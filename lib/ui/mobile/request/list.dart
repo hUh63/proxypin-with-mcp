@@ -221,7 +221,8 @@ class RequestListState extends State<RequestListWidget> {
         .replaceAll(" ", "_")
         .replaceAll(":", "_");
 
-    showExportDialog(context, view.toList(), folderName);
+    showExportDialog(context, view.toList(), folderName,
+        onImport: (imported) => container.addAll(imported));
   }
 
   void sort(bool sortDesc) {

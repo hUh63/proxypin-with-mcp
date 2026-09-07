@@ -4,9 +4,11 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
+import 'package:proxypin/network/http/passcode.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/configuration.dart';
@@ -304,6 +306,7 @@ void showExportDialog(
   List<HttpRequest> requests,
   String folderName, {
   VoidCallback? onExportSuccess,
+  void Function(List<HttpRequest> requests)? onImport,
 }) {
   final localizations = AppLocalizations.of(ctx)!;
 
@@ -311,10 +314,33 @@ void showExportDialog(
     context: ctx,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: Text(localizations.export),
-        content: Column(
+        title: const Text('导入 / 导出'),
+        content: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (onImport != null)
+              ListTile(
+                leading: const Icon(Icons.content_paste),
+                title: const Text('从剪贴板导入口令'),
+                subtitle: const Text('粘贴此前导出的口令，还原请求到列表', style: TextStyle(fontSize: 12)),
+                onTap: () async {
+                  final data = await Clipboard.getData(Clipboard.kTextPlain);
+                  try {
+                    final imported = decodeRequestPasscode(data?.text ?? '');
+                    if (imported.isEmpty) throw const FormatException('口令中没有任何请求');
+                    Navigator.pop(context);
+                    onImport!(imported);
+                    if (ctx.mounted) {
+                      FlutterToastr.show('已导入 ${imported.length} 条请求', ctx);
+                    }
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      FlutterToastr.show('口令无效：$e', ctx, backgroundColor: Colors.red);
+                    }
+                  }
+                },
+              ),
             ListTile(
               title: Text(localizations.request),
               onTap: () {
@@ -387,7 +413,20 @@ void showExportDialog(
                 );
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.copy_all_outlined),
+              title: const Text('复制口令'),
+              subtitle: const Text('将所选请求压缩为口令文本，粘贴给他人即可导入', style: TextStyle(fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                Clipboard.setData(ClipboardData(text: encodeRequestPasscode(requests)));
+                if (ctx.mounted) {
+                  FlutterToastr.show('口令已复制（${requests.length} 条请求）', ctx);
+                }
+              },
+            ),
           ],
+        ),
         ),
         actions: [
           TextButton(

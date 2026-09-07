@@ -363,7 +363,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     final folderName = 'proxypin_export_${DateTime.now().dateFormat()}';
     showExportDialog(context, selectedRequests, folderName, onExportSuccess: () {
       selectionController.clear();
-    });
+    }, onImport: (imported) => container.addAll(imported));
   }
 
   ///导出
@@ -372,7 +372,8 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     List<HttpRequest>? requests = currentView();
     if (requests == null) return;
     final folderName = 'proxypin_${DateTime.now().dateFormat()}';
-    showExportDialog(context, requests, folderName);
+    showExportDialog(context, requests, folderName,
+        onImport: (imported) => container.addAll(imported));
   }
 
   ///重发所有请求

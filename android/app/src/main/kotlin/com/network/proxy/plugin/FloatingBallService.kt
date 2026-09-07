@@ -151,7 +151,8 @@ class FloatingBallService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.END
             x = 24
-            y = 260
+            // 默认初始位置：屏幕高度约 1/3 处（往下移，不顶在状态栏附近）
+            y = (resources.displayMetrics.heightPixels / 3).coerceAtLeast(260)
         }
 
         val dm = resources.displayMetrics

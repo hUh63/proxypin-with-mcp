@@ -299,7 +299,7 @@ class RequestSequenceState extends State<RequestSequence> with AutomaticKeepAliv
     final folderName = 'proxypin_export_${DateTime.now().dateFormat()}';
     showExportDialog(context, selected, folderName, onExportSuccess: () {
       selectionController.clear();
-    });
+    }, onImport: (imported) => widget.container.addAll(imported));
   }
 
   void repeatSelected() {

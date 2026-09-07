@@ -445,21 +445,28 @@ class _LogViewerPageState extends State<LogViewerPage> {
                   ),
           ),
           
-          // 底部统计
+          // 底部统计（背景随主题，数字按级别配色）
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              border: Border(top: BorderSide(color: Colors.grey[300]!)),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+              border: Border(
+                  top: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5))),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('总数', _logManager.getLogs().length),
-                _buildStatItem('调试', _logManager.getLogsByLevel(LogLevel.debug).length),
-                _buildStatItem('信息', _logManager.getLogsByLevel(LogLevel.info).length),
-                _buildStatItem('警告', _logManager.getLogsByLevel(LogLevel.warning).length),
-                _buildStatItem('错误', _logManager.getLogsByLevel(LogLevel.error).length),
+                _buildStatItem('总数', _logManager.getLogs().length,
+                    Theme.of(context).colorScheme.primary),
+                _buildStatItem('调试', _logManager.getLogsByLevel(LogLevel.debug).length,
+                    _getLevelColor(LogLevel.debug)),
+                _buildStatItem('信息', _logManager.getLogsByLevel(LogLevel.info).length,
+                    _getLevelColor(LogLevel.info)),
+                _buildStatItem('警告', _logManager.getLogsByLevel(LogLevel.warning).length,
+                    _getLevelColor(LogLevel.warning)),
+                _buildStatItem('错误', _logManager.getLogsByLevel(LogLevel.error).length,
+                    _getLevelColor(LogLevel.error)),
               ],
             ),
           ),
@@ -468,14 +475,15 @@ class _LogViewerPageState extends State<LogViewerPage> {
     );
   }
 
-  Widget _buildStatItem(String label, int count) {
+  Widget _buildStatItem(String label, int count, Color color) {
     return Column(
       children: [
         Text(
           count.toString(),
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 17,
             fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
         Text(
