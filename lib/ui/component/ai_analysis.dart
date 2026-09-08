@@ -403,13 +403,14 @@ class _AiChatPageState extends State<AiChatPage> {
     }
 
     final attachments = List<_Attachment>.from(_attachments);
+    // 捕获当前会话对象：异步等待期间切换/删除会话，本次消息仍归属原会话
+    final conv = _conversations[_activeConversation];
     setState(() {
       // 首条消息自动命名会话
-      final conv = _conversations[_activeConversation];
       if (conv.messages.isEmpty && conv.title == '新对话') {
         conv.title = text.length > 14 ? '${text.substring(0, 14)}…' : text;
       }
-      _messages.add(_ChatMessage(role: 'user', content: text, attachments: attachments));
+      conv.messages.add(_ChatMessage(role: 'user', content: text, attachments: attachments));
       _attachments.clear();
       _inputController.clear();
       _sending = true;
@@ -417,7 +418,7 @@ class _AiChatPageState extends State<AiChatPage> {
     _scrollToBottom();
 
     // 组装 API 消息（附件并入 user 内容）
-    final apiMessages = _messages.map((m) => {'role': m.role, 'content': m.apiContent}).toList();
+    final apiMessages = conv.messages.map((m) => {'role': m.role, 'content': m.apiContent}).toList();
 
     try {
       var round = 0;
@@ -428,7 +429,7 @@ class _AiChatPageState extends State<AiChatPage> {
 
         final calls = _agentMode ? _parseToolCalls(reply) : const <_ToolCall>[];
         setState(() {
-          _messages.add(_ChatMessage(
+          conv.messages.add(_ChatMessage(
             role: 'assistant',
             content: _stripToolTags(reply),
             toolCalls: calls.map((c) => (c.name, '')).toList(),
@@ -455,7 +456,9 @@ class _AiChatPageState extends State<AiChatPage> {
       }
     } catch (e) {
       setState(() {
-        _messages.add(_ChatMessage(role: 'assistant', content: '分析失败：$e', isError: true));
+        if (mounted) {
+          conv.messages.add(_ChatMessage(role: 'assistant', content: '分析失败：$e', isError: true));
+        }
       });
     } finally {
       if (mounted) setState(() => _sending = false);

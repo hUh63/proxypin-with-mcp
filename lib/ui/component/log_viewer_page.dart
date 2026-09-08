@@ -208,6 +208,16 @@ class _LogViewerPageState extends State<LogViewerPage> {
       logs = _logManager.searchLogs(_searchQuery);
     }
 
+    // 内容无变化（筛选条件相同且条数/首条一致）时跳过重建，避免 500ms 空转
+    final filterKey = '${_selectedLevel?.name ?? 'all'}|$_searchQuery';
+    if (filterKey == _lastFilterKey &&
+        logs.isNotEmpty &&
+        _filteredLogs.length == logs.length &&
+        _filteredLogs.first.timestamp == logs.first.timestamp) {
+      return;
+    }
+    _lastFilterKey = filterKey;
+
     setState(() {
       _filteredLogs = logs;
     });
@@ -224,6 +234,7 @@ class _LogViewerPageState extends State<LogViewerPage> {
   }
 
   int _lastTopId = -1;
+  String _lastFilterKey = ;
 
   Color _getLevelColor(LogLevel level) {
     switch (level) {
