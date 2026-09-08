@@ -56,6 +56,9 @@ class ProxyServer {
   //socket服务
   Server? server;
 
+  /// QUIC 元数据探测 UDP 监听（VPN 层抄送 UDP:443 首包到此，见 QuicProbe）
+  DatagramSocket? _quicProbeSocket;
+
   //请求事件监听
   List<EventListener> listeners = [];
 
@@ -88,7 +91,7 @@ class ProxyServer {
   /// 启动代理服务
   Future<Server> start() async {
     // 启动 QUIC 元数据探测监听（VPN 层会将 UDP:443 首包抄送到本机端口）
-    unawaited(QuicProbe.instance.start());
+    unawaited(_startQuicProbeListener());
     Server server = Server(configuration, listener: CombinedEventListener(listeners));
 
     List<Interceptor> interceptors = [
@@ -187,7 +190,7 @@ class ProxyServer {
 
   /// 停止代理服务
   Future<Server?> stop() async {
-    QuicProbe.instance.stop();
+    _stopQuicProbeListener();
     if (!isRunning) {
       return server;
     }
@@ -219,6 +222,28 @@ class ProxyServer {
       }));
     } catch (_) {}
     return server;
+  }
+
+  /// 启动 QUIC 元数据探测监听：接收 VPN 层抄送的 UDP:443 首包交给 QuicProbe 解析
+  Future<void> _startQuicProbeListener() async {
+    try {
+      _quicProbeSocket =
+          await DatagramSocket.bind(InternetAddress.loopbackIPv4, quicProbePort);
+      _quicProbeSocket!.listen((d) {
+        QuicProbe.instance.handlePacket(d.data, '${d.address.address}:${d.port}');
+      }, onError: (Object e) {
+        logger.w('QUIC 探测监听异常', error: e);
+      });
+    } catch (e) {
+      logger.w('QUIC 探测监听启动失败', error: e);
+    }
+  }
+
+  void _stopQuicProbeListener() {
+    try {
+      _quicProbeSocket?.close();
+    } catch (_) {}
+    _quicProbeSocket = null;
   }
 
   /// 设置系统代理

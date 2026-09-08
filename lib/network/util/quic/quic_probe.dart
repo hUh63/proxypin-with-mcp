@@ -23,7 +23,6 @@
 /// 说明：QUIC 业务数据（HTTP/3 请求响应）经 TLS 1.3 加密无法解密（业界一致）；
 /// 本模块展示的是"哪些 App/域名在走 QUIC、建立多少连接"的连接级元数据。
 
-import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -70,29 +69,9 @@ class QuicProbe {
   final ValueNotifier<int> revision = ValueNotifier(0);
   final List<String> _probeLog = <String>[]; // 最近解析日志（供 UI 调试展示）
 
-  DatagramSocket? _socket;
-  bool _started = false;
-
   List<QuicSession> get sessions => _sessions.values.toList();
 
-  Future<void> start() async {
-    if (_started) return;
-    _started = true;
-    try {
-      _socket = await DatagramSocket.bind(InternetAddress.loopbackIPv4, quicProbePort);
-      _socket!.listen(_onDatagram, onError: (Object e) {
-        logger.w('QUIC 探测监听异常', error: e);
-      });
-    } catch (e) {
-      logger.w('QUIC 探测监听启动失败', error: e);
-    }
-  }
 
-  void stop() {
-    _started = false;
-    _socket?.close();
-    _socket = null;
-  }
 
   /// 清空会话（UI 手动刷新/清空时调用）
   void clear() {
@@ -101,15 +80,14 @@ class QuicProbe {
     revision.value++;
   }
 
-  void _onDatagram(Datagram datagram) {
-    final data = datagram.data;
+  /// 处理一个 UDP:443 首包（由持有 socket 的网络层调用，本类保持纯解析无 IO）
+  void handlePacket(List<int> data, String remote) {
     if (data.length < 12 || data.length > 2048) return;
     try {
       final packet = Uint8List.fromList(data);
       final info = parseQuicInitial(packet); // 明文字段 + Header Protection
       final dcidHex = _hex(info.dcid);
       final existing = _sessions[dcidHex];
-      final remote = '${datagram.address.address}:${datagram.port}';
       if (existing != null) {
         // 会话已建立：仅计数（Kotlin 侧已按 30s 节流，此处兜底）
         existing.packets++;
