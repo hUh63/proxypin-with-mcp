@@ -29,7 +29,10 @@ library;
 
 import 'dart:typed_data';
 
-import 'package:pointycastle/pointycastle.dart';
+import 'package:pointycastle/api.dart';
+import 'package:pointycastle/block/aes.dart';
+import 'package:pointycastle/block/modes/ecb.dart';
+import 'package:pointycastle/block/modes/gcm.dart';
 
 import 'quic_keys.dart';
 
