@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.22.39 (2026-09-09)
+
+### 上游 #489：QUIC 管线推进
+
+- **QUIC v1 包解析与 Initial 解密器**：新增 `lib/network/util/quic/quic_packet.dart`——
+  - 长头包明文字段解析（版本 / DCID / SCID / token）
+  - Header Protection 去除（RFC 9001 §5.4：AES-ECB(hp, sample) 掩码解出包号长度与包号）
+  - Initial payload AES-128-GCM 解密（nonce = iv ⊕ 包号；标签校验失败安全返回 null）
+  - QUIC 帧遍历：CRYPTO 帧数据拼接（内含 TLS ClientHello 前缀，供上层提取 SNI/会话元数据）
+- 至此 #489 管线组件齐备：密钥派生（v1.22.38，RFC 9001 A.1 向量校验）→ 包解析/解密 → CRYPTO 数据；
+  下一步为把 VPN/root 管道中捕获的 UDP:443 首包接入该管线并展示 QUIC 连接（SNI/版本/帧统计）
+- **Root 系统级回落**（v1.22.38 随附）：偏好设置可一键 iptables 丢弃 UDP:443（重启失效，可停用）
+
+### 说明
+
+- 完整 QUIC 业务解密（HTTP/3 请求响应明文）受限于 TLS 1.3 密钥获取，任何抓包工具（Reqable/Clash 等）
+  均无法在无密钥注入时解出应用层明文；本实现的目标是**QUIC 连接级元数据**（可识别"哪个 App 在走 QUIC、
+  访问哪个域名、建立多少连接），已抓包回落 TCP 仍可看完整请求明文
+
 ## v1.22.38 (2026-09-08)
 
 ### 界面优化
