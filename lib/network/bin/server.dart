@@ -27,6 +27,7 @@ import 'package:proxypin/network/components/request_rewrite.dart';
 import 'package:proxypin/network/components/script.dart';
 import 'package:proxypin/network/handle/http_proxy_handle.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
+import 'package:proxypin/network/util/quic/quic_probe.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
 import 'package:proxypin/network/mcp/script_workflow_engine.dart';
@@ -86,6 +87,8 @@ class ProxyServer {
 
   /// 启动代理服务
   Future<Server> start() async {
+    // 启动 QUIC 元数据探测监听（VPN 层会将 UDP:443 首包抄送到本机端口）
+    unawaited(QuicProbe.instance.start());
     Server server = Server(configuration, listener: CombinedEventListener(listeners));
 
     List<Interceptor> interceptors = [
@@ -184,6 +187,7 @@ class ProxyServer {
 
   /// 停止代理服务
   Future<Server?> stop() async {
+    QuicProbe.instance.stop();
     if (!isRunning) {
       return server;
     }

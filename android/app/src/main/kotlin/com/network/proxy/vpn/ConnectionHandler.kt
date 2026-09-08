@@ -72,6 +72,17 @@ class ConnectionHandler(
     private fun handleUDPPacket(clientPacketData: ByteBuffer, ipHeader: IP4Header) {
         val udpHeader = UDPPacketFactory.createUDPHeader(clientPacketData)
 
+        // QUIC 元数据探测（上游 #489）：UDP:443 首个数据包抄送一份给 Dart 侧解析
+        // （Dart 解密 QUIC Initial 提取 SNI/版本）；不影响下方回落/转发逻辑
+        if (udpHeader.destinationPort == 443 && clientPacketData.remaining() > 0) {
+            val saved = clientPacketData.position()
+            val payload = ByteArray(clientPacketData.remaining())
+            clientPacketData.get(payload)
+            clientPacketData.position(saved)
+            ProxyVpnService.forwardQuicProbe(
+                "${ipHeader.sourceIP}:${udpHeader.sourcePort}", payload)
+        }
+
         // QUIC 拦截（上游 #489）：丢弃 UDP:443，客户端握手失败后回落 TCP HTTP，流量即可被代理抓取
         if (ProxyVpnService.blockQuic && udpHeader.destinationPort == 443) {
             ProxyVpnService.quicBlockedCount.incrementAndGet()

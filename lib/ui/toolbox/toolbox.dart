@@ -4,6 +4,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
+import 'package:proxypin/ui/component/quic_sessions_page.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/ui/component/ai_analysis.dart';
 import 'package:proxypin/ui/toolbox/dev_tools.dart';
@@ -283,6 +284,19 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.api,
                       text: 'API 端点',
                       tooltip: '从抓包数据提取 API 端点'),
+                  IconText(
+                      onTap: () async {
+                        if (Platforms.isMobile()) {
+                          await Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => const QuicSessionsPage()));
+                          return;
+                        }
+                        MultiWindow.openWindow('QUIC 连接', 'QuicSessionsPage',
+                            size: const Size(760, 640));
+                      },
+                      icon: Icons.hub_outlined,
+                      text: 'QUIC 连接',
+                      tooltip: 'QUIC/HTTP3 连接元数据（SNI/版本/统计）'),
                   IconText(
                       onTap: () => showGuideCenter(context),
                       icon: Icons.menu_book_outlined,

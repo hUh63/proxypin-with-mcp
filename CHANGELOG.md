@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.22.40 (2026-09-09)
+
+### 新功能：QUIC 连接元数据展示（上游 #489 全链路打通）
+
+- **数据捕获（Kotlin VPN 层）**：VPN 抓包运行时，`ConnectionHandler` 会把 UDP:443 的**首个数据包**抄送到本机（同一源地址 30 秒节流，避免洪泛）；与"拦截 QUIC 回落 TCP"互不干扰——回落开启时照常回落抓明文，同时仍可记录 QUIC 连接
+- **解析管线（Dart）**：新增 `QuicProbe`（UDP 监听 41745）：QUIC v1 长头解析 → Initial 解密（v1.22.38/39 已交付的密钥派生 + Header Protection + AES-GCM）→ 帧扫描 → **ClientHello 的 SNI 域名提取**（手写 TLS 1.3 ClientHello 解析，失败安全忽略）
+- **展示页**：工具箱 → 新增「QUIC 连接」入口（桌面/移动端均支持）——列出每个 QUIC 会话：**SNI 域名 / QUIC 版本（0x1 = v1）/ 源地址 / 首次时间 / 连接 ID / 包与帧统计**；空态与页内说明诚实标注能力边界（HTTP/3 业务明文需 TLS 密钥，无法解密，要看明文请开启「拦截 QUIC」回落）
+- 配置开关：偏好设置可关「QUIC 探测」（Configuration.quicProbeEnabled，默认开）
+
+### 说明
+
+- 常见抓不到 QUIC 连接的原因：目标应用默认走 TCP/HTTP2（多数应用如此），仅使用 QUIC 的应用（部分视频/游戏/Google 系）会出现；可临时关闭「拦截 QUIC」重开抓包让 QUIC 流量放行并记录
+- QUIC 会话列表为内存态，抓包停止/清空后重置
+
 ## v1.22.39 (2026-09-09)
 
 ### 上游 #489：QUIC 管线推进

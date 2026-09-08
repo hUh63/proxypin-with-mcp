@@ -62,6 +62,7 @@ class ProxyVpnService : VpnService(), ProtectSocket {
         const val SET_SYSTEM_PROXY_KEY = "SetSystemProxy"
         const val PROXY_PASS_DOMAINS_KEY = "ProxyPassDomains"
         const val BLOCK_QUIC_KEY = "BlockQuic" //拦截 QUIC (UDP:443) 强制回落 TCP
+        const val QUIC_PROBE_KEY = "QuicProbe" //QUIC 元数据探测（UDP:443 首包抄送 Dart 解析）
 
         /**
          * 动作：断开连接
@@ -93,6 +94,69 @@ class ProxyVpnService : VpnService(), ProtectSocket {
         var quicBlockedCount: java.util.concurrent.atomic.AtomicLong =
             java.util.concurrent.atomic.AtomicLong(0)
 
+        /** QUIC 元数据探测开关（VPN 运行时把 UDP:443 首包抄送本机 Dart 监听端口） */
+        @Volatile
+        var quicProbeEnabled: Boolean = true
+
+        /** Dart 侧 QUIC 探测监听端口（server.dart QuicProbe 常驻监听） */
+        const val QUIC_PROBE_PORT = 41745
+
+        private const val QUIC_PROBE_THROTTLE_MS = 30_000L
+
+        @Volatile
+        private var quicProbeSocket: java.net.DatagramSocket? = null
+
+        /** 抄送节流：key = "srcIP:srcPort"，避免 UDP 洪泛 */
+        private val quicProbeThrottle =
+            java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+        /** 懒创建本机 UDP socket（应用进程内 Dart 监听端口），失败静默 */
+        @JvmStatic
+        fun quicProbeSender(): java.net.DatagramSocket? {
+            var sock = quicProbeSocket
+            if (sock == null) {
+                synchronized(this) {
+                    sock = quicProbeSocket
+                    if (sock == null) {
+                        try {
+                            sock = java.net.DatagramSocket()
+                            quicProbeSocket = sock
+                        } catch (e: Exception) {
+                            Log.w(TAG, "create quic probe socket failed", e)
+                        }
+                    }
+                }
+            }
+            return quicProbeSocket
+        }
+
+        /** 抄送一个 QUIC 首包给 Dart 探测监听；同一五元组 30s 内只抄送一次 */
+        @JvmStatic
+        fun forwardQuicProbe(remoteKey: String, payload: ByteArray) {
+            if (!quicProbeEnabled) return
+            val now = System.currentTimeMillis()
+            val last = quicProbeThrottle[remoteKey]
+            if (last != null && now - last < QUIC_PROBE_THROTTLE_MS) return
+            quicProbeThrottle[remoteKey] = now
+            try {
+                quicProbeSender()?.send(
+                    java.net.DatagramPacket(
+                        payload, payload.size,
+                        java.net.InetAddress.getLoopbackAddress(), QUIC_PROBE_PORT
+                    )
+                )
+            } catch (e: Exception) {
+                if (quicProbeThrottle.size > 2048) quicProbeThrottle.clear()
+            }
+        }
+
+        @JvmStatic
+        fun closeQuicProbeSocket() {
+            try { quicProbeSocket?.close() } catch (_: Exception) {}
+            quicProbeSocket = null
+            quicProbeThrottle.clear()
+        }
+
         fun stopVpnIntent(context: Context): Intent {
             return Intent(context, ProxyVpnService::class.java).also {
                 it.action = ACTION_DISCONNECT
@@ -107,7 +171,8 @@ class ProxyVpnService : VpnService(), ProtectSocket {
             disallowApps: ArrayList<String>? = this.disallowApps,
             setSystemProxy: Boolean = true,
             proxyPassDomains: ArrayList<String>? = null,
-            blockQuic: Boolean = this.blockQuic
+            blockQuic: Boolean = this.blockQuic,
+            quicProbeEnabled: Boolean = this.quicProbeEnabled
         ): Intent {
             return Intent(context, ProxyVpnService::class.java).also {
                 it.putExtra(PROXY_HOST_KEY, proxyHost)
@@ -117,6 +182,7 @@ class ProxyVpnService : VpnService(), ProtectSocket {
                 it.putExtra(SET_SYSTEM_PROXY_KEY, setSystemProxy)
                 it.putStringArrayListExtra(PROXY_PASS_DOMAINS_KEY, proxyPassDomains)
                 it.putExtra(BLOCK_QUIC_KEY, blockQuic)
+                it.putExtra(QUIC_PROBE_KEY, quicProbeEnabled)
             }
         }
 
@@ -152,6 +218,7 @@ class ProxyVpnService : VpnService(), ProtectSocket {
     override fun onDestroy() {
         super.onDestroy()
         disconnect()
+        closeQuicProbeSocket()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -172,6 +239,7 @@ class ProxyVpnService : VpnService(), ProtectSocket {
             val setSystemProxy = intent.getBooleanExtra(SET_SYSTEM_PROXY_KEY, setSystemProxy)
             val proxyPassDomains = intent.getStringArrayListExtra(PROXY_PASS_DOMAINS_KEY)
             blockQuic = intent.getBooleanExtra(BLOCK_QUIC_KEY, blockQuic)
+            quicProbeEnabled = intent.getBooleanExtra(QUIC_PROBE_KEY, quicProbeEnabled)
 
             connect(
                 proxyHost,

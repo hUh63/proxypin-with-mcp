@@ -90,6 +90,9 @@ class Configuration {
   //QUIC 拦截（Android VPN 层丢弃 UDP:443，强制应用回落 TCP HTTP 以便可抓包，上游 #489）
   bool blockQuic = true;
 
+  //QUIC 元数据探测：VPN 捕获 UDP:443 首包解密 Initial 提取 SNI/版本等连接元数据（上游 #489）
+  bool quicProbeEnabled = true;
+
   //双向认证 mTLS（与上游服务器 TLS 握手时提供客户端证书，上游 #366）
   bool mtlsEnabled = false;
   String? mtlsChainPath; // 客户端证书链 PEM
@@ -133,6 +136,7 @@ class Configuration {
     aiAgentMaxRounds = config['aiAgentMaxRounds'] ?? 3;
     aiAgentExtraPrompt = config['aiAgentExtraPrompt'] ?? "";
     blockQuic = config['blockQuic'] ?? true;
+    quicProbeEnabled = config['quicProbeEnabled'] ?? true;
     mtlsEnabled = config['mtlsEnabled'] ?? false;
     mtlsChainPath = config['mtlsChainPath'];
     mtlsKeyPath = config['mtlsKeyPath'];
@@ -208,6 +212,7 @@ class Configuration {
       'aiAgentMaxRounds': aiAgentMaxRounds,
       if (aiAgentExtraPrompt.isNotEmpty) 'aiAgentExtraPrompt': aiAgentExtraPrompt,
       'blockQuic': blockQuic,
+      'quicProbeEnabled': quicProbeEnabled,
       'mtlsEnabled': mtlsEnabled,
       if (mtlsChainPath != null) 'mtlsChainPath': mtlsChainPath,
       if (mtlsKeyPath != null) 'mtlsKeyPath': mtlsKeyPath,
