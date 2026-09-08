@@ -234,7 +234,7 @@ class _LogViewerPageState extends State<LogViewerPage> {
   }
 
   int _lastTopId = -1;
-  String _lastFilterKey = ;
+  String _lastFilterKey = '';
 
   Color _getLevelColor(LogLevel level) {
     switch (level) {

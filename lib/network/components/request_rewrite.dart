@@ -46,7 +46,7 @@ class RequestRewriteInterceptor extends Interceptor {
   /// 构造 RegExp；若未启用正则则自动转义为字面量匹配，若 pattern 不合法则回退为字面量匹配
   /// 展开正则替换模板中的分组引用（上游 #925）：支持 $0~$9（$0=整段匹配），
   /// 从大到小替换，避免先替换 $1 把 "$10..." 之类后续文本误伤
-  static String _expandRegexGroups(String template, RegExpMatch match) {
+  static String _expandRegexGroups(String template, Match match) {
     var result = template;
     for (var i = match.groupCount; i >= 0; i--) {
       result = result.replaceAll('\$$i', match.group(i) ?? '');
