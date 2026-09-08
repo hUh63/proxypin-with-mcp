@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.22.38 (2026-09-08)
+
+### 界面优化
+
+- **API 端点页统计卡片重设计**：三个卡片从"纯数字+灰字"改为莫奈风——各自带圆角图标徽标（总端点/资源组/总请求），颜色分别取主题 primary/tertiary/secondary，浅色描边+surface 底，深浅模式自适应
+
+### 新功能（上游 #489：QUIC 的 root 能力）
+
+- **系统级 QUIC 回落（Root + iptables）**：偏好设置 → 拦截 QUIC 开关下方新增「启用/停用」——用 root 在系统层 `iptables -I OUTPUT -p udp --dport 443 -j REJECT`，比 VPN 层拦截更早生效（对更多应用起效），一键停用清理规则；执行结果即时反馈
+- **QUIC v1 Initial 密钥派生库**：新增 `lib/network/util/quic/quic_keys.dart`——按 RFC 9001 §5.2 / RFC 8446 §7.1 实现 Initial 密钥派生（HKDF-Extract/Expand-Label），**内置 RFC 9001 附录 A.1 官方测试向量自检**（5 组值逐一比对），为后续在 VPN/root 管道中解密 QUIC Initial、提取 SNI/会话元数据铺路
+
 ## v1.22.37 (2026-09-08)
 
 ### 问题修复

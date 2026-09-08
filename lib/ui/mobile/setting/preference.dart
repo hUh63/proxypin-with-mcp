@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/native/mcp_screen.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/network/util/mtls.dart';
 import 'package:proxypin/network/bin/configuration.dart';
@@ -348,6 +349,34 @@ class _PreferenceState extends State<Preference> {
   }
 
   @override
+  /// 系统级 QUIC 回落（#489 root 能力）：iptables 丢弃全部 UDP:443 强制回落 TCP
+  Future<void> _systemQuicFallback(bool enable) async {
+    final rootOk = await McpScreen.requestRootAuthorization();
+    if (!rootOk) {
+      if (mounted) {
+        FlutterToastr.show('未获得 Root 授权，无法执行系统级回落', context,
+            backgroundColor: Colors.orange);
+      }
+      return;
+    }
+    final rule = 'OUTPUT -p udp --dport 443 -j REJECT';
+    final cmd = enable ? 'iptables -I $rule' : 'iptables -D $rule';
+    final r = await McpScreen.shell(cmd, useSu: true, timeoutMs: 8000);
+    final ok = r['success'] == true ||
+        (r['code'] is num && (r['code'] as num) == 0);
+    if (mounted) {
+      FlutterToastr.show(
+        ok
+            ? (enable ? '系统级回落已启用：UDP:443 将被丢弃（重启系统后失效）' : '系统级回落已停用')
+            : '执行失败：${r['stderr'] ?? r['error'] ?? 'iptables 不可用'}',
+        context,
+        duration: 4,
+        backgroundColor: ok ? Colors.green : Colors.red,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
     final borderColor = Theme.of(context).dividerColor.withValues(alpha: 0.13);
@@ -463,6 +492,33 @@ class _PreferenceState extends State<Preference> {
                       FlutterToastr.show('已关闭，重新启动抓包后生效', context);
                     }
                   },
+                ),
+              ),
+              // 系统级 QUIC 回落（Root）：iptables 在系统层丢弃 UDP:443，
+              // 比 VPN 层拦截更早生效（#489 root 能力）
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '系统级回落（需 Root + iptables）：丢弃全部 UDP:443 强制回落 TCP，重启系统后失效',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _systemQuicFallback(true),
+                      icon: const Icon(Icons.power_settings_new, size: 15),
+                      label: const Text('启用', style: TextStyle(fontSize: 12)),
+                    ),
+                    TextButton(
+                      onPressed: () => _systemQuicFallback(false),
+                      child: const Text('停用', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
                 ),
               ),
               Divider(height: 0, thickness: 0.3, color: dividerColor),

@@ -106,15 +106,22 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: _buildStatCard('总端点', _endpoints.length.toString()),
+                  child: _buildStatCard(
+                      Icons.link_rounded, '总端点', _endpoints.length.toString(),
+                      Theme.of(context).colorScheme.primary),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: _buildStatCard('资源组', _groups.length.toString()),
+                  child: _buildStatCard(
+                      Icons.folder_copy_rounded, '资源组', _groups.length.toString(),
+                      Theme.of(context).colorScheme.tertiary),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: _buildStatCard('总请求', _endpoints.fold<int>(0, (s, e) => s + e.callCount).toString()),
+                  child: _buildStatCard(
+                      Icons.alt_route_rounded, '总请求',
+                      _endpoints.fold<int>(0, (s, e) => s + e.callCount).toString(),
+                      Theme.of(context).colorScheme.secondary),
                 ),
               ],
             ),
@@ -135,22 +142,43 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
+  Widget _buildStatCard(IconData icon, String label, String value, Color accent) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: accent.withValues(alpha: 0.18)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
         child: Column(
           children: [
+            // 图标徽标
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.13),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 17, color: accent),
+            ),
+            const SizedBox(height: 8),
             Text(
               value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
-                  ),
+              style: cs.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+                height: 1.1,
+              ),
             ),
+            const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
             ),
           ],
         ),
