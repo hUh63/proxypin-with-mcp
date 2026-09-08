@@ -22,11 +22,10 @@
 ///
 /// 说明：QUIC 业务数据（HTTP/3 请求响应）经 TLS 1.3 加密无法解密（业界一致）；
 /// 本模块展示的是"哪些 App/域名在走 QUIC、建立多少连接"的连接级元数据。
-library;
 
+import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -82,10 +81,10 @@ class QuicProbe {
     try {
       _socket = await DatagramSocket.bind(InternetAddress.loopbackIPv4, quicProbePort);
       _socket!.listen(_onDatagram, onError: (Object e) {
-        debugPrint('QUIC 探测监听异常: $e');
+        logger.w('QUIC 探测监听异常', error: e);
       });
     } catch (e) {
-      debugPrint('QUIC 探测监听启动失败: $e');
+      logger.w('QUIC 探测监听启动失败', error: e);
     }
   }
 
