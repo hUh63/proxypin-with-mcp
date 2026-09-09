@@ -55,6 +55,13 @@
   - 批量重放
 - iOS 导出使用系统分享面板，避免「Is a directory」错误
 
+## 请求口令分享（跨端秒传）
+
+- 把抓到的请求**压缩成一段口令文本**：长按/多选请求 → 导入/导出 → **复制口令**（`PROXYPIN1:` 前缀 + base64Url + gzip 压缩 JSON，体积小、可粘贴到任意聊天/邮件）
+- 还原：导入/导出 → **从剪贴板导入口令**，粘贴口令即还原请求到列表（含 URL/方法/头/体，可直接重放）
+- 实现位置：`lib/network/http/passcode.dart`（`encodeRequestPasscode`/`decodeRequestPasscode`），入口 `lib/utils/export_request.dart`
+- 适用：手机抓到的问题请求发给电脑端排查、把请求分享给同事复现（无需整包导出文件）
+
 ## API 端点提取
 
 - 工具箱 → API 端点：从当前流量自动归纳 REST 接口
@@ -88,6 +95,19 @@
 - 原理：VPN 层丢弃 UDP 443（QUIC/HTTP3），应用握手失败后自动回落 TCP HTTP，流量即可正常抓包（Charles 同款方案）
 - 开关副标题显示已拦截的 QUIC 包数量；修改后需重启抓包生效
 - 游戏类 App 走 QUIC 无法抓包/异常时，保持开启可解决（上游 #474/#489）
+
+## QUIC 连接（元数据展示，Android）
+
+- 入口：工具箱 → **QUIC 连接**（移动端 push 新页 / 桌面端独立子窗口，`QuicSessionsPage`）
+- ==抓包运行中自动记录==访问过的 QUIC/HTTP3 会话：**SNI 域名 / QUIC 版本 / 源地址 / 首次时间 / 连接 ID / 包与帧统计**；支持清空记录（内存态，停止抓包/清空后重置）
+- **实现方式**（三端链路）：Kotlin VPN 层 `ConnectionHandler.handleUDPPacket` 把 UDP:443 首个数据包经**本机 TCP**（41745 端口，即发即断）抄送给 Dart `ProxyServer`（30 秒/源节流防洪泛）→ `QuicProbe` 纯解析（无 socket）：QUIC v1 长头解析 → Header Protection 去除（AES-ECB）→ Initial AES-128-GCM 解密（密钥派生见 v1.22.38，RFC 9001 A.1 向量校验）→ CRYPTO 帧拼接 → 手写 TLS 1.3 ClientHello 解析提取 SNI，任一环节失败安全忽略
+- **能力边界（诚实提示）**：HTTP/3 业务明文经 TLS 1.3 加密，无会话密钥无法解密查看——要看明文请开启「拦截 QUIC」让应用回落 TCP；列表头部提示条已注明
+- **与其它功能联动**：
+  - 「拦截 QUIC」开关（偏好设置）开启时照常回落抓明文，**同时**仍可记录 QUIC 连接（拦截前抄送，互不干扰）
+  - 「QUIC 探测」开关（偏好设置 → 自动抓包下方，`Configuration.quicProbeEnabled` 默认开）可整体关闭抄送
+  - 常用抓不到的原因：目标应用默认走 TCP/HTTP2；可临时关闭拦截重开抓包观察
+- **开发细节**：Dart 监听在 `ProxyServer`（`lib/network/bin/server.dart`，`ServerSocket.bind` loopback 41745）；解析器 `lib/network/util/quic/`（`quic_keys.dart`/`quic_packet.dart`/`quic_probe.dart`）；Kotlin 入口 `ProxyVpnService.forwardQuicProbe` + `ConnectionHandler`；注意 Dart 侧不直接依赖 `dart:io` UDP（DatagramSocket），统一走 TCP 即发即断通道
+
 
 ## 双向认证 mTLS
 

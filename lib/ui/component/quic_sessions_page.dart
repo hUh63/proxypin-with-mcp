@@ -84,7 +84,7 @@ class QuicSessionsPage extends StatelessWidget {
                     ),
                     subtitle: Text(
                       'QUIC ${s.version} · ${s.remote} · ${_time(s.firstSeen)}\n'
-                      '连接 ${s.dcid.substring(0, 6)}… · ${s.packets} 包 / ${s.frames} 帧',
+                      '连接 ${s.dcid.length >= 6 ? s.dcid.substring(0, 6) : s.dcid}… · ${s.packets} 包 / ${s.frames} 帧',
                       style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, height: 1.4),
                     ),
                     isThreeLine: true,
