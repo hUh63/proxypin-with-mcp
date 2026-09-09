@@ -5,7 +5,7 @@
 ### 新功能：QUIC 连接元数据展示（上游 #489 全链路打通）
 
 - **数据捕获（Kotlin VPN 层）**：VPN 抓包运行时，`ConnectionHandler` 会把 UDP:443 的**首个数据包**抄送到本机（同一源地址 30 秒节流，避免洪泛）；与"拦截 QUIC 回落 TCP"互不干扰——回落开启时照常回落抓明文，同时仍可记录 QUIC 连接
-- **解析管线（Dart）**：新增 `QuicProbe`（UDP 监听 41745）：QUIC v1 长头解析 → Initial 解密（v1.22.38/39 已交付的密钥派生 + Header Protection + AES-GCM）→ 帧扫描 → **ClientHello 的 SNI 域名提取**（手写 TLS 1.3 ClientHello 解析，失败安全忽略）
+- **解析管线（Dart）**：新增 `QuicProbe`（`ProxyServer` 本机 TCP 监听 41745，VPN 层经 TCP 即发即断抄送首包，避免跨语言 UDP 依赖）：QUIC v1 长头解析 → Initial 解密（v1.22.38/39 已交付的密钥派生 + Header Protection + AES-GCM）→ 帧扫描 → **ClientHello 的 SNI 域名提取**（手写 TLS 1.3 ClientHello 解析，失败安全忽略）
 - **展示页**：工具箱 → 新增「QUIC 连接」入口（桌面/移动端均支持）——列出每个 QUIC 会话：**SNI 域名 / QUIC 版本（0x1 = v1）/ 源地址 / 首次时间 / 连接 ID / 包与帧统计**；空态与页内说明诚实标注能力边界（HTTP/3 业务明文需 TLS 密钥，无法解密，要看明文请开启「拦截 QUIC」回落）
 - 配置开关：偏好设置可关「QUIC 探测」（Configuration.quicProbeEnabled，默认开）
 

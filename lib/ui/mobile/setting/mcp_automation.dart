@@ -1294,7 +1294,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                         ),
                         const SizedBox(height: 6),
                         Row(children: [
-                          Expanded(child: DropdownButtonFormField<String>(
+                          // 字段文本较长(如「请求 Content-Type」)：占 6/10 宽保证单行完整显示；
+                          // 运算符文本短(符号/两字词)占 4/10。过窄会让选中长文本换行被输入框高度裁剪。
+                          Flexible(flex: 6, child: DropdownButtonFormField<String>(
                             value: fields.contains(c.field) ? c.field : (fields.isNotEmpty ? fields.first : 'url'),
                             isExpanded: true,
                             decoration: const InputDecoration(border: OutlineInputBorder()),
@@ -1302,7 +1304,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                             onChanged: (v) => setDialogState(() => c.field = v ?? fields.first),
                           )),
                           const SizedBox(width: 6),
-                          Expanded(child: DropdownButtonFormField<Operator>(
+                          Flexible(flex: 4, child: DropdownButtonFormField<Operator>(
                             value: c.operator,
                             isExpanded: true,
                             decoration: const InputDecoration(border: OutlineInputBorder()),

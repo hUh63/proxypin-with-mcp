@@ -103,34 +103,14 @@ class ProxyVpnService : VpnService(), ProtectSocket {
 
         private const val QUIC_PROBE_THROTTLE_MS = 30_000L
 
-        @Volatile
-        private var quicProbeSocket: java.net.DatagramSocket? = null
-
-        /** 抄送节流：key = "srcIP:srcPort"，避免 UDP 洪泛 */
+        /** 抄送节流：key = "srcIP:srcPort"，避免洪泛 */
         private val quicProbeThrottle =
             java.util.concurrent.ConcurrentHashMap<String, Long>()
 
-        /** 懒创建本机 UDP socket（应用进程内 Dart 监听端口），失败静默 */
-        @JvmStatic
-        fun quicProbeSender(): java.net.DatagramSocket? {
-            var sock = quicProbeSocket
-            if (sock == null) {
-                synchronized(this) {
-                    sock = quicProbeSocket
-                    if (sock == null) {
-                        try {
-                            sock = java.net.DatagramSocket()
-                            quicProbeSocket = sock
-                        } catch (e: Exception) {
-                            Log.w(TAG, "create quic probe socket failed", e)
-                        }
-                    }
-                }
-            }
-            return quicProbeSocket
-        }
-
-        /** 抄送一个 QUIC 首包给 Dart 探测监听；同一五元组 30s 内只抄送一次 */
+        /**
+         * 抄送一个 QUIC 首包给 Dart 探测监听（本机 TCP 即发即断，低频安全）；
+         * 同一五元组 30s 内只抄送一次。Dart 侧监听端口与常量一致。
+         */
         @JvmStatic
         fun forwardQuicProbe(remoteKey: String, payload: ByteArray) {
             if (!quicProbeEnabled) return
@@ -139,21 +119,21 @@ class ProxyVpnService : VpnService(), ProtectSocket {
             if (last != null && now - last < QUIC_PROBE_THROTTLE_MS) return
             quicProbeThrottle[remoteKey] = now
             try {
-                quicProbeSender()?.send(
-                    java.net.DatagramPacket(
-                        payload, payload.size,
-                        java.net.InetAddress.getLoopbackAddress(), QUIC_PROBE_PORT
+                java.net.Socket().use { socket ->
+                    socket.connect(
+                        java.net.InetSocketAddress(java.net.InetAddress.getLoopbackAddress(), QUIC_PROBE_PORT),
+                        300
                     )
-                )
-            } catch (e: Exception) {
+                    socket.getOutputStream().write(payload)
+                    socket.getOutputStream().flush()
+                }
+            } catch (_: Exception) {
                 if (quicProbeThrottle.size > 2048) quicProbeThrottle.clear()
             }
         }
 
         @JvmStatic
         fun closeQuicProbeSocket() {
-            try { quicProbeSocket?.close() } catch (_: Exception) {}
-            quicProbeSocket = null
             quicProbeThrottle.clear()
         }
 

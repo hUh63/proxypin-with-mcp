@@ -16,6 +16,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/hosts.dart';
@@ -56,8 +57,8 @@ class ProxyServer {
   //socket服务
   Server? server;
 
-  /// QUIC 元数据探测 UDP 监听（VPN 层抄送 UDP:443 首包到此，见 QuicProbe）
-  DatagramSocket? _quicProbeSocket;
+  /// QUIC 元数据探测监听（VPN 层经本机 TCP 抄送 UDP:443 首包到此，见 QuicProbe）
+  ServerSocket? _quicProbeSocket;
 
   //请求事件监听
   List<EventListener> listeners = [];
@@ -224,13 +225,36 @@ class ProxyServer {
     return server;
   }
 
-  /// 启动 QUIC 元数据探测监听：接收 VPN 层抄送的 UDP:443 首包交给 QuicProbe 解析
+  /// 启动 QUIC 元数据探测监听：接收 VPN 层经本机 TCP 抄送的 UDP:443 首包
   Future<void> _startQuicProbeListener() async {
     try {
       _quicProbeSocket =
-          await DatagramSocket.bind(InternetAddress.loopbackIPv4, quicProbePort);
-      _quicProbeSocket!.listen((d) {
-        QuicProbe.instance.handlePacket(d.data, '${d.address.address}:${d.port}');
+          await ServerSocket.bind(InternetAddress.loopbackIPv4, quicProbePort);
+      _quicProbeSocket!.listen((client) {
+        // 单包即发即断：数据可能拆包，防抖合并后交给解析器
+        final buffer = BytesBuilder();
+        Timer? t;
+        client.listen((chunk) {
+          buffer.add(chunk);
+          t?.cancel();
+          t = Timer(const Duration(milliseconds: 80), () {
+            try {
+              QuicProbe.instance
+                  .handlePacket(buffer.toBytes(), client.remoteAddress.address);
+            } catch (_) {}
+            try { client.close(); } catch (_) {}
+          });
+        }, onDone: () {
+          t?.cancel();
+          try {
+            if (buffer.length > 0) {
+              QuicProbe.instance
+                  .handlePacket(buffer.toBytes(), client.remoteAddress.address);
+            }
+          } catch (_) {}
+        }, onError: (Object e) {
+          logger.w('QUIC 探测连接异常', error: e);
+        });
       }, onError: (Object e) {
         logger.w('QUIC 探测监听异常', error: e);
       });
