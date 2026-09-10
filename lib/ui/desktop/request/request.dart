@@ -102,6 +102,12 @@ class _RequestWidgetState extends State<RequestWidget> {
   //选择的节点
   static _RequestWidgetState? selectedState;
 
+  /// 上游 #915: 以 requestId 记录单击选中行。
+  /// 选中状态此前存在 State 实例字段里，列表头部插入新请求会触发
+  /// ListView 元素回收/重建，State 销毁后选中高亮即丢失。
+  /// 按 requestId 判定后，无论元素如何回收重建都能恢复高亮。
+  static String? selectedRequestId;
+
   static LruCacheSet<String> autoReadRequests = LruCacheSet<String>(5000);
 
   static bool markAutoRead(String requestId) {
@@ -111,8 +117,6 @@ class _RequestWidgetState extends State<RequestWidget> {
   static void removeAutoReadByIds(Iterable<String> requestIds) {
     autoReadRequests.removeAll(requestIds);
   }
-
-  bool selected = false;
 
   Color? highlightColor; //高亮颜色
 
@@ -183,7 +187,7 @@ class _RequestWidgetState extends State<RequestWidget> {
                             style: const TextStyle(fontSize: 11, color: Colors.grey))
                       ],
                     ))),
-            selected: selected || selectedInSelectionMode,
+            selected: _RequestWidgetState.selectedRequestId == request.requestId || selectedInSelectionMode,
             dense: true,
             visualDensity: const VisualDensity(vertical: -4),
             contentPadding: EdgeInsets.only(left: selectedInSelectionMode ? 6 : 28),
@@ -556,21 +560,16 @@ class _RequestWidgetState extends State<RequestWidget> {
       return;
     }
 
-    if (!selected) {
-      setState(() {
-        selected = true;
-      });
-    }
-
+    //切换选中的节点 (#915: 选中以 requestId 记录, 行元素回收重建后高亮可恢复)
     if (AppConfiguration.current?.autoReadEnabled == true) {
       markAutoRead(widget.request.requestId);
     }
-
-    //切换选中的节点
+    _RequestWidgetState.selectedRequestId = widget.request.requestId;
     if (selectedState?.mounted == true && selectedState != this) {
-      selectedState?.setState(() {
-        selectedState?.selected = false;
-      });
+      selectedState?.setState(() {});
+    }
+    if (mounted) {
+      setState(() {});
     }
 
     selectedState = this;

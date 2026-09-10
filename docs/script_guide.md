@@ -38,6 +38,30 @@ function onResponse(request, response) {
 | `response.headers` | 响应头 |
 | `response.body` | 响应体文本 |
 
+## 多值响应头（Set-Cookie 等）
+
+同一个名字可能出现多次的头（最典型是 `Set-Cookie`），在脚本里统一以**字符串数组**给出；只有一个值的头仍是普通字符串。
+
+```javascript
+function onResponse(request, response) {
+  // 单值头：字符串
+  console.log(response.headers["content-type"]);
+
+  // 多值头：数组，逐条处理，不要拼接成一个字符串
+  var cookies = response.headers["set-cookie"];
+  if (Array.isArray(cookies)) {
+    response.headers["set-cookie"] = cookies.map(function (c) {
+      return c + "; Secure";   // 例：给每条 Cookie 追加 Secure
+    });
+  }
+  return response;
+}
+```
+
+**为什么不能合并**：`Set-Cookie` 用分号分隔 Cookie 的各个属性（Path / Domain / Expires …）。一旦把多条合并成一条字符串，客户端会把第二条之后的内容当成第一条的属性来解析，导致会话 Cookie 丢失、登录态异常。
+
+**实现细节**（`lib/network/components/js/script_engine.dart` → `headersForScript`）：值个数为 1 时输出字符串、大于 1 时输出字符串数组；回写时数组走 `addValues`（逐条保留）、字符串走 `set`（覆盖单条）。**与抓包转发的联动**：无论脚本是否改写响应头，转发层都会按多值头逐条写出；可在「请求详情 → 响应头」核对每一条 `Set-Cookie`。**兼容性**：既有脚本读取单值头的写法（`response.headers["x"]`）行为完全不变。
+
 ## 示例
 
 ### 修改响应状态码

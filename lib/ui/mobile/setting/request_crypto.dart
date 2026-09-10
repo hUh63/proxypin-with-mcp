@@ -574,8 +574,8 @@ class _MobileCryptoRuleEditPageState extends State<MobileCryptoRuleEditPage> {
                           child: DropdownButton<String>(
                             value: padding,
                             items: const [
-                              DropdownMenuItem(value: 'PKCS7', child: Text('PKCS7')),
-                              DropdownMenuItem(value: 'ZeroPadding', child: Text('ZeroPadding')),
+                              DropdownMenuItem(value: 'PKCS7', child: Text('PKCS7', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                              DropdownMenuItem(value: 'ZeroPadding', child: Text('ZeroPadding', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
                             ],
                             onChanged: (v) => setState(() => padding = v ?? 'PKCS7'),
                           ),

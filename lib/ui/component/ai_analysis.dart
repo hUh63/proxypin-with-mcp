@@ -780,8 +780,14 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                 decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                 items: [
                   for (final p in _aiProviders)
-                    DropdownMenuItem(value: p.baseUrl, child: Text(p.name, style: const TextStyle(fontSize: 13))),
-                  const DropdownMenuItem(value: 'custom', child: Text('自定义服务…', style: TextStyle(fontSize: 13))),
+                    DropdownMenuItem(
+                        value: p.baseUrl,
+                        child: Text(p.name,
+                            maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: const TextStyle(fontSize: 13))),
+                  const DropdownMenuItem(
+                      value: 'custom',
+                      child: Text('自定义服务…',
+                          maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: TextStyle(fontSize: 13))),
                 ],
                 onChanged: (v) {
                   if (v == null) return;

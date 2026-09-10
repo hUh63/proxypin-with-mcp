@@ -632,6 +632,9 @@ class _HttpState extends State<_HttpWidget> with SingleTickerProviderStateMixin,
                   .map((e) => DropdownMenuItem(
                       value: e,
                       child: Text(_bodyLanguageLabels[e] ?? e.name.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                           style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500))))
                   .toList(),
               onChanged: (val) {

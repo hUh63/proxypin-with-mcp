@@ -80,7 +80,8 @@ class _PhoneConnectState extends State<PhoneConnect> {
                       items: widget.hosts
                           .map((it) => DropdownMenuItem(
                                 value: it,
-                                child: SelectableText('$it:$port'),
+                                child: Text('$it:$port',
+                                    maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false),
                               ))
                           .toList(),
                       onChanged: (String? value) {

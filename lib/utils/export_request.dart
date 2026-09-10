@@ -224,8 +224,12 @@ Future<void> exportRequestsAsFiles(
               // Handled separately
               break;
           }
-          successCount++;
-          
+          // 上游 #894: 导出「响应」时无响应的请求不产生文件, 也不计入成功数,
+          // 避免出现"导出成功: N 请求"而实际文件数为 0 的误导提示
+          if (type != ExportType.response || request.response != null) {
+            successCount++;
+          }
+
           // 更新进度
           final progress = (i + 1) / total;
           onProgress?.call(progress);

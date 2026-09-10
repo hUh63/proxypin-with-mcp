@@ -439,8 +439,17 @@ class DropdownMenuState<T> extends State<DropdownMenu<T>> {
     return PopupMenuButton<T>(
       tooltip: '',
       initialValue: selectValue,
+      // 菜单宽度下限：保证较长选项（如 FORM-URL / 本地化类型名）在菜单里完整显示
+      constraints: const BoxConstraints(minWidth: 200),
       child: Wrap(runAlignment: WrapAlignment.center, children: [
-        Text(selectValue?.toString() ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        // 单行省略 + 长按提示：避免长选中值在 Wrap 里换行后被外层固定高度裁切
+        Tooltip(
+            message: selectValue?.toString() ?? '',
+            child: Text(selectValue?.toString() ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
         const Icon(Icons.arrow_drop_down, size: 20)
       ]),
       onSelected: (T value) {
@@ -451,8 +460,14 @@ class DropdownMenuState<T> extends State<DropdownMenu<T>> {
       },
       itemBuilder: (BuildContext context) {
         return widget.items
-            .map((entry) =>
-                PopupMenuItem<T>(height: 35, value: entry.value, child: Text(entry.label ?? entry.value.toString(), style: const TextStyle(fontSize: 12))))
+            .map((entry) => PopupMenuItem<T>(
+                height: 35,
+                value: entry.value,
+                child: Text(entry.label ?? entry.value.toString(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: const TextStyle(fontSize: 12))))
             .toList();
       },
     );

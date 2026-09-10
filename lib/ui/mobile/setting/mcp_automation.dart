@@ -796,13 +796,17 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
                     value: actionType,
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    isExpanded: true,
+                    isDense: true,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                     items: const [
-                      DropdownMenuItem(value: 0, child: Text('执行脚本')),
-                      DropdownMenuItem(value: 1, child: Text('调用 MCP 工具')),
-                      DropdownMenuItem(value: 2, child: Text('执行工作流')),
-                      DropdownMenuItem(value: 3, child: Text('发送 Webhook')),
+                      DropdownMenuItem(value: 0, child: Text('执行脚本', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(value: 1, child: Text('调用 MCP 工具', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(value: 2, child: Text('执行工作流', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(value: 3, child: Text('发送 Webhook', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
                     ],
+                    selectedItemBuilder: _selectedItems<int>(const [0, 1, 2, 3],
+                        (v) => const ['执行脚本', '调用 MCP 工具', '执行工作流', '发送 Webhook'][v]),
                     onChanged: (v) => setDialogState(() => actionType = v ?? 1),
                   ),
                   const SizedBox(height: 8),
@@ -1021,14 +1025,17 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 children: [
                   DropdownButtonFormField<int>(
                     isExpanded: true,
+                    isDense: true,
                     value: eventType,
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                     items: const [
-                      DropdownMenuItem(value: 0, child: Text('HTTP 请求事件')),
-                      DropdownMenuItem(value: 1, child: Text('网络状态事件')),
-                      DropdownMenuItem(value: 2, child: Text('代理状态事件')),
-                      DropdownMenuItem(value: 3, child: Text('抓包阈值事件')),
+                      DropdownMenuItem(value: 0, child: Text('HTTP 请求事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(value: 1, child: Text('网络状态事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(value: 2, child: Text('代理状态事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(value: 3, child: Text('抓包阈值事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
                     ],
+                    selectedItemBuilder: _selectedItems<int>(const [0, 1, 2, 3],
+                        (v) => const ['HTTP 请求事件', '网络状态事件', '代理状态事件', '抓包阈值事件'][v]),
                     onChanged: (v) => setDialogState(() => eventType = v ?? 0),
                   ),
                   const SizedBox(height: 12),
@@ -1041,21 +1048,25 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   if (eventType == 1)
                     DropdownButtonFormField<NetworkStatus>(
                       isExpanded: true,
+                      isDense: true,
                       value: networkStatus,
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
+                      decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                       items: NetworkStatus.values
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s.name)))
+                          .map((s) => DropdownMenuItem(value: s, child: _dropdownText(s.name)))
                           .toList(),
+                      selectedItemBuilder: _selectedItems<NetworkStatus>(NetworkStatus.values, (s) => s.name),
                       onChanged: (v) => setDialogState(() => networkStatus = v ?? NetworkStatus.disconnected),
                     ),
                   if (eventType == 2)
                     DropdownButtonFormField<ProxyStatus>(
                       isExpanded: true,
+                      isDense: true,
                       value: proxyStatus,
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
+                      decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                       items: ProxyStatus.values
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s.name)))
+                          .map((s) => DropdownMenuItem(value: s, child: _dropdownText(s.name)))
                           .toList(),
+                      selectedItemBuilder: _selectedItems<ProxyStatus>(ProxyStatus.values, (s) => s.name),
                       onChanged: (v) => setDialogState(() => proxyStatus = v ?? ProxyStatus.started),
                     ),
                   if (eventType == 3)
@@ -1252,8 +1263,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   DropdownButtonFormField<RulePriority>(
                     value: priority,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: '优先级', border: OutlineInputBorder()),
-                    items: RulePriority.values.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
+                    isDense: true,
+                    decoration: const InputDecoration(labelText: '优先级', border: OutlineInputBorder(), isDense: true),
+                    items: RulePriority.values.map((p) => DropdownMenuItem(value: p, child: _dropdownText(p.name))).toList(),
+                    selectedItemBuilder: _selectedItems<RulePriority>(RulePriority.values, (p) => p.name),
                     onChanged: (v) => setDialogState(() => priority = v ?? RulePriority.normal),
                   ),
                   const SizedBox(height: 8),
@@ -1278,11 +1291,17 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                               ? c.type
                               : ConditionType.httpRequest,
                           isExpanded: true,
-                          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: '条件类型'),
+                          isDense: true,
+                          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: '条件类型', isDense: true),
                           items: [
                             for (final t in ConditionType.values)
                               if (t != ConditionType.custom)
-                                DropdownMenuItem(value: t, child: Text(_conditionTypeLabel(t), style: const TextStyle(fontSize: 13))),
+                                DropdownMenuItem(value: t, child: _dropdownText(_conditionTypeLabel(t))),
+                          ],
+                          selectedItemBuilder: (context) => [
+                            for (final t in ConditionType.values)
+                              if (t != ConditionType.custom)
+                                Align(alignment: Alignment.centerLeft, child: _dropdownText(_conditionTypeLabel(t))),
                           ],
                           onChanged: (v) => setDialogState(() {
                             c.type = v ?? ConditionType.httpRequest;
@@ -1293,25 +1312,30 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                           }),
                         ),
                         const SizedBox(height: 6),
-                        Row(children: [
-                          // 字段文本较长(如「请求 Content-Type」)：占 6/10 宽保证单行完整显示；
-                          // 运算符文本短(符号/两字词)占 4/10。过窄会让选中长文本换行被输入框高度裁剪。
-                          Flexible(flex: 6, child: DropdownButtonFormField<String>(
-                            value: fields.contains(c.field) ? c.field : (fields.isNotEmpty ? fields.first : 'url'),
-                            isExpanded: true,
-                            decoration: const InputDecoration(border: OutlineInputBorder()),
-                            items: fields.map((f) => DropdownMenuItem(value: f, child: Text(_ConditionRow.fieldDisplayName(c.type, f), style: const TextStyle(fontSize: 13)))).toList(),
-                            onChanged: (v) => setDialogState(() => c.field = v ?? fields.first),
-                          )),
-                          const SizedBox(width: 6),
-                          Flexible(flex: 4, child: DropdownButtonFormField<Operator>(
-                            value: c.operator,
-                            isExpanded: true,
-                            decoration: const InputDecoration(border: OutlineInputBorder()),
-                            items: Operator.values.map((o) => DropdownMenuItem(value: o, child: Text(_formatOperator(o), style: const TextStyle(fontSize: 13)))).toList(),
-                            onChanged: (v) => setDialogState(() => c.operator = v ?? Operator.equals),
-                          )),
-                        ]),
+                        // 字段独占整行：长字段名(如「请求 Content-Type」)在任何屏幕宽度/字号下都完整显示，
+                        // 配合 isDense + 单行省略 + Tooltip，彻底消除"只显示前半截"的问题
+                        DropdownButtonFormField<String>(
+                          value: fields.contains(c.field) ? c.field : (fields.isNotEmpty ? fields.first : 'url'),
+                          isExpanded: true,
+                          isDense: true,
+                          decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                          items: fields
+                              .map((f) => DropdownMenuItem(value: f, child: _dropdownText(_ConditionRow.fieldDisplayName(c.type, f))))
+                              .toList(),
+                          selectedItemBuilder: _selectedItems<String>(fields, (f) => _ConditionRow.fieldDisplayName(c.type, f)),
+                          onChanged: (v) => setDialogState(() => c.field = v ?? fields.first),
+                        ),
+                        const SizedBox(height: 6),
+                        // 运算符独占整行：不再与字段争抢宽度
+                        DropdownButtonFormField<Operator>(
+                          value: c.operator,
+                          isExpanded: true,
+                          isDense: true,
+                          decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                          items: Operator.values.map((o) => DropdownMenuItem(value: o, child: _dropdownText(_formatOperator(o)))).toList(),
+                          selectedItemBuilder: _selectedItems<Operator>(Operator.values, _formatOperator),
+                          onChanged: (v) => setDialogState(() => c.operator = v ?? Operator.equals),
+                        ),
                       ]),
                       subtitle: _buildValueEditor(c, setDialogState),
                       onDelete: () => setDialogState(() => conditions.removeAt(i)),
@@ -1326,8 +1350,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       title: DropdownButtonFormField<ActionType>(
                         value: a.type,
                         isExpanded: true,
-                        decoration: const InputDecoration(border: OutlineInputBorder()),
-                        items: ActionType.values.map((t) => DropdownMenuItem(value: t, child: Text(_formatActionType(t), style: const TextStyle(fontSize: 13)))).toList(),
+                        isDense: true,
+                        decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                        items: ActionType.values
+                            .map((t) => DropdownMenuItem(value: t, child: _dropdownText(_formatActionType(t))))
+                            .toList(),
+                        selectedItemBuilder: _selectedItems<ActionType>(ActionType.values, _formatActionType),
                         onChanged: (v) => setDialogState(() => a.type = v ?? ActionType.log),
                       ),
                       subtitle: TextField(
@@ -1445,6 +1473,40 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     }
   }
 
+  /// 下拉菜单项的统一文本样式：显式单行、超宽省略、禁止换行。
+  ///
+  /// DropdownButtonFormField 的「选中值显示区」高度由输入框固定，长文本（如
+  /// 「请求 Content-Type」）默认会自动换行，第二行随即被高度裁掉——用户只看到
+  /// 前半截（如「请求 Co」），且既无省略号也无法滚动。这里统一约束为单行 +
+  /// ellipsis，配合 isExpanded 与 isDense，保证任意宽度/字号下都可完整辨识。
+  static Widget _dropdownText(String text) => text.isEmpty
+      ? const SizedBox.shrink()
+      : Tooltip(
+          // 长按/悬停可查看被省略的完整文本，避免"看不全又无从得知"的困惑
+          message: text,
+          waitDuration: const Duration(milliseconds: 500),
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 13),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
+        );
+
+  /// 生成 dropdown 的 selectedItemBuilder：让选中值左对齐并按单行省略渲染，
+  /// 避免复用菜单项 widget（可换行）导致的裁切。
+  static List<Widget> Function(BuildContext) _selectedItems<T>(
+      List<T> values, String Function(T) label) {
+    return (context) => values
+        .map((v) => Align(alignment: Alignment.centerLeft, child: _dropdownText(label(v))))
+        .toList();
+  }
+
+  /// 下拉输入框统一样式：紧凑（isDense）且留出更小的内容内边距，
+  /// 让可用文本宽度最大化，减少长文本被省略的概率。
+  static const InputBorder _dropdownBorder = OutlineInputBorder();
+
   /// 条件值编辑器:枚举型 status 字段(代理/网络状态)在 equals/notEquals 时用下拉,
   /// 其余情况(数值/正则/列表/时间戳等)用文本框。
   Widget _buildValueEditor(_ConditionRow c, void Function(VoidCallback) setDialogState) {
@@ -1453,10 +1515,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       return DropdownButtonFormField<String>(
         value: opts.contains(c.valueController.text) ? c.valueController.text : null,
         isExpanded: true,
+        isDense: true,
         decoration: const InputDecoration(labelText: '值', border: OutlineInputBorder(), isDense: true),
         items: opts
-            .map((v) => DropdownMenuItem(value: v, child: Text(_ConditionRow.valueDisplayName(c.type, v), style: const TextStyle(fontSize: 13))))
+            .map((v) => DropdownMenuItem(value: v, child: _dropdownText(_ConditionRow.valueDisplayName(c.type, v))))
             .toList(),
+        selectedItemBuilder: _selectedItems<String>(opts, (v) => _ConditionRow.valueDisplayName(c.type, v)),
         onChanged: (v) => setDialogState(() => c.valueController.text = v ?? ''),
       );
     }
@@ -1580,12 +1644,16 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   DropdownButtonFormField<String>(
                     value: selected['name']?.toString(),
                     isExpanded: true,
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    isDense: true,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                     items: prompts
                         .map((p) => DropdownMenuItem(
                             value: p['name']?.toString() ?? '',
-                            child: Text(p['name']?.toString() ?? '未命名')))
+                            child: _dropdownText(p['name']?.toString() ?? '未命名')))
                         .toList(),
+                    selectedItemBuilder: _selectedItems<String>(
+                        prompts.map((p) => p['name']?.toString() ?? '').toList(),
+                        (name) => name.isEmpty ? '未命名' : name),
                     onChanged: (v) {
                       if (v == null) return;
                       final found = promptByName(v);
@@ -1908,9 +1976,11 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               isExpanded: true,
+                              isDense: true,
                               value: n['name']?.toString(),
-                              decoration: const InputDecoration(border: OutlineInputBorder()),
-                              items: scriptNames.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                              decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                              items: scriptNames.map((s) => DropdownMenuItem(value: s, child: _dropdownText(s))).toList(),
+                              selectedItemBuilder: _selectedItems<String>(scriptNames, (s) => s),
                               onChanged: (v) => setDialogState(() {
                                 n['name'] = v;
                                 n['scriptId'] = v;
@@ -2123,9 +2193,11 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     }
     return DropdownButtonFormField<String>(
       isExpanded: true,
+      isDense: true,
       value: (value != null && options.contains(value)) ? value : null,
-      decoration: InputDecoration(border: const OutlineInputBorder(), labelText: hint),
-      items: options.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 13)))).toList(),
+      decoration: InputDecoration(border: const OutlineInputBorder(), labelText: hint, isDense: true),
+      items: options.map((o) => DropdownMenuItem(value: o, child: _dropdownText(o))).toList(),
+      selectedItemBuilder: _selectedItems<String>(options, (o) => o),
       onChanged: onChanged,
     );
   }

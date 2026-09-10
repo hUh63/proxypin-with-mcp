@@ -148,11 +148,27 @@ class JavaScriptEngine {
       'url': request.requestUrl,
       'path': requestUri?.path,
       'queries': requestUri?.queryParameters,
-      'headers': request.headers.toMap(),
+      'headers': headersForScript(request.headers),
       'method': request.method.name,
       'body': await request.decodeBodyString(),
       'rawBody': request.body
     };
+  }
+
+  /// 上游 #901: 多值响应头（如多个 Set-Cookie）在脚本上下文中保留为数组，
+  /// 不再用 toMap() 的 join(";") 合并——Set-Cookie 里的分号是 Cookie 参数分隔符，
+  /// 合并后回写会被客户端当成单条 Cookie 解析，导致会话丢失。
+  /// 单值头仍输出字符串，兼容既有脚本；回写侧字符串走 set、数组走 addValues。
+  static Map<String, dynamic> headersForScript(HttpHeaders headers) {
+    final Map<String, dynamic> result = {};
+    headers.forEach((name, values) {
+      if (values.length == 1) {
+        result[name] = values.first;
+      } else {
+        result[name] = List<String>.of(values);
+      }
+    });
+    return result;
   }
 
   /// 脚本是否未修改请求：返回对象去掉 scriptContext 后与原始请求结构一致即视为未改动。
@@ -191,7 +207,7 @@ class JavaScriptEngine {
     }
 
     return {
-      'headers': response.headers.toMap(),
+      'headers': headersForScript(response.headers),
       'statusCode': response.status.code,
       'body': body,
       'rawBody': response.body

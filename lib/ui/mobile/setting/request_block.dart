@@ -195,11 +195,14 @@ class RequestBlockAddDialog extends StatelessWidget {
                   const SizedBox(height: 15),
                   DropdownButtonFormField(
                       value: item.type,
+                      isExpanded: true,
                       decoration: InputDecoration(
                           isDense: true, labelText: localizations.type, border: const OutlineInputBorder()),
                       items: BlockType.values
                           .map((e) => DropdownMenuItem(
-                              value: e, child: Text(isCN ? e.label : e.name, style: const TextStyle(fontSize: 14))))
+                              value: e,
+                              child: Text(isCN ? e.label : e.name,
+                                  maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: const TextStyle(fontSize: 14))))
                           .toList(),
                       onSaved: (val) => item.type = val!,
                       onChanged: (val) {}),
