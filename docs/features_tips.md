@@ -96,6 +96,14 @@
 - 统计调用次数、成功率、平均耗时
 - 一键导出 OpenAPI（Swagger）、Postman Collection、JSON
 
+## 外部代理（上游代理链）
+
+- 设置 → 外部代理：把 ProxyPin 的出口流量交给另一个代理（常用于 ProxyPin 上面再挂一层抓包/隧道）
+- ==支持两种协议==（上游 #825）：**HTTP 代理**（走 HTTP CONNECT 隧道，与旧版一致）与 **SOCKS5**（RFC 1928，含 RFC 1929 用户名/口令认证）
+- 选择 SOCKS5 后，ProxyPin 会在连上代理后完成方法协商 → 认证（若配置）→ CONNECT 目标地址（自动区分 IPv4 / IPv6 / 域名）
+- 失败原因会明确提示（如「代理拒绝认证」「主机不可达」「连接被拒绝」等错误码含义）
+- 实现：`lib/network/util/socks5.dart`（二进制握手状态机）、`lib/network/http/http_client.dart`（按 `ProxyInfo.protocol` 分流）；配置持久化在 `ProxyInfo.protocol`，旧配置默认 `http`，行为不变
+
 ## Hosts 与域名过滤
 
 - 设置 → Hosts：自定义域名解析映射，无需改系统 hosts 文件

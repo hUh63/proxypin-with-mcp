@@ -156,6 +156,9 @@ class ProxyInfo {
   String host = '127.0.0.1';
   int? port;
 
+  /// 上游代理协议（上游 #825）：http（含 HTTPS 代理的 CONNECT 隧道）/ socks5
+  String protocol = 'http';
+
   //authorization
   String? username;
   String? password;
@@ -166,11 +169,15 @@ class ProxyInfo {
 
   bool get isAuthenticated => username?.isNotEmpty == true;
 
+  /// 是否为 SOCKS5 上游代理
+  bool get isSocks5 => protocol.toLowerCase() == 'socks5';
+
   ProxyInfo.fromJson(Map<String, dynamic> json) {
     enabled = json['enabled'] == true;
     capturePacket = json['capturePacket'] ?? true;
     host = json['host'];
     port = json['port'];
+    protocol = json['protocol'] ?? 'http';
     username = json['username'];
     password = json['password'];
   }
@@ -181,6 +188,7 @@ class ProxyInfo {
       'capturePacket': capturePacket,
       'host': host,
       'port': port,
+      'protocol': protocol,
       'username': username,
       'password': password,
     };
@@ -188,6 +196,6 @@ class ProxyInfo {
 
   @override
   String toString() {
-    return 'ProxyInfo{enabled: $enabled, capturePacket: $capturePacket, host: $host, port: $port, username: $username, password: $password}';
+    return 'ProxyInfo{enabled: $enabled, protocol: $protocol, host: $host, port: $port, username: $username}';
   }
 }

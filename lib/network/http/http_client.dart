@@ -29,6 +29,7 @@ import 'package:proxypin/network/util/byte_buf.dart';
 import 'package:proxypin/network/util/byte_utils.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
+import 'package:proxypin/network/util/socks5.dart';
 import 'package:proxypin/network/util/attribute_keys.dart';
 import 'package:proxy_manager/proxy_manager.dart';
 
@@ -100,6 +101,12 @@ class HttpClients {
   ///发起代理连接请求
   static Future<Channel> connectRequest(ChannelContext channelContext, HostAndPort hostAndPort, Channel channel,
       {ProxyInfo? proxyInfo}) async {
+    // 上游 #825：SOCKS5 上游代理使用二进制握手，不发送 HTTP CONNECT
+    if (proxyInfo?.isSocks5 == true) {
+      await Socks5Connect.handshake(channelContext, hostAndPort, channel, proxyInfo!);
+      return channel;
+    }
+
     ChannelHandler handler = channel.dispatcher.handler;
     //代理 发送connect请求
     var httpResponseHandler = HttpResponseHandler();
