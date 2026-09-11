@@ -64,8 +64,8 @@ class WsTrafficServer implements EventListener {
       shared: true,
     );
     _server = server;
-    server.listen(_handleRequest, onError: (e) => log.e('WsTrafficServer error', error: e));
-    log.i('WsTrafficServer listening on ${server.port}');
+    server.listen(_handleRequest, onError: (e) => logger.e('WsTrafficServer error', error: e));
+    logger.i('WsTrafficServer listening on ${server.port}');
   }
 
   Future<void> stop() async {
@@ -114,7 +114,7 @@ class WsTrafficServer implements EventListener {
       final ws = await io.WebSocketTransformer.upgrade(request);
       _attach(ws);
     } catch (e, t) {
-      log.e('WsTrafficServer upgrade 失败', error: e, stackTrace: t);
+      logger.e('WsTrafficServer upgrade 失败', error: e, stackTrace: t);
     }
   }
 
@@ -122,7 +122,7 @@ class WsTrafficServer implements EventListener {
     _clients.add(ws);
     // 内置心跳：30s 无响应自动断开，保证 clientCount 准确
     ws.pingInterval = const Duration(seconds: 30);
-    log.i('WsTrafficServer client connected, total=${_clients.length}');
+    logger.i('WsTrafficServer client connected, total=${_clients.length}');
 
     // 连接即下发当前配置
     _send(ws, {'type': 'config', 'data': _configPayload()});
@@ -131,7 +131,7 @@ class WsTrafficServer implements EventListener {
       (data) => _handleClientMessage(ws, data),
       onDone: () => _detach(ws),
       onError: (e) {
-        log.e('WsTrafficServer client error', error: e);
+        logger.e('WsTrafficServer client error', error: e);
         _detach(ws);
       },
       cancelOnError: true,
@@ -140,7 +140,7 @@ class WsTrafficServer implements EventListener {
 
   void _detach(io.WebSocket ws) {
     if (_clients.remove(ws)) {
-      log.i('WsTrafficServer client disconnected, total=${_clients.length}');
+      logger.i('WsTrafficServer client disconnected, total=${_clients.length}');
     }
   }
 
