@@ -21,6 +21,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/network/components/repeat_task_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 ///高级重放
@@ -29,7 +30,14 @@ class CustomRepeatDialog extends StatefulWidget {
   final Function onRepeat;
   final SharedPreferences prefs;
 
-  const CustomRepeatDialog({super.key, required this.onRepeat, required this.prefs});
+  /// 任务标题（用于「发送队列」展示）
+  final String? taskTitle;
+
+  /// 待发送请求清单（上游 #715）
+  final List<String>? pendingItems;
+
+  const CustomRepeatDialog(
+      {super.key, required this.onRepeat, required this.prefs, this.taskTitle, this.pendingItems});
 
   @override
   State<StatefulWidget> createState() => _CustomRepeatState();
@@ -46,6 +54,9 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
   bool keepSetting = true;
 
   DateTime? time;
+
+  // 当前重放任务（#715/#401）
+  RepeatTask? _task;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -217,13 +228,23 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
             }
 
             int delayValue = int.parse(delay.text);
+            DateTime? schedule;
             if (time != null) {
               DateTime now = DateTime.now();
               if (time!.isBefore(now)) {
                 time = time!.add(const Duration(days: 1));
               }
+              schedule = time;
               delayValue += time!.difference(now).inMilliseconds;
             }
+
+            // 上游 #715/#401：登记任务到「发送队列」，含计划时间与待发送清单
+            _task = RepeatTaskManager.instance.create(
+              title: widget.taskTitle ?? localizations.customRepeat,
+              total: int.parse(count.text),
+              scheduledAt: schedule,
+              pending: widget.pendingItems ?? const [],
+            );
 
             //定时发起请求
             Future.delayed(Duration(milliseconds: delayValue), () => submitTask(int.parse(count.text)));
@@ -236,10 +257,19 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
 
   //定时重放
   void submitTask(int counter) {
-    if (counter <= 0) {
+    // 用户已在「发送队列」取消该任务
+    if (_task?.status == RepeatTaskStatus.canceled) {
       return;
     }
+    if (counter <= 0) {
+      if (_task != null) RepeatTaskManager.instance.markCompleted(_task!);
+      return;
+    }
+    if (_task != null && _task!.status == RepeatTaskStatus.scheduled) {
+      RepeatTaskManager.instance.markRunning(_task!);
+    }
     widget.onRepeat.call();
+    if (_task != null) RepeatTaskManager.instance.record(_task!, ok: true);
 
     int intervalValue = int.parse(interval.text);
     //随机

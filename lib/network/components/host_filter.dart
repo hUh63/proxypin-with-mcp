@@ -28,18 +28,42 @@ class HostFilter {
   static final Blacks blacklist = Blacks();
 
   /// 是否过滤
-  static bool filter(String? host) {
+  ///
+  /// [host] 主机名；[path] 可选，请求路径（含查询串）。
+  /// 上游 #225：除了按域名过滤，还支持按 URL 路径/接口过滤——
+  /// 传入 path 时匹配目标是 `host + path`，于是规则既可写 `.*\.apple\.com`
+  /// （域名，行为与旧版一致），也可写 `api\.example\.com/v1/` 只抓某个接口。
+  ///
+  /// 连接建立阶段拿不到 path（只有 host），此时对**含 `/` 的路径型规则**不做
+  /// 否决：白名单视为"可能命中"（不排除），黑名单视为"未命中"（不过滤），
+  /// 把最终判定推迟到请求/响应阶段按完整 URL 进行——否则白名单会误杀整个域名、
+  /// 黑名单会过度过滤。
+  static bool filter(String? host, {String? path}) {
     if (host == null) {
       return false;
     }
 
+    var hasPath = path != null && path.isNotEmpty;
+    var target = hasPath ? '$host$path' : host;
+
+    bool ruleMatches(RegExp rule, {required bool assumePathHit}) {
+      if (rule.hasMatch(target)) {
+        return true;
+      }
+      if (hasPath || !rule.pattern.contains('/')) {
+        return false;
+      }
+      // 无 path 信息时的路径型规则：保守处理，避免误判
+      return assumePathHit;
+    }
+
     //如果白名单不为空，不在白名单里都是黑名单
     if (whitelist.enabled) {
-      return whitelist.list.every((element) => !element.hasMatch(host));
+      return whitelist.list.every((element) => !ruleMatches(element, assumePathHit: true));
     }
 
     if (blacklist.enabled) {
-      return blacklist.list.any((element) => element.hasMatch(host));
+      return blacklist.list.any((element) => ruleMatches(element, assumePathHit: false));
     }
     return false;
   }

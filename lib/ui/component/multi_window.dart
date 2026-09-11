@@ -20,6 +20,7 @@ import 'dart:io';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
+import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
@@ -163,6 +164,11 @@ Widget multiWindow(String windowId, Map<dynamic, dynamic> argument) {
   // QUIC 连接元数据（#489）
   if (argument['name'] == 'QuicSessionsPage') {
     return const QuicSessionsPage();
+  }
+
+  // 发送队列 / 重放任务（#715/#401）
+  if (argument['name'] == 'RepeatQueuePage') {
+    return const RepeatQueuePage();
   }
 
   if (argument['name'] == 'McpConnectionPage') {

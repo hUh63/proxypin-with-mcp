@@ -911,11 +911,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get domainWhitelistDescribe =>
-      'Only proxy domain names on the whitelist. If the whitelist is enabled, the blacklist will be invalid';
+      'Only proxy domain names or URL paths on the whitelist (wildcards supported, e.g. example.com/api/). If the whitelist is enabled, the blacklist will be invalid';
 
   @override
   String get domainBlacklistDescribe =>
-      'Domain names on the blacklist will not be proxied';
+      'Domain names or URL paths on the blacklist will not be proxied';
 
   @override
   String get domain => 'Host';

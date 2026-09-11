@@ -21,6 +21,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/network/components/repeat_task_manager.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,7 +31,14 @@ class MobileCustomRepeat extends StatefulWidget {
   final Function onRepeat;
   final SharedPreferences prefs;
 
-  const MobileCustomRepeat({super.key, required this.onRepeat, required this.prefs});
+  /// 任务标题（用于「发送队列」展示），如 `GET api.example.com/user`
+  final String? taskTitle;
+
+  /// 待发送请求清单（上游 #715），供「发送队列」查看准备发送的请求
+  final List<String>? pendingItems;
+
+  const MobileCustomRepeat(
+      {super.key, required this.onRepeat, required this.prefs, this.taskTitle, this.pendingItems});
 
   @override
   State<StatefulWidget> createState() => _CustomRepeatState();
@@ -63,6 +71,9 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
   
   // 增强：记录最后错误信息 (#892)
   String? lastError;
+
+  // 当前重放任务（#715/#401：登记到发送队列，供随时查看状态）
+  RepeatTask? _task;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -121,14 +132,24 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
                 }
 
                 int delayValue = int.parse(delay.text);
+                DateTime? schedule;
                 if (time != null) {
                   DateTime now = DateTime.now();
-                  DateTime schedule = DateTime(now.year, now.month, now.day, time!.hour, time!.minute);
+                  schedule = DateTime(now.year, now.month, now.day, time!.hour, time!.minute);
                   if (schedule.isBefore(now)) {
                     schedule = schedule.add(const Duration(days: 1));
                   }
                   delayValue += schedule.difference(now).inMilliseconds;
                 }
+
+                // 上游 #715/#401：把任务登记到「发送队列」，
+                // 记录计划时间与待发送请求清单，关页后仍可查看进度与状态
+                _task = RepeatTaskManager.instance.create(
+                  title: widget.taskTitle ?? localizations.customRepeat,
+                  total: int.parse(count.text),
+                  scheduledAt: schedule,
+                  pending: widget.pendingItems ?? const [],
+                );
 
                 Future.delayed(Duration(milliseconds: delayValue), () => submitTask(int.parse(count.text)));
                 Navigator.of(context).pop();
@@ -202,9 +223,18 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
 
   // 定时重放 - 支持时间单位 (#887) + 重试机制 (#892)
   void submitTask(int counter) {
+    // 用户已在「发送队列」取消该任务
+    if (_task?.status == RepeatTaskStatus.canceled) {
+      return;
+    }
     if (counter <= 0) {
+      if (_task != null) RepeatTaskManager.instance.markCompleted(_task!);
       _showRepeatResult();
       return;
+    }
+    // 首次执行：任务从「等待发送」转为「发送中」
+    if (_task != null && _task!.status == RepeatTaskStatus.scheduled) {
+      RepeatTaskManager.instance.markRunning(_task!);
     }
     _executeWithRetry(counter);
   }
@@ -215,12 +245,15 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
       await widget.onRepeat.call();
       successCount++;
       lastError = null; // 清除错误记录
+      if (_task != null) RepeatTaskManager.instance.record(_task!, ok: true);
       _scheduleNext(counter - 1);
     } catch (e) {
       failCount++;
       lastError = e.toString();
+      if (_task != null) RepeatTaskManager.instance.record(_task!, ok: false, error: lastError);
       if (enableRetry && attempt < maxRetries) {
         retryCount++;
+        if (_task != null) RepeatTaskManager.instance.recordRetry(_task!);
         // 增强：指数退避延迟 (100ms, 200ms, 400ms...) (#892)
         int delayMs = retryBaseDelayMs * attempt;
         Future.delayed(Duration(milliseconds: delayMs), () {

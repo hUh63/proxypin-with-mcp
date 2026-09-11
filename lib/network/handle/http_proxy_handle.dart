@@ -111,7 +111,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
     if (httpRequest.method != HttpMethod.connect) {
       // log.d(
       //     "[${channel.id}] streamId:${httpRequest.streamId ?? ''} ${httpRequest.protocolVersion}  ${httpRequest.method.name} ${httpRequest.requestUrl}");
-      if (HostFilter.filter(httpRequest.hostAndPort?.host)) {
+      if (HostFilter.filter(httpRequest.hostAndPort?.host, path: httpRequest.pathAndQuery)) {
         await remoteChannel?.write(channelContext, httpRequest);
         return;
       }
@@ -364,7 +364,7 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
     }
 
     //域名是否过滤
-    if (HostFilter.filter(request?.hostAndPort?.host) || request?.method == HttpMethod.connect) {
+    if (HostFilter.filter(request?.hostAndPort?.host, path: request?.pathAndQuery) || request?.method == HttpMethod.connect) {
       await clientChannel.write(channelContext, msg);
       return;
     }

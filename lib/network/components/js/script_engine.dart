@@ -13,6 +13,7 @@ import '../../util/logger.dart';
 import '../../util/uri.dart';
 import 'file.dart';
 import 'md5.dart';
+import 'require.dart';
 
 class JavaScriptRuntimePool {
   final int size;
@@ -107,6 +108,8 @@ class JavaScriptEngine {
     }
     Md5Bridge.registerMd5(flutterJs);
     FileBridge.registerFile(flutterJs);
+    // 上游 #719：注入全局 require(url) / loadLibrary(url)，支持加载第三方 JS 库
+    RequireBridge.registerRequire(flutterJs);
 
     flutterJs.enableFetch2();
     return flutterJs;

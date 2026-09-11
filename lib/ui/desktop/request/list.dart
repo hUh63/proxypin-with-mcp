@@ -24,6 +24,7 @@ import 'package:proxypin/network/channel/channel_context.dart';
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
+import 'package:proxypin/network/components/repeat_task_manager.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
 import 'package:proxypin/ui/component/selection_action_bar.dart';
@@ -388,20 +389,32 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     var localizations = AppLocalizations.of(context);
     final proxyServer = widget.proxyServer;
 
+    // 上游 #715/#401：批量重放登记到「发送队列」
+    final task = RepeatTaskManager.instance.create(
+      title: '批量重放 ${requests.length} 个请求',
+      total: requests.length,
+      pending: requests.map((r) => '${r.method.name} ${r.domainPath}').toList(),
+    );
+    RepeatTaskManager.instance.markRunning(task);
+
     for (var request in requests) {
+      if (task.status == RepeatTaskStatus.canceled) break;
       var httpRequest = request.copy(uri: request.requestUrl);
       var proxyInfo = proxyServer.isRunning ? ProxyInfo.of("127.0.0.1", proxyServer.port) : null;
       try {
         await HttpClients.proxyRequest(httpRequest, proxyInfo: proxyInfo, timeout: const Duration(seconds: 3));
+        RepeatTaskManager.instance.record(task, ok: true);
         if (mounted) {
           FlutterToastr.show(localizations!.reSendRequest, rootNavigator: true, context);
         }
       } catch (e) {
+        RepeatTaskManager.instance.record(task, ok: false, error: e.toString());
         if (mounted) {
           FlutterToastr.show('${localizations!.fail} $e', rootNavigator: true, context);
         }
       }
     }
+    RepeatTaskManager.instance.markCompleted(task);
   }
 }
 

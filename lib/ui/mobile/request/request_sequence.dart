@@ -6,6 +6,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:get/get.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/network/components/repeat_task_manager.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
@@ -314,19 +315,32 @@ class RequestSequenceState extends State<RequestSequence> with AutomaticKeepAliv
   Future<void> _repeatRequests(List<HttpRequest> requests) async {
     final proxyServer = widget.proxyServer;
     selectionController.clear();
+
+    // 上游 #715/#401：批量重放同样登记到「发送队列」，可查看进度与待发送清单
+    final task = RepeatTaskManager.instance.create(
+      title: '批量重放 ${requests.length} 个请求',
+      total: requests.length,
+      pending: requests.map((r) => '${r.method.name} ${r.domainPath}').toList(),
+    );
+    RepeatTaskManager.instance.markRunning(task);
+
     for (final request in requests) {
+      if (task.status == RepeatTaskStatus.canceled) break;
       final httpRequest = request.copy(uri: request.requestUrl);
       final proxyInfo = proxyServer.isRunning ? ProxyInfo.of('127.0.0.1', proxyServer.port) : null;
       try {
         await HttpClients.proxyRequest(httpRequest, proxyInfo: proxyInfo, timeout: const Duration(seconds: 3));
+        RepeatTaskManager.instance.record(task, ok: true);
         if (mounted) {
           FlutterToastr.show(localizations.reSendRequest, rootNavigator: true, context);
         }
       } catch (e) {
+        RepeatTaskManager.instance.record(task, ok: false, error: e.toString());
         if (mounted) {
           FlutterToastr.show('${localizations.fail} $e', rootNavigator: true, context);
         }
       }
     }
+    RepeatTaskManager.instance.markCompleted(task);
   }
 }

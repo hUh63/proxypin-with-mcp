@@ -375,7 +375,11 @@ class _FavoriteItemState extends State<_FavoriteItem> {
     Navigator.of(context).pop();
     Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => futureWidget(SharedPreferences.getInstance(),
-            (prefs) => MobileCustomRepeat(onRepeat: () => onRepeat(request), prefs: prefs))));
+            (prefs) => MobileCustomRepeat(
+                onRepeat: () => onRepeat(request),
+                prefs: prefs,
+                taskTitle: '${request.method.name} ${request.domainPath}',
+                pendingItems: ['${request.method.name} ${request.domainPath}']))));
   }
 
   void onRepeat(HttpRequest request) {

@@ -463,7 +463,11 @@ class RequestRowState extends State<RequestRow> {
     await Navigator.maybePop(availableContext);
     var pageRoute = MaterialPageRoute(
         builder: (context) => futureWidget(SharedPreferences.getInstance(),
-            (prefs) => MobileCustomRepeat(onRepeat: () => onRepeat(request), prefs: prefs)));
+            (prefs) => MobileCustomRepeat(
+                onRepeat: () => onRepeat(request),
+                prefs: prefs,
+                taskTitle: '${request.method.name} ${request.domainPath}',
+                pendingItems: ['${request.method.name} ${request.domainPath}'])));
 
     Navigator.push(getContext(), pageRoute);
   }

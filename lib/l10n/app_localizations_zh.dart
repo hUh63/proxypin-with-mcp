@@ -886,10 +886,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get proxyIgnoreDomain => '代理忽略域名';
 
   @override
-  String get domainWhitelistDescribe => '只代理白名单中的域名, 白名单启用黑名单将会失效';
+  String get domainWhitelistDescribe => '只代理白名单中的域名或 URL 路径（支持 * 通配，如 example.com/api/ 只抓该接口）, 白名单启用黑名单将会失效';
 
   @override
-  String get domainBlacklistDescribe => '黑名单中的域名不会代理';
+  String get domainBlacklistDescribe => '黑名单中的域名或 URL 路径不会代理';
 
   @override
   String get domain => '域名';
@@ -2097,10 +2097,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get proxyIgnoreDomain => '代理忽略網域名稱';
 
   @override
-  String get domainWhitelistDescribe => '只代理白名單中的網域名稱, 白名單啟用黑名單將會失效';
+  String get domainWhitelistDescribe => '只代理白名單中的網域名稱或 URL 路徑（支援 * 通配，如 example.com/api/ 只抓該介面）, 白名單啟用黑名單將會失效';
 
   @override
-  String get domainBlacklistDescribe => '黑名單中的網域名稱不會代理';
+  String get domainBlacklistDescribe => '黑名單中的網域名稱或 URL 路徑不會代理';
 
   @override
   String get domain => '網域名稱';

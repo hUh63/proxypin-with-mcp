@@ -62,6 +62,26 @@ function onResponse(request, response) {
 
 **实现细节**（`lib/network/components/js/script_engine.dart` → `headersForScript`）：值个数为 1 时输出字符串、大于 1 时输出字符串数组；回写时数组走 `addValues`（逐条保留）、字符串走 `set`（覆盖单条）。**与抓包转发的联动**：无论脚本是否改写响应头，转发层都会按多值头逐条写出；可在「请求详情 → 响应头」核对每一条 `Set-Cookie`。**兼容性**：既有脚本读取单值头的写法（`response.headers["x"]`）行为完全不变。
 
+## 加载第三方 JS 库（require）
+
+上游 #719：脚本内可加载远程 JS 库，不必把依赖代码整段粘贴进脚本。
+
+```javascript
+async function onRequest(context, request) {
+  // 按 URL 拉取并执行，返回该库的 module.exports（同 URL 只拉取一次，自动缓存）
+  const utils = await require('https://example.com/my-utils.js');
+  request.headers['x-sign'] = utils.sign(request.body);
+  return request;
+}
+```
+
+- `require(url)` 与别名 `loadLibrary(url)` 均已提供，返回 Promise，**必须 await**
+- 库以 CommonJS 风格执行：可写 `module.exports = {...}` / `exports.foo = ...`；也可把 API 挂到 `globalThis`，加载后直接调用
+- 依赖网络（走引擎内置 `fetch`），失败会抛出带原因的异常，可在脚本日志中查看
+- 所以钩子需声明为 `async`（`onRequest` / `onResponse` 均支持）
+
+**实现细节**（`lib/network/components/js/require.dart`）：运行时初始化时注入全局 `require`，内部用 `fetch` 取源码 → `new Function('module','exports','require','globalThis','console', code)` 包装执行 → 结果按 URL 缓存到 `globalThis.__proxypinModuleCache`。**与其它功能的联动**：拉取走的是引擎自带网络栈（不受抓包代理影响），但脚本身份与请求改写仍受「脚本启用状态」「脚本执行顺序」控制。
+
 ## 示例
 
 ### 修改响应状态码

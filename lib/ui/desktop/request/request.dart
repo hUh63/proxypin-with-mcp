@@ -495,7 +495,11 @@ class _RequestWidgetState extends State<RequestWidget> {
     showDialog(
         context: context,
         builder: (BuildContext context) {
-          return CustomRepeatDialog(onRepeat: () => onRepeat(request), prefs: prefs);
+          return CustomRepeatDialog(
+              onRepeat: () => onRepeat(request),
+              prefs: prefs,
+              taskTitle: '${request.method.name} ${request.domainPath}',
+              pendingItems: ['${request.method.name} ${request.domainPath}']);
         });
   }
 
