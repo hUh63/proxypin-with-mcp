@@ -13,7 +13,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
 
 /// 弱网模拟配置管理
@@ -52,7 +52,8 @@ class NetworkConditionManager extends ChangeNotifier {
   }
 
   static Future<File> _configFile() async {
-    var directory = await getApplicationSupportDirectory().then((it) => it.path);
+    // 便携模式下配置随程序目录存放（上游 #285）
+    var directory = await Paths.homePath();
     var file = File('$directory${Platform.pathSeparator}network_condition.json');
     if (!await file.exists()) {
       await file.create(recursive: true);

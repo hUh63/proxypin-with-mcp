@@ -27,7 +27,6 @@ import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/files.dart';
 import 'package:proxypin/utils/har.dart';
 import 'package:proxypin/utils/listenable_list.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 ///历史存储
@@ -73,8 +72,9 @@ class HistoryStorage {
   }
 
   static Future<String> _homePath() async {
-    final home = await getApplicationSupportDirectory();
-    return '${home.path}${Platform.pathSeparator}history';
+    // 便携模式下历史同样跟随程序目录（上游 #285）
+    final home = await Paths.homePath();
+    return '$home${Platform.pathSeparator}history';
   }
 
   /// 获取历史记录

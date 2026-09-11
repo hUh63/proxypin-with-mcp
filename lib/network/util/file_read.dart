@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -12,7 +13,12 @@ class FileRead {
       return File("${userHome!}${Platform.pathSeparator}.proxypin");
     }
     if (Platforms.isDesktop()) {
-      userHome = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+      // 便携模式（上游 #285）：程序目录存在 portable 标记时，配置随程序目录存放
+      if (await Paths.isPortable()) {
+        userHome = await Paths.homePath();
+      } else {
+        userHome = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+      }
     } else {
       userHome = (await getApplicationSupportDirectory()).path;
     }

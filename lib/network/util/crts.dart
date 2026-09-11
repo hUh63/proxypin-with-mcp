@@ -19,12 +19,12 @@ import 'dart:core';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/export.dart';
 import 'package:proxypin/network/util/cert/pkcs12.dart';
 import 'package:proxypin/network/util/cert/x509.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/random.dart';
+import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/lang.dart';
 
 import 'cache.dart';
@@ -307,7 +307,8 @@ class CertificateManager {
 
   /// 证书文件
   static Future<File> certificateFile() async {
-    final String appPath = await getApplicationSupportDirectory().then((value) => value.path);
+    // 便携模式下证书随程序目录存放（上游 #285）
+    final String appPath = await Paths.homePath();
     var caFile = File("$appPath${Platform.pathSeparator}ca.crt");
     if (!(await caFile.exists())) {
       var body = await FileRead.read('assets/certs/ca.crt');
@@ -325,7 +326,8 @@ class CertificateManager {
 
   /// 私钥文件
   static Future<File> privateKeyFile() async {
-    final String appPath = await getApplicationSupportDirectory().then((value) => value.path);
+    // 便携模式下私钥随程序目录存放（上游 #285）
+    final String appPath = await Paths.homePath();
     var caFile = File("$appPath${Platform.pathSeparator}ca_key.pem");
     if (!(await caFile.exists())) {
       var body = await FileRead.read('assets/certs/ca_key.pem');

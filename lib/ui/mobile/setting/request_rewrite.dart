@@ -20,6 +20,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
+import 'package:proxypin/ui/component/share_crypto_dialogs.dart';
+import 'package:proxypin/utils/secure_share.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/components/manager/request_rewrite_manager.dart';
@@ -99,9 +101,21 @@ class _MobileRequestRewriteState extends State<MobileRequestRewrite> {
     var file = result.single.xFile;
 
     try {
-      List json = jsonDecode(utf8.decode(await file.readAsBytes()));
+      var text = utf8.decode(await file.readAsBytes());
+      // 上游 #133：加密分享的内容需先输入口令解密
+      if (SecureShare.isEncrypted(text)) {
+        final password = await showSharePasswordDialog(context,
+            title: '输入分享口令', subtitle: '该文件已加密，请输入分享时设置的口令。', confirmButtonText: '解密');
+        if (password == null) return;
+        text = SecureShare.decrypt(text, password);
+      }
 
-      for (var item in json) {
+      final decoded = jsonDecode(text);
+      if (decoded is! List) {
+        throw const FormatException('内容不是有效的重写规则列表');
+      }
+
+      for (var item in decoded) {
         var rule = RequestRewriteRule.formJson(item);
         var items = (item['items'] as List).map((e) => RewriteItem.fromJson(e)).toList();
         await widget.requestRewrites.addRule(rule, items);
@@ -371,12 +385,31 @@ class _RequestRuleListState extends State<RequestRuleList> {
       list.add(json);
     }
 
+    final plain = jsonEncode(list);
+    var content = plain;
+
+    // 上游 #133：可选加密分享（口令保护）
+    final encryptShare = await showShareModeDialog(context, title: '分享重写规则');
+    if (encryptShare == null) return;
+    if (encryptShare) {
+      final password = await showSharePasswordDialog(context,
+          title: '设置分享口令', subtitle: '接收方导入时需要输入相同口令；口令丢失将无法恢复内容。', confirm: true, confirmButtonText: '加密分享');
+      if (password == null) return;
+      try {
+        content = SecureShare.encrypt(plain, password);
+        fileName = 'proxypin-rewrites.enc';
+      } catch (e) {
+        if (context.mounted) FlutterToastr.show('加密失败：$e', context);
+        return;
+      }
+    }
+
     RenderBox? box;
     if (await Platforms.isIpad() && context.mounted) {
       box = context.findRenderObject() as RenderBox?;
     }
 
-    final XFile file = XFile.fromData(utf8.encode(jsonEncode(list)), mimeType: 'config');
+    final XFile file = XFile.fromData(utf8.encode(content), mimeType: 'config');
     await SharePlus.instance
         .share(ShareParams(files: [file], fileNameOverrides: [fileName], sharePositionOrigin: box?.paintBounds));
   }

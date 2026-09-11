@@ -17,6 +17,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:proxypin/ui/component/guide_center.dart';
+import 'package:proxypin/ui/component/share_crypto_dialogs.dart';
+import 'package:proxypin/utils/secure_share.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
@@ -158,7 +160,7 @@ class RequestRewriteState extends State<RequestRewriteWidget> {
 
   //导入js
   Future<void> import() async {
-    var result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['config', 'json']);
+    var result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['config', 'json', 'enc', 'txt']);
     String? path = result?.single.xFile.path;
 
     if (path == null) {
@@ -166,8 +168,20 @@ class RequestRewriteState extends State<RequestRewriteWidget> {
     }
 
     try {
-      List json = jsonDecode(await File(path).readAsString());
-      for (var item in json) {
+      var text = await File(path).readAsString();
+      // 上游 #133：加密分享的内容需先输入口令解密
+      if (SecureShare.isEncrypted(text)) {
+        final password = await showSharePasswordDialog(context,
+            title: '输入分享口令', subtitle: '该文件已加密，请输入分享时设置的口令。', confirmButtonText: '解密');
+        if (password == null) return;
+        text = SecureShare.decrypt(text, password);
+      }
+
+      final decoded = jsonDecode(text);
+      if (decoded is! List) {
+        throw const FormatException('内容不是有效的重写规则列表');
+      }
+      for (var item in decoded) {
         var rule = RequestRewriteRule.formJson(item);
         var items = (item['items'] as List).map((e) => RewriteItem.fromJson(e)).toList();
 
@@ -364,12 +378,6 @@ class _RequestRuleListState extends State<RequestRuleList> {
   Future<void> export(List<int> indexes) async {
     if (indexes.isEmpty) return;
 
-    String fileName = 'proxypin-rewrites.config';
-    Uri? path = await Platforms.saveFileAdaptive(fileName: fileName);
-    if (path == null) {
-      return;
-    }
-
     var list = [];
     for (var index in indexes) {
       var rule = widget.requestRewrites.rules[index];
@@ -379,7 +387,34 @@ class _RequestRuleListState extends State<RequestRuleList> {
       list.add(json);
     }
 
-    await File(path.toFilePath()).writeAsBytes(utf8.encode(jsonEncode(list)));
+    var content = jsonEncode(list);
+    String fileName = 'proxypin-rewrites.config';
+
+    // 上游 #133：可选加密分享（口令保护）
+    final encryptShare = await showShareModeDialog(context, title: '分享重写规则');
+    if (encryptShare == null) return;
+    if (encryptShare) {
+      final password = await showSharePasswordDialog(context,
+          title: '设置分享口令',
+          subtitle: '接收方导入时需要输入相同口令；口令丢失将无法恢复内容。',
+          confirm: true,
+          confirmButtonText: '加密分享');
+      if (password == null) return;
+      try {
+        content = SecureShare.encrypt(content, password);
+        fileName = 'proxypin-rewrites.enc';
+      } catch (e) {
+        if (mounted) FlutterToastr.show('加密失败：$e', context);
+        return;
+      }
+    }
+
+    Uri? path = await Platforms.saveFileAdaptive(fileName: fileName);
+    if (path == null) {
+      return;
+    }
+
+    await File(path.toFilePath()).writeAsBytes(utf8.encode(content));
     if (mounted) FlutterToastr.show(localizations.exportSuccess, context);
   }
 
