@@ -82,6 +82,38 @@ async function onRequest(context, request) {
 
 **实现细节**（`lib/network/components/js/require.dart`）：运行时初始化时注入全局 `require`，内部用 `fetch` 取源码 → `new Function('module','exports','require','globalThis','console', code)` 包装执行 → 结果按 URL 缓存到 `globalThis.__proxypinModuleCache`。**与其它功能的联动**：拉取走的是引擎自带网络栈（不受抓包代理影响），但脚本身份与请求改写仍受「脚本启用状态」「脚本执行顺序」控制。
 
+## 捕获 WebSocket 帧（onWebSocket）
+
+上游 #722：除了请求/响应钩子，脚本还可订阅 WebSocket 帧，用于记录、统计或触发外部动作。
+
+```javascript
+function onWebSocket(context, ws) {
+  // 方向：client_to_server / server_to_client
+  console.log(ws.direction, ws.length, ws.url);
+  if (ws.binary) {
+    console.log('binary frame', ws.rawBody.length, 'bytes');
+  } else {
+    console.log('text frame:', ws.payload);
+  }
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `ws.url` | 连接对应的请求地址 |
+| `ws.direction` | `client_to_server`（客户端发出）/ `server_to_client`（服务端下发） |
+| `ws.opcode` | 帧类型（0x1 文本 / 0x2 二进制 / 0x8 关闭 / 0x9 ping / 0xa pong） |
+| `ws.binary` | 是否二进制帧 |
+| `ws.payload` | 载荷文本（文本帧） |
+| `ws.rawBody` | 载荷字节**数组**（文本与二进制帧都能拿到，解决旧版 rawBody 为空） |
+| `ws.length` | 载荷字节长度 |
+| `ws.time` | 帧时间戳（毫秒） |
+
+- 触发时机：每个 WebSocket 帧解析完成后立即异步派发，**只读捕获**，不改动转发字节，因此不影响连接稳定性
+- 声明方式：必须写成 `function onWebSocket(context, ws) {...}`（可加 `async`）。仅在**存在**该函数时才逐帧派发，未定义的脚本零开销
+- 需要改包请使用「WebSocket 拦截」（规则 + 暂停修改），二者可配合：脚本负责记录/上报，拦截负责改写
+- 实现位置：`lib/network/components/manager/script_manager.dart`（`hasWebSocketHook` / `dispatchWebSocketFrame`）、`lib/network/handle/websocket_handle.dart`（帧解析后异步派发）
+
 ## 示例
 
 ### 修改响应状态码

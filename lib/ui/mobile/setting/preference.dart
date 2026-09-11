@@ -10,6 +10,7 @@ import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/network/util/mtls.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/network/components/ws_traffic_server.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/ui/component/widgets.dart';
@@ -632,6 +633,62 @@ class _PreferenceState extends State<Preference> {
               ),
               trailing: maxRequestCount(context, localizations),
             ),
+          ]),
+          const SizedBox(height: 12),
+          // WebSocket 实时流量推送（上游 #756）
+          section([
+            ListTile(
+              leading: const Icon(Icons.stream_outlined, color: Colors.teal),
+              title: const Text('WebSocket 流量推送'),
+              subtitle: Text(
+                configuration.wsTrafficEnabled
+                    ? '外部工具 / AI 可订阅抓包流量：ws://127.0.0.1:${configuration.wsTrafficPort}'
+                        '（已连接 ${WsTrafficServer.instance.clientCount}）'
+                    : '开启后，外部工具 / AI 可通过 WebSocket 实时订阅抓包流量'
+                        '（默认端口 ${configuration.wsTrafficPort}），开关即时生效',
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: SwitchWidget(
+                value: configuration.wsTrafficEnabled,
+                scale: 0.8,
+                onChanged: (value) async {
+                  setState(() => configuration.wsTrafficEnabled = value);
+                  configuration.flushConfig();
+                  final ok = await proxyServer.applyWsTraffic();
+                  if (value && !ok) {
+                    // 启动失败（多为端口被占用）：回滚开关，避免"开着但没服务"
+                    setState(() => configuration.wsTrafficEnabled = false);
+                    configuration.flushConfig();
+                  }
+                  if (mounted) {
+                    FlutterToastr.show(
+                        !value
+                            ? '已停止'
+                            : ok
+                                ? '已启动（端口 ${configuration.wsTrafficPort}）'
+                                : '启动失败：端口 ${configuration.wsTrafficPort} 可能被占用',
+                        context);
+                  }
+                },
+              ),
+            ),
+            if (configuration.wsTrafficEnabled) ...[
+              Divider(height: 0, thickness: 0.3, color: dividerColor),
+              ListTile(
+                title: const Text('允许订阅端查询历史'),
+                subtitle: const Text('客户端可通过 list_histories / get_history 读取历史会话',
+                    style: TextStyle(fontSize: 12)),
+                trailing: SwitchWidget(
+                  value: configuration.wsTrafficHistoryEnabled,
+                  scale: 0.8,
+                  onChanged: (value) {
+                    setState(() => configuration.wsTrafficHistoryEnabled = value);
+                    configuration.flushConfig();
+                    WsTrafficServer.instance.broadcastConfig();
+                  },
+                ),
+              ),
+            ],
           ]),
           const SizedBox(height: 12),
           // 配置管理区块

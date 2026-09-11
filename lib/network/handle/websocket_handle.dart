@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:proxypin/network/channel/channel.dart';
 import 'package:proxypin/network/channel/channel_context.dart';
+import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -39,6 +41,13 @@ class WebSocketChannelHandler extends ChannelHandler<Uint8List> {
 
       message.messages.add(frame);
       channelContext.listener?.onMessage(channel, message, frame);
+
+      // 上游 #722：让脚本能捕获 WebSocket 帧（只读派发，异步执行，不影响转发字节）
+      final scriptManager = ScriptManager.instanceOrNull;
+      if (scriptManager != null && scriptManager.enabled) {
+        unawaited(scriptManager.dispatchWebSocketFrame(message, frame));
+      }
+
       logger.d(
           "[${channelContext.clientChannel?.id}] websocket channelRead ${frame.payloadLength} ${frame.fin} ${frame.payloadDataAsString}");
 

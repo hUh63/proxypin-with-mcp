@@ -93,6 +93,11 @@ class Configuration {
   //QUIC 元数据探测：VPN 捕获 UDP:443 首包解密 Initial 提取 SNI/版本等连接元数据（上游 #489）
   bool quicProbeEnabled = true;
 
+  //WebSocket 实时流量推送（上游 #756）：外部工具/AI 通过 WebSocket 订阅抓包流量
+  bool wsTrafficEnabled = false;
+  int wsTrafficPort = 12080;
+  bool wsTrafficHistoryEnabled = true; // 是否允许客户端查询历史记录
+
   //双向认证 mTLS（与上游服务器 TLS 握手时提供客户端证书，上游 #366）
   bool mtlsEnabled = false;
   String? mtlsChainPath; // 客户端证书链 PEM
@@ -137,6 +142,9 @@ class Configuration {
     aiAgentExtraPrompt = config['aiAgentExtraPrompt'] ?? "";
     blockQuic = config['blockQuic'] ?? true;
     quicProbeEnabled = config['quicProbeEnabled'] ?? true;
+    wsTrafficEnabled = config['wsTrafficEnabled'] ?? false;
+    wsTrafficPort = config['wsTrafficPort'] ?? 12080;
+    wsTrafficHistoryEnabled = config['wsTrafficHistoryEnabled'] ?? true;
     mtlsEnabled = config['mtlsEnabled'] ?? false;
     mtlsChainPath = config['mtlsChainPath'];
     mtlsKeyPath = config['mtlsKeyPath'];
@@ -213,6 +221,9 @@ class Configuration {
       if (aiAgentExtraPrompt.isNotEmpty) 'aiAgentExtraPrompt': aiAgentExtraPrompt,
       'blockQuic': blockQuic,
       'quicProbeEnabled': quicProbeEnabled,
+      'wsTrafficEnabled': wsTrafficEnabled,
+      'wsTrafficPort': wsTrafficPort,
+      'wsTrafficHistoryEnabled': wsTrafficHistoryEnabled,
       'mtlsEnabled': mtlsEnabled,
       if (mtlsChainPath != null) 'mtlsChainPath': mtlsChainPath,
       if (mtlsKeyPath != null) 'mtlsKeyPath': mtlsKeyPath,

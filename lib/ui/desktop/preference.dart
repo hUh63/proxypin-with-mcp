@@ -15,8 +15,11 @@
  */
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/network/components/ws_traffic_server.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/configuration.dart';
@@ -163,6 +166,54 @@ class _PreferenceState extends State<Preference> {
                   title: Text(localizations.memoryCleanup, style: titleStyle),
                   subtitle: Text(localizations.memoryCleanupSubtitle, style: subtitleStyle),
                   trailing: memoryCleanup(context, localizations)),
+
+              const Divider(),
+              // WebSocket 实时流量推送（上游 #756）
+              ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('WebSocket 流量推送', style: titleStyle),
+                  subtitle: Text(
+                      configuration.wsTrafficEnabled
+                          ? '外部工具 / AI 可订阅抓包流量：ws://127.0.0.1:${configuration.wsTrafficPort}'
+                              '（已连接 ${WsTrafficServer.instance.clientCount}）'
+                          : '开启后，外部工具 / AI 可通过 WebSocket 实时订阅抓包流量'
+                              '（默认端口 ${configuration.wsTrafficPort}），开关即时生效',
+                      style: subtitleStyle),
+                  trailing: SwitchWidget(
+                      scale: 0.75,
+                      value: configuration.wsTrafficEnabled,
+                      onChanged: (value) async {
+                        setState(() => configuration.wsTrafficEnabled = value);
+                        configuration.flushConfig();
+                        final ok = await ProxyServer.current?.applyWsTraffic() ?? false;
+                        if (value && !ok) {
+                          // 启动失败（多为端口被占用）：回滚开关，避免"开着但没服务"
+                          setState(() => configuration.wsTrafficEnabled = false);
+                          configuration.flushConfig();
+                        }
+                        if (mounted) {
+                          FlutterToastr.show(
+                              !value
+                                  ? '已停止'
+                                  : ok
+                                      ? '已启动（端口 ${configuration.wsTrafficPort}）'
+                                      : '启动失败：端口 ${configuration.wsTrafficPort} 可能被占用',
+                              context);
+                        }
+                      })),
+              if (configuration.wsTrafficEnabled)
+                ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('允许订阅端查询历史', style: titleStyle),
+                    subtitle: Text('客户端可通过 list_histories / get_history 命令读取历史会话', style: subtitleStyle),
+                    trailing: SwitchWidget(
+                        scale: 0.75,
+                        value: configuration.wsTrafficHistoryEnabled,
+                        onChanged: (value) {
+                          setState(() => configuration.wsTrafficHistoryEnabled = value);
+                          configuration.flushConfig();
+                          WsTrafficServer.instance.broadcastConfig();
+                        })),
 
               SizedBox(height: 5),
             ])));

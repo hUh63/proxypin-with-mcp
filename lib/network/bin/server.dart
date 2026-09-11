@@ -26,6 +26,7 @@ import 'package:proxypin/network/components/report_server_interceptor.dart';
 import 'package:proxypin/network/components/request_block.dart';
 import 'package:proxypin/network/components/request_rewrite.dart';
 import 'package:proxypin/network/components/script.dart';
+import 'package:proxypin/network/components/ws_traffic_server.dart';
 import 'package:proxypin/network/handle/http_proxy_handle.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
@@ -93,6 +94,10 @@ class ProxyServer {
   Future<Server> start() async {
     // 启动 QUIC 元数据探测监听（VPN 层会将 UDP:443 首包抄送到本机端口）
     unawaited(_startQuicProbeListener());
+    // 启动 WebSocket 流量推送服务（上游 #756）
+    if (configuration.wsTrafficEnabled) {
+      _startWsTrafficServer().ignore();
+    }
     Server server = Server(configuration, listener: CombinedEventListener(listeners));
 
     List<Interceptor> interceptors = [
@@ -192,6 +197,12 @@ class ProxyServer {
   /// 停止代理服务
   Future<Server?> stop() async {
     _stopQuicProbeListener();
+    // 停止 WebSocket 流量推送服务（上游 #756）
+    try {
+      await WsTrafficServer.instance.stop();
+    } catch (e) {
+      logger.w('WebSocket 流量推送服务停止异常', error: e);
+    }
     if (!isRunning) {
       return server;
     }
@@ -268,6 +279,33 @@ class ProxyServer {
       _quicProbeSocket?.close();
     } catch (_) {}
     _quicProbeSocket = null;
+  }
+
+  /// 启动 WebSocket 流量推送服务（上游 #756），返回是否启动成功
+  Future<bool> _startWsTrafficServer() async {
+    try {
+      final traffic = WsTrafficServer.instance;
+      if (!listeners.contains(traffic)) {
+        listeners.add(traffic);
+      }
+      await traffic.start(configuration);
+      return true;
+    } catch (e) {
+      logger.w('WebSocket 流量推送服务启动失败', error: e);
+      return false;
+    }
+  }
+
+  /// 应用 WebSocket 流量推送配置（偏好设置切换开关时即时生效，无需重启抓包）。
+  /// 返回 true 表示服务正在运行；启动失败返回 false，由调用方提示用户。
+  Future<bool> applyWsTraffic() async {
+    if (configuration.wsTrafficEnabled) {
+      return _startWsTrafficServer();
+    }
+    try {
+      await WsTrafficServer.instance.stop();
+    } catch (_) {}
+    return false;
   }
 
   /// 设置系统代理

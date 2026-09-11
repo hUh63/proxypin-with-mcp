@@ -20,6 +20,7 @@ import 'dart:io';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/http/http.dart';
+import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/util/cache.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
@@ -141,6 +142,85 @@ async function onResponse(context, request, response) {
     }
     list = scripts;
     _scriptMap.clear();
+    _wsHookCached = null;
+  }
+
+  /// 同步获取已初始化的实例（未初始化时为 null）
+  static ScriptManager? get instanceOrNull => _instance;
+
+  bool? _wsHookCached;
+  DateTime? _wsHookCheckedAt;
+
+  /// 声明式检测：需以 `function onWebSocket(...)` 形式定义（支持 async），
+  /// 用正则而非简单包含匹配，避免注释中出现该词导致误判与无谓开销。
+  static final RegExp _wsHookPattern = RegExp(r'function\s+onWebSocket\b');
+
+  /// 是否存在声明了 `onWebSocket` 的启用脚本（结果缓存 3 秒，避免每帧读盘）
+  Future<bool> hasWebSocketHook() async {
+    if (!enabled) return false;
+    final now = DateTime.now();
+    final checkedAt = _wsHookCheckedAt;
+    final cached = _wsHookCached;
+    if (cached != null && checkedAt != null && now.difference(checkedAt) < const Duration(seconds: 3)) {
+      return cached;
+    }
+    var found = false;
+    for (final item in list) {
+      if (!item.enabled) continue;
+      try {
+        final script = await getScript(item);
+        if (script != null && _wsHookPattern.hasMatch(script)) {
+          found = true;
+          break;
+        }
+      } catch (_) {}
+    }
+    _wsHookCached = found;
+    _wsHookCheckedAt = now;
+    return found;
+  }
+
+  /// 把 WebSocket 帧派发给脚本（上游 #722）。
+  ///
+  /// 语义为**只读捕获**：脚本通过 `onWebSocket(context, ws)` 读取帧内容
+  /// （url / 方向 / opcode / payload / rawBody / 长度），不参与转发字节，
+  /// 因此不会影响连接稳定性；如需改包请使用「WebSocket 拦截」。
+  Future<void> dispatchWebSocketFrame(HttpMessage message, WebSocketFrame frame) async {
+    if (!await hasWebSocketHook()) {
+      return;
+    }
+
+    final url = message.requestUrl ?? '';
+    final wsJson = jsonEncode({
+      'url': url,
+      'direction': frame.isFromClient ? 'client_to_server' : 'server_to_client',
+      'opcode': frame.opcode,
+      'binary': !frame.isText,
+      'text': frame.isText ? frame.payloadDataAsString : null,
+      'payload': frame.payloadDataAsString,
+      'rawBody': frame.payloadData.toList(),
+      'length': frame.payloadLength,
+      'time': frame.time.millisecondsSinceEpoch,
+    });
+
+    for (final item in list) {
+      if (!item.enabled || !item.match(url)) continue;
+      try {
+        final script = await getScript(item);
+        if (script == null || !_wsHookPattern.hasMatch(script)) continue;
+
+        final context = jsonEncode(scriptContext(item));
+        await flutterJsPool.run((flutterJs) async {
+          await flutterJs.evaluateAsync("var ws = $wsJson, context = $context; $script\n"
+              "  (typeof onWebSocket === 'function'"
+              " ? Promise.resolve(onWebSocket(context, ws))"
+              "    .catch(function(e){ console.error('onWebSocket error: ' + e); })"
+              " : null)");
+        });
+      } catch (e, st) {
+        logger.e('WebSocket 脚本执行失败: ${item.name}', error: e, stackTrace: st);
+      }
+    }
   }
 
   static Future<File> get _path async {

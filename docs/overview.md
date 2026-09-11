@@ -22,7 +22,7 @@
 | 重写规则 | 设置 → 请求重写 | ~改前先想清楚匹配范围~，支持 `*` 通配与环境变量 |
 | 请求重放 | 长按/右键 → 重放 | 单次/批量/自定义次数间隔 |
 | 断点调试 | 设置 → 断点 | 拦截后人工改包再放行 |
-| 脚本 | 设置 → 脚本 | JS 双钩子 onRequest/onResponse；==支持 `await require(url)` 加载第三方库==（#719） |
+| 脚本 | 设置 → 脚本 | JS 双钩子 onRequest/onResponse；==支持 `await require(url)` 加载第三方库==（#719）；==`onWebSocket` 逐帧捕获 WS 数据==（#722） |
 | 环境变量 | 设置 → 环境变量 | `{{变量名}}` 动态替换 + 内置变量 |
 | Hosts | 设置 → Hosts | 域名映射到指定 IP |
 | 请求解密 | 设置 → 请求解密 | 对指定请求做解密处理 |
@@ -33,6 +33,7 @@
 | 功能 | 入口 | 说明 |
 |---|---|---|
 | MCP Server | 设置 → MCP Connection | AI 客户端经 SSE/Streamable HTTP 接入 |
+| WebSocket 流量推送 | 偏好设置 → WebSocket 流量推送 | ==外部工具/AI 实时订阅抓包流量==（ws://127.0.0.1:12080；支持状态与历史查询命令，上游 #756） |
 | 定时任务 | MCP Connection → 自动化 | ==一次性/每天/每周/间隔/Cron 五种模式== |
 | 事件监听 | MCP Connection → 自动化 | onRequest/onResponse/启停触发 |
 | 规则引擎 | MCP Connection → 自动化 | 条件匹配 → 动作（改包/拦截/通知） |

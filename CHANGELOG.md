@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.22.44 (2026-09-11)
+
+### 新功能：WebSocket 实时流量推送（上游 #756）
+
+- **偏好设置 → WebSocket 流量推送**：外部工具 / AI 助手可通过 WebSocket 实时订阅抓包流量，作为 MCP 之外的第二条轻量集成通道
+  - 服务端：`WsTrafficServer`（`lib/network/components/ws_traffic_server.dart`，实现 `EventListener`），随代理启动/停止，**开关切换即时生效**（无需重启抓包）
+  - 推送消息：`config` / `request` / `response` / `message`（含方法、URL、状态码、耗时、大小；WS 帧含方向与文本载荷，截断至 4KB）；为避免洪泛**不含请求/响应 body**
+  - 客户端命令：`ping` / `status` / `list_histories` / `get_history`（历史查询可用开关关闭）
+  - 连接即下发配置；设置页副标题实时显示**已连接客户端数**；内置 30 秒心跳，断线自动清理
+  - 配置项：`wsTrafficEnabled`（默认关）、`wsTrafficPort`（默认 12080）、`wsTrafficHistoryEnabled`（默认开）
+
+### 新功能：脚本捕获 WebSocket 帧（上游 #722）
+
+- 脚本新增 `onWebSocket(context, ws)` 钩子：**每个 WS 帧解析完成后逐帧回调**，解决旧版「脚本拿不到 WS 数据、rawBody 为空」的问题
+  - 可读字段：`url` / `direction`（client_to_server、server_to_client）/ `opcode` / `binary` / `payload`（文本）/ **`rawBody`（字节数组，文本与二进制帧都有）** / `length` / `time`
+  - **只读捕获**：不参与转发字节，因此不影响连接稳定性；需要改包请用「WebSocket 拦截」（两者可配合）
+  - 仅在脚本中声明 `function onWebSocket(...)` 时才逐帧派发，未声明的脚本零开销；钩子检测用正则匹配函数声明并做 3 秒缓存，避免每帧读盘
+  - 实现：`script_manager.dart`（`hasWebSocketHook` / `dispatchWebSocketFrame`） + `websocket_handle.dart`（帧解析后异步派发）
+
+### 内置教程完善（docs/*）
+
+- 脚本开发指南新增「捕获 WebSocket 帧（onWebSocket）」章节（字段表、触发时机、声明要求、与 WebSocket 拦截的配合、实现位置）
+- 常用功能技巧新增「WebSocket 流量推送」完整条目（入口、连接地址、消息格式、命令、心跳、实现）
+- 功能总览：自动化表新增「WebSocket 流量推送」；脚本行标注 onWebSocket 能力
+
+### 上游 issue 比对
+
+- 本次实现：#756、#722
+- 仍未实现（后续排期）：#133（重写规则分享加密与设备数限制）、#825（外部代理 SOCKS5）、#815（非默认路由选项）、#683（鸿蒙）、#560（arm64 deb）、#285（便携版）
+
 ## v1.22.43 (2026-09-11)
 
 ### 新功能：发送队列（重放任务中心）

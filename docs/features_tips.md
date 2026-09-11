@@ -38,6 +38,7 @@
 - 环境变量：脚本中通过 `env.get('name')` 读取，支持 `{{name}}` 模板替换；内置变量 `{{timestamp}}`、`{{date}}`、`{{uuid}}` 等开箱即用
 - ==多值响应头==（如 `Set-Cookie`）在脚本里是**字符串数组**（单值头仍是字符串），逐条处理即可；详见「脚本开发指南 → 多值响应头」（上游 #901）
 - ==加载第三方 JS 库==（上游 #719）：`const lib = await require('https://…/utils.js')`，支持 CommonJS 导出或挂到全局；同 URL 自动缓存，详见「脚本开发指南 → require」
+- ==捕获 WebSocket 帧==（上游 #722）：定义 `function onWebSocket(context, ws)` 即可逐帧回调，可读方向/文本/`rawBody` 字节数组/长度；只读不改包，详见「脚本开发指南 → onWebSocket」
 
 ## 弱网模拟
 
@@ -128,6 +129,17 @@
   - 常用抓不到的原因：目标应用默认走 TCP/HTTP2；可临时关闭拦截重开抓包观察
 - **开发细节**：Dart 监听在 `ProxyServer`（`lib/network/bin/server.dart`，`ServerSocket.bind` loopback 41745）；解析器 `lib/network/util/quic/`（`quic_keys.dart`/`quic_packet.dart`/`quic_probe.dart`）；Kotlin 入口 `ProxyVpnService.forwardQuicProbe` + `ConnectionHandler`；注意 Dart 侧不直接依赖 `dart:io` UDP（DatagramSocket），统一走 TCP 即发即断通道
 
+
+## WebSocket 流量推送（外部工具集成）
+
+- 入口：设置 → 偏好设置 → **WebSocket 流量推送**（开关即时生效，无需重启抓包）
+- 用途：让 AI 助手（Claude Code 等）或外部工具**实时订阅抓包流量**，是 MCP 之外的第二条轻量集成通道
+- 连接地址：`ws://127.0.0.1:12080`（默认端口，配置项 `wsTrafficPort`）
+- 推送消息（JSON）：`config` / `request` / `response` / `message` —— 含方法、URL、状态码、耗时、大小；WS 帧含方向（client_to_server / server_to_client）与文本载荷（截断至 4KB）
+- 客户端命令：`{"action":"ping"}`、`{"action":"status"}`、`{"action":"list_histories"}`、`{"action":"get_history","name":"<会话名>"}`
+- 设置项副标题实时显示**已连接客户端数**；内置 30 秒心跳，断线自动清理
+- 「允许订阅端查询历史」可关闭历史读取（仅保留实时推送）
+- 实现：`lib/network/components/ws_traffic_server.dart`（实现 `EventListener`，随代理启动/停止，开关切换即时生效）；实时推送**不含请求/响应 body**，避免大流量耗尽带宽
 
 ## 双向认证 mTLS
 
