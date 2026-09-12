@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.22.48 (2026-09-12)
+
+### 修复与完善：Linux 安装包（上游 #560）
+
+- 修正 `.github/workflows/build-deb.yml`：补齐 `libayatana-appindicator3-dev` 依赖（`tray_manager` 插件的 Linux 前置依赖，缺失会导致 CMake 直接失败）
+- 实测结果：Linux 桌面版构建 + `.deb` 打包**全流程通过**，产物 `proxypin-<version>-linux-amd64.deb`（约 12 MB），tag 发布时自动附加到对应 Release
+- 架构范围：**当前仅提供 amd64**——Flutter 官方尚未发布 Linux arm64 的预编译 SDK（`flutter-action` 在 arm64 runner 上无法安装 SDK），arm64 需等待上游工具链支持；矩阵中已保留 arm64 位置与注释，届时补回一行即可
+- 独立性：该工作流与 APK 流程完全分离（含 `continue-on-error`），Linux 侧任何异常都不会影响 Android 产物发布
+
+### 内置教程完善（docs/*）
+
+- 常用功能技巧新增「Linux 安装包」说明（获取方式、架构、依赖、实现位置）
+
 ## v1.22.47 (2026-09-12)
 
 ### 新增：Linux 安装包（arm64 / amd64，上游 #560）

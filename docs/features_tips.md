@@ -170,6 +170,13 @@
 - 「允许订阅端查询历史」可关闭历史读取（仅保留实时推送）
 - 实现：`lib/network/components/ws_traffic_server.dart`（实现 `EventListener`，随代理启动/停止，开关切换即时生效）；实时推送**不含请求/响应 body**，避免大流量耗尽带宽
 
+## Linux 安装包（上游 #560）
+
+- Release 页面除 Android APK 外，另附 Linux 安装包：`proxypin-<版本>-linux-amd64.deb`
+- 安装：`sudo dpkg -i proxypin-*.deb`（依赖 `libgtk-3-0`、`ca-certificates`；桌面托盘功能需 `libayatana-appindicator3`）
+- 架构：**当前仅 amd64**——Flutter 官方尚未提供 Linux arm64 预编译 SDK，arm64 产物需等待上游工具链支持
+- 实现：`.github/workflows/build-deb.yml`（独立工作流，与 APK 构建互不影响）；打包脚本参考仓库内 `linux/build.sh`
+
 ## 双向认证 mTLS
 
 - 场景：目标服务器要求客户端证书（双向 TLS）
