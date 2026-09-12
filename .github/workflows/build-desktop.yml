@@ -24,7 +24,7 @@ jobs:
       matrix:
         include:
           - name: windows
-            os: windows-latest
+            os: windows-2022
           - name: macos
             os: macos-latest
     runs-on: ${{ matrix.os }}
@@ -49,6 +49,10 @@ jobs:
 
       - name: Build Windows
         if: matrix.name == 'windows'
+        env:
+          # permission_handler_windows 等插件仍使用 <experimental/coroutine>，
+          # 新版 MSVC 会将其升级为硬错误；此处按官方提示抑制该弃用告警/错误。
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
         run: flutter build windows --release
 
       - name: Package Windows (zip)
