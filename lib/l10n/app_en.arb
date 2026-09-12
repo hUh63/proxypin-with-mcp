@@ -536,5 +536,13 @@
   "externalProxyHttp": "HTTP proxy",
   "portableModeEnabled": "Portable mode enabled",
   "portableModeDataDir": "Data (config / history / certificates / backups) is stored alongside the program: {dir}",
-  "selectAll": "Select All"
+  "selectAll": "Select All",
+  "winTakeover": "Windows Takeover (Enhanced)",
+  "winTakeoverDesc": "Layered proxy (WinHTTP + environment variables) to cover apps that ignore the system proxy; applied when capture starts",
+  "winTakeoverAdmin": "The WinHTTP part requires administrator privileges",
+  "winTakeoverSandboxieOn": "Sandboxie detected",
+  "winTakeoverSandboxieOff": "Sandboxie not detected",
+  "winTakeoverTunNote": "Full TUN (kernel-level) takeover is not enabled in this build; apps with their own network stack (e.g. WeChat inside Sandboxie) still require it.",
+  "mcpAllowLan": "Allow LAN access",
+  "mcpAllowLanDesc": "Off: listen on 127.0.0.1 only (safer). On: listen on all interfaces without authentication - use with caution."
 }

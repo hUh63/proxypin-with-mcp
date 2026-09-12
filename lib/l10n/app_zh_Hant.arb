@@ -421,5 +421,13 @@
   "externalProxyHttp": "HTTP 代理",
   "portableModeEnabled": "可攜模式已啟用",
   "portableModeDataDir": "資料（設定/歷史/憑證/備份）隨程式目錄存放：{dir}",
-  "selectAll": "全選"
+  "selectAll": "全選",
+  "winTakeover": "Windows 接管增強",
+  "winTakeoverDesc": "分層代理（WinHTTP + 環境變數），覆蓋不走系統代理的應用；隨抓包啟動生效",
+  "winTakeoverAdmin": "WinHTTP 部分需要系統管理員權限",
+  "winTakeoverSandboxieOn": "偵測到 Sandboxie",
+  "winTakeoverSandboxieOff": "未偵測到 Sandboxie",
+  "winTakeoverTunNote": "完整 TUN（內核級）接管未在本版啟用；自帶網路堆疊的應用（如 Sandboxie 內的微信）仍需 TUN。",
+  "mcpAllowLan": "允許區域網路存取",
+  "mcpAllowLanDesc": "關閉：僅監聽 127.0.0.1（較安全）；開啟：監聽所有網卡且無驗證，請謹慎使用"
 }

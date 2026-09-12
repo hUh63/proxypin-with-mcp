@@ -133,10 +133,13 @@ class McpServer {
 
       _port = config.mcpPort;
 
-      // 绑定 0.0.0.0 允许局域网访问
-      _server = await io.HttpServer.bind(io.InternetAddress.anyIPv4, _port!);
+      // 安全默认：仅监听回环地址；如需局域网访问，由用户在设置中显式开启 mcpAllowLan
+      final bindAddress =
+          config.mcpAllowLan ? io.InternetAddress.anyIPv4 : io.InternetAddress.loopbackIPv4;
+      _server = await io.HttpServer.bind(bindAddress, _port!);
       _lastError = null; // 清除之前的错误
-      logger.i('MCP Server listening on http://0.0.0.0:$_port');
+      logger.i('MCP Server listening on http://${bindAddress.address}:$_port '
+          '(allowLan=${config.mcpAllowLan})');
 
       _server!.listen((request) {
         // CORS 处理
@@ -726,7 +729,8 @@ class McpServer {
               'tools': {'listChanged': false},
               'resources': {},
               'prompts': {'listChanged': false},
-              'roots': {'listChanged': false},
+              // 注意：roots 属于"客户端能力"（由服务端向客户端发起 roots/list），
+              // 不应声明为服务端能力，故此处不再声明
               'completions': {},
             },
             'serverInfo': {'name': 'ProxyPin MCP', 'version': '1.3.1'},
@@ -754,13 +758,22 @@ class McpServer {
             return error(-32602, 'Missing params');
           }
           final name = params['name'];
-          final args = Map<String, dynamic>.from(params['arguments'] ?? {});
+          if (name is! String || name.isEmpty) {
+            return error(-32602, 'Invalid params: name is required');
+          }
+          final rawArgs = params['arguments'];
+          final Map<String, dynamic> args =
+              rawArgs is Map ? Map<String, dynamic>.from(rawArgs) : {};
           try {
-            final result = await _executeTool(name, args);
+            // 超时保护：避免设备类工具（MethodChannel）等长时间挂起占用连接
+            final result = await _executeTool(name, args).timeout(const Duration(seconds: 120));
+            // 统一错误语义：工具内部以 {'error': ...} 表示失败时，按 MCP 规范标记 isError
+            final isErr = result is Map && result.containsKey('error');
             return response({
               'content': [
                 {'type': 'text', 'text': jsonEncode(result)},
               ],
+              if (isErr) 'isError': true,
             });
           } catch (e) {
             // MCP 规范：工具执行错误应作为结果返回（isError: true），而非 JSON-RPC 错误

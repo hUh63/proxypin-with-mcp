@@ -249,3 +249,21 @@
 - 通过 MCP 读取 `proxypin://config/current` 时，==敏感字段（AI API Key、mTLS 私钥路径、上游代理口令）已脱敏为 `***`==，避免经 AI 对话 / SSE 泄露
 - 配置文件刷新日志同样脱敏
 - 实现位置：`lib/network/bin/configuration.dart`（`redactSecrets`）、`lib/network/mcp/mcp_server.dart`（`_readResource`）
+
+## Windows 全局接管（上游 #577）
+
+- 背景：Windows 上只设置 WinINET 系统代理时，==自带网络栈的应用（如微信）、使用 WinHTTP 的组件、CLI 工具、Sandboxie 沙箱内程序==都不会走代理，于是出现"Sandboxie 里的微信抓不到包"
+- ==本版提供「Windows 接管增强」（分层代理，安全可回滚）==：在系统代理之外叠加
+  - **WinHTTP 代理**（`netsh winhttp set proxy`）——覆盖使用 WinHTTP 的服务与部分应用（需管理员）
+  - **用户环境变量** `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`（含小写）——覆盖 curl / git / node / 包管理器 / 容器等
+- 入口：桌面端「偏好设置 → Windows 接管增强」；==随抓包启动自动应用、抓包停止时自动还原==；设置页实时显示 管理员 / Sandboxie / wintun.dll 检测状态
+- 实现位置：`lib/network/util/windows_takeover.dart`；联动：代理启停（`lib/network/bin/server.dart` 的 start/stop）
+- ==仍未覆盖==：自行直连（含沙箱内自带网络栈）的应用——这类必须使用**真正的 TUN**（内核级虚拟网卡 WinTun + 用户态 TCP/IP 协议栈），属原生/驱动级工程且需驱动签名，==本版未启用==（误加路由会直接断网，故不做半成品）
+- 规避建议：Sandboxie 内应用优先尝试"增强接管"；或用支持 TUN 的代理工具作为上游。后续版本将评估引入 WinTun 数据包转发组件
+
+## MCP 局域网访问（安全默认）
+
+- MCP Server ==默认仅监听 `127.0.0.1`==（更安全）；需要局域网 / 其它设备访问时，在「偏好设置 → 允许局域网访问」显式开启（开启后监听 `0.0.0.0`，==且无鉴权，请谨慎==）
+- 开关即时生效：切换后自动重启 MCP 服务
+- `tools/call` 增加==参数校验与 120 秒超时保护==；工具内部失败统一以 `isError: true` 返回，便于客户端区分成功/失败
+- 实现位置：`lib/network/mcp/mcp_server.dart`、`lib/network/bin/configuration.dart`（`mcpAllowLan`）

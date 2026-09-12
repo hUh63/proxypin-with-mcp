@@ -56,7 +56,7 @@ ProxyPin 1.3.1 新增功能（已包含在本源码中）：
 | `lib/network/mcp/mcp_server.dart` | **新增** MCP Server，实现 JSON-RPC 协议和 49 个工具 |
 | `lib/network/mcp/mcp_bridge.dart` | **新增** 流量桥接器，连接 ProxyServer 和 McpServer |
 | `lib/native/mcp_screen.dart` | **新增** Dart 端 MethodChannel 桥接，封装设备控制 API |
-| `lib/network/bin/configuration.dart` | **修改** 添加 mcpPort 配置（默认 17777） |
+| `lib/network/bin/configuration.dart` | **修改** 添加 mcpPort 配置（默认 9010） |
 | `lib/ui/desktop/desktop.dart` | **修改** 桌面端 MCP 初始化和清理 |
 | `lib/ui/mobile/mobile.dart` | **修改** 移动端 MCP 初始化和清理 |
 
@@ -178,11 +178,11 @@ python proxypin_mcp_server.py
 
 ### 配置
 
-MCP Server 默认监听 `127.0.0.1:17777`，可在 `Configuration` 中修改 `mcpPort`。
+MCP Server 默认仅监听 `127.0.0.1:9010`（`mcpAllowLan=false`）；如需局域网访问，在偏好设置中开启「允许局域网访问」（将改为监听 `0.0.0.0`，且无鉴权，请谨慎）。端口可在 `Configuration` 中修改 `mcpPort`。
 
 Python Server 通过环境变量配置：
 - `PROXYPIN_HOST`: ProxyPin 主机 (默认 127.0.0.1)
-- `PROXYPIN_PORT`: MCP 端口 (默认 17777)
+- `PROXYPIN_PORT`: MCP 端口 (默认 9010)
 
 ## 技术要点
 

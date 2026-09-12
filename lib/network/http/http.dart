@@ -131,6 +131,7 @@ abstract class HttpMessage {
       return _bodyString!;
     }
 
+    final bool isDefaultCharset = charset == null || charset == 'utf-8' || charset == 'utf8';
     charset ??= this.charset;
     try {
       List<int> rawBody = body!;
@@ -143,11 +144,15 @@ abstract class HttpMessage {
         rawBody = zlibDecode(body!);
       }
 
-      if (charset == 'utf-8' || charset == 'utf8') {
-        return utf8.decode(rawBody);
-      }
+      final result = (charset == 'utf-8' || charset == 'utf8')
+          ? utf8.decode(rawBody)
+          : String.fromCharCodes(rawBody);
 
-      return String.fromCharCodes(rawBody);
+      // 性能：缓存默认（UTF-8）解码结果，避免每次调用重复解压/解码大响应体
+      if (isDefaultCharset && _bodyString == null) {
+        _bodyString = result;
+      }
+      return result;
     } catch (e) {
       return String.fromCharCodes(body!);
     }

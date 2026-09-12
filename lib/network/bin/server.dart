@@ -43,6 +43,7 @@ import '../http/codec.dart';
 import '../channel/network.dart';
 import '../util/logger.dart';
 import '../util/system_proxy.dart';
+import '../util/windows_takeover.dart';
 import 'listener.dart';
 import 'package:proxypin/network/components/request_breakpoint.dart';
 
@@ -209,6 +210,14 @@ class ProxyServer {
 
     if (configuration.enableSystemProxy) {
       await setSystemProxyEnable(false);
+    }
+    // 上游 #577：还原 Windows 分层增强接管（WinHTTP + 环境变量）
+    if (Platform.isWindows && configuration.winTakeoverEnabled) {
+      try {
+        await WindowsTakeover.disableLayered();
+      } catch (e) {
+        logger.w('还原 Windows 增强接管失败', error: e);
+      }
     }
     logger.i("stop on $port");
     await server?.stop();

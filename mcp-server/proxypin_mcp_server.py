@@ -8,7 +8,7 @@ from fastmcp import FastMCP
 
 # ProxyPin HTTP API配置
 PROXYPIN_HOST = os.getenv("PROXYPIN_HOST", "127.0.0.1")
-PROXYPIN_PORT = int(os.getenv("PROXYPIN_PORT", "17777"))
+PROXYPIN_PORT = int(os.getenv("PROXYPIN_PORT", "9010"))
 BASE_URL = f"http://{PROXYPIN_HOST}:{PROXYPIN_PORT}"
 MESSAGES_URL = f"{BASE_URL}/messages"
 

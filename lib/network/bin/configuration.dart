@@ -70,6 +70,12 @@ class Configuration {
   //MCP Server 是否随应用启动自动启动
   bool mcpAutoStart = true;
 
+  //MCP Server 是否允许局域网访问（默认仅监听 127.0.0.1，降低"无鉴权 + 全网卡"暴露面）
+  bool mcpAllowLan = false;
+
+  //Windows 分层增强接管（上游 #577）：WinHTTP 代理 + 用户环境变量，覆盖更多不走系统代理的应用
+  bool winTakeoverEnabled = false;
+
   //MCP 工具启用状态（工具名 -> 是否启用），默认全部启用
   Map<String, bool> mcpToolsEnabled = {};
 
@@ -157,6 +163,8 @@ class Configuration {
     mcpPort = config['mcpPort'] ?? 9010;
     mcpEnabled = config['mcpEnabled'] ?? true;
     mcpAutoStart = config['mcpAutoStart'] ?? true;
+    mcpAllowLan = config['mcpAllowLan'] ?? false;
+    winTakeoverEnabled = config['winTakeoverEnabled'] ?? false;
     if (config['mcpToolsEnabled'] is Map) {
       mcpToolsEnabled = (config['mcpToolsEnabled'] as Map)
           .map((key, value) => MapEntry(key.toString(), value == true));
@@ -253,6 +261,7 @@ class Configuration {
       'mcpPort': mcpPort,
       'mcpEnabled': mcpEnabled,
       'mcpAutoStart': mcpAutoStart,
+      'mcpAllowLan': mcpAllowLan,
       'mcpToolsEnabled': mcpToolsEnabled,
       'enabledHttp2': enabledHttp2,
       'autoBackupEnabled': autoBackupEnabled,

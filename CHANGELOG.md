@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.22.52 (2026-09-13)
+
+### Windows 全局接管增强（上游 #577）
+
+- 新增「Windows 接管增强」（分层代理，桌面端偏好设置开关）：在系统代理之外叠加 **WinHTTP 代理**（`netsh winhttp set proxy`）与**用户环境变量** `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`（含小写），覆盖更多不走系统代理的应用（curl / git / node / 容器 / 部分沙箱内 CLI）
+- 随抓包启动自动应用、抓包停止时自动还原；设置页实时显示 管理员 / Sandboxie / wintun.dll 检测状态
+- 新增 `lib/network/util/windows_takeover.dart`；与代理启停联动（`lib/network/bin/server.dart`）
+- 说明：真正覆盖"自带网络栈的应用（如 Sandboxie 内微信）"需内核级 TUN（WinTun 驱动 + 用户态协议栈），属原生/驱动级工程，==本版未启用==（避免误加路由导致断网）；已在文档标注现状与后续方案
+
+### MCP 安全与健壮性
+
+- **默认仅监听 127.0.0.1**（新增配置 `mcpAllowLan`，默认 false）；需局域网访问时在偏好设置显式开启并提示风险，切换后自动重启服务
+- `capabilities` 不再声明 `roots`（roots 属客户端能力）；`tools/call` 增加参数校验（name 必填 / arguments 类型）、**120 秒超时保护**、工具内部 `{'error': ...}` 统一标记 `isError`
+- MCP 文档与外部 Python 网关默认端口统一为 `9010`（此前文档写 17777，与实际不符）
+
+### 性能
+
+- `HttpMessage.getBodyString` 缓存默认（UTF-8）解码结果，避免大响应体被重复解压 / 解码
+
+### 构建
+
+- 维持多平台产物：Android 4 ABI APK / Windows x64 zip / macOS zip / iOS 未签名 ipa / Linux amd64 deb
+
 ## v1.22.51 (2026-09-13)
 
 ### 构建修复：Windows 桌面产物

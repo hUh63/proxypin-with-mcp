@@ -531,5 +531,13 @@
   "portableModeEnabled": "便携模式已启用",
   "portableModeDataDir": "数据（配置/历史/证书/备份）随程序目录存放：{dir}",
   "profileDownload": "描述文件下载",
-  "selectAll": "全选"
+  "selectAll": "全选",
+  "winTakeover": "Windows 接管增强",
+  "winTakeoverDesc": "分层代理（WinHTTP + 环境变量），覆盖不走系统代理的应用；随抓包启动生效",
+  "winTakeoverAdmin": "WinHTTP 部分需要管理员权限",
+  "winTakeoverSandboxieOn": "检测到 Sandboxie",
+  "winTakeoverSandboxieOff": "未检测到 Sandboxie",
+  "winTakeoverTunNote": "完整 TUN（内核级）接管未在本版启用；自带网络栈的应用（如 Sandboxie 内的微信）仍需 TUN。",
+  "mcpAllowLan": "允许局域网访问",
+  "mcpAllowLanDesc": "关闭：仅监听 127.0.0.1（更安全）；开启：监听所有网卡且无鉴权，请谨慎使用"
 }

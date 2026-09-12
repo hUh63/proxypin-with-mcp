@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
@@ -24,6 +26,8 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/component/ws_traffic_port_dialog.dart';
+import 'package:proxypin/network/mcp/mcp_server.dart';
+import 'package:proxypin/network/util/windows_takeover.dart';
 import 'package:proxypin/ui/configuration.dart';
 
 /// @author wanghongen
@@ -49,6 +53,9 @@ class _PreferenceState extends State<Preference> {
   bool _portable = false;
   String? _portableDir;
 
+  /// Windows 接管环境（上游 #577）
+  WindowsTakeoverStatus? _takeover;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +73,11 @@ class _PreferenceState extends State<Preference> {
     });
     if (!memoryCleanupList.contains(appConfiguration.memoryCleanupThreshold)) {
       memoryCleanupController.text = appConfiguration.memoryCleanupThreshold.toString();
+    }
+    if (Platform.isWindows) {
+      WindowsTakeover.detect().then((value) {
+        if (mounted) setState(() => _takeover = value);
+      });
     }
   }
 
@@ -288,6 +300,55 @@ class _PreferenceState extends State<Preference> {
                     title: Text(localizations.portableModeEnabled, style: titleStyle),
                     subtitle: Text(localizations.portableModeDataDir('${_portableDir ?? ''}'),
                         style: subtitleStyle, maxLines: 2, overflow: TextOverflow.ellipsis)),
+
+              // 上游 #577：Windows 接管增强（分层代理）+ MCP 局域网访问开关
+              if (Platform.isWindows) ...[
+                const Divider(),
+                ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(localizations.winTakeover, style: titleStyle),
+                    subtitle: Text(
+                        '${localizations.winTakeoverDesc}\n'
+                        '${_takeover?.sandboxieInstalled == true ? localizations.winTakeoverSandboxieOn : localizations.winTakeoverSandboxieOff}'
+                        '${_takeover?.isAdmin == true ? '' : ' · ${localizations.winTakeoverAdmin}'}\n'
+                        '${localizations.winTakeoverTunNote}',
+                        style: subtitleStyle,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis),
+                    trailing: SwitchWidget(
+                        scale: 0.75,
+                        value: configuration.winTakeoverEnabled,
+                        onChanged: (v) async {
+                          setState(() => configuration.winTakeoverEnabled = v);
+                          configuration.flushConfig();
+                          try {
+                            if (!v) {
+                              await WindowsTakeover.disableLayered();
+                            } else if (ProxyServer.current?.isRunning == true) {
+                              await WindowsTakeover.enableLayered('127.0.0.1', configuration.port);
+                            }
+                          } catch (e) {
+                            logger.w('Windows 接管切换失败', error: e);
+                          }
+                        })),
+              ],
+              const Divider(),
+              ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(localizations.mcpAllowLan, style: titleStyle),
+                  subtitle: Text(localizations.mcpAllowLanDesc, style: subtitleStyle),
+                  trailing: SwitchWidget(
+                      scale: 0.75,
+                      value: configuration.mcpAllowLan,
+                      onChanged: (v) async {
+                        setState(() => configuration.mcpAllowLan = v);
+                        configuration.flushConfig();
+                        try {
+                          if (McpServer.instance.isRunning) await McpServer.instance.restart();
+                        } catch (e) {
+                          logger.w('重启 MCP 以应用局域网设置失败', error: e);
+                        }
+                      })),
 
               SizedBox(height: 5),
             ])));
