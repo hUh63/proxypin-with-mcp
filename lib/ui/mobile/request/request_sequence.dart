@@ -10,6 +10,7 @@ import 'package:proxypin/network/components/repeat_task_manager.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
+import 'package:proxypin/ui/component/request_compare_page.dart';
 import 'package:proxypin/ui/component/selection_action_bar.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/desktop/request/request.dart';
@@ -202,6 +203,17 @@ class RequestSequenceState extends State<RequestSequence> with AutomaticKeepAliv
     return view.where((request) => selectedIds.contains(request.requestId)).toList();
   }
 
+  /// 请求对比：选中恰好两条时可用（复用已实现的请求对比分析页）
+  void compareSelected() {
+    final selected = selectedRequests();
+    if (selected.length != 2) {
+      FlutterToastr.show(localizations.compareNeedTwo, context);
+      return;
+    }
+    RequestCompareUtils.showCompare(context, selected[0], selected[1],
+        responseA: selected[0].response, responseB: selected[1].response);
+  }
+
   void changeState() {
     //防止频繁刷新
     if (!changing) {
@@ -230,6 +242,7 @@ class RequestSequenceState extends State<RequestSequence> with AutomaticKeepAliv
               selectionController: selectionController,
               onSelectAll: () => selectionController.selectAll(view.map((r) => r.requestId)),
               onRepeat: repeatSelected,
+              onCompare: compareSelected,
               onExport: exportSelected,
               onDelete: deleteSelected),
         Expanded(

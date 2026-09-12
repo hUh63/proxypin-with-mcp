@@ -1,16 +1,18 @@
 /*
  * 请求对比分析器 - 详细的请求差异对比
  * 支持：URL、Headers、Body、响应 对比
+ *
+ * 注意：本文件此前引用不存在的 Request/Response 类型（从未被编译器编译），
+ * 现改为正确的 HttpRequest / HttpResponse。
  */
 
-import 'dart:convert';
 import 'package:proxypin/network/http/http.dart';
 
 /// 对比结果类型
 enum CompareType {
-  added,     // 新增
-  removed,   // 删除
-  modified,  // 修改
+  added, // 新增
+  removed, // 删除
+  modified, // 修改
   unchanged, // 未变
 }
 
@@ -33,13 +35,12 @@ class FieldCompare {
 
 /// 对比结果
 class ComparisonResult {
-  final Request? requestA;
-  final Request? requestB;
-  final Response? responseA;
-  final Response? responseB;
+  final HttpRequest? requestA;
+  final HttpRequest? requestB;
+  final HttpResponse? responseA;
+  final HttpResponse? responseB;
 
   // URL 对比
-  final String? urlDiff;
   final bool urlChanged;
 
   // 方法对比
@@ -72,7 +73,6 @@ class ComparisonResult {
     this.requestB,
     this.responseA,
     this.responseB,
-    this.urlDiff,
     this.urlChanged = false,
     this.methodChanged = false,
     this.headerDiffs = const [],
@@ -93,22 +93,19 @@ class ComparisonResult {
     final buffer = StringBuffer();
     buffer.writeln('=== 请求对比报告 ===\n');
 
-    // URL 变化
     if (urlChanged) {
-      buffer.writeln('📍 URL 变化:');
-      buffer.writeln('  - 旧：$requestA?.url');
-      buffer.writeln('  + 新：$requestB?.url\n');
+      buffer.writeln('URL 变化:');
+      buffer.writeln('  - 旧：${requestA?.requestUrl}');
+      buffer.writeln('  + 新：${requestB?.requestUrl}\n');
     }
 
-    // 方法变化
     if (methodChanged) {
-      buffer.writeln('📝 方法变化:');
-      buffer.writeln('  - ${requestA?.method} → + ${requestB?.method}\n');
+      buffer.writeln('方法变化:');
+      buffer.writeln('  - ${requestA?.method.name} → + ${requestB?.method.name}\n');
     }
 
-    // 请求头变化
     if (headerDiffs.isNotEmpty) {
-      buffer.writeln('📋 请求头变化 (${headerDiffs.length}):');
+      buffer.writeln('请求头变化 (${headerDiffs.length}):');
       for (var diff in headerDiffs) {
         if (diff.type == CompareType.added) {
           buffer.writeln('  + ${diff.fieldName}: ${diff.newValue}');
@@ -123,9 +120,8 @@ class ComparisonResult {
       buffer.writeln();
     }
 
-    // 请求体变化
     if (bodyDiff != null && bodyDiff!.hasChanged) {
-      buffer.writeln('📦 请求体变化:');
+      buffer.writeln('请求体变化:');
       if (bodyDiff!.type == CompareType.modified) {
         buffer.writeln('  旧：${_truncate(bodyDiff!.oldValue, 200)}');
         buffer.writeln('  新：${_truncate(bodyDiff!.newValue, 200)}');
@@ -133,9 +129,8 @@ class ComparisonResult {
       buffer.writeln();
     }
 
-    // 查询参数变化
     if (queryDiffs.isNotEmpty) {
-      buffer.writeln('🔍 查询参数变化 (${queryDiffs.length}):');
+      buffer.writeln('查询参数变化 (${queryDiffs.length}):');
       for (var diff in queryDiffs) {
         if (diff.type == CompareType.added) {
           buffer.writeln('  + ${diff.fieldName}=${diff.newValue}');
@@ -148,13 +143,11 @@ class ComparisonResult {
       buffer.writeln();
     }
 
-    // 响应状态码
     if (statusCodeChanged) {
-      buffer.writeln('📊 状态码变化:');
-      buffer.writeln('  - ${responseA?.statusCode} → + ${responseB?.statusCode}\n');
+      buffer.writeln('状态码变化:');
+      buffer.writeln('  - ${responseA?.status.code} → + ${responseB?.status.code}\n');
     }
 
-    // 总结
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━');
     buffer.writeln('总计变化：$totalChanges 处');
     buffer.writeln('对比结果：${hasChanges ? "存在差异" : "完全相同"}');
@@ -172,13 +165,17 @@ class ComparisonResult {
 /// 请求对比分析器
 class RequestComparator {
   /// 对比两个请求
-  ComparisonResult compare(Request requestA, Request requestB, {Response? responseA, Response? responseB}) {
+  ComparisonResult compare(HttpRequest requestA, HttpRequest requestB,
+      {HttpResponse? responseA, HttpResponse? responseB}) {
     int changes = 0;
     final headerDiffs = <FieldCompare>[];
     final queryDiffs = <FieldCompare>[];
 
+    final urlA = requestA.requestUrl ?? '';
+    final urlB = requestB.requestUrl ?? '';
+
     // URL 对比
-    final urlChanged = requestA.url != requestB.url;
+    final urlChanged = urlA != urlB;
     if (urlChanged) changes++;
 
     // 方法对比
@@ -186,11 +183,12 @@ class RequestComparator {
     if (methodChanged) changes++;
 
     // 请求头对比
-    final allHeaders = <String>{...requestA.headers.keys, ...requestB.headers.keys};
+    final mapA = requestA.headers.toMap();
+    final mapB = requestB.headers.toMap();
+    final allHeaders = <String>{...mapA.keys, ...mapB.keys};
     for (var key in allHeaders) {
-      final valueA = requestA.headers[key];
-      final valueB = requestB.headers[key];
-
+      final valueA = mapA[key];
+      final valueB = mapB[key];
       if (valueA == null && valueB != null) {
         headerDiffs.add(FieldCompare(fieldName: key, newValue: valueB, type: CompareType.added));
         changes++;
@@ -198,19 +196,19 @@ class RequestComparator {
         headerDiffs.add(FieldCompare(fieldName: key, oldValue: valueA, type: CompareType.removed));
         changes++;
       } else if (valueA != valueB) {
-        headerDiffs.add(FieldCompare(fieldName: key, oldValue: valueA, newValue: valueB, type: CompareType.modified));
+        headerDiffs
+            .add(FieldCompare(fieldName: key, oldValue: valueA, newValue: valueB, type: CompareType.modified));
         changes++;
       }
     }
 
     // 查询参数对比
-    final uriA = Uri.parse(requestA.url);
-    final uriB = Uri.parse(requestB.url);
-    final allQueryKeys = <String>{...uriA.queryParameters.keys, ...uriB.queryParameters.keys};
+    final uriA = requestA.requestUri;
+    final uriB = requestB.requestUri;
+    final allQueryKeys = <String>{...?uriA?.queryParameters.keys, ...?uriB?.queryParameters.keys};
     for (var key in allQueryKeys) {
-      final valueA = uriA.queryParameters[key];
-      final valueB = uriB.queryParameters[key];
-
+      final valueA = uriA?.queryParameters[key];
+      final valueB = uriB?.queryParameters[key];
       if (valueA == null && valueB != null) {
         queryDiffs.add(FieldCompare(fieldName: key, newValue: valueB, type: CompareType.added));
         changes++;
@@ -218,26 +216,31 @@ class RequestComparator {
         queryDiffs.add(FieldCompare(fieldName: key, oldValue: valueA, type: CompareType.removed));
         changes++;
       } else if (valueA != valueB) {
-        queryDiffs.add(FieldCompare(fieldName: key, oldValue: valueA, newValue: valueB, type: CompareType.modified));
+        queryDiffs
+            .add(FieldCompare(fieldName: key, oldValue: valueA, newValue: valueB, type: CompareType.modified));
         changes++;
       }
     }
 
     // 请求体对比
     FieldCompare? bodyDiff;
-    if (requestA.body != requestB.body) {
+    final bodyA = requestA.bodyAsString;
+    final bodyB = requestB.bodyAsString;
+    if (bodyA != bodyB) {
       bodyDiff = FieldCompare(
         fieldName: 'body',
-        oldValue: requestA.body.isEmpty ? null : requestA.body,
-        newValue: requestB.body.isEmpty ? null : requestB.body,
-        type: requestA.body.isEmpty ? CompareType.added : (requestB.body.isEmpty ? CompareType.removed : CompareType.modified),
+        oldValue: bodyA.isEmpty ? null : bodyA,
+        newValue: bodyB.isEmpty ? null : bodyB,
+        type: bodyA.isEmpty
+            ? CompareType.added
+            : (bodyB.isEmpty ? CompareType.removed : CompareType.modified),
       );
       changes++;
     }
 
     // 响应状态码对比
     bool statusCodeChanged = false;
-    if (responseA != null && responseB != null && responseA.statusCode != responseB.statusCode) {
+    if (responseA != null && responseB != null && responseA.status.code != responseB.status.code) {
       statusCodeChanged = true;
       changes++;
     }
@@ -245,11 +248,12 @@ class RequestComparator {
     // 响应头对比
     final responseHeaderDiffs = <FieldCompare>[];
     if (responseA != null && responseB != null) {
-      final allRespHeaders = <String>{...responseA.headers.keys, ...responseB.headers.keys};
+      final rMapA = responseA.headers.toMap();
+      final rMapB = responseB.headers.toMap();
+      final allRespHeaders = <String>{...rMapA.keys, ...rMapB.keys};
       for (var key in allRespHeaders) {
-        final valueA = responseA.headers[key];
-        final valueB = responseB.headers[key];
-
+        final valueA = rMapA[key];
+        final valueB = rMapB[key];
         if (valueA == null && valueB != null) {
           responseHeaderDiffs.add(FieldCompare(fieldName: key, newValue: valueB, type: CompareType.added));
           changes++;
@@ -257,7 +261,8 @@ class RequestComparator {
           responseHeaderDiffs.add(FieldCompare(fieldName: key, oldValue: valueA, type: CompareType.removed));
           changes++;
         } else if (valueA != valueB) {
-          responseHeaderDiffs.add(FieldCompare(fieldName: key, oldValue: valueA, newValue: valueB, type: CompareType.modified));
+          responseHeaderDiffs
+              .add(FieldCompare(fieldName: key, oldValue: valueA, newValue: valueB, type: CompareType.modified));
           changes++;
         }
       }
@@ -265,25 +270,27 @@ class RequestComparator {
 
     // 响应体对比
     FieldCompare? responseBodyDiff;
-    if (responseA != null && responseB != null && responseA.body != responseB.body) {
-      responseBodyDiff = FieldCompare(
-        fieldName: 'body',
-        oldValue: responseA.body.isEmpty ? null : responseA.body,
-        newValue: responseB.body.isEmpty ? null : responseB.body,
-        type: responseA.body.isEmpty ? CompareType.added : (responseB.body.isEmpty ? CompareType.removed : CompareType.modified),
-      );
-      changes++;
+    if (responseA != null && responseB != null) {
+      final rBodyA = responseA.bodyAsString;
+      final rBodyB = responseB.bodyAsString;
+      if (rBodyA != rBodyB) {
+        responseBodyDiff = FieldCompare(
+          fieldName: 'body',
+          oldValue: rBodyA.isEmpty ? null : rBodyA,
+          newValue: rBodyB.isEmpty ? null : rBodyB,
+          type: rBodyA.isEmpty
+              ? CompareType.added
+              : (rBodyB.isEmpty ? CompareType.removed : CompareType.modified),
+        );
+        changes++;
+      }
     }
-
-    // 生成总结
-    final summary = _generateSummary(changes, headerDiffs.length, queryDiffs.length, bodyDiff, urlChanged, methodChanged);
 
     return ComparisonResult(
       requestA: requestA,
       requestB: requestB,
       responseA: responseA,
       responseB: responseB,
-      urlDiff: urlChanged ? '${requestA.url} → ${requestB.url}' : null,
       urlChanged: urlChanged,
       methodChanged: methodChanged,
       headerDiffs: headerDiffs,
@@ -293,88 +300,7 @@ class RequestComparator {
       responseHeaderDiffs: responseHeaderDiffs,
       responseBodyDiff: responseBodyDiff,
       totalChanges: changes,
-      summary: summary,
+      summary: '共 $changes 处变化',
     );
-  }
-
-  String _generateSummary(int total, int headers, int queries, FieldCompare? body, bool url, bool method) {
-    final parts = <String>[];
-    if (url) parts.add('URL 变化');
-    if (method) parts.add('方法变化');
-    if (headers > 0) parts.add('$headers 个请求头变化');
-    if (queries > 0) parts.add('$queries 个参数变化');
-    if (body != null && body.hasChanged) parts.add('请求体变化');
-    return parts.isEmpty ? '无变化' : parts.join(', ');
-  }
-
-  /// 对比两个 JSON 字符串
-  String compareJson(String jsonA, String jsonB) {
-    try {
-      final mapA = json.decode(jsonA) as Map<String, dynamic>;
-      final mapB = json.decode(jsonB) as Map<String, dynamic>;
-      return _compareMaps(mapA, mapB, '');
-    } catch (e) {
-      return 'JSON 解析失败：$e';
-    }
-  }
-
-  String _compareMaps(Map<String, dynamic> a, Map<String, dynamic> b, String prefix) {
-    final buffer = StringBuffer();
-    final allKeys = <String>{...a.keys, ...b.keys};
-
-    for (var key in allKeys) {
-      final valueA = a[key];
-      final valueB = b[key];
-
-      if (valueA == null && valueB != null) {
-        buffer.writeln('$prefix+ $key: $valueB');
-      } else if (valueA != null && valueB == null) {
-        buffer.writeln('$prefix- $key: $valueA');
-      } else if (valueA is Map && valueB is Map) {
-        buffer.write(_compareMaps(valueA as Map<String, dynamic>, valueB as Map<String, dynamic>, '$prefix  '));
-      } else if (valueA != valueB) {
-        buffer.writeln('$prefix~ $key: $valueA → $valueB');
-      }
-    }
-
-    return buffer.toString();
-  }
-
-  /// 并排对比视图数据
-  Map<String, dynamic> getSideBySideView(ComparisonResult result) {
-    return {
-      'url': {
-        'left': result.requestA?.url ?? '',
-        'right': result.requestB?.url ?? '',
-        'changed': result.urlChanged,
-      },
-      'method': {
-        'left': result.requestA?.method ?? '',
-        'right': result.requestB?.method ?? '',
-        'changed': result.methodChanged,
-      },
-      'headers': result.headerDiffs.map((d) => {
-        'key': d.fieldName,
-        'left': d.oldValue ?? '',
-        'right': d.newValue ?? '',
-        'type': _compareTypeToString(d.type),
-      }).toList(),
-      'body': {
-        'left': result.bodyDiff?.oldValue ?? '',
-        'right': result.bodyDiff?.newValue ?? '',
-        'changed': result.bodyDiff?.hasChanged ?? false,
-      },
-      'totalChanges': result.totalChanges,
-      'summary': result.summary,
-    };
-  }
-
-  String _compareTypeToString(CompareType type) {
-    switch (type) {
-      case CompareType.added: return 'added';
-      case CompareType.removed: return 'removed';
-      case CompareType.modified: return 'modified';
-      case CompareType.unchanged: return 'unchanged';
-    }
   }
 }

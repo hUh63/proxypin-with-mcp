@@ -267,3 +267,10 @@
 - 开关即时生效：切换后自动重启 MCP 服务
 - `tools/call` 增加==参数校验与 120 秒超时保护==；工具内部失败统一以 `isError: true` 返回，便于客户端区分成功/失败
 - 实现位置：`lib/network/mcp/mcp_server.dart`、`lib/network/bin/configuration.dart`（`mcpAllowLan`）
+
+## 请求对比（Diff）
+
+- 在请求列表中进入==多选（勾选）==，选中**恰好两条请求**，点工具栏的「对比」按钮即可打开对比分析页（桌面端与移动端一致）
+- 页面按四个标签展示差异：**概览**（URL / 方法 / 变化统计 / 详细报告）、**请求头**、**请求体**、**响应**（状态码 / 响应头 / 响应体）
+- ==说明==：该对比页面与算法此前"已实现但从未接入"，且引用了不存在的 `Request`/`Response` 类型（从未被编译）；本轮修正为 `HttpRequest`/`HttpResponse` 并接入列表
+- 实现位置：`lib/ui/component/request_compare_page.dart`（页面）、`lib/network/util/request_comparator.dart`（对比算法）、`SelectionActionBar` 的 `onCompare`（入口）

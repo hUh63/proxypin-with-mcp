@@ -9,9 +9,16 @@ class SelectionActionBar extends StatelessWidget {
   final VoidCallback? onRepeat;
   final VoidCallback? onExport;
   final VoidCallback? onDelete;
+  final VoidCallback? onCompare;
 
   const SelectionActionBar(
-      {super.key, required this.selectionController, this.onSelectAll, this.onRepeat, this.onExport, this.onDelete});
+      {super.key,
+      required this.selectionController,
+      this.onSelectAll,
+      this.onRepeat,
+      this.onExport,
+      this.onDelete,
+      this.onCompare});
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +37,11 @@ class SelectionActionBar extends StatelessWidget {
                 icon: const Icon(Icons.select_all, size: 18)),
           if (onRepeat != null)
             IconButton(onPressed: onRepeat, tooltip: localizations?.repeat, icon: const Icon(Icons.repeat, size: 18)),
+          if (onCompare != null)
+            IconButton(
+                onPressed: onCompare,
+                tooltip: localizations?.compare,
+                icon: const Icon(Icons.compare_arrows, size: 18)),
           if (onExport != null)
             IconButton(
                 onPressed: onExport, tooltip: localizations?.export, icon: const Icon(Icons.share_outlined, size: 18)),

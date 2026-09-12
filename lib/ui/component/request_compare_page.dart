@@ -1,5 +1,8 @@
 /*
  * 请求对比分析页面 - 详细的请求差异对比
+ *
+ * 修复：此前引用不存在的 Request/Response 类型（故从未被编译、也从未接入），
+ * 现改为 HttpRequest / HttpResponse，并接入请求列表（见 RequestCompareUtils.showCompare）。
  */
 
 import 'package:flutter/material.dart';
@@ -8,10 +11,10 @@ import 'package:proxypin/network/util/request_comparator.dart';
 
 /// 请求对比页面
 class RequestComparePage extends StatefulWidget {
-  final Request requestA;
-  final Request requestB;
-  final Response? responseA;
-  final Response? responseB;
+  final HttpRequest requestA;
+  final HttpRequest requestB;
+  final HttpResponse? responseA;
+  final HttpResponse? responseB;
 
   const RequestComparePage({
     super.key,
@@ -25,8 +28,7 @@ class RequestComparePage extends StatefulWidget {
   State<RequestComparePage> createState() => _RequestComparePageState();
 }
 
-class _RequestComparePageState extends State<RequestComparePage>
-    with SingleTickerProviderStateMixin {
+class _RequestComparePageState extends State<RequestComparePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ComparisonResult _result;
   final RequestComparator _comparator = RequestComparator();
@@ -53,7 +55,7 @@ class _RequestComparePageState extends State<RequestComparePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('请求对比'),
+        title: const Text('请求对比'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -83,7 +85,6 @@ class _RequestComparePageState extends State<RequestComparePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 对比结果卡片
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -97,9 +98,10 @@ class _RequestComparePageState extends State<RequestComparePage>
                   const SizedBox(height: 16),
                   Text(
                     _result.hasChanges ? '存在差异' : '完全相同',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: _result.hasChanges ? Colors.orange : Colors.green,
-                        ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(color: _result.hasChanges ? Colors.orange : Colors.green),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -110,72 +112,50 @@ class _RequestComparePageState extends State<RequestComparePage>
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // URL 对比
           _buildComparisonCard(
             'URL',
-            widget.requestA.url,
-            widget.requestB.url,
+            widget.requestA.requestUrl ?? '',
+            widget.requestB.requestUrl ?? '',
             changed: _result.urlChanged,
           ),
-
           const SizedBox(height: 12),
-
-          // 方法对比
           _buildComparisonCard(
             '方法',
-            widget.requestA.method,
-            widget.requestB.method,
+            widget.requestA.method.name,
+            widget.requestB.method.name,
             changed: _result.methodChanged,
           ),
-
           const SizedBox(height: 12),
-
-          // 统计信息
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '变化统计',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text('变化统计', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
                   _buildStatRow('请求头变化', _result.headerDiffs.length),
                   _buildStatRow('参数变化', _result.queryDiffs.length),
-                  _buildStatRow('请求体变化', _result.bodyDiff?.hasChanged ?? false ? 1 : 0),
-                  if (_result.statusCodeChanged)
-                    _buildStatRow('状态码变化', 1),
+                  _buildStatRow('请求体变化', (_result.bodyDiff?.hasChanged ?? false) ? 1 : 0),
+                  if (_result.statusCodeChanged) _buildStatRow('状态码变化', 1),
                 ],
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // 详细报告
           Card(
-            color: Colors.grey[100],
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '详细报告',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text('详细报告', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   SelectableText(
                     _result.detailedReport,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                   ),
                 ],
               ),
@@ -189,11 +169,8 @@ class _RequestComparePageState extends State<RequestComparePage>
   /// 请求头对比标签页
   Widget _buildHeadersTab() {
     if (_result.headerDiffs.isEmpty) {
-      return const Center(
-        child: Text('请求头无变化'),
-      );
+      return const Center(child: Text('请求头无变化'));
     }
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _result.headerDiffs.length,
@@ -208,19 +185,11 @@ class _RequestComparePageState extends State<RequestComparePage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (diff.oldValue != null)
-                  Text(
-                    '旧：${diff.oldValue}',
-                    style: TextStyle(
-                      color: diff.type == CompareType.removed ? Colors.red : null,
-                    ),
-                  ),
+                  Text('旧：${diff.oldValue}',
+                      style: TextStyle(color: diff.type == CompareType.removed ? Colors.red : null)),
                 if (diff.newValue != null)
-                  Text(
-                    '新：${diff.newValue}',
-                    style: TextStyle(
-                      color: diff.type == CompareType.added ? Colors.green : null,
-                    ),
-                  ),
+                  Text('新：${diff.newValue}',
+                      style: TextStyle(color: diff.type == CompareType.added ? Colors.green : null)),
               ],
             ),
             isThreeLine: true,
@@ -238,19 +207,13 @@ class _RequestComparePageState extends State<RequestComparePage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_result.bodyDiff == null || !_result.bodyDiff!.hasChanged)
-            const Center(
-              child: Text('请求体无变化'),
-            )
+            const Center(child: Text('请求体无变化'))
           else
-            Column(
-              children: [
-                _buildCodeDiff(
-                  '请求体 A',
-                  widget.requestA.body,
-                  '请求体 B',
-                  widget.requestB.body,
-                ),
-              ],
+            _buildCodeDiff(
+              '请求体 A',
+              widget.requestA.bodyAsString,
+              '请求体 B',
+              widget.requestB.bodyAsString,
             ),
         ],
       ),
@@ -260,32 +223,23 @@ class _RequestComparePageState extends State<RequestComparePage>
   /// 响应标签页
   Widget _buildResponseTab() {
     if (widget.responseA == null && widget.responseB == null) {
-      return const Center(
-        child: Text('无响应数据'),
-      );
+      return const Center(child: Text('无响应数据'));
     }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 状态码对比
           if (widget.responseA != null && widget.responseB != null)
             _buildComparisonCard(
               '状态码',
-              '${widget.responseA!.statusCode}',
-              '${widget.responseB!.statusCode}',
+              '${widget.responseA!.status.code}',
+              '${widget.responseB!.status.code}',
               changed: _result.statusCodeChanged,
             ),
-
           const SizedBox(height: 16),
-
-          // 响应头对比
-          Text(
-            '响应头变化 (${_result.responseHeaderDiffs.length})',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('响应头变化 (${_result.responseHeaderDiffs.length})',
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           if (_result.responseHeaderDiffs.isEmpty)
             const Text('无变化')
@@ -302,6 +256,14 @@ class _RequestComparePageState extends State<RequestComparePage>
                     ],
                   ),
                 )),
+          const SizedBox(height: 16),
+          if ((_result.responseBodyDiff?.hasChanged ?? false))
+            _buildCodeDiff(
+              '响应体 A',
+              widget.responseA?.bodyAsString ?? '',
+              '响应体 B',
+              widget.responseB?.bodyAsString ?? '',
+            ),
         ],
       ),
     );
@@ -316,25 +278,16 @@ class _RequestComparePageState extends State<RequestComparePage>
           children: [
             Row(
               children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text(label, style: Theme.of(context).textTheme.titleMedium),
                 const Spacer(),
                 if (changed)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.orange[100],
+                      color: Theme.of(context).colorScheme.tertiaryContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(
-                      '已修改',
-                      style: TextStyle(
-                        color: Colors.orange[800],
-                        fontSize: 12,
-                      ),
-                    ),
+                    child: Text('已修改', style: TextStyle(color: Colors.orange[800], fontSize: 12)),
                   ),
               ],
             ),
@@ -342,35 +295,11 @@ class _RequestComparePageState extends State<RequestComparePage>
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('请求 A', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        valueA,
-                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(child: _buildValuePanel('A', valueA)),
                 const SizedBox(width: 16),
-                Icon(Icons.arrow_forward, size: 16, color: Colors.grey[400]),
+                Icon(Icons.arrow_forward, size: 16, color: Theme.of(context).colorScheme.outline),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('请求 B', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        valueB,
-                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(child: _buildValuePanel('B', valueB)),
               ],
             ),
           ],
@@ -379,17 +308,24 @@ class _RequestComparePageState extends State<RequestComparePage>
     );
   }
 
+  Widget _buildValuePanel(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('请求 $label', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+        const SizedBox(height: 4),
+        SelectableText(value, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+      ],
+    );
+  }
+
   Widget _buildCodeDiff(String labelA, String codeA, String labelB, String codeB) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _buildCodePanel(labelA, codeA),
-        ),
+        Expanded(child: _buildCodePanel(labelA, codeA)),
         const SizedBox(width: 8),
-        Expanded(
-          child: _buildCodePanel(labelB, codeB),
-        ),
+        Expanded(child: _buildCodePanel(labelB, codeB)),
       ],
     );
   }
@@ -405,32 +341,18 @@ class _RequestComparePageState extends State<RequestComparePage>
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-              ),
+              color: Colors.grey[850],
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
             ),
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             child: SelectableText(
               code.isEmpty ? '(空)' : code,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 11,
-                color: Colors.white,
-              ),
+              style: const TextStyle(color: Colors.greenAccent, fontFamily: 'monospace', fontSize: 12),
             ),
           ),
         ],
@@ -438,18 +360,13 @@ class _RequestComparePageState extends State<RequestComparePage>
     );
   }
 
-  Widget _buildStatRow(String label, int value) {
+  Widget _buildStatRow(String label, int count) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
-          Chip(
-            label: Text('$value'),
-            padding: EdgeInsets.zero,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
+          Expanded(child: Text(label)),
+          Text('$count', style: TextStyle(fontWeight: FontWeight.bold, color: count > 0 ? Colors.orange : null)),
         ],
       ),
     );
@@ -473,10 +390,10 @@ class _RequestComparePageState extends State<RequestComparePage>
 class RequestCompareUtils {
   static void showCompare(
     BuildContext context,
-    Request requestA,
-    Request requestB, {
-    Response? responseA,
-    Response? responseB,
+    HttpRequest requestA,
+    HttpRequest requestB, {
+    HttpResponse? responseA,
+    HttpResponse? responseB,
   }) {
     Navigator.push(
       context,

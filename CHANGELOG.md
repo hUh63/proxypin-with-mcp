@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.22.53 (2026-09-13)
+
+### 修复并接入：请求对比（Diff）
+
+- 修复「请求对比」页面与对比算法引用了**不存在的 `Request` / `Response` 类型**（该文件因此从未被编译，也从未接入任何入口）——改用 `HttpRequest` / `HttpResponse`，并修正 URL / 方法 / 请求体 / 状态码 / 响应头等字段访问
+- **接入请求列表**：多选（勾选）**恰好两条**请求后，工具栏出现「对比」按钮，桌面端与移动端一致；不足两条时提示
+- 对比页去掉硬编码浅色底，改主题色（暗色模式可读）；请求体 / 响应体对比改用 `bodyAsString`
+- 实现位置：`lib/ui/component/request_compare_page.dart`、`lib/network/util/request_comparator.dart`、`lib/ui/component/selection_action_bar.dart`（`onCompare`）
+- 新增文案键：`compareNeedTwo`
+
+### 内置教程（docs/*）
+
+- 常用功能技巧新增「请求对比（Diff）」章节（入口、标签页、修复说明、实现位置）
+- MCP 局域网访问章节保持（默认仅 127.0.0.1、tools/call 超时与 isError）
+
 ## v1.22.52 (2026-09-13)
 
 ### Windows 全局接管增强（上游 #577）
