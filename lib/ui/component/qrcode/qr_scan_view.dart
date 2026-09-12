@@ -18,11 +18,10 @@ class QrCodeScanner {
     if (!status.isGranted) {
       if (!context.mounted) return Future.value(null);
       AppLocalizations localizations = AppLocalizations.of(context)!;
-      bool isCN = localizations.localeName == 'zh';
       await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-                content: Text(isCN ? "请授予相机权限" : "Please grant camera permission"),
+                content: Text(localizations.grantCameraPermission),
                 actions: <Widget>[
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
@@ -102,8 +101,7 @@ class _QrReaderViewState extends State<QeCodeScanView> with TickerProviderStateM
   void _initAnimation() {
     _animationController ??= AnimationController(vsync: this, duration: Duration(milliseconds: animationTime));
     _animationController
-      ?..addListener(_upState)
-      ..addStatusListener((state) {
+      ?..addStatusListener((state) {
         if (!mounted) {
           stop();
           return;
@@ -138,10 +136,6 @@ class _QrReaderViewState extends State<QeCodeScanView> with TickerProviderStateM
     }
   }
 
-  void _upState() {
-    setState(() {});
-  }
-
   setFlashlight() async {
     if (!isScan) return false;
     _controller?.setFlashlight();
@@ -157,6 +151,29 @@ class _QrReaderViewState extends State<QeCodeScanView> with TickerProviderStateM
         Navigator.of(context, rootNavigator: true).pop(value ?? "-1");
       }
     });
+  }
+
+  /// 扫描线动画只重建自身，避免动画每帧 setState 重建整页（相机预览 + 底部按钮）。
+  Widget _scanBoxPreview(BuildContext context, double qrScanSize) {
+    final controller = _animationController;
+    final color = Theme.of(context).colorScheme.primary;
+    if (controller == null) {
+      return CustomPaint(
+        painter: QrScanBoxPainter(boxLineColor: color, animationValue: 0, isForward: true),
+        child: SizedBox(width: qrScanSize, height: qrScanSize),
+      );
+    }
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) => CustomPaint(
+        painter: QrScanBoxPainter(
+          boxLineColor: color,
+          animationValue: controller.value,
+          isForward: controller.status == AnimationStatus.forward,
+        ),
+        child: SizedBox(width: qrScanSize, height: qrScanSize),
+      ),
+    );
   }
 
   @override
@@ -181,14 +198,7 @@ class _QrReaderViewState extends State<QeCodeScanView> with TickerProviderStateM
               Positioned(
                 left: (constraints.maxWidth - qrScanSize) / 2,
                 top: (constraints.maxHeight - qrScanSize) * 0.333333,
-                child: CustomPaint(
-                  painter: QrScanBoxPainter(
-                    boxLineColor: Theme.of(context).colorScheme.primary,
-                    animationValue: _animationController?.value ?? 0,
-                    isForward: _animationController?.status == AnimationStatus.forward,
-                  ),
-                  child: SizedBox(width: qrScanSize, height: qrScanSize),
-                ),
+                child: _scanBoxPreview(context, qrScanSize),
               ),
               Positioned(
                 width: constraints.maxWidth,

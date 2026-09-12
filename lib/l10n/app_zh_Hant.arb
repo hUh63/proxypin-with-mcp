@@ -432,5 +432,13 @@
   "mcpAllowLanDesc": "關閉：僅監聽 127.0.0.1（較安全）；開啟：監聽所有網卡且無驗證，請謹慎使用",
   "compareNeedTwo": "請選擇兩條請求進行對比",
   "antiCache": "去快取（Anticache）",
-  "antiCacheDesc": "移除 If-Modified-Since / If-None-Match 並強制 no-cache，讓伺服器回傳完整回應（便於除錯）"
+  "antiCacheDesc": "移除 If-Modified-Since / If-None-Match 並強制 no-cache，讓伺服器回傳完整回應（便於除錯）",
+  "sortBy": "排序",
+  "sortTime": "時間",
+  "sortAsc": "遞增↑",
+  "sortDesc": "遞減↓",
+  "grantCameraPermission": "請授予相機權限",
+  "quickFilter": "快速篩選",
+  "noMessageBody": "此請求無訊息主體",
+  "dataType": "資料類型"
 }

@@ -87,11 +87,6 @@ class RequestEditorState extends State<MobileRequestEditor> with SingleTickerPro
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
-  var tabs = const [
-    Tab(text: "请求"),
-    Tab(text: "响应"),
-  ];
-
   @override
   void dispose() {
     _responseWatchTimer?.cancel();
@@ -116,7 +111,7 @@ class RequestEditorState extends State<MobileRequestEditor> with SingleTickerPro
     super.initState();
 
     tabController = TabController(
-        length: tabs.length,
+        length: 2,
         vsync: this,
         initialIndex: widget.source == RequestEditorSource.breakpointResponse ? 1 : 0);
     request = widget.request;
@@ -190,13 +185,10 @@ class RequestEditorState extends State<MobileRequestEditor> with SingleTickerPro
 
   @override
   Widget build(BuildContext context) {
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-    if (!isCN) {
-      tabs = [
-        Tab(text: localizations.request),
-        Tab(text: localizations.response),
-      ];
-    }
+    final tabs = [
+      Tab(text: localizations.request),
+      Tab(text: localizations.response),
+    ];
 
     var buttonText = localizations.send;
     IconData icon = Icons.send;
@@ -568,7 +560,6 @@ class _HttpState extends State<_HttpWidget> with SingleTickerProviderStateMixin,
       return KeepAliveWrapper(child: SingleChildScrollView(child: HttpBodyWidget(httpMessage: message)));
     }
 
-    final isCN = localizations.localeName == 'zh';
     final isNone = _bodyLanguage == _BodyLanguage.none;
     final ct = _bodyLanguageToContentType[_bodyLanguage];
     final language = ct == null ? null : HighlightLanguages.getLanguage(ct);
@@ -589,7 +580,7 @@ class _HttpState extends State<_HttpWidget> with SingleTickerProviderStateMixin,
         child: isNone
             ? Center(
                 child: Text(
-                  isCN ? '此请求无消息体' : 'This request has no body',
+                  localizations.noMessageBody,
                   style: TextStyle(color: Theme.of(context).hintColor),
                 ),
               )
@@ -615,13 +606,12 @@ class _HttpState extends State<_HttpWidget> with SingleTickerProviderStateMixin,
   }
 
   Widget _bodyToolbar() {
-    final isCN = localizations.localeName == 'zh';
     final color = Theme.of(context).colorScheme.primary;
 
     return SizedBox(
         height: 36,
         child: Row(children: [
-          Text(isCN ? '数据类型' : 'Type', style: const TextStyle(fontSize: 12)),
+          Text(localizations.dataType, style: const TextStyle(fontSize: 12)),
           const SizedBox(width: 6),
           DropdownButtonHideUnderline(
             child: DropdownButton<_BodyLanguage>(

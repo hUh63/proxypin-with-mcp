@@ -70,9 +70,17 @@ class McpServer {
   // SSE 连接池 — 使用 List 的 copy-then-iterate 模式保证并发安全
   final List<io.HttpResponse> _sseConnections = [];
 
-  /// 线程安全地添加 SSE 连接
-  void _addSseConnection(io.HttpResponse response) {
+  /// SSE 连接数上限：防止（尤其开启局域网访问后）未认证客户端无限建连耗尽资源（DoS）。
+  static const int maxSseConnections = 32;
+
+  /// 线程安全地添加 SSE 连接。超过上限时返回 false，调用方应主动关闭该连接。
+  bool _addSseConnection(io.HttpResponse response) {
+    if (_sseConnections.length >= maxSseConnections) {
+      logger.i('MCP SSE connection rejected: limit $maxSseConnections reached');
+      return false;
+    }
     _sseConnections.add(response);
+    return true;
   }
 
   /// 线程安全地移除 SSE 连接
@@ -208,6 +216,14 @@ class McpServer {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
 
+    // 取消会话过期定时器并清理会话，避免服务停止后 Timer 仍在后台挂起（泄漏）
+    for (var session in _streamSessions.values) {
+      session.expiry?.cancel();
+      session.expiry = null;
+      session.stream = null;
+    }
+    _streamSessions.clear();
+
     // 关闭所有 SSE 连接（先取快照再遍历）
     for (var conn in _snapshotSseConnections()) {
       try {
@@ -266,7 +282,11 @@ class McpServer {
     response.write('event: endpoint\ndata: $endpoint\n\n');
     response.flush();
 
-    _addSseConnection(response);
+    if (!_addSseConnection(response)) {
+      response.write('event: error\ndata: too many concurrent connections\n\n');
+      response.close();
+      return;
+    }
 
     logger.i('New MCP SSE connection');
 
@@ -360,7 +380,11 @@ class McpServer {
       response.write('event: endpoint\ndata: $endpoint\n\n');
       response.flush();
 
-      _addSseConnection(response);
+      if (!_addSseConnection(response)) {
+        response.write('event: error\ndata: too many concurrent connections\n\n');
+        await response.close();
+        return;
+      }
 
       logger.i('New MCP streamable HTTP connection');
 
@@ -596,11 +620,12 @@ class McpServer {
     if (!isInitialize) return null;
 
     final sessionId = _generateSessionId();
-    _streamSessions[sessionId] = _StreamableSession();
-    // 清理过期会话（简单保护：超过 1 小时未使用）
-    Timer(const Duration(hours: 1), () {
+    final session = _StreamableSession();
+    // 清理过期会话（简单保护：超过 1 小时未使用）；定时器保存引用以便停止服务时取消
+    session.expiry = Timer(const Duration(hours: 1), () {
       _streamSessions.remove(sessionId);
     });
+    _streamSessions[sessionId] = session;
     return sessionId;
   }
 
@@ -622,7 +647,11 @@ class McpServer {
     response.write('event: endpoint\ndata: /mcp\n\n');
     response.flush();
 
-    _addSseConnection(response);
+    if (!_addSseConnection(response)) {
+      response.write('event: error\ndata: too many concurrent connections\n\n');
+      response.close();
+      return;
+    }
     response.done
         .then((_) {
           _removeSseConnection(response);
@@ -4275,4 +4304,7 @@ class ApiEndpoint {
 /// Streamable HTTP 会话（保存该会话的 SSE 输出流，用于服务端推送）
 class _StreamableSession {
   io.HttpResponse? stream;
+
+  /// 会话过期定时器（保存引用，停止服务时统一取消，避免 Timer 泄漏）
+  Timer? expiry;
 }

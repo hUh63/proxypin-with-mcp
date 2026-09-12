@@ -452,6 +452,9 @@ logger.e('错误信息');
 - 不要在脚本中硬编码敏感信息
 - 使用环境变量或加密存储密钥
 - 定期导出配置备份
+- ==默认只监听 `127.0.0.1`==：MCP 的 `Allow LAN access`（`mcpAllowLan`）关闭时仅本机可连；开启后监听所有网卡且**无鉴权**，仅建议在受信内网临时开启
+- ==SSE 连接数上限==：服务端最多保持 32 条并行 SSE 连接（`McpServer.maxSseConnections`），超限的建连请求会收到 `event: error` 并被立即关闭，避免未认证客户端无限建连耗尽资源；正常 IDE 客户端（Cursor / VSCode / Claude）通常只会占用 1~2 条
+- ==会话定时器回收==：Streamable HTTP 的 `Mcp-Session-Id` 会话设有 1 小时过期定时器，停止 MCP 服务时会连同心跳定时器一起取消并清空会话表，不会在后台残留定时器
 
 ---
 

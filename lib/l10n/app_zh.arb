@@ -542,5 +542,13 @@
   "mcpAllowLanDesc": "关闭：仅监听 127.0.0.1（更安全）；开启：监听所有网卡且无鉴权，请谨慎使用",
   "compareNeedTwo": "请选择两条请求进行对比",
   "antiCache": "去缓存（Anticache）",
-  "antiCacheDesc": "剥离 If-Modified-Since / If-None-Match 并强制 no-cache，让服务端返回完整响应（便于调试）"
+  "antiCacheDesc": "剥离 If-Modified-Since / If-None-Match 并强制 no-cache，让服务端返回完整响应（便于调试）",
+  "sortBy": "排序",
+  "sortTime": "时间",
+  "sortAsc": "升序↑",
+  "sortDesc": "降序↓",
+  "grantCameraPermission": "请授予相机权限",
+  "quickFilter": "快速筛选",
+  "noMessageBody": "此请求无消息体",
+  "dataType": "数据类型"
 }

@@ -17,7 +17,7 @@ import 'package:proxypin/ui/desktop/setting/request_map/map_scipt.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 
-import '../../../../network/util/logger.dart';
+import 'package:proxypin/network/util/logger.dart';
 
 bool _refresh = false;
 

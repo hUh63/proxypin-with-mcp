@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.22.55 (2026-09-13)
+
+### 新功能 / 体验
+
+- **搜索面板快速筛选 chips**：新增状态码分组 chips（2xx/3xx/4xx/5xx），一键写入状态码区间、再点一次取消；与协议 chips（HTTP/HTTPS/WS/SSE/HTTP1/H2）并排展示，与下方状态码区间输入框共用同一组条件，两者始终一致
+
+### i18n 覆盖
+
+- 搜索条件面板：排序字段（时间 / 耗时 / 状态码）与排序方向（升序 / 降序）由硬编码中文改为 l10n
+- 移动端请求编辑器：请求/响应 Tab、请求体为空提示、请求体「数据类型」标签改为 l10n（移除 `localeName == 'zh'` 分支）
+- 扫码相机授权提示改为 l10n（新增 `grantCameraPermission`）
+- 新增词条：`sortBy` / `sortTime` / `sortAsc` / `sortDesc` / `grantCameraPermission` / `quickFilter` / `noMessageBody` / `dataType`（en / zh / zh_Hant 三份 ARB 同步）
+
+### 性能
+
+- 扫码页扫描线动画改为 `AnimatedBuilder` 局部重建，不再每帧 `setState` 重建整页（相机预览 + 底部按钮），降低低端机扫码时的掉帧
+
+### 修复
+
+- 修正 `lib/ui/desktop/setting/request_map.dart`、`lib/ui/mobile/setting/request_map.dart` 中 `logger.dart` 的相对导入多了一层目录（`../../../../`），该路径并不存在；统一改为 `package:proxypin/network/util/logger.dart`
+
+### MCP 健壮性
+
+- SSE 连接数上限 `maxSseConnections`（默认 32）：超过上限的新连接返回 `event: error` 后立即关闭，避免（尤其开启局域网访问后）未认证客户端无限建连耗尽资源
+- Streamable HTTP 会话过期 `Timer` 保存引用并在 `stop()` 时统一取消，消除会话定时器泄漏
+
+### 平台限制说明（不实现，非缺陷）
+
+- **#683 鸿蒙 / HarmonyOS**：Flutter 官方无 HarmonyOS 构建目标，需要基于华为 ArkUI/DevEco 另建工程
+- **#489 QUIC / HTTP3 完整解码**：需内核或协议栈级支持，当前仅做透传
+- **#560 Linux arm64 deb**：Flutter 官方未提供 Linux arm64 预编译 SDK
+
 ## v1.22.54 (2026-09-13)
 
 ### 新功能：去缓存（Anticache）

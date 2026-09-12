@@ -547,5 +547,13 @@
   "mcpAllowLanDesc": "Off: listen on 127.0.0.1 only (safer). On: listen on all interfaces without authentication - use with caution.",
   "compareNeedTwo": "Select exactly two requests to compare",
   "antiCache": "Disable Caching (Anticache)",
-  "antiCacheDesc": "Strip If-Modified-Since / If-None-Match and force no-cache so the server returns full responses (helpful when debugging)"
+  "antiCacheDesc": "Strip If-Modified-Since / If-None-Match and force no-cache so the server returns full responses (helpful when debugging)",
+  "sortBy": "Sort by",
+  "sortTime": "Time",
+  "sortAsc": "Ascending ↑",
+  "sortDesc": "Descending ↓",
+  "grantCameraPermission": "Please grant camera permission",
+  "quickFilter": "Quick filter",
+  "noMessageBody": "This request has no message body",
+  "dataType": "Type"
 }

@@ -114,16 +114,16 @@ class SearchConditionsState extends State<SearchConditions> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('排序:', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              Text(localizations.sortBy, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
               Row(
                 children: [
                   // 排序字段
                   DropdownMenu<String>(
                     initialValue: searchModel.sortBy.name,
                     items: [
-                      DropdownMenuEntry(value: 'time', label: '时间'),
-                      DropdownMenuEntry(value: 'duration', label: '耗时'),
-                      DropdownMenuEntry(value: 'statusCode', label: '状态码'),
+                      DropdownMenuEntry(value: 'time', label: localizations.sortTime),
+                      DropdownMenuEntry(value: 'duration', label: localizations.duration),
+                      DropdownMenuEntry(value: 'statusCode', label: localizations.statusCode),
                     ],
                     onSelected: (val) {
                       if (val != null) {
@@ -138,8 +138,8 @@ class SearchConditionsState extends State<SearchConditions> {
                   DropdownMenu<String>(
                     initialValue: searchModel.sortOrder.name,
                     items: [
-                      DropdownMenuEntry(value: 'desc', label: '降序↓'),
-                      DropdownMenuEntry(value: 'asc', label: '升序↑'),
+                      DropdownMenuEntry(value: 'desc', label: localizations.sortDesc),
+                      DropdownMenuEntry(value: 'asc', label: localizations.sortAsc),
                     ],
                     onSelected: (val) {
                       if (val != null) {
@@ -157,6 +157,10 @@ class SearchConditionsState extends State<SearchConditions> {
           const SizedBox(height: 10),
           // protocol quick selectors placed under the keyword input (very compact)
           protocolsWidget(),
+          const SizedBox(height: 6),
+          // 状态码分组快捷筛选（2xx/3xx/4xx/5xx），一键写入状态码范围，再点一次取消
+          statusGroupWidget(),
+          const SizedBox(height: 6),
           const SizedBox(height: 10),
           // keyword scope
           Text(localizations.keywordSearchScope),
@@ -365,6 +369,46 @@ class SearchConditionsState extends State<SearchConditions> {
           }),
         ),
       ],
+    );
+  }
+
+  /// 状态码分组快捷筛选：一键按 2xx/3xx/4xx/5xx 过滤，再点一次取消。
+  /// 与下方的状态码区间输入框双向一致（写的是同一组 statusCodeFrom/To）。
+  Widget statusGroupWidget() {
+    Color primaryColor = ColorScheme.of(context).primary;
+    const groups = <String, List<int>>{
+      '2xx': [200, 299],
+      '3xx': [300, 399],
+      '4xx': [400, 499],
+      '5xx': [500, 599],
+    };
+    return Wrap(
+      spacing: 5,
+      runSpacing: 2,
+      children: groups.entries.map((e) {
+        final from = e.value[0];
+        final to = e.value[1];
+        final selected = searchModel.statusCodeFrom == from && searchModel.statusCodeTo == to;
+        return FilterChip(
+          label: Text(e.key),
+          selected: selected,
+          showCheckmark: false,
+          selectedColor: primaryColor.withValues(alpha: 0.12),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+          labelStyle: const TextStyle(fontSize: 12),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: const VisualDensity(horizontal: -3, vertical: -3),
+          onSelected: (sel) => setState(() {
+            if (sel) {
+              searchModel.statusCodeFrom = from;
+              searchModel.statusCodeTo = to;
+            } else {
+              searchModel.statusCodeFrom = null;
+              searchModel.statusCodeTo = null;
+            }
+          }),
+        );
+      }).toList(),
     );
   }
 
