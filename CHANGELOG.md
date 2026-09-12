@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.22.54 (2026-09-13)
+
+### 新功能：去缓存（Anticache）
+
+- 新增「去缓存」开关（移动端 / 桌面端偏好设置）：请求发出前剥离 `If-Modified-Since` / `If-None-Match` / `If-Range` 并强制 `Cache-Control/Pragma: no-cache`，使服务端返回完整响应（避免命中 304 拿不到 body），便于抓包调试
+- 实现：`lib/network/components/anti_cache_interceptor.dart`（`Interceptor`，priority 10，先于改写/脚本清理请求头），由 `server.dart` 按 `configuration.antiCacheEnabled` 注册；下次启动抓包生效
+- 参考竞品：mitmproxy 的 anticache、Proxyman 的 No Caching
+
+### 修复
+
+- `Configuration.toJson` 补齐 `winTakeoverEnabled`（v1.22.52 遗漏，导致 Windows 接管开关不持久化）与 `antiCacheEnabled`
+
+### 内置教程（docs/*）
+
+- 常用功能技巧新增「去缓存（Anticache）」章节
+
 ## v1.22.53 (2026-09-13)
 
 ### 修复并接入：请求对比（Diff）

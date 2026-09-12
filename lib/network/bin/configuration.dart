@@ -76,6 +76,9 @@ class Configuration {
   //Windows 分层增强接管（上游 #577）：WinHTTP 代理 + 用户环境变量，覆盖更多不走系统代理的应用
   bool winTakeoverEnabled = false;
 
+  //去缓存拦截（Anticache）：剥掉条件请求头，强制回源，便于抓包看到完整响应
+  bool antiCacheEnabled = false;
+
   //MCP 工具启用状态（工具名 -> 是否启用），默认全部启用
   Map<String, bool> mcpToolsEnabled = {};
 
@@ -165,6 +168,7 @@ class Configuration {
     mcpAutoStart = config['mcpAutoStart'] ?? true;
     mcpAllowLan = config['mcpAllowLan'] ?? false;
     winTakeoverEnabled = config['winTakeoverEnabled'] ?? false;
+    antiCacheEnabled = config['antiCacheEnabled'] ?? false;
     if (config['mcpToolsEnabled'] is Map) {
       mcpToolsEnabled = (config['mcpToolsEnabled'] as Map)
           .map((key, value) => MapEntry(key.toString(), value == true));
@@ -262,6 +266,8 @@ class Configuration {
       'mcpEnabled': mcpEnabled,
       'mcpAutoStart': mcpAutoStart,
       'mcpAllowLan': mcpAllowLan,
+      'winTakeoverEnabled': winTakeoverEnabled,
+      'antiCacheEnabled': antiCacheEnabled,
       'mcpToolsEnabled': mcpToolsEnabled,
       'enabledHttp2': enabledHttp2,
       'autoBackupEnabled': autoBackupEnabled,

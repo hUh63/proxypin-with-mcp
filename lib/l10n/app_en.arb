@@ -545,5 +545,7 @@
   "winTakeoverTunNote": "Full TUN (kernel-level) takeover is not enabled in this build; apps with their own network stack (e.g. WeChat inside Sandboxie) still require it.",
   "mcpAllowLan": "Allow LAN access",
   "mcpAllowLanDesc": "Off: listen on 127.0.0.1 only (safer). On: listen on all interfaces without authentication - use with caution.",
-  "compareNeedTwo": "Select exactly two requests to compare"
+  "compareNeedTwo": "Select exactly two requests to compare",
+  "antiCache": "Disable Caching (Anticache)",
+  "antiCacheDesc": "Strip If-Modified-Since / If-None-Match and force no-cache so the server returns full responses (helpful when debugging)"
 }

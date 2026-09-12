@@ -274,3 +274,11 @@
 - 页面按四个标签展示差异：**概览**（URL / 方法 / 变化统计 / 详细报告）、**请求头**、**请求体**、**响应**（状态码 / 响应头 / 响应体）
 - ==说明==：该对比页面与算法此前"已实现但从未接入"，且引用了不存在的 `Request`/`Response` 类型（从未被编译）；本轮修正为 `HttpRequest`/`HttpResponse` 并接入列表
 - 实现位置：`lib/ui/component/request_compare_page.dart`（页面）、`lib/network/util/request_comparator.dart`（对比算法）、`SelectionActionBar` 的 `onCompare`（入口）
+
+## 去缓存（Anticache）
+
+- 入口：偏好设置 →「去缓存（Anticache）」开关（移动端 / 桌面端一致）
+- 作用：请求发出前==剥离 `If-Modified-Since` / `If-None-Match` / `If-Range`，并强制 `Cache-Control/Pragma: no-cache`==，让服务端每次真正回源、返回完整响应——避免命中 304 拿不到 body，便于抓包与调试
+- ==下次启动抓包生效==（拦截器在代理启动时装配）
+- 实现位置：`lib/network/components/anti_cache_interceptor.dart`（`Interceptor`，priority 10，先于改写/脚本清理请求头）、`lib/network/bin/server.dart`（按 `antiCacheEnabled` 注册）、`lib/network/bin/configuration.dart`（配置项）
+- 参考竞品：mitmproxy 的 anticache、Proxyman 的 No Caching

@@ -23,6 +23,7 @@ import 'package:proxypin/network/components/hosts.dart';
 import 'package:proxypin/network/components/interceptor.dart';
 import 'package:proxypin/network/components/network_condition.dart';
 import 'package:proxypin/network/components/report_server_interceptor.dart';
+import 'package:proxypin/network/components/anti_cache_interceptor.dart';
 import 'package:proxypin/network/components/request_block.dart';
 import 'package:proxypin/network/components/request_rewrite.dart';
 import 'package:proxypin/network/components/script.dart';
@@ -109,6 +110,7 @@ class ProxyServer {
       RequestBlockInterceptor(),
       RequestBreakpointInterceptor.instance, // Register the interceptor
       NetworkConditionInterceptor.instance,
+      if (configuration.antiCacheEnabled) AntiCacheInterceptor(),
       ReportServerInterceptor()
     ];
 

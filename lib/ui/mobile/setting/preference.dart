@@ -740,6 +740,27 @@ class _PreferenceState extends State<Preference> {
             ),
           ]),
           const SizedBox(height: 12),
+          // 去缓存（Anticache）：剥离条件请求头，强制回源（下次启动抓包生效）
+          section([
+            ListTile(
+              leading: const Icon(Icons.cleaning_services_outlined, color: Colors.deepOrange),
+              title: Text(localizations.antiCache),
+              subtitle: Text(localizations.antiCacheDesc, style: const TextStyle(fontSize: 12)),
+              trailing: SwitchWidget(
+                value: configuration.antiCacheEnabled,
+                scale: 0.8,
+                onChanged: (value) {
+                  setState(() => configuration.antiCacheEnabled = value);
+                  configuration.flushConfig();
+                },
+              ),
+              onTap: () {
+                setState(() => configuration.antiCacheEnabled = !configuration.antiCacheEnabled);
+                configuration.flushConfig();
+              },
+            ),
+          ]),
+          const SizedBox(height: 12),
           // 配置管理区块
           section([
             ListTile(

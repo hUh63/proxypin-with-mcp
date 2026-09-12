@@ -349,6 +349,18 @@ class _PreferenceState extends State<Preference> {
                           logger.w('重启 MCP 以应用局域网设置失败', error: e);
                         }
                       })),
+              // 去缓存（Anticache）：剥离条件请求头，强制回源（下次启动抓包生效）
+              ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(localizations.antiCache, style: titleStyle),
+                  subtitle: Text(localizations.antiCacheDesc, style: subtitleStyle),
+                  trailing: SwitchWidget(
+                      scale: 0.75,
+                      value: configuration.antiCacheEnabled,
+                      onChanged: (v) {
+                        setState(() => configuration.antiCacheEnabled = v);
+                        configuration.flushConfig();
+                      })),
 
               SizedBox(height: 5),
             ])));
