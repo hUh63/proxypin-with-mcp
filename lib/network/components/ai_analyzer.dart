@@ -147,6 +147,15 @@ class AiAnalyzer {
 
   static String _truncate(String s, int max) {
     s = s.trim();
-    return s.length <= max ? s : '${s.substring(0, max)}…(已截断)';
+    if (s.length <= max) return s;
+    var end = max;
+    // 避免在 UTF-16 代理对（emoji/增补字符）中间截断，产生半字符乱码
+    if (end > 0 && end < s.length) {
+      var unit = s.codeUnitAt(end - 1);
+      if (unit >= 0xD800 && unit <= 0xDBFF) {
+        end -= 1;
+      }
+    }
+    return '${s.substring(0, end)}…(已截断)';
   }
 }

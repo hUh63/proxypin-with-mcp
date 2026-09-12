@@ -311,7 +311,7 @@ Future<T?> showConfirmDialog<T>(BuildContext context, {String? title, String? co
       builder: (context) {
         return AlertDialog(
           title: Text(title!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          content: Text(content!),
+          content: SingleChildScrollView(child: Text(content!)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),

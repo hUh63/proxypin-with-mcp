@@ -18,7 +18,7 @@ class SelectionActionBar extends StatelessWidget {
     final localizations = AppLocalizations.of(context);
 
     return SizedBox(
-        height: 36,
+        height: 44,
         child: Row(children: [
           const SizedBox(width: 8),
           _SelectLabel(selectionController: selectionController),
@@ -26,7 +26,7 @@ class SelectionActionBar extends StatelessWidget {
           if (onSelectAll != null)
             IconButton(
                 onPressed: onSelectAll,
-                tooltip: '全选 / Select All',
+                tooltip: localizations?.selectAll,
                 icon: const Icon(Icons.select_all, size: 18)),
           if (onRepeat != null)
             IconButton(onPressed: onRepeat, tooltip: localizations?.repeat, icon: const Icon(Icons.repeat, size: 18)),

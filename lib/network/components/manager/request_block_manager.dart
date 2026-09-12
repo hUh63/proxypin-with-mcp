@@ -90,7 +90,7 @@ class RequestBlockManager {
 
   ///刷新配置
   Future<void> flushConfig() async {
-    _storageFile.writeAsString(jsonEncode({'enabled': enabled, 'list': list}));
+    await _storageFile.writeAsString(jsonEncode({'enabled': enabled, 'list': list}));
   }
 }
 
@@ -103,7 +103,8 @@ enum BlockType {
 
   const BlockType(this.label);
   static BlockType nameOf(String name) {
-    return BlockType.values.firstWhere((element) => element.name == name);
+    return BlockType.values.firstWhere((element) => element.name == name,
+        orElse: () => BlockType.blockRequest);
   }
 }
 

@@ -301,14 +301,34 @@ class McpServer {
       response.headers.contentType = io.ContentType.json;
       response.headers.add('Access-Control-Allow-Origin', '*');
 
-      final Map<String, dynamic> jsonRpc = jsonDecode(content);
-      final result = await _processJsonRpc(jsonRpc);
-
-      if (result != null) {
-        response.write(jsonEncode(result));
+      final decoded = jsonDecode(content);
+      if (decoded is List) {
+        // 批量请求
+        final results = <Map<String, dynamic>>[];
+        for (var item in decoded) {
+          final result = await _processJsonRpc(Map<String, dynamic>.from(item as Map));
+          if (result != null) results.add(result);
+        }
+        if (results.isEmpty) {
+          response.statusCode = 202;
+        } else {
+          response.write(jsonEncode(results));
+        }
+      } else if (decoded is Map) {
+        final result = await _processJsonRpc(Map<String, dynamic>.from(decoded));
+        if (result != null) {
+          response.write(jsonEncode(result));
+        } else {
+          // 通知类消息不需要返回内容，返回 202 Accepted
+          response.statusCode = 202;
+        }
       } else {
-        // 通知类消息不需要返回内容，返回 202 Accepted
-        response.statusCode = 202;
+        response.statusCode = io.HttpStatus.badRequest;
+        response.write(jsonEncode({
+          'jsonrpc': '2.0',
+          'id': null,
+          'error': {'code': -32600, 'message': 'Invalid Request'}
+        }));
       }
       response.close();
     } catch (e) {
@@ -382,21 +402,32 @@ class McpServer {
         // 批量请求
         final results = <Map<String, dynamic>>[];
         for (var item in decoded) {
-          final result = await _processJsonRpc(Map<String, dynamic>.from(item));
+          final result = await _processJsonRpc(Map<String, dynamic>.from(item as Map));
           if (result != null) {
             results.add(result);
           }
         }
-        response.write(jsonEncode(results));
-      } else {
-        final Map<String, dynamic> jsonRpc = decoded;
-        final result = await _processJsonRpc(jsonRpc);
+        if (results.isEmpty) {
+          // 纯通知批：按规范不返回响应体
+          response.statusCode = 202;
+        } else {
+          response.write(jsonEncode(results));
+        }
+      } else if (decoded is Map) {
+        final result = await _processJsonRpc(Map<String, dynamic>.from(decoded));
 
         if (result != null) {
           response.write(jsonEncode(result));
         } else {
           response.statusCode = 202;
         }
+      } else {
+        response.statusCode = io.HttpStatus.badRequest;
+        response.write(jsonEncode({
+          'jsonrpc': '2.0',
+          'id': null,
+          'error': {'code': -32600, 'message': 'Invalid Request'}
+        }));
       }
       response.close();
     } catch (e) {
@@ -4044,7 +4075,8 @@ Body Encoding Rules:
           .toList();
     } else if (uri == 'proxypin://config/current') {
       var config = await Configuration.instance;
-      return config.toJson();
+      // 脱敏：不向前端/客户端暴露 aiApiKey、mTLS 私钥路径、上游代理口令
+      return Configuration.redactSecrets(config.toJson());
     } else if (uri == 'proxypin://breakpoints/rules') {
       var manager = await RequestBreakpointManager.instance;
       return {

@@ -1,0 +1,60 @@
+name: Build iOS (unsigned)
+
+# 上游 #560 扩展：产出 iOS 未签名安装包（.ipa），随 tag Release 一起发布。
+# 说明：CI 无 Apple 开发者证书，故使用 --no-codesign 构建；产物为未签名 .ipa，
+#       需由使用者用自己的证书/工具（如 sideloadly/AltStore/重签）安装。
+#       本工作流与 APK / 桌面流程彼此独立，互不阻塞。
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-ios:
+    name: Build iOS (unsigned)
+    continue-on-error: true
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned IPA
+        run: |
+          set -e
+          VER=$(grep '^version:' pubspec.yaml | head -1 | sed 's/version: //' | tr -d ' ')
+          APP="build/ios/iphoneos/Runner.app"
+          rm -rf Payload payload
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry "proxypin-${VER}-ios-unsigned.ipa" Payload
+
+      - name: Upload to Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: proxypin-*-ios-*.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: proxypin-ios-unsigned
+          path: proxypin-*-ios-*.ipa
+          retention-days: 30

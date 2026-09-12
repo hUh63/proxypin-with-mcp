@@ -75,6 +75,28 @@ class _PreferenceState extends State<Preference> {
     super.dispose();
   }
 
+  /// 上游 #756：切换 WebSocket 流量推送开关（整行可点，避免只能点很小的开关）
+  Future<void> _toggleWsTraffic(bool value) async {
+    final localizations = AppLocalizations.of(context)!;
+    setState(() => configuration.wsTrafficEnabled = value);
+    configuration.flushConfig();
+    final ok = await ProxyServer.current?.applyWsTraffic() ?? false;
+    if (value && !ok) {
+      // 启动失败（多为端口被占用）：回滚开关，避免"开着但没服务"
+      setState(() => configuration.wsTrafficEnabled = false);
+      configuration.flushConfig();
+    }
+    if (!mounted) return;
+    FlutterToastr.show(
+        !value
+            ? localizations.wsTrafficStopped
+            : ok
+                ? localizations.wsTrafficStarted('${configuration.wsTrafficPort}')
+                : localizations.wsTrafficStartFailed('${configuration.wsTrafficPort}'),
+        context);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
@@ -96,6 +118,7 @@ class _PreferenceState extends State<Preference> {
                 SizedBox(width: 100, child: Text("${localizations.language}: ", style: titleStyle)),
                 DropdownButton<Locale>(
                     value: appConfiguration.language,
+                    isExpanded: true,
                     onChanged: (Locale? value) => appConfiguration.language = value,
                     focusColor: Colors.transparent,
                     items: [
@@ -187,43 +210,25 @@ class _PreferenceState extends State<Preference> {
               // WebSocket 实时流量推送（上游 #756）
               ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text('WebSocket 流量推送', style: titleStyle),
+                  title: Text(localizations.wsTrafficPush, style: titleStyle),
                   subtitle: Text(
                       configuration.wsTrafficEnabled
                           ? (WsTrafficServer.instance.isRunning
-                              ? '外部工具 / AI 可订阅抓包流量：ws://127.0.0.1:${configuration.wsTrafficPort}'
-                                  '（已连接 ${WsTrafficServer.instance.clientCount}）'
-                              : '已开启，但抓包未运行：启动抓包后自动监听 ws://127.0.0.1:${configuration.wsTrafficPort}')
-                          : '开启后，外部工具 / AI 可通过 WebSocket 实时订阅抓包流量'
-                              '（默认端口 ${configuration.wsTrafficPort}），开关即时生效',
+                              ? localizations.wsTrafficSubtitleRunning(
+                                  '${configuration.wsTrafficPort}', '${WsTrafficServer.instance.clientCount}')
+                              : localizations.wsTrafficSubtitleNotRunning('${configuration.wsTrafficPort}'))
+                          : localizations.wsTrafficSubtitleOff('${configuration.wsTrafficPort}'),
                       style: subtitleStyle),
                   trailing: SwitchWidget(
                       scale: 0.75,
                       value: configuration.wsTrafficEnabled,
-                      onChanged: (value) async {
-                        setState(() => configuration.wsTrafficEnabled = value);
-                        configuration.flushConfig();
-                        final ok = await ProxyServer.current?.applyWsTraffic() ?? false;
-                        if (value && !ok) {
-                          // 启动失败（多为端口被占用）：回滚开关，避免"开着但没服务"
-                          setState(() => configuration.wsTrafficEnabled = false);
-                          configuration.flushConfig();
-                        }
-                        if (mounted) {
-                          FlutterToastr.show(
-                              !value
-                                  ? '已停止'
-                                  : ok
-                                      ? '已启动（端口 ${configuration.wsTrafficPort}）'
-                                      : '启动失败：端口 ${configuration.wsTrafficPort} 可能被占用',
-                              context);
-                        }
-                      })),
+                      onChanged: (value) => _toggleWsTraffic(value)),
+                  onTap: () => _toggleWsTraffic(!configuration.wsTrafficEnabled)),
               if (configuration.wsTrafficEnabled)
                 ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text('允许订阅端查询历史', style: titleStyle),
-                    subtitle: Text('客户端可通过 list_histories / get_history 命令读取历史会话', style: subtitleStyle),
+                    title: Text(localizations.wsTrafficHistory, style: titleStyle),
+                    subtitle: Text(localizations.wsTrafficHistoryDesc, style: subtitleStyle),
                     trailing: SwitchWidget(
                         scale: 0.75,
                         value: configuration.wsTrafficHistoryEnabled,
@@ -231,15 +236,20 @@ class _PreferenceState extends State<Preference> {
                           setState(() => configuration.wsTrafficHistoryEnabled = value);
                           configuration.flushConfig();
                           WsTrafficServer.instance.broadcastConfig();
-                        })),
+                        }),
+                    onTap: () {
+                      setState(() => configuration.wsTrafficHistoryEnabled = !configuration.wsTrafficHistoryEnabled);
+                      configuration.flushConfig();
+                      WsTrafficServer.instance.broadcastConfig();
+                    }),
               // 上游 #756：端口此前只能改配置文件（被占用时开关无法开启），这里提供图形化修改入口
               ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text('订阅端口', style: titleStyle),
+                  title: Text(localizations.wsTrafficPort, style: titleStyle),
                   subtitle: Text(
                       configuration.wsTrafficEnabled
-                          ? '当前监听 ${configuration.wsTrafficPort}，点击修改（将立刻重启监听）'
-                          : '当前端口 ${configuration.wsTrafficPort}，点击修改',
+                          ? localizations.wsTrafficPortListening('${configuration.wsTrafficPort}')
+                          : localizations.wsTrafficPortCurrent('${configuration.wsTrafficPort}'),
                       style: subtitleStyle),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text('${configuration.wsTrafficPort}',
@@ -259,9 +269,13 @@ class _PreferenceState extends State<Preference> {
                         setState(() => configuration.wsTrafficEnabled = false);
                         configuration.flushConfig();
                       }
-                      FlutterToastr.show(ok ? '端口已改为 $port 并重新监听' : '端口 $port 启动失败：可能被占用', context);
+                      FlutterToastr.show(
+                          ok
+                              ? localizations.wsTrafficPortChangedListening('$port')
+                              : localizations.wsTrafficPortChangedFailed('$port'),
+                          context);
                     } else if (mounted) {
-                      FlutterToastr.show('端口已改为 $port，开启后生效', context);
+                      FlutterToastr.show(localizations.wsTrafficPortChangedPending('$port'), context);
                     }
                     if (mounted) setState(() {});
                   }),
@@ -271,8 +285,8 @@ class _PreferenceState extends State<Preference> {
                 ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(Icons.usb, size: 18, color: Theme.of(context).colorScheme.primary),
-                    title: Text('便携模式已启用', style: titleStyle),
-                    subtitle: Text('数据（配置/历史/证书/备份）随程序目录存放：${_portableDir ?? ''}',
+                    title: Text(localizations.portableModeEnabled, style: titleStyle),
+                    subtitle: Text(localizations.portableModeDataDir('${_portableDir ?? ''}'),
                         style: subtitleStyle, maxLines: 2, overflow: TextOverflow.ellipsis)),
 
               SizedBox(height: 5),
@@ -310,6 +324,7 @@ class _PreferenceState extends State<Preference> {
     try {
       return DropdownButton<int>(
           value: appConfiguration.memoryCleanupThreshold,
+          isExpanded: true,
           onTap: () {
             memoryCleanupOpened = true;
           },

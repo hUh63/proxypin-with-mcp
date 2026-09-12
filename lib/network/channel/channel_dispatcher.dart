@@ -296,7 +296,11 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
 
     // Fallback: generic relay for unsupported body types
     buffer.add(decodeResult.forward ?? []);
-    relay(channelContext, channel, remoteChannel!);
+    if (remoteChannel == null) {
+      logger.w("[$channel] remoteChannel is null, drop response frame");
+      return;
+    }
+    relay(channelContext, channel, remoteChannel);
 
     if (decodeResult.data is HttpResponse) {
       var response = decodeResult.data as HttpResponse;

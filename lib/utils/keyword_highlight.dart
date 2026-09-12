@@ -48,10 +48,13 @@ class KeywordHighlights {
           return;
         }
         var map = jsonDecode(val);
+        var next = Map<Color, String>.from(_keywordsController.value);
         map.forEach((key, value) {
           var color = ColorMapping.getColor(key);
-          _keywordsController.value[color] = value;
+          next[color] = value;
         });
+        // 整体替换 value，触发 ValueNotifier 通知（原地修改 Map 不会通知监听者）
+        _keywordsController.value = next;
       });
     }
     _keywordsController.addListener(listener);

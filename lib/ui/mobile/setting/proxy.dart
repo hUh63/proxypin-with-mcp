@@ -80,7 +80,7 @@ class _ExternalProxyDialogState extends State<ExternalProxyDialog> {
               const SizedBox(height: 10),
               // 上游 #825：上游代理协议（HTTP 代理 / SOCKS5）
               Row(children: [
-                const Text('协议：', style: TextStyle(fontWeight: FontWeight.w300)),
+                Text('${localizations.externalProxyProtocol}: ', style: const TextStyle(fontWeight: FontWeight.w300)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<String>(
@@ -88,17 +88,17 @@ class _ExternalProxyDialogState extends State<ExternalProxyDialog> {
                     isExpanded: true,
                     isDense: true,
                     decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                           value: 'http',
-                          child: Text('HTTP 代理',
+                          child: Text(localizations.externalProxyHttp,
                               maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false,
-                              style: TextStyle(fontSize: 13))),
+                              style: const TextStyle(fontSize: 13))),
                       DropdownMenuItem(
                           value: 'socks5',
                           child: Text('SOCKS5',
                               maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false,
-                              style: TextStyle(fontSize: 13))),
+                              style: const TextStyle(fontSize: 13))),
                     ],
                     onChanged: (val) => setState(() => externalProxy.protocol = val ?? 'http'),
                   ),

@@ -388,7 +388,9 @@ class HttpResponseHandler extends ChannelHandler<HttpResponse> {
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, HttpResponse msg) async {
     // log.i("[${channel.id}] Response $msg");
-    _completer.complete(msg);
+    if (!_completer.isCompleted) {
+      _completer.complete(msg);
+    }
   }
 
   Future<HttpResponse> getResponse(Duration duration) {

@@ -190,8 +190,23 @@ class Configuration {
     HostFilter.whitelist.toJson();
     HostFilter.blacklist.toJson();
     var json = jsonEncode(toJson());
-    logger.d('Refresh configuration file $runtimeType ${toJson()}');
+    logger.d('Refresh configuration file $runtimeType ${redactSecrets(toJson())}');
     file.writeAsString(json);
+  }
+
+  /// 脱敏：掩码敏感字段，避免写入日志或经 MCP 资源泄露（密钥 / 私钥路径 / 上游代理口令）
+  static Map<String, dynamic> redactSecrets(Map<String, dynamic> json) {
+    var out = Map<String, dynamic>.from(json);
+    var apiKey = out['aiApiKey'];
+    if (apiKey is String && apiKey.isNotEmpty) out['aiApiKey'] = '***';
+    if (out['mtlsKeyPath'] != null) out['mtlsKeyPath'] = '***';
+    var ext = out['externalProxy'];
+    if (ext is Map) {
+      var copy = Map<String, dynamic>.from(ext);
+      if (copy['password'] != null) copy['password'] = '***';
+      out['externalProxy'] = copy;
+    }
+    return out;
   }
 
   /// 加载配置文件

@@ -6,6 +6,7 @@
  */
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 
 /// 编辑 WebSocket 流量推送端口；确认返回新端口，取消返回 null。
 Future<int?> showWsTrafficPortDialog(BuildContext context, {required int currentPort}) async {
@@ -14,40 +15,47 @@ Future<int?> showWsTrafficPortDialog(BuildContext context, {required int current
 
   final result = await showDialog<int>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('订阅端口'),
-      content: Form(
-        key: formKey,
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('外部工具 / AI 通过 ws://127.0.0.1:<端口> 订阅抓包流量。'
-              '端口被占用时请改用其他端口（建议 1024~65535）。', style: TextStyle(fontSize: 12, height: 1.4)),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: '端口', border: OutlineInputBorder(), isDense: true),
-            validator: (v) {
-              final port = int.tryParse(v?.trim() ?? '');
-              if (port == null) return '请输入数字端口';
-              if (port < 1024 || port > 65535) return '端口需在 1024~65535 之间';
-              return null;
-            },
+    builder: (context) {
+      final localizations = AppLocalizations.of(context)!;
+      return AlertDialog(
+        title: Text(localizations.wsTrafficPort),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(localizations.wsTrafficPortDialogDesc, style: const TextStyle(fontSize: 12, height: 1.4)),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                    labelText: localizations.wsTrafficPortLabel,
+                    border: const OutlineInputBorder(),
+                    isDense: true),
+                validator: (v) {
+                  final port = int.tryParse(v?.trim() ?? '');
+                  if (port == null) return localizations.wsTrafficPortInvalidNumber;
+                  if (port < 1024 || port > 65535) return localizations.wsTrafficPortOutOfRange;
+                  return null;
+                },
+              ),
+            ]),
           ),
-        ]),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-        FilledButton(
-          onPressed: () {
-            if (formKey.currentState?.validate() != true) return;
-            Navigator.pop(context, int.parse(controller.text.trim()));
-          },
-          child: const Text('保存'),
         ),
-      ],
-    ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() != true) return;
+              Navigator.pop(context, int.parse(controller.text.trim()));
+            },
+            child: Text(localizations.save),
+          ),
+        ],
+      );
+    },
   );
   return result;
 }

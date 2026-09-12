@@ -70,7 +70,9 @@ class HttpParse {
           break;
         }
         var header = _splitHeader(line);
-        headers.add(header[0], header[1]);
+        if (header.length >= 2) {
+          headers.add(header[0], header[1]);
+        }
       }
     }
 
@@ -90,7 +92,7 @@ class HttpParse {
       if (data[i] == HttpConstants.colon) {
         headers.add(String.fromCharCodes(data.sublist(0, i)));
 
-        if (data[i + 1] == HttpConstants.sp) {
+        if (i + 1 < data.length && data[i + 1] == HttpConstants.sp) {
           headers.add(String.fromCharCodes(data.sublist(i + 2)));
         } else {
           headers.add(String.fromCharCodes(data.sublist(i + 1)));

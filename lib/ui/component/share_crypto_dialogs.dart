@@ -6,35 +6,40 @@
  */
 import 'package:flutter/material.dart';
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/secure_share.dart';
 
 /// 选择分享方式：返回 true 表示加密分享，false 表示明文，null 表示取消
-Future<bool?> showShareModeDialog(BuildContext context, {String title = '分享方式'}) {
+Future<bool?> showShareModeDialog(BuildContext context, {String? title}) {
   return showDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('明文分享：接收方可直接导入，适合自己备份或可信环境。', style: TextStyle(fontSize: 12, height: 1.4)),
-        const SizedBox(height: 8),
-        const Text('加密分享：设置口令后接收方需输入相同口令才能导入；口令不同或内容被改动将无法解密。',
-            style: TextStyle(fontSize: 12, height: 1.4)),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('明文分享')),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('加密分享')),
-      ],
-    ),
+    builder: (context) {
+      final localizations = AppLocalizations.of(context)!;
+      return AlertDialog(
+        title: Text(title ?? localizations.share),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(localizations.shareModePlainDesc, style: const TextStyle(fontSize: 12, height: 1.4)),
+            const SizedBox(height: 8),
+            Text(localizations.shareModeEncryptedDesc, style: const TextStyle(fontSize: 12, height: 1.4)),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(localizations.shareModePlain)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(localizations.shareModeEncrypted)),
+        ],
+      );
+    },
   );
 }
 
 /// 输入分享口令；[confirm] 为 true 时要求两次输入一致。取消返回 null
 Future<String?> showSharePasswordDialog(
   BuildContext context, {
-  required String title,
+  String? title,
   String? subtitle,
   bool confirm = false,
-  String confirmButtonText = '确定',
+  String? confirmButtonText,
 }) async {
   final controller = TextEditingController();
   final confirmController = TextEditingController();
@@ -44,51 +49,59 @@ Future<String?> showSharePasswordDialog(
   final result = await showDialog<String>(
     context: context,
     builder: (context) => StatefulBuilder(builder: (context, setState) {
+      final localizations = AppLocalizations.of(context)!;
       return AlertDialog(
-        title: Text(title),
+        title: Text(title ?? localizations.password),
         content: Form(
           key: formKey,
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (subtitle != null) ...[
-              Text(subtitle, style: const TextStyle(fontSize: 12, height: 1.4)),
-              const SizedBox(height: 10),
-            ],
-            TextFormField(
-              controller: controller,
-              obscureText: obscure,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: '口令',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                helperText: '至少 ${SecureShare.minPasswordLength} 位',
-                suffixIcon: IconButton(
-                  icon: Icon(obscure ? Icons.visibility_off : Icons.visibility, size: 18),
-                  tooltip: obscure ? '显示' : '隐藏',
-                  onPressed: () => setState(() => obscure = !obscure),
-                ),
-              ),
-              validator: (v) => (v == null || v.length < SecureShare.minPasswordLength) ? '口令至少 ${SecureShare.minPasswordLength} 位' : null,
-            ),
-            if (confirm) ...[
-              const SizedBox(height: 10),
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (subtitle != null) ...[
+                Text(subtitle, style: const TextStyle(fontSize: 12, height: 1.4)),
+                const SizedBox(height: 10),
+              ],
               TextFormField(
-                controller: confirmController,
+                controller: controller,
                 obscureText: obscure,
-                decoration: const InputDecoration(labelText: '确认口令', border: OutlineInputBorder(), isDense: true),
-                validator: (v) => v != controller.text ? '两次输入不一致' : null,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: localizations.password,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  helperText: localizations.sharePasswordMinLength('${SecureShare.minPasswordLength}'),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscure ? Icons.visibility_off : Icons.visibility, size: 18),
+                    tooltip: obscure ? localizations.sharePasswordShow : localizations.sharePasswordHide,
+                    onPressed: () => setState(() => obscure = !obscure),
+                  ),
+                ),
+                validator: (v) => (v == null || v.length < SecureShare.minPasswordLength)
+                    ? localizations.sharePasswordMinLength('${SecureShare.minPasswordLength}')
+                    : null,
               ),
-            ],
-          ]),
+              if (confirm) ...[
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: confirmController,
+                  obscureText: obscure,
+                  decoration: InputDecoration(
+                      labelText: localizations.sharePasswordConfirm,
+                      border: const OutlineInputBorder(),
+                      isDense: true),
+                  validator: (v) => v != controller.text ? localizations.sharePasswordMismatch : null,
+                ),
+              ],
+            ]),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
           FilledButton(
             onPressed: () {
               if (formKey.currentState?.validate() != true) return;
               Navigator.pop(context, controller.text);
             },
-            child: Text(confirmButtonText),
+            child: Text(confirmButtonText ?? localizations.confirm),
           ),
         ],
       );

@@ -218,3 +218,34 @@
 ## 详情页实时刷新
 
 - 抓包详情页打开期间请求才完成时，==响应内容自动刷新==，不再停留在"未响应"（上游 #922）；配合请求/响应 Tab 查看完整报文
+
+## 多平台安装包（Windows / macOS / iOS / Linux）
+
+- 推送 `v*` tag 后自动产出多平台安装包并附加到对应 Release：
+  - **Android**：4 个 ABI 的 APK（`build-apk.yml`）
+  - **Linux**：`proxypin-<版本>-linux-amd64.deb`（`build-deb.yml`；arm64 待 Flutter 官方 Linux arm64 SDK）
+  - **Windows**：`proxypin-<版本>-windows-x64.zip`（免安装，解压即用，`build-desktop.yml`）
+  - **macOS**：`proxypin-<版本>-macos.zip`（含 `ProxyPin.app`，未签名，首次打开需右键→打开，`build-desktop.yml`）
+  - **iOS**：`proxypin-<版本>-ios-unsigned.ipa`（未签名，需自行用证书重签安装，`build-ios.yml`）
+- 各工作流彼此独立并带 `continue-on-error`：==任一平台构建失败都不会影响其它产物发布==
+- 排查要点：`continue-on-error` 会掩盖单个 job 失败，需到 Actions 里逐个 job 看步骤状态；Linux 桌面构建依赖 `libayatana-appindicator3-dev`（`tray_manager` 需要）
+- 实现位置：`.github/workflows/build-apk.yml`、`build-deb.yml`、`build-desktop.yml`、`build-ios.yml`
+
+## 重写规则列表排序（最新在上）
+
+- 重写规则列表中，==最新添加 / 导入的规则显示在最上面==，不必再往下翻找（上游 #926）
+- 说明：==仅改变显示顺序，不改变存储顺序==——规则的匹配语义与导出顺序保持不变，不会因排序影响命中结果
+- 桌面端与移动端一致；行内开关、双击编辑、右键菜单、多选导出 / 删除仍按真实规则索引工作
+
+## 国际化（多语言）覆盖
+
+- 新功能界面（WebSocket 流量推送、加密分享、SOCKS5 协议、便携模式提示等）已全部接入多语言，跟随系统语言或「偏好设置 → 语言」切换
+- 语言资源：`lib/l10n/app_en.arb`（模板）、`app_zh.arb`、`app_zh_Hant.arb` 为主，其余语言缺失键自动回退英文
+- ==构建期自动生成==：`pubspec.yaml` 中 `generate: true`，`flutter build` 时会由 gen-l10n 从 ARB 重新生成 `app_localizations*.dart`，因此新增文案只需改 ARB 并加代码引用
+- 开发提示：新增界面文案请在 ARB 中加键（英文模板必填），并用 `AppLocalizations.of(context)!.<key>` 引用，不要在代码里写死中文
+
+## MCP 配置资源脱敏
+
+- 通过 MCP 读取 `proxypin://config/current` 时，==敏感字段（AI API Key、mTLS 私钥路径、上游代理口令）已脱敏为 `***`==，避免经 AI 对话 / SSE 泄露
+- 配置文件刷新日志同样脱敏
+- 实现位置：`lib/network/bin/configuration.dart`（`redactSecrets`）、`lib/network/mcp/mcp_server.dart`（`_readResource`）

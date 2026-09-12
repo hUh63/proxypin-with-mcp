@@ -95,12 +95,14 @@ class _SearchFieldState extends State<SearchField> {
             if (Platforms.isMobile()) SizedBox(width: 10),
             InkWell(
               onTap: widget.searchController.movePrevious,
-              child: const Icon(Icons.north, size: 17),
+              customBorder: const CircleBorder(),
+              child: const Padding(padding: EdgeInsets.all(13), child: Icon(Icons.north, size: 18)),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 4),
             InkWell(
               onTap: widget.searchController.moveNext,
-              child: const Icon(Icons.south, size: 17),
+              customBorder: const CircleBorder(),
+              child: const Padding(padding: EdgeInsets.all(13), child: Icon(Icons.south, size: 18)),
             ),
             const SizedBox(width: 3),
             IconButton(

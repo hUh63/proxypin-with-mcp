@@ -192,7 +192,12 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
         break;
       case FrameType.data:
         //处理DATA帧
-        var message = getMessage(channelContext, frameHeader)!;
+        var message = getMessage(channelContext, frameHeader);
+        if (message == null) {
+          // 流上下文不存在（HEADERS 未到或已被 RST 清理）：无法解析，直接转发原始 DATA 帧
+          result.forward = List.from(frameHeader.encode())..addAll(framePayload);
+          break;
+        }
         bool isSseResponse =
             message is HttpResponse && message.headers.contentType.toLowerCase().startsWith('text/event-stream');
         if (isSseResponse) {

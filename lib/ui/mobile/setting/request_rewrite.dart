@@ -105,7 +105,9 @@ class _MobileRequestRewriteState extends State<MobileRequestRewrite> {
       // 上游 #133：加密分享的内容需先输入口令解密
       if (SecureShare.isEncrypted(text)) {
         final password = await showSharePasswordDialog(context,
-            title: '输入分享口令', subtitle: '该文件已加密，请输入分享时设置的口令。', confirmButtonText: '解密');
+            title: localizations.sharePasswordInputTitle,
+            subtitle: localizations.sharePasswordInputSubtitle,
+            confirmButtonText: localizations.shareDecrypt);
         if (password == null) return;
         text = SecureShare.decrypt(text, password);
       }
@@ -190,11 +192,20 @@ class _RequestRuleListState extends State<RequestRuleList> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Container(width: 60, padding: const EdgeInsets.only(left: 10), child: Text(localizations.name)),
-                    SizedBox(width: 46, child: Text(localizations.enable, textAlign: TextAlign.center)),
+                    Container(
+                        width: 60,
+                        padding: const EdgeInsets.only(left: 10),
+                        child: Text(localizations.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    SizedBox(
+                        width: 48,
+                        child: Text(localizations.enable,
+                            maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
                     const VerticalDivider(),
                     const Expanded(child: Text("URL")),
-                    SizedBox(width: 60, child: Text(localizations.action, textAlign: TextAlign.center)),
+                    SizedBox(
+                        width: 60,
+                        child: Text(localizations.action,
+                            maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
                   ],
                 ),
                 const Divider(thickness: 0.5),
@@ -248,7 +259,10 @@ class _RequestRuleListState extends State<RequestRuleList> {
   List<Widget> rows(List<RequestRewriteRule> list) {
     var primaryColor = Theme.of(context).colorScheme.primary;
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-    return List.generate(list.length, (index) {
+    // 上游 #926：最新添加的规则显示在最上面（仅改显示顺序，不改存储顺序，避免影响匹配语义）
+    final total = list.length;
+    return List.generate(total, (displayIndex) {
+      final index = total - 1 - displayIndex;
       return InkWell(
           highlightColor: Colors.transparent,
           splashColor: Colors.transparent,
@@ -271,30 +285,34 @@ class _RequestRuleListState extends State<RequestRuleList> {
                   : index.isEven
                       ? Colors.grey.withValues(alpha: 0.1)
                       : null,
-              height: 45,
-              padding: const EdgeInsets.all(5),
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
               child: Row(
                 children: [
                   SizedBox(
                       width: 60,
                       child: Text(list[index].name ?? "",
-                          overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                          maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
                   SizedBox(
-                      width: 35,
-                      child: SwitchWidget(
-                          scale: 0.65,
-                          value: list[index].enabled,
-                          onChanged: (val) {
-                            list[index].enabled = val;
-                            changed = true;
-                          })),
-                  const SizedBox(width: 20),
-                  Expanded(child: Text(list[index].url, style: const TextStyle(fontSize: 13))),
-                  const SizedBox(width: 3),
+                      width: 48,
+                      child: Center(
+                          child: SwitchWidget(
+                              scale: 0.8,
+                              value: list[index].enabled,
+                              onChanged: (val) {
+                                list[index].enabled = val;
+                                changed = true;
+                              }))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Text(list[index].url,
+                          maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                  const SizedBox(width: 6),
                   SizedBox(
                       width: 60,
                       child: Text(!isCN ? list[index].type.name.camelCaseToSpaced() : list[index].type.label,
-                          textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
+                          maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 13))),
                 ],
               )));
     });
@@ -389,17 +407,20 @@ class _RequestRuleListState extends State<RequestRuleList> {
     var content = plain;
 
     // 上游 #133：可选加密分享（口令保护）
-    final encryptShare = await showShareModeDialog(context, title: '分享重写规则');
+    final encryptShare = await showShareModeDialog(context, title: localizations.shareRuleTitle);
     if (encryptShare == null) return;
     if (encryptShare) {
       final password = await showSharePasswordDialog(context,
-          title: '设置分享口令', subtitle: '接收方导入时需要输入相同口令；口令丢失将无法恢复内容。', confirm: true, confirmButtonText: '加密分享');
+          title: localizations.shareSetPasswordTitle,
+          subtitle: localizations.shareSetPasswordSubtitle,
+          confirm: true,
+          confirmButtonText: localizations.shareModeEncrypted);
       if (password == null) return;
       try {
         content = SecureShare.encrypt(plain, password);
         fileName = 'proxypin-rewrites.enc';
       } catch (e) {
-        if (context.mounted) FlutterToastr.show('加密失败：$e', context);
+        if (context.mounted) FlutterToastr.show(localizations.shareEncryptFailed('$e'), context);
         return;
       }
     }

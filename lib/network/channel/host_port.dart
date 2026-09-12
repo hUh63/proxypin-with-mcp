@@ -111,7 +111,12 @@ class HostAndPort {
     if (port != null) {
       bool isSsl = port == "443" || ssl == true;
       scheme ??= isSsl ? httpsScheme : httpScheme;
-      return HostAndPort(scheme, host, int.parse(port), ipv6: ipv6);
+      var portNum = int.tryParse(port);
+      if (portNum != null && portNum >= 1 && portNum <= 65535) {
+        return HostAndPort(scheme, host, portNum, ipv6: ipv6);
+      }
+      // 端口非法（非数字/越界）：按 scheme 默认端口处理，避免 FormatException
+      return HostAndPort(scheme, host, scheme == httpScheme ? 80 : 443, ipv6: ipv6);
     }
     scheme ??= (ssl == true ? httpsScheme : httpScheme);
     return HostAndPort(scheme, host, scheme == httpScheme ? 80 : 443, ipv6: ipv6);

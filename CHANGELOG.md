@@ -1,5 +1,59 @@
 # Changelog
 
+## v1.22.50 (2026-09-13)
+
+### 国际化（i18n）覆盖
+
+- 新功能界面此前为中文硬编码，现全部接入 l10n（`app_en` / `app_zh` / `app_zh_Hant` 三套，其余语言自动回退英文）：
+  - WebSocket 流量推送设置区块与订阅端口对话框（上游 #756 后续）
+  - 重写规则加密分享：分享方式 / 设置口令 / 输入口令对话框与导入导出调用点（上游 #133）
+  - 上游代理协议（HTTP / SOCKS5）标签（上游 #825）
+  - 便携模式提示（上游 #285）
+- 补齐历史遗留缺失键：`selectAll`、`profileDownload`；本轮新增 40 个键
+- 说明：构建期 `generate: true` 由 gen-l10n 自动再生成 `app_localizations*.dart`
+
+### 反人类操作与长文本 / 点击区域统一梳理
+
+- 搜索栏「上一个 / 下一个」点击热区由 17dp 扩大到 44dp（`InkWell` + padding，圆形涟漪）
+- 多选操作栏高度 36→44dp，避免压扁 IconButton 的默认触摸高度
+- 重写规则列表（移动端）行高 45→48dp、开关列宽 35→48dp、缩放 0.65→0.8，开关更易点中；名称 / URL / 类型列补 `maxLines:1 + ellipsis`
+- 重写规则列表（桌面端）名称 / 类型列补 `ellipsis`，开关列加宽，与移动端对齐
+- 重写规则表头列宽适配本地化文本并加省略号；语言 / 内存清理下拉框加 `isExpanded: true`
+- 通用确认对话框内容改为可滚动，长文件名 / 长规则名不再溢出
+- 脚本工作流页脚本预览底色改用主题色 `surfaceContainerHighest`，修复暗色模式浅底浅字不可读；依赖 / 变量 Chip 改用 `primaryContainer` / `secondaryContainer` 语义色
+
+### 隐藏 Bug 修复（代码审查发现）
+
+- HTTP/1 头解析：`_splitHeader` 处理「`X-Foo:` 无值」与「无冒号行」时越界 / 空列表，修复 `RangeError`（`http_parser.dart`）
+- HTTP/2：DATA 帧在流上下文缺失（HEADERS 未到或被 RST 清理）时解包崩溃，改为直接转发原始帧（`h2_codec.dart`）
+- 通道分发：`remoteChannel!` 空解包崩溃，改为判空丢弃并记录日志（`channel_dispatcher.dart`）
+- `HostAndPort.of`：端口 `int.parse` 改 `int.tryParse` 并校验范围，非法端口回退默认端口（`host_port.dart`）
+- 响应处理器 `Completer` 二次 `complete` 抛未捕获异常，改为 `isCompleted` 守卫（`http_client.dart`）
+- 请求屏蔽配置 `flushConfig` 未 `await` 写盘，可能静默丢失规则；`BlockType.nameOf` 未知类型崩溃，补 `orElse`
+- 关键字高亮恢复时原地改 Map 不触发 `ValueNotifier`，改为整体替换（`keyword_highlight.dart`）
+- `Strings.splitFirst` / `trimWrap` 按 pattern / wrap 实际长度切分（`lang.dart`）
+- AI 分析文本截断按 UTF-16 代理对边界处理，避免半字符乱码（`ai_analyzer.dart`）
+- `ip.dart` 移除遗留调试 `main()`，网卡为空时回环兜底，避免 `StateError`
+
+### MCP 服务修复
+
+- **配置资源脱敏**：`resources/read proxypin://config/current` 不再返回 `aiApiKey`、mTLS 私钥路径、上游代理口令（新增 `Configuration.redactSecrets`）；配置文件刷新日志同样脱敏
+- **`/messages` 端点**：修复 JSON-RPC 批量数组导致的崩溃；支持批量，非对象请求返回标准 `-32600`
+- **`/mcp` 端点**：批量结果为空返回 202；非对象 JSON 返回标准 `-32600` 错误信封
+
+### 上游 issue 核对
+
+- 已修并核对：#923（URL 编码中文域名 → Punycode）、#925（重写规则正则多分组）、#927（Gradle 8.14 / AGP 8.11.1 / Kotlin 2.2.20 已达标，file_picker 12 API 兼容，CI 构建通过）
+- 本轮实现：#926（重写规则列表最新显示在最上面；仅改显示顺序，不影响匹配语义）
+- #928 标题为 "Lilbo"，内容无意义，不予实现
+- #560：Linux `.deb`（amd64）已产出；本轮补齐 **Windows / macOS / iOS** 产物
+
+### 多平台产物（上游 #560）
+
+- 新增 `.github/workflows/build-desktop.yml`：Windows（`proxypin-<ver>-windows-x64.zip`）与 macOS（`proxypin-<ver>-macos.zip`，含 ProxyPin.app）
+- 新增 `.github/workflows/build-ios.yml`：iOS 未签名 `.ipa`（`flutter build ios --no-codesign` 后按 Payload 结构打包）
+- 三个工作流与 APK 流程相互独立（`continue-on-error`），任一平台失败不影响 Android 产物
+
 ## v1.22.49 (2026-09-12)
 
 ### 上游 issue 落地审计（核查"做了的是否真的做了"）

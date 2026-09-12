@@ -172,7 +172,9 @@ class RequestRewriteState extends State<RequestRewriteWidget> {
       // 上游 #133：加密分享的内容需先输入口令解密
       if (SecureShare.isEncrypted(text)) {
         final password = await showSharePasswordDialog(context,
-            title: '输入分享口令', subtitle: '该文件已加密，请输入分享时设置的口令。', confirmButtonText: '解密');
+            title: localizations.sharePasswordInputTitle,
+            subtitle: localizations.sharePasswordInputSubtitle,
+            confirmButtonText: localizations.shareDecrypt);
         if (password == null) return;
         text = SecureShare.decrypt(text, password);
       }
@@ -313,7 +315,10 @@ class _RequestRuleListState extends State<RequestRuleList> {
     var primaryColor = Theme.of(context).colorScheme.primary;
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
-    return List.generate(list.length, (index) {
+    // 上游 #926：最新添加的规则显示在最上面（仅改显示顺序，不改存储顺序，避免影响匹配语义）
+    final total = list.length;
+    return List.generate(total, (displayIndex) {
+      final index = total - 1 - displayIndex;
       return InkWell(
           highlightColor: Colors.transparent,
           splashColor: Colors.transparent,
@@ -351,23 +356,28 @@ class _RequestRuleListState extends State<RequestRuleList> {
               padding: const EdgeInsets.all(5),
               child: Row(
                 children: [
-                  SizedBox(width: 130, child: Text(list[index].name ?? '', style: const TextStyle(fontSize: 13))),
                   SizedBox(
-                      width: 40,
-                      child: SwitchWidget(
-                          scale: 0.6,
-                          value: list[index].enabled,
-                          onChanged: (val) {
-                            list[index].enabled = val;
-                            MultiWindow.invokeRefreshRewrite(Operation.update, index: index, rule: list[index]);
-                          })),
-                  const SizedBox(width: 20),
+                      width: 130,
+                      child: Text(list[index].name ?? '',
+                          maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                  SizedBox(
+                      width: 48,
+                      child: Center(
+                          child: SwitchWidget(
+                              scale: 0.7,
+                              value: list[index].enabled,
+                              onChanged: (val) {
+                                list[index].enabled = val;
+                                MultiWindow.invokeRefreshRewrite(Operation.update, index: index, rule: list[index]);
+                              }))),
+                  const SizedBox(width: 12),
                   Expanded(
-                      child:
-                          Text(list[index].url, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                      child: Text(list[index].url,
+                          maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
                   SizedBox(
                       width: 100,
                       child: Text(isCN ? list[index].type.label : list[index].type.name.camelCaseToSpaced(),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
                 ],
               )));
@@ -391,20 +401,20 @@ class _RequestRuleListState extends State<RequestRuleList> {
     String fileName = 'proxypin-rewrites.config';
 
     // 上游 #133：可选加密分享（口令保护）
-    final encryptShare = await showShareModeDialog(context, title: '分享重写规则');
+    final encryptShare = await showShareModeDialog(context, title: localizations.shareRuleTitle);
     if (encryptShare == null) return;
     if (encryptShare) {
       final password = await showSharePasswordDialog(context,
-          title: '设置分享口令',
-          subtitle: '接收方导入时需要输入相同口令；口令丢失将无法恢复内容。',
+          title: localizations.shareSetPasswordTitle,
+          subtitle: localizations.shareSetPasswordSubtitle,
           confirm: true,
-          confirmButtonText: '加密分享');
+          confirmButtonText: localizations.shareModeEncrypted);
       if (password == null) return;
       try {
         content = SecureShare.encrypt(content, password);
         fileName = 'proxypin-rewrites.enc';
       } catch (e) {
-        if (mounted) FlutterToastr.show('加密失败：$e', context);
+        if (mounted) FlutterToastr.show(localizations.shareEncryptFailed('$e'), context);
         return;
       }
     }

@@ -295,7 +295,7 @@ class _ScriptWorkflowManagerPageState extends State<ScriptWorkflowManagerPage> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[100],
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -314,8 +314,11 @@ class _ScriptWorkflowManagerPageState extends State<ScriptWorkflowManagerPage> {
                                     runSpacing: 4,
                                     children: node.dependencies
                                         .map((dep) => Chip(
-                                              label: Text(dep, style: const TextStyle(fontSize: 12, color: Colors.white)),
-                                              backgroundColor: Colors.blue,
+                                              label: Text(dep,
+                                                  style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                                             ))
                                         .toList(),
                                   ),
@@ -328,8 +331,11 @@ class _ScriptWorkflowManagerPageState extends State<ScriptWorkflowManagerPage> {
                                     runSpacing: 4,
                                     children: node.variables.entries
                                         .map((e) => Chip(
-                                              label: Text('${e.key}={{${e.value}}}', style: const TextStyle(fontSize: 12)),
-                                              backgroundColor: Colors.green[100],
+                                              label: Text('${e.key}={{${e.value}}}',
+                                                  style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Theme.of(context).colorScheme.onSecondaryContainer)),
+                                              backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
                                             ))
                                         .toList(),
                                   ),

@@ -1,0 +1,92 @@
+name: Build Desktop (Windows / macOS)
+
+# 上游 #560 扩展：产出 Windows 与 macOS 桌面版安装包，随 tag Release 一起发布。
+# Linux（.deb）由 build-deb.yml 负责；本工作流与 APK 流程彼此独立，互不阻塞。
+#
+# 产物：
+#   Windows：proxypin-<version>-windows-x64.zip（免安装，解压即可运行）
+#   macOS  ：proxypin-<version>-macos.zip（ProxyPin.app，未签名，首次打开需右键→打开）
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    name: Build ${{ matrix.name }}
+    # 桌面端构建独立实验，不阻塞其它产物
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            os: windows-latest
+          - name: macos
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Enable desktop platform
+        run: |
+          flutter config --enable-windows-desktop
+          flutter config --enable-macos-desktop
+
+      - name: Build Windows
+        if: matrix.name == 'windows'
+        run: flutter build windows --release
+
+      - name: Package Windows (zip)
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          $ver = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$').Matches.Groups[1].Value.Trim()
+          $dir = "build/windows/x64/runner/Release"
+          Compress-Archive -Path "$dir/*" -DestinationPath "proxypin-$ver-windows-x64.zip"
+
+      - name: Build macOS
+        if: matrix.name == 'macos'
+        run: flutter build macos --release
+
+      - name: Package macOS (zip)
+        if: matrix.name == 'macos'
+        run: |
+          set -e
+          VER=$(grep '^version:' pubspec.yaml | head -1 | sed 's/version: //' | tr -d ' ')
+          APP="build/macos/Build/Products/Release/ProxyPin.app"
+          if [ ! -d "$APP" ]; then APP=$(ls -d build/macos/Build/Products/Release/*.app | head -1); fi
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "proxypin-${VER}-macos.zip"
+
+      - name: Upload to Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            proxypin-*-windows-*.zip
+            proxypin-*-macos.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: proxypin-desktop-${{ matrix.name }}
+          path: |
+            proxypin-*-windows-*.zip
+            proxypin-*-macos.zip
+          retention-days: 30

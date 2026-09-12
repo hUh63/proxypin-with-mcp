@@ -87,15 +87,18 @@ class Strings {
   static MapEntry<String, String>? splitFirst(String str, Pattern pattern) {
     var index = str.indexOf(pattern);
     if (index > 0) {
-      return MapEntry(str.substring(0, index), str.substring(index + 1));
+      // 用 pattern 的实际匹配长度切分，兼容多字符 pattern
+      var end = pattern.matchAsPrefix(str, index)?.end ?? index + 1;
+      return MapEntry(str.substring(0, index), str.substring(end));
     }
 
     return null;
   }
 
   static String trimWrap(String str, String wrap) {
-    if (str.startsWith(wrap) && str.endsWith(wrap)) {
-      return str.substring(1, str.length - 1);
+    if (wrap.isNotEmpty && str.startsWith(wrap) && str.endsWith(wrap) && str.length >= wrap.length * 2) {
+      // 按 wrap 的实际长度去除首尾包裹
+      return str.substring(wrap.length, str.length - wrap.length);
     }
     return str;
   }

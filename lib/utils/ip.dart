@@ -1,18 +1,5 @@
 import 'dart:io';
 
-void main() {
-  NetworkInterface.list(type: InternetAddressType.IPv4).then((interfaces) {
-    for (var interface in interfaces) {
-      print(interface.name);
-      for (var address in interface.addresses) {
-        print("  ${address.address}");
-        print("  ${address.host}");
-        print("  ${address.type}");
-      }
-    }
-  });
-}
-
 String? ip;
 
 /// 获取本机ip (en0 or WLAN)优先
@@ -33,7 +20,13 @@ Future<InternetAddress> localAddress() async {
     interfaces.sort((a, b) {
       return weight(a) - weight(b);
     });
-    return interfaces.first.addresses.first;
+    // 兜底：无可用网卡时返回回环地址，避免 StateError: No element
+    for (var interface in interfaces) {
+      if (interface.addresses.isNotEmpty) {
+        return interface.addresses.first;
+      }
+    }
+    return InternetAddress.loopbackIPv4;
   });
 }
 
@@ -57,8 +50,10 @@ Future<List<String>> localIps({bool readCache = true}) async {
 
   ipList = [];
   for (var element in list) {
-    if (!ipList!.contains(element.addresses.first.address)) {
-      ipList?.add(element.addresses.first.address);
+    if (element.addresses.isEmpty) continue;
+    var address = element.addresses.first.address;
+    if (!ipList!.contains(address)) {
+      ipList!.add(address);
     }
   }
   _ipListTime = DateTime.now();
