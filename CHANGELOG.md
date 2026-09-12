@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.22.47 (2026-09-12)
+
+### 新增：Linux 安装包（arm64 / amd64，上游 #560）
+
+- 新增独立工作流 `.github/workflows/build-deb.yml`：推送 tag 时构建 Linux 桌面版并打包 `.deb`，自动附加到对应 Release
+  - 双架构矩阵：**arm64**（`ubuntu-24.04-arm` runner）与 **amd64**
+  - 包内容：`/opt/proxypin`（Flutter bundle）+ 桌面快捷方式；声明依赖 `libgtk-3-0`、`ca-certificates`
+  - 与 APK 构建流程**完全独立**（`continue-on-error` + 独立 workflow 文件）：即使某个架构的桌面构建失败，Android 产物照常发布，不会出现"因 Linux 失败而整版不发"的情况
+- 说明：Linux 桌面链路为实验性支持，首次接入后按 CI 结果迭代；产物只在 tag 构建时上传 Release
+
 ## v1.22.46 (2026-09-12)
 
 ### 新功能：外部代理支持 SOCKS5（上游 #825）

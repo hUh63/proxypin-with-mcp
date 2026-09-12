@@ -1,0 +1,93 @@
+name: Build Linux DEB
+
+# 上游 #560：提供 Linux 安装包（arm64 / amd64）。
+# 独立于 APK 构建流程：即使 Linux 桌面构建失败，也不会影响 Android Release。
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deb:
+    name: Build DEB (${{ matrix.arch }})
+    # 桌面端构建链路独立实验，不阻塞其它产物
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          - arch: amd64
+            runner: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Install Linux desktop build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build Linux release
+        run: flutter build linux --release
+
+      - name: Package DEB
+        run: |
+          set -e
+          VER=$(grep '^version:' pubspec.yaml | head -1 | sed 's/version: //' | tr -d ' ')
+          ARCH="${{ matrix.arch }}"
+          cd build/linux/*/release
+          rm -rf package
+          mkdir -p package/DEBIAN package/usr/share/applications package/opt
+          {
+            echo "Package: proxypin"
+            echo "Version: ${VER}"
+            echo "Priority: optional"
+            echo "Architecture: ${ARCH}"
+            echo "Depends: ca-certificates, libgtk-3-0"
+            echo "Section: utils"
+            echo "Maintainer: hUh63"
+            echo "Homepage: https://github.com/hUh63/proxypin-with-mcp"
+            echo "Description: HTTP/HTTPS packet capture tool (ProxyPin fork)"
+          } > package/DEBIAN/control
+          if [ -f ../../../../linux/proxy-pin.desktop ]; then
+            cp ../../../../linux/proxy-pin.desktop package/usr/share/applications/
+          fi
+          cp -r bundle package/opt/proxypin
+          dpkg-deb --build package "proxypin-${VER}-linux-${ARCH}.deb"
+          mv "proxypin-${VER}-linux-${ARCH}.deb" "$GITHUB_WORKSPACE/"
+
+      - name: Upload DEB to Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: proxypin-*-linux-*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload DEB as artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: proxypin-linux-${{ matrix.arch }}-deb
+          path: proxypin-*-linux-*.deb
+          retention-days: 30
