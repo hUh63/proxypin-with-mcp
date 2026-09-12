@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/util/file_read.dart';
 import 'package:proxypin/network/util/logger.dart';
 
 /// 桌面端备份管理页面
@@ -60,16 +61,9 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
   Future<void> _loadBackups() async {
     setState(() => _isLoading = true);
     try {
-      final homeDir = Platform.isWindows
-          ? Platform.environment['USERPROFILE'] ?? ''
-          : Platform.environment['HOME'] ?? '';
-      
-      if (homeDir.isEmpty) {
-        _backups = [];
-        return;
-      }
-
-      final backupDir = Directory('$homeDir${Platform.pathSeparator}proxypin_backups');
+      // 与写入端（Configuration 自动备份）保持一致：备份位于数据目录（~/.proxypin，便携模式下为程序目录）下的 proxypin_backups
+      final home = await FileRead.homeDir();
+      final backupDir = Directory('${home.path}${Platform.pathSeparator}proxypin_backups');
 
       if (await backupDir.exists()) {
         final files = await backupDir.list().toList();
@@ -230,13 +224,9 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
   }
 
   Future<void> _openBackupFolder() async {
-    final homeDir = Platform.isWindows
-        ? Platform.environment['USERPROFILE'] ?? ''
-        : Platform.environment['HOME'] ?? '';
-    
-    if (homeDir.isEmpty) return;
-
-    final backupDir = '$homeDir${Platform.pathSeparator}proxypin_backups';
+    // 与写入端保持一致：备份目录位于数据目录下的 proxypin_backups
+    final home = await FileRead.homeDir();
+    final backupDir = '${home.path}${Platform.pathSeparator}proxypin_backups';
     final dir = Directory(backupDir);
 
     if (await dir.exists()) {

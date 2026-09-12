@@ -14,6 +14,7 @@ import 'package:proxypin/network/components/ws_traffic_server.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/ui/component/widgets.dart';
+import 'package:proxypin/ui/component/ws_traffic_port_dialog.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/mobile/setting/config_management.dart';
 import 'package:proxypin/ui/mobile/setting/theme.dart';
@@ -642,8 +643,10 @@ class _PreferenceState extends State<Preference> {
               title: const Text('WebSocket 流量推送'),
               subtitle: Text(
                 configuration.wsTrafficEnabled
-                    ? '外部工具 / AI 可订阅抓包流量：ws://127.0.0.1:${configuration.wsTrafficPort}'
-                        '（已连接 ${WsTrafficServer.instance.clientCount}）'
+                    ? (WsTrafficServer.instance.isRunning
+                        ? '外部工具 / AI 可订阅抓包流量：ws://127.0.0.1:${configuration.wsTrafficPort}'
+                            '（已连接 ${WsTrafficServer.instance.clientCount}）'
+                        : '已开启，但抓包未运行：启动抓包后自动监听 ws://127.0.0.1:${configuration.wsTrafficPort}')
                     : '开启后，外部工具 / AI 可通过 WebSocket 实时订阅抓包流量'
                         '（默认端口 ${configuration.wsTrafficPort}），开关即时生效',
                 style: const TextStyle(fontSize: 12),
@@ -689,6 +692,40 @@ class _PreferenceState extends State<Preference> {
                 ),
               ),
             ],
+            // 上游 #756：端口此前只能改配置文件（被占用时开关无法开启），这里提供图形化修改入口
+            ListTile(
+              title: const Text('订阅端口'),
+              subtitle: Text(
+                configuration.wsTrafficEnabled
+                    ? '当前监听 ${configuration.wsTrafficPort}，点击修改（将立刻重启监听）'
+                    : '当前端口 ${configuration.wsTrafficPort}，点击修改',
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text('${configuration.wsTrafficPort}',
+                    style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.primary)),
+                const SizedBox(width: 4),
+                Icon(Icons.edit, size: 16, color: Theme.of(context).colorScheme.primary),
+              ]),
+              onTap: () async {
+                final port = await showWsTrafficPortDialog(context, currentPort: configuration.wsTrafficPort);
+                if (port == null || port == configuration.wsTrafficPort) return;
+                configuration.wsTrafficPort = port;
+                configuration.flushConfig();
+                if (configuration.wsTrafficEnabled) {
+                  final ok = await proxyServer.applyWsTraffic();
+                  if (!mounted) return;
+                  if (!ok) {
+                    setState(() => configuration.wsTrafficEnabled = false);
+                    configuration.flushConfig();
+                  }
+                  FlutterToastr.show(ok ? '端口已改为 $port 并重新监听' : '端口 $port 启动失败：可能被占用', context);
+                } else if (mounted) {
+                  FlutterToastr.show('端口已改为 $port，开启后生效', context);
+                }
+                if (mounted) setState(() {});
+              },
+            ),
           ]),
           const SizedBox(height: 12),
           // 配置管理区块
