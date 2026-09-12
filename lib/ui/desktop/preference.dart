@@ -344,7 +344,7 @@ class _PreferenceState extends State<Preference> {
                         setState(() => configuration.mcpAllowLan = v);
                         configuration.flushConfig();
                         try {
-                          if (McpServer.instance.isRunning) await McpServer.instance.restart();
+                          if (McpServer().isRunning) await McpServer().restart();
                         } catch (e) {
                           logger.w('重启 MCP 以应用局域网设置失败', error: e);
                         }
