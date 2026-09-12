@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.22.51 (2026-09-13)
+
+### 构建修复：Windows 桌面产物
+
+- 修复 Windows 构建失败：第三方插件 `permission_handler_windows` 仍使用已废弃的 `<experimental/coroutine>`，在 `windows-latest`（新版 MSVC / VS18）上被升级为硬错误
+- 处理：Windows 构建改用 `windows-2022` runner，并加编译器抑制宏 `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`
+- 结果为 v1.22.50 全部内容 + 补齐 **Windows** 产物：`proxypin-<ver>-windows-x64.zip`
+- 至此随 tag 发布的产物覆盖：**Android（4 ABI APK）/ Windows / macOS / iOS（未签名 ipa）/ Linux（amd64 deb）**
+
 ## v1.22.50 (2026-09-13)
 
 ### 国际化（i18n）覆盖
