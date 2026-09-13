@@ -66,7 +66,7 @@ class _NetworkDiagnosticsPageState extends State<NetworkDiagnosticsPage> {
     bool caExists = false;
     String caPath = '';
     try {
-      final file = await Crts.certificateFile();
+      final file = await CertificateManager.certificateFile();
       caExists = await file.exists();
       caPath = file.path;
     } catch (_) {

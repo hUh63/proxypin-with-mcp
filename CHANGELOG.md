@@ -17,7 +17,7 @@
 
 - `file_picker` `^12.0.0-beta.7` → `^12.3.0`（改用稳定版）
 - `permission_handler` `^12.0.1` → `^13.0.2`
-- `dynamic_color` `^1.7.0` → `^2.1.0`（`DynamicColorBuilder` API 兼容）
+- **`dynamic_color` 保持 `^1.7.0`**：2.x 已迁移到独立的 `material_ui` 包，其 `ColorScheme` 与 Flutter Material 并非同一类型，直接升级会导致 `DynamicColorBuilder` / `ColorScheme.harmonized` 编译失败，故暂不升级（待适配后再跟进）
 
 ### 文档
 

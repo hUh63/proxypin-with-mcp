@@ -336,7 +336,8 @@
 
 ## 依赖与内置资源更新（v1.22.57）
 
-- 升级到当前最新：`file_picker` `^12.0.0-beta.7` → `^12.3.0`（改用稳定版）、`permission_handler` `^12.0.1` → `^13.0.2`、`dynamic_color` `^1.7.0` → `^2.1.0`
+- 升级到当前最新：`file_picker` `^12.0.0-beta.7` → `^12.3.0`（改用稳定版）、`permission_handler` `^12.0.1` → `^13.0.2`
+- `dynamic_color` **保持 `^1.7.0`**：2.x 迁移到独立的 `material_ui` 包，其 `ColorScheme` 与 Flutter Material 不是同一类型，直接升级会导致 `DynamicColorBuilder` / `ColorScheme.harmonized` 编译失败，故暂不升级
 - 其余依赖在 `^` 约束下已解析到最新兼容版本（如 `archive` 4.3.0、`code_forge` 10.14.0、`logger` 2.8.0、`http` 1.6.0 等）
 - 内置教程：`docs/*.md` 随安装包分发，由「工具箱 → 使用文档」（`GuideCenter`）离线索引，本页所有条目均可在应用内查看
 
