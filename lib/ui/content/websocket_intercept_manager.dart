@@ -101,7 +101,8 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
     showDialog(
       context: context,
       builder: (context) => _PayloadEditDialog(frame: frame, onSaved: (newPayload) {
-        McpBridge().resumeWebSocketMessage(frame.frameId, payload: newPayload);
+        McpBridge().resumeWebSocketMessage(frame.frameId,
+            payload: utf8.decode(newPayload, allowMalformed: true));
         _loadPausedMessages();
       }),
     );
@@ -430,22 +431,17 @@ class _PayloadEditDialogState extends State<_PayloadEditDialog> {
             // 编辑器
             SizedBox(
               height: 300,
-              child: _viewMode == 'json'
-                ? JsonTextEditor(
-                    initialText: _textController.text,
-                    onChanged: (text) => _textController.text = text,
-                  )
-                : TextField(
-                    controller: _textController,
-                    maxLines: null,
-                    expands: true,
-                    textAlignVertical: TextAlignVertical.top,
-                    style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.all(8),
-                    ),
-                  ),
+              child: TextField(
+                controller: _textController,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.all(8),
+                ),
+              ),
             ),
           ],
         ),

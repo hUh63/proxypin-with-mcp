@@ -75,7 +75,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.automation_outlined, size: 80, color: Colors.grey[400]),
+          Icon(Icons.schedule_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context)!.noAutomationTasks,
@@ -393,7 +393,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
     );
   }
 
-  String _buildDetailRow(String label, String value) => Padding(
+  Widget _buildDetailRow(String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       SizedBox(width: 80, child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold))),
