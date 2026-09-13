@@ -1,5 +1,38 @@
 # Changelog
 
+## v1.22.57 (2026-09-14)
+
+### 新功能：网络诊断 / 连接自检（借鉴 proxypin-mcp-workbench）
+
+- 工具箱新增「网络诊断」（桌面端独立子窗口 / 移动端全屏页）：一屏显示 **代理服务状态、监听端口、本机局域网地址、根 CA 证书状态、MCP 服务状态**，并提供手机代理设置 / CA 信任 / 防火墙 / 端口区分等排障提示，关键项可一键复制
+- 实现：`lib/ui/toolbox/network_diagnostics.dart`；入口 `lib/ui/toolbox/toolbox.dart`，桌面子窗口分支 `lib/ui/component/multi_window.dart`
+
+### 借鉴 Reqable：cURL 导入健壮性
+
+- 导入 cURL 时忽略**整行 / 行尾注释**（`#`、`//`，仅识别引号外；`https://`、`#fragment` 不受影响）
+- 忽略 `-o/--output`、`--proxy` 等**带取值的参数**，避免其取值被误判为请求 URL
+- 支持 `\` 续行的多行 cURL 粘贴
+
+### 依赖升级（对齐最新）
+
+- `file_picker` `^12.0.0-beta.7` → `^12.3.0`（改用稳定版）
+- `permission_handler` `^12.0.1` → `^13.0.2`
+- `dynamic_color` `^1.7.0` → `^2.1.0`（`DynamicColorBuilder` API 兼容）
+
+### 文档
+
+- `docs/features_tips.md` 新增：网络诊断、cURL 导入健壮性、依赖更新、上游 #489 说明、自动化两子系统区分
+
+### 调研结论（不实现）
+
+- **#489 QUIC 完整解码**：QUIC 强制 TLS1.3 + 客户端密钥保护，中间人无法还原 HTTP/3 帧；上游维护者明确回复「目前没计划支持非 HTTP 协议」。保持已有的 QUIC 元数据展示
+- **小黄鸟（HttpCanary）**：仓库自 2024 年停更、仅存说明文档，无可借鉴的新实现
+- **workbench（魔改版）其余可借鉴项**：抓包项目归档、采集方案、API 资产整理、脱敏数据导出（JSON/CSV）、Mock 场景合集、本机抓包按应用筛选、宽屏双列详情 —— 记录为后续备选
+
+### i18n
+
+- 新增 16 条词条（网络诊断相关），en / zh / zh_Hant 三份 ARB 键集合一致（各 664 键）
+
 ## v1.22.56 (2026-09-13)
 
 ### 功能补全：孤立管理页面接入 UI 入口

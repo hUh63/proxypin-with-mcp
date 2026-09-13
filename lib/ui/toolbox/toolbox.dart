@@ -24,6 +24,7 @@ import 'cert_hash.dart';
 import 'encoder.dart';
 import 'js_run.dart';
 import 'json_viewer.dart';
+import 'network_diagnostics.dart';
 import 'text_diff.dart';
 import 'text_editor.dart';
 import 'websocket_request.dart';
@@ -276,6 +277,19 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.article_outlined,
                       text: '日志',
                       tooltip: '日志查看与过滤'),
+                  IconText(
+                      onTap: () async {
+                        if (Platforms.isMobile()) {
+                          await Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => const NetworkDiagnosticsPage()));
+                          return;
+                        }
+                        MultiWindow.openWindow(localizations.networkDiagnostics,
+                            'NetworkDiagnosticsPage', size: const Size(560, 740));
+                      },
+                      icon: Icons.health_and_safety_outlined,
+                      text: localizations.networkDiagnostics,
+                      tooltip: localizations.networkDiagnostics),
                   IconText(
                       onTap: () {
                         // 从当前抓包数据提取 API 端点

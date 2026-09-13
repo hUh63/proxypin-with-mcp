@@ -775,5 +775,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "networkDiagnostics": "Network Diagnostics",
+  "diagProxyService": "Proxy Service",
+  "diagRunning": "Running",
+  "diagStopped": "Stopped",
+  "diagListeningPort": "Listening Port",
+  "diagLanAddress": "LAN Address",
+  "diagRootCa": "Root CA Certificate",
+  "diagCaReady": "Ready",
+  "diagCaMissing": "Not generated - open a certificate entry once",
+  "diagMcpService": "MCP Service",
+  "diagNoLanAddress": "No LAN address detected - check Wi-Fi / Ethernet",
+  "diagHints": "Troubleshooting Tips",
+  "diagHintPhoneProxy": "On the phone, point Wi-Fi HTTP proxy to the LAN address and capture port shown above.",
+  "diagHintCa": "If HTTPS cannot be decrypted, install and fully trust the CA certificate on the device.",
+  "diagHintFirewall": "If the phone cannot connect, allow this app through the system firewall.",
+  "diagHintMcp": "MCP listens on loopback by default; phones should use the HTTP proxy port, not the MCP port."
 }

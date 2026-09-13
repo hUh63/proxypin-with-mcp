@@ -655,5 +655,21 @@
   "viewBackup": "檢視",
   "exportBackup": "匯出",
   "deleteBackup": "刪除",
-  "showAllItems": "顯示全部（共 {count} 項）"
+  "showAllItems": "顯示全部（共 {count} 項）",
+  "networkDiagnostics": "網路診斷",
+  "diagProxyService": "代理服務",
+  "diagRunning": "執行中",
+  "diagStopped": "已停止",
+  "diagListeningPort": "監聽埠",
+  "diagLanAddress": "本機區域網路位址",
+  "diagRootCa": "根 CA 憑證",
+  "diagCaReady": "已就緒",
+  "diagCaMissing": "尚未產生——請先在憑證入口安裝一次",
+  "diagMcpService": "MCP 服務",
+  "diagNoLanAddress": "未偵測到區域網路位址——請檢查 Wi-Fi / 網路線",
+  "diagHints": "排障提示",
+  "diagHintPhoneProxy": "在手機 Wi-Fi 中把 HTTP 代理指向「上方顯示的區域網路位址 + 抓包埠」。",
+  "diagHintCa": "若 HTTPS 無法解密，請在裝置上安裝並完全信任根 CA 憑證。",
+  "diagHintFirewall": "若手機連不上，請在系統防火牆中放行本應用程式。",
+  "diagHintMcp": "MCP 預設僅監聽本機回環；手機應連線 HTTP 代理埠，而非 MCP 埠。"
 }

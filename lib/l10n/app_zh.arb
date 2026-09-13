@@ -680,5 +680,21 @@
   "unknownError": "未知错误",
   "executeException": "执行异常",
   "errorDetails": "错误详情",
-  "showAllItems": "显示全部（共 {count} 项）"
+  "showAllItems": "显示全部（共 {count} 项）",
+  "networkDiagnostics": "网络诊断",
+  "diagProxyService": "代理服务",
+  "diagRunning": "运行中",
+  "diagStopped": "已停止",
+  "diagListeningPort": "监听端口",
+  "diagLanAddress": "本机局域网地址",
+  "diagRootCa": "根 CA 证书",
+  "diagCaReady": "已就绪",
+  "diagCaMissing": "尚未生成——请先在证书入口安装一次",
+  "diagMcpService": "MCP 服务",
+  "diagNoLanAddress": "未检测到局域网地址——请检查 Wi-Fi / 网线",
+  "diagHints": "排障提示",
+  "diagHintPhoneProxy": "在手机 Wi-Fi 中把 HTTP 代理指向“上方显示的局域网地址 + 抓包端口”。",
+  "diagHintCa": "若 HTTPS 无法解密，请在设备上安装并完全信任根 CA 证书。",
+  "diagHintFirewall": "若手机连不上，请在系统防火墙中放行本应用。",
+  "diagHintMcp": "MCP 默认仅监听本机回环；手机应连接 HTTP 代理端口，而非 MCP 端口。"
 }

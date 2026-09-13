@@ -175,11 +175,6 @@ String? _extractDispositionParam(String header, String paramName) {
   return match?.group(1);
 }
 
-void main() {
-  print(Curl.parse(
-      "curl -X POST 'https://example.com/api' -H 'Content-Type: application/json' -d '{\"key\":\"value\"}'"));
-}
-
 class Curl {
   static const String _h = "-H";
   static const String _header = "--header";
@@ -189,6 +184,61 @@ class Curl {
   static const String _dataRaw = "--data-raw";
   static const String _d = "-d";
 
+  /// 需要忽略其取值的 cURL 参数（避免其取值被误判为请求 URL，参考 Reqable 的 cURL 导入）
+  static const Set<String> _valueFlagsToSkip = {
+    '-o', '--output', // 输出文件
+    '-x', '--proxy', // 代理地址（取值可能含 http://）
+    '--connect-timeout', '--max-time', '-m', '--retry', '--retry-delay',
+    '--cacert', '--cert', '--key', '--capath',
+    '-w', '--write-out', '--resolve', '--interface',
+    '-A', '--user-agent', '-e', '--referer',
+  };
+
+  /// 预处理 cURL 文本（参考 Reqable）：
+  /// 1) 丢弃整行注释（以 `#` 或 `//` 开头）；
+  /// 2) 去除引号外的行尾注释（` #...` / ` //...`，`://` 不会被误判）；
+  /// 3) 去除行尾续行符 `\`，并将换行 / Tab 归一为空格。
+  static String _preprocessCurl(String raw) {
+    final buf = StringBuffer();
+    for (final rawLine in raw.split('\n')) {
+      final trimmedLeft = rawLine.trimLeft();
+      if (trimmedLeft.startsWith('#') || trimmedLeft.startsWith('//')) {
+        continue; // 整行注释
+      }
+      var line = _stripTrailingComment(rawLine);
+      line = line.replaceFirst(RegExp(r'\\\s*$'), ''); // 续行符
+      buf.write(line);
+      buf.write(' ');
+    }
+    return buf.toString().replaceAll(RegExp(r'[\t\r\n]'), ' ').trim();
+  }
+
+  /// 去除引号外的行尾注释：` #...` 或 ` //...`
+  static String _stripTrailingComment(String line) {
+    bool inQuotes = false;
+    String quoteChar = '';
+    for (int i = 0; i < line.length; i++) {
+      final c = line[i];
+      if (inQuotes) {
+        if (c == quoteChar) inQuotes = false;
+        continue;
+      }
+      if (c == '"' || c == "'") {
+        inQuotes = true;
+        quoteChar = c;
+        continue;
+      }
+      final prevIsSpace = i > 0 && (line[i - 1] == ' ' || line[i - 1] == '\t');
+      if (c == '#' && prevIsSpace) {
+        return line.substring(0, i);
+      }
+      if (c == '/' && i + 1 < line.length && line[i + 1] == '/' && prevIsSpace) {
+        return line.substring(0, i);
+      }
+    }
+    return line;
+  }
+
   static HttpRequest parse(String curlCommand) {
     HttpMethod method = HttpMethod.get;
     HttpHeaders headers = HttpHeaders();
@@ -196,8 +246,8 @@ class Curl {
     String? url;
     String? data;
 
-    // 去除 "curl" 关键字并去除首尾空格
-    String trimmedCommand = curlCommand.replaceFirst('curl', '').trim();
+    // 预处理：剥离注释、合并续行符、归一空白（参考 Reqable 的 cURL 导入能力）
+    String trimmedCommand = _preprocessCurl(curlCommand).replaceFirst('curl', '').trim();
 
     List<String> parts = [];
     String currentPart = '';
@@ -270,6 +320,9 @@ class Curl {
       } else if (url == null && !part.startsWith('-') && part.contains("http")) {
         // 解析请求 URL
         url = part.replaceAll("'", "").replaceAll('"', '');
+      } else if (_valueFlagsToSkip.contains(part)) {
+        // 忽略带取值的非目标参数（如 -o 输出文件、--proxy 代理地址），避免取值被误判为 URL
+        if (i + 1 < parts.length) i++;
       } else if ("--http2" == part) {
         // protocolVersion = "HTTP2";
       }

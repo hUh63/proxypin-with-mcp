@@ -312,4 +312,42 @@
 ## 代码库规范化（v1.22.56）
 
 - 清理了**无法编译且不可达**的死代码文件：`lib/ui/component/components.dart`（聚合导出指向不存在的 `api_endpoints_page.dart`）、`lib/ui/component/code_generator_page.dart` 与 `lib/network/util/code_generator.dart`（均引用了不存在的 `Request` 类型）、`lib/ui/content/script_template_manager_page.dart`（依赖不存在的 `CodeEditorDialog`）
-- 结果：全库 339 个 Dart 文件的所有 `import` 均可解析（**0 处断链**），代码库不再包含「一旦被引用即编译失败」的隐藏雷区
+- 结果：全库 Dart 文件的所有 `import` 均可解析（**0 处断链**），代码库不再包含「一旦被引用即编译失败」的隐藏雷区
+
+## 网络诊断 / 连接自检（v1.22.57）
+
+- 入口：工具箱 →「网络诊断」（桌面端为独立子窗口 `NetworkDiagnosticsPage`，移动端为全屏页）
+- 作用：一屏汇总抓包必备要素的当前状态，快速定位「手机连不上 / HTTPS 解不开」等问题：
+  - **代理服务**：是否运行中
+  - **监听端口**：当前抓包端口（可一键复制）
+  - **本机局域网地址**：所有可用 IPv4（可一键复制）——手机代理要填这个
+  - **根 CA 证书**：是否已生成（可一键复制证书路径）
+  - **MCP 服务**：是否运行中 + 端口
+  - **排障提示**：手机代理设置、CA 信任、防火墙放行、MCP 端口与代理端口不要混用
+- 实现位置：`lib/ui/toolbox/network_diagnostics.dart`（页面）、`lib/ui/toolbox/toolbox.dart`（入口）、`lib/ui/component/multi_window.dart`（桌面子窗口分支）
+- 依赖 API：`ProxyServer.current`（状态 / 端口）、`localIps()`（`lib/utils/ip.dart`）、`Crts.certificateFile()`（CA）、`McpServer()`（状态 / 端口）
+- 与其他功能联动：诊断各项直接对应「偏好设置」里的抓包开关、端口设置、「证书」入口与 MCP 开关，便于照方抓药
+- 借鉴来源：`sinyu1012/proxypin-mcp-workbench` 的「连接诊断（Connection Doctor）」
+
+## cURL 导入健壮性（v1.22.57，借鉴 Reqable）
+
+- 导入 cURL 时现在会：**忽略整行与行尾注释**（`#` 与 `//`，仅识别引号外的注释，URL 里的 `https://`、`#fragment` 不受影响）；**忽略 `-o/--output`、`--proxy` 等带取值的参数**，避免其取值被误判为请求 URL；并支持 `\` 续行的多行粘贴
+- 实现位置：`lib/utils/curl.dart` — `Curl.parse` 内的 `_preprocessCurl`（注释 / 续行 / 空白归一）、`_stripTrailingComment`（引号外行尾注释）、`_valueFlagsToSkip`（需跳过取值的参数集合）
+
+## 依赖与内置资源更新（v1.22.57）
+
+- 升级到当前最新：`file_picker` `^12.0.0-beta.7` → `^12.3.0`（改用稳定版）、`permission_handler` `^12.0.1` → `^13.0.2`、`dynamic_color` `^1.7.0` → `^2.1.0`
+- 其余依赖在 `^` 约束下已解析到最新兼容版本（如 `archive` 4.3.0、`code_forge` 10.14.0、`logger` 2.8.0、`http` 1.6.0 等）
+- 内置教程：`docs/*.md` 随安装包分发，由「工具箱 → 使用文档」（`GuideCenter`）离线索引，本页所有条目均可在应用内查看
+
+## 上游 issue #489（QUIC 抓包）说明
+
+- 现状：ProxyPin 已提供 **QUIC/HTTP3 连接元数据展示**（工具箱 →「QUIC 连接」，实现见 `lib/network/util/quic/` 与 `lib/ui/component/quic_sessions_page.dart`），可查看 SNI / 版本 / 统计等
+- 为何不做**完整 QUIC 解密**：QUIC 强制 TLS1.3 且 payload 由客户端密钥保护，中间人在不解密 TLS1.3 的前提下无法还原 HTTP/3 帧；上游维护者亦明确回复「目前没计划支持非 HTTP 协议」
+- 结论：**保持元数据展示**，不做完整解码（属协议栈 / 工具链能力边界，非缺陷）
+
+## 自动化功能的两个子系统（避免混淆）
+
+- **MCP 定时任务**（设置 →「MCP 定时任务」）管理 `MCPAutomationManager`：按 **请求匹配 / 响应匹配 / 定时 / 代理启停 / 手动** 触发，执行「修改请求 / 拦截 / 重放 / 导出 / 脚本 / 通知 / Webhook」等动作；已接线到 `server.dart` 与 `lib/network/handle/http_proxy_handle.dart`
+- **MCP 自动化**（桌面：设置 →「MCP 自动化」子窗口；移动：设置 → MCP 连接 → MCP 自动化）为 6 标签页：定时任务 / 事件监听 / 规则引擎 / Prompts / Roots / **工作流**；其中「工作流」即可视化编排脚本工作流
+- 二者面向不同模型、各自可用；**脚本工作流的图形界面请从「MCP 自动化 → 工作流」进入**

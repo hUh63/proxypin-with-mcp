@@ -63,6 +63,7 @@ import '../toolbox/text_editor.dart';
 import '../toolbox/xml_viewer.dart';
 import '../toolbox/regexp.dart';
 import '../toolbox/timestamp.dart';
+import '../toolbox/network_diagnostics.dart';
 import '../toolbox/websocket_request.dart';
 
 bool isMultiWindow = false;
@@ -169,6 +170,11 @@ Widget multiWindow(String windowId, Map<dynamic, dynamic> argument) {
   // 发送队列 / 重放任务（#715/#401）
   if (argument['name'] == 'RepeatQueuePage') {
     return const RepeatQueuePage();
+  }
+
+  // 网络诊断 / 连接自检
+  if (argument['name'] == 'NetworkDiagnosticsPage') {
+    return const NetworkDiagnosticsPage();
   }
 
   if (argument['name'] == 'McpConnectionPage') {
