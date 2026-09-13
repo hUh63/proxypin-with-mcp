@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.22.56 (2026-09-13)
+
+### 功能补全：孤立管理页面接入 UI 入口
+
+- **WebSocket 拦截管理 / WebSocket 规则管理**：`websocket_intercept_manager.dart`、`websocket_rule_manager_page.dart` 此前已实现但**无任何入口**（文件不可达、从未参与编译）；现接入偏好设置（桌面 / 移动）「高级功能」区（含全局拦截开关、规则增删改、匹配方式与方向）
+- **MCP 定时任务管理**：`mcp_task_manager_page.dart` 接入「高级功能」区，管理 MCP 自动化定时任务（触发类型、URL 模式、动作、启停、手动执行）
+- 上述 3 个页面完成 **i18n 全覆盖**（用户可见硬编码中文清零），新增 130 条词条；en / zh / zh_Hant 三份 ARB 键集合一致（各 648 键）；并补齐引用的缺失键（`createTask` / `mcpAutomationTasks` / `noAutomationTasks` 等）
+- 修正 62 处 `AppLocalizations.of(context)` 漏写 `!`（可空类型），使这些页面可正常编译
+- **移除死按钮**：桌面脚本设置页原「工作流」按钮会打开**空窗口**（多窗口工厂 `multiWindow()` 未处理窗口名 `ScriptWorkflowManagerPage`），已移除该按钮与 `openWorkflowManagerWindow()`；工作流引擎本身正常（`server.dart` 已接线 DAG 执行器 → `ScriptManager`），图形界面待按引擎实际 API 重建
+
+### 修复
+
+- **MCP 暂停帧内存泄漏**：`McpBridge._pausedWebSocketDetails` 此前只增不减（永不过期）；新增保留时长 10 分钟 + 上限 256 条的惰性清理 `_purgeExpiredPausedFrames`
+- 修正 WebSocket 拦截 `pauseWebSocketMessage` 的误导性注释与文档，明确其为**观测 / 登记语义**（原始字节直通转发不受阻塞或改写）
+- `abortWebSocketMessage` 的 `reason` 参数改回固定值，不再随界面语言变化
+
+### 性能
+
+- JSON 查看器：单个对象 / 数组默认最多渲染 1000 个子项，超出部分以「显示全部（共 N 项）」按钮展开，避免打开超大 JSON 时一次性构建海量 Widget 造成卡顿
+- `JsonViewer` 由 `StatelessWidget` 改为 `StatefulWidget`：搜索匹配的 `matchKeys` 提升为 State 缓存，并防止 `postFrameCallback` 在同一帧内重复注册堆积
+
+### 代码库规范化
+
+- 删除 4 个**无法编译且不可达**的死代码文件：`ui/component/components.dart`（聚合导出指向不存在的文件）、`ui/component/code_generator_page.dart` 与 `network/util/code_generator.dart`（引用不存在的 `Request` 类型）、`ui/content/script_template_manager_page.dart`（依赖不存在的 `CodeEditorDialog`）
+- 全库 339 个 Dart 文件所有 `import` 均可解析（断链由 2 处 → **0 处**）
+
+### 上游 issue
+
+- **#929 / #928**：正文均为乱码（`Tdorojo` / `Todocapa`）、0 评论、无复现步骤，无可修复内容，判定为无效 issue，未做改动
+- 复核 #923 / #925 / #926 / #927 / #922 / #901 / #913 等均已在此前版本修复
+
+### 平台限制说明（不实现，非缺陷）
+
+- #683 鸿蒙 / HarmonyOS：Flutter 官方无 HarmonyOS 构建目标，需基于华为 ArkUI/DevEco 另建工程
+- #489 QUIC / HTTP3 完整解码：需内核或协议栈级支持，当前仅做透传
+- #560 Linux arm64 deb：Flutter 官方未提供 Linux arm64 预编译 SDK
+
 ## v1.22.55 (2026-09-13)
 
 ### 新功能 / 体验

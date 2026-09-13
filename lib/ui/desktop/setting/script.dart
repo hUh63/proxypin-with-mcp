@@ -156,12 +156,6 @@ class _ScriptWidgetState extends State<ScriptWidget> {
                                   onPressed: consoleLog,
                                   label: Text(localizations.logger),
                                 ),
-                                const SizedBox(width: 10),
-                                TextButton.icon(
-                                  icon: const Icon(Icons.auto_awesome, size: 18),
-                                  onPressed: workflowManager,
-                                  label: const Text('工作流'),
-                                ),
                               ],
                             )),
                             const SizedBox(width: 15)
@@ -173,10 +167,6 @@ class _ScriptWidgetState extends State<ScriptWidget> {
 
   void consoleLog() {
     openScriptConsoleWindow();
-  }
-
-  void workflowManager() {
-    openWorkflowManagerWindow();
   }
 
   //导入js
@@ -1015,15 +1005,5 @@ void openScriptConsoleWindow() async {
     'title': '脚本控制台',
     'width': 800,
     'height': 600,
-  }));
-}
-
-/// 打开工作流管理器窗口
-void openWorkflowManagerWindow() async {
-  await DesktopMultiWindow.createWindow(jsonEncode({
-    'name': 'ScriptWorkflowManagerPage',
-    'title': '脚本工作流管理',
-    'width': 1200,
-    'height': 800,
   }));
 }

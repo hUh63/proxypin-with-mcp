@@ -311,7 +311,31 @@ class McpBridge implements EventListener {
     duration: const Duration(minutes: 10),
   );
 
-  /// 暂停 WebSocket 消息并等待修改
+  /// 暂停帧保留时长：超过后惰性清理，避免 _pausedWebSocketDetails 无限增长造成内存泄漏
+  static const Duration _pausedTtl = Duration(minutes: 10);
+
+  /// 暂停帧数量上限：MCP 客户端始终不 resume 时的兜底保护（超出丢弃最旧的）
+  static const int _maxPausedFrames = 256;
+
+  /// 惰性清理过期 / 超量的暂停帧（在写入与读取时触发）
+  void _purgeExpiredPausedFrames() {
+    final now = DateTime.now();
+    _pausedWebSocketDetails.removeWhere((_, v) => now.difference(v.pausedAt) > _pausedTtl);
+    final overflow = _pausedWebSocketDetails.length - _maxPausedFrames;
+    if (overflow > 0) {
+      final sorted = _pausedWebSocketDetails.entries.toList()
+        ..sort((a, b) => a.value.pausedAt.compareTo(b.value.pausedAt));
+      for (var i = 0; i < overflow; i++) {
+        _pausedWebSocketDetails.remove(sorted[i].key);
+        _pausedWebSockets.remove(sorted[i].key);
+      }
+    }
+  }
+
+  /// 登记一条“暂停”的 WebSocket 消息并通知 MCP 客户端。
+  ///
+  /// 受原始字节直通转发架构限制，本方法不阻塞也不改写实际转发的字节，
+  /// 属观测 / 登记语义（MCP 侧可据此 resume / abort）。
   Future<bool> pauseWebSocketMessage(WebSocketFrame frame, String url, bool isOutgoing) async {
     final frameId = 'ws_${DateTime.now().millisecondsSinceEpoch}_${frame.hashCode}';
     final paused = PausedWebSocketFrame(
@@ -325,13 +349,16 @@ class McpBridge implements EventListener {
     
     _pausedWebSocketDetails[frameId] = paused;
     _pausedWebSockets.set(frameId, paused);
+    _purgeExpiredPausedFrames();
     
     logger.i('WebSocket message paused: $frameId (${isOutgoing ? "outgoing" : "incoming"})');
     
     // 通知 MCP 客户端（通过回调）
     onWebSocketMessage?.call(paused);
     
-    // 等待直到被 resume 或 abort
+    // 说明：本方法登记暂停帧并通知 MCP 客户端，由客户端决定 resume / abort。
+    // 由于 WebSocket 转发采用原始字节直通（保真、零拷贝），此处不会阻塞或改写
+    // 实际转发的字节；resume 时可回写登记内容供 MCP 侧展示。
     return true;
   }
 
@@ -374,6 +401,7 @@ class McpBridge implements EventListener {
 
   /// 获取所有暂停的 WebSocket 消息
   List<PausedWebSocketFrame> getPausedWebSocketMessages() {
+    _purgeExpiredPausedFrames();
     return _pausedWebSocketDetails.values.toList();
   }
 

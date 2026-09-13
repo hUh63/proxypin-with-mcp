@@ -30,8 +30,15 @@ ProxyPin v1.12.0+ 引入了完整的 MCP（Man-in-the-Middle Control Protocol）
 
 ### 访问入口
 
-**移动端**: 设置 → MCP 自动化 → 4 个标签页  
-**桌面端**: 脚本 → 工作流管理 / 控制台
+**桌面端**：偏好设置 →「高级功能」区，提供两个图形化入口（v1.22.56 起）：
+- **WebSocket 拦截** → WebSocket 拦截管理（右上角可进入拦截规则管理）
+- **MCP 定时任务** → 定时任务管理
+
+**移动端**：设置 →「高级功能」区，提供同样的两个入口。
+
+> 说明：这两个管理页面此前已实现但==没有任何 UI 入口==（文件不可达、从未被编译）。v1.22.56 起补齐入口并完成中 / 英 / 繁国际化。
+>
+> ⚠️ **工作流编排暂无图形化管理界面**：脚本设置页原「工作流」按钮会打开一个**空窗口**（多窗口工厂未处理窗口名 `ScriptWorkflowManagerPage`），且草稿页 `script_workflow_manager_page.dart` 与引擎 API 严重不符、无法编译，故 v1.22.56 已移除该死按钮与草稿页。**工作流引擎本身正常**（`lib/network/bin/server.dart` 已接线 DAG 执行器 → `ScriptManager`），可经 MCP 触发；图形界面待后续按引擎实际 API（`ScriptWorkflowEngine` / `ScriptWorkflow` / `WorkflowNode`）重建。
 
 ---
 

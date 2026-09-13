@@ -26,7 +26,19 @@ import 'package:proxypin/utils/platform.dart';
 
 import '../search/search_controller.dart';
 
-class JsonViewer extends StatelessWidget {
+/// 大集合被截断时显示的“显示全部”按钮（超大 JSON 渲染保护）
+Widget _buildShowAllButton(BuildContext context, int total, VoidCallback onPressed) {
+  final localizations = AppLocalizations.of(context)!;
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: TextButton(
+      onPressed: onPressed,
+      child: Text(localizations.showAllItems(total), style: const TextStyle(fontSize: 12)),
+    ),
+  );
+}
+
+class JsonViewer extends StatefulWidget {
   final dynamic jsonObj;
   final ColorTheme colorTheme;
   final SearchTextController? searchController;
@@ -34,25 +46,44 @@ class JsonViewer extends StatelessWidget {
   const JsonViewer(this.jsonObj, {super.key, required this.colorTheme, this.searchController});
 
   @override
+  State<JsonViewer> createState() => _JsonViewerState();
+}
+
+class _JsonViewerState extends State<JsonViewer> {
+  /// 匹配项的 GlobalKey 缓存：提升为 State 字段，避免每次 build 重新分配列表
+  final List<GlobalKey> _matchKeys = [];
+
+  /// 是否已注册本帧的滚动/计数回调，避免搜索连续触发时 postFrameCallback 堆积
+  bool _scrollScheduled = false;
+
+  @override
   Widget build(BuildContext context) {
-    final matchKeys = <GlobalKey>[];
+    final searchController = widget.searchController;
     if (searchController == null) {
+      _matchKeys.clear();
       return DefaultTextStyle.merge(
           style: const TextStyle(fontWeight: FontWeight.w600),
-          child: getContentWidget(jsonObj, matchTotalCount: ValueWrap.of(0), matchKeys: matchKeys));
+          child: getContentWidget(widget.jsonObj,
+              matchTotalCount: ValueWrap.of(0), matchKeys: _matchKeys));
     }
     return AnimatedBuilder(
-        animation: searchController ?? ValueNotifier(0),
+        animation: searchController,
         builder: (context, child) {
           final matchTotalCount = ValueWrap.of(0);
-          matchKeys.clear();
+          _matchKeys.clear();
           final contentWidget = DefaultTextStyle.merge(
               style: const TextStyle(fontWeight: FontWeight.w600),
-              child: getContentWidget(jsonObj, matchTotalCount: matchTotalCount, matchKeys: matchKeys));
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            searchController?.updateMatchCount(matchTotalCount.get()!);
-            scrollToMatch(matchKeys);
-          });
+              child: getContentWidget(widget.jsonObj,
+                  matchTotalCount: matchTotalCount, matchKeys: _matchKeys));
+          if (!_scrollScheduled) {
+            _scrollScheduled = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _scrollScheduled = false;
+              if (!mounted) return;
+              searchController.updateMatchCount(matchTotalCount.get() ?? 0);
+              scrollToMatch(_matchKeys);
+            });
+          }
           return contentWidget;
         });
   }
@@ -61,14 +92,14 @@ class JsonViewer extends StatelessWidget {
       {required ValueWrap<int> matchTotalCount, required List<GlobalKey> matchKeys}) {
     if (content is List) {
       return JsonArrayViewer(content,
-          colorTheme: colorTheme,
-          searchController: searchController,
+          colorTheme: widget.colorTheme,
+          searchController: widget.searchController,
           matchTotalCount: matchTotalCount,
           matchKeys: matchKeys);
     } else if (content is Map<String, dynamic>) {
       return JsonObjectViewer(content,
-          colorTheme: colorTheme,
-          searchController: searchController,
+          colorTheme: widget.colorTheme,
+          searchController: widget.searchController,
           matchTotalCount: matchTotalCount,
           matchKeys: matchKeys);
     } else {
@@ -77,8 +108,9 @@ class JsonViewer extends StatelessWidget {
   }
 
   void scrollToMatch(List<GlobalKey> matchKeys) {
+    final searchController = widget.searchController;
     if (searchController != null && matchKeys.isNotEmpty) {
-      final currentIndex = searchController!.currentMatchIndex.value;
+      final currentIndex = searchController.currentMatchIndex.value;
       if (currentIndex >= 0 && currentIndex < matchKeys.length) {
         final key = matchKeys[currentIndex];
         final context = key.currentContext;
@@ -133,9 +165,18 @@ class JsonObjectViewerState extends State<JsonObjectViewer> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: _getList());
   }
 
+  /// 大 JSON 性能保护：单个对象默认最多渲染这么多子项，超出部分需手动展开，
+  /// 避免超大对象一次性构建巨量 Widget 造成卡顿。
+  static const int maxRenderChildren = 1000;
+  bool _showAll = false;
+
   List<Widget> _getList() {
     List<Widget> list = [];
-    for (MapEntry entry in widget.jsonObj.entries) {
+    final total = widget.jsonObj.length;
+    final limited = !_showAll && total > maxRenderChildren;
+    final entries =
+        limited ? widget.jsonObj.entries.take(maxRenderChildren) : widget.jsonObj.entries;
+    for (MapEntry entry in entries) {
       if (openFlag[entry.key] == null) {
         openFlag[entry.key] = widget.notRoot == false && _isExtensible(entry.value);
       }
@@ -162,6 +203,9 @@ class JsonObjectViewerState extends State<JsonObjectViewer> {
             matchTotalCount: widget.matchTotalCount,
             matchKeys: widget.matchKeys));
       }
+    }
+    if (limited) {
+      list.add(_buildShowAllButton(context, total, () => setState(() => _showAll = true)));
     }
     return list;
   }
@@ -266,10 +310,17 @@ class _JsonArrayViewerState extends State<JsonArrayViewer> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: _getList());
   }
 
+  /// 大 JSON 性能保护：单个数组默认最多渲染这么多元素，超出部分需手动展开
+  static const int maxRenderChildren = 1000;
+  bool _showAll = false;
+
   List<Widget> _getList() {
     List<Widget> list = [];
-    int i = 0;
-    for (dynamic content in widget.jsonArray) {
+    final total = widget.jsonArray.length;
+    final limited = !_showAll && total > maxRenderChildren;
+    final count = limited ? maxRenderChildren : total;
+    for (int i = 0; i < count; i++) {
+      final content = widget.jsonArray[i];
       list.add(Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -292,7 +343,9 @@ class _JsonArrayViewerState extends State<JsonArrayViewer> {
             matchTotalCount: widget.matchTotalCount,
             matchKeys: widget.matchKeys));
       }
-      i++;
+    }
+    if (limited) {
+      list.add(_buildShowAllButton(context, total, () => setState(() => _showAll = true)));
     }
     return list;
   }

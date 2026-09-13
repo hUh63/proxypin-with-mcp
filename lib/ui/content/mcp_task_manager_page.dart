@@ -50,7 +50,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).mcpAutomationTasks),
+        title: Text(AppLocalizations.of(context)!.mcpAutomationTasks),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -78,14 +78,14 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
           Icon(Icons.automation_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
-            AppLocalizations.of(context).noAutomationTasks,
+            AppLocalizations.of(context)!.noAutomationTasks,
             style: TextStyle(color: Colors.grey[600], fontSize: 16),
           ),
           const SizedBox(height: 8),
           ElevatedButton.icon(
             onPressed: () => _showTaskDialog(),
             icon: const Icon(Icons.add),
-            label: Text(AppLocalizations.of(context).createTask),
+            label: Text(AppLocalizations.of(context)!.createTask),
           ),
         ],
       ),
@@ -121,7 +121,8 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
                 const SizedBox(height: 4),
                 Text(_getTriggerLabel(task.triggerType)),
                 Text(
-                  '${task.actions.length} 个动作 | 执行 ${task.executionCount} 次',
+                  AppLocalizations.of(context)!
+                      .mcpTaskActionsSummary(task.actions.length, task.executionCount),
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -170,23 +171,30 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? '编辑任务' : '添加任务'),
+          title: Text(isEdit
+              ? AppLocalizations.of(context)!.mcpEditTask
+              : AppLocalizations.of(context)!.mcpAddTask),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: '任务名称', prefixIcon: Icon(Icons.label)),
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.mcpTaskName,
+                      prefixIcon: Icon(Icons.label)),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: descController,
-                  decoration: const InputDecoration(labelText: '描述', prefixIcon: Icon(Icons.description)),
+                  decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.descriptionLabel,
+                      prefixIcon: Icon(Icons.description)),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
-                const Text('触发器类型', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.of(context)!.mcpTriggerType,
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<AutomationTriggerType>(
                   isExpanded: true,
@@ -198,12 +206,16 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
                 if (selectedTrigger == AutomationTriggerType.onRequest || selectedTrigger == AutomationTriggerType.onResponse) ...[
                   const SizedBox(height: 12),
                   TextField(
-                    decoration: const InputDecoration(labelText: 'URL 匹配模式', prefixIcon: Icon(Icons.link), hintText: '例如：api.example.com'),
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.urlPattern,
+                      prefixIcon: Icon(Icons.link),
+                      hintText: AppLocalizations.of(context)!.urlPatternHint),
                     onChanged: (v) => urlPattern = v,
                   ),
                 ],
                 const SizedBox(height: 16),
-                const Text('动作类型', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.of(context)!.mcpActionType,
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 ...AutomationActionType.values.map((action) => CheckboxListTile(
                   title: Text(action.label),
@@ -220,7 +232,9 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppLocalizations.of(context)!.cancel)),
             FilledButton(
               onPressed: () async {
                 if (nameController.text.isEmpty) return;
@@ -245,7 +259,9 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
                 Navigator.pop(context);
                 await _loadTasks();
               },
-              child: Text(isEdit ? '保存' : '添加'),
+              child: Text(isEdit
+                  ? AppLocalizations.of(context)!.save
+                  : AppLocalizations.of(context)!.add),
             ),
           ],
         ),
@@ -266,19 +282,31 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailRow('描述', task.description.isEmpty ? '无' : task.description),
-              _buildDetailRow('触发器', task.triggerType.label),
-              _buildDetailRow('动作', task.actions.map((a) => a.label).join(', ')),
-              _buildDetailRow('状态', task.enabled ? '✅ 已启用' : '❌ 已禁用'),
-              _buildDetailRow('执行次数', '${task.executionCount} 次'),
-              if (task.lastExecutedAt != null) _buildDetailRow('最后执行', _formatDate(task.lastExecutedAt!)),
-              _buildDetailRow('创建时间', _formatDate(task.createdAt)),
-              _buildDetailRow('更新时间', _formatDate(task.updatedAt)),
+              _buildDetailRow(AppLocalizations.of(context)!.descriptionLabel,
+                  task.description.isEmpty ? AppLocalizations.of(context)!.none : task.description),
+              _buildDetailRow(AppLocalizations.of(context)!.mcpTrigger, task.triggerType.label),
+              _buildDetailRow(AppLocalizations.of(context)!.mcpAction,
+                  task.actions.map((a) => a.label).join(', ')),
+              _buildDetailRow(
+                  AppLocalizations.of(context)!.mcpStatus,
+                  task.enabled
+                      ? AppLocalizations.of(context)!.mcpStatusEnabled
+                      : AppLocalizations.of(context)!.mcpStatusDisabled),
+              _buildDetailRow(AppLocalizations.of(context)!.executionCount,
+                  AppLocalizations.of(context)!.timesCount(task.executionCount)),
+              if (task.lastExecutedAt != null)
+                _buildDetailRow(AppLocalizations.of(context)!.mcpLastExecuted,
+                    _formatDate(task.lastExecutedAt!)),
+              _buildDetailRow(
+                  AppLocalizations.of(context)!.mcpCreatedAt, _formatDate(task.createdAt)),
+              _buildDetailRow(
+                  AppLocalizations.of(context)!.mcpUpdatedAt, _formatDate(task.updatedAt)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context)!.close)),
         ],
       ),
     );
@@ -293,7 +321,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit),
-              title: const Text('编辑任务'),
+              title: Text(AppLocalizations.of(context)!.mcpEditTask),
               onTap: () {
                 Navigator.pop(context);
                 _showTaskDialog(task);
@@ -301,7 +329,9 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
             ),
             ListTile(
               leading: Icon(task.enabled ? Icons.pause : Icons.play_arrow),
-              title: Text(task.enabled ? '禁用任务' : '启用任务'),
+              title: Text(task.enabled
+                  ? AppLocalizations.of(context)!.mcpDisableTask
+                  : AppLocalizations.of(context)!.mcpEnableTask),
               onTap: () async {
                 await _toggleTask(task);
                 Navigator.pop(context);
@@ -309,7 +339,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
             ),
             ListTile(
               leading: const Icon(Icons.info),
-              title: const Text('查看详情'),
+              title: Text(AppLocalizations.of(context)!.mcpViewDetails),
               onTap: () {
                 Navigator.pop(context);
                 _showTaskDetails(task);
@@ -318,29 +348,36 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
             if (task.triggerType == AutomationTriggerType.manual)
               ListTile(
                 leading: const Icon(Icons.play_arrow),
-                title: const Text('手动执行'),
+                title: Text(AppLocalizations.of(context)!.mcpRunManually),
                 onTap: () async {
                   await _manager.executeTask(task.id);
                   if (mounted) {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('任务已触发')));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(AppLocalizations.of(context)!.mcpTaskTriggered)));
                     await _loadTasks();
                   }
                 },
               ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('删除任务', style: TextStyle(color: Colors.red)),
+              title: Text(AppLocalizations.of(context)!.mcpDeleteTask,
+                  style: TextStyle(color: Colors.red)),
               onTap: () async {
                 Navigator.pop(context);
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (c) => AlertDialog(
-                    title: const Text('确认删除'),
-                    content: Text('确定要删除任务 "${task.name}" 吗？'),
+                    title: Text(AppLocalizations.of(context)!.confirmDelete),
+                    content: Text(
+                        AppLocalizations.of(context)!.mcpDeleteTaskNameConfirm(task.name)),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('取消')),
-                      FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('删除')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(c, false),
+                          child: Text(AppLocalizations.of(context)!.cancel)),
+                      FilledButton(
+                          onPressed: () => Navigator.pop(c, true),
+                          child: Text(AppLocalizations.of(context)!.delete)),
                     ],
                   ),
                 );

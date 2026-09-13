@@ -29,6 +29,8 @@ import 'package:proxypin/ui/component/ws_traffic_port_dialog.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/network/util/windows_takeover.dart';
 import 'package:proxypin/ui/configuration.dart';
+import 'package:proxypin/ui/content/mcp_task_manager_page.dart';
+import 'package:proxypin/ui/content/websocket_intercept_manager.dart';
 
 /// @author wanghongen
 /// 2024/1/2
@@ -361,6 +363,28 @@ class _PreferenceState extends State<Preference> {
                         setState(() => configuration.antiCacheEnabled = v);
                         configuration.flushConfig();
                       })),
+
+              const Divider(),
+              // 高级功能入口：以下管理页面此前已实现但无任何 UI 入口（不可达），
+              // 这里补齐入口，使用户可访问 WebSocket 拦截 / MCP 定时任务。
+              ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading:
+                      Icon(Icons.swap_horiz, size: 18, color: Theme.of(context).colorScheme.primary),
+                  title: Text(localizations.wsInterceptor, style: titleStyle),
+                  subtitle: Text(localizations.wsInterceptorDesc, style: subtitleStyle),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => const WebSocketInterceptManager()))),
+              ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading:
+                      Icon(Icons.schedule, size: 18, color: Theme.of(context).colorScheme.primary),
+                  title: Text(localizations.mcpAutomationTasks, style: titleStyle),
+                  subtitle: Text(localizations.mcpAutomationTasksDesc, style: subtitleStyle),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => const MCPTaskManagerPage()))),
 
               SizedBox(height: 5),
             ])));

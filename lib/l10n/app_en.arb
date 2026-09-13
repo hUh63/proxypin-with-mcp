@@ -555,5 +555,225 @@
   "grantCameraPermission": "Please grant camera permission",
   "quickFilter": "Quick filter",
   "noMessageBody": "This request has no message body",
-  "dataType": "Type"
+  "dataType": "Type",
+  "wsInterceptor": "WebSocket Interception",
+  "wsInterceptorDesc": "Pause, edit and resume WebSocket messages with rules",
+  "scriptWorkflow": "Script Workflows",
+  "scriptWorkflowDesc": "Compose and manage multi-step script workflows",
+  "mcpAutomationTasks": "MCP Scheduled Tasks",
+  "mcpAutomationTasksDesc": "Schedule and manage automated MCP tasks",
+  "wsInterceptRules": "WebSocket Interception Rules",
+  "wsInterceptManagement": "WebSocket Interception Management",
+  "wsManageRules": "Manage interception rules",
+  "wsGlobalInterceptToggle": "Global Interception",
+  "wsGlobalEnabledDesc": "Enabled - messages matching a rule will be intercepted",
+  "wsGlobalDisabledDesc": "Disabled - all messages pass through",
+  "wsGlobalEnabledInterceptDesc": "Enabled - WebSocket messages matching a rule will be paused",
+  "wsTapToAddRule": "Tap the button below to add a rule",
+  "wsAddRule": "Add Rule",
+  "wsEditRule": "Edit Rule",
+  "wsDeleteRule": "Delete Rule",
+  "wsDeleteRuleConfirm": "Delete rule \"{name}\"?",
+  "@wsDeleteRuleConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "wsRuleDeleted": "Rule deleted",
+  "wsRuleAdded": "Rule added",
+  "wsNoPausedMessages": "No paused WebSocket messages",
+  "wsGlobalDisabledHint": "Global interception is disabled; enable it to see paused messages",
+  "wsMessageResumed": "Message resumed",
+  "wsMessageAborted": "Message aborted",
+  "wsAbortByUser": "Manually aborted by user",
+  "wsPausedInfo": "{opcode} • Paused {seconds}s • {preview}",
+  "@wsPausedInfo": {
+    "placeholders": {
+      "opcode": { "type": "String" },
+      "seconds": { "type": "int" },
+      "preview": { "type": "String" }
+    }
+  },
+  "wsModifyPayload": "Edit Payload",
+  "wsResume": "Resume",
+  "wsAbort": "Abort",
+  "wsFullUrl": "Full URL:",
+  "wsPayloadPreview": "Payload Preview:",
+  "wsPausedAt": "Paused at: {time}",
+  "@wsPausedAt": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "wsPayloadModifiedResumed": "Payload modified and resumed",
+  "wsSaveAndResume": "Save and Resume",
+  "ruleName": "Rule Name",
+  "wsRuleNameHint": "e.g. API interception",
+  "wsEnterRuleName": "Please enter a rule name",
+  "matchPattern": "Match Pattern",
+  "wsEnterMatchPattern": "Please enter a match pattern",
+  "matchMethod": "Match Method",
+  "ruleDescOptional": "Rule Description (optional)",
+  "wsRuleDescHint": "e.g. intercept all API requests",
+  "wsInterceptDirection": "Intercept Direction:",
+  "wsOutgoing": "Outgoing (OUT)",
+  "wsIncoming": "Incoming (IN)",
+  "wsSelectDirection": "Please select at least one interception direction",
+  "matchContains": "Contains",
+  "matchStartsWith": "Starts With",
+  "matchEndsWith": "Ends With",
+  "matchRegex": "Regex",
+  "matchExact": "Exact Match",
+  "urlPatternHint": "e.g. api.example.com",
+  "noAutomationTasks": "No automation tasks",
+  "createTask": "Create Task",
+  "mcpEditTask": "Edit Task",
+  "mcpAddTask": "Add Task",
+  "mcpTaskName": "Task Name",
+  "descriptionLabel": "Description",
+  "mcpTriggerType": "Trigger Type",
+  "urlPattern": "URL Pattern",
+  "mcpActionType": "Action Type",
+  "mcpTrigger": "Trigger",
+  "mcpAction": "Action",
+  "mcpStatus": "Status",
+  "mcpStatusEnabled": "✅ Enabled",
+  "mcpStatusDisabled": "❌ Disabled",
+  "executionCount": "Execution Count",
+  "timesCount": "{count} times",
+  "@timesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mcpTaskActionsSummary": "{actions} actions | executed {count} times",
+  "@mcpTaskActionsSummary": {
+    "placeholders": {
+      "actions": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
+  "mcpLastExecuted": "Last Executed",
+  "mcpCreatedAt": "Created At",
+  "mcpUpdatedAt": "Updated At",
+  "mcpDisableTask": "Disable Task",
+  "mcpEnableTask": "Enable Task",
+  "mcpViewDetails": "View Details",
+  "mcpRunManually": "Run Now",
+  "mcpTaskTriggered": "Task triggered",
+  "mcpDeleteTask": "Delete Task",
+  "confirmDelete": "Confirm Delete",
+  "mcpDeleteTaskNameConfirm": "Delete task \"{name}\"?",
+  "@mcpDeleteTaskNameConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "none": "None",
+  "scriptWorkflowManager": "Script Workflow Manager",
+  "useTutorial": "Tutorial",
+  "newWorkflow": "New Workflow",
+  "runSelectedWorkflow": "Run Selected Workflow",
+  "workflowList": "Workflow List",
+  "noWorkflows": "No workflows yet. Tap + in the top right to create one",
+  "workflowNodesSummary": "{nodes} nodes | {successes} succeeded",
+  "@workflowNodesSummary": {
+    "placeholders": {
+      "nodes": { "type": "int" },
+      "successes": { "type": "int" }
+    }
+  },
+  "selectWorkflowHint": "Select a workflow to view its details",
+  "workflowDescription": "Description: {desc}",
+  "@workflowDescription": {
+    "placeholders": {
+      "desc": { "type": "String" }
+    }
+  },
+  "nodeCount": "Nodes",
+  "successRate": "Success Rate",
+  "workflowNodes": "Workflow Nodes",
+  "nodeInfo": "Type: {type} | Timeout: {timeout}s | Retry: {retry} times",
+  "@nodeInfo": {
+    "placeholders": {
+      "type": { "type": "String" },
+      "timeout": { "type": "int" },
+      "retry": { "type": "int" }
+    }
+  },
+  "moveUp": "Move Up",
+  "moveDown": "Move Down",
+  "scriptContentLabel": "Script:",
+  "dependenciesLabel": "Dependencies:",
+  "variablesLabel": "Variables:",
+  "recentExecutions": "Recent Executions",
+  "addNode": "Add Node",
+  "executing": "Running...",
+  "executeWorkflow": "Run Workflow",
+  "executionSummary": "Duration: {duration}ms | Success: {success}/{total}",
+  "@executionSummary": {
+    "placeholders": {
+      "duration": { "type": "int" },
+      "success": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "createWorkflow": "Create Workflow",
+  "workflowName": "Workflow Name",
+  "workflowNameHint": "e.g. Auto login flow",
+  "create": "Create",
+  "createSuccess": "Created successfully",
+  "editWorkflow": "Edit Workflow",
+  "deleteWorkflowConfirm": "Delete workflow \"{name}\"?",
+  "@deleteWorkflowConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "workflowCopy": "{name} (Copy)",
+  "@workflowCopy": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "copySuccess": "Copied successfully",
+  "nodeName": "Node Name",
+  "nodeNameHint": "e.g. Run login script",
+  "scriptContent": "Script Content",
+  "scriptHint": "Enter a JavaScript or Dart script",
+  "timeoutSecondsLabel": "Timeout (seconds)",
+  "retryCountLabel": "Retry Count",
+  "retryDelayLabel": "Retry Delay (seconds)",
+  "nodeDefaultName": "Node {index}",
+  "@nodeDefaultName": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "editNode": "Edit Node",
+  "deleteNodeConfirm": "Delete node \"{name}\"?",
+  "@deleteNodeConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "executeSuccess": "Executed successfully",
+  "durationMs": "Duration: {ms}ms",
+  "@durationMs": {
+    "placeholders": {
+      "ms": { "type": "int" }
+    }
+  },
+  "executeFailed": "Execution failed",
+  "unknownError": "Unknown error",
+  "executeException": "Execution error",
+  "errorDetails": "Error Details",
+  "showAllItems": "Show all ({count})",
+  "@showAllItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

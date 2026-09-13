@@ -58,19 +58,20 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
   }
 
   Future<void> _deleteRule(WebSocketRule rule) async {
+    final appLocalizations = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('删除规则'),
-        content: Text('确定要删除规则 "${rule.name}" 吗？'),
+        title: Text(appLocalizations.wsDeleteRule),
+        content: Text(appLocalizations.wsDeleteRuleConfirm(rule.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('取消'),
+            child: Text(appLocalizations.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('删除', style: TextStyle(color: Colors.red)),
+            child: Text(appLocalizations.delete, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -81,7 +82,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
       await _loadRules();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('规则已删除')),
+          SnackBar(content: Text(appLocalizations.wsRuleDeleted)),
         );
       }
     }
@@ -113,6 +114,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
   }
 
   Future<void> _addRule() async {
+    final appLocalizations = AppLocalizations.of(context)!;
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => RuleEditDialog(),
@@ -130,7 +132,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
       await _loadRules();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('规则已添加')),
+          SnackBar(content: Text(appLocalizations.wsRuleAdded)),
         );
       }
     }
@@ -138,16 +140,16 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final appLocalizations = AppLocalizations.of(context);
+    final appLocalizations = AppLocalizations.of(context)!;
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('WebSocket 拦截规则'),
+        title: Text(appLocalizations.wsInterceptRules),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: _loadRules,
-            tooltip: '刷新',
+            tooltip: appLocalizations.refresh,
           ),
         ],
       ),
@@ -173,7 +175,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '全局拦截开关',
+                                appLocalizations.wsGlobalInterceptToggle,
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -181,8 +183,8 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
                               ),
                               Text(
                                 _globalEnabled
-                                    ? '已启用 - 匹配规则的消息将被拦截'
-                                    : '已禁用 - 所有消息直接放行',
+                                    ? appLocalizations.wsGlobalEnabledDesc
+                                    : appLocalizations.wsGlobalDisabledDesc,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -214,7 +216,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
                               ),
                               SizedBox(height: 16),
                               Text(
-                                '暂无规则',
+                                appLocalizations.noRules,
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey[600],
@@ -222,7 +224,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
                               ),
                               SizedBox(height: 8),
                               Text(
-                                '点击下方按钮添加规则',
+                                appLocalizations.wsTapToAddRule,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[400],
@@ -259,7 +261,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
                                   children: [
                                     SizedBox(height: 4),
                                     Text(
-                                      '${_getModeName(rule.mode)}: ${rule.pattern}',
+                                      '${_getModeName(appLocalizations, rule.mode)}: ${rule.pattern}',
                                       style: TextStyle(fontSize: 12),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -321,16 +323,16 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
                                   itemBuilder: (context) => [
                                     PopupMenuItem(
                                       value: 'toggle',
-                                      child: Text(rule.enabled ? '禁用' : '启用'),
+                                      child: Text(rule.enabled ? appLocalizations.disabled : appLocalizations.enable),
                                     ),
                                     PopupMenuItem(
                                       value: 'edit',
-                                      child: Text('编辑'),
+                                      child: Text(appLocalizations.edit),
                                     ),
                                     PopupMenuItem(
                                       value: 'delete',
                                       child: Text(
-                                        '删除',
+                                        appLocalizations.delete,
                                         style: TextStyle(color: Colors.red),
                                       ),
                                     ),
@@ -351,18 +353,18 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
     );
   }
 
-  String _getModeName(RuleMatchMode mode) {
+  String _getModeName(AppLocalizations appLocalizations, RuleMatchMode mode) {
     switch (mode) {
       case RuleMatchMode.contains:
-        return '包含';
+        return appLocalizations.matchContains;
       case RuleMatchMode.startsWith:
-        return '开头';
+        return appLocalizations.matchStartsWith;
       case RuleMatchMode.endsWith:
-        return '结尾';
+        return appLocalizations.matchEndsWith;
       case RuleMatchMode.regex:
-        return '正则';
+        return appLocalizations.matchRegex;
       case RuleMatchMode.exact:
-        return '完全匹配';
+        return appLocalizations.matchExact;
     }
   }
 }
@@ -408,8 +410,9 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(widget.rule == null ? '添加规则' : '编辑规则'),
+      title: Text(widget.rule == null ? appLocalizations.wsAddRule : appLocalizations.wsEditRule),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -419,12 +422,12 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: '规则名称',
-                  hintText: '例如：API 拦截',
+                  labelText: appLocalizations.ruleName,
+                  hintText: appLocalizations.wsRuleNameHint,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入规则名称';
+                    return appLocalizations.wsEnterRuleName;
                   }
                   return null;
                 },
@@ -433,12 +436,12 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
               TextFormField(
                 controller: _patternController,
                 decoration: InputDecoration(
-                  labelText: '匹配模式',
-                  hintText: '例如：api.example.com',
+                  labelText: appLocalizations.matchPattern,
+                  hintText: appLocalizations.urlPatternHint,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入匹配模式';
+                    return appLocalizations.wsEnterMatchPattern;
                   }
                   return null;
                 },
@@ -447,27 +450,27 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
               DropdownButtonFormField<RuleMatchMode>(
                   isExpanded: true,
                 value: _mode,
-                decoration: InputDecoration(labelText: '匹配方式'),
+                decoration: InputDecoration(labelText: appLocalizations.matchMethod),
                 items: [
                   DropdownMenuItem(
                     value: RuleMatchMode.contains,
-                    child: Text('包含'),
+                    child: Text(appLocalizations.matchContains),
                   ),
                   DropdownMenuItem(
                     value: RuleMatchMode.startsWith,
-                    child: Text('开头'),
+                    child: Text(appLocalizations.matchStartsWith),
                   ),
                   DropdownMenuItem(
                     value: RuleMatchMode.endsWith,
-                    child: Text('结尾'),
+                    child: Text(appLocalizations.matchEndsWith),
                   ),
                   DropdownMenuItem(
                     value: RuleMatchMode.regex,
-                    child: Text('正则表达式'),
+                    child: Text(appLocalizations.regExp),
                   ),
                   DropdownMenuItem(
                     value: RuleMatchMode.exact,
-                    child: Text('完全匹配'),
+                    child: Text(appLocalizations.matchExact),
                   ),
                 ],
                 onChanged: (value) {
@@ -478,19 +481,19 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
               TextFormField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
-                  labelText: '规则描述 (可选)',
-                  hintText: '例如：拦截所有 API 请求',
+                  labelText: appLocalizations.ruleDescOptional,
+                  hintText: appLocalizations.wsRuleDescHint,
                 ),
                 maxLines: 2,
               ),
               SizedBox(height: 16),
-              Text('拦截方向:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(appLocalizations.wsInterceptDirection, style: TextStyle(fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: CheckboxListTile(
-                      title: Text('发出 (OUT)'),
+                      title: Text(appLocalizations.wsOutgoing),
                       value: _interceptOutgoing,
                       onChanged: (value) {
                         setState(() => _interceptOutgoing = value ?? false);
@@ -499,7 +502,7 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
                   ),
                   Expanded(
                     child: CheckboxListTile(
-                      title: Text('接收 (IN)'),
+                      title: Text(appLocalizations.wsIncoming),
                       value: _interceptIncoming,
                       onChanged: (value) {
                         setState(() => _interceptIncoming = value ?? false);
@@ -515,14 +518,14 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('取消'),
+          child: Text(appLocalizations.cancel),
         ),
         TextButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               if (!_interceptOutgoing && !_interceptIncoming) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('请至少选择一个拦截方向')),
+                  SnackBar(content: Text(appLocalizations.wsSelectDirection)),
                 );
                 return;
               }
@@ -538,7 +541,7 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
               });
             }
           },
-          child: Text('保存'),
+          child: Text(appLocalizations.save),
         ),
       ],
     );

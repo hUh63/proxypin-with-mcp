@@ -285,3 +285,31 @@
 - ==下次启动抓包生效==（拦截器在代理启动时装配）
 - 实现位置：`lib/network/components/anti_cache_interceptor.dart`（`Interceptor`，priority 10，先于改写/脚本清理请求头）、`lib/network/bin/server.dart`（按 `antiCacheEnabled` 注册）、`lib/network/bin/configuration.dart`（配置项）
 - 参考竞品：mitmproxy 的 anticache、Proxyman 的 No Caching
+
+## 高级功能入口（WebSocket 拦截 / MCP 定时任务）
+
+- 入口：偏好设置（移动端「设置」）→「高级功能」区，共两个入口：**WebSocket 拦截**、**MCP 定时任务**
+- ==背景==：这两个管理页面此前已实现但**没有任何 UI 入口**（文件不可达、从未参与编译），用户无从访问；v1.22.56 起补齐入口，并完成中 / 英 / 繁国际化
+- **WebSocket 拦截**：进入 `WebSocketInterceptManager`，右上角「管理拦截规则」进入 `WebSocketRuleManagerPage`，可开关全局拦截、增删改规则（匹配方式：包含 / 前缀 / 后缀 / 正则 / 精确；方向：发出 / 接收）
+- **MCP 定时任务**：进入 `MCPTaskManagerPage`，管理 MCP 自动化定时任务（触发类型、URL 模式、动作、启停、手动执行）
+- 实现位置：`lib/ui/content/websocket_intercept_manager.dart`、`websocket_rule_manager_page.dart`、`mcp_task_manager_page.dart`；入口在 `lib/ui/desktop/preference.dart`、`lib/ui/mobile/setting/preference.dart`
+- ==工作流编排暂缺图形界面==：脚本设置页原「工作流」按钮会打开**空窗口**（多窗口工厂未处理窗口名 `ScriptWorkflowManagerPage`），且草稿页与 `ScriptWorkflowEngine` API 严重不符、无法编译；v1.22.56 已移除该死按钮与草稿页。工作流引擎已接线（`server.dart`），可经 MCP 触发，图形界面待按引擎实际 API 重建
+
+## WebSocket 消息拦截的语义（观测模式）
+
+- 页面可展示被规则命中的「暂停」WebSocket 帧，并支持**恢复 / 中止 / 编辑载荷**
+- ==重要==：WebSocket 转发采用**原始字节直通**（保真、零拷贝）设计，帧在解析前即已转发，因此 MCP 侧的「暂停」是**观测 / 登记语义**——不会阻塞或改写实际转发的字节；`resume` 时可回写登记内容，仅供 MCP 客户端展示
+- 暂停帧记录有**保留时长（10 分钟）与数量上限（256 条）**，超期或超量自动惰性清理，避免长时间运行内存持续增长（v1.22.56 修复）
+- 实现位置：`lib/network/mcp/mcp_bridge.dart`（`pauseWebSocketMessage` / `resumeWebSocketMessage` / `abortWebSocketMessage` / `_purgeExpiredPausedFrames`）
+
+## 大 JSON 查看性能保护
+
+- JSON 查看器（详情页「JSON」标签、工具箱 JSON 查看器等）对**超大对象 / 数组**做了渲染保护：单个对象或数组默认最多渲染 **1000** 个子项，其余以「**显示全部（共 N 项）**」按钮呈现，点击后展开全部
+- 目的：避免打开超大 JSON 时一次性构建海量 Widget 导致的卡顿 / 掉帧
+- 另：搜索匹配的 `GlobalKey` 列表提升为 State 缓存，并防止 `postFrameCallback` 在同一帧内重复注册堆积（v1.22.56）
+- 实现位置：`lib/ui/component/json/json_viewer.dart`
+
+## 代码库规范化（v1.22.56）
+
+- 清理了**无法编译且不可达**的死代码文件：`lib/ui/component/components.dart`（聚合导出指向不存在的 `api_endpoints_page.dart`）、`lib/ui/component/code_generator_page.dart` 与 `lib/network/util/code_generator.dart`（均引用了不存在的 `Request` 类型）、`lib/ui/content/script_template_manager_page.dart`（依赖不存在的 `CodeEditorDialog`）
+- 结果：全库 339 个 Dart 文件的所有 `import` 均可解析（**0 处断链**），代码库不再包含「一旦被引用即编译失败」的隐藏雷区

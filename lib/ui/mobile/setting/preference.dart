@@ -16,6 +16,8 @@ import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/component/ws_traffic_port_dialog.dart';
 import 'package:proxypin/ui/configuration.dart';
+import 'package:proxypin/ui/content/mcp_task_manager_page.dart';
+import 'package:proxypin/ui/content/websocket_intercept_manager.dart';
 import 'package:proxypin/ui/mobile/setting/config_management.dart';
 import 'package:proxypin/ui/mobile/setting/theme.dart';
 
@@ -776,6 +778,29 @@ class _PreferenceState extends State<Preference> {
                   ),
                 );
               },
+            ),
+          ]),
+          const SizedBox(height: 12),
+          // 高级功能入口：以下管理页面此前已实现但无任何 UI 入口（不可达），
+          // 这里补齐入口，使用户可访问 WebSocket 拦截 / MCP 定时任务。
+          section([
+            ListTile(
+              leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
+              title: Text(localizations.wsInterceptor),
+              subtitle: Text(localizations.wsInterceptorDesc, style: const TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const WebSocketInterceptManager())),
+            ),
+            Divider(height: 0, thickness: 0.3, color: dividerColor),
+            ListTile(
+              leading: const Icon(Icons.schedule, color: Colors.deepPurple),
+              title: Text(localizations.mcpAutomationTasks),
+              subtitle:
+                  Text(localizations.mcpAutomationTasksDesc, style: const TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const MCPTaskManagerPage())),
             ),
           ]),
           const SizedBox(height: 15),

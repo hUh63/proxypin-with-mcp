@@ -75,21 +75,24 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
   }
 
   void _resumeMessage(PausedWebSocketFrame frame) {
+    final appLocalizations = AppLocalizations.of(context)!;
     McpBridge().resumeWebSocketMessage(frame.frameId);
     _loadPausedMessages();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('消息已恢复'), duration: const Duration(seconds: 1)),
+        SnackBar(content: Text(appLocalizations.wsMessageResumed), duration: const Duration(seconds: 1)),
       );
     }
   }
 
   void _abortMessage(PausedWebSocketFrame frame) {
-    McpBridge().abortWebSocketMessage(frame.frameId, reason: '用户手动中止');
+    final appLocalizations = AppLocalizations.of(context)!;
+    // reason 为程序化参数（传给网络/MCP 层），保持固定值，不随界面语言变化
+    McpBridge().abortWebSocketMessage(frame.frameId, reason: 'user abort');
     _loadPausedMessages();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('消息已中止'), duration: const Duration(seconds: 1)),
+        SnackBar(content: Text(appLocalizations.wsMessageAborted), duration: const Duration(seconds: 1)),
       );
     }
   }
@@ -120,15 +123,15 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appLocalizations = AppLocalizations.of(context);
+    final appLocalizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WebSocket 拦截管理'),
+        title: Text(appLocalizations.wsInterceptManagement),
         actions: [
           IconButton(
             icon: const Icon(Icons.rule),
-            tooltip: '管理拦截规则',
+            tooltip: appLocalizations.wsManageRules,
             onPressed: _navigateToRuleManager,
           ),
         ],
@@ -149,8 +152,8 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
                         const SizedBox(height: 16),
                         Text(
                           _globalEnabled 
-                            ? '暂无暂停的 WebSocket 消息' 
-                            : '全局拦截已禁用，开启后将显示暂停的消息',
+                            ? appLocalizations.wsNoPausedMessages 
+                            : appLocalizations.wsGlobalDisabledHint,
                           style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.outline),
                         ),
                       ],
@@ -171,6 +174,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
   }
 
   Widget _buildControlCard(ThemeData theme) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return Card(
       margin: const EdgeInsets.all(8),
       child: Padding(
@@ -188,14 +192,14 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '全局拦截开关',
+                    appLocalizations.wsGlobalInterceptToggle,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _globalEnabled 
-                      ? '已启用 - 匹配规则的 WebSocket 消息将被暂停' 
-                      : '已禁用 - 所有消息直接放行',
+                      ? appLocalizations.wsGlobalEnabledInterceptDesc 
+                      : appLocalizations.wsGlobalDisabledDesc,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.outline,
                     ),
@@ -214,6 +218,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
   }
 
   Widget _buildMessageCard(PausedWebSocketFrame frame, ThemeData theme) {
+    final appLocalizations = AppLocalizations.of(context)!;
     final isOutgoing = frame.isOutgoing;
     final duration = DateTime.now().difference(frame.pausedAt);
     
@@ -245,7 +250,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          '${_getOpcodeName(frame.opcode)} • 暂停 ${duration.inSeconds}秒 • ${frame.payloadPreview}',
+          appLocalizations.wsPausedInfo(_getOpcodeName(frame.opcode), duration.inSeconds, frame.payloadPreview),
           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -255,19 +260,19 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
           children: [
             IconButton(
               icon: const Icon(Icons.edit),
-              tooltip: '修改 Payload',
+              tooltip: appLocalizations.wsModifyPayload,
               onPressed: () => _editMessage(frame),
               color: theme.colorScheme.primary,
             ),
             IconButton(
               icon: const Icon(Icons.play_arrow),
-              tooltip: '恢复',
+              tooltip: appLocalizations.wsResume,
               onPressed: () => _resumeMessage(frame),
               color: theme.colorScheme.tertiary,
             ),
             IconButton(
               icon: const Icon(Icons.stop),
-              tooltip: '中止',
+              tooltip: appLocalizations.wsAbort,
               onPressed: () => _abortMessage(frame),
               color: theme.colorScheme.error,
             ),
@@ -280,7 +285,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('完整 URL:', style: theme.textTheme.labelSmall),
+                Text(appLocalizations.wsFullUrl, style: theme.textTheme.labelSmall),
                 const SizedBox(height: 4),
                 SelectionArea(
                   child: Text(
@@ -289,7 +294,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text('Payload 预览:', style: theme.textTheme.labelSmall),
+                Text(appLocalizations.wsPayloadPreview, style: theme.textTheme.labelSmall),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -306,7 +311,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '暂停时间：${_formatDateTime(frame.pausedAt)}',
+                  appLocalizations.wsPausedAt(_formatDateTime(frame.pausedAt)),
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
                 ),
               ],
@@ -381,9 +386,10 @@ class _PayloadEditDialogState extends State<_PayloadEditDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appLocalizations = AppLocalizations.of(context)!;
 
     return AlertDialog(
-      title: const Text('修改 Payload'),
+      title: Text(appLocalizations.wsModifyPayload),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
@@ -391,8 +397,8 @@ class _PayloadEditDialogState extends State<_PayloadEditDialog> {
           children: [
             // 视图切换
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'text', label: Text('文本')),
+              segments: [
+                ButtonSegment(value: 'text', label: Text(appLocalizations.text)),
                 ButtonSegment(value: 'json', label: Text('JSON')),
                 ButtonSegment(value: 'hex', label: Text('HEX')),
               ],
@@ -447,17 +453,17 @@ class _PayloadEditDialogState extends State<_PayloadEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
+          child: Text(appLocalizations.cancel),
         ),
         FilledButton(
           onPressed: () {
             widget.onSaved(_getPayload());
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Payload 已修改并恢复'), duration: Duration(seconds: 2)),
+              SnackBar(content: Text(appLocalizations.wsPayloadModifiedResumed), duration: const Duration(seconds: 2)),
             );
           },
-          child: const Text('保存并恢复'),
+          child: Text(appLocalizations.wsSaveAndResume),
         ),
       ],
     );
