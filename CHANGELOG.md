@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.22.61 (2026-09-15)
+
+### 新功能：安全自检（被动安全基线核查）
+
+- 工具箱新增「**安全自检**」：只读地分析**已抓到的**流量，按 高 / 中 / 低 / 提示 四级列出常见隐患，可筛选、可导出 Markdown 报告
+- 覆盖 15 条规则：明文 HTTP 传输、URL / 请求体敏感参数、Cookie 缺 Secure / HttpOnly / SameSite、缺失安全响应头、服务器指纹、私钥 / 密钥泄露、PII、错误堆栈泄露、CORS 过宽、JWT alg=none / 无 exp、HTTP/1.0
+- **边界：不发送任何请求**，不做注入探测 / 载荷投递 / 爆破 / 绕过——属于被动扫描（passive scan），不是主动漏洞利用
+- 实现：`SecurityAuditor`（`lib/network/util/security_audit.dart`）+ `SecurityAuditPage`（`lib/ui/component/security_audit_page.dart`）
+- 去重 + 规模保护（最多 5000 条请求；单条 body 超 512 KB 跳过内容检测）
+
+### i18n
+
+- 新增 16 条词条，en / zh / zh_Hant 三份 ARB 键集合一致（各 722 键）
+
+### 文档
+
+- 新增内置教程 `docs/security_audit_guide.md`（边界 / 规则清单 / 使用 / 实现 / 联动 / 导出格式 / FAQ），已在「使用文档」中心登记
+- `docs/features_tips.md` 新增「安全自检」一节
+
 ## v1.22.60 (2026-09-15)
 
 ### 新功能：采集方案（借鉴 proxypin-mcp-workbench 的 Capture Plan）

@@ -5,6 +5,7 @@ import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
 import 'package:proxypin/ui/component/capture_plan_page.dart';
+import 'package:proxypin/ui/component/security_audit_page.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
@@ -312,6 +313,16 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.api,
                       text: 'API 端点',
                       tooltip: '从抓包数据提取 API 端点'),
+                  IconText(
+                      onTap: () {
+                        // 对已抓到的流量做被动安全基线核查（不发送任何请求）
+                        final source = (widget.requestContainer ?? const <HttpRequest>[]).toList();
+                        Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => SecurityAuditPage(requests: source)));
+                      },
+                      icon: Icons.shield_outlined,
+                      text: localizations.securityAudit,
+                      tooltip: localizations.securityAuditTips),
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {

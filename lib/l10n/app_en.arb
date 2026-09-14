@@ -850,5 +850,21 @@
   "capturePlanAddStep": "Add step",
   "capturePlanStepTitle": "Step title",
   "capturePlanStepDesc": "Step details",
-  "capturePlanNameRequired": "Please enter a plan name"
+  "capturePlanNameRequired": "Please enter a plan name",
+  "securityAudit": "Security Self-Audit",
+  "securityAuditTips": "Passive analysis of the traffic already captured. It never sends any request; findings need manual review.",
+  "securityAuditScanned": "Requests analyzed",
+  "securityAuditIssues": "Findings",
+  "securityAuditSeverityHigh": "High",
+  "securityAuditSeverityMedium": "Medium",
+  "securityAuditSeverityLow": "Low",
+  "securityAuditSeverityInfo": "Info",
+  "securityAuditSuggestion": "Suggestion",
+  "securityAuditExport": "Export report",
+  "securityAuditExportSuccess": "Report exported",
+  "securityAuditExportFailed": "Failed to export report:",
+  "securityAuditFilterAll": "All",
+  "securityAuditEmpty": "No findings under the current filter",
+  "securityAuditClean": "No notable risks found",
+  "securityAuditCleanTips": "None of the rules matched the analyzed traffic. The rules cover common configuration issues only and do not guarantee absolute security."
 }

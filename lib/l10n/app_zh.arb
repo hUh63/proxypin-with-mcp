@@ -704,5 +704,21 @@
   "capturePlanAddStep": "添加步骤",
   "capturePlanStepTitle": "步骤标题",
   "capturePlanStepDesc": "步骤说明",
-  "capturePlanNameRequired": "请填写方案名称"
+  "capturePlanNameRequired": "请填写方案名称",
+  "securityAudit": "安全自检",
+  "securityAuditTips": "只对已抓到的流量做被动分析，不会发送任何请求；发现项需人工复核。",
+  "securityAuditScanned": "已分析请求",
+  "securityAuditIssues": "风险项",
+  "securityAuditSeverityHigh": "高危",
+  "securityAuditSeverityMedium": "中危",
+  "securityAuditSeverityLow": "低危",
+  "securityAuditSeverityInfo": "提示",
+  "securityAuditSuggestion": "建议",
+  "securityAuditExport": "导出报告",
+  "securityAuditExportSuccess": "报告已导出",
+  "securityAuditExportFailed": "导出报告失败:",
+  "securityAuditFilterAll": "全部",
+  "securityAuditEmpty": "当前筛选下没有风险项",
+  "securityAuditClean": "未发现明显风险",
+  "securityAuditCleanTips": "本次分析的流量未命中任何规则。规则只覆盖常见配置问题，不代表绝对安全。"
 }
