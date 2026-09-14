@@ -352,3 +352,22 @@
 - **MCP 定时任务**（设置 →「MCP 定时任务」）管理 `MCPAutomationManager`：按 **请求匹配 / 响应匹配 / 定时 / 代理启停 / 手动** 触发，执行「修改请求 / 拦截 / 重放 / 导出 / 脚本 / 通知 / Webhook」等动作；已接线到 `server.dart` 与 `lib/network/handle/http_proxy_handle.dart`
 - **MCP 自动化**（桌面：设置 →「MCP 自动化」子窗口；移动：设置 → MCP 连接 → MCP 自动化）为 6 标签页：定时任务 / 事件监听 / 规则引擎 / Prompts / Roots / **工作流**；其中「工作流」即可视化编排脚本工作流
 - 二者面向不同模型、各自可用；**脚本工作流的图形界面请从「MCP 自动化 → 工作流」进入**
+
+## 导出 CSV（脱敏）（v1.22.58，借鉴 proxypin-mcp-workbench）
+
+- 入口：请求列表「导出」（桌面端工具栏 / 移动端菜单）→「导入 / 导出」对话框 → **导出 CSV（脱敏）**
+- 内容：一行一条请求，列为 `index,method,url,status,duration_ms,started_at,request_content_type,response_content_type,request_bytes,response_bytes`
+- **脱敏**：URL 查询参数中命中敏感键（`token` / `access_token` / `refresh_token` / `password` / `secret` / `api_key` / `session` / `cookie` / `sign` / `signature` / `key` 等）的值统一替换为 `***`
+- 实现：`lib/utils/export_request.dart`（`exportRequestsCsv` + `_maskSensitiveInUrl` + `_csvCell`），入口在共用对话框 `showExportDialog`（桌面 / 移动一致）
+
+## MCP 抓包查询增强（v1.22.58，借鉴黄鸟 MCP4HttpCanary）
+
+- `get_recent_requests` 新增参数：`domain`（域名过滤）、`since_time` / `end_time`（时间范围，`YYYY-MM-DD` 或 `YYYY-MM-DD HH:mm`）、`page`（0 起分页，翻看更早数据）、`compact`（只返回 `id/method/url/status/duration/contentType` 核心字段，显著降低 AI 读取 token）
+- 实现：`lib/network/mcp/mcp_server.dart`（工具 schema + handler + `_parseTimeArg` / `_compactRequestJson`）
+- 兼容：不带新参数时行为与旧版完全一致
+
+## 关于「黄鸟」魔改包（HttpCanary 3.3.6）的分析结论（v1.22.58）
+
+- 该包 = HttpCanary 3.3.6 本体（重签名 + 破解高级版）＋ `assets/mcp_module.apk`——后者是一个 **Xposed 模块**：hook HttpCanary 的 `SettingsActivity`、直读其 SQLite 库，在 **18990 端口**开 HTTP MCP 服务，且随包泄漏了 5373 行 `McpServer.java` 源码
+- **可借鉴并已落地**：AI 友好的抓包查询输出（summary / compact / 分页 / 时间范围）——见上一节
+- **明确不借鉴**：其大量的**攻击性工具**（SQLi 检测 / 注入 / 盲注、XSS、WAF 探测与绕过、IDOR、JWT 攻击、支付逻辑篡改、验证码辅助、Web 缓存投毒、竞态、批量渗透等）。ProxyPin 定位是**调试 / 排障代理**，不内置攻击工具，避免被用于未授权攻击

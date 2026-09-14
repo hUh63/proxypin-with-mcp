@@ -80,7 +80,7 @@ ProxyPin 1.3.1 新增功能（已包含在本源码中）：
 | `update_script` | 创建/更新 JavaScript 脚本 |
 | `get_scripts` | 获取所有脚本 |
 | `search_requests` | 高级搜索请求 (支持 URL/方法/状态码/域名/Header/Body/耗时过滤) |
-| `get_recent_requests` | 获取最近请求列表 (Legacy) |
+| `get_recent_requests` | 最近请求列表（支持 `domain` / `since_time` / `end_time` / `page` 分页 / `compact` 精简，AI 友好） |
 | `get_request_details` | 获取请求详情 (含 Body 编码信息) |
 | `get_statistics` | 获取请求统计 |
 | `export_har` | 导出 HAR 文件 (支持指定 request_ids) |

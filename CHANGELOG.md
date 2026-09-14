@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.22.58 (2026-09-14)
+
+### 新功能：导出 CSV（脱敏）（借鉴 proxypin-mcp-workbench）
+
+- 请求列表「导入 / 导出」对话框新增「**导出 CSV（脱敏）**」：一行一条请求，导出 `index/method/url/status/耗时/时间/内容类型/大小`
+- 敏感查询参数（`token` / 密码 / 签名等）自动打码为 `***`
+
+### MCP 抓包查询增强（借鉴黄鸟 MCP4HttpCanary）
+
+- `get_recent_requests` 新增 `domain` / `since_time` / `end_time` / `page` / `compact`：支持域名与时间范围过滤、分页翻看更早数据、精简字段以降低 AI 读取 token
+- 不带新参数时行为与旧版一致
+
+### 黄鸟（HttpCanary 3.3.6）魔改包分析
+
+- 结论：本体为破解高级版的 HttpCanary 3.3.6，另附一个 **Xposed 模块**（`assets/mcp_module.apk`）直读其数据库并在 18990 端口提供 MCP 服务，源码随包泄漏
+- 已借鉴：AI 友好的抓包查询输出；**不借鉴**其攻击性工具（SQLi / XSS / WAF 绕过 / 渗透等），保持调试代理定位
+
+### i18n
+
+- 新增 1 条词条（`exportCsv`），en / zh / zh_Hant 三份 ARB 键集合一致（各 665 键）
+
+### 文档
+
+- `docs/features_tips.md`（新增 3 节）、`MCP_INTEGRATION.md`（工具说明）同步更新
+
 ## v1.22.57 (2026-09-14)
 
 ### 新功能：网络诊断 / 连接自检（借鉴 proxypin-mcp-workbench）

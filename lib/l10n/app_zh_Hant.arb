@@ -671,5 +671,6 @@
   "diagHintPhoneProxy": "在手機 Wi-Fi 中把 HTTP 代理指向「上方顯示的區域網路位址 + 抓包埠」。",
   "diagHintCa": "若 HTTPS 無法解密，請在裝置上安裝並完全信任根 CA 憑證。",
   "diagHintFirewall": "若手機連不上，請在系統防火牆中放行本應用程式。",
-  "diagHintMcp": "MCP 預設僅監聽本機回環；手機應連線 HTTP 代理埠，而非 MCP 埠。"
+  "diagHintMcp": "MCP 預設僅監聽本機回環；手機應連線 HTTP 代理埠，而非 MCP 埠。",
+  "exportCsv": "匯出 CSV（去識別化）"
 }

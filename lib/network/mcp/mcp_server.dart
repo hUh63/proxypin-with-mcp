@@ -1329,7 +1329,7 @@ class McpServer {
       {
         'name': 'get_recent_requests',
         'description':
-            'Get a list of recent HTTP requests (Legacy, use search_requests instead).',
+            'List recent HTTP requests. Supports domain / time-range filters, paging and a compact mode for token-efficient AI reads.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1344,6 +1344,27 @@ class McpServer {
             'method': {
               'type': 'string',
               'description': 'Filter by HTTP Method (GET, POST...)',
+            },
+            'domain': {
+              'type': 'string',
+              'description': 'Filter by host / domain keyword',
+            },
+            'since_time': {
+              'type': 'string',
+              'description': 'Only requests at/after this time (YYYY-MM-DD or YYYY-MM-DD HH:mm)',
+            },
+            'end_time': {
+              'type': 'string',
+              'description': 'Only requests at/before this time (YYYY-MM-DD or YYYY-MM-DD HH:mm)',
+            },
+            'page': {
+              'type': 'integer',
+              'description': 'Page index (0-based) to page through older data (default 0)',
+            },
+            'compact': {
+              'type': 'boolean',
+              'description':
+                  'If true, return core fields only (id/method/url/status/duration/contentType) to cut tokens',
             },
           },
         },
@@ -2535,16 +2556,38 @@ Body Encoding Rules:
 
       case 'get_recent_requests':
         final limit = (args['limit'] as num?)?.toInt() ?? 20;
+        final page = (args['page'] as num?)?.toInt() ?? 0;
         final urlFilter = args['url_filter'] as String?;
         final method = args['method'] as String?;
+        final domain = args['domain'] as String?;
+        final compact = args['compact'] == true;
+        final since = _parseTimeArg(args['since_time'] as String?);
+        final until = _parseTimeArg(args['end_time'] as String?);
 
-        final requests = McpBridge().getRecentRequests(
-          limit: limit,
+        // 取到目标页所需的最大条数，再按时间范围过滤 + 分页（借鉴 MCP4HttpCanary 的 AI 友好输出）
+        var requests = McpBridge().getRecentRequests(
+          limit: (page + 1) * limit,
           urlFilter: urlFilter,
           method: method,
+          domain: domain,
         );
 
-        return requests.map((r) => McpBridge.requestToJson(r)).toList();
+        if (since != null || until != null) {
+          requests = requests.where((r) {
+            if (since != null && r.requestTime.isBefore(since)) return false;
+            if (until != null && r.requestTime.isAfter(until)) return false;
+            return true;
+          }).toList();
+        }
+
+        final start = page * limit;
+        final pageItems =
+            start < requests.length ? requests.skip(start).take(limit).toList() : <HttpRequest>[];
+
+        if (compact) {
+          return pageItems.map(_compactRequestJson).toList();
+        }
+        return pageItems.map((r) => McpBridge.requestToJson(r)).toList();
 
       case 'get_statistics':
         return McpBridge().getStatistics();
@@ -4147,6 +4190,24 @@ Body Encoding Rules:
   }
 
   /// 比较两个 Header Map 的差异
+  /// 解析时间参数（支持 `YYYY-MM-DD` 或 `YYYY-MM-DD HH:mm`），无法解析返回 null
+  DateTime? _parseTimeArg(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return DateTime.tryParse(value.trim().replaceFirst(' ', 'T'));
+  }
+
+  /// 精简版请求 JSON（仅核心字段，降低 AI 读取 token，借鉴 MCP4HttpCanary）
+  Map<String, dynamic> _compactRequestJson(HttpRequest r) {
+    return {
+      'id': r.requestId,
+      'method': r.method.name,
+      'url': r.requestUrl,
+      'status': r.response?.status.code,
+      'duration': r.response?.responseTime.difference(r.requestTime).inMilliseconds,
+      'contentType': r.response?.headers.contentType,
+    };
+  }
+
   Map<String, dynamic> _compareHeaders(
     Map<String, String> h1,
     Map<String, String> h2,

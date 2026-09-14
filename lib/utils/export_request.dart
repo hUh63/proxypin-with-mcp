@@ -418,6 +418,21 @@ void showExportDialog(
               },
             ),
             ListTile(
+              leading: const Icon(Icons.table_chart_outlined),
+              title: Text(localizations.exportCsv),
+              subtitle: const Text('一行一条请求，敏感查询参数（token / 密码 / 签名等）自动打码',
+                  style: TextStyle(fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                exportRequestsCsv(
+                  requests,
+                  '$folderName.csv',
+                  context: ctx,
+                  onSuccess: onExportSuccess,
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.copy_all_outlined),
               title: const Text('复制口令'),
               subtitle: const Text('将所选请求压缩为口令文本，粘贴给他人即可导入', style: TextStyle(fontSize: 12)),
@@ -441,4 +456,75 @@ void showExportDialog(
       );
     },
   );
+}
+
+/// 需要脱敏的查询参数 / 字段名（小写匹配）
+const Set<String> _csvSensitiveKeys = {
+  'token', 'access_token', 'refresh_token', 'id_token', 'password', 'passwd', 'pwd',
+  'secret', 'client_secret', 'api_key', 'apikey', 'auth', 'authorization',
+  'session', 'sessionid', 'sid', 'cookie', 'sign', 'signature', 'code', 'key',
+};
+
+/// 把 URL 中敏感查询参数的值替换为 ***
+String _maskSensitiveInUrl(String url) {
+  try {
+    final uri = Uri.parse(url);
+    if (uri.queryParameters.isEmpty) return url;
+    final masked = <String, String>{};
+    uri.queryParameters.forEach((k, v) {
+      masked[k] = _csvSensitiveKeys.contains(k.toLowerCase()) ? '***' : v;
+    });
+    return uri.replace(queryParameters: masked).toString();
+  } catch (_) {
+    return url;
+  }
+}
+
+/// CSV 字段转义（含逗号 / 引号 / 换行时加引号并转义内部引号）
+String _csvCell(String? value) {
+  final s = value ?? '';
+  if (s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r')) {
+    return '"${s.replaceAll('"', '""')}"';
+  }
+  return s;
+}
+
+/// 导出为 CSV（脱敏）：一行一条请求，敏感查询参数（token / 密码 / 签名等）自动打码。
+/// 借鉴 proxypin-mcp-workbench 的「脱敏数据导出」。
+Future<void> exportRequestsCsv(
+  List<HttpRequest> requests,
+  String fileName, {
+  required BuildContext context,
+  VoidCallback? onSuccess,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  final buffer = StringBuffer();
+  buffer.writeln('index,method,url,status,duration_ms,started_at,'
+      'request_content_type,response_content_type,request_bytes,response_bytes');
+  for (var i = 0; i < requests.length; i++) {
+    final r = requests[i];
+    final resp = r.response;
+    final duration = resp == null ? '' : '${resp.responseTime.difference(r.requestTime).inMilliseconds}';
+    buffer.writeln(<String>[
+      '${i + 1}',
+      r.method.name,
+      _csvCell(_maskSensitiveInUrl(r.requestUrl ?? '')),
+      resp?.status.code?.toString() ?? '',
+      duration,
+      _csvCell(r.requestTime.toIso8601String()),
+      _csvCell(r.headers.contentType),
+      _csvCell(resp?.headers.contentType),
+      '${r.body?.length ?? 0}',
+      '${resp?.body?.length ?? 0}',
+    ].join(','));
+  }
+  try {
+    await FilePicker.saveFile(fileName: fileName, bytes: utf8.encode(buffer.toString()));
+    onSuccess?.call();
+    if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
+  } catch (e) {
+    if (context.mounted) {
+      FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
+    }
+  }
 }
