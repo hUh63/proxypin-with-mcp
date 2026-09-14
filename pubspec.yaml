@@ -69,6 +69,7 @@ flutter:
     - docs/quick_start.md
     - docs/certificate_https.md
     - docs/features_tips.md
+    - docs/capture_plan_guide.md
     - docs/overview.md
     - docs/ai_analysis.md
     - docs/script_guide.md

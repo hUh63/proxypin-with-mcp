@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.22.60 (2026-09-15)
+
+### 新功能：采集方案（借鉴 proxypin-mcp-workbench 的 Capture Plan）
+
+- 工具箱新增「**采集方案**」：把一次抓包任务模板化——一组**包含 / 排除域名规则** + 一份**操作步骤清单**
+- 「**应用到域名过滤**」一键把方案域名写入白名单 / 黑名单并启用、立即持久化，抓包只聚焦目标业务
+- 支持新建 / 编辑 / 复制 / 导出（`*.capture-plan.json`）/ 删除；内置两个方案（移动端 App 抓包排查、接口清单梳理）
+- 域名规则：`example.com` 精确、`*.example.com` 子域通配；非法写法保存时自动忽略
+- 实现：`CapturePlanManager`（`lib/network/components/manager/capture_plan_manager.dart`）+ `CapturePlanPage`（`lib/ui/component/capture_plan_page.dart`），本地持久化 `capture_plans.json`，桌面多窗口 + 移动端入口齐备
+- 边界：只做域名过滤与任务记录，**不自动操作目标 App / 不重放 / 不改写数据**
+
+### i18n
+
+- 新增 27 条词条（采集方案），en / zh / zh_Hant 三份 ARB 键集合一致（各 706 键）
+
+### 文档
+
+- 新增内置教程 `docs/capture_plan_guide.md`（定位 / 使用方法 / 实现细节 / 联动 / 边界 / FAQ），已在「使用文档」中心登记
+- `docs/features_tips.md` 新增「采集方案」一节
+
 ## v1.22.59 (2026-09-14)
 
 ### 新功能：Mock 场景合集（借鉴 proxypin-mcp-workbench）

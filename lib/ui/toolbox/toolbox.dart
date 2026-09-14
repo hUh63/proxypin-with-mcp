@@ -4,6 +4,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
+import 'package:proxypin/ui/component/capture_plan_page.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
@@ -290,6 +291,18 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.health_and_safety_outlined,
                       text: localizations.networkDiagnostics,
                       tooltip: localizations.networkDiagnostics),
+                  IconText(
+                      onTap: () async {
+                        if (Platforms.isMobile()) {
+                          await Navigator.of(context).push(
+                              MaterialPageRoute(builder: (context) => const CapturePlanPage()));
+                          return;
+                        }
+                        MultiWindow.openWindow(localizations.capturePlan, 'CapturePlanPage',
+                            size: const Size(720, 760));
+                      },
+                      icon: Icons.route_outlined,
+                      text: localizations.capturePlan),
                   IconText(
                       onTap: () {
                         // 从当前抓包数据提取 API 端点
