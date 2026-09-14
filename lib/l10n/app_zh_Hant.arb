@@ -672,5 +672,19 @@
   "diagHintCa": "若 HTTPS 無法解密，請在裝置上安裝並完全信任根 CA 憑證。",
   "diagHintFirewall": "若手機連不上，請在系統防火牆中放行本應用程式。",
   "diagHintMcp": "MCP 預設僅監聽本機回環；手機應連線 HTTP 代理埠，而非 MCP 埠。",
-  "exportCsv": "匯出 CSV（去識別化）"
+  "exportCsv": "匯出 CSV（去識別化）",
+  "scenario": "場景",
+  "scenarioHint": "新增或選擇既有場景",
+  "mockScenario": "Mock 場景",
+  "mockScenarioTips": "把重寫規則歸入場景後，可在此一鍵批次啟用 / 停用整個場景。",
+  "mockScenarioEmpty": "暫無場景：請在編輯重寫規則時填寫「場景」名稱",
+  "mockScenarioEnabled": "已啟用",
+  "mockScenarioUnassigned": "未歸類規則",
+  "mockScenarioSolo": "僅啟用",
+  "mockScenarioClear": "移出分組",
+  "mockScenarioClearConfirm": "把該場景下的規則移出分組？（規則本身不會被刪除）",
+  "mockScenarioRename": "重新命名場景",
+  "mockScenarioRenameHint": "新的場景名稱",
+  "exportJson": "匯出 JSON（脫敏）",
+  "mockScenarioSoloTip": "僅啟用該場景，其餘規則全部停用"
 }

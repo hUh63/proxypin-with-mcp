@@ -697,5 +697,19 @@
   "diagHintCa": "若 HTTPS 无法解密，请在设备上安装并完全信任根 CA 证书。",
   "diagHintFirewall": "若手机连不上，请在系统防火墙中放行本应用。",
   "diagHintMcp": "MCP 默认仅监听本机回环；手机应连接 HTTP 代理端口，而非 MCP 端口。",
-  "exportCsv": "导出 CSV（脱敏）"
+  "exportCsv": "导出 CSV（脱敏）",
+  "scenario": "场景",
+  "scenarioHint": "新建或选择已有场景",
+  "mockScenario": "Mock 场景",
+  "mockScenarioTips": "把重写规则归入场景后，可在此一键批量启用 / 停用整个场景。",
+  "mockScenarioEmpty": "暂无场景：请在编辑重写规则时填写「场景」名",
+  "mockScenarioEnabled": "已启用",
+  "mockScenarioUnassigned": "未归类规则",
+  "mockScenarioSolo": "仅启用",
+  "mockScenarioClear": "移出分组",
+  "mockScenarioClearConfirm": "把该场景下的规则移出分组？（规则本身不会被删除）",
+  "mockScenarioRename": "重命名场景",
+  "mockScenarioRenameHint": "新的场景名",
+  "exportJson": "导出 JSON（脱敏）",
+  "mockScenarioSoloTip": "只启用该场景，其余规则全部停用"
 }

@@ -433,6 +433,21 @@ void showExportDialog(
               },
             ),
             ListTile(
+              leading: const Icon(Icons.data_object),
+              title: Text(localizations.exportJson),
+              subtitle: const Text('结构化 JSON，敏感查询参数自动打码，便于喂给 AI 或脚本分析',
+                  style: TextStyle(fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                exportRequestsJson(
+                  requests,
+                  '$folderName.json',
+                  context: ctx,
+                  onSuccess: onExportSuccess,
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.copy_all_outlined),
               title: const Text('复制口令'),
               subtitle: const Text('将所选请求压缩为口令文本，粘贴给他人即可导入', style: TextStyle(fontSize: 12)),
@@ -520,6 +535,48 @@ Future<void> exportRequestsCsv(
   }
   try {
     await FilePicker.saveFile(fileName: fileName, bytes: utf8.encode(buffer.toString()));
+    onSuccess?.call();
+    if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
+  } catch (e) {
+    if (context.mounted) {
+      FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
+    }
+  }
+}
+/// 导出为 JSON（脱敏）：结构化列表，敏感查询参数自动打码，便于喂给 AI 或脚本分析。
+Future<void> exportRequestsJson(
+  List<HttpRequest> requests,
+  String fileName, {
+  required BuildContext context,
+  VoidCallback? onSuccess,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  final list = <Map<String, dynamic>>[];
+  for (var i = 0; i < requests.length; i++) {
+    final r = requests[i];
+    final resp = r.response;
+    list.add({
+      'index': i + 1,
+      'method': r.method.name,
+      'url': _maskSensitiveInUrl(r.requestUrl ?? ''),
+      'status': resp?.status.code,
+      'duration_ms': resp == null ? null : resp.responseTime.difference(r.requestTime).inMilliseconds,
+      'started_at': r.requestTime.toIso8601String(),
+      'request_content_type': r.headers.contentType,
+      'response_content_type': resp?.headers.contentType,
+      'request_bytes': r.body?.length ?? 0,
+      'response_bytes': resp?.body?.length ?? 0,
+      'app': r.processInfo?.name,
+      'protocol': r.protocolVersion,
+    });
+  }
+  final content = const JsonEncoder.withIndent('  ').convert({
+    'exported_at': DateTime.now().toIso8601String(),
+    'count': list.length,
+    'requests': list,
+  });
+  try {
+    await FilePicker.saveFile(fileName: fileName, bytes: utf8.encode(content));
     onSuccess?.call();
     if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
   } catch (e) {

@@ -20,6 +20,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
+import 'package:proxypin/ui/component/rewrite_scenario_dialog.dart';
 import 'package:proxypin/ui/component/share_crypto_dialogs.dart';
 import 'package:proxypin/utils/secure_share.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -85,6 +86,12 @@ class _MobileRequestRewriteState extends State<MobileRequestRewrite> {
                       icon: const Icon(Icons.input_rounded, size: 20),
                       onPressed: import,
                       label: Text(localizations.import)),
+                  const SizedBox(width: 5),
+                  TextButton.icon(
+                      icon: const Icon(Icons.movie_filter_outlined, size: 20),
+                      onPressed: () =>
+                          showRewriteScenarioDialog(context, widget.requestRewrites, onChanged: () => setState(() {})),
+                      label: Text(localizations.mockScenario)),
                 ]),
                 const SizedBox(height: 10),
                 Expanded(child: RequestRuleList(widget.requestRewrites)),
@@ -478,6 +485,10 @@ class _RewriteRuleState extends State<RewriteRule> {
   late RuleType ruleType;
   late TextEditingController nameInput;
   late TextEditingController urlInput;
+  late TextEditingController scenarioInput;
+
+  /// 已有场景名，用于输入框下拉快速选择
+  List<String> scenarioOptions = [];
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -492,6 +503,13 @@ class _RewriteRuleState extends State<RewriteRule> {
 
     nameInput = TextEditingController(text: rule.name);
     urlInput = TextEditingController(text: rule.url);
+    scenarioInput = TextEditingController(text: rule.scenario);
+
+    RequestRewriteManager.instance.then((manager) {
+      if (mounted) {
+        setState(() => scenarioOptions = manager.scenarios);
+      }
+    });
 
     if (items == null && widget.request != null) {
       items = fromRequestItems(widget.request!, ruleType);
@@ -502,6 +520,7 @@ class _RewriteRuleState extends State<RewriteRule> {
   void dispose() {
     urlInput.dispose();
     nameInput.dispose();
+    scenarioInput.dispose();
     scrollController.dispose();
     super.dispose();
   }
@@ -534,6 +553,7 @@ class _RewriteRuleState extends State<RewriteRule> {
                   (formKey.currentState as FormState).save();
                   rule.name = nameInput.text;
                   rule.url = urlInput.text;
+                  rule.scenario = scenarioInput.text.trim().isEmpty ? null : scenarioInput.text.trim();
                   items = rewriteReplaceKey.currentState?.getItems() ?? rewriteUpdateKey.currentState?.getItems();
 
                   var requestRewrites = await RequestRewriteManager.instance;
@@ -571,6 +591,8 @@ class _RewriteRuleState extends State<RewriteRule> {
                       ]),
                       const SizedBox(height: 8),
                       textField('${localizations.name}:', nameInput, localizations.pleaseEnter),
+                      const SizedBox(height: 8),
+                      scenarioField(),
                       const SizedBox(height: 8),
                       // URL input with Method as prefix (method shown before the URL field)
                       Row(children: [
@@ -671,6 +693,37 @@ class _RewriteRuleState extends State<RewriteRule> {
 
     return MobileRewriteReplace(
         scrollController: scrollController, key: rewriteReplaceKey, items: items, ruleType: ruleType);
+  }
+
+  /// 场景名输入框：可直接输入新场景，也可从已有场景下拉中选择
+  Widget scenarioField() {
+    return Row(children: [
+      SizedBox(
+          width: 60,
+          child: Text('${localizations.scenario}:', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
+      Expanded(
+          child: TextFormField(
+        controller: scenarioInput,
+        style: const TextStyle(fontSize: 14),
+        decoration: InputDecoration(
+            hintText: localizations.scenarioHint,
+            hintStyle: TextStyle(color: Colors.grey.shade500),
+            contentPadding: const EdgeInsets.only(left: 5),
+            errorStyle: const TextStyle(height: 0, fontSize: 0),
+            isDense: true,
+            border: const OutlineInputBorder(),
+            suffixIcon: scenarioOptions.isEmpty
+                ? null
+                : PopupMenuButton<String>(
+                    tooltip: localizations.mockScenario,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onSelected: (value) => setState(() => scenarioInput.text = value),
+                    itemBuilder: (context) => scenarioOptions
+                        .map((e) => PopupMenuItem<String>(value: e, child: Text(e, style: const TextStyle(fontSize: 14))))
+                        .toList(),
+                  )),
+      ))
+    ]);
   }
 
   Widget textField(String label, TextEditingController controller, String hint,

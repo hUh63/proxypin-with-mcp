@@ -224,6 +224,75 @@ class RequestRewriteManager {
     return items;
   }
 
+  // ==================== Mock 场景合集 ====================
+
+  /// 场景名统一归一化：去空白，null / 空 视为未归类
+  static String _normalizeScenario(String? scenario) => scenario?.trim() ?? '';
+
+  /// 已配置的 Mock 场景名（去重、按名称排序）
+  List<String> get scenarios {
+    var names = <String>{};
+    for (var rule in rules) {
+      var scenario = _normalizeScenario(rule.scenario);
+      if (scenario.isNotEmpty) {
+        names.add(scenario);
+      }
+    }
+    return names.toList()..sort();
+  }
+
+  /// 未归入任何场景的规则数量
+  int get unassignedCount => rules.where((rule) => _normalizeScenario(rule.scenario).isEmpty).length;
+
+  /// 场景下的规则总数
+  int scenarioTotal(String scenario) {
+    return rules.where((rule) => _normalizeScenario(rule.scenario) == scenario).length;
+  }
+
+  /// 场景下已启用的规则数量
+  int scenarioEnabledCount(String scenario) {
+    return rules.where((rule) => _normalizeScenario(rule.scenario) == scenario && rule.enabled).length;
+  }
+
+  /// 一键启用 / 停用某个场景下的全部规则
+  Future<void> setScenarioEnabled(String scenario, bool enabled) async {
+    for (var rule in rules) {
+      if (_normalizeScenario(rule.scenario) == scenario) {
+        rule.enabled = enabled;
+      }
+    }
+    await flushRequestRewriteConfig();
+  }
+
+  /// 只启用某个场景：该场景规则全部启用，其余规则（含未归类）全部停用
+  Future<void> soloScenario(String scenario) async {
+    enabled = true;
+    for (var rule in rules) {
+      rule.enabled = _normalizeScenario(rule.scenario) == scenario;
+    }
+    await flushRequestRewriteConfig();
+  }
+
+  /// 场景重命名：把规则从 from 迁移到 to
+  Future<void> renameScenario(String from, String to) async {
+    for (var rule in rules) {
+      if (_normalizeScenario(rule.scenario) == from) {
+        rule.scenario = to;
+      }
+    }
+    await flushRequestRewriteConfig();
+  }
+
+  /// 移出分组：仅清空场景归属，规则本身保留
+  Future<void> clearScenario(String scenario) async {
+    for (var rule in rules) {
+      if (_normalizeScenario(rule.scenario) == scenario) {
+        rule.scenario = null;
+      }
+    }
+    await flushRequestRewriteConfig();
+  }
+
   Map<String, Object> toJson() {
     return {
       'enabled': enabled,

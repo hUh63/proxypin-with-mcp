@@ -48,10 +48,20 @@ class RequestRewriteRule {
   RegExp _urlReg;
   String? rewritePath;
 
+  /// Mock 场景名：同一场景下的规则可一键批量启停；null / 空 表示未归类
+  String? scenario;
+
   // 可选的 HTTP 方法匹配；null 表示匹配任意方法
   HttpMethod? method;
 
-  RequestRewriteRule({this.enabled = true, this.name, required this.url, required this.type, this.rewritePath, this.method})
+  RequestRewriteRule(
+      {this.enabled = true,
+      this.name,
+      required this.url,
+      required this.type,
+      this.rewritePath,
+      this.scenario,
+      this.method})
       : _urlReg = UrlPattern.toRegExp(url);
 
   bool match(String url, {RuleType? type, HttpMethod? method}) {
@@ -85,6 +95,7 @@ class RequestRewriteRule {
         url: map['url'] ?? map['domain'] + map['path'],
         type: RuleType.fromName(map['type']),
         rewritePath: map['rewritePath'],
+        scenario: map['scenario'],
         method: method);
   }
 
@@ -99,6 +110,7 @@ class RequestRewriteRule {
       'url': url,
       'type': type.name,
       'rewritePath': rewritePath,
+      'scenario': scenario,
     };
 
     if (method != null) {

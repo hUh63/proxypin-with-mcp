@@ -31,6 +31,7 @@ import 'package:proxypin/network/components/manager/rewrite_rule.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
+import 'package:proxypin/ui/component/rewrite_scenario_dialog.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/desktop/setting/rewrite/rewrite_replace.dart';
@@ -142,6 +143,13 @@ class RequestRewriteState extends State<RequestRewriteWidget> {
                       icon: const Icon(Icons.input_rounded, size: 18),
                       onPressed: import,
                       label: Text(localizations.import),
+                    ),
+                    const SizedBox(width: 5),
+                    TextButton.icon(
+                      icon: const Icon(Icons.movie_filter_outlined, size: 18),
+                      onPressed: () =>
+                          showRewriteScenarioDialog(context, widget.requestRewrites, onChanged: () => setState(() {})),
+                      label: Text(localizations.mockScenario),
                     )
                   ],
                 )),
@@ -529,6 +537,10 @@ class _RewriteRuleEditState extends State<RewriteRuleEdit> {
   late RuleType ruleType;
   late TextEditingController nameInput;
   late TextEditingController urlInput;
+  late TextEditingController scenarioInput;
+
+  /// 已有场景名，用于输入框下拉快速选择
+  List<String> scenarioOptions = [];
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -540,6 +552,13 @@ class _RewriteRuleEditState extends State<RewriteRuleEdit> {
     ruleType = rule.type;
     nameInput = TextEditingController(text: rule.name);
     urlInput = TextEditingController(text: rule.url);
+    scenarioInput = TextEditingController(text: rule.scenario);
+
+    RequestRewriteManager.instance.then((manager) {
+      if (mounted) {
+        setState(() => scenarioOptions = manager.scenarios);
+      }
+    });
 
     if (items == null && widget.request != null) {
       items = fromRequestItems(widget.request!, ruleType);
@@ -550,6 +569,7 @@ class _RewriteRuleEditState extends State<RewriteRuleEdit> {
   void dispose() {
     urlInput.dispose();
     nameInput.dispose();
+    scenarioInput.dispose();
     super.dispose();
   }
 
@@ -588,6 +608,8 @@ class _RewriteRuleEditState extends State<RewriteRuleEdit> {
                       ]),
                       const SizedBox(height: 5),
                       textField('${localizations.name}:', nameInput, localizations.pleaseEnter),
+                      const SizedBox(height: 10),
+                      scenarioField(),
                       const SizedBox(height: 10),
                       // URL input with Method as prefix (method shown before the URL field)
                       Row(children: [
@@ -661,6 +683,7 @@ class _RewriteRuleEditState extends State<RewriteRuleEdit> {
                 (formKey.currentState as FormState).save();
                 rule.name = nameInput.text;
                 rule.url = urlInput.text;
+                rule.scenario = scenarioInput.text.trim().isEmpty ? null : scenarioInput.text.trim();
                 // method already set on change
                 items = rewriteReplaceKey.currentState?.getItems() ?? rewriteUpdateKey.currentState?.getItems();
 
@@ -721,6 +744,36 @@ class _RewriteRuleEditState extends State<RewriteRuleEdit> {
     }
 
     return DesktopRewriteReplace(key: rewriteReplaceKey, items: items, ruleType: ruleType, windowId: widget.windowId);
+  }
+
+  /// 场景名输入框：可直接输入新场景，也可从已有场景下拉中选择
+  Widget scenarioField() {
+    return Row(children: [
+      SizedBox(width: 60, child: Text('${localizations.scenario}:')),
+      Expanded(
+          child: TextFormField(
+        controller: scenarioInput,
+        style: const TextStyle(fontSize: 14),
+        decoration: InputDecoration(
+            hintText: localizations.scenarioHint,
+            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            errorStyle: const TextStyle(height: 0, fontSize: 0),
+            focusedBorder: focusedBorder(),
+            isDense: true,
+            border: const OutlineInputBorder(),
+            suffixIcon: scenarioOptions.isEmpty
+                ? null
+                : PopupMenuButton<String>(
+                    tooltip: localizations.mockScenario,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onSelected: (value) => setState(() => scenarioInput.text = value),
+                    itemBuilder: (context) => scenarioOptions
+                        .map((e) => PopupMenuItem<String>(value: e, child: Text(e, style: const TextStyle(fontSize: 14))))
+                        .toList(),
+                  )),
+      ))
+    ]);
   }
 
   Widget textField(String label, TextEditingController controller, String hint,

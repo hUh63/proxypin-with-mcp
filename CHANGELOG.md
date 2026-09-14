@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.22.59 (2026-09-14)
+
+### 新功能：Mock 场景合集（借鉴 proxypin-mcp-workbench）
+
+- 重写规则新增「**场景**」字段：编辑规则时可新建或选择已有场景名，同名规则归为一组
+- 「请求重写」页新增「**Mock 场景**」入口：一键启用 / 停用整组、**仅启用**该组、重命名场景、移出分组（规则保留）
+- 场景名写入 `request_rewrite.json` 的 `scenario` 字段，随规则导入 / 导出 / 分享一起流转；桌面端改动经多窗口刷新消息同步
+- 实现：`RewriteScenarioDialog`（`lib/ui/component/rewrite_scenario_dialog.dart`）+ `RequestRewriteManager` 场景批量方法
+
+### 新功能：导出 JSON（脱敏）
+
+- 请求列表「导入 / 导出」新增「**导出 JSON（脱敏）**」：结构化 JSON（含 app / protocol / 字节数等字段），敏感查询参数自动打码，便于喂给 AI 或脚本
+
+### i18n
+
+- 新增 13 条词条（场景相关 + 导出 JSON），en / zh / zh_Hant 三份 ARB 键集合一致（各 678 键）
+
+### 文档
+
+- `docs/rewrite_guide.md` 新增「Mock 场景合集」章节；`docs/features_tips.md` 新增 2 节
+
 ## v1.22.58 (2026-09-14)
 
 ### 新功能：导出 CSV（脱敏）（借鉴 proxypin-mcp-workbench）
