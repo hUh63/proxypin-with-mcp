@@ -876,7 +876,7 @@
   "securityAuditRuleTarget": "Scope",
   "securityAuditRuleMatchType": "Match type",
   "securityAuditRulePattern": "Expression",
-  "securityAuditRulePatternHint": "e.g. secret_token or \\d{17}[\\dXx]",
+  "securityAuditRulePatternHint": "e.g. secret_token, or a regex like ^\\d+$",
   "securityAuditRuleSeverity": "Severity",
   "securityAuditRuleSuggestion": "Suggestion (optional)",
   "securityAuditRuleNameRequired": "Please enter a rule name",

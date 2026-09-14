@@ -730,7 +730,7 @@
   "securityAuditRuleTarget": "匹配范围",
   "securityAuditRuleMatchType": "匹配方式",
   "securityAuditRulePattern": "表达式",
-  "securityAuditRulePatternHint": "例如：secret_token 或 \\d{17}[\\dXx]",
+  "securityAuditRulePatternHint": "例如：secret_token，或正则 ^\\d+$",
   "securityAuditRuleSeverity": "风险等级",
   "securityAuditRuleSuggestion": "修复建议（选填）",
   "securityAuditRuleNameRequired": "请填写规则名称",
