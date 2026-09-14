@@ -29,6 +29,7 @@ library;
 import 'dart:convert';
 
 import 'package:proxypin/network/http/http.dart';
+import 'package:proxypin/network/http/http_headers.dart';
 
 /// 风险等级
 enum SecuritySeverity {
