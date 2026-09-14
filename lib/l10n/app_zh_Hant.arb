@@ -720,5 +720,21 @@
   "securityAuditFilterAll": "全部",
   "securityAuditEmpty": "當前篩選下沒有風險項",
   "securityAuditClean": "未發現明顯風險",
-  "securityAuditCleanTips": "本次分析的流量未命中任何規則。規則只覆蓋常見配置問題，不代表絕對安全。"
+  "securityAuditCleanTips": "本次分析的流量未命中任何規則。規則只覆蓋常見配置問題，不代表絕對安全。",
+  "securityAuditRules": "自訂規則",
+  "securityAuditRuleNew": "新建規則",
+  "securityAuditRuleEdit": "編輯規則",
+  "securityAuditRulesTips": "用你自己的關鍵詞或正則匹配已抓到的流量（唯讀，依舊不發送任何請求）。適合內建規則無法覆蓋的業務欄位或內部標記。",
+  "securityAuditRuleEmpty": "還沒有自訂規則",
+  "securityAuditRuleName": "規則名稱",
+  "securityAuditRuleTarget": "匹配範圍",
+  "securityAuditRuleMatchType": "匹配方式",
+  "securityAuditRulePattern": "表達式",
+  "securityAuditRulePatternHint": "例如：secret_token 或 \\d{17}[\\dXx]",
+  "securityAuditRuleSeverity": "風險等級",
+  "securityAuditRuleSuggestion": "修復建議（選填）",
+  "securityAuditRuleNameRequired": "請填寫規則名稱",
+  "securityAuditRulePatternRequired": "請填寫表達式",
+  "securityAuditRuleInvalidRegex": "正則表達式不合法",
+  "securityAuditRuleDeleteConfirm": "確認刪除自訂規則"
 }

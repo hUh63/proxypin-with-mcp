@@ -84,18 +84,24 @@ class SecurityAuditor {
   /// 一次最多分析的请求数
   static const int maxRequests = 5000;
 
-  static SecurityAuditReport audit(List<HttpRequest> requests) {
+  static SecurityAuditReport audit(List<HttpRequest> requests, {List<CustomSecurityRule> customRules = const []}) {
     final seen = <String>{};
     final issues = <SecurityIssue>[];
     final limited = requests.length > maxRequests ? requests.sublist(requests.length - maxRequests) : requests;
+    final activeRules = customRules.where((rule) => rule.enabled).toList(growable: false);
 
     for (final request in limited) {
-      _inspect(request, (issue) {
+      void emit(SecurityIssue issue) {
         final key = '${issue.rule}|${issue.method}|${issue.url}';
         if (seen.add(key)) {
           issues.add(issue);
         }
-      });
+      }
+
+      _inspect(request, emit);
+      if (activeRules.isNotEmpty) {
+        _inspectCustom(request, activeRules, emit);
+      }
     }
 
     issues.sort((a, b) {
@@ -323,6 +329,66 @@ class SecurityAuditor {
     }
   }
 
+  /// 应用用户自定义规则。同样只读本地已抓到的数据，不产生任何请求。
+  static void _inspectCustom(
+      HttpRequest request, List<CustomSecurityRule> rules, void Function(SecurityIssue) emit) {
+    final method = request.method.name.toUpperCase();
+    final url = request.requestUrl;
+
+    String? urlText;
+    String? reqHeaderText;
+    String? reqBodyText;
+    String? respHeaderText;
+    String? respBodyText;
+
+    String textFor(SecurityRuleTarget target) {
+      if (target == SecurityRuleTarget.url) return urlText ??= url;
+      if (target == SecurityRuleTarget.requestHeader) return reqHeaderText ??= _headersText(request.headers);
+      if (target == SecurityRuleTarget.requestBody) return reqBodyText ??= _safeBody(request);
+      if (target == SecurityRuleTarget.responseHeader) {
+        return respHeaderText ??= _headersText(request.response?.headers);
+      }
+      if (target == SecurityRuleTarget.responseBody) {
+        return respBodyText ??= request.response == null ? '' : _safeBody(request.response!);
+      }
+      return (urlText ??= url) +
+          '\n' +
+          (reqHeaderText ??= _headersText(request.headers)) +
+          '\n' +
+          (reqBodyText ??= _safeBody(request)) +
+          '\n' +
+          (respHeaderText ??= _headersText(request.response?.headers)) +
+          '\n' +
+          (respBodyText ??= request.response == null ? '' : _safeBody(request.response!));
+    }
+
+    for (final rule in rules) {
+      final text = textFor(rule.target);
+      if (text.isEmpty || !rule.matches(text)) continue;
+      emit(_issue(
+        rule: 'custom:${rule.id}',
+        severity: rule.severity,
+        title: rule.name,
+        detail: '命中自定义规则「${rule.name}」（${rule.describe()}）。',
+        suggestion: rule.suggestion.isEmpty ? '请结合业务安全要求确认该内容是否应当出现。' : rule.suggestion,
+        method: method,
+        url: url,
+        requestId: request.requestId,
+      ));
+    }
+  }
+
+  static String _headersText(HttpHeaders? headers) {
+    if (headers == null) return '';
+    final buffer = StringBuffer();
+    headers.forEach((name, values) {
+      for (final value in values) {
+        buffer.writeln('$name: $value');
+      }
+    });
+    return buffer.toString();
+  }
+
   // ===== 工具方法 =====
 
   static SecurityIssue _issue({
@@ -488,5 +554,138 @@ class SecurityAuditor {
     } catch (_) {
       return null;
     }
+  }
+}
+
+/// 自定义规则的匹配范围
+enum SecurityRuleTarget { url, requestHeader, requestBody, responseHeader, responseBody, any }
+
+/// 自定义规则的匹配方式
+enum SecurityRuleMatchType { keyword, regex }
+
+/// 用户自定义检测规则：用关键词或正则匹配请求 / 响应的某一部分。
+///
+/// 面向「内置规则覆盖不到的业务字段」——例如自家接口的敏感字段名、
+/// 内部测试标记、特定业务术语。仍然是**只读**匹配，不发送任何请求。
+class CustomSecurityRule {
+  final String id;
+  final String name;
+  final bool enabled;
+  final SecurityRuleTarget target;
+  final SecurityRuleMatchType matchType;
+  final String pattern;
+  final SecuritySeverity severity;
+  final String suggestion;
+
+  const CustomSecurityRule({
+    required this.id,
+    required this.name,
+    this.enabled = true,
+    this.target = SecurityRuleTarget.any,
+    this.matchType = SecurityRuleMatchType.keyword,
+    required this.pattern,
+    this.severity = SecuritySeverity.medium,
+    this.suggestion = '',
+  });
+
+  factory CustomSecurityRule.fromJson(Map<String, dynamic> json) => CustomSecurityRule(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        enabled: json['enabled'] != false,
+        target: _targetFrom(json['target']?.toString()),
+        matchType: _matchFrom(json['matchType']?.toString()),
+        pattern: json['pattern']?.toString() ?? '',
+        severity: _severityFrom(json['severity']?.toString()),
+        suggestion: json['suggestion']?.toString() ?? '',
+      );
+
+  CustomSecurityRule copyWith({
+    String? name,
+    bool? enabled,
+    SecurityRuleTarget? target,
+    SecurityRuleMatchType? matchType,
+    String? pattern,
+    SecuritySeverity? severity,
+    String? suggestion,
+  }) =>
+      CustomSecurityRule(
+        id: id,
+        name: name ?? this.name,
+        enabled: enabled ?? this.enabled,
+        target: target ?? this.target,
+        matchType: matchType ?? this.matchType,
+        pattern: pattern ?? this.pattern,
+        severity: severity ?? this.severity,
+        suggestion: suggestion ?? this.suggestion,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'enabled': enabled,
+        'target': target.name,
+        'matchType': matchType.name,
+        'pattern': pattern,
+        'severity': severity.name,
+        'suggestion': suggestion,
+      };
+
+  bool matches(String text) {
+    if (pattern.isEmpty || text.isEmpty) return false;
+    if (matchType == SecurityRuleMatchType.keyword) {
+      return text.toLowerCase().contains(pattern.toLowerCase());
+    }
+    try {
+      return RegExp(pattern, caseSensitive: false, multiLine: true).hasMatch(text);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 校验表达式是否可用（供编辑界面即时提示）
+  static bool isValidPattern(String pattern, SecurityRuleMatchType matchType) {
+    if (pattern.trim().isEmpty) return false;
+    if (matchType == SecurityRuleMatchType.keyword) return true;
+    try {
+      RegExp(pattern);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String describe() => '范围：${targetLabel(target)}；方式：${matchLabel(matchType)}';
+
+  static String targetLabel(SecurityRuleTarget target) {
+    if (target == SecurityRuleTarget.url) return '请求 URL';
+    if (target == SecurityRuleTarget.requestHeader) return '请求头';
+    if (target == SecurityRuleTarget.requestBody) return '请求体';
+    if (target == SecurityRuleTarget.responseHeader) return '响应头';
+    if (target == SecurityRuleTarget.responseBody) return '响应体';
+    return '全部内容';
+  }
+
+  static String matchLabel(SecurityRuleMatchType matchType) =>
+      matchType == SecurityRuleMatchType.keyword ? '关键词' : '正则';
+
+  static SecurityRuleTarget _targetFrom(String? value) {
+    for (final target in SecurityRuleTarget.values) {
+      if (target.name == value) return target;
+    }
+    return SecurityRuleTarget.any;
+  }
+
+  static SecurityRuleMatchType _matchFrom(String? value) {
+    for (final match in SecurityRuleMatchType.values) {
+      if (match.name == value) return match;
+    }
+    return SecurityRuleMatchType.keyword;
+  }
+
+  static SecuritySeverity _severityFrom(String? value) {
+    for (final severity in SecuritySeverity.values) {
+      if (severity.name == value) return severity;
+    }
+    return SecuritySeverity.medium;
   }
 }

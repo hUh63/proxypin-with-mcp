@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.22.62 (2026-09-15)
+
+### 新功能：安全自检支持自定义规则
+
+- 安全自检页新增「**自定义规则**」：用关键词 / 正则匹配「请求 URL / 请求头 / 请求体 / 响应头 / 响应体 / 全部内容」，命中后按指定等级与建议列入报告
+- 适用场景：内置规则覆盖不到的业务字段（自家接口的敏感字段名、内部测试标记、特定业务术语）
+- 支持新建 / 编辑 / 启停 / 删除，本地持久化 `security_rules.json`；规则变更后报告即时重算
+- 正则非法即时提示并拒绝保存；匹配依旧**只读**，仍然不发送任何请求
+- 实现：`CustomSecurityRule` / `SecurityRuleTarget` / `SecurityRuleMatchType`（`lib/network/util/security_audit.dart`）+ `SecurityRuleStore`（`lib/network/util/security_rule_store.dart`）+ 页面内管理 / 编辑对话框
+
+### i18n
+
+- 新增 16 条词条，en / zh / zh_Hant 三份 ARB 键集合一致（各 738 键）
+
+### 文档
+
+- `docs/security_audit_guide.md` 新增「自定义规则」章节
+
 ## v1.22.61 (2026-09-15)
 
 ### 新功能：安全自检（被动安全基线核查）

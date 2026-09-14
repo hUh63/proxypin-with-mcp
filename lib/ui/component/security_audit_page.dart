@@ -23,6 +23,8 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/security_audit.dart';
+import 'package:proxypin/network/util/security_rule_store.dart';
+import 'package:proxypin/ui/component/utils.dart';
 
 /// 安全自检页：对已抓到的流量做**被动**安全基线核查。
 ///
@@ -40,19 +42,36 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
   SecurityAuditReport? _report;
   bool _loading = true;
   SecuritySeverity? _filter;
+  SecurityRuleStore? _store;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
   void initState() {
     super.initState();
+    _init();
+  }
+
+  @override
+  void dispose() {
+    _store?.removeListener(_onRulesChanged);
+    super.dispose();
+  }
+
+  Future<void> _init() async {
+    final store = await SecurityRuleStore.instance;
+    store.addListener(_onRulesChanged);
+    if (!mounted) return;
+    setState(() => _store = store);
     _run();
   }
+
+  void _onRulesChanged() => _run();
 
   void _run() {
     // 放到下一帧，避免阻塞首屏
     Future.delayed(Duration.zero, () {
-      final report = SecurityAuditor.audit(widget.requests);
+      final report = SecurityAuditor.audit(widget.requests, customRules: _store?.rules ?? const []);
       if (!mounted) return;
       setState(() {
         _report = report;
@@ -82,6 +101,12 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
       appBar: AppBar(
         title: Text(localizations.securityAudit),
         actions: [
+          TextButton.icon(
+            onPressed: _openRules,
+            icon: const Icon(Icons.rule, size: 18),
+            label: Text(localizations.securityAuditRules),
+          ),
+          const SizedBox(width: 4),
           if (report != null && !report.isClean)
             TextButton.icon(
               onPressed: _export,
@@ -358,5 +383,371 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
       logger.e('导出安全自检报告失败', error: e, stackTrace: t);
       if (mounted) FlutterToastr.show('${localizations.securityAuditExportFailed} $e', context);
     }
+  }
+
+  Future<void> _openRules() async {
+    final store = _store ?? await SecurityRuleStore.instance;
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (context) => _SecurityRulesDialog(store: store),
+    );
+  }
+}
+
+/// 自定义规则管理对话框
+class _SecurityRulesDialog extends StatefulWidget {
+  final SecurityRuleStore store;
+
+  const _SecurityRulesDialog({required this.store});
+
+  @override
+  State<_SecurityRulesDialog> createState() => _SecurityRulesDialogState();
+}
+
+class _SecurityRulesDialogState extends State<_SecurityRulesDialog> {
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.store.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.store.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Color _color(SecuritySeverity severity) {
+    if (severity == SecuritySeverity.high) return const Color(0xFFD32F2F);
+    if (severity == SecuritySeverity.medium) return const Color(0xFFEF6C00);
+    if (severity == SecuritySeverity.low) return const Color(0xFFF9A825);
+    return const Color(0xFF607D8B);
+  }
+
+  String _severityLabel(SecuritySeverity severity) {
+    if (severity == SecuritySeverity.high) return localizations.securityAuditSeverityHigh;
+    if (severity == SecuritySeverity.medium) return localizations.securityAuditSeverityMedium;
+    if (severity == SecuritySeverity.low) return localizations.securityAuditSeverityLow;
+    return localizations.securityAuditSeverityInfo;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rules = widget.store.rules;
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(localizations.securityAuditRules,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          ),
+          TextButton.icon(
+            onPressed: () => _edit(),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(localizations.securityAuditRuleNew),
+          ),
+        ],
+      ),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 420),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              localizations.securityAuditRulesTips,
+              style: TextStyle(
+                  fontSize: 12, height: 1.4, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: rules.isEmpty
+                  ? Center(child: Text(localizations.securityAuditRuleEmpty))
+                  : ListView.separated(
+                      itemCount: rules.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final rule = rules[index];
+                        final color = _color(rule.severity);
+                        return ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(_severityLabel(rule.severity),
+                                    style: TextStyle(fontSize: 11, color: color)),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(rule.name,
+                                    style: const TextStyle(fontSize: 14),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
+                          subtitle: Text(
+                            '${rule.describe()}\n${rule.pattern}',
+                            style: const TextStyle(fontSize: 11.5, height: 1.35),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          isThreeLine: true,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Switch(
+                                  value: rule.enabled,
+                                  onChanged: (value) => widget.store.setEnabled(rule.id, value)),
+                              IconButton(
+                                  tooltip: localizations.edit,
+                                  onPressed: () => _edit(rule: rule),
+                                  icon: const Icon(Icons.edit_outlined, size: 18)),
+                              IconButton(
+                                  tooltip: localizations.delete,
+                                  onPressed: () => _delete(rule),
+                                  icon: const Icon(Icons.delete_outline, size: 18)),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
+      ],
+    );
+  }
+
+  Future<void> _edit({CustomSecurityRule? rule}) async {
+    final result = await showDialog<CustomSecurityRule>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _SecurityRuleEditorDialog(rule: rule),
+    );
+    if (result == null) return;
+    if (rule == null) {
+      await widget.store.add(result);
+    } else {
+      await widget.store.update(result);
+    }
+  }
+
+  Future<void> _delete(CustomSecurityRule rule) async {
+    await showConfirmDialog(
+      context,
+      content: '${localizations.securityAuditRuleDeleteConfirm}：${rule.name}',
+      onConfirm: () => widget.store.remove(rule.id),
+    );
+  }
+}
+
+/// 自定义规则编辑对话框
+class _SecurityRuleEditorDialog extends StatefulWidget {
+  final CustomSecurityRule? rule;
+
+  const _SecurityRuleEditorDialog({this.rule});
+
+  @override
+  State<_SecurityRuleEditorDialog> createState() => _SecurityRuleEditorDialogState();
+}
+
+class _SecurityRuleEditorDialogState extends State<_SecurityRuleEditorDialog> {
+  late final TextEditingController _name;
+  late final TextEditingController _pattern;
+  late final TextEditingController _suggestion;
+  late SecurityRuleTarget _target;
+  late SecurityRuleMatchType _matchType;
+  late SecuritySeverity _severity;
+
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
+
+  @override
+  void initState() {
+    super.initState();
+    final rule = widget.rule;
+    _name = TextEditingController(text: rule?.name ?? '');
+    _pattern = TextEditingController(text: rule?.pattern ?? '');
+    _suggestion = TextEditingController(text: rule?.suggestion ?? '');
+    _target = rule?.target ?? SecurityRuleTarget.any;
+    _matchType = rule?.matchType ?? SecurityRuleMatchType.keyword;
+    _severity = rule?.severity ?? SecuritySeverity.medium;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _pattern.dispose();
+    _suggestion.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _name.text.trim();
+    if (name.isEmpty) {
+      FlutterToastr.show(localizations.securityAuditRuleNameRequired, context);
+      return;
+    }
+    final pattern = _pattern.text;
+    if (pattern.trim().isEmpty) {
+      FlutterToastr.show(localizations.securityAuditRulePatternRequired, context);
+      return;
+    }
+    if (!CustomSecurityRule.isValidPattern(pattern, _matchType)) {
+      FlutterToastr.show(localizations.securityAuditRuleInvalidRegex, context);
+      return;
+    }
+    Navigator.pop(
+      context,
+      CustomSecurityRule(
+        id: widget.rule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: name,
+        enabled: widget.rule?.enabled ?? true,
+        target: _target,
+        matchType: _matchType,
+        pattern: pattern.trim(),
+        severity: _severity,
+        suggestion: _suggestion.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool patternInvalid =
+        _pattern.text.trim().isNotEmpty && !CustomSecurityRule.isValidPattern(_pattern.text, _matchType);
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      title: Text(widget.rule == null ? localizations.securityAuditRuleNew : localizations.securityAuditRuleEdit,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _name,
+                decoration: InputDecoration(
+                  labelText: localizations.securityAuditRuleName,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<SecurityRuleTarget>(
+                      initialValue: _target,
+                      decoration: InputDecoration(
+                        labelText: localizations.securityAuditRuleTarget,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        for (final target in SecurityRuleTarget.values)
+                          DropdownMenuItem(
+                            value: target,
+                            child: Text(CustomSecurityRule.targetLabel(target),
+                                style: const TextStyle(fontSize: 13)),
+                          ),
+                      ],
+                      onChanged: (value) => setState(() => _target = value ?? _target),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<SecurityRuleMatchType>(
+                      initialValue: _matchType,
+                      decoration: InputDecoration(
+                        labelText: localizations.securityAuditRuleMatchType,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        for (final match in SecurityRuleMatchType.values)
+                          DropdownMenuItem(
+                            value: match,
+                            child: Text(CustomSecurityRule.matchLabel(match),
+                                style: const TextStyle(fontSize: 13)),
+                          ),
+                      ],
+                      onChanged: (value) => setState(() => _matchType = value ?? _matchType),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _pattern,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: localizations.securityAuditRulePattern,
+                  hintText: localizations.securityAuditRulePatternHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  errorText: patternInvalid ? localizations.securityAuditRuleInvalidRegex : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SecuritySeverity>(
+                initialValue: _severity,
+                decoration: InputDecoration(
+                  labelText: localizations.securityAuditRuleSeverity,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                items: [
+                  for (final severity in SecuritySeverity.values)
+                    DropdownMenuItem(
+                      value: severity,
+                      child: Text(_severityText(severity), style: const TextStyle(fontSize: 13)),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _severity = value ?? _severity),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _suggestion,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: localizations.securityAuditRuleSuggestion,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
+        FilledButton(onPressed: _submit, child: Text(localizations.save)),
+      ],
+    );
+  }
+
+  String _severityText(SecuritySeverity severity) {
+    if (severity == SecuritySeverity.high) return localizations.securityAuditSeverityHigh;
+    if (severity == SecuritySeverity.medium) return localizations.securityAuditSeverityMedium;
+    if (severity == SecuritySeverity.low) return localizations.securityAuditSeverityLow;
+    return localizations.securityAuditSeverityInfo;
   }
 }

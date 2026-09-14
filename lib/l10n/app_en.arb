@@ -866,5 +866,21 @@
   "securityAuditFilterAll": "All",
   "securityAuditEmpty": "No findings under the current filter",
   "securityAuditClean": "No notable risks found",
-  "securityAuditCleanTips": "None of the rules matched the analyzed traffic. The rules cover common configuration issues only and do not guarantee absolute security."
+  "securityAuditCleanTips": "None of the rules matched the analyzed traffic. The rules cover common configuration issues only and do not guarantee absolute security.",
+  "securityAuditRules": "Custom rules",
+  "securityAuditRuleNew": "New rule",
+  "securityAuditRuleEdit": "Edit rule",
+  "securityAuditRulesTips": "Match your own keywords or regex against the captured traffic (read-only, still no requests sent). Useful for business-specific secrets or markers that the built-in rules cannot know.",
+  "securityAuditRuleEmpty": "No custom rules yet",
+  "securityAuditRuleName": "Rule name",
+  "securityAuditRuleTarget": "Scope",
+  "securityAuditRuleMatchType": "Match type",
+  "securityAuditRulePattern": "Expression",
+  "securityAuditRulePatternHint": "e.g. secret_token or \\d{17}[\\dXx]",
+  "securityAuditRuleSeverity": "Severity",
+  "securityAuditRuleSuggestion": "Suggestion (optional)",
+  "securityAuditRuleNameRequired": "Please enter a rule name",
+  "securityAuditRulePatternRequired": "Please enter an expression",
+  "securityAuditRuleInvalidRegex": "Invalid regular expression",
+  "securityAuditRuleDeleteConfirm": "Delete custom rule"
 }

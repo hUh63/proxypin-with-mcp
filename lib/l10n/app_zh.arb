@@ -720,5 +720,21 @@
   "securityAuditFilterAll": "全部",
   "securityAuditEmpty": "当前筛选下没有风险项",
   "securityAuditClean": "未发现明显风险",
-  "securityAuditCleanTips": "本次分析的流量未命中任何规则。规则只覆盖常见配置问题，不代表绝对安全。"
+  "securityAuditCleanTips": "本次分析的流量未命中任何规则。规则只覆盖常见配置问题，不代表绝对安全。",
+  "securityAuditRules": "自定义规则",
+  "securityAuditRuleNew": "新建规则",
+  "securityAuditRuleEdit": "编辑规则",
+  "securityAuditRulesTips": "用你自己的关键词或正则匹配已抓到的流量（只读，依旧不发送任何请求）。适合内置规则无法覆盖的业务字段或内部标记。",
+  "securityAuditRuleEmpty": "还没有自定义规则",
+  "securityAuditRuleName": "规则名称",
+  "securityAuditRuleTarget": "匹配范围",
+  "securityAuditRuleMatchType": "匹配方式",
+  "securityAuditRulePattern": "表达式",
+  "securityAuditRulePatternHint": "例如：secret_token 或 \\d{17}[\\dXx]",
+  "securityAuditRuleSeverity": "风险等级",
+  "securityAuditRuleSuggestion": "修复建议（选填）",
+  "securityAuditRuleNameRequired": "请填写规则名称",
+  "securityAuditRulePatternRequired": "请填写表达式",
+  "securityAuditRuleInvalidRegex": "正则表达式不合法",
+  "securityAuditRuleDeleteConfirm": "确认删除自定义规则"
 }
