@@ -529,9 +529,76 @@ class _SecurityRulesDialogState extends State<_SecurityRulesDialog> {
         ),
       ),
       actions: [
+        TextButton.icon(
+          onPressed: _import,
+          icon: const Icon(Icons.file_upload_outlined, size: 18),
+          label: Text(localizations.securityAuditRuleImport),
+        ),
+        TextButton.icon(
+          onPressed: _export,
+          icon: const Icon(Icons.file_download_outlined, size: 18),
+          label: Text(localizations.securityAuditRuleExport),
+        ),
         TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
       ],
     );
+  }
+
+  Future<void> _import() async {
+    try {
+      final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+      if (result == null || result.isEmpty) return;
+      final file = result.single;
+      final text = await file.xFile.readAsString();
+      final decoded = jsonDecode(text);
+      List<dynamic> raw;
+      if (decoded is List) {
+        raw = decoded;
+      } else if (decoded is Map && decoded['rules'] is List) {
+        raw = decoded['rules'] as List;
+      } else {
+        if (mounted) FlutterToastr.show(localizations.securityAuditRuleImportFailed, context);
+        return;
+      }
+      final incoming = raw
+          .whereType<Map>()
+          .map((item) => CustomSecurityRule.fromJson(Map<String, dynamic>.from(item)))
+          .where((rule) => rule.name.isNotEmpty && rule.pattern.isNotEmpty)
+          .toList();
+      if (incoming.isEmpty) {
+        if (mounted) FlutterToastr.show(localizations.securityAuditRuleImportEmpty, context);
+        return;
+      }
+      final added = await widget.store.importRules(incoming);
+      if (mounted) FlutterToastr.show('${localizations.securityAuditRuleImportSuccess} $added', context);
+    } catch (e, t) {
+      logger.e('导入自定义安全规则失败', error: e, stackTrace: t);
+      if (mounted) FlutterToastr.show('${localizations.securityAuditRuleImportFailed} $e', context);
+    }
+  }
+
+  Future<void> _export() async {
+    final rules = widget.store.rules;
+    if (rules.isEmpty) {
+      FlutterToastr.show(localizations.securityAuditRuleEmpty, context);
+      return;
+    }
+    try {
+      final payload = {
+        'type': 'proxypin.security-rules',
+        'version': 1,
+        'rules': rules.map((rule) => rule.toJson()).toList(growable: false),
+      };
+      final Uri? path = await FilePicker.saveFile(
+        fileName: 'security-rules.json',
+        bytes: utf8.encode(const JsonEncoder.withIndent('  ').convert(payload)),
+      );
+      if (path == null) return;
+      if (mounted) FlutterToastr.show(localizations.securityAuditRuleExportSuccess, context);
+    } catch (e, t) {
+      logger.e('导出自定义安全规则失败', error: e, stackTrace: t);
+      if (mounted) FlutterToastr.show('${localizations.securityAuditRuleExportFailed} $e', context);
+    }
   }
 
   Future<void> _edit({CustomSecurityRule? rule}) async {

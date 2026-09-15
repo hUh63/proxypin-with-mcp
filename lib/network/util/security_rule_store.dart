@@ -107,4 +107,31 @@ class SecurityRuleStore extends ChangeNotifier {
     await _save();
     notifyListeners();
   }
+
+  /// 批量导入：按「名称 + 范围 + 表达式」判重，重复的跳过；
+  /// 返回实际新增的规则数量（便于导入后给出准确提示）。
+  Future<int> importRules(List<CustomSecurityRule> incoming) async {
+    var added = 0;
+    for (final rule in incoming) {
+      final duplicated = _rules.any((item) =>
+          item.name == rule.name && item.target == rule.target && item.pattern == rule.pattern);
+      if (duplicated) continue;
+      _rules.add(CustomSecurityRule(
+        id: '${DateTime.now().microsecondsSinceEpoch}-$added',
+        name: rule.name,
+        enabled: rule.enabled,
+        target: rule.target,
+        matchType: rule.matchType,
+        pattern: rule.pattern,
+        severity: rule.severity,
+        suggestion: rule.suggestion,
+      ));
+      added++;
+    }
+    if (added > 0) {
+      await _save();
+      notifyListeners();
+    }
+    return added;
+  }
 }

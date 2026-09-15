@@ -20,6 +20,7 @@ import 'dart:io';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:proxypin/ui/component/capture_plan_page.dart';
+import 'package:proxypin/ui/component/log_viewer_page.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:flutter/material.dart';
@@ -176,6 +177,11 @@ Widget multiWindow(String windowId, Map<dynamic, dynamic> argument) {
   // 网络诊断 / 连接自检
   if (argument['name'] == 'NetworkDiagnosticsPage') {
     return const NetworkDiagnosticsPage();
+  }
+
+  // 日志查看
+  if (argument['name'] == 'LogViewerPage') {
+    return const LogViewerPage();
   }
 
   if (argument['name'] == 'CapturePlanPage') {

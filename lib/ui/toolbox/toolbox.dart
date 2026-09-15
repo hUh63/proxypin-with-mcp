@@ -197,7 +197,7 @@ class _ToolboxState extends State<Toolbox> {
                 ],
               ),
               const Divider(thickness: 0.3),
-              Text(localizations.other, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Text(localizations.toolboxGroupUtilities, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
               Wrap(
                 spacing: 6,
                 children: [
@@ -246,6 +246,13 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.qr_code_2,
                       text: localizations.qrCode,
                       tooltip: localizations.qrCode),
+                ],
+              ),
+              const Divider(thickness: 0.3),
+              Text(localizations.toolboxGroupRuntime, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Wrap(
+                spacing: 6,
+                children: [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -266,8 +273,8 @@ class _ToolboxState extends State<Toolbox> {
                         MultiWindow.openWindow('性能监控', 'PerformanceDashboard', size: const Size(900, 700));
                       },
                       icon: Icons.speed,
-                      text: '性能监控',
-                      tooltip: '性能监控仪表盘'),
+                      text: localizations.toolboxPerformance,
+                      tooltip: localizations.toolboxPerformanceTip),
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -277,8 +284,15 @@ class _ToolboxState extends State<Toolbox> {
                         MultiWindow.openWindow('日志查看', 'LogViewerPage', size: const Size(900, 700));
                       },
                       icon: Icons.article_outlined,
-                      text: '日志',
-                      tooltip: '日志查看与过滤'),
+                      text: localizations.toolboxLog,
+                      tooltip: localizations.toolboxLogTip),
+                ],
+              ),
+              const Divider(thickness: 0.3),
+              Text(localizations.toolboxGroupCapture, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Wrap(
+                spacing: 6,
+                children: [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -311,8 +325,8 @@ class _ToolboxState extends State<Toolbox> {
                         ApiEndpointUtils.showEndpoints(context, source);
                       },
                       icon: Icons.api,
-                      text: 'API 端点',
-                      tooltip: '从抓包数据提取 API 端点'),
+                      text: localizations.toolboxApiEndpoints,
+                      tooltip: localizations.toolboxApiEndpointsTip),
                   IconText(
                       onTap: () {
                         // 对已抓到的流量做被动安全基线核查（不发送任何请求）
@@ -334,8 +348,8 @@ class _ToolboxState extends State<Toolbox> {
                             size: const Size(760, 640));
                       },
                       icon: Icons.hub_outlined,
-                      text: 'QUIC 连接',
-                      tooltip: 'QUIC/HTTP3 连接元数据（SNI/版本/统计）'),
+                      text: localizations.toolboxQuic,
+                      tooltip: localizations.toolboxQuicTip),
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -347,21 +361,28 @@ class _ToolboxState extends State<Toolbox> {
                             size: const Size(760, 640));
                       },
                       icon: Icons.outbox_outlined,
-                      text: '发送队列',
-                      tooltip: '重放任务队列与状态（待发送 / 进行中 / 已完成）'),
+                      text: localizations.toolboxSendQueue,
+                      tooltip: localizations.toolboxSendQueueTip),
+                ],
+              ),
+              const Divider(thickness: 0.3),
+              Text(localizations.other, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Wrap(
+                spacing: 6,
+                children: [
                   IconText(
                       onTap: () => showGuideCenter(context),
                       icon: Icons.menu_book_outlined,
-                      text: '使用文档',
-                      tooltip: '功能教程 / 规范文档 / 开发文档'),
+                      text: localizations.toolboxDocs,
+                      tooltip: localizations.toolboxDocsTip),
                   IconText(
                       onTap: () {
                         Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => const DevToolsPage(initialIndex: 0)));
                       },
                       icon: Icons.build_circle_outlined,
-                      text: '开发工具',
-                      tooltip: 'Cron 表达式 / JWT 解码 / UUID / SHA 哈希'),
+                      text: localizations.toolboxDevTools,
+                      tooltip: localizations.toolboxDevToolsTip),
                   IconText(
                       onTap: () {
                         Navigator.of(context).push(
