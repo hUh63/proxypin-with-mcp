@@ -52,7 +52,7 @@ class SearchModel {
   Set<Protocol> protocols = {};
 
   // 排序字段：time(时间), duration(耗时), statusCode(状态码)
-  SortBy sortBy = SortBy.time;
+  SortBy sortBy = SortBy.original;
   // 排序方向：asc(升序), desc(降序)
   SortOrder sortOrder = SortOrder.desc;
 
@@ -136,6 +136,11 @@ class SearchModel {
 
   /// 对搜索结果进行排序（增强版：支持相关性评分）(#843)
   List<HttpRequest> sortResults(List<HttpRequest> results) {
+    // 原始顺序：保持容器里的既有次序（上游 #843 —— 搜索后结果的序号与未搜索时一致，
+    // 便于按序号定位上下文）。这也是搜索的默认行为。
+    if (sortBy == SortBy.original) {
+      return results;
+    }
     if (sortBy == SortBy.relevance && keyword != null && keyword!.isNotEmpty) {
       // 按相关性排序：计算每个请求与关键词的匹配度
       results.sort((a, b) {
@@ -163,6 +168,9 @@ class SearchModel {
           case SortBy.relevance:
             // 默认按时间降序
             comparison = b.requestTime.compareTo(a.requestTime);
+            break;
+          case SortBy.original:
+            comparison = 0;
             break;
         }
         return sortOrder == SortOrder.asc ? comparison : -comparison;
@@ -409,7 +417,7 @@ enum Option {
 enum Protocol { http, https, ws, sse, http1, h2 }
 
 /// 排序字段 (#843)
-enum SortBy { time, duration, statusCode, relevance }
+enum SortBy { original, time, duration, statusCode, relevance }
 
 /// 排序方向 (#843)
 enum SortOrder { asc, desc }

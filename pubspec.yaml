@@ -71,6 +71,7 @@ flutter:
     - docs/features_tips.md
     - docs/capture_plan_guide.md
     - docs/security_audit_guide.md
+    - docs/js_restore_guide.md
     - docs/overview.md
     - docs/ai_analysis.md
     - docs/script_guide.md

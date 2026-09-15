@@ -204,8 +204,7 @@ class _MobileHistoryState extends State<MobileHistory> {
               _sessionSaved = true;
             });
           },
-        ),
-        onTap: () {});
+        ));
   }
 
   //导入har

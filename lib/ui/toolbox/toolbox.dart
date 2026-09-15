@@ -6,6 +6,7 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
 import 'package:proxypin/ui/component/capture_plan_page.dart';
 import 'package:proxypin/ui/component/security_audit_page.dart';
+import 'package:proxypin/ui/toolbox/js_restore_page.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
@@ -144,6 +145,19 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.note_alt_outlined,
                       text: localizations.textEditor,
                       tooltip: localizations.textEditor),
+                  IconText(
+                      onTap: () async {
+                        if (Platforms.isMobile()) {
+                          await Navigator.of(context).push(
+                              MaterialPageRoute(builder: (context) => const JsRestorePage()));
+                          return;
+                        }
+                        MultiWindow.openWindow(localizations.jsRestore, 'JsRestorePage',
+                            size: const Size(900, 760));
+                      },
+                      icon: Icons.auto_fix_high_outlined,
+                      text: localizations.jsRestore,
+                      tooltip: localizations.jsRestoreTips),
                 ],
               ),
               const Divider(thickness: 0.3),

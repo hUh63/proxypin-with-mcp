@@ -232,8 +232,7 @@ class _HistoryListState extends State<_HistoryListWidget> {
               _sessionSaved = true;
             });
           },
-        ),
-        onTap: () {});
+        ));
   }
 
   //构建历史记录

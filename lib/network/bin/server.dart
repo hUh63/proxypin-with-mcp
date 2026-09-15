@@ -202,16 +202,22 @@ class ProxyServer {
     _stopQuicProbeListener();
     // 停止 WebSocket 流量推送服务（上游 #756）
     try {
-      await WsTrafficServer.instance.stop();
+      // 上游 #931：给停止流程加超时保护，避免某一步永久阻塞导致"停止抓包"卡死、
+      // 状态无法复位（需强杀进程）的情况
+      await WsTrafficServer.instance.stop().timeout(const Duration(seconds: 5));
     } catch (e) {
-      logger.w('WebSocket 流量推送服务停止异常', error: e);
+      logger.w('WebSocket 流量推送服务停止异常（已跳过）', error: e);
     }
     if (!isRunning) {
       return server;
     }
 
     if (configuration.enableSystemProxy) {
-      await setSystemProxyEnable(false);
+      try {
+        await setSystemProxyEnable(false).timeout(const Duration(seconds: 5));
+      } catch (e) {
+        logger.w('关闭系统代理超时或失败（继续停止流程）', error: e);
+      }
     }
     // 上游 #577：还原 Windows 分层增强接管（WinHTTP + 环境变量）
     if (Platform.isWindows && configuration.winTakeoverEnabled) {
@@ -222,7 +228,14 @@ class ProxyServer {
       }
     }
     logger.i("stop on $port");
-    await server?.stop();
+    final current = server;
+    if (current != null) {
+      try {
+        await current.stop().timeout(const Duration(seconds: 5));
+      } catch (e) {
+        logger.w('关闭代理服务器超时或失败（继续停止流程）', error: e);
+      }
+    }
     try {
       McpEventAutomation().triggerProxyStatusChange(ProxyStatus.stopped);
     } catch (e, s) {

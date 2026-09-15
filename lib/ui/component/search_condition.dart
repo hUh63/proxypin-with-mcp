@@ -121,6 +121,7 @@ class SearchConditionsState extends State<SearchConditions> {
                   DropdownMenu<String>(
                     initialValue: searchModel.sortBy.name,
                     items: [
+                      DropdownMenuEntry(value: 'original', label: localizations.sortOriginal),
                       DropdownMenuEntry(value: 'time', label: localizations.sortTime),
                       DropdownMenuEntry(value: 'duration', label: localizations.duration),
                       DropdownMenuEntry(value: 'statusCode', label: localizations.statusCode),

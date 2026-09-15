@@ -464,6 +464,10 @@ class DomainRequests extends StatefulWidget {
     var filtered = body
         .where((element) => searchModel.filter(element.request, element.response.get() ?? element.request.response))
         .toList();
+    // 原始顺序（上游 #843）：保持既有次序，不做重排（搜索结果的序号与未搜索时一致）
+    if (searchModel.sortBy == SortBy.original) {
+      return filtered;
+    }
     // 对搜索结果进行排序
     filtered.sort((a, b) {
       int comparison = 0;
@@ -484,6 +488,10 @@ class DomainRequests extends StatefulWidget {
         case SortBy.relevance:
           // 相关性排序已在 search_model.dart 的 sortResults 中处理，此处默认按时间降序
           comparison = b.request.requestTime.compareTo(a.request.requestTime);
+          break;
+        case SortBy.original:
+          // 原始顺序：保持既有次序（上游 #843）
+          comparison = 0;
           break;
       }
       return searchModel.sortOrder == SortOrder.asc ? comparison : -comparison;

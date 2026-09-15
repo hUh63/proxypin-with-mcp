@@ -21,6 +21,7 @@ import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:proxypin/ui/component/capture_plan_page.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart';
+import 'package:proxypin/ui/toolbox/js_restore_page.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:flutter/material.dart';
@@ -182,6 +183,11 @@ Widget multiWindow(String windowId, Map<dynamic, dynamic> argument) {
   // 日志查看
   if (argument['name'] == 'LogViewerPage') {
     return const LogViewerPage();
+  }
+
+  // JS 还原（内置 jsrestore）
+  if (argument['name'] == 'JsRestorePage') {
+    return const JsRestorePage();
   }
 
   if (argument['name'] == 'CapturePlanPage') {

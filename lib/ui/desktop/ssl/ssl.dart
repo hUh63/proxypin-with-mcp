@@ -366,7 +366,13 @@ class _SwitchState extends State<_Switch> {
   @override
   Widget build(BuildContext context) {
     return MenuItemButton(
-        onPressed: () {},
+        // 整行可点：与右侧 Switch 行为一致（点击文字也能切换）
+        onPressed: () {
+          setState(() {
+            widget.proxyServer.enableSsl = !widget.proxyServer.enableSsl;
+            changed = true;
+          });
+        },
         child: Row(children: [
           Padding(
               padding: const EdgeInsets.only(left: 10, right: 5),

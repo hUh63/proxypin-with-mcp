@@ -31,6 +31,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/css_formatter.dart';
+import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:re_highlight/languages/bash.dart';
@@ -149,12 +150,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _controller.text = '';
   }
 
-  /// 是否支持格式化：JSON / XML / HTML / CSS。
-  /// 其他语言要引入重型 formatter，不在范围内——按钮在 UI 上禁用。
-  bool get _canFormat => _lang.label == 'JSON' || _lang.label == 'XML / HTML' || _lang.label == 'CSS';
+  /// 是否支持格式化：JSON / XML / HTML / CSS / JavaScript。
+  bool get _canFormat =>
+      _lang.label == 'JSON' ||
+      _lang.label == 'XML / HTML' ||
+      _lang.label == 'CSS' ||
+      _lang.label == 'JavaScript';
 
   /// 按当前语言格式化。失败时通过 toast 显示原因，不修改原文。
-  void _format() {
+  Future<void> _format() async {
     final text = _controller.text;
     if (text.trim().isEmpty) return;
     switch (_lang.label) {
@@ -178,6 +182,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
         // CSS.pretty 内部 try/catch 失败时返回原文——非破坏性，不再额外加 toast。
         final pretty = CSS.pretty(text);
         if (pretty != text) _controller.text = pretty;
+      case 'JavaScript':
+        // 内置 js-beautify：离线美化 JS（保留注释、不改变语义）。
+        // 反混淆能力见工具箱「JS 还原」。
+        try {
+          final pretty = await JsDeobfuscator.beautify(text);
+          if (pretty != text) _controller.text = pretty;
+        } catch (e) {
+          _toast('${localizations.fail}: $e');
+        }
     }
   }
 
