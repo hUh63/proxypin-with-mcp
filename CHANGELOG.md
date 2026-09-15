@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.22.64 (2026-09-15)
+
+### 代码健康：清理 9 个不可达文件（全局 + 移动端巡检）
+
+巡检方法：扫描全部 `Xxx extends StatefulWidget/StatelessWidget`，与引用点做差集，再逐个 grep 复核。
+
+删除（均无任何引用，合计约 1.4k 行）：
+
+| 文件 | 原因 |
+|---|---|
+| `lib/ui/content/batch_operations_page.dart` | 批量操作页，与请求列表已有的多选批量删除 / 导出重复 |
+| `lib/network/batch/batch_operations.dart` | 仅被上一文件引用，随之成为孤儿 |
+| `lib/ui/component/har_manager_page.dart` | HAR 管理页，使用 file_picker 旧 API（`FilePicker.platform`），与 12.x 不兼容；且现有导出 HAR 已可用 |
+| `lib/ui/mobile/setting/rule_visual_config.dart` | 规则可视化页，与「MCP 自动化 → 规则引擎」Tab 重复 |
+| `lib/ui/component/context_menu_region.dart` | 通用右键菜单组件，无任何使用；项目已统一用 `showContextMenu` |
+| `lib/event/{event,enhanced_scheduler,script_executor,rule_visual_config}.dart` | `lib/event` 下仅 `event_bus.dart` 被引用，其余 4 个为孤儿 |
+
+保留 `lib/event/event_bus.dart`（被 `mcp_rule_engine` / `desktop` / `mobile` 引用）。
+
+### 核实：#815「iOS 不作为默认路由」
+
+结论：**平台限制，无法实现**。
+
+- iOS 侧的路由接管本就由「**IP 层代理**」（`ipLayerProxy`）开关控制，**默认不接管默认路由**（走 `NEProxySettings` HTTP 代理）；
+- 但 issue 的诉求是「某些 App 检测到 VPN 就闪退」——只要存在 `NEPacketTunnelProvider` 隧道，系统就视为 VPN 连接，App 可通过 `CFNetworkCopySystemProxySettings` / `getifaddrs` 检测到，**与是否接管默认路由无关**，无法规避。
+
 ## v1.22.63 (2026-09-15)
 
 ### 新功能：安全自检自定义规则支持导入 / 导出
