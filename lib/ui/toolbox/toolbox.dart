@@ -5,6 +5,7 @@ import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
 import 'package:proxypin/ui/component/capture_plan_page.dart';
+import 'package:proxypin/ui/component/fuzzer_page.dart';
 import 'package:proxypin/ui/component/security_audit_page.dart';
 import 'package:proxypin/ui/toolbox/js_restore_page.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
@@ -377,6 +378,16 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.outbox_outlined,
                       text: localizations.toolboxSendQueue,
                       tooltip: localizations.toolboxSendQueueTip),
+                  IconText(
+                      onTap: () {
+                        // 手动 Fuzz：把用户自填的取值逐条替换进请求发送并对照响应
+                        final source = (widget.requestContainer ?? const <HttpRequest>[]).toList();
+                        Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => FuzzerPage(requests: source)));
+                      },
+                      icon: Icons.science_outlined,
+                      text: localizations.fuzzer,
+                      tooltip: localizations.fuzzerTips),
                 ],
               ),
               const Divider(thickness: 0.3),

@@ -43,6 +43,7 @@ class GuideCenter {
     GuideDoc('capture_plan', '采集方案指南', '功能指南', 'docs/capture_plan_guide.md', Icons.route_outlined),
     GuideDoc('security_audit', '安全自检指南', '功能指南', 'docs/security_audit_guide.md', Icons.shield_outlined),
     GuideDoc('js_restore', 'JS 还原指南', '功能指南', 'docs/js_restore_guide.md', Icons.auto_fix_high_outlined),
+    GuideDoc('fuzzer', '手动 Fuzz 指南', '功能指南', 'docs/fuzzer_guide.md', Icons.science_outlined),
     GuideDoc('script', '脚本开发指南', '功能指南', 'docs/script_guide.md', Icons.terminal_outlined),
     GuideDoc('rewrite', '请求重写指南', '功能指南', 'docs/rewrite_guide.md', Icons.edit_note_outlined),
     GuideDoc('environment', '环境变量指南', '功能指南', 'docs/environment_guide.md', Icons.text_snippet_outlined),
