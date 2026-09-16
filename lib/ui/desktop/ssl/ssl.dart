@@ -100,18 +100,25 @@ class _SslState extends State<SslWidget> {
                     TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
                     TextButton(
                       onPressed: () async {
-                        var file = File(result.single.xFile.path!);
-                        var bytes = await file.readAsBytes();
                         try {
-                          await CertificateManager.importPkcs12(bytes, password);
+                          var file = File(result.single.xFile.path!);
+                          var bytes = await file.readAsBytes();
+                          if (bytes.isEmpty) {
+                            throw Exception('读取到的文件为空，请重新选择 .p12 文件');
+                          }
+                          await CertificateManager.importPkcs12(bytes, password?.isNotEmpty == true ? password : null);
                           if (context.mounted) {
                             FlutterToastr.show(localizations.success, context);
                             Navigator.pop(context);
                           }
                         } catch (e, stackTrace) {
-                          logger.e('import p12 error [$password]', error: e, stackTrace: stackTrace);
-                          if (context.mounted) FlutterToastr.show(localizations.importFailed, context);
-                          return;
+                          // 不再把密码写进日志（上游 #850 顺带修）；并把失败原因显示出来
+                          logger.e('import p12 error', error: e, stackTrace: stackTrace);
+                          var reason = e.toString().replaceFirst('Exception: ', '');
+                          if (reason.length > 120) reason = reason.substring(0, 120);
+                          if (context.mounted) {
+                            FlutterToastr.show('${localizations.importFailed}: $reason', context, duration: 4);
+                          }
                         }
                       },
                       child: Text(localizations.import),

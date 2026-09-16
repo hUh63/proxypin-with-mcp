@@ -29,6 +29,8 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
+import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/system_proxy.dart';
 import 'package:proxypin/storage/histories.dart';
 import 'package:proxypin/ui/component/app_dialog.dart';
 import 'package:proxypin/ui/component/memory_cleanup.dart';
@@ -42,6 +44,7 @@ import 'package:proxypin/ui/desktop/request/list.dart';
 import 'package:proxypin/ui/desktop/toolbar/toolbar.dart';
 import 'package:proxypin/ui/desktop/widgets/windows_toolbar.dart';
 import 'package:proxypin/utils/listenable_list.dart';
+import 'package:proxy_manager/proxy_manager.dart';
 
 import '../app_update/app_update_repository.dart';
 import '../component/split_view.dart';
@@ -150,6 +153,32 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
       });
     } else {
       AppUpdateRepository.checkUpdate(context);
+    }
+
+    // 上游 #886：启动自愈，清掉上次异常退出残留、指向本机已失效端口的系统代理
+    unawaited(_repairStaleSystemProxy());
+  }
+
+  /// 上游 #886：系统代理残留自愈。
+  ///
+  /// 崩溃/强杀/卸载后系统代理可能仍指向 `127.0.0.1:<本应用端口>`，而那个端口已无人监听，
+  /// 用户会表现为"整机网页全打不开"。这里只在以下条件同时成立时清理，避免误伤其它本地代理工具：
+  /// 1. 用户没有开启「系统代理」开关（否则启动后本应用会正常接管）；
+  /// 2. 代理指向 127.0.0.1 / localhost，且端口正是本应用的代理端口。
+  Future<void> _repairStaleSystemProxy() async {
+    try {
+      if (widget.configuration.enableSystemProxy) return;
+
+      final proxy = await SystemProxy.getSystemProxy(ProxyTypes.http);
+      if (proxy == null) return;
+
+      final host = proxy.host.toLowerCase();
+      if ((host == '127.0.0.1' || host == 'localhost') && proxy.port == widget.configuration.port) {
+        await SystemProxy.resetSystemProxy();
+        logger.i('检测到残留的系统代理 ${proxy.host}:${proxy.port}，已自动清除');
+      }
+    } catch (e, t) {
+      logger.e('系统代理自愈检查失败', error: e, stackTrace: t);
     }
   }
 

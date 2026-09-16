@@ -684,7 +684,13 @@ class Http2RequestDecoder extends Http2Codec<HttpRequest> {
     var uri = message.requestUri!;
     headers.add(Header.ascii(":method", message.method.name));
     headers.add(Header.ascii(":scheme", uri.scheme));
-    headers.add(Header.ascii(":authority", uri.host));
+    // 上游 #871：:authority 优先沿用客户端原始 Host 头——MITM 场景下它才是权威值。
+    // 直接用 uri.host 重建会丢掉非默认端口（upstream 可能据此路由/校验而返回 403）。
+    final hostHeader = message.headers.get('host');
+    final authority = (hostHeader != null && hostHeader.trim().isNotEmpty)
+        ? hostHeader.trim()
+        : ((uri.hasPort && uri.port != 443 && uri.port != 80) ? '${uri.host}:${uri.port}' : uri.host);
+    headers.add(Header.ascii(":authority", authority));
     headers.add(Header.ascii(":path", message.uri));
 
     // h2 禁止的 hop-by-hop headers (RFC 7540 §8.1.2.2)：
@@ -744,9 +750,16 @@ class Http2ResponseDecoder extends Http2Codec<HttpResponse> {
   List<Header> encodeHeaders(HttpResponse message) {
     var headers = <Header>[];
     headers.add(Header.ascii(":status", message.status.code.toString()));
+
+    // 上游 #871：HTTP/2 要求 header 名全小写（RFC 9113 §8.2.1），
+    // 且不得出现连接相关的 hop-by-hop 头；下发大写/连接头会被严格客户端判为协议错误。
+    const forbidden = {'connection', 'proxy-connection', 'keep-alive', 'transfer-encoding', 'upgrade'};
+
     message.headers.forEach((key, values) {
+      final lower = key.toLowerCase();
+      if (forbidden.contains(lower)) return;
       for (var value in values) {
-        headers.add(Header.ascii(key, value));
+        headers.add(Header(latin1.encode(lower), _sanitizeHeaderValue(latin1.encode(value))));
       }
     });
     return headers;

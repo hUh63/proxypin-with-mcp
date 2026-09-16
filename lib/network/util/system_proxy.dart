@@ -95,6 +95,15 @@ class SystemProxy {
     instance._setProxyPassDomains(proxyPassDomains);
   }
 
+  /// 清除系统代理残留（上游 #886 的救援手段）。
+  ///
+  /// 应用异常退出/被强杀/卸载后，系统代理可能仍指向 `127.0.0.1:<端口>`，
+  /// 而那个端口已经没人监听——结果是浏览器打不开任何网页，用户却找不到原因。
+  /// 这里关闭系统代理并清掉代理地址，把网络恢复原状。
+  static Future<void> resetSystemProxy() async {
+    await instance._resetSystemProxy();
+  }
+
   //子类抽象方法
 
   ///获取系统代理
@@ -122,6 +131,12 @@ class SystemProxy {
 
   ///设置代理忽略地址
   Future<void> _setProxyPassDomains(String proxyPassDomains) async {}
+
+  /// 清除系统代理残留（上游 #886）。默认：关闭系统代理开关。
+  /// 需要额外清理地址/自动配置的平台可覆写。
+  Future<void> _resetSystemProxy() async {
+    await _setProxyEnable(false, true);
+  }
 }
 
 class MacSystemProxy implements SystemProxy {
@@ -367,6 +382,26 @@ class WindowsSystemProxy extends SystemProxy {
       '/v',
       ...args,
     ]).then((results) => results.stdout.toString());
+  }
+
+  /// 上游 #886：Windows 残留清理——关掉开关、清空代理地址、删掉自动配置脚本（PAC）。
+  /// 只清开关的话，PAC 或残留地址仍可能让浏览器走上已经不存在的代理端口。
+  @override
+  Future<void> _resetSystemProxy() async {
+    try {
+      await _internetSettings('add', ['ProxyEnable', '/t', 'REG_DWORD', '/f', '/d', '0']);
+      await _internetSettings('add', ['ProxyServer', '/t', 'REG_SZ', '/f', '/d', '']);
+      await Process.run('reg', [
+        'delete',
+        'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings',
+        '/v',
+        'AutoConfigURL',
+        '/f',
+      ]);
+      logger.i('已清除 Windows 系统代理残留');
+    } catch (e, t) {
+      logger.e('清除 Windows 系统代理残留失败', error: e, stackTrace: t);
+    }
   }
 }
 

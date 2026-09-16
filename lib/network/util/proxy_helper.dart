@@ -195,11 +195,14 @@ class ProxyHelper {
     String message = error.toString();
     HttpStatus status = HttpStatus(-1, message);
     if (error is HandshakeException) {
+      // 上游 #898：把手握失败的原始原因带上，并给出可操作的解释——
+      // 否则用户只看到一串"感叹号包"，分不清是证书没装、证书没被信任，还是对方做了证书固定。
+      final detail = error.message.isEmpty ? '' : ' (${error.message})';
       status = HttpStatus(
           -2,
           Localizations.isZH
-              ? 'SSL handshake failed, 请检查证书安装是否正确'
-              : 'SSL handshake failed, please check the certificate');
+              ? 'SSL 握手失败$detail。常见原因：1) 证书未安装或未信任；2) 目标应用启用了证书校验（SSL Pinning）；3) 该连接不是标准 TLS 流量'
+              : 'SSL handshake failed$detail. Usual causes: 1) certificate not installed/trusted; 2) the app uses certificate pinning; 3) the connection is not plain TLS');
     } else if (error is ParserException) {
       status = HttpStatus(-3, error.message);
     } else if (error is SocketException) {

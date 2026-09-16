@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import 'package:flutter/material.dart';
+import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
@@ -283,6 +284,7 @@ class _ProxyMenuState extends State<_ProxyMenu> {
         PortWidget(proxyServer: widget.proxyServer, textStyle: const TextStyle(fontSize: 13)),
         const Divider(thickness: 0.3, height: 8),
         setSystemProxy(),
+        resetSystemProxy(),
         const Divider(thickness: 0.3, height: 8),
         Row(children: [
           Expanded(
@@ -376,6 +378,34 @@ class _ProxyMenuState extends State<_ProxyMenu> {
                 });
               })),
       SizedBox(width: 10)
+    ]);
+  }
+
+  /// 网络救援：清除系统代理残留（上游 #886）
+  ///
+  /// 异常退出/强杀后系统代理可能仍指向已经不存在的本地端口，导致整机断网；
+  /// 这里一键把系统代理设置清干净。
+  Widget resetSystemProxy() {
+    return Row(children: [
+      Expanded(
+          child: Padding(
+              padding: const EdgeInsets.only(left: 15, right: 12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('清除系统代理残留', style: const TextStyle(fontSize: 14)),
+                Text('异常退出后网络打不开时点这里恢复',
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).hintColor)),
+              ]))),
+      OutlinedButton.icon(
+        onPressed: () async {
+          await SystemProxy.resetSystemProxy();
+          if (mounted) {
+            FlutterToastr.show('已清除系统代理设置，网络应恢复正常', context, duration: 3);
+          }
+        },
+        icon: const Icon(Icons.build_outlined, size: 16),
+        label: const Text('修复'),
+      ),
+      const SizedBox(width: 10),
     ]);
   }
 }
