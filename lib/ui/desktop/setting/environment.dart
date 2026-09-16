@@ -13,6 +13,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/util/random.dart';
+import 'package:proxypin/ui/component/builtin_variables_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 环境变量管理弹窗
@@ -177,6 +178,11 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
         Expanded(
           child: Text(localizations.envUsageHint.replaceFirst('%s', '{{name}}'),
               style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        ),
+        IconButton(
+          tooltip: '内置变量',
+          onPressed: () => BuiltinVariablesDialog.show(context),
+          icon: const Icon(Icons.functions, size: 18),
         ),
         IconButton(
           tooltip: localizations.useGuide,

@@ -10,6 +10,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/ui/component/builtin_variables_dialog.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
@@ -172,6 +173,11 @@ class _MobileEnvironmentPageState extends State<MobileEnvironmentPage> {
           toolbarHeight: 36,
           centerTitle: true,
           actions: [
+            IconButton(
+              tooltip: '内置变量',
+              onPressed: () => BuiltinVariablesDialog.show(context),
+              icon: const Icon(Icons.functions, size: 20),
+            ),
             IconButton(
               tooltip: localizations.useGuide,
               onPressed: _openGuide,

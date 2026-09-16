@@ -82,6 +82,24 @@ async function onRequest(context, request) {
 
 **实现细节**（`lib/network/components/js/require.dart`）：运行时初始化时注入全局 `require`，内部用 `fetch` 取源码 → `new Function('module','exports','require','globalThis','console', code)` 包装执行 → 结果按 URL 缓存到 `globalThis.__proxypinModuleCache`。**与其它功能的联动**：拉取走的是引擎自带网络栈（不受抓包代理影响），但脚本身份与请求改写仍受「脚本启用状态」「脚本执行顺序」控制。
 
+## 日志里输出图片（二维码等）
+
+上游 #873：脚本日志面板能直接渲染图片——把图片的 base64 拼成 data URI 交给 `console.log` 即可：
+
+```javascript
+function onRequest(context, request) {
+  // b64 来源随意：接口返回、扫码结果、自己生成的二维码位图……
+  const b64 = 'iVBORw0KGgoAAAANSUhEUg...';
+  console.log('data:image/png;base64,' + b64);
+  return request;
+}
+```
+
+- 支持格式：`png` / `jpeg` / `gif` / `webp` / `bmp`；
+- 单条日志 base64 上限约 2MB，超过就按普通文本显示（避免一条日志把内存吃光）；
+- 图片下方标注体积；非图片内容仍按原样显示，文本可选中复制；
+- 想在脚本里生成二维码，可用 `require()` 加载纯 JS 的二维码库算出位图，再按上面的方式输出。
+
 ## 捕获 WebSocket 帧（onWebSocket）
 
 上游 #722：除了请求/响应钩子，脚本还可订阅 WebSocket 帧，用于记录、统计或触发外部动作。

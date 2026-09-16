@@ -36,6 +36,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
+import 'package:proxypin/utils/data_uri.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -308,7 +309,8 @@ class _ScriptConsoleState extends State<ScriptConsoleWidget> {
                         Text(logs[index].level, style: TextStyle(fontSize: 13, color: color)),
                         const SizedBox(width: 10),
                         Expanded(
-                            child: SelectableText(logs[index].output, style: TextStyle(fontSize: 13, color: color))),
+                            child: scriptLogContent(logs[index].output,
+                                style: TextStyle(fontSize: 13, color: color))),
                       ],
                     ));
               },

@@ -32,6 +32,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/mobile/widgets/floating_window.dart';
+import 'package:proxypin/utils/data_uri.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
@@ -277,7 +278,7 @@ class _ScriptConsoleLogState extends State<ScriptConsoleLog> {
                   const SizedBox(width: 8),
                   Text(log.level, style: TextStyle(fontSize: 13, color: color)),
                   const SizedBox(width: 8),
-                  Expanded(child: SelectableText(log.output, style: TextStyle(fontSize: 13, color: color))),
+                  Expanded(child: scriptLogContent(log.output, style: TextStyle(fontSize: 13, color: color))),
                 ],
               ));
         });
@@ -371,10 +372,9 @@ class _ScriptLogSmallWindowState extends State<ScriptLogSmallWindow> {
                   var log = logs[index];
                   return Padding(
                       padding: const EdgeInsets.only(bottom: 3, left: 3, right: 3),
-                      child: Text(log.output,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 13, color: log.level == 'error' ? Colors.red : null)));
+                      child: scriptLogContent(log.output,
+                          style: TextStyle(fontSize: 13, color: log.level == 'error' ? Colors.red : null),
+                          size: 96));
                 })));
   }
 }

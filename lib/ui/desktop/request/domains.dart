@@ -147,7 +147,6 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
     if (searchModel?.isNotEmpty == true) {
       searchView = searchFilter(searchModel!);
       list = searchView.values;
-      selectionController.prune(list.expand((e) => e.body).map((e) => e.request.requestId).toSet());
     } else {
       searchView.clear();
     }
@@ -162,6 +161,17 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
     setState(() {
       searchModel = val;
     });
+    // 上游 #915：收敛选中集合的动作放在这里，不能放在 build 里——
+    // build 会被任意次触发（新请求进来、列表刷新），每次都按当前视图 prune，
+    // 会把用户在其它视图里选好的项一并清掉，表现为"选取状态莫名消失"。
+    if (val != null && val.isNotEmpty) {
+      final visible = searchFilter(val)
+          .values
+          .expand((e) => e.body)
+          .map((e) => e.request.requestId)
+          .toSet();
+      selectionController.prune(visible);
+    }
   }
 
   ///搜索过滤

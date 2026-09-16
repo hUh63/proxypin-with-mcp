@@ -240,17 +240,23 @@ class JavaScriptEngine {
     });
 
     request.headers.remove(HttpHeaders.CONTENT_ENCODING);
+    request.headers.remove(HttpHeaders.TRANSFER_ENCODING);
 
     //判断是否是二进制
     if (Lists.getElementType(map['body']) == int) {
       request.body = Lists.convertList<int>(map['body']);
-      return request;
+    } else {
+      request.body = map['body']?.toString().codeUnits;
+
+      if (request.body != null && (request.charset == 'utf-8' || request.charset == 'utf8')) {
+        request.body = utf8.encode(map['body'].toString());
+      }
     }
 
-    request.body = map['body']?.toString().codeUnits;
-
-    if (request.body != null && (request.charset == 'utf-8' || request.charset == 'utf8')) {
-      request.body = utf8.encode(map['body'].toString());
+    // 上游 #844：脚本改了 body 之后必须同步 Content-Length。
+    // 否则会带着旧的 Content-Length 发出，服务端按旧长度读包等不到数据 → 卡住/超时。
+    if (request.body != null) {
+      request.headers.contentLength = request.body!.length;
     }
     return request;
   }
@@ -269,16 +275,22 @@ class JavaScriptEngine {
     });
 
     response.headers.remove(HttpHeaders.CONTENT_ENCODING);
+    response.headers.remove(HttpHeaders.TRANSFER_ENCODING);
 
     //判断是否是二进制
     if (Lists.getElementType(map['body']) == int) {
       response.body = Lists.convertList<int>(map['body']);
-      return response;
+    } else {
+      response.body = map['body']?.toString().codeUnits;
+      if (response.body != null && (response.charset == 'utf-8' || response.charset == 'utf8')) {
+        response.body = utf8.encode(map['body'].toString());
+      }
     }
 
-    response.body = map['body']?.toString().codeUnits;
-    if (response.body != null && (response.charset == 'utf-8' || response.charset == 'utf8')) {
-      response.body = utf8.encode(map['body'].toString());
+    // 上游 #844：响应体被脚本改写后同步 Content-Length，
+    // 否则客户端按旧长度读取，等不到剩余字节 → 抓包显示 200 但 App 侧超时。
+    if (response.body != null) {
+      response.headers.contentLength = response.body!.length;
     }
 
     return response;

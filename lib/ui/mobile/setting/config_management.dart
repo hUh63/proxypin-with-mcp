@@ -82,6 +82,22 @@ class _ConfigManagementState extends State<ConfigManagement> {
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
+              leading: const Icon(Icons.content_copy, color: Colors.teal),
+              title: const Text('复制配置到剪贴板'),
+              subtitle: const Text('生成配置文本，粘贴到其它设备即可导入（无需传文件）'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => _exportToClipboard(context),
+            ),
+            Divider(height: 0, thickness: 0.3, color: dividerColor),
+            ListTile(
+              leading: const Icon(Icons.content_paste, color: Colors.orange),
+              title: const Text('从剪贴板导入配置'),
+              subtitle: const Text('读取剪贴板里的配置文本，会覆盖当前配置'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => _importFromClipboard(context),
+            ),
+            Divider(height: 0, thickness: 0.3, color: dividerColor),
+            ListTile(
               leading: const Icon(Icons.backup, color: Colors.purple),
               title: const Text('备份管理'),
               subtitle: const Text('查看、恢复或删除自动备份的配置文件'),
@@ -298,27 +314,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
       final file = File(filePath);
       final jsonStr = await file.readAsString();
       final newConfig = await ConfigImportExport.importConfig(jsonStr);
-
-      // 应用新配置
-      configuration.port = newConfig.port;
-      configuration.enableSsl = newConfig.enableSsl;
-      configuration.startup = newConfig.startup;
-      configuration.enableSystemProxy = newConfig.enableSystemProxy;
-      configuration.enableSocks5 = newConfig.enableSocks5;
-      configuration.proxyPassDomains = newConfig.proxyPassDomains;
-      configuration.externalProxy = newConfig.externalProxy;
-      configuration.appWhitelist = newConfig.appWhitelist;
-      configuration.appWhitelistEnabled = newConfig.appWhitelistEnabled;
-      configuration.appBlacklist = newConfig.appBlacklist;
-      configuration.historyCacheTime = newConfig.historyCacheTime;
-      configuration.mcpPort = newConfig.mcpPort;
-      configuration.mcpEnabled = newConfig.mcpEnabled;
-      configuration.mcpAutoStart = newConfig.mcpAutoStart;
-      configuration.mcpToolsEnabled = newConfig.mcpToolsEnabled;
-      configuration.enabledHttp2 = newConfig.enabledHttp2;
-
-      // 刷新配置
-      configuration.flushConfig();
+      _applyImportedConfig(newConfig);
 
       if (mounted) {
         FlutterToastr.show(
@@ -343,5 +339,77 @@ class _ConfigManagementState extends State<ConfigManagement> {
         );
       }
     }
+  }
+
+  /// 上游 #920：把配置文本复制到剪贴板，方便在设备间直接粘贴传递
+  Future<void> _exportToClipboard(BuildContext context) async {
+    try {
+      final jsonStr = configuration.exportConfig();
+      await Clipboard.setData(ClipboardData(text: jsonStr));
+      if (mounted) {
+        FlutterToastr.show('配置已复制到剪贴板，在其它设备粘贴导入即可', context, duration: 3, backgroundColor: Colors.green);
+        logger.i('配置已复制到剪贴板');
+      }
+    } catch (e) {
+      logger.e('复制配置到剪贴板失败', error: e, stackTrace: StackTrace.current);
+      if (mounted) {
+        FlutterToastr.show('复制失败：${e.toString()}', context, duration: 3, backgroundColor: Colors.red);
+      }
+    }
+  }
+
+  /// 上游 #920：从剪贴板读取配置文本并导入
+  Future<void> _importFromClipboard(BuildContext context) async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim();
+      if (text == null || text.isEmpty) {
+        if (mounted) {
+          FlutterToastr.show('剪贴板里没有文本', context, duration: 2, backgroundColor: Colors.orange);
+        }
+        return;
+      }
+      if (!text.startsWith('{')) {
+        if (mounted) {
+          FlutterToastr.show('剪贴板内容不是配置 JSON，请先复制配置文本', context, duration: 3, backgroundColor: Colors.red);
+        }
+        return;
+      }
+
+      final newConfig = await ConfigImportExport.importConfig(text);
+      _applyImportedConfig(newConfig);
+
+      if (mounted) {
+        FlutterToastr.show('配置导入成功，部分设置可能需要重启应用后生效', context, duration: 3, backgroundColor: Colors.green);
+        logger.i('配置已从剪贴板导入');
+        setState(() {});
+      }
+    } catch (e) {
+      logger.e('从剪贴板导入配置失败', error: e, stackTrace: StackTrace.current);
+      if (mounted) {
+        FlutterToastr.show('导入失败：${e.toString()}', context, duration: 3, backgroundColor: Colors.red);
+      }
+    }
+  }
+
+  /// 把导入的配置写入当前实例（文件导入与剪贴板导入共用）
+  void _applyImportedConfig(Configuration newConfig) {
+    configuration.port = newConfig.port;
+    configuration.enableSsl = newConfig.enableSsl;
+    configuration.startup = newConfig.startup;
+    configuration.enableSystemProxy = newConfig.enableSystemProxy;
+    configuration.enableSocks5 = newConfig.enableSocks5;
+    configuration.proxyPassDomains = newConfig.proxyPassDomains;
+    configuration.externalProxy = newConfig.externalProxy;
+    configuration.appWhitelist = newConfig.appWhitelist;
+    configuration.appWhitelistEnabled = newConfig.appWhitelistEnabled;
+    configuration.appBlacklist = newConfig.appBlacklist;
+    configuration.historyCacheTime = newConfig.historyCacheTime;
+    configuration.mcpPort = newConfig.mcpPort;
+    configuration.mcpEnabled = newConfig.mcpEnabled;
+    configuration.mcpAutoStart = newConfig.mcpAutoStart;
+    configuration.mcpToolsEnabled = newConfig.mcpToolsEnabled;
+    configuration.enabledHttp2 = newConfig.enabledHttp2;
+    configuration.flushConfig();
   }
 }

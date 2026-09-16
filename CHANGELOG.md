@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.22.70 (2026-09-17)
+
+### 修复
+
+- **#844（抓包显示响应 200，客户端却超时）**：`ScriptEngine.convertHttpRequest` / `convertHttpResponse` 在脚本改写 body 后只移除了 `Content-Encoding`，没有同步 `Content-Length`。带着旧长度下发时，客户端按旧长度读包、等不到剩余字节就会超时——这正是"抓包看是 200、App 侧超时"的成因之一。现改完 body 立即重算长度并清掉 `Transfer-Encoding`。
+- **#915（选中状态莫名消失）**：域名视图在 `build()` 里调用 `selectionController.prune(...)`，而 `build` 会被新请求到来、列表刷新等任意时机触发，于是用户在其它视图里选好的项被按"当前视图"收敛掉。现将收敛动作移到「搜索条件变化」时执行一次。
+
+### 新增
+
+- **#920 从剪贴板导入 / 导出配置**（桌面 + 移动）：配置管理页新增「复制配置到剪贴板」「从剪贴板导入配置」，省掉"导出文件 → 传输到另一台设备 → 导入文件"的来回。导入前校验内容是否为配置 JSON，导入后与文件导入共用同一套配置应用逻辑。
+- **#873 脚本日志输出图片**：日志面板支持渲染图片 data URI——`console.log('data:image/png;base64,' + b64)` 即可出图，二维码、验证码之类的内容不必再"复制 → 另行转码"。新增 `lib/utils/data_uri.dart`（解析 + 2MB 上限保护），桌面日志面板与移动端日志窗口均已接入。
+- **#900 内置变量可见可复制**：环境变量页新增「内置变量」入口（桌面在标题栏、移动端在 AppBar），列出 `timestamp`、`timestamp_ms`、`datetime`、`date`、`time`、`unix_date`、`uuid` 七个免定义变量，点击即复制 `{{变量名}}`。
+
+### 核实（无需改动）
+
+- **#913（IP 目标 MITM 证书 SAN 类型）**：代码已按 iPAddress（context tag `0x87`）编码 IP，仅域名走 dNSName（`0x82`），符合预期。
+- **#906（请求列表全选）**：桌面与移动端均已有全选入口。
+- **#927（Android release 构建失败）**：属上游仓库的 Gradle/AGP/Kotlin 版本与 file_picker 12 API 适配问题；本仓 Android 构建在 CI 中稳定通过，且已使用 file_picker 12.x API。
+
+### 文档
+
+- `docs/script_guide.md` 新增「日志里输出图片（二维码等）」
+- `docs/environment_guide.md` 内置变量表补充 `{{unix_date}}`，并说明界面入口
+- `docs/features_tips.md` 新增本版要点
+
 ## v1.22.69 (2026-09-17)
 
 ### 修复：界面显示问题（窄屏适配与控件裁切）
