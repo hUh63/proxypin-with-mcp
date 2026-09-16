@@ -227,12 +227,18 @@ class _JsRestorePageState extends State<JsRestorePage> {
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(width: 8),
               if (_inputFileName != null)
-                Flexible(
+                Expanded(
                   child: Text(_inputFileName!,
                       style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
                       overflow: TextOverflow.ellipsis),
                 ),
-              const Spacer(),
+            ],
+          ),
+          // 操作按钮单独一行自动换行，窄屏不再挤在标题右侧导致溢出
+          Wrap(
+            spacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
               TextButton.icon(
                 onPressed: _running ? null : _paste,
                 icon: const Icon(Icons.content_paste_go, size: 16),
@@ -246,6 +252,7 @@ class _JsRestorePageState extends State<JsRestorePage> {
               if (_inputController.text.isNotEmpty)
                 IconButton(
                   tooltip: localizations.jsRestoreClear,
+                  visualDensity: VisualDensity.compact,
                   onPressed: _running
                       ? null
                       : () => setState(() {
@@ -280,7 +287,11 @@ class _JsRestorePageState extends State<JsRestorePage> {
   Widget _buildActionBar(ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      child: Row(
+      // 4 个动作按钮 + 日志按钮在窄屏放不下一行，改为自动换行，避免溢出
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           FilledButton.icon(
             onPressed: _running ? null : () => _run(localizations.jsRestoreRestore, command: 'restore'),
@@ -289,25 +300,21 @@ class _JsRestorePageState extends State<JsRestorePage> {
                 : const Icon(Icons.auto_fix_high, size: 17),
             label: Text(localizations.jsRestoreRestore),
           ),
-          const SizedBox(width: 8),
           OutlinedButton.icon(
             onPressed: _running ? null : () => _run(localizations.jsRestoreBeautify, command: 'beautify'),
             icon: const Icon(Icons.format_align_left, size: 17),
             label: Text(localizations.jsRestoreBeautify),
           ),
-          const SizedBox(width: 8),
           OutlinedButton.icon(
             onPressed: _running ? null : () => _run(localizations.jsRestoreDetect, command: 'detect'),
             icon: const Icon(Icons.fingerprint, size: 17),
             label: Text(localizations.jsRestoreDetect),
           ),
-          const SizedBox(width: 8),
           OutlinedButton.icon(
             onPressed: _running ? null : () => _run(localizations.jsRestoreVerify, command: 'verify'),
             icon: const Icon(Icons.fact_check_outlined, size: 17),
             label: Text(localizations.jsRestoreVerify),
           ),
-          const Spacer(),
           if (_logs.isNotEmpty)
             TextButton.icon(
               onPressed: () => setState(() => _showLogs = !_showLogs),

@@ -232,14 +232,22 @@ class _FuzzerPageState extends State<FuzzerPage> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Text(localizations.fuzzerInjection,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    Flexible(
+                      child: Text(localizations.fuzzerInjection,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
                     const SizedBox(width: 8),
                     if (combinationCount > 0)
-                      Text('${localizations.fuzzerCombinations}: $combinationCount',
+                      Flexible(
+                        child: Text(
+                          '${localizations.fuzzerCombinations}: $combinationCount',
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: 12,
-                              color: combinationCount > RequestFuzzer.maxCombinations ? cs.error : cs.onSurfaceVariant)),
+                              color: combinationCount > RequestFuzzer.maxCombinations ? cs.error : cs.onSurfaceVariant),
+                        ),
+                      ),
                     const Spacer(),
                     TextButton.icon(
                       onPressed: _running ? null : () => setState(() => _injections.add(_InjectionEditor(field: ''))),
@@ -398,42 +406,70 @@ class _FuzzerPageState extends State<FuzzerPage> {
   }
 
   Widget _buildRunBar(ColorScheme cs) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FilledButton.icon(
-          onPressed: _running ? null : _start,
-          icon: const Icon(Icons.play_arrow, size: 18),
-          label: Text(localizations.fuzzerStart),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            FilledButton.icon(
+              onPressed: _running ? null : _start,
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: Text(localizations.fuzzerStart),
+            ),
+            OutlinedButton.icon(
+              onPressed: _running ? _stop : null,
+              icon: const Icon(Icons.stop, size: 18),
+              label: Text(localizations.fuzzerStop),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(localizations.fuzzerInterval, style: const TextStyle(fontSize: 12.5)),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 76,
+                  child: TextField(
+                    controller: _intervalController,
+                    enabled: !_running,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, suffixText: 'ms'),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        OutlinedButton.icon(
-          onPressed: _running ? _stop : null,
-          icon: const Icon(Icons.stop, size: 18),
-          label: Text(localizations.fuzzerStop),
-        ),
-        const SizedBox(width: 12),
-        Text(localizations.fuzzerInterval, style: const TextStyle(fontSize: 12.5)),
-        const SizedBox(width: 6),
-        SizedBox(
-          width: 76,
-          child: TextField(
-            controller: _intervalController,
-            enabled: !_running,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, suffixText: 'ms'),
-            style: const TextStyle(fontSize: 12),
+        const SizedBox(height: 4),
+        // 开关单独一行：Switch 标准高度 48，硬塞进小盒子会被裁切
+        InkWell(
+          onTap: _running ? null : () => setState(() => _sendBaseline = !_sendBaseline),
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 44,
+                  height: 28,
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Switch(
+                      value: _sendBaseline,
+                      onChanged: _running ? null : (value) => setState(() => _sendBaseline = value),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(localizations.fuzzerSendBaseline, style: const TextStyle(fontSize: 12.5)),
+              ],
+            ),
           ),
         ),
-        const Spacer(),
-        SizedBox(
-          height: 24,
-          child: Switch(
-            value: _sendBaseline,
-            onChanged: _running ? null : (value) => setState(() => _sendBaseline = value),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(localizations.fuzzerSendBaseline, style: const TextStyle(fontSize: 12.5)),
       ],
     );
   }
@@ -446,6 +482,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
         child: Text(localizations.fuzzerNoResult, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
       );
     }
+    final compact = MediaQuery.sizeOf(context).width < 420;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -459,14 +496,14 @@ class _FuzzerPageState extends State<FuzzerPage> {
           ],
         ),
         const SizedBox(height: 6),
-        _buildHeaderRow(cs),
+        _buildHeaderRow(cs, compact),
         const Divider(height: 1),
-        for (final outcome in _results) _buildResultRow(cs, outcome),
+        for (final outcome in _results) _buildResultRow(cs, outcome, compact),
       ],
     );
   }
 
-  Widget _buildHeaderRow(ColorScheme cs) {
+  Widget _buildHeaderRow(ColorScheme cs, bool compact) {
     const style = TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600);
     final color = cs.onSurfaceVariant;
     return Padding(
@@ -475,15 +512,16 @@ class _FuzzerPageState extends State<FuzzerPage> {
         children: [
           SizedBox(width: 30, child: Text('#', style: style.copyWith(color: color))),
           Expanded(flex: 3, child: Text('payload', style: style.copyWith(color: color))),
-          SizedBox(width: 46, child: Text(localizations.fuzzerStatus, style: style.copyWith(color: color))),
-          SizedBox(width: 60, child: Text(localizations.fuzzerLength, style: style.copyWith(color: color))),
-          SizedBox(width: 60, child: Text(localizations.fuzzerDuration, style: style.copyWith(color: color))),
+          SizedBox(width: compact ? 40 : 46, child: Text(localizations.fuzzerStatus, style: style.copyWith(color: color))),
+          // 窄屏不显示长度列（改在每行第二行给出），避免 payload 被挤到看不清
+          if (!compact) SizedBox(width: 60, child: Text(localizations.fuzzerLength, style: style.copyWith(color: color))),
+          SizedBox(width: compact ? 54 : 60, child: Text(localizations.fuzzerDuration, style: style.copyWith(color: color))),
         ],
       ),
     );
   }
 
-  Widget _buildResultRow(ColorScheme cs, FuzzOutcome outcome) {
+  Widget _buildResultRow(ColorScheme cs, FuzzOutcome outcome, bool compact) {
     final statusColor = outcome.error != null
         ? cs.error
         : (outcome.statusCode != null && outcome.statusCode! >= 400 ? cs.error : cs.primary);
@@ -511,20 +549,31 @@ class _FuzzerPageState extends State<FuzzerPage> {
                   ),
                 ),
                 SizedBox(
-                  width: 46,
+                  width: compact ? 40 : 46,
                   child: Text(
                     outcome.error != null ? 'ERR' : '${outcome.statusCode ?? '-'}',
                     style: TextStyle(fontSize: 12, color: statusColor, fontWeight: FontWeight.w600),
                   ),
                 ),
-                SizedBox(width: 60, child: Text('${outcome.bodyLength}', style: const TextStyle(fontSize: 11.5))),
-                SizedBox(width: 60, child: Text('${outcome.durationMs}ms', style: const TextStyle(fontSize: 11.5))),
+                if (!compact)
+                  SizedBox(width: 60, child: Text('${outcome.bodyLength}', style: const TextStyle(fontSize: 11.5))),
+                SizedBox(
+                    width: compact ? 54 : 60,
+                    child: Text('${outcome.durationMs}ms', style: const TextStyle(fontSize: 11.5))),
               ],
             ),
-            if (outcome.diff.isNotEmpty)
+            if (compact || outcome.diff.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(left: 30, top: 2),
-                child: Text(outcome.diff, style: TextStyle(fontSize: 11, color: cs.tertiary)),
+                child: Text(
+                  compact
+                      ? [
+                          '${localizations.fuzzerLength} ${outcome.bodyLength}',
+                          if (outcome.diff.isNotEmpty) outcome.diff,
+                        ].join(' · ')
+                      : outcome.diff,
+                  style: TextStyle(fontSize: 11, color: cs.tertiary),
+                ),
               ),
             if (outcome.error != null)
               Padding(

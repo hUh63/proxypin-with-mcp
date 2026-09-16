@@ -74,9 +74,12 @@ class _RewriteScenarioDialogState extends State<RewriteScenarioDialog> {
           const SizedBox(width: 8),
           Text(localizations.mockScenario, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
         ]),
-        content: SizedBox(
-            width: 540,
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        content: ConstrainedBox(
+            // 定宽 540 在手机上会溢出，改为「上限 540、窄屏自适应」
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: SizedBox(
+                width: double.maxFinite,
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(localizations.mockScenarioTips, style: TextStyle(fontSize: 12, color: hintColor)),
               const SizedBox(height: 12),
               if (scenarios.isEmpty)
@@ -98,7 +101,7 @@ class _RewriteScenarioDialogState extends State<RewriteScenarioDialog> {
                     padding: const EdgeInsets.only(top: 6),
                     child: Text('${localizations.mockScenarioUnassigned}: ${widget.manager.unassignedCount}',
                         style: TextStyle(fontSize: 12, color: hintColor))),
-            ])),
+            ]))),
         actions: [
           ElevatedButton(child: Text(localizations.close), onPressed: () => Navigator.of(context).pop()),
         ]);
