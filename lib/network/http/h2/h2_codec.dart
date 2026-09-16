@@ -623,7 +623,10 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
 
   /// 清洗 h2 header 值：剥离 NUL/CR/LF（RFC 9113 禁止），避免 header injection
   /// 或 upstream 解析错误。请求与响应的编码共用同一实现。
-  static Uint8List _sanitizeHeaderValue(Uint8List bytes) {
+  ///
+  /// 注意：这里必须是实例方法——Dart 的 static 成员不被子类继承，
+  /// 写成 static 的话两个子类里都无法直接调用（只能通过基类名限定）。
+  Uint8List _sanitizeHeaderValue(Uint8List bytes) {
     for (final b in bytes) {
       if (b == 0x00 || b == 0x0A || b == 0x0D) {
         // 有非法字节才走 copy 路径
