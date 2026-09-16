@@ -326,6 +326,17 @@ class MacSystemProxy implements SystemProxy {
   static String _concatCommands(List<String> commands) {
     return commands.where((element) => element.isNotEmpty).join(' && ');
   }
+
+  /// 上游 #886：macOS 残留清理——关闭各网络服务的 HTTP / HTTPS 代理
+  @override
+  Future<void> _resetSystemProxy() async {
+    try {
+      await _setProxyEnable(false, true);
+      logger.i('已清除 macOS 系统代理残留');
+    } catch (e, t) {
+      logger.e('清除 macOS 系统代理残留失败', error: e, stackTrace: t);
+    }
+  }
 }
 
 class WindowsSystemProxy extends SystemProxy {
