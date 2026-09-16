@@ -755,6 +755,9 @@ class _ScriptEditState extends State<ScriptEdit> {
                                   SizedBox(
                                       height: 360,
                                       child: CodeForge(
+                                        // 上游 #885：切换"本地/远程"后编辑器仍是旧的只读实例，
+                                        // 用 key 强制重建，保证本地模式下可以正常输入。
+                                        key: ValueKey('script-editor-${_useRemote ? 'remote' : 'local'}'),
                                         controller: script,
                                         language: langJavascript,
                                         editorTheme: monokaiSublimeTheme,

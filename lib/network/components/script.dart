@@ -28,13 +28,20 @@ class ScriptInterceptor extends Interceptor {
 
   @override
   Future<HttpRequest?> onRequest(HttpRequest request) async {
-    //脚本替换
-    var scriptManager = await ScriptManager.instance;
-    HttpRequest? httpRequest = await scriptManager.runScript(request);
-    if (httpRequest == null) {
-      return null;
+    try {
+      //脚本替换
+      var scriptManager = await ScriptManager.instance;
+      HttpRequest? httpRequest = await scriptManager.runScript(request);
+      if (httpRequest == null) {
+        return null;
+      }
+      return request;
+    } catch (e, t) {
+      // 上游 #885：脚本执行异常（含外部代理模式下链路异常）不应让请求直接失败，
+      // 否则表现为页面/接口莫名打不开。这里记录异常后按原样放行。
+      logger.e('[${request.requestId}] 执行请求脚本异常，已放行原始请求', error: e, stackTrace: t);
+      return request;
     }
-    return request;
   }
 
   @override

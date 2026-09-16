@@ -16,6 +16,7 @@
 
 import 'dart:io';
 
+import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/configuration.dart';
 
@@ -24,6 +25,23 @@ import 'package:proxypin/ui/configuration.dart';
 
 class MemoryCleanupMonitor {
   static bool _processing = false;
+
+  /// 释放已从抓包列表移除的请求所占用的字节数据（上游 #899）
+  ///
+  /// 列表移除只是断开引用，字节数据要等 GC；长时间抓包时堆积明显。
+  /// 这里在清理后显式置空请求/响应体，让大对象尽早可回收。
+  static void releaseAll(Iterable<HttpRequest> requests) {
+    var count = 0;
+    var bytes = 0;
+    for (final request in requests) {
+      bytes += (request.body?.length ?? 0) + (request.response?.body?.length ?? 0);
+      request.release();
+      count++;
+    }
+    if (count > 0) {
+      logger.d('Memory cleanup: released $count requests, about ${bytes ~/ 1024} KB');
+    }
+  }
 
   static void onMonitor({Function? onCleanup}) {
     var threshold = AppConfiguration.current?.memoryCleanupThreshold;

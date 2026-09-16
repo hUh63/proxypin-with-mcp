@@ -663,6 +663,8 @@ class _ScriptEditState extends State<ScriptEdit> {
                               child: Stack(
                                 children: [
                                   CodeForge(
+                                    // 上游 #885：本地/远程切换后强制重建编辑器，避免残留只读状态
+                                    key: ValueKey('script-editor-${_useRemote ? 'remote' : 'local'}'),
                                     controller: script,
                                     language: langJavascript,
                                     editorTheme: monokaiSublimeTheme,

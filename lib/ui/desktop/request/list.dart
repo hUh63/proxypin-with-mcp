@@ -26,11 +26,13 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/components/repeat_task_manager.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
+import 'package:proxypin/ui/component/memory_cleanup.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
 import 'package:proxypin/ui/component/request_compare_page.dart';
 import 'package:proxypin/ui/component/selection_action_bar.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
+import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/content/panel.dart';
 import 'package:proxypin/ui/desktop/request/report_servers.dart';
 import 'package:proxypin/ui/desktop/request/request.dart';
@@ -254,6 +256,18 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     container.add(request);
     domainListKey.currentState?.add(channel, request);
     requestSequenceKey.currentState?.add(request);
+
+    // 上游 #899：与移动端保持一致，超出上限自动丢弃最旧请求
+    final maxCount = AppConfiguration.current?.maxRequestCount ?? 0;
+    if (maxCount > 0 && container.length > maxCount) {
+      final overflow = container.length - maxCount;
+      final removed = container.removeRange(0, overflow);
+      domainListKey.currentState?.clean();
+      requestSequenceKey.currentState?.clean();
+      RequestWidget.removeAutoReadByIds(removed.map((request) => request.requestId));
+      selectionController.prune(container.map((request) => request.requestId));
+      MemoryCleanupMonitor.releaseAll(removed);
+    }
   }
 
   ///添加响应
@@ -296,6 +310,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   ///清理
   void clean() {
+    final removed = container.source.toList();
     setState(() {
       RequestWidget.removeAutoReadByIds(container.map((request) => request.requestId));
       container.clear();
@@ -304,6 +319,8 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       widget.panel.change(null, null);
       selectionController.clear();
     });
+    // 上游 #899：清空后立即释放字节数据
+    MemoryCleanupMonitor.releaseAll(removed);
   }
 
   void cleanupEarlyData(int retain) {
@@ -319,6 +336,8 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
     RequestWidget.removeAutoReadByIds(removeRange.map((request) => request.requestId));
     selectionController.prune(container.map((request) => request.requestId));
+    // 上游 #899：被清理的请求立刻释放字节数据
+    MemoryCleanupMonitor.releaseAll(removeRange);
   }
 
   void deleteSelected() {

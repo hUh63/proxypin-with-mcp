@@ -103,6 +103,15 @@ abstract class HttpMessage {
     _bodyString = null;
   }
 
+  /// 释放消息体占用的内存
+  ///
+  /// 上游 #899：请求从抓包列表移除后，Dart 并不会立刻回收这些字节数据，
+  /// 长时间抓包会持续堆积。这里提供显式释放入口，由列表清理逻辑调用。
+  void releaseBody() {
+    _body = null;
+    _bodyString = null;
+  }
+
   ///获取消息体编码
   String? get charset {
     var contentType = headers.contentType;
@@ -205,6 +214,14 @@ class HttpRequest extends HttpMessage {
   }
 
   HttpRequest(this.method, this._uri, {String protocolVersion = "HTTP/1.1"}) : super(protocolVersion);
+
+  /// 释放该请求及其响应占用的字节数据（上游 #899）
+  ///
+  /// 仅在请求已从抓包列表移除、界面不再展示它时调用，避免内存长期堆积。
+  void release() {
+    releaseBody();
+    response?.releaseBody();
+  }
 
   String? remoteDomain() {
     if (hostAndPort == null && HostAndPort.startsWithScheme(uri)) {

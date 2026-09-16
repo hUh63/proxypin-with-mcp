@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.22.67 (2026-09-16)
+
+### 增强：手动 Fuzz —— 多参数组合 + 结果导出
+
+- **多参数组合**：可添加多条「注入项」（位置 + 字段 + 取值），一次跑它们的**笛卡尔积**
+  - 组合数在界面上实时预览；总上限 **500** 条，超出自动截断并提示
+  - 每条结果标注完整组合标签（如 `page=1 & X-Tenant=a`），便于定位是哪组参数触发的差异
+  - 实现：`FuzzInjection` / `FuzzCase` / `RequestFuzzer.buildCases` / `combinationCount` / `buildVariant(template, injections, values)`
+- **结果导出**：结果区右上角可导出
+  - **CSV**：`index,payload,baseline,status,length,duration_ms,diff,error`，字段自动转义，可直接进表格做筛选统计
+  - **JSON**：含生成时间、模板请求、总条数与逐条结构化结果，便于脚本二次处理与留证
+  - 实现：`RequestFuzzer.toCsv` / `toJson`，落盘走 `FilePicker.saveFile`
+
+### 修复：上游 #899（安卓内存清理机制）
+
+- **问题**：请求从抓包列表移除后，字节数据要等 GC 才回收，长时间抓包内存持续堆积；清空临时数据也不见下降
+- **修复**：列表清理路径改为**显式释放**字节数据（`HttpMessage.releaseBody` / `HttpRequest.release` + `MemoryCleanupMonitor.releaseAll`）
+  - 移动端：清空、内存阈值清理、超限丢弃三条路径
+  - 桌面端：清空、内存阈值清理两条路径
+  - MCP 桥接的 `cleanupEarlyData` 同步释放
+- **补齐功能缺口**：桌面端此前**没有**「请求记录上限」的自动丢弃逻辑（仅移动端有），现按同一配置项补齐，超限丢弃时一并释放
+
+### 修复：上游 #885（脚本 + 外部代理导致请求/响应无效）
+
+- **不再静默丢弃请求/响应**：请求脚本、响应脚本未返回有效结果时，此前直接返回 `null` 把这条请求/响应丢掉，表现为页面/接口莫名打不开；现改为**放行原始对象 + 记录告警**（阻断类需求请用「阻止请求」规则）
+- **请求脚本异常兜底**：`ScriptInterceptor.onRequest` 增加异常捕获，脚本执行出错时按原样放行，不再让请求直接失败
+- **修复编辑器只读残留**：脚本类型从「远程 URL」切回「本地」后，编辑器实例仍是旧的只读实例，输入框点不动、不弹输入法；现按模式 `key` 强制重建编辑器（移动端 + 桌面端）
+- **健壮性**：脚本 context 缺失时不再抛 `NoSuchMethod`（`scriptContext` 取用加类型保护）
+
+### i18n
+
+- 新增 9 条词条（注入项 / 添加注入项 / 组合数 / 组合超限 / 导出结果 / 导出 CSV / 导出 JSON / 导出成功 / 导出失败），en / zh / zh_Hant 三份 ARB 同步
+
+### 文档
+
+- `docs/fuzzer_guide.md`：新增「多参数组合（笛卡尔积）」「结果导出（留证）」两节，更新实现细节、限制与 FAQ
+- `docs/features_tips.md`：手动 Fuzz 一节补充组合与导出说明
+
 ## v1.22.66 (2026-09-16)
 
 ### 新功能：手动 Fuzz（变体发送）

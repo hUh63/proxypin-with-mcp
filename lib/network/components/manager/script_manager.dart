@@ -390,11 +390,15 @@ async function onResponse(context, request, response) {
               """var request = $jsRequest, context = $context;  request['scriptContext'] = context; $script\n  onRequest(context, request)""");
           return await JavaScriptEngine.jsResultResolve(flutterJs, jsResult);
         });
-        if (result == null) {
-          return null;
+        if (result == null || result is! Map) {
+          // 上游 #885：脚本没有返回有效结果时，此前会直接丢弃请求，
+          // 表现为网页/接口莫名打不开。这里改为"放行原始请求"并记录告警。
+          // 需要阻断请求请在规则里配置「阻止请求」，不要依赖脚本返回空值。
+          logger.w('脚本 "${item.name}" 未返回有效结果，已放行原始请求: $url');
+          continue;
         }
         request.attributes['scriptContext'] = result['scriptContext'];
-        scriptSession = result['scriptContext']['session'] ?? {};
+        scriptSession = (result['scriptContext'] as Map?)?['session'] ?? {};
         await _applyScriptEnv(envBefore, result['scriptContext']);
         // 脚本未改动请求时保留原始字节，避免 query 重编码/header 重排破坏签名
         if (!JavaScriptEngine.isRequestUnchanged(jsRequestMap, result)) {
@@ -465,10 +469,13 @@ async function onResponse(context, request, response) {
             \n  onResponse(context, $jsRequest, response);""");
           return await JavaScriptEngine.jsResultResolve(flutterJs, jsResult);
         });
-        if (result == null) {
-          return null;
+        if (result == null || result is! Map) {
+          // 上游 #885：响应脚本没有返回有效结果时，保持响应原样下发，
+          // 不再让客户端收不到任何响应（表现为"有请求有响应但页面白屏"）。
+          logger.w('响应脚本 "${item.name}" 未返回有效结果，已放行原始响应: $url');
+          continue;
         }
-        scriptSession = result['scriptContext']['session'] ?? {};
+        scriptSession = (result['scriptContext'] as Map?)?['session'] ?? {};
         await _applyScriptEnv(envBefore, result['scriptContext']);
         response = JavaScriptEngine.convertHttpResponse(response, result);
       }

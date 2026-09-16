@@ -20,6 +20,7 @@ import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/channel/channel.dart';
 import 'package:proxypin/network/channel/channel_context.dart';
 import 'package:proxypin/network/http/http.dart';
+import 'package:proxypin/ui/component/memory_cleanup.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/mobile/request/domians.dart';
@@ -149,6 +150,8 @@ class RequestListState extends State<RequestListWidget> {
       RequestRowState.removeAutoReadByIds(
         removed.map((request) => request.requestId),
       );
+      // 上游 #899：超限丢弃的请求同样释放字节数据
+      MemoryCleanupMonitor.releaseAll(removed);
     }
   }
 
@@ -188,6 +191,7 @@ class RequestListState extends State<RequestListWidget> {
 
   ///清理
   void clean() {
+    final removed = container.source.toList();
     setState(() {
       RequestRowState.removeAutoReadByIds(
         container.map((request) => request.requestId),
@@ -196,6 +200,8 @@ class RequestListState extends State<RequestListWidget> {
       domainListKey.currentState?.clean();
       requestSequenceKey.currentState?.clean();
     });
+    // 上游 #899：清空后立即释放字节数据，而不是等 GC 慢慢回收
+    MemoryCleanupMonitor.releaseAll(removed);
   }
 
   ///清理早期数据
@@ -212,6 +218,8 @@ class RequestListState extends State<RequestListWidget> {
     RequestRowState.removeAutoReadByIds(
       removeRange.map((request) => request.requestId),
     );
+    // 上游 #899：被清理的请求立刻释放字节数据
+    MemoryCleanupMonitor.releaseAll(removeRange);
   }
 
   //导出har或文件夹

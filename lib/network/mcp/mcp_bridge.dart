@@ -216,8 +216,12 @@ class McpBridge implements EventListener {
     if (_requestContainer == null) return;
     var list = _requestContainer!.source;
     if (list.length <= retain) return;
-    
-    _requestContainer!.removeRange(0, list.length - retain);
+
+    // 上游 #899：移除后显式释放字节数据，避免等 GC 造成内存堆积
+    final removed = _requestContainer!.removeRange(0, list.length - retain);
+    for (final request in removed) {
+      request.release();
+    }
   }
   
   /// 获取请求统计信息
