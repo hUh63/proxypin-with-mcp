@@ -295,34 +295,67 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
     if (initial.isBefore(minDate)) initial = minDate;
 
     DateTime temp = initial;
+    // 上游 #887：指定时间此前只能选到分钟，这里补一个秒选择
+    int tempSecond = initial.second;
 
     var date = await showDialog<DateTime>(
         context: context,
         builder: (BuildContext context) {
-          return AlertDialog(
-            contentPadding: const EdgeInsets.all(16.0),
-            content: SizedBox(
-              height: 250,
-              width: 300,
-              child: CupertinoTheme(
-                data: CupertinoThemeData(brightness: Theme.of(context).brightness),
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.dateAndTime,
-                  initialDateTime: initial,
-                  minimumDate: minDate,
-                  maximumDate: minDate.add(const Duration(days: 365)),
-                  use24hFormat: true,
-                  onDateTimeChanged: (val) {
-                    temp = val;
-                  },
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
-              TextButton(onPressed: () => Navigator.pop(context, temp), child: Text(localizations.done)),
-            ],
-          );
+          return StatefulBuilder(
+              builder: (context, setDialogState) => AlertDialog(
+                    contentPadding: const EdgeInsets.all(16.0),
+                    content: SizedBox(
+                      height: 320,
+                      width: 320,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: CupertinoTheme(
+                              data: CupertinoThemeData(brightness: Theme.of(context).brightness),
+                              child: CupertinoDatePicker(
+                                mode: CupertinoDatePickerMode.dateAndTime,
+                                initialDateTime: initial,
+                                minimumDate: minDate,
+                                maximumDate: minDate.add(const Duration(days: 365)),
+                                use24hFormat: true,
+                                onDateTimeChanged: (val) {
+                                  temp = val;
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(localizations.second),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: DropdownButtonFormField<int>(
+                                  initialValue: tempSecond,
+                                  isExpanded: true,
+                                  decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                                  items: [
+                                    for (var s = 0; s < 60; s++)
+                                      DropdownMenuItem(value: s, child: Text(s.toString().padLeft(2, '0'))),
+                                  ],
+                                  onChanged: (value) => setDialogState(() => tempSecond = value ?? 0),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
+                      TextButton(
+                          onPressed: () => Navigator.pop(
+                                context,
+                                DateTime(temp.year, temp.month, temp.day, temp.hour, temp.minute, tempSecond),
+                              ),
+                          child: Text(localizations.done)),
+                    ],
+                  ));
         });
 
     if (date != null) {

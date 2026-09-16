@@ -352,6 +352,24 @@ class _QrEncodeState extends State<_QrEncode> with AutomaticKeepAliveClientMixin
     var imageBytes = await toImageBytes();
     if (imageBytes == null) return;
 
+    // 上游 #902：桌面端 saveFile 传入 bytes 在部分平台不会真正落盘（提示成功但文件不存在），
+    // 桌面端改为只弹保存框拿路径、由 dart:io 写入。
+    if (Platforms.isDesktop()) {
+      Uri? path = await Platforms.saveFileAdaptive(fileName: "qrcode.png", type: FileType.image);
+      if (path == null) return;
+      try {
+        await File(path.toFilePath()).writeAsBytes(imageBytes);
+        if (mounted) {
+          CustomToast.success(localizations.saveSuccess).show(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          FlutterToastr.show('保存失败 / Save failed: $e', context, duration: 2, rootNavigator: true);
+        }
+      }
+      return;
+    }
+
     Uri? path = await FilePicker.saveFile(fileName: "qrcode.png", bytes: imageBytes, type: FileType.image);
     if (path == null) return;
     if (mounted) {

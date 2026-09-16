@@ -550,6 +550,7 @@
   "scriptContent": "腳本內容",
   "scriptHint": "輸入 JavaScript 或 Dart 腳本",
   "timeoutSecondsLabel": "逾時時間 (秒)",
+  "second": "秒",
   "retryCountLabel": "重試次數",
   "retryDelayLabel": "重試間隔 (秒)",
   "nodeDefaultName": "節點 {index}",

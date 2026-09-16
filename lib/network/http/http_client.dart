@@ -28,6 +28,7 @@ import 'package:proxypin/network/channel/network.dart';
 import 'package:proxypin/network/util/byte_buf.dart';
 import 'package:proxypin/network/util/byte_utils.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/idn.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
 import 'package:proxypin/network/util/socks5.dart';
 import 'package:proxypin/network/util/attribute_keys.dart';
@@ -40,11 +41,9 @@ import 'h2/setting.dart';
 
 class HttpClients {
   static Future<Channel> startConnect(HostAndPort hostAndPort, {Duration timeout = const Duration(seconds: 3)}) {
-    String host = hostAndPort.host;
-    //说明支持ipv6
-    if (host.startsWith("[") && host.endsWith(']')) {
-      host = host.substring(1, host.length - 1);
-    }
+    // 上游 #923：URL 编码主机名（含 %）与中文域名需先清洗，
+    // 否则 Dart 地址解析会把它当成 IPv6 link-local scope id 抛 FormatException。
+    String host = sanitizeConnectHost(hostAndPort.host);
 
     return Socket.connect(host, hostAndPort.port, timeout: timeout).then((socket) {
       if (socket.address.type != InternetAddressType.unix) {

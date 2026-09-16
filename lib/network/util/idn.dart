@@ -26,6 +26,29 @@
 ///    （`小度.中国` → `xn--*****.xn--fiqs8s`），保证系统 DNS 可以解析。
 library;
 
+/// 连接前清洗主机名（上游 #923）。
+///
+/// 1. 去掉 IPv6 的方括号（`[::1]` → `::1`）；
+/// 2. 非 IPv6 且含 `%` 的主机做百分号解码（`%E5%B0%8F%E5%BA%A6…` → `小度…`）；
+///    IPv6 一定含 `:`，其 `%` 是 scope id（如 `fe80::1%eth0`），不能解码；
+/// 3. 含非 ASCII 字符时转 Punycode，保证系统 DNS 可以解析。
+///
+/// 所有 `Socket.connect` / `SecureSocket.connect` 之前都应经过本函数。
+String sanitizeConnectHost(String host) {
+  var result = host;
+  if (result.startsWith('[') && result.endsWith(']')) {
+    result = result.substring(1, result.length - 1);
+  }
+  if (result.contains('%') && !result.contains(':')) {
+    try {
+      result = Uri.decodeComponent(result);
+    } catch (_) {
+      // 解码失败时按原样处理，由后续 DNS 解析给出错误
+    }
+  }
+  return idnToAscii(result);
+}
+
 /// 将主机名转换为 DNS 可解析的 ASCII 形式（IDNA/Punycode）。
 /// 纯 ASCII 输入原样返回；解码失败时返回原始输入（由上层按域名解析失败处理）。
 String idnToAscii(String host) {

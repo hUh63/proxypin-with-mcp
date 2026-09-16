@@ -44,14 +44,24 @@ class RequestRewriteInterceptor extends Interceptor {
   static final _regexCache = LruCache<String, RegExp>(256);
 
   /// 构造 RegExp；若未启用正则则自动转义为字面量匹配，若 pattern 不合法则回退为字面量匹配
-  /// 展开正则替换模板中的分组引用（上游 #925）：支持 $0~$9（$0=整段匹配），
-  /// 从大到小替换，避免先替换 $1 把 "$10..." 之类后续文本误伤
+  /// 分组引用正则：`$1` / `${1}`
+  static final RegExp _groupRefRegExp = RegExp(r'\$\{(\d+)\}|\$(\d+)');
+
+  /// 展开正则替换模板中的分组引用（上游 #925）
+  ///
+  /// 支持 `$0`~`$99`（`$0` = 整段匹配）与 `${1}` 写法。用单次遍历替换：
+  /// - 多位数分组号不会被拆错（`$11` 不会先当成 `$1` 再补个 `1`）；
+  /// - 分组内容里恰好含 `$1` 这类文本时，也不会被二次替换；
+  /// - 越界引用（如正则里只有 1 个分组却写了 `$2`）保持原样，便于排查写法。
   static String _expandRegexGroups(String template, Match match) {
-    var result = template;
-    for (var i = match.groupCount; i >= 0; i--) {
-      result = result.replaceAll('\$$i', match.group(i) ?? '');
-    }
-    return result;
+    if (!template.contains(r'$')) return template;
+    return template.replaceAllMapped(_groupRefRegExp, (ref) {
+      final index = int.tryParse(ref.group(1) ?? ref.group(2) ?? '');
+      if (index == null || index > match.groupCount) {
+        return ref.group(0)!;
+      }
+      return match.group(index) ?? '';
+    });
   }
 
   static RegExp _toRegExp(
@@ -268,7 +278,8 @@ class RequestRewriteInterceptor extends Interceptor {
             var line = "${entry.key}=${entry.value}";
 
             if (regExp.hasMatch(line)) {
-              line = line.replaceAll(regExp, item.value ?? '');
+              // 上游 #925：此处此前直接把 $1/$2 原样写回，正则分组不生效
+              line = line.replaceAllMapped(regExp, (m) => _expandRegexGroups(item.value ?? '', m));
               var pair = line.splitFirst(HttpConstants.equal);
               if (pair.first != entry.key) queryParameters.remove(entry.key);
 
@@ -343,7 +354,8 @@ class RequestRewriteInterceptor extends Interceptor {
       headers.forEach((key, values) {
         var line = "$key: ${values.firstOrNull ?? ''}";
         if (regExp.hasMatch(line)) {
-          line = line.replaceAll(regExp, item.value ?? '');
+          // 上游 #925：同样支持 $1/$2 等分组引用
+          line = line.replaceAllMapped(regExp, (m) => _expandRegexGroups(item.value ?? '', m));
           var pair = line.splitFirst(HttpConstants.colon);
           if (pair.first != key) message.headers.remove(key);
           message.headers.set(pair.first, pair.length > 1 ? pair.last : '');

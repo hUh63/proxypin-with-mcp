@@ -447,9 +447,21 @@ class HttpBodyState extends State<HttpBodyWidget> {
             return;
           }
 
-          Uri? path = await FilePicker.saveFile(fileName: fileName, bytes: bytes, type: FileType.image);
-          if (path != null && mounted) {
-            FlutterToastr.show(localizations.saveSuccess, context, duration: 2, rootNavigator: true);
+          // 桌面平台：file_picker 在部分平台并不会真正写入 bytes
+          // （上游 #902：Windows 上提示"保存成功"但文件不存在），
+          // 沿用桌面端惯例——只弹保存框拿路径，字节写入交给 dart:io。
+          Uri? path = await Platforms.saveFileAdaptive(fileName: fileName, type: FileType.image);
+          if (path == null) return;
+          try {
+            await File(path.toFilePath()).writeAsBytes(bytes);
+            if (mounted) {
+              FlutterToastr.show(localizations.saveSuccess, context, duration: 2, rootNavigator: true);
+            }
+          } catch (e) {
+            logger.e('保存图片失败', error: e);
+            if (mounted) {
+              FlutterToastr.show('保存失败 / Save failed: $e', context, duration: 2, rootNavigator: true);
+            }
           }
         });
   }

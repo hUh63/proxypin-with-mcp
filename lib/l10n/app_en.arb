@@ -753,6 +753,7 @@
   "scriptContent": "Script Content",
   "scriptHint": "Enter a JavaScript or Dart script",
   "timeoutSecondsLabel": "Timeout (seconds)",
+  "second": "Second",
   "retryCountLabel": "Retry Count",
   "retryDelayLabel": "Retry Delay (seconds)",
   "nodeDefaultName": "Node {index}",

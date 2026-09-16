@@ -288,17 +288,9 @@ class Client extends Network {
     return host;
   }
 
-  /// 上游 #923：URL 编码的主机名（如 `%E5%B0%8F%E5%BA%A6.%E4%B8%AD%E5%9B%BD`）含 `%`，
-  /// Dart 的地址解析会将其误判为 IPv6 链路本地 scope id 抛 FormatException。
-  /// 非 IPv6 的含 % 主机先做百分号解码，再按需转换为 IDN punycode（中文域名等）。
-  static String _sanitizeHost(String host) {
-    if (host.contains('%') && !HostAndPort.ipV6RegExp.hasMatch(host)) {
-      try {
-        host = Uri.decodeComponent(host);
-      } catch (_) {}
-    }
-    return idnToAscii(host);
-  }
+  /// 上游 #923：主机名清洗统一走 [sanitizeConnectHost]
+  /// （去 IPv6 方括号 → 百分号解码还原 URL 编码域名 → 中文域名转 punycode）。
+  static String _sanitizeHost(String host) => sanitizeConnectHost(host);
 
   Future<Channel> connect(HostAndPort hostAndPort, ChannelContext channelContext,
       {Duration timeout = const Duration(seconds: 3)}) async {

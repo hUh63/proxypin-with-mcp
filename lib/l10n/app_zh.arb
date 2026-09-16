@@ -635,6 +635,7 @@
   "scriptContent": "脚本内容",
   "scriptHint": "输入 JavaScript 或 Dart 脚本",
   "timeoutSecondsLabel": "超时时间 (秒)",
+  "second": "秒",
   "retryCountLabel": "重试次数",
   "retryDelayLabel": "重试间隔 (秒)",
   "nodeDefaultName": "节点 {index}",

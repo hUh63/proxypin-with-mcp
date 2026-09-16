@@ -388,42 +388,70 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
     if (temp.isBefore(now)) {
       temp = now;
     }
+    // 上游 #887：指定时间此前只能选到分钟，这里补一个秒选择
+    int tempSecond = temp.second;
 
     DateTime? selected = await showModalBottomSheet<DateTime>(
       context: context,
       builder: (BuildContext context) {
         DateTime current = temp;
-        return SafeArea(
-          child: SizedBox(
-            height: 300,
-            child: Column(
-              children: [
-                Expanded(
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.dateAndTime,
-                    use24hFormat: true,
-                    initialDateTime: temp,
-                    minimumDate: now,
-                    maximumDate: now.add(const Duration(days: 365)),
-                    onDateTimeChanged: (DateTime value) {
-                      current = value;
-                    },
+        return StatefulBuilder(
+          builder: (context, setSheetState) => SafeArea(
+            child: SizedBox(
+              height: 360,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.dateAndTime,
+                      use24hFormat: true,
+                      initialDateTime: temp,
+                      minimumDate: now,
+                      maximumDate: now.add(const Duration(days: 365)),
+                      onDateTimeChanged: (DateTime value) {
+                        current = value;
+                      },
+                    ),
                   ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(localizations.cancel),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Text(localizations.second),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: tempSecond,
+                            isExpanded: true,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                            items: [
+                              for (var s = 0; s < 60; s++)
+                                DropdownMenuItem(value: s, child: Text(s.toString().padLeft(2, '0'))),
+                            ],
+                            onChanged: (value) => setSheetState(() => tempSecond = value ?? 0),
+                          ),
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, current),
-                      child: Text(localizations.done),
-                    ),
-                  ],
-                )
-              ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(localizations.cancel),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(
+                          context,
+                          DateTime(current.year, current.month, current.day, current.hour, current.minute, tempSecond),
+                        ),
+                        child: Text(localizations.done),
+                      ),
+                    ],
+                  )
+                ],
+              ),
             ),
           ),
         );
