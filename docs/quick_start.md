@@ -84,3 +84,6 @@ ProxyPin 是一款开源免费的跨平台抓包工具，支持 Windows / macOS 
 | **Linux arm64**（上游 #560） | CI 中已尝试构建 | 依赖 Flutter 对 Linux arm64 桌面的工具链；arm64 runner 上装不到 SDK 时会自动跳过该架构（不影响 amd64 产物）。也可自行 `flutter build linux --release` |
 | **QUIC / HTTP3 内容**（上游 #489） | 只做拦截与识别，不做内容解密 | 完整解密 1-RTT 需要 TLS1.3 握手状态机与密钥调度，工程量极大。当前策略：开启「拦截 QUIC」让应用回落到 TCP HTTP（内容即可正常抓），QUIC 会话页列出识别到的连接与 SNI |
 | **Windows 上自带网络栈的进程** | 需分层接管 | 见「常用功能技巧」的 Windows 全局接管一节（WinHTTP + 环境变量；仍不行则把 ProxyPin 挂到支持 TUN 的工具下） |
+| **Flutter 应用抓不到 HTTPS**（上游 #860） | 抓不到 | Dart 运行时自带一份根证书列表，**不读系统 CA**，所以装了 ProxyPin 证书也没用。需要在应用侧信任该 CA，或改抓其原生网络库的调用 |
+| **想找旧版本安装包**（上游 #881） | 从 Releases 取 | 本仓每次发版都保留全部产物，进入 Releases 页面按版本号（tag）即可下载对应的 apk / ipa / deb / zip |
+| **抓不到却不知道卡在哪** | 用「抓包自检」 | 工具箱 → 「抓包与重放」→ **抓包自检**：只读检测代理服务、系统代理、CA 证书、最近流量，并列出常见原因与对策 |

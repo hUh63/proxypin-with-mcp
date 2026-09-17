@@ -758,6 +758,8 @@
   "toolboxQuicTip": "QUIC/HTTP3 连接元数据（SNI/版本/统计）",
   "toolboxSendQueue": "发送队列",
   "toolboxSendQueueTip": "重放任务队列与状态（待发送 / 进行中 / 已完成）",
+  "captureDiagnose": "抓包自检",
+  "captureDiagnoseTip": "检查代理、证书与流量状态，并列出常见抓不到的原因",
   "toolboxDocs": "使用文档",
   "toolboxDocsTip": "功能教程 / 规范文档 / 开发文档",
   "toolboxDevTools": "开发工具",

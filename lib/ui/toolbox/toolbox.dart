@@ -5,6 +5,7 @@ import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
 import 'package:proxypin/ui/component/capture_plan_page.dart';
+import 'package:proxypin/ui/component/capture_diagnose_page.dart';
 import 'package:proxypin/ui/component/fuzzer_page.dart';
 import 'package:proxypin/ui/component/security_audit_page.dart';
 import 'package:proxypin/ui/toolbox/js_restore_page.dart';
@@ -388,6 +389,16 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.science_outlined,
                       text: localizations.fuzzer,
                       tooltip: localizations.fuzzerTips),
+                  IconText(
+                      onTap: () {
+                        // 抓包自检：只读检测代理/证书/流量状态，并列出常见抓不到的原因
+                        final source = (widget.requestContainer ?? const <HttpRequest>[]).toList();
+                        Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => CaptureDiagnosePage(requests: source)));
+                      },
+                      icon: Icons.fact_check_outlined,
+                      text: localizations.captureDiagnose,
+                      tooltip: localizations.captureDiagnoseTip),
                 ],
               ),
               const Divider(thickness: 0.3),

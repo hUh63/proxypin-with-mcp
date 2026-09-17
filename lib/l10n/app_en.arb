@@ -904,6 +904,8 @@
   "toolboxQuicTip": "QUIC/HTTP3 connection metadata (SNI / version / stats)",
   "toolboxSendQueue": "Send queue",
   "toolboxSendQueueTip": "Replay task queue and status (pending / running / done)",
+  "captureDiagnose": "Capture Diagnose",
+  "captureDiagnoseTip": "Check proxy, certificate and traffic status, and list the usual reasons nothing gets captured",
   "toolboxDocs": "Guides",
   "toolboxDocsTip": "Tutorials / specs / dev docs",
   "toolboxDevTools": "Dev tools",

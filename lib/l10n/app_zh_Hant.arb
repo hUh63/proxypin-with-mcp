@@ -758,6 +758,8 @@
   "toolboxQuicTip": "QUIC/HTTP3 連線中繼資料（SNI/版本/統計）",
   "toolboxSendQueue": "傳送佇列",
   "toolboxSendQueueTip": "重放任務佇列與狀態（待傳送 / 進行中 / 已完成）",
+  "captureDiagnose": "抓包自檢",
+  "captureDiagnoseTip": "檢查代理、憑證與流量狀態，並列出常見抓不到的原因",
   "toolboxDocs": "使用文件",
   "toolboxDocsTip": "功能教學 / 規範文件 / 開發文件",
   "toolboxDevTools": "開發工具",
