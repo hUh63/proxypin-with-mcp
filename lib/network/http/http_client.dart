@@ -244,38 +244,39 @@ class Http2ClientHandler {
 
     await channel.writeBytes(Http2Codec.connectionPrefacePRI);
 
-    //发送setting
+    //发送setting（上游 #871：向浏览器 h2 指纹对齐）
+    // 部分服务端会把客户端 HTTP/2 指纹纳入风控，参数明显"非浏览器"时可能被直接拒绝（403）。
+    // 同时修正标识符写错的问题——原实现把 MAX_FRAME_SIZE 的值填进了 identifier 6
+    // （标准里 6 = MAX_HEADER_LIST_SIZE），等于向对端声明"我只接受 16KB 的头部列表"。
     final streamSetting = StreamSetting();
     streamSetting.headTableSize = 65536;
-    streamSetting.initialWindowSize = 1048896;
+    streamSetting.enablePush = false;
+    streamSetting.maxConcurrentStreams = 1000;
+    streamSetting.initialWindowSize = 6291456; // 6MB，与 Chrome 一致
     streamSetting.maxHeaderListSize = 262144;
 
-    var payload = Uint8List(6 * 3);
+    var payload = Uint8List(6 * 6);
     int offset = 0;
-    // SETTINGS_HEADER_TABLE_SIZE
-    setInt16(payload, offset, 1);
-    offset += 2;
-    setInt32(payload, offset, streamSetting.headTableSize);
-    offset += 4;
+    void putSetting(int identifier, int value) {
+      setInt16(payload, offset, identifier);
+      offset += 2;
+      setInt32(payload, offset, value);
+      offset += 4;
+    }
 
-    // SETTINGS_INITIAL_WINDOW_SIZE
-    setInt16(payload, offset, 4);
-    offset += 2;
-    setInt32(payload, offset, streamSetting.initialWindowSize);
-    offset += 4;
-
-    //SETTINGS_MAX_FRAME_SIZE（此前误写为 maxHeaderListSize，导致声明的帧上限与实现不一致）
-    setInt16(payload, offset, 6);
-    offset += 2;
-    setInt32(payload, offset, streamSetting.maxFrameSize);
-    offset += 4;
+    putSetting(1, streamSetting.headTableSize); // HEADER_TABLE_SIZE
+    putSetting(2, streamSetting.enablePush ? 1 : 0); // ENABLE_PUSH
+    putSetting(3, streamSetting.maxConcurrentStreams!); // MAX_CONCURRENT_STREAMS
+    putSetting(4, streamSetting.initialWindowSize); // INITIAL_WINDOW_SIZE
+    putSetting(5, streamSetting.maxFrameSize); // MAX_FRAME_SIZE
+    putSetting(6, streamSetting.maxHeaderListSize!); // MAX_HEADER_LIST_SIZE
 
     var settingFrame = FrameHeader(payload.length, FrameType.settings, 0, 0);
     var buffer = settingFrame.encode()..addAll(payload);
     await channel.writeBytes(buffer);
 
-    // 连接建立后立即扩大连接级接收窗口（默认 65535 对大响应过小）
-    await channel.writeBytes(buildWindowUpdateFrame(0, 1048576 - 65535));
+    // 连接建立后立即扩大连接级接收窗口（默认 65535 对含大响应/多流场景过小）
+    await channel.writeBytes(buildWindowUpdateFrame(0, 15663105));
   }
 
   void onData(ChannelContext channelContext, Channel channel, Uint8List data) {

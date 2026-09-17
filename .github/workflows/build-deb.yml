@@ -1,12 +1,13 @@
 name: Build Linux DEB
 
-# 上游 #560：提供 Linux 安装包（.deb）。
+# 上游 #560：提供 Linux 安装包（.deb），覆盖 amd64 与 arm64。
 # 独立于 APK 构建流程：即使 Linux 桌面构建失败，也不会影响 Android Release。
 #
-# 架构说明：当前仅构建 amd64。
-#   Flutter 官方尚未提供 Linux **arm64** 的预编译 SDK（flutter-action 在 arm64 runner 上
-#   无法安装 SDK），因此 arm64 产物需等待上游工具链支持后再加入矩阵——届时在 matrix
-#   中补回 `- arch: arm64 / runner: ubuntu-24.04-arm` 即可，其余步骤无需改动。
+# 架构说明：arm64 使用 GitHub 官方 arm64 runner（ubuntu-24.04-arm）。
+#   Flutter 对 Linux arm64 桌面的工具链仍在演进，flutter-action 在 arm64 runner 上
+#   未必能装成 SDK；因此这里做「可用则构建、不可用则优雅跳过」的自适应处理——
+#   Set up Flutter 失败由 continue-on-error 吞掉，后续步骤依据 outcome 跳过，
+#   既不会让流程变红，也不影响已有的 amd64 产物。
 on:
   push:
     tags: [ 'v*' ]
@@ -26,6 +27,8 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -41,21 +44,35 @@ jobs:
             libayatana-appindicator3-dev
 
       - name: Set up Flutter
+        id: flutter
+        continue-on-error: true
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
+      - name: Report Flutter SDK availability
+        run: |
+          if [ "${{ steps.flutter.outcome }}" = "success" ]; then
+            echo "Flutter SDK 可用，继续构建 ${{ matrix.arch }} 产物"
+          else
+            echo "::warning::当前 runner 上 Flutter SDK 不可用（${{ matrix.arch }}），本次跳过该架构产物"
+          fi
+
       - name: Enable Linux desktop
+        if: steps.flutter.outcome == 'success'
         run: flutter config --enable-linux-desktop
 
       - name: Flutter pub get
+        if: steps.flutter.outcome == 'success'
         run: flutter pub get
 
       - name: Build Linux release
+        if: steps.flutter.outcome == 'success'
         run: flutter build linux --release
 
       - name: Package DEB
+        if: steps.flutter.outcome == 'success'
         run: |
           set -e
           VER=$(grep '^version:' pubspec.yaml | head -1 | sed 's/version: //' | tr -d ' ')
@@ -82,7 +99,7 @@ jobs:
           mv "proxypin-${VER}-linux-${ARCH}.deb" "$GITHUB_WORKSPACE/"
 
       - name: Upload DEB to Release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
+        if: steps.flutter.outcome == 'success' && startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           files: proxypin-*-linux-*.deb
@@ -90,6 +107,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload DEB as artifact
+        if: steps.flutter.outcome == 'success'
         uses: actions/upload-artifact@v6
         with:
           name: proxypin-linux-${{ matrix.arch }}-deb

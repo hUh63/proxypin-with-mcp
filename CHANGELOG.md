@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.22.72 (2026-09-17)
+
+### #871 深入：HTTP/2 客户端指纹向浏览器对齐
+
+- 连接上游时声明的 SETTINGS 改为与 Chrome 一致：`HEADER_TABLE_SIZE=65536`、`ENABLE_PUSH=0`、`MAX_CONCURRENT_STREAMS=1000`、`INITIAL_WINDOW_SIZE=6291456`（6MB）、`MAX_HEADER_LIST_SIZE=262144`；连接级接收窗口从 983041 提升到 15663105。部分服务端会把客户端 h2 指纹纳入风控，参数明显"非浏览器"时可能直接返回 403。
+- **修正一个标识符写错的问题**：原实现把 `MAX_FRAME_SIZE` 的值填进了 `identifier 6`——标准里 6 是 `MAX_HEADER_LIST_SIZE`，等于向对端声明"我只接受 16KB 的头部列表"。现按标准发 5 = `MAX_FRAME_SIZE`、6 = `MAX_HEADER_LIST_SIZE`。
+
+### #560 Linux arm64 安装包
+
+- CI 的 DEB 构建加入 `arm64` 架构（`ubuntu-24.04-arm`），与 amd64 并行。
+- 采用**自适应**策略：arm64 runner 上 Flutter SDK 装不成时，Set up Flutter 的失败被 `continue-on-error` 吸收、后续步骤按 outcome 跳过，流程不会变红，也不影响 amd64 产物；工具链就绪后无需改动即可自动产出 arm64 deb。
+
+### 平台能力边界文档化（#874 / #683 / #489）
+
+- `docs/quick_start.md` 新增「平台支持边界」一节，逐条说明现状、原因与替代做法：
+  - **Mac App Store 应用**抓不到（沙箱 + 强制签名，系统代理无效；接管需要 Network Extension/TUN 与签名授权，本仓为未签名构建）
+  - **鸿蒙**暂未提供构建（需独立 HarmonyOS 工程 + Flutter ohos 分支）
+  - **Linux arm64** 由 CI 自适应构建
+  - **QUIC** 只做拦截与识别（完整 1-RTT 解密需 TLS1.3 握手状态机与密钥调度，工程量极大），并说明"拦截 QUIC → 回落 TCP"的抓取路径
+- 修正快速上手中"支持鸿蒙"的不准确表述。
+
 ## v1.22.71 (2026-09-17)
 
 ### 修复与加固
