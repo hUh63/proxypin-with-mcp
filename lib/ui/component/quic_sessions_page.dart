@@ -4,6 +4,8 @@
  * QUIC v1 Initial 后在此展示：SNI 域名 / QUIC 版本 / 连接 ID / 包与帧统计。
  */
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
 
 class QuicSessionsPage extends StatelessWidget {
@@ -20,6 +22,23 @@ class QuicSessionsPage extends StatelessWidget {
             overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
+            icon: const Icon(Icons.copy_all_outlined, size: 20),
+            tooltip: '复制会话列表（制表符分隔，可直接贴进表格）',
+            onPressed: () async {
+              final sessions = QuicProbe.instance.sessions
+                ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
+              if (sessions.isEmpty) return;
+              final text = sessions
+                  .map((s) => '${s.host.isEmpty ? '(无SNI)' : s.host}\t${s.version}\t${s.remote}\t'
+                      '${s.packets}包 / ${_humanBytes(s.bytes)}\t最后活动 ${_time(s.lastSeen)}')
+                  .join('\n');
+              await Clipboard.setData(ClipboardData(text: text));
+              if (context.mounted) {
+                FlutterToastr.show('已复制 ${sessions.length} 条会话记录', context, duration: 2);
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: '刷新（等待新的 QUIC 包到达）',
             onPressed: () => QuicProbe.instance.revision.value++,
@@ -34,7 +53,8 @@ class QuicSessionsPage extends StatelessWidget {
       body: ValueListenableBuilder<int>(
         valueListenable: QuicProbe.instance.revision,
         builder: (context, _, __) {
-          final sessions = QuicProbe.instance.sessions;
+          final sessions = QuicProbe.instance.sessions
+            ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen)); // 最近活动优先
           if (sessions.isEmpty) {
             return _empty(cs, context);
           }
@@ -52,6 +72,7 @@ class QuicSessionsPage extends StatelessWidget {
                     fontSize: 11, color: cs.onTertiaryContainer, height: 1.4),
               ),
             ),
+            _buildSummary(context, sessions),
             Expanded(
               child: ListView.builder(
                 itemCount: sessions.length,
@@ -83,8 +104,9 @@ class QuicSessionsPage extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     subtitle: Text(
-                      'QUIC ${s.version} · ${s.remote} · ${_time(s.firstSeen)}\n'
-                      '连接 ${s.dcid.length >= 6 ? s.dcid.substring(0, 6) : s.dcid}… · ${s.packets} 包 / ${s.frames} 帧',
+                      'QUIC ${s.version} · ${s.remote} · 首见 ${_time(s.firstSeen)} · 最后活动 ${_ago(s.lastSeen)}\n'
+                      '连接 ${s.dcid.length >= 6 ? s.dcid.substring(0, 6) : s.dcid}… · '
+                      '${s.packets} 包 / ${s.frames} 帧 · ${_humanBytes(s.bytes)}',
                       style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, height: 1.4),
                     ),
                     isThreeLine: true,
@@ -96,6 +118,58 @@ class QuicSessionsPage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  /// 顶部统计条：连接 / 域名 / 包 / 流量 / 活跃数（30 秒内还有活动的会话）
+  Widget _buildSummary(BuildContext context, List<QuicSession> sessions) {
+    final cs = Theme.of(context).colorScheme;
+    final hosts = sessions.map((s) => s.host).where((h) => h.isNotEmpty).toSet();
+    final packets = sessions.fold<int>(0, (sum, s) => sum + s.packets);
+    final bytes = sessions.fold<int>(0, (sum, s) => sum + s.bytes);
+    final active = sessions.where((s) => DateTime.now().difference(s.lastSeen).inSeconds <= 30).length;
+
+    Widget cell(String label, String value, {Color? color}) {
+      return Expanded(
+        child: Column(
+          children: [
+            Text(value,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: color ?? cs.onSurface)),
+            Text(label, style: TextStyle(fontSize: 10.5, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          cell('连接', '${sessions.length}'),
+          cell('域名', '${hosts.length}'),
+          cell('包', '$packets'),
+          cell('流量', _humanBytes(bytes)),
+          cell('活跃', '$active', color: active > 0 ? Colors.green : cs.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+
+  static String _humanBytes(int bytes) {
+    if (bytes < 1024) return '${bytes}B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}K';
+    return '${(bytes / 1024 / 1024).toStringAsFixed(1)}M';
+  }
+
+  static String _ago(DateTime t) {
+    final seconds = DateTime.now().difference(t).inSeconds;
+    if (seconds < 60) return '$seconds 秒前';
+    if (seconds < 3600) return '${seconds ~/ 60} 分钟前';
+    return '${seconds ~/ 3600} 小时前';
   }
 
   Widget _empty(ColorScheme cs, BuildContext context) {

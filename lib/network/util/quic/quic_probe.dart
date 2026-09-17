@@ -46,8 +46,15 @@ class QuicSession {
   /// 远端信息 IP:port（探测包来自源五元组）
   final String remote;
   final DateTime firstSeen;
+
+  /// 最后一次看到该连接的时间（UI 用来判断活跃度、排序）
+  DateTime lastSeen;
+
   int packets;
   int frames;
+
+  /// 累计字节数（只统计被抄送过来的 QUIC 包，用于估算规模）
+  int bytes;
 
   QuicSession({
     required this.host,
@@ -55,9 +62,11 @@ class QuicSession {
     required this.dcid,
     required this.remote,
     required this.firstSeen,
+    DateTime? lastSeen,
     this.packets = 1,
     this.frames = 0,
-  });
+    this.bytes = 0,
+  }) : lastSeen = lastSeen ?? firstSeen;
 }
 
 /// QUIC 探测单例：UDP 监听 + Initial 解析 + 会话管理
@@ -91,6 +100,8 @@ class QuicProbe {
       if (existing != null) {
         // 会话已建立：仅计数（Kotlin 侧已按 30s 节流，此处兜底）
         existing.packets++;
+        existing.bytes += data.length;
+        existing.lastSeen = DateTime.now();
         revision.value++;
         return;
       }
@@ -112,6 +123,7 @@ class QuicProbe {
         firstSeen: DateTime.now(),
         packets: 1,
         frames: frames,
+        bytes: data.length,
       );
       if (_sessions.length > 200) {
         // 上限保护：移除最早会话

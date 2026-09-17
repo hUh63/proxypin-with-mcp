@@ -81,6 +81,7 @@ flutter:
     - docs/report_server.md
     - docs/MCP_AUTOMATION_GUIDE.md
     - docs/WORKFLOW_TUTORIAL.md
+    - docs/extension_guide.md
     - CHANGELOG.md
     - README_CN.md
     - AGENTS.md
