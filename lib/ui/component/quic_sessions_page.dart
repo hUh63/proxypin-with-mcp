@@ -73,6 +73,7 @@ class QuicSessionsPage extends StatelessWidget {
               ),
             ),
             _buildSummary(context, sessions),
+            _buildTimeline(context),
             Expanded(
               child: ListView.builder(
                 itemCount: sessions.length,
@@ -116,6 +117,75 @@ class QuicSessionsPage extends StatelessWidget {
             ),
           ]);
         },
+      ),
+    );
+  }
+
+  /// 时间轴：最近 10 分钟、每 10 秒一格的 QUIC 包量柱状图（旧 → 新）
+  Widget _buildTimeline(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final packets = QuicProbe.instance.timelinePackets();
+    final bytes = QuicProbe.instance.timelineBytes();
+    final maxValue = packets.fold<int>(0, (max, v) => v > max ? v : max);
+    final total = packets.fold<int>(0, (sum, v) => sum + v);
+    final totalBytes = bytes.fold<int>(0, (sum, v) => sum + v);
+    final activeBuckets = packets.where((v) => v > 0).length;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('最近 10 分钟 QUIC 包量', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              const Spacer(),
+              Text(
+                activeBuckets == 0
+                    ? '暂无数据'
+                    : '共 $total 包 · ${_humanBytes(totalBytes)} · $activeBuckets 段有流量',
+                style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 54,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (final value in packets)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 0.5),
+                      child: Container(
+                        height: maxValue == 0 ? 2 : (value / maxValue * 52).clamp(2.0, 52.0),
+                        decoration: BoxDecoration(
+                          color: value > 0 ? cs.primary : cs.outlineVariant.withValues(alpha: 0.35),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Text('10 分钟前', style: TextStyle(fontSize: 10, color: cs.outline)),
+              const Spacer(),
+              Text('每格 10 秒', style: TextStyle(fontSize: 10, color: cs.outline)),
+              const Spacer(),
+              Text('现在', style: TextStyle(fontSize: 10, color: cs.outline)),
+            ],
+          ),
+        ],
       ),
     );
   }

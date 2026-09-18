@@ -78,6 +78,43 @@ class QuicProbe {
   final ValueNotifier<int> revision = ValueNotifier(0);
   final List<String> _probeLog = <String>[]; // 最近解析日志（供 UI 调试展示）
 
+  /// 时间轴：最近 10 分钟、每 10 秒一个桶（供会话页展示"流量随时间的变化"）
+  static const int timelineBucketCount = 60;
+  static const int timelineBucketMs = 10 * 1000;
+  final List<int> _bucketPackets = List<int>.filled(timelineBucketCount, 0);
+  final List<int> _bucketBytes = List<int>.filled(timelineBucketCount, 0);
+  final List<int> _bucketSlot = List<int>.filled(timelineBucketCount, -1);
+
+  void _recordTimeline(int bytes) {
+    final slot = DateTime.now().millisecondsSinceEpoch ~/ timelineBucketMs;
+    final index = slot % timelineBucketCount;
+    if (_bucketSlot[index] != slot) {
+      // 该桶已被新的时间槽复用，重置后再累加
+      _bucketSlot[index] = slot;
+      _bucketPackets[index] = 0;
+      _bucketBytes[index] = 0;
+    }
+    _bucketPackets[index]++;
+    _bucketBytes[index] += bytes;
+  }
+
+  /// 按时间升序（旧 → 新）返回每桶的包数
+  List<int> timelinePackets() => _readTimeline(_bucketPackets);
+
+  /// 按时间升序（旧 → 新）返回每桶的字节数
+  List<int> timelineBytes() => _readTimeline(_bucketBytes);
+
+  List<int> _readTimeline(List<int> buckets) {
+    final nowSlot = DateTime.now().millisecondsSinceEpoch ~/ timelineBucketMs;
+    final result = List<int>.filled(timelineBucketCount, 0);
+    for (var i = 0; i < timelineBucketCount; i++) {
+      final slot = nowSlot - (timelineBucketCount - 1 - i);
+      final index = slot % timelineBucketCount;
+      result[i] = _bucketSlot[index] == slot ? buckets[index] : 0;
+    }
+    return result;
+  }
+
   List<QuicSession> get sessions => _sessions.values.toList();
 
 
@@ -86,6 +123,11 @@ class QuicProbe {
   void clear() {
     _sessions.clear();
     _probeLog.clear();
+    for (var i = 0; i < timelineBucketCount; i++) {
+      _bucketSlot[i] = -1;
+      _bucketPackets[i] = 0;
+      _bucketBytes[i] = 0;
+    }
     revision.value++;
   }
 
@@ -95,6 +137,7 @@ class QuicProbe {
     try {
       final packet = Uint8List.fromList(data);
       final info = parseQuicInitial(packet); // 明文字段 + Header Protection
+      _recordTimeline(data.length); // 时间轴统计（与是否新会话无关）
       final dcidHex = _hex(info.dcid);
       final existing = _sessions[dcidHex];
       if (existing != null) {

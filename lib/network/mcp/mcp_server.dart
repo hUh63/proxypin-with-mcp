@@ -20,6 +20,7 @@ import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/capture_diagnose.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/network/http/http.dart';
@@ -2155,6 +2156,16 @@ Body Encoding Rules:
           },
           'required': ['frame_id'],
         },
+      },
+      {
+        'name': 'diagnose_capture',
+        'description':
+            'Run a read-only self-check of the capture pipeline: whether the proxy server is running, '
+                'whether the system proxy points at this app, whether the CA certificate is trusted, '
+                'and whether any traffic arrived recently. Returns structured findings plus actionable '
+                'suggestions. Call this first when the user says requests cannot be captured, pages fail '
+                'to load, or traffic suddenly stops.',
+        'inputSchema': {'type': 'object', 'properties': {}},
       },    ];
   }
 
@@ -2400,6 +2411,12 @@ Body Encoding Rules:
         final isRunning = ProxyServer.current?.isRunning ?? false;
         final port = ProxyServer.current?.port;
         return {'isRunning': isRunning, 'port': port};
+
+      case 'diagnose_capture':
+        // 抓包链路只读自检：与界面「抓包自检」同一份结论，便于 AI 先诊断再建议
+        final diagnoseRequests = McpBridge().source.toList();
+        final diagnoseResult = await CaptureDiagnose.run(diagnoseRequests);
+        return diagnoseResult.toJson();
 
       case 'clear_requests':
         // 调用真正的清除方法（对应UI垃圾桶图标）
