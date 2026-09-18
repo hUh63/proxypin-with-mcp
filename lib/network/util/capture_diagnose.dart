@@ -200,10 +200,11 @@ class CaptureDiagnose {
       key: 'traffic',
       title: '最近流量',
       status: (agoSeconds != null && agoSeconds <= 60) ? DiagnoseStatus.ok : DiagnoseStatus.warn,
-      detail: requests.isEmpty
+      detail: agoSeconds == null
           ? '本次会话还没有抓到任何请求'
-          : '共 ${requests.length} 条，最新一条在 $agoSeconds 秒前'
-              '${agoSeconds <= 60 ? '' : '（当前没有新流量进来）'}',
+          : (agoSeconds <= 60
+              ? '共 ${requests.length} 条，最新一条在 $agoSeconds 秒前'
+              : '共 ${requests.length} 条，最新一条在 $agoSeconds 秒前（当前没有新流量进来）'),
     ));
 
     return CaptureDiagnoseResult(items, requestCount: requests.length, latestRequestAgoSeconds: agoSeconds);
