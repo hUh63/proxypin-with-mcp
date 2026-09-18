@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.22.76 (2026-09-19)
+
+### 新增：QUIC 密钥日志解密（上游 #489：把"能解"变成"真解"）
+
+被动旁路抓包无法推导 QUIC 会话密钥（ECDHE，见《平台与技术边界》）；本版落地**唯一可行路径**——让目标应用导出密钥日志（NSS key log / `SSLKEYLOGFILE`），再离线解密 1-RTT 应用数据：
+
+- **密钥日志导入**：QUIC 连接页右上角「钥匙」按钮导入 keylog 文件（或文本）；解析 `CLIENT_TRAFFIC_SECRET_0` / `SERVER_TRAFFIC_SECRET_0`（自动兼容 Chrome 的 `QUIC_` 前缀），按 **client_random** 建索引（`lib/network/util/quic/quic_keylog.dart`）；
+- **1-RTT 解密链路**（`lib/network/util/quic/quic_1rtt.dart`）：short header 去 Header Protection（AES-ECB）→ 按包号派生 nonce → AES-128-GCM 解密 → QUIC varint 帧解析 → 提取 STREAM 数据；密钥由 traffic secret 经 HKDF-Expand-Label 派生 `quic key/iv/hp`（RFC 9001 §5.1）；
+- **自动命中**：`QuicProbe` 从 Initial 取出的 ClientHello.random 与导入密钥日志对齐，命中的连接自动解密**客户端方向** 1-RTT；会话项显示「已解密 N 段」，点开查看每段的流 ID / HTTP/3 帧类型 / 长度 / 可读预览（可见 ASCII 原样、其余转 `\xNN`）；
+- **交付边界**：只到「QUIC 流数据层」——HEADERS 帧内部是 **QPACK 压缩**，本版不解码，因此给的是逐段预览而非结构化请求；这已足够判断"哪个域名在传什么内容"。
+
+### 新增：MCP 工具补全（QUIC / 安全 / 性能）
+
+- **`get_quic_sessions`**：QUIC 会话列表（SNI、版本、远端、包/字节、最后活动）+ 10 分钟时间轴 + 密钥日志状态 + 已解密流预览；
+- **`get_security_audit`**：对已抓流量跑**被动安全自检**（明文 HTTP、敏感泄露、Cookie 属性、安全响应头、CORS 过宽、JWT 等），返回按严重级别汇总与逐条修复建议，支持按 `severity` 过滤；只读、不发请求、不投递载荷；
+- **`get_performance_metrics`**：进程内存（当前 / 峰值 RSS）与抓包聚合统计（方法/状态/域名分布、总大小、平均耗时、错误数）。
+
+### 文档
+
+- 《平台与技术边界》QUIC 一节更新为**已支持导入密钥日志解密**；《功能指南》QUIC 连接节同步；《扩展与定制指南》MCP 一节补充三个新工具。
+
 ## v1.22.75 (2026-09-18)
 
 ### 新增：抓包自检接入 MCP（让 AI 先诊断再建议）

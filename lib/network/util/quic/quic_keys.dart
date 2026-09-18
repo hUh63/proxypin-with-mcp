@@ -102,8 +102,30 @@ QuicInitialKeys deriveQuicV1InitialKeys(List<int> clientDstConnectionId) {
   );
 }
 
-String _hex(List<int> b) => b.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
+/// QUIC 1-RTT（应用数据）方向的密钥集
+class QuicTrafficKeys {
+  final Uint8List key; // 16B AES-128-GCM
+  final Uint8List iv; // 12B
+  final Uint8List hp; // 16B header protection
 
+  QuicTrafficKeys({required this.key, required this.iv, required this.hp});
+}
+
+/// 由 TLS 1.3 traffic secret 派生 1-RTT 密钥（RFC 9001 §5.1）
+///
+/// secret 来源是密钥日志（SSLKEYLOGFILE）中的
+/// `CLIENT_TRAFFIC_SECRET_0` / `SERVER_TRAFFIC_SECRET_0`（Chrome 会带 `QUIC_` 前缀）。
+/// 注意：secret 的获取意味着**目标应用的密钥被导出**——被动旁路抓包本身拿不到它。
+QuicTrafficKeys deriveQuicV1TrafficKeys(List<int> trafficSecret) {
+  final secret = Uint8List.fromList(trafficSecret);
+  return QuicTrafficKeys(
+    key: _hkdfExpandLabel(secret, 'quic key', const [], 16),
+    iv: _hkdfExpandLabel(secret, 'quic iv', const [], 12),
+    hp: _hkdfExpandLabel(secret, 'quic hp', const [], 16),
+  );
+}
+
+String _hex(List<int> b) => b.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
 /// RFC 9001 附录 A.1 测试向量自检；派生不符时抛异常
 void verifyRfc9001Vector() {
   const cidHex = '8394c8f03e515708';

@@ -21,6 +21,11 @@ import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
+import 'package:proxypin/network/util/security_audit.dart';
+import 'package:proxypin/network/util/security_rule_store.dart';
+import 'package:proxypin/network/util/quic/quic_1rtt.dart';
+import 'package:proxypin/network/util/quic/quic_keylog.dart';
+import 'package:proxypin/network/util/quic/quic_probe.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/network/http/http.dart';
@@ -2166,7 +2171,65 @@ Body Encoding Rules:
                 'suggestions. Call this first when the user says requests cannot be captured, pages fail '
                 'to load, or traffic suddenly stops.',
         'inputSchema': {'type': 'object', 'properties': {}},
-      },    ];
+      },
+      {
+        'name': 'get_quic_sessions',
+        'description':
+            'List QUIC/HTTP-3 connections observed by the passive VPN probe, with per-session '
+                'metadata (SNI host, QUIC version, remote endpoint, packet/byte counts, last-seen) and '
+                'a rolling 10-minute traffic timeline. Also reports how many TLS key-log entries have '
+                'been imported and, for sessions whose keys are available, a preview of decrypted '
+                '1-RTT stream data. Call this when the user asks which apps/domains use QUIC, why a '
+                'QUIC connection cannot be decrypted, or wants an overview of QUIC traffic.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'host_filter': {
+              'type': 'string',
+              'description': 'Only return sessions whose SNI host contains this text (optional)',
+            },
+            'limit': {
+              'type': 'integer',
+              'description': 'Maximum number of sessions to return (default 50)',
+            },
+          },
+        },
+      },
+      {
+        'name': 'get_security_audit',
+        'description':
+            'Run the passive security self-audit over already-captured traffic: flags cleartext '
+                'HTTP, leaked secrets/tokens, cookies missing Secure/HttpOnly, missing security '
+                'response headers, verbose server fingerprints, over-permissive CORS and unsigned or '
+                'expiring JWTs. This is a read-only baseline check — it never sends requests or attack '
+                'payloads. Returns counts per severity plus the matched issues with fix suggestions. '
+                'Call this when the user asks whether the captured API has security problems or wants '
+                'a security review of recent traffic.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'severity': {
+              'type': 'string',
+              'enum': ['high', 'medium', 'low', 'info'],
+              'description': 'Only return issues of this severity (optional)',
+            },
+            'limit': {
+              'type': 'integer',
+              'description': 'Maximum number of issues to return (default 100)',
+            },
+          },
+        },
+      },
+      {
+        'name': 'get_performance_metrics',
+        'description':
+            'Report runtime performance metrics: process memory usage (current and peak RSS) and '
+                'aggregate capture statistics (request counts by method/status/domain, total size, '
+                'average duration, error count). Call this when the user asks how much memory the app '
+                'uses, whether capture is slowing things down, or wants a performance overview.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+    ];
   }
 
   Future<dynamic> _executeTool(String name, Map<String, dynamic> args) async {
@@ -2417,6 +2480,117 @@ Body Encoding Rules:
         final diagnoseRequests = McpBridge().source.toList();
         final diagnoseResult = await CaptureDiagnose.run(diagnoseRequests);
         return diagnoseResult.toJson();
+
+      case 'get_quic_sessions':
+        // QUIC 连接概览：会话元数据 + 10 分钟时间轴 + 密钥日志状态 + 已解密流预览
+        final quicHostFilter = (args['host_filter'] as String?)?.toLowerCase();
+        final quicLimit = (args['limit'] as num?)?.toInt() ?? 50;
+        final quicNow = DateTime.now();
+        final allQuic = QuicProbe.instance.sessions
+          ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
+        final quicSessions = (quicHostFilter == null || quicHostFilter.isEmpty)
+            ? allQuic
+            : allQuic
+                .where((s) => s.host.toLowerCase().contains(quicHostFilter))
+                .toList();
+        final quicKeylog = QuicKeylogStore.instance;
+        return {
+          'total_sessions': allQuic.length,
+          'returned': quicSessions.length > quicLimit ? quicLimit : quicSessions.length,
+          'keylog': {
+            'imported': !quicKeylog.isEmpty,
+            'entries': quicKeylog.entryCount,
+            'connections': quicKeylog.connectionCount,
+            'hint': quicKeylog.isEmpty
+                ? '未导入密钥日志：QUIC 业务数据受 TLS 1.3 加密无法旁路解密，'
+                    '需要目标应用导出 SSLKEYLOGFILE 后在 App 内导入。'
+                : '已导入密钥日志；命中连接的 1-RTT 客户端方向流数据会自动解密。',
+          },
+          'timeline': {
+            'window_minutes':
+                (QuicProbe.timelineBucketCount * QuicProbe.timelineBucketMs) ~/ 60000,
+            'bucket_seconds': QuicProbe.timelineBucketMs ~/ 1000,
+            'packets': QuicProbe.instance.timelinePackets(),
+            'bytes': QuicProbe.instance.timelineBytes(),
+          },
+          'sessions': quicSessions.take(quicLimit).map((s) {
+            return {
+              'host': s.host.isEmpty ? '(no SNI)' : s.host,
+              'version': s.version,
+              'remote': s.remote,
+              'dcid': s.dcid,
+              'packets': s.packets,
+              'frames': s.frames,
+              'bytes': s.bytes,
+              'first_seen': s.firstSeen.toIso8601String(),
+              'last_seen': s.lastSeen.toIso8601String(),
+              'last_seen_ago_seconds': quicNow.difference(s.lastSeen).inSeconds,
+              'decrypted_streams': s.decrypted.length,
+              'decrypted': s.decrypted.take(20).map((d) {
+                return {
+                  'stream_id': d.streamId,
+                  'frame': http3FrameName(d.frameType),
+                  'length': d.length,
+                  'fin': d.fin,
+                  'preview': d.preview,
+                };
+              }).toList(),
+            };
+          }).toList(),
+        };
+
+      case 'get_security_audit':
+        // 对已抓流量跑被动安全自检（只读：不发送请求、不投递载荷）
+        final auditRequests = McpBridge().source.toList();
+        final auditLimit = (args['limit'] as num?)?.toInt() ?? 100;
+        final auditSeverity = args['severity'] as String?;
+        final auditStore = await SecurityRuleStore.instance;
+        final auditReport =
+            SecurityAuditor.audit(auditRequests, customRules: auditStore.rules);
+        final auditIssues = (auditSeverity == null || auditSeverity.isEmpty)
+            ? auditReport.issues
+            : auditReport.issues
+                .where((i) => i.severity.name == auditSeverity)
+                .toList();
+        return {
+          'scanned_requests': auditReport.scannedRequests,
+          'total_issues': auditReport.issues.length,
+          'clean': auditReport.isClean,
+          'summary': {
+            'high': auditReport.count(SecuritySeverity.high),
+            'medium': auditReport.count(SecuritySeverity.medium),
+            'low': auditReport.count(SecuritySeverity.low),
+            'info': auditReport.count(SecuritySeverity.info),
+          },
+          'returned': auditIssues.length > auditLimit ? auditLimit : auditIssues.length,
+          'issues': auditIssues.take(auditLimit).map((i) {
+            return {
+              'rule': i.rule,
+              'severity': i.severity.name,
+              'title': i.title,
+              'method': i.method,
+              'url': i.url,
+              'detail': i.detail,
+              'suggestion': i.suggestion,
+              'request_id': i.requestId,
+            };
+          }).toList(),
+        };
+
+      case 'get_performance_metrics':
+        // 进程内存 + 抓包聚合统计
+        final rss = io.ProcessInfo.currentRss;
+        final maxRss = io.ProcessInfo.maxRss;
+        return {
+          'memory': {
+            'current_rss_bytes': rss,
+            'current_rss_mb': double.parse((rss / 1024 / 1024).toStringAsFixed(1)),
+            'peak_rss_bytes': maxRss,
+            'peak_rss_mb': double.parse((maxRss / 1024 / 1024).toStringAsFixed(1)),
+          },
+          'capture': McpBridge().getStatistics(),
+          'captured_requests': McpBridge().source.length,
+        };
 
       case 'clear_requests':
         // 调用真正的清除方法（对应UI垃圾桶图标）

@@ -3,9 +3,14 @@
  * VPN 抓包运行时，ProxyVpnService 把 UDP:443 首包抄送本机，QuicProbe 解密
  * QUIC v1 Initial 后在此展示：SNI 域名 / QUIC 版本 / 连接 ID / 包与帧统计。
  */
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/network/util/quic/quic_1rtt.dart';
+import 'package:proxypin/network/util/quic/quic_keylog.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
 
 class QuicSessionsPage extends StatelessWidget {
@@ -21,6 +26,11 @@ class QuicSessionsPage extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.key_outlined, size: 20),
+            tooltip: '导入密钥日志（SSLKEYLOGFILE）后即可解密 1-RTT 流数据',
+            onPressed: () => _importKeylog(context),
+          ),
           IconButton(
             icon: const Icon(Icons.copy_all_outlined, size: 20),
             tooltip: '复制会话列表（制表符分隔，可直接贴进表格）',
@@ -65,9 +75,15 @@ class QuicSessionsPage extends StatelessWidget {
               color: cs.tertiaryContainer.withValues(alpha: 0.5),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
-                '仅展示 QUIC 连接级元数据（哪些域名在走 QUIC、连接统计）。'
-                'HTTP/3 请求响应经 TLS 1.3 加密，无法解密为明文；'
-                '需要完整请求内容请在偏好设置开启「拦截 QUIC」强制回落 TCP 抓取。',
+                QuicKeylogStore.instance.isEmpty
+                    ? '仅展示 QUIC 连接级元数据（哪些域名在走 QUIC、连接统计）。'
+                        'HTTP/3 内容受 TLS 1.3 加密，默认无法解为明文；'
+                        '点右上角「钥匙」导入密钥日志（SSLKEYLOGFILE）后，命中的连接会自动解密 1-RTT 流数据；'
+                        '或开启「拦截 QUIC」强制定向 TCP 抓取完整请求。'
+                    : '已导入 ${QuicKeylogStore.instance.entryCount} 条密钥（覆盖 '
+                        '${QuicKeylogStore.instance.connectionCount} 个连接）。'
+                        '命中连接自动解密 1-RTT（仅客户端方向；HEADERS 为 QPACK 压缩，本版不解码）。'
+                        '未命中的连接请开启「拦截 QUIC」回落 TCP 抓取。',
                 style: TextStyle(
                     fontSize: 11, color: cs.onTertiaryContainer, height: 1.4),
               ),
@@ -107,10 +123,19 @@ class QuicSessionsPage extends StatelessWidget {
                     subtitle: Text(
                       'QUIC ${s.version} · ${s.remote} · 首见 ${_time(s.firstSeen)} · 最后活动 ${_ago(s.lastSeen)}\n'
                       '连接 ${s.dcid.length >= 6 ? s.dcid.substring(0, 6) : s.dcid}… · '
-                      '${s.packets} 包 / ${s.frames} 帧 · ${_humanBytes(s.bytes)}',
-                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, height: 1.4),
+                      '${s.packets} 包 / ${s.frames} 帧 · ${_humanBytes(s.bytes)}'
+                      '${s.decrypted.isNotEmpty ? ' · 已解密 ${s.decrypted.length} 段' : ''}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: s.decrypted.isNotEmpty ? Colors.green.shade700 : cs.onSurfaceVariant,
+                        height: 1.4,
+                      ),
                     ),
                     isThreeLine: true,
+                    onTap: s.decrypted.isEmpty ? null : () => _showDecrypted(context, s),
+                    trailing: s.decrypted.isEmpty
+                        ? null
+                        : Icon(Icons.lock_open_outlined, size: 16, color: Colors.green.shade600),
                   );
                 },
               ),
@@ -185,6 +210,86 @@ class QuicSessionsPage extends StatelessWidget {
               Text('现在', style: TextStyle(fontSize: 10, color: cs.outline)),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  /// 导入密钥日志（NSS key log / SSLKEYLOGFILE）——被动旁路解密 QUIC 的唯一可行路径
+  Future<void> _importKeylog(BuildContext context) async {
+    try {
+      final files = await FilePicker.pickFiles(type: FileType.any);
+      if (files == null || files.isEmpty) return;
+
+      final bytes = await files.first.readAsBytes();
+      final text = utf8.decode(bytes, allowMalformed: true);
+      final added = QuicKeylogStore.instance.importText(text);
+
+      if (context.mounted) {
+        FlutterToastr.show(
+          added > 0
+              ? '已导入 $added 条密钥，覆盖 ${QuicKeylogStore.instance.connectionCount} 个连接'
+              : '没有解析到新的密钥条目（请确认文件是 NSS key log 格式）',
+          context,
+          duration: 3,
+        );
+      }
+      QuicProbe.instance.revision.value++;
+    } catch (e) {
+      if (context.mounted) {
+        FlutterToastr.show('导入失败：$e', context, duration: 3);
+      }
+    }
+  }
+
+  /// 查看某个会话解密出来的流数据
+  void _showDecrypted(BuildContext context, QuicSession session) {
+    final cs = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${session.host.isEmpty ? '(未解出 SNI)' : session.host} · 解密内容',
+            style: const TextStyle(fontSize: 15), maxLines: 2, overflow: TextOverflow.ellipsis),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640, maxHeight: 440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '共 ${session.decrypted.length} 段（客户端发送方向，1-RTT）。'
+                'HEADERS 内部是 QPACK 压缩，本版只到"QUIC 流数据层"，因此展示的是逐段预览而非结构化请求。',
+                style: TextStyle(fontSize: 11.5, height: 1.45, color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: session.decrypted.length,
+                  itemBuilder: (context, index) {
+                    final item = session.decrypted[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'stream ${item.streamId} · ${http3FrameName(item.frameType)} · '
+                            '${item.length}B${item.fin ? ' · FIN' : ''} · ${_time(item.time)}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 3),
+                          SelectableText(item.preview,
+                              style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace', height: 1.4)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
         ],
       ),
     );

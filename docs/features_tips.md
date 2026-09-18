@@ -156,12 +156,14 @@
 - 入口：工具箱 → **QUIC 连接**（移动端 push 新页 / 桌面端独立子窗口，`QuicSessionsPage`）
 - ==抓包运行中自动记录==访问过的 QUIC/HTTP3 会话：**SNI 域名 / QUIC 版本 / 源地址 / 首次时间 / 连接 ID / 包与帧统计**；支持清空记录（内存态，停止抓包/清空后重置）
 - **实现方式**（三端链路）：Kotlin VPN 层 `ConnectionHandler.handleUDPPacket` 把 UDP:443 首个数据包经**本机 TCP**（41745 端口，即发即断）抄送给 Dart `ProxyServer`（30 秒/源节流防洪泛）→ `QuicProbe` 纯解析（无 socket）：QUIC v1 长头解析 → Header Protection 去除（AES-ECB）→ Initial AES-128-GCM 解密（密钥派生见 v1.22.38，RFC 9001 A.1 向量校验）→ CRYPTO 帧拼接 → 手写 TLS 1.3 ClientHello 解析提取 SNI，任一环节失败安全忽略
-- **能力边界（诚实提示）**：HTTP/3 业务明文经 TLS 1.3 加密，无会话密钥无法解密查看——要看明文请开启「拦截 QUIC」让应用回落 TCP；列表头部提示条已注明
+- **数据解密（v1.22.76，导入密钥日志）**：点右上角**「钥匙」**导入 NSS key log（`SSLKEYLOGFILE`，自动兼容 Chrome 的 `QUIC_` 前缀），`QuicProbe` 用 Initial 里取出的 `ClientHello.random` 与日志对齐，**命中连接的客户端方向 1-RTT 自动解密**：short header 去保护 → AES-128-GCM 解密 → 帧解析 → 提取 STREAM 数据；会话项显示「已解密 N 段」，点开看每段的流 ID / HTTP/3 帧类型 / 长度 / 可读预览（可见 ASCII 原样、其余 `\xNN`）
+- **能力边界（诚实提示）**：未导入密钥日志时，HTTP/3 业务明文经 TLS 1.3（ECDHE）无法旁路解密——要看明文可导入密钥日志，或开启「拦截 QUIC」让应用回落 TCP；即便已解密，也**只到"QUIC 流数据层"**——HEADERS 帧内部是 QPACK 压缩，本版不做解码，因此是逐段预览而非结构化请求
 - **与其它功能联动**：
   - 「拦截 QUIC」开关（偏好设置）开启时照常回落抓明文，**同时**仍可记录 QUIC 连接（拦截前抄送，互不干扰）
   - 「QUIC 探测」开关（偏好设置 → 自动抓包下方，`Configuration.quicProbeEnabled` 默认开）可整体关闭抄送
   - 常用抓不到的原因：目标应用默认走 TCP/HTTP2；可临时关闭拦截重开抓包观察
-- **开发细节**：Dart 监听在 `ProxyServer`（`lib/network/bin/server.dart`，`ServerSocket.bind` loopback 41745）；解析器 `lib/network/util/quic/`（`quic_keys.dart`/`quic_packet.dart`/`quic_probe.dart`）；Kotlin 入口 `ProxyVpnService.forwardQuicProbe` + `ConnectionHandler`；注意 Dart 侧不直接依赖 `dart:io` UDP（DatagramSocket），统一走 TCP 即发即断通道
+  - **密钥日志与「拦截 QUIC」相互独立**：即使开启拦截让应用回落 TCP，命中密钥日志的连接仍照常解密
+- **开发细节**：Dart 监听在 `ProxyServer`（`lib/network/bin/server.dart`，`ServerSocket.bind` loopback 41745）；解析器 `lib/network/util/quic/`（`quic_keys.dart`/`quic_packet.dart`/`quic_probe.dart`，1-RTT 解密 `quic_1rtt.dart`、密钥日志 `quic_keylog.dart`）；Kotlin 入口 `ProxyVpnService.forwardQuicProbe` + `ConnectionHandler`；注意 Dart 侧不直接依赖 `dart:io` UDP（DatagramSocket），统一走 TCP 即发即断通道
 
 
 ## WebSocket 流量推送（外部工具集成）
@@ -492,3 +494,9 @@
 - **让 AI 自己会诊断**：抓包自检的结论现在也能通过 MCP 工具 **`diagnose_capture`** 拿到——AI 在你抱怨"抓不到包/页面打不开"时会先调它，拿到代理状态、系统代理指向、证书信任、最近流量与**可执行建议**，再给结论，而不是凭空猜；
 - **QUIC 流量时间轴**：QUIC 连接页新增柱状时间轴，最近 10 分钟、每 10 秒一格，一眼看出 QUIC 流量是持续还是有突发、最近有没有活动；
 - **平台与技术边界说明**（使用文档 → 功能指南）：为什么 Mac App Store 应用抓不到、鸿蒙要移植什么、QUIC 为什么**在数学上**没法旁路解密（ECDHE），以及各自的替代做法都写清了。
+
+## 本版新增（v1.22.76）
+
+- **QUIC 能"真解"了**（导入密钥日志，上游 #489）：QUIC 连接页右上角**「钥匙」**导入 NSS key log（`SSLKEYLOGFILE`，兼容 Chrome 的 `QUIC_` 前缀）后，用 Initial 里取出的 `ClientHello.random` 对齐密钥日志，**命中连接自动解密客户端方向 1-RTT**——会话项显示「已解密 N 段」，点开看每段的流 ID / HTTP/3 帧类型 / 长度 / 可读预览。受限于 QPACK 压缩，只到"QUIC 流数据层"，不解 HEADERS 内部（判断传了什么已够）；
+- **AI 能干更多活**：MCP 新增三个**只读**工具——`get_quic_sessions`（QUIC 会话 + 时间轴 + 解密预览）、`get_security_audit`（对已抓流量跑被动安全自检，按严重级别给修复建议）、`get_performance_metrics`（进程内存与抓包聚合统计）；
+- **边界说明同步**：《平台与技术边界》QUIC 一节改为"已支持导入密钥日志解密"，把"能拿到才解"的道理写清。
