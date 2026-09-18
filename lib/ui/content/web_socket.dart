@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/utils/lang.dart';
@@ -10,6 +11,7 @@ import 'package:proxypin/utils/num.dart';
 import '../../l10n/app_localizations.dart';
 import '../../network/http/http.dart';
 import '../../network/http/websocket.dart';
+import '../../network/util/ws_payload_decoder.dart';
 import '../../utils/platform.dart';
 import '../component/app_dialog.dart';
 import '../component/json/json_text.dart';
@@ -83,20 +85,14 @@ class Websocket extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: SelectableText(
-                                  "${message.payloadDataAsString}${message.isBinary ? ' ${getPackage(message.payloadLength)}' : ''}",
+                                  _bubbleText(message),
                                   maxLines: 3,
                                   minLines: 1,
                                   contextMenuBuilder: (context, editableTextState) =>
                                       contextMenu(context, editableTextState,
                                           customItem: ContextMenuButtonItem(
                                             label: localizations.download,
-                                            onPressed: () async {
-                                              Uri? path = (await FilePicker.saveFile(
-                                                  fileName: "websocket.txt", bytes: message.payloadData));
-                                              if (path != null && context.mounted) {
-                                                CustomToast.success(localizations.saveSuccess).show(context);
-                                              }
-                                            },
+                                            onPressed: () => _savePayload(context, message.payloadData),
                                             type: ContextMenuButtonType.custom,
                                           )),
                                 )),
@@ -112,6 +108,19 @@ class Websocket extends StatelessWidget {
       },
     );
   }
+
+  /// 列表气泡展示文本：二进制帧先自动解码，尽量给出可读内容（上游 #623）
+  static String _bubbleText(WebSocketFrame message) {
+    if (!message.isBinary) {
+      return message.payloadDataAsString;
+    }
+    final decoded = WsPayloadDecoder.decode(message.payloadData);
+    if (decoded.kind == WsPayloadKind.text || decoded.kind == WsPayloadKind.json) {
+      return decoded.text ?? decoded.label;
+    }
+    // 图片 / 压缩 / 未知二进制：展示识别出的类型标签，点开预览可进一步查看
+    return '[${decoded.label}]';
+  }
 }
 
 class _PreviewDialog extends StatefulWidget {
@@ -124,16 +133,41 @@ class _PreviewDialog extends StatefulWidget {
 }
 
 class _PreviewDialogState extends State<_PreviewDialog> {
-  int tabIndex = 0; // 0: HEX, 1: TEXT
+  int tabIndex = 0; // 当前选中的 tab（含动态 tab 时用于保持位置）
+
+  /// 每次打开对话框解码一次（字节不变）
+  late final WsDecodedPayload _decoded = WsPayloadDecoder.decode(Uint8List.fromList(widget.bytes));
+  late final bool _isJson = _decoded.text != null && WsPayloadDecoder.looksJson(_decoded.text!);
 
   @override
   Widget build(BuildContext context) {
-    var tabs = [
-      if (isJsonText(widget.bytes)) const Tab(text: "JSON Text"),
-      if (isJsonText(widget.bytes)) const Tab(text: "JSON"),
-      const Tab(text: "TEXT"),
-      const Tab(text: "HEX"),
-    ];
+    final tabs = <Tab>[];
+    final views = <Widget>[];
+
+    // 图片：直接渲染（上游 #623）
+    if (_decoded.hasImage) {
+      tabs.add(const Tab(text: 'IMAGE'));
+      views.add(_scroll(imageView()));
+    }
+    // 压缩解压出的文本
+    if (_decoded.kind == WsPayloadKind.compressed && _decoded.text != null) {
+      tabs.add(const Tab(text: 'DECOMPRESSED'));
+      views.add(_scroll(SelectableText(_decoded.text!)));
+    }
+    // JSON（文本或解压后）
+    if (_isJson) {
+      tabs.add(const Tab(text: 'JSON Text'));
+      views.add(_scroll(jsonText()));
+      tabs.add(const Tab(text: 'JSON'));
+      views.add(_scroll(jsonView()));
+    }
+    // 始终提供 TEXT / HEX
+    tabs.add(const Tab(text: 'TEXT'));
+    views.add(_scroll(SelectableText(safeTextPreview(widget.bytes))));
+    tabs.add(const Tab(text: 'HEX'));
+    views.add(_scroll(SelectableText(widget.bytes.map(intToHex).join(" "))));
+
+    final initial = tabIndex < tabs.length ? tabIndex : 0;
 
     return AlertDialog(
       content: SizedBox(
@@ -141,9 +175,10 @@ class _PreviewDialogState extends State<_PreviewDialog> {
         height: min(MediaQuery.of(context).size.height * 0.6, 650),
         child: DefaultTabController(
           length: tabs.length,
-          initialIndex: tabIndex,
+          initialIndex: initial,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             TabBar(
+              isScrollable: true,
               tabs: tabs,
               onTap: (index) {
                 setState(() {
@@ -151,29 +186,12 @@ class _PreviewDialogState extends State<_PreviewDialog> {
                 });
               },
             ),
-            Expanded(
-              child: TabBarView(children: [
-                if (isJsonText(widget.bytes))
-                  SingleChildScrollView(padding: const EdgeInsets.all(8.0), child: jsonText()),
-                if (isJsonText(widget.bytes))
-                  SingleChildScrollView(padding: const EdgeInsets.all(8.0), child: jsonView()),
-                // TEXT
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(8),
-                  child: SelectableText(safeTextPreview(widget.bytes)),
-                ),
-
-                // HEX
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(8),
-                  child: SelectableText(widget.bytes.map(intToHex).join(" ")),
-                ),
-              ]),
-            ),
+            Expanded(child: TabBarView(children: views)),
           ]),
         ),
       ),
       actions: [
+        TextButton(onPressed: () => _savePayload(context, widget.bytes), child: const Text('保存')),
         TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(MaterialLocalizations.of(context).closeButtonLabel))
@@ -181,8 +199,29 @@ class _PreviewDialogState extends State<_PreviewDialog> {
     );
   }
 
+  Widget _scroll(Widget child) =>
+      SingleChildScrollView(padding: const EdgeInsets.all(8.0), child: child);
+
+  /// 图片视图（上游 #623）
+  Widget imageView() {
+    final bytes = _decoded.imageBytes;
+    if (bytes == null) return const SizedBox();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(_decoded.label, style: const TextStyle(fontSize: 12)),
+        const SizedBox(height: 8),
+        Image.memory(
+          bytes,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stack) => Text('无法渲染图片：$error'),
+        ),
+      ],
+    );
+  }
+
   Widget jsonText() {
-    String body = utf8.decode(widget.bytes, allowMalformed: true);
+    var body = _decoded.text ?? safeTextPreview(widget.bytes);
     dynamic jsonData;
     try {
       jsonData = json.decode(body);
@@ -198,39 +237,8 @@ class _PreviewDialogState extends State<_PreviewDialog> {
   }
 
   Widget jsonView() {
-    String body = utf8.decode(widget.bytes, allowMalformed: true);
-    dynamic jsonData;
-    try {
-      jsonData = json.decode(body);
-    } catch (e) {
-      jsonData = null;
-    }
-
-    if (jsonData == null) {
-      return SelectableText(safeTextPreview(widget.bytes));
-    }
-
+    var body = _decoded.text ?? safeTextPreview(widget.bytes);
     return JsonViewer(json.decode(body), colorTheme: ColorTheme.of(context));
-  }
-
-  //判断是否是json格式
-  bool isJsonText(List<int> bytes) {
-    return bytes.isNotEmpty && (bytes[0] == 0x7B || bytes[0] == 0x5B);
-  }
-
-  /// Format bytes as hex-dump string: 4 bytes per group (8 hex digits), space between groups, line break every 16 bytes
-  String formatHexDump(List<int> bytes) {
-    final buffer = StringBuffer();
-
-    // 每8个字节为一组，用空格分隔，组之间换行
-    for (int i = 0; i < bytes.length; i++) {
-      // 添加当前十六进制部分
-      buffer.write(bytes[i].toRadixString(16).padLeft(2, '0'));
-      if ((i + 1) % 2 == 0 && i != bytes.length - 1) {
-        buffer.write(' ');
-      }
-    }
-    return buffer.toString();
   }
 
   /// Decode bytes to string, non-printable as '.'
@@ -240,5 +248,22 @@ class _PreviewDialogState extends State<_PreviewDialog> {
     } catch (_) {
       return bytes.map((b) => b >= 32 && b <= 126 ? String.fromCharCode(b) : '.').join();
     }
+  }
+}
+
+/// 保存 WebSocket 载荷为文件。
+///
+/// 桌面端统一走 [Platforms.saveFileAdaptive] 拿路径后自行写盘——`FilePicker.saveFile`
+/// 在桌面端不保证写出 bytes（上游 #902 同款问题）。文件扩展名按识别结果给出，
+/// 图片存成对应图片格式，文本/JSON 存成 .txt，其余存 .bin。
+Future<void> _savePayload(BuildContext context, List<int> bytes) async {
+  final decoded = WsPayloadDecoder.decode(Uint8List.fromList(bytes));
+  final ext = decoded.imageFormat ??
+      ((decoded.kind == WsPayloadKind.text || decoded.kind == WsPayloadKind.json) ? 'txt' : 'bin');
+  final Uri? path = await Platforms.saveFileAdaptive(fileName: 'websocket.$ext');
+  if (path == null) return;
+  await File(path.toFilePath()).writeAsBytes(bytes);
+  if (context.mounted) {
+    CustomToast.success(AppLocalizations.of(context)!.saveSuccess).show(context);
   }
 }

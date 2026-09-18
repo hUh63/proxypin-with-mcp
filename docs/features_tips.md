@@ -304,6 +304,7 @@
 - ==重要==：WebSocket 转发采用**原始字节直通**（保真、零拷贝）设计，帧在解析前即已转发，因此 MCP 侧的「暂停」是**观测 / 登记语义**——不会阻塞或改写实际转发的字节；`resume` 时可回写登记内容，仅供 MCP 客户端展示
 - 暂停帧记录有**保留时长（10 分钟）与数量上限（256 条）**，超期或超量自动惰性清理，避免长时间运行内存持续增长（v1.22.56 修复）
 - 实现位置：`lib/network/mcp/mcp_bridge.dart`（`pauseWebSocketMessage` / `resumeWebSocketMessage` / `abortWebSocketMessage` / `_purgeExpiredPausedFrames`）
+- **二进制内容自动识别（v1.22.77，上游 #623）**：二进制帧（opcode=0x02）在消息气泡与预览对话框里自动尝试解码——图片（PNG / JPEG / GIF / WebP / BMP）直接渲染，gzip / zlib 压缩流展示解压后文本，文本 / JSON 直接可读；识别不出时回退「二进制」并保留 HEX 视图。实现见 `lib/network/util/ws_payload_decoder.dart`
 
 ## 大 JSON 查看性能保护
 
@@ -500,3 +501,8 @@
 - **QUIC 能"真解"了**（导入密钥日志，上游 #489）：QUIC 连接页右上角**「钥匙」**导入 NSS key log（`SSLKEYLOGFILE`，兼容 Chrome 的 `QUIC_` 前缀）后，用 Initial 里取出的 `ClientHello.random` 对齐密钥日志，**命中连接自动解密客户端方向 1-RTT**——会话项显示「已解密 N 段」，点开看每段的流 ID / HTTP/3 帧类型 / 长度 / 可读预览。受限于 QPACK 压缩，只到"QUIC 流数据层"，不解 HEADERS 内部（判断传了什么已够）；
 - **AI 能干更多活**：MCP 新增三个**只读**工具——`get_quic_sessions`（QUIC 会话 + 时间轴 + 解密预览）、`get_security_audit`（对已抓流量跑被动安全自检，按严重级别给修复建议）、`get_performance_metrics`（进程内存与抓包聚合统计）；
 - **边界说明同步**：《平台与技术边界》QUIC 一节改为"已支持导入密钥日志解密"，把"能拿到才解"的道理写清。
+
+## 本版新增（v1.22.77）
+
+- **WebSocket 二进制不再是乱码**（上游 #623）：二进制帧现在会自动尝试解码——图片（PNG / JPEG / GIF / WebP / BMP）在预览里直接渲染成图，gzip / zlib 压缩流展示解压后的文本，文本 / JSON 直接可读；识别不出才回退「二进制」并保留 HEX。列表气泡也会直接显示可读内容或类型标签（如 `[PNG 图片 · 12.3 KB]`）；
+- **顺手修一个保存问题**：WebSocket 的保存改走桌面端自适应保存（此前在桌面端可能提示成功却没写出文件），文件名按识别结果自动给扩展名。

@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.22.77 (2026-09-19)
+
+### 新增：WebSocket 二进制内容自动解码（上游 #623）
+
+WebSocket 的二进制帧（opcode=0x02）本身不带格式信息，此前一律按 UTF-8 展示、多是乱码。本版做**尽力而为**的识别与解码：
+
+- 新增 `lib/network/util/ws_payload_decoder.dart`：按**魔数 + 严格解码**识别——图片（PNG / JPEG / GIF / WebP / BMP）、压缩流（gzip / zlib）、UTF-8 文本、JSON；识别不出时回退为"二进制"并标注大小；
+- **消息列表**：二进制气泡直接显示可读内容（文本 / JSON），或在识别为图片 / 压缩时显示类型标签（如 `[PNG 图片 · 12.3 KB]`、`[gzip 解压 → JSON · 1.2 KB]`）；
+- **预览对话框**：按内容动态给出标签页——图片渲染成图（IMAGE）、压缩流展示解压后文本（DECOMPRESSED）、JSON 提供结构化视图，始终保留 TEXT / HEX；新增「保存」按钮，扩展名按识别结果给出；
+- 误判不影响原始字节：HEX 视图始终可查看原文。
+
+### 修复：WebSocket 保存按钮在桌面端可能写不出文件
+
+- 保存 WebSocket 载荷改用 `Platforms.saveFileAdaptive`（桌面端拿路径后自行写盘），修复与上游 #902 同源的问题（`FilePicker.saveFile` 在桌面端不保证写出 `bytes`）；文件扩展名按识别结果自动给出（图片 / txt / bin）。
+
+### 文档
+
+- `docs/features_tips.md` 的「WebSocket 消息拦截的语义」一节补充二进制自动解码说明。
+
 ## v1.22.76 (2026-09-19)
 
 ### 新增：QUIC 密钥日志解密（上游 #489：把"能解"变成"真解"）
