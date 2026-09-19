@@ -424,25 +424,36 @@ class McpBridge implements EventListener {
       if (includeBody) ...{
         'request': {
           'headers': request.headers.toMap(),
-          ..._encodeBodyWithMetadata(request.body),
+          ..._encodeBodyWithMetadata(request.body,
+              truncated: request.bodyTruncated, originalLength: request.originalBodyLength),
         },
         'response': {
           'statusCode': request.response?.status.code,
           'statusText': request.response?.status.reasonPhrase,
           'headers': request.response?.headers.toMap(),
-          ..._encodeBodyWithMetadata(request.response?.body),
+          ..._encodeBodyWithMetadata(request.response?.body,
+              truncated: request.response?.bodyTruncated ?? false,
+              originalLength: request.response?.originalBodyLength),
         },
       },
     };
   }
   
   /// 编码 body 并返回元数据（包含编码类型、大小、内容）
-  static Map<String, dynamic> _encodeBodyWithMetadata(List<int>? body) {
+  static Map<String, dynamic> _encodeBodyWithMetadata(List<int>? body,
+      {bool truncated = false, int? originalLength}) {
+    final size = originalLength ?? body?.length ?? 0;
+    // 被「抓包内容上限」裁剪时，bodySize 反映原始大小，并显式标记（上游 #773）
+    final meta = <String, dynamic>{
+      if (truncated && originalLength != null) 'originalBodySize': originalLength,
+      if (truncated) 'bodyTruncated': true,
+    };
     if (body == null || body.isEmpty) {
       return {
         'body': null,
-        'bodySize': 0,
+        'bodySize': size,
         'bodyEncoding': 'none',
+        ...meta,
       };
     }
     
@@ -451,15 +462,17 @@ class McpBridge implements EventListener {
       var text = utf8.decode(body, allowMalformed: false);
       return {
         'body': text,
-        'bodySize': body.length,
+        'bodySize': size,
         'bodyEncoding': 'utf8',
+        ...meta,
       };
     } catch (e) {
       // 解码失败，说明是二进制数据，用 Base64 编码
       return {
         'body': base64Encode(body),
-        'bodySize': body.length,
+        'bodySize': size,
         'bodyEncoding': 'base64',
+        ...meta,
       };
     }
   }

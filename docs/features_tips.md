@@ -523,3 +523,7 @@
 ## 本版新增（v1.22.79）
 
 - **QUIC 里能看懂 HTTP/3 头部了**（上游 #489 延续）：导入密钥日志解密 1-RTT 后，**HEADERS 帧进一步做 QPACK 解码**（简化子集：99 项静态表 + Huffman），流预览里直接显示 `:method: GET`、`:path: /xxx`、`content-type: ...` 等头部；引用了**动态表**的字段行以 `:dynamic-*` 占位标出——不猜、不编。实现见 `lib/network/util/quic/qpack_decoder.dart` 与 `qpack_static_table.dart`。
+
+## 本版打磨（v1.22.80）
+
+- 一致性收尾（无新功能）：MCP 的 `get_quic_sessions` 现在也返回 QPACK 解出的 HTTP/3 头部；导出 HAR 与 MCP 请求详情在 body 被「抓包内容上限」裁剪后，会报告**原始大小**并标注 `bodyTruncated`；《平台与技术边界》QUIC 一节与《扩展与定制指南》同步到"已支持 QPACK 解码"。

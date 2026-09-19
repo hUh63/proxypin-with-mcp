@@ -26,6 +26,10 @@ import 'package:proxypin/ui/configuration.dart';
 class Har {
   static int maxBodyLength = 1024 * 1024 * 4;
 
+  /// 请求/响应体大小（上游 #773）：body 被「抓包内容上限」裁剪后，
+  /// `body.length` 已不是原始大小，优先取 `originalBodyLength`。
+  static int _bodySize(List<int>? body, int? originalLength) => originalLength ?? body?.length ?? -1;
+
   static List<Map> _entries(List<HttpRequest> list) {
     return list.map((e) => toHar(e)).toList();
   }
@@ -46,7 +50,7 @@ class Har {
         "queryString": _getQueryString(request), // 请求参数
         "postData": _getPostData(request), // 请求体
         "headersSize": -1, // 请求头大小
-        "bodySize": request.body?.length ?? -1, // 请求体大小
+        "bodySize": _bodySize(request.body, request.originalBodyLength), // 请求体大小
       },
       "cache": {},
       'timings': {
@@ -64,13 +68,13 @@ class Har {
       "cookies": [], // 响应携带的cookie
       "headers": _headers(request.response), // 响应头
       "content": {
-        "size": request.response?.body?.length ?? -1, // 响应体大小
+        "size": _bodySize(request.response?.body, request.response?.originalBodyLength), // 响应体大小
         "mimeType": _getContentType(request.response?.headers.contentType), // 响应体类型
         "text": _getResponseText(request.response),
       },
       "redirectURL": '', // 重定向地址
       "headersSize": -1, // 响应头大小
-      "bodySize": request.response?.body?.length ?? -1, // 响应体大小
+      "bodySize": _bodySize(request.response?.body, request.response?.originalBodyLength), // 响应体大小
     };
     return har;
   }
@@ -92,7 +96,7 @@ class Har {
         "queryString": _getQueryString(request),
         "postData": _getPostData(request),
         "headersSize": -1,
-        "bodySize": request.body?.length ?? -1,
+        "bodySize": _bodySize(request.body, request.originalBodyLength),
       },
       "response": null,
       "cache": {},
@@ -120,13 +124,13 @@ class Har {
         "cookies": [],
         "headers": _headers(request.response),
         "content": {
-          "size": request.response?.body?.length ?? -1,
+          "size": _bodySize(request.response?.body, request.response?.originalBodyLength),
           "mimeType": _getContentType(request.response?.headers.contentType),
           "text": _getResponseText(request.response),
         },
         "redirectURL": '',
         "headersSize": -1,
-        "bodySize": request.response?.body?.length ?? -1,
+        "bodySize": _bodySize(request.response?.body, request.response?.originalBodyLength),
       },
       "cache": {},
       'timings': {

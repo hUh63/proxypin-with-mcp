@@ -2532,6 +2532,9 @@ Body Encoding Rules:
                   'frame': http3FrameName(d.frameType),
                   'length': d.length,
                   'fin': d.fin,
+                  // HTTP/3 HEADERS 帧经 QPACK（简化子集）解出的头部字段（上游 #489）
+                  if (d.headers.isNotEmpty)
+                    'headers': d.headers.map((h) => {'name': h.name, 'value': h.value}).toList(),
                   'preview': d.preview,
                 };
               }).toList(),

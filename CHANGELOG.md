@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.22.80 (2026-09-19)
+
+### 打磨：一致性巡检与联动补齐（无新功能）
+
+对 v1.22.76–79 的新功能做了一轮一致性检查，修掉几处"功能已加、周边未跟上"的地方：
+
+- **MCP `get_quic_sessions` 补上 HTTP/3 头部**：v1.22.79 解出的 QPACK 头部此前只在界面可见，现在也进入工具返回（`headers` 字段），AI 能直接读；
+- **HAR 导出的 body 大小改用原始长度**：v1.22.78 的「抓包内容上限」会在转发后裁剪 body，此前导出 HAR 的 `bodySize` / `content.size` 会显示**裁剪后**的大小；现改为优先报告原始大小；
+- **MCP 请求详情标记截断**：经 `requestToJson` 的输出（`get_request_details` 等）在 body 被裁剪时带上 `bodyTruncated` / `originalBodySize`，不再静默给不完整内容；
+- **文档同步**：《平台与技术边界》QUIC 一节此前仍写"HEADERS 帧不解码"，已更新为**已支持 QPACK 解码（简化子集）**；《扩展与定制指南》补 QPACK 说明；`MCP_INTEGRATION.md` 的工具数由过时的 49 更正为实际的 64。
+
 ## v1.22.79 (2026-09-19)
 
 ### 新增：QPACK 简化子集解码 —— QUIC 里能看懂 HTTP/3 头部了（上游 #489 延续）
