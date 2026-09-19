@@ -165,7 +165,7 @@
 - ==抓包运行中自动记录==访问过的 QUIC/HTTP3 会话：**SNI 域名 / QUIC 版本 / 源地址 / 首次时间 / 连接 ID / 包与帧统计**；支持清空记录（内存态，停止抓包/清空后重置）
 - **实现方式**（三端链路）：Kotlin VPN 层 `ConnectionHandler.handleUDPPacket` 把 UDP:443 首个数据包经**本机 TCP**（41745 端口，即发即断）抄送给 Dart `ProxyServer`（30 秒/源节流防洪泛）→ `QuicProbe` 纯解析（无 socket）：QUIC v1 长头解析 → Header Protection 去除（AES-ECB）→ Initial AES-128-GCM 解密（密钥派生见 v1.22.38，RFC 9001 A.1 向量校验）→ CRYPTO 帧拼接 → 手写 TLS 1.3 ClientHello 解析提取 SNI，任一环节失败安全忽略
 - **数据解密（v1.22.76，导入密钥日志）**：点右上角**「钥匙」**导入 NSS key log（`SSLKEYLOGFILE`，自动兼容 Chrome 的 `QUIC_` 前缀），`QuicProbe` 用 Initial 里取出的 `ClientHello.random` 与日志对齐，**命中连接的客户端方向 1-RTT 自动解密**：short header 去保护 → AES-128-GCM 解密 → 帧解析 → 提取 STREAM 数据；会话项显示「已解密 N 段」，点开看每段的流 ID / HTTP/3 帧类型 / 长度 / 可读预览（可见 ASCII 原样、其余 `\xNN`）
-- **能力边界（诚实提示）**：未导入密钥日志时，HTTP/3 业务明文经 TLS 1.3（ECDHE）无法旁路解密——要看明文可导入密钥日志，或开启「拦截 QUIC」让应用回落 TCP；即便已解密，也**只到"QUIC 流数据层"**——HEADERS 帧内部是 QPACK 压缩，本版不做解码，因此是逐段预览而非结构化请求
+- **能力边界（诚实提示）**：未导入密钥日志时，HTTP/3 业务明文经 TLS 1.3（ECDHE）无法旁路解密——要看明文可导入密钥日志，或开启「拦截 QUIC」让应用回落 TCP；已解密后，**HEADERS 帧会进一步做 QPACK 解码**（v1.22.79，简化子集：静态表 + Huffman），流预览里直接看到 `:method` / `:path` / `content-type` 等头部；引用**动态表**的字段行以 `:dynamic-*` 占位标出（动态表需跨帧跟踪编码器指令流，本子集不解）
 - **与其它功能联动**：
   - 「拦截 QUIC」开关（偏好设置）开启时照常回落抓明文，**同时**仍可记录 QUIC 连接（拦截前抄送，互不干扰）
   - 「QUIC 探测」开关（偏好设置 → 自动抓包下方，`Configuration.quicProbeEnabled` 默认开）可整体关闭抄送
@@ -519,3 +519,7 @@
 
 - **抓包不再越抓越涨内存**（上游 #773 / #456）：新增「抓包内容上限」，超过上限的响应/请求体只保留前 N 字节（压缩体整体释放），默认**不限**（行为不变）；被裁剪的消息在详情页显示「已裁剪（原始 X MB）」提示。**转发完全不受影响**（裁剪在写回对端之后进行）。长时抓包用户可调到 128 KB / 256 KB，内存占用显著下降。
 - 配套：配置随导出/导入同步；实现见 `lib/network/util/capture_body_limiter.dart`。
+
+## 本版新增（v1.22.79）
+
+- **QUIC 里能看懂 HTTP/3 头部了**（上游 #489 延续）：导入密钥日志解密 1-RTT 后，**HEADERS 帧进一步做 QPACK 解码**（简化子集：99 项静态表 + Huffman），流预览里直接显示 `:method: GET`、`:path: /xxx`、`content-type: ...` 等头部；引用了**动态表**的字段行以 `:dynamic-*` 占位标出——不猜、不编。实现见 `lib/network/util/quic/qpack_decoder.dart` 与 `qpack_static_table.dart`。

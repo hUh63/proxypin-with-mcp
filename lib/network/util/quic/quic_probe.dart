@@ -29,6 +29,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/quic/qpack_decoder.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';
 import 'package:proxypin/network/util/quic/quic_keylog.dart';
 import 'package:proxypin/network/util/quic/quic_keys.dart';
@@ -55,6 +56,9 @@ class QuicDecryptedStream {
   final int length;
   final DateTime time;
 
+  /// 若该帧是 HTTP/3 HEADERS 且成功 QPACK 解码，这里存放解出的头部字段
+  final List<QpackHeaderField> headers;
+
   QuicDecryptedStream({
     required this.streamId,
     required this.offset,
@@ -63,6 +67,7 @@ class QuicDecryptedStream {
     required this.preview,
     required this.length,
     required this.time,
+    this.headers = const [],
   });
 }
 
@@ -192,6 +197,10 @@ class QuicProbe {
 
     for (final frame in result.streams) {
       if (session.decrypted.length >= maxDecryptedStreams) break;
+      // 流起始处的帧可能是 HTTP/3 HEADERS：尝试 QPACK 解码出头部（上游 #489）
+      final headers = frame.offset == 0
+          ? (decodeHttp3Headers(frame.data)?.fields ?? const <QpackHeaderField>[])
+          : const <QpackHeaderField>[];
       session.decrypted.add(QuicDecryptedStream(
         streamId: frame.streamId,
         offset: frame.offset,
@@ -201,6 +210,7 @@ class QuicProbe {
         preview: previewStreamData(frame.data, limit: 300),
         length: frame.data.length,
         time: DateTime.now(),
+        headers: headers,
       ));
     }
   }

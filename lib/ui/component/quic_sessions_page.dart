@@ -279,6 +279,29 @@ class QuicSessionsPage extends StatelessWidget {
                           const SizedBox(height: 3),
                           SelectableText(item.preview,
                               style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace', height: 1.4)),
+                          if (item.headers.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('HTTP/3 头部 · QPACK 已解码 ${item.headers.length} 项',
+                                      style: TextStyle(
+                                          fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 4),
+                                  for (final h in item.headers)
+                                    SelectableText('${h.name}: ${h.value}',
+                                        style: const TextStyle(fontSize: 11, fontFamily: 'monospace', height: 1.4)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     );

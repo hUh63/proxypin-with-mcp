@@ -16,6 +16,7 @@
 
 import 'dart:typed_data';
 
+import 'package:proxypin/network/util/quic/qpack_decoder.dart';
 import 'package:proxypin/network/util/quic/quic_keys.dart';
 import 'package:proxypin/network/util/quic/quic_packet.dart';
 
@@ -177,6 +178,34 @@ List<QuicStreamFrame> parseStreamFrames(Uint8List payload) {
   }
 
   return frames;
+}
+
+/// 从一条流的字节里解析**首个 HTTP/3 HEADERS 帧**并做 QPACK 解码（简化子集）。
+///
+/// 只会处理流起始处（调用方按 offset==0 判定）且 HTTP/3 帧长度完整的 HEADERS；
+/// 分片或非 HEADERS 帧返回 null。动态表引用会以占位符标出。
+QpackDecodeResult? decodeHttp3Headers(Uint8List data) {
+  var pos = 0;
+
+  int? readVarInt() {
+    if (pos >= data.length) return null;
+    final first = data[pos];
+    final len = 1 << (first >> 6);
+    if (pos + len > data.length) return null;
+    var value = first & 0x3f;
+    for (var i = 1; i < len; i++) {
+      value = (value << 8) | data[pos + i];
+    }
+    pos += len;
+    return value;
+  }
+
+  final type = readVarInt();
+  if (type != 0x01) return null; // 只解 HEADERS
+  final length = readVarInt();
+  if (length == null || pos + length > data.length) return null; // 分片，跳过
+  final payload = Uint8List.sublistView(data, pos, pos + length);
+  return QpackDecoder.decode(payload);
 }
 
 /// HTTP/3 帧类型名（RFC 9114），用于给预览加个说明

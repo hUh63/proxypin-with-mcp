@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.22.79 (2026-09-19)
+
+### 新增：QPACK 简化子集解码 —— QUIC 里能看懂 HTTP/3 头部了（上游 #489 延续）
+
+上一版用密钥日志解到 QUIC「流数据层」；本版把 **HTTP/3 HEADERS 帧**里的字段段也解出来：
+
+- 新增 `lib/network/util/quic/qpack_decoder.dart`：按 RFC 9204 解析字段段——Encoded Field Section Prefix、索引字段行（静态表）、名字引用、字面名字 / 值；字符串支持 Huffman（**复用项目已有的 HPACK Huffman 表**，两者是同一套码）；
+- 新增 `lib/network/util/quic/qpack_static_table.dart`：RFC 9204 附录 A 的 **99 项静态表**（与 HPACK 的 61 项不同，不可混用）；
+- **边界（诚实）**：不支持**动态表**（需按顺序跟踪编码器指令流、跨帧维护插入 / 淘汰，复杂度远超本子集）——引用动态表的字段行以 `:dynamic-*` 占位标出，不猜；
+- QUIC 连接页的流预览里，HEADERS 帧会额外显示 **「HTTP/3 头部 · QPACK 已解码 N 项」** 与逐条 `name: value`。
+
+### 文档
+
+- `docs/features_tips.md` 的 QUIC 连接一节补充 QPACK 解码说明与能力边界。
+
 ## v1.22.78 (2026-09-19)
 
 ### 新增：抓包内容上限（上游 #773 / #456）
