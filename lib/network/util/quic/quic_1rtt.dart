@@ -17,6 +17,7 @@
 import 'dart:typed_data';
 
 import 'package:proxypin/network/util/quic/qpack_decoder.dart';
+import 'package:proxypin/network/util/quic/qpack_dynamic_table.dart';
 import 'package:proxypin/network/util/quic/quic_keys.dart';
 import 'package:proxypin/network/util/quic/quic_packet.dart';
 
