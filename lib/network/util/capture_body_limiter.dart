@@ -63,4 +63,26 @@ class CaptureBodyLimiter {
     logger.d('Capture body limit: body ${originalLength ~/ 1024}KB -> '
         '${compressed ? 'released' : '${maxBytes ~/ 1024}KB'} (limit ${limitKB}KB)');
   }
+
+  /// 对一批**已抓取**的请求（含其响应）统一应用内容上限。
+  ///
+  /// 供"停止抓包"时调用：把此前按上限只做了一半的裁剪补齐，并释放超大 body 的驻留内存。
+  /// 未开启上限（<= 0）时不做任何事——默认行为与旧版完全一致。
+  static void limitAll(Iterable<HttpRequest> requests) {
+    final limitKB = Configuration.loaded?.captureBodyLimitKB ?? 0;
+    if (limitKB <= 0) return;
+
+    var count = 0;
+    for (final request in requests) {
+      limit(request);
+      final response = request.response;
+      if (response != null) {
+        limit(response);
+      }
+      count++;
+    }
+    if (count > 0) {
+      logger.d('Capture body limit applied to $count retained messages on stop');
+    }
+  }
 }

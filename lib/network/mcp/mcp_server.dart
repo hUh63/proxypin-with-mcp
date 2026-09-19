@@ -2179,8 +2179,11 @@ Body Encoding Rules:
                 'metadata (SNI host, QUIC version, remote endpoint, packet/byte counts, last-seen) and '
                 'a rolling 10-minute traffic timeline. Also reports how many TLS key-log entries have '
                 'been imported and, for sessions whose keys are available, a preview of decrypted '
-                '1-RTT stream data. Call this when the user asks which apps/domains use QUIC, why a '
-                'QUIC connection cannot be decrypted, or wants an overview of QUIC traffic.',
+                '1-RTT stream data. HTTP/3 HEADERS are decoded with QPACK (static + dynamic table; '
+                'dynamic table state is reconstructed per connection from the QPACK encoder stream) '
+                'and returned as structured headers. Call this when the user asks which apps/domains '
+                'use QUIC, why a QUIC connection cannot be decrypted, or wants an overview of QUIC '
+                'traffic.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2526,13 +2529,24 @@ Body Encoding Rules:
               'last_seen': s.lastSeen.toIso8601String(),
               'last_seen_ago_seconds': quicNow.difference(s.lastSeen).inSeconds,
               'decrypted_streams': s.decrypted.length,
+              // QPACK 动态表状态（由本连接的编码器单向流 0x02 还原，上游 #489）
+              'qpack_dynamic_table': {
+                'insert_count': s.qpackTable.insertCount,
+                'live_entries': s.qpackTable.length,
+                'capacity': s.qpackTable.capacity,
+                'evicted': s.qpackTable.evicted,
+              },
               'decrypted': s.decrypted.take(20).map((d) {
                 return {
                   'stream_id': d.streamId,
+                  'stream_type': d.uniStreamType == null
+                      ? null
+                      : h3UniStreamTypeName(d.uniStreamType!),
                   'frame': http3FrameName(d.frameType),
                   'length': d.length,
                   'fin': d.fin,
-                  // HTTP/3 HEADERS 帧经 QPACK（简化子集）解出的头部字段（上游 #489）
+                  // HTTP/3 HEADERS 帧经 QPACK 解出的头部字段（含动态表，上游 #489）
+                  if (d.headers.isNotEmpty) 'headers_unresolved': d.headersUnresolved,
                   if (d.headers.isNotEmpty)
                     'headers': d.headers.map((h) => {'name': h.name, 'value': h.value}).toList(),
                   'preview': d.preview,

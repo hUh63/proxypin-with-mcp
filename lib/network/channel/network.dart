@@ -48,10 +48,12 @@ abstract class Network {
     _channelInitializer.call(channel);
     channel.dispatcher.channelActive(channelContext, channel);
 
-    channel.socket.listen((data) => onEvent(data, channelContext, channel),
+    final subscription = channel.socket.listen((data) => onEvent(data, channelContext, channel),
         onError: (error, StackTrace trace) =>
             channel.dispatcher.exceptionCaught(channelContext, channel, error, trace: trace),
         onDone: () => channel.dispatcher.channelInactive(channelContext, channel));
+    // 记录读订阅：通道关闭时取消，避免停止后仍有残留回调处理数据
+    channel.attachSocketSubscription(subscription);
 
     channel.socket.done.onError((error, StackTrace trace) {
       logger.e('[${channelContext.clientChannel?.id}] socket done error', error: error, stackTrace: trace);
@@ -80,6 +82,10 @@ class Server extends Network {
   final List<Channel> _connections = [];
   Timer? _connectionCleanupTimer;
 
+  /// 已接受的连接上下文。停止时要连**远程侧通道**一起关闭——否则远程 socket 的
+  /// 读订阅会悬挂、继续解析与转发，表现为"停止抓包后仍在处理流量"（上游 #674）。
+  final List<ChannelContext> _contexts = [];
+
   Server(this.configuration, {this.listener});
 
   Future<ServerSocket> bind(int port) async {
@@ -93,6 +99,8 @@ class Server extends Network {
       ChannelContext channelContext = ChannelContext();
       channelContext.clientChannel = channel;
       channelContext.listener = listener;
+      _contexts.add(channelContext);
+      socket.done.whenComplete(() => _contexts.remove(channelContext));
       listen(channel, channelContext);
     }, onError: (error, StackTrace trace) {
       logger.e('server socket listen error on port $port', error: error, stackTrace: trace);
@@ -122,6 +130,18 @@ class Server extends Network {
       }
     }
     _connections.clear();
+    // 关闭各连接的远程侧通道，避免远程 socket 读订阅悬挂（上游 #674）
+    for (final context in List<ChannelContext>.of(_contexts)) {
+      final remote = context.serverChannel;
+      if (remote != null && !remote.isClosed) {
+        try {
+          remote.close();
+        } catch (e) {
+          logger.e('Error closing remote socket: $e');
+        }
+      }
+    }
+    _contexts.clear();
     //关闭监听
     serverSubscription?.cancel();
     serverSubscription = null;
@@ -143,6 +163,9 @@ class Server extends Network {
 
   @override
   Future<void> onEvent(Uint8List data, ChannelContext channelContext, Channel channel) async {
+    // 已停止抓包：丢弃残留读数据，不再解析/转发（上游 #674）
+    if (!isRunning) return;
+
     //手机扫码转发远程地址
     if (configuration.remoteHost != null) {
       channelContext.putAttribute(AttributeKeys.remote, HostAndPort.of(configuration.remoteHost!));

@@ -18,6 +18,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:proxypin/network/channel/channel_context.dart';
 import 'package:proxypin/network/channel/host_port.dart';
@@ -87,6 +88,19 @@ class Channel {
   Object? error; //异常
   //是否使用代理
   bool useProxy = false;
+
+  /// socket 读订阅。关闭通道时一并取消——否则（如"停止抓包"后）残留连接仍会
+  /// 触发读回调、继续解析与转发，表现为"停止后仍在处理流量"。
+  StreamSubscription<Uint8List>? _socketSubscription;
+
+  /// 记录本通道的 socket 读订阅（由 [Network.listen] / [ChannelDispatcher.listen] 注册）。
+  ///
+  /// 只记录、不取消上一个订阅：TLS 升级会用安全套接字重新 `listen`，
+  /// 对已被 `SecureSocket.secureServer` 接管的旧订阅执行 cancel 有中断连接的风险。
+  /// 关闭通道时只取消**当前**订阅即可满足"停止后不再处理数据"。
+  void attachSocketSubscription(StreamSubscription<Uint8List> subscription) {
+    _socketSubscription = subscription;
+  }
 
   Channel(this._socket)
     : _id = DateTime.now().millisecondsSinceEpoch + Random().nextInt(999999),
@@ -216,6 +230,9 @@ class Channel {
     }
 
     isOpen = false;
+    // 先取消读订阅，确保不会再收到数据事件
+    _socketSubscription?.cancel();
+    _socketSubscription = null;
     await _socket.close();
   }
 

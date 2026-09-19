@@ -29,11 +29,13 @@ class JavaScriptRuntimePool {
     try {
       final flutterJs = await runtime.flutterJs.onError((error, stackTrace) {
         _runtimes.remove(runtime);
+        _releaseRuntime(runtime);
         throw error!;
       });
       return await JavaScriptEngine.synchronized(flutterJs, () => action(flutterJs));
     } on TimeoutException catch (e) {
       _runtimes.remove(runtime);
+      _releaseRuntime(runtime);
       logger.e('JavaScript runtime timed out and was removed from pool: $e');
       rethrow;
     } finally {
@@ -41,11 +43,26 @@ class JavaScriptRuntimePool {
     }
   }
 
+  /// 释放一个被移出池的运行时：取消其 XHR 轮询定时器并销毁运行时（上游 #674）。
+  ///
+  /// 此前只是 `_runtimes.remove(runtime)`，运行时与它的 20ms 轮询定时器都不再回收；
+  /// 反复出现脚本超时/异常时会累积大量空转定时器，CPU 持续上升。
+  void _releaseRuntime(_PooledJavaScriptRuntime runtime) {
+    unawaited(runtime.flutterJs
+        .then((js) {
+          js.disposeXhr();
+          js.dispose();
+        })
+        .catchError((Object _) {}));
+  }
+
   Future<void> dispose() async {
     final runtimes = List<_PooledJavaScriptRuntime>.of(_runtimes);
     _runtimes.clear();
     for (final runtime in runtimes) {
-      (await runtime.flutterJs).dispose();
+      final js = await runtime.flutterJs;
+      js.disposeXhr();
+      js.dispose();
     }
   }
 

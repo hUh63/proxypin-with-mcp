@@ -42,10 +42,12 @@ import 'package:proxypin/utils/platform.dart';
 import '../components/request_map.dart';
 import '../http/codec.dart';
 import '../channel/network.dart';
+import '../util/capture_body_limiter.dart';
 import '../util/logger.dart';
 import '../util/system_proxy.dart';
 import '../util/windows_takeover.dart';
 import 'listener.dart';
+import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/components/request_breakpoint.dart';
 
 Future<void> main() async {
@@ -62,6 +64,9 @@ class ProxyServer {
 
   /// QUIC 元数据探测监听（VPN 层经本机 TCP 抄送 UDP:443 首包到此，见 QuicProbe）
   ServerSocket? _quicProbeSocket;
+
+  /// 当前生效的事件闸（停止抓包时置 stopped，闸住残留事件；上游 #674）
+  CombinedEventListener? _combinedListener;
 
   //请求事件监听
   List<EventListener> listeners = [];
@@ -100,7 +105,10 @@ class ProxyServer {
     if (configuration.wsTrafficEnabled) {
       _startWsTrafficServer().ignore();
     }
-    Server server = Server(configuration, listener: CombinedEventListener(listeners));
+    // 同一份事件闸同时供给「服务器」与「代理处理器」，停止时可一次性闸住所有回调
+    final combinedListener = CombinedEventListener(listeners);
+    _combinedListener = combinedListener;
+    Server server = Server(configuration, listener: combinedListener);
 
     List<Interceptor> interceptors = [
       Hosts(),
@@ -120,7 +128,7 @@ class ProxyServer {
       channel.dispatcher.handle(
         HttpRequestCodec(),
         HttpResponseCodec(),
-        HttpProxyChannelHandler(listener: CombinedEventListener(listeners), interceptors: interceptors),
+        HttpProxyChannelHandler(listener: combinedListener, interceptors: interceptors),
       );
     });
 
@@ -200,6 +208,9 @@ class ProxyServer {
   /// 停止代理服务
   Future<Server?> stop() async {
     _stopQuicProbeListener();
+    // 闸住事件回调：停止后到达的残留读事件不再更新界面（上游 #674）
+    _combinedListener?.stopped = true;
+    _combinedListener = null;
     // 停止 WebSocket 流量推送服务（上游 #756）
     try {
       // 上游 #931：给停止流程加超时保护，避免某一步永久阻塞导致"停止抓包"卡死、
@@ -235,6 +246,13 @@ class ProxyServer {
       } catch (e) {
         logger.w('关闭代理服务器超时或失败（继续停止流程）', error: e);
       }
+    }
+    // 停止抓包：按用户设置的「内容上限」统一裁剪列表里已抓消息体，及时释放驻留内存（上游 #674）。
+    // 未设置上限（默认不限）时为空操作，行为与旧版一致。
+    try {
+      CaptureBodyLimiter.limitAll(McpBridge().source);
+    } catch (e) {
+      logger.w('停止后统一裁剪消息体失败（已跳过）', error: e);
     }
     try {
       McpEventAutomation().triggerProxyStatusChange(ProxyStatus.stopped);

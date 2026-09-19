@@ -82,7 +82,7 @@ class QuicSessionsPage extends StatelessWidget {
                         '或开启「拦截 QUIC」强制定向 TCP 抓取完整请求。'
                     : '已导入 ${QuicKeylogStore.instance.entryCount} 条密钥（覆盖 '
                         '${QuicKeylogStore.instance.connectionCount} 个连接）。'
-                        '命中连接自动解密 1-RTT（仅客户端方向；HEADERS 为 QPACK 压缩，本版不解码）。'
+                        '命中连接自动解密 1-RTT（仅客户端方向；HEADERS 按 QPACK 解码，含动态表）。'
                         '未命中的连接请开启「拦截 QUIC」回落 TCP 抓取。',
                 style: TextStyle(
                     fontSize: 11, color: cs.onTertiaryContainer, height: 1.4),
@@ -257,7 +257,8 @@ class QuicSessionsPage extends StatelessWidget {
             children: [
               Text(
                 '共 ${session.decrypted.length} 段（客户端发送方向，1-RTT）。'
-                'HEADERS 内部是 QPACK 压缩，本版只到"QUIC 流数据层"，因此展示的是逐段预览而非结构化请求。',
+                'HEADERS 为 QPACK 压缩：静态表与动态表引用均已解码，动态表由本连接的'
+                '「QPACK 编码器流」按序还原${session.qpackTable.insertCount > 0 ? '（已插入 ${session.qpackTable.insertCount} 条，当前存活 ${session.qpackTable.length} 条）' : '（本连接未使用动态表）'}。',
                 style: TextStyle(fontSize: 11.5, height: 1.45, color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 10),
@@ -272,7 +273,8 @@ class QuicSessionsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'stream ${item.streamId} · ${http3FrameName(item.frameType)} · '
+                            'stream ${item.streamId} · '
+                            '${item.uniStreamType != null ? h3UniStreamTypeName(item.uniStreamType!) : http3FrameName(item.frameType)} · '
                             '${item.length}B${item.fin ? ' · FIN' : ''} · ${_time(item.time)}',
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                           ),

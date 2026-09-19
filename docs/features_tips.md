@@ -165,7 +165,7 @@
 - ==抓包运行中自动记录==访问过的 QUIC/HTTP3 会话：**SNI 域名 / QUIC 版本 / 源地址 / 首次时间 / 连接 ID / 包与帧统计**；支持清空记录（内存态，停止抓包/清空后重置）
 - **实现方式**（三端链路）：Kotlin VPN 层 `ConnectionHandler.handleUDPPacket` 把 UDP:443 首个数据包经**本机 TCP**（41745 端口，即发即断）抄送给 Dart `ProxyServer`（30 秒/源节流防洪泛）→ `QuicProbe` 纯解析（无 socket）：QUIC v1 长头解析 → Header Protection 去除（AES-ECB）→ Initial AES-128-GCM 解密（密钥派生见 v1.22.38，RFC 9001 A.1 向量校验）→ CRYPTO 帧拼接 → 手写 TLS 1.3 ClientHello 解析提取 SNI，任一环节失败安全忽略
 - **数据解密（v1.22.76，导入密钥日志）**：点右上角**「钥匙」**导入 NSS key log（`SSLKEYLOGFILE`，自动兼容 Chrome 的 `QUIC_` 前缀），`QuicProbe` 用 Initial 里取出的 `ClientHello.random` 与日志对齐，**命中连接的客户端方向 1-RTT 自动解密**：short header 去保护 → AES-128-GCM 解密 → 帧解析 → 提取 STREAM 数据；会话项显示「已解密 N 段」，点开看每段的流 ID / HTTP/3 帧类型 / 长度 / 可读预览（可见 ASCII 原样、其余 `\xNN`）
-- **能力边界（诚实提示）**：未导入密钥日志时，HTTP/3 业务明文经 TLS 1.3（ECDHE）无法旁路解密——要看明文可导入密钥日志，或开启「拦截 QUIC」让应用回落 TCP；已解密后，**HEADERS 帧会进一步做 QPACK 解码**（v1.22.79，简化子集：静态表 + Huffman），流预览里直接看到 `:method` / `:path` / `content-type` 等头部；引用**动态表**的字段行以 `:dynamic-*` 占位标出（动态表需跨帧跟踪编码器指令流，本子集不解）
+- **能力边界（诚实提示）**：未导入密钥日志时，HTTP/3 业务明文经 TLS 1.3（ECDHE）无法旁路解密——要看明文可导入密钥日志，或开启「拦截 QUIC」让应用回落 TCP；已解密后，**HEADERS 帧会进一步做 QPACK 解码**（静态表 + 动态表 + Huffman），流预览里直接看到 `:method` / `:path` / `content-type` 等头部。**动态表**引用（v1.22.81 起）由本连接的「QPACK 编码器流」（单向流 `0x02`）逐条还原后解出真实 name/value；只有当编码器流缺失、状态不足以还原时才回落 `:dynamic-*` 占位——不猜、不编
 - **与其它功能联动**：
   - 「拦截 QUIC」开关（偏好设置）开启时照常回落抓明文，**同时**仍可记录 QUIC 连接（拦截前抄送，互不干扰）
   - 「QUIC 探测」开关（偏好设置 → 自动抓包下方，`Configuration.quicProbeEnabled` 默认开）可整体关闭抄送
@@ -527,3 +527,9 @@
 ## 本版打磨（v1.22.80）
 
 - 一致性收尾（无新功能）：MCP 的 `get_quic_sessions` 现在也返回 QPACK 解出的 HTTP/3 头部；导出 HAR 与 MCP 请求详情在 body 被「抓包内容上限」裁剪后，会报告**原始大小**并标注 `bodyTruncated`；《平台与技术边界》QUIC 一节与《扩展与定制指南》同步到"已支持 QPACK 解码"。
+
+## 本版新增（v1.22.81）
+
+- **QPACK 动态表也解出来了**（上游 #489 延续）：此前 HEADERS 里引用动态表的字段行只能以 `:dynamic-*` 占位；现在按连接维护一份**动态表副本**——消费客户端发来的「QPACK 编码器流」（单向流 `0x02`）上的 `Set Dynamic Table Capacity` / `Insert With Name Reference` / `Insert With Literal Name` / `Duplicate` 指令，按序插入与淘汰，再据字段段前缀（Required Insert Count + Delta Base）算出 Base，正确解析前基相对索引与后基引用。实现见 `lib/network/util/quic/qpack_dynamic_table.dart`；
+- **不再"只到流数据层"**：会话页解密内容里，控制流 / QPACK 编码器流会标注出流类型，HEADERS 段展示解出的结构化头部；解码结果（含动态表插入数、是否仍有占位）同步进 MCP 的 `get_quic_sessions`；
+- **顺手治 "停止抓包后还在跑"**（上游 #674）：`Server.stop()` 现在会取消每个连接的 socket 订阅，并在停止后闸住事件回调——残留连接/延迟回调不再更新界面、不再继续解析转发（远程侧通道也一并关闭）；停止时会按你设置的**「抓包内容上限」**统一裁剪列表里已抓消息的 body，及时释放驻留内存（默认"不限"则不变）；另修掉脚本引擎里两个问题——20ms 轮询定时器只建不销、运行时被移出池时不回收（反复脚本超时会累积空转定时器），轮询也改为**按需拉起、空闲自动停**。

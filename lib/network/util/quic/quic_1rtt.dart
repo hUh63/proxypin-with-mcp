@@ -180,11 +180,14 @@ List<QuicStreamFrame> parseStreamFrames(Uint8List payload) {
   return frames;
 }
 
-/// 从一条流的字节里解析**首个 HTTP/3 HEADERS 帧**并做 QPACK 解码（简化子集）。
+/// 从一条流的字节里解析**首个 HTTP/3 HEADERS 帧**并做 QPACK 解码。
 ///
 /// 只会处理流起始处（调用方按 offset==0 判定）且 HTTP/3 帧长度完整的 HEADERS；
-/// 分片或非 HEADERS 帧返回 null。动态表引用会以占位符标出。
-QpackDecodeResult? decodeHttp3Headers(Uint8List data) {
+/// 分片或非 HEADERS 帧返回 null。
+///
+/// [dynamicTable] 为该连接的 QPACK 动态表副本（由编码器单向流 `0x02` 维护）；
+/// 传入后字段段里引用动态表的字段行即可解出真实 name/value，否则以占位符呈现。
+QpackDecodeResult? decodeHttp3Headers(Uint8List data, {QpackDynamicTable? dynamicTable}) {
   var pos = 0;
 
   int? readVarInt() {
@@ -205,7 +208,36 @@ QpackDecodeResult? decodeHttp3Headers(Uint8List data) {
   final length = readVarInt();
   if (length == null || pos + length > data.length) return null; // 分片，跳过
   final payload = Uint8List.sublistView(data, pos, pos + length);
-  return QpackDecoder.decode(payload);
+  return QpackDecoder.decode(payload, dynamicTable: dynamicTable);
+}
+
+/// 读一个 QUIC 变长整数，返回 (值, 占用字节数)；数据不足返回 null。
+(int, int)? readVarIntWithLength(Uint8List data, [int start = 0]) {
+  if (start >= data.length) return null;
+  final first = data[start];
+  final len = 1 << (first >> 6);
+  if (start + len > data.length) return null;
+  var value = first & 0x3f;
+  for (var i = 1; i < len; i++) {
+    value = (value << 8) | data[start + i];
+  }
+  return (value, len);
+}
+
+/// 客户端发起的单向下行流（HTTP/3 控制流 / QPACK 编码器・解码器流等）的流类型名。
+String h3UniStreamTypeName(int type) {
+  switch (type) {
+    case 0x00:
+      return '控制流';
+    case 0x01:
+      return '推送流';
+    case 0x02:
+      return 'QPACK 编码器流';
+    case 0x03:
+      return 'QPACK 解码器流';
+    default:
+      return '单向流 0x${type.toRadixString(16)}';
+  }
 }
 
 /// HTTP/3 帧类型名（RFC 9114），用于给预览加个说明

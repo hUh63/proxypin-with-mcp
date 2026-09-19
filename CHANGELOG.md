@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.22.81 (2026-09-20)
+
+### 新增：QPACK 动态表解码 —— HEADERS 里的动态引用不再"占位"（上游 #489 延续）
+
+v1.22.79 的 QPACK 解码只覆盖静态表，引用动态表的字段行一律以 `:dynamic-*` 占位。本版补齐动态表：
+
+- 新增 `lib/network/util/quic/qpack_dynamic_table.dart`：
+  - `QpackDynamicTable`：编码器侧动态表的**解码器副本**——按 RFC 9204 §3.2 维护容量 / 插入计数 / 绝对与相对索引，条目大小按 `名字字节数 + 值字节数 + 32` 计，容量不足时从最早条目开始淘汰；
+  - `QpackEncoderStreamDecoder`：消费客户端发来的「QPACK 编码器流」（单向流 `0x02`）指令——`Set Dynamic Table Capacity` / `Insert With Name Reference` / `Insert With Literal Name` / `Duplicate`。指令之间无边界标记，故按顺序增量消费：遇不完整指令暂存等待后续字节，遇错位即停（不再连锁误读）；
+- `qpack_decoder.dart`：解析字段段前缀（Required Insert Count + Delta Base → 计算 Base），按前基相对索引（`Base - rel - 1`）与后基索引（`Base + i`）解析动态引用并取真实 name/value；无表或状态不足时才回落 `:dynamic-*` 占位，并以 `unresolvedDynamicTable` 标出；
+- `quic_probe.dart`：每个会话维护一份动态表副本；识别客户端单向流类型（`0x02` 编码器流的数据按序喂给解码器），HEADERS 只在客户端双向流上解码；
+- **边界（诚实）**：真实最大容量由服务端 `SETTINGS_QPACK_MAX_TABLE_CAPACITY` 决定，而我们只解密客户端方向、看不到该 SETTINGS，故按 RFC 推荐值 4096 计算 `MaxEntries`；仅在"实际容量不同 + 连接插入数极大"时 Required Insert Count 的回绕还原可能不成立。
+
+### 修复：停止抓包后仍在处理流量 / 资源不释放（上游 #674）
+
+"停止抓包"后表格仍更新、CPU/RAM 持续上升，根因是多处残留仍在工作。本版逐一收口：
+
+- `Server.stop()`：关闭每个连接的**远程侧通道**——此前只关客户端侧，远程 socket 的读订阅会悬挂、继续解析与转发；
+- `Channel`：记录 socket 读订阅并在 `close()` 时取消——此前订阅从不取消，通道"关了"回调还在跑；
+- `CombinedEventListener` 增加"停止闸"：`ProxyServer.stop()` 后残留连接/延迟回调一律丢弃，不再更新界面；服务器与代理处理器共用同一个闸；
+- 停止时按用户设置的**「抓包内容上限」**统一裁剪列表里已抓消息的 body，及时释放驻留内存（默认"不限"则行为不变）；
+- 脚本引擎两处泄漏：① XHR 的 20ms 轮询定时器只建不销——改为**按需拉起、空闲自动停**，且同一运行时幂等；② 运行时因脚本超时/异常被移出池时不再回收——现取消其轮询并销毁，避免长期运行累积空转定时器。
+
+### 文档
+
+- `docs/platform_limits.md` / `docs/features_tips.md` / `docs/extension_guide.md`：QUIC 一节更新为"已支持 QPACK **动态表**"；`get_quic_sessions` 的返回补充 `qpack_dynamic_table` 概览与流类型（工具总数仍为 64）。
+
 ## v1.22.80 (2026-09-19)
 
 ### 打磨：一致性巡检与联动补齐（无新功能）

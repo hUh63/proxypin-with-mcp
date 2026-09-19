@@ -30,6 +30,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/quic/qpack_decoder.dart';
+import 'package:proxypin/network/util/quic/qpack_dynamic_table.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';
 import 'package:proxypin/network/util/quic/quic_keylog.dart';
 import 'package:proxypin/network/util/quic/quic_keys.dart';
@@ -59,6 +60,12 @@ class QuicDecryptedStream {
   /// 若该帧是 HTTP/3 HEADERS 且成功 QPACK 解码，这里存放解出的头部字段
   final List<QpackHeaderField> headers;
 
+  /// 头部里是否存在未能解出的动态表引用（true 时 [headers] 中对应项为占位）
+  final bool headersUnresolved;
+
+  /// 客户端单向流的类型（控制流 / QPACK 编码器流…）；非单向流为 null
+  final int? uniStreamType;
+
   QuicDecryptedStream({
     required this.streamId,
     required this.offset,
@@ -68,6 +75,8 @@ class QuicDecryptedStream {
     required this.length,
     required this.time,
     this.headers = const [],
+    this.headersUnresolved = false,
+    this.uniStreamType,
   });
 }
 
@@ -100,6 +109,15 @@ class QuicSession {
 
   /// 已解密的流片段（导入密钥日志后才能拿到；上限见 [maxDecryptedStreams]）
   final List<QuicDecryptedStream> decrypted = [];
+
+  /// QPACK 动态表副本（解码客户端请求头所需；由本连接的编码器单向流 0x02 维护）
+  final QpackDynamicTable qpackTable = QpackDynamicTable();
+
+  /// 编码器单向流（stream type 0x02）指令流解码器
+  late final QpackEncoderStreamDecoder qpackEncoderStream = QpackEncoderStreamDecoder(qpackTable);
+
+  /// 各客户端单向流已识别的流类型（streamId → type），用于把后续帧归到同一控制/编码器流
+  final Map<int, int> uniStreamTypes = {};
 
   QuicSession({
     required this.host,
@@ -197,10 +215,38 @@ class QuicProbe {
 
     for (final frame in result.streams) {
       if (session.decrypted.length >= maxDecryptedStreams) break;
+
+      // 客户端发起的单向下行流（streamId 低 2 位 = 10）：首个 varint 是流类型。
+      // type 0x02 是 QPACK 编码器流——它携带动态表的插入 / 淘汰指令，
+      // 必须先于引用它的 HEADERS 被消费，动态表引用才解得出来。
+      final kind = frame.streamId & 0x03;
+      int? uniType;
+      if (kind == 0x02) {
+        if (frame.offset == 0) {
+          final t = readVarIntWithLength(frame.data);
+          if (t != null) {
+            uniType = t.$1;
+            session.uniStreamTypes[frame.streamId] = uniType;
+            if (uniType == 0x02) {
+              // 跳过流类型字节，其余是编码器指令
+              session.qpackEncoderStream.addData(Uint8List.sublistView(frame.data, t.$2));
+            }
+          }
+        } else {
+          uniType = session.uniStreamTypes[frame.streamId];
+          if (uniType == 0x02) {
+            session.qpackEncoderStream.addData(frame.data);
+          }
+        }
+      }
+
       // 流起始处的帧可能是 HTTP/3 HEADERS：尝试 QPACK 解码出头部（上游 #489）
-      final headers = frame.offset == 0
-          ? (decodeHttp3Headers(frame.data)?.fields ?? const <QpackHeaderField>[])
-          : const <QpackHeaderField>[];
+      // 只有客户端双向流（低 2 位 = 00）承载请求/响应字段段
+      QpackDecodeResult? decoded;
+      if (kind == 0x00 && frame.offset == 0) {
+        decoded = decodeHttp3Headers(frame.data, dynamicTable: session.qpackTable);
+      }
+      final headers = decoded?.fields ?? const <QpackHeaderField>[];
       session.decrypted.add(QuicDecryptedStream(
         streamId: frame.streamId,
         offset: frame.offset,
@@ -211,6 +257,8 @@ class QuicProbe {
         length: frame.data.length,
         time: DateTime.now(),
         headers: headers,
+        headersUnresolved: decoded?.unresolvedDynamicTable ?? false,
+        uniStreamType: uniType,
       ));
     }
   }
