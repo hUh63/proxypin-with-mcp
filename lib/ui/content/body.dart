@@ -359,6 +359,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('$type Body', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          if (truncatedBadge() != null) ...[const SizedBox(width: 6), truncatedBadge()!],
           const SizedBox(width: 8),
           searchBtn,
           const SizedBox(width: 4),
@@ -387,6 +388,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
     // (horizontal scroll when needed).
     final list = <Widget>[
       Text('$type Body', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      if (truncatedBadge() != null) ...[const SizedBox(width: 8), truncatedBadge()!],
       const SizedBox(width: 18),
       searchBtn,
       const SizedBox(width: 4),
@@ -405,6 +407,27 @@ class HttpBodyState extends State<HttpBodyWidget> {
     }
 
     return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: list));
+  }
+
+  /// 「抓包内容上限」裁剪提示（上游 #773）：body 被裁剪时在标题栏给出提示
+  Widget? truncatedBadge() {
+    final message = widget.httpMessage;
+    if (message == null || !message.bodyTruncated) return null;
+    final original = message.originalBodyLength;
+    final sizeText = original == null
+        ? ''
+        : original >= 1024 * 1024
+            ? '（原始 ${(original / 1024 / 1024).toStringAsFixed(1)} MB）'
+            : '（原始 ${(original / 1024).toStringAsFixed(0)} KB）';
+    final color = Theme.of(context).colorScheme.error;
+    return Tooltip(
+      message: '已按「抓包内容上限」裁剪，完整内容未保留',
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.compress, size: 13, color: color),
+        const SizedBox(width: 3),
+        Text('已裁剪$sizeText', style: TextStyle(fontSize: 11, color: color)),
+      ]),
+    );
   }
 
   ///下载图片

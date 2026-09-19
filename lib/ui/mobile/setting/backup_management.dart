@@ -248,6 +248,7 @@ class _BackupManagementState extends State<BackupManagement> {
       config.appWhitelistEnabled = newConfig.appWhitelistEnabled;
       config.appBlacklist = newConfig.appBlacklist;
       config.historyCacheTime = newConfig.historyCacheTime;
+      config.captureBodyLimitKB = newConfig.captureBodyLimitKB;
       config.mcpPort = newConfig.mcpPort;
       config.mcpEnabled = newConfig.mcpEnabled;
       config.mcpAutoStart = newConfig.mcpAutoStart;

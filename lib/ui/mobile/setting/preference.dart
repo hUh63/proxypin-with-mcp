@@ -13,6 +13,7 @@ import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/components/ws_traffic_server.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
+import 'package:proxypin/ui/component/capture_body_limit.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/component/ws_traffic_port_dialog.dart';
 import 'package:proxypin/ui/configuration.dart';
@@ -497,6 +498,14 @@ class _PreferenceState extends State<Preference> {
                   configuration.flushConfig();
                 },
               ),
+            ),
+            Divider(height: 0, thickness: 0.3, color: dividerColor),
+            ListTile(
+              title: const Text('抓包内容上限'),
+              subtitle: Text(captureBodyLimitLabel(configuration.captureBodyLimitKB),
+                  style: const TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.data_usage, size: 20),
+              onTap: () => showCaptureBodyLimitDialog(context, configuration, onChanged: () => setState(() {})),
             ),
             if (Platform.isAndroid) ...[
               Divider(height: 0, thickness: 0.3, color: dividerColor),

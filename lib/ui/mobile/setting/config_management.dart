@@ -405,6 +405,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
     configuration.appWhitelistEnabled = newConfig.appWhitelistEnabled;
     configuration.appBlacklist = newConfig.appBlacklist;
     configuration.historyCacheTime = newConfig.historyCacheTime;
+    configuration.captureBodyLimitKB = newConfig.captureBodyLimitKB;
     configuration.mcpPort = newConfig.mcpPort;
     configuration.mcpEnabled = newConfig.mcpEnabled;
     configuration.mcpAutoStart = newConfig.mcpAutoStart;

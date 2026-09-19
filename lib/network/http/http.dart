@@ -75,6 +75,14 @@ abstract class HttpMessage {
   /// body 字节由上层通过 raw / forward 透传，避免累积到内存。
   bool streamingBody = false;
 
+  /// 抓包内容上限（上游 #773）：body 超过用户设定上限时，只保留前 N 字节
+  /// （压缩体整体释放）用于列表展示，减少长时抓包的内存驻留。
+  /// 裁剪发生在**代理转发完成之后**，不影响转发完整性。
+  bool bodyTruncated = false;
+
+  /// 裁剪前的原始 body 长度（[bodyTruncated] 为 true 时有效）
+  int? originalBodyLength;
+
   HttpMessage(this.protocolVersion);
 
   //json序列化

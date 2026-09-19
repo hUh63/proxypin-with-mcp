@@ -22,6 +22,7 @@ import 'package:proxypin/network/components/manager/hosts_manager.dart';
 import 'package:proxypin/network/components/manager/network_condition_manager.dart';
 import 'package:proxypin/network/components/manager/request_block_manager.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
+import 'package:proxypin/ui/component/capture_body_limit.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/component/proxy_port_setting.dart';
 import 'package:proxypin/ui/component/widgets.dart';
@@ -88,6 +89,9 @@ class _SettingState extends State<Setting> {
         item(localizations.breakpoint, onPressed: requestBreakpoint),
         item(localizations.weakNetwork, onPressed: showWeakNetwork),
         item(localizations.externalProxy, onPressed: setExternalProxy),
+        item('抓包内容上限',
+            onPressed: () => showCaptureBodyLimitDialog(context, widget.proxyServer.configuration),
+            leadingIcon: Icons.data_usage),
         const Divider(),
         item('MCP 连接', onPressed: showMcpConnection, leadingIcon: Icons.cloud),
         item('MCP 自动化', onPressed: showMcpAutomation, leadingIcon: Icons.auto_awesome),

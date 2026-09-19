@@ -61,6 +61,10 @@ class Configuration {
   //历史记录缓存时间
   int historyCacheTime = 0;
 
+  /// 抓包内容上限（KB，0 = 不限）。超过上限的 body 只保留前 N 字节用于展示，
+  /// 降低长时抓包的内存驻留（上游 #773 / #456）。裁剪在转发完成后进行，不影响转发。
+  int captureBodyLimitKB = 0;
+
   //MCP Server 端口
   int mcpPort = 9010;
 
@@ -163,6 +167,7 @@ class Configuration {
 
     proxyPassDomains = config['proxyPassDomains'] ?? SystemProxy.proxyPassDomains;
     historyCacheTime = config['historyCacheTime'] ?? 0;
+    captureBodyLimitKB = config['captureBodyLimitKB'] ?? 0;
     mcpPort = config['mcpPort'] ?? 9010;
     mcpEnabled = config['mcpEnabled'] ?? true;
     mcpAutoStart = config['mcpAutoStart'] ?? true;
@@ -262,6 +267,7 @@ class Configuration {
       'appWhitelistEnabled': appWhitelistEnabled,
       'appBlacklist': appBlacklist,
       'historyCacheTime': historyCacheTime,
+      'captureBodyLimitKB': captureBodyLimitKB,
       'mcpPort': mcpPort,
       'mcpEnabled': mcpEnabled,
       'mcpAutoStart': mcpAutoStart,

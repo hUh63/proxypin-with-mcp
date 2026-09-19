@@ -16,6 +16,7 @@ import 'package:proxypin/network/http/http_headers.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
+import 'package:proxypin/network/util/capture_body_limiter.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/proxy_helper.dart';
 import 'package:proxypin/network/util/attribute_keys.dart';
@@ -203,6 +204,8 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         request.uri = "${requestUri.path}${requestUri.hasQuery ? '?${requestUri.query}' : ''}";
       }
       await remoteChannel?.write(channelContext, request);
+      // 转发完成后按「抓包内容上限」裁剪请求体（上游 #773）
+      if (request != null) CaptureBodyLimiter.limit(request);
     }
   }
 
@@ -389,6 +392,8 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
     listener?.onResponse(channelContext, response!);
     //发送给客户端
     await clientChannel.write(channelContext, response!);
+    // 转发完成后按「抓包内容上限」裁剪 body（上游 #773）
+    CaptureBodyLimiter.limit(response!);
   }
 
   @override
