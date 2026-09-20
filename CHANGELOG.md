@@ -6,7 +6,7 @@ iOS 的 VPN 扩展（IP 层代理 / `ios/ProxyPin`）专项健壮性审计。扩
 
 ### 修复：TCP 序号回绕会直接崩溃扩展进程
 
-Swift 的 `+` 在整数溢出时**无条件 trap**（release 也一样）。而 TCP 序号按 RFC 793 必须做 mod 2^32 运算——客户端的 ISN 是随机 32 位，只要它接近 `UInt32.max`，回 ACK 时 `sequenceNumber + 1` 就会溢出崩溃。同样的写法在扩展里有 8 处，全部改成 `&+`：
+Swift 的 `+` 在整数溢出时**无条件 trap**（release 也一样）。而 TCP 序号按 RFC 793 必须做 mod 2^32 运算——客户端的 ISN 是随机 32 位，只要它接近 `UInt32.max`，回 ACK 时 `sequenceNumber + 1` 就会溢出崩溃。同样的写法在扩展里共 9 处，全部改成 `&+`：
 
 - `ConnectionHandler`：`ackFinAck` / `sendFinAck` / `sendAckForDisorder` / `sendAck` / `sendLastAck` / `replySynAck`；
 - `TCPPacketFactory`：`createRstData` / `createSynAckPacketData`；
