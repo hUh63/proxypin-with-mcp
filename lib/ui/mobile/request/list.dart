@@ -62,6 +62,10 @@ class RequestListState extends State<RequestListWidget> {
   //当前搜索模型
   SearchModel? _currentSearchModel;
 
+  /// 当前生效的搜索/筛选条件。
+  /// 小窗等外部视图需要据此展示与主列表一致的结果（上游 #783 第 4 条）。
+  SearchModel? get currentSearchModel => _currentSearchModel;
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override

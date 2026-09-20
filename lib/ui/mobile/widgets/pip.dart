@@ -20,6 +20,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/native/pip.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
+import 'package:proxypin/ui/component/model/search_model.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/utils/ip.dart';
 import 'package:proxypin/utils/lang.dart';
@@ -29,7 +30,11 @@ import 'package:proxypin/utils/listenable_list.dart';
 class PictureInPictureWindow extends StatefulWidget {
   final ListenableList<HttpRequest> container;
 
-  const PictureInPictureWindow(this.container, {super.key});
+  /// 主列表当前生效的搜索/筛选条件。
+  /// 小窗需要据此过滤，否则主页设置了筛选后小窗仍显示全部请求（上游 #783 第 4 条）。
+  final SearchModel? searchModel;
+
+  const PictureInPictureWindow(this.container, {this.searchModel, super.key});
 
   @override
   State<PictureInPictureWindow> createState() => _PictureInPictureWindowState();
@@ -57,20 +62,25 @@ class _PictureInPictureWindowState extends State<PictureInPictureWindow> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.container.isEmpty) {
+    final searchModel = widget.searchModel;
+    final requests = (searchModel == null || searchModel.isEmpty)
+        ? widget.container.source.toList()
+        : widget.container.where((request) => searchModel.filter(request, request.response)).toList();
+
+    if (requests.isEmpty) {
       return Material(child: Center(child: Text(localizations.emptyData, style: const TextStyle(color: Colors.grey))));
     }
 
     return Material(
         child: ListView.separated(
             padding: const EdgeInsets.only(left: 2),
-            itemCount: widget.container.length,
+            itemCount: requests.length,
             separatorBuilder: (context, index) => const Divider(thickness: 0.3, height: 0.5),
             itemBuilder: (context, index) {
               return Text.rich(
                   overflow: TextOverflow.ellipsis,
                   TextSpan(
-                      text: widget.container.elementAt(widget.container.length - index - 1).requestUrl.fixAutoLines(),
+                      text: requests[requests.length - index - 1].requestUrl.fixAutoLines(),
                       style: const TextStyle(fontSize: 9)),
                   maxLines: 2);
             }));

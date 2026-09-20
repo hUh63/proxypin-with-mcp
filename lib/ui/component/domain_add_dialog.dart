@@ -28,7 +28,14 @@ class DomainAddDialog extends StatelessWidget {
                 child: Column(children: <Widget>[
                   TextFormField(
                       initialValue: host,
-                      decoration: const InputDecoration(labelText: 'Host', hintText: '*.example.com'),
+                      // 规则既可以是域名，也可以是带路径的 URL 前缀（上游 #225/#705）：
+                      // `*` 通配，匹配目标是 `host + path?query`，例如
+                      //   *.example.com            整个域名
+                      //   api.example.com/v1/*     只抓某个接口
+                      decoration: const InputDecoration(
+                          labelText: 'Host / URL',
+                          hintText: '*.example.com  ·  api.example.com/v1/*',
+                          helperText: '域名或 URL 前缀均可，* 为通配符 / host or URL prefix; * is wildcard'),
                       validator: (val) => val == null || val.trim().isEmpty ? localizations.cannotBeEmpty : null,
                       onChanged: (val) => host = val)
                 ]))),

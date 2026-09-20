@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-void main() {
-  print(HostFilter.filter("stackoverflow.com"));
-}
-
 /// @author wanghongen
 /// 2023/7/26
 class HostFilter {

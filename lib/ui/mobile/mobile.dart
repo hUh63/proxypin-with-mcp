@@ -360,7 +360,8 @@ class MobileHomeState extends State<MobileHomePage> implements EventListener, Li
               transitionDuration: Duration.zero,
               reverseTransitionDuration: Duration.zero,
               pageBuilder: (context, animation, secondaryAnimation) {
-                return PictureInPictureWindow(MobileApp.container);
+                return PictureInPictureWindow(MobileApp.container,
+                    searchModel: MobileApp.requestStateKey.currentState?.currentSearchModel);
               }));
       return;
     }

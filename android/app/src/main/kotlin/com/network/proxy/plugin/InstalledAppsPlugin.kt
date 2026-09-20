@@ -29,12 +29,15 @@ class InstalledAppsPlugin : AndroidFlutterPlugin() {
                     val withIcon = call.argument<Boolean>("withIcon") ?: false
                     val packageNamePrefix = call.argument<String>("packageNamePrefix") ?: ""
                     val includeSystemApps = call.argument<Boolean>("includeSystemApps") ?: false
+                    // 默认不查版本号：逐个应用 getPackageInfo 是跨进程调用，冷启动时可能累计数秒
+                    val withVersion = call.argument<Boolean>("withVersion") ?: false
                     Thread {
                         result.success(
                             getInstalledApps(
                                 withIcon,
                                 packageNamePrefix,
-                                includeSystemApps
+                                includeSystemApps,
+                                withVersion
                             )
                         )
                     }.start()
@@ -53,7 +56,7 @@ class InstalledAppsPlugin : AndroidFlutterPlugin() {
     private fun getAppInfo(packageName: String): ProcessInfo {
         val packageManager = activity.packageManager
         packageManager.getApplicationInfo(packageName, 0).let { app ->
-            return ProcessInfo.create(packageManager, app, true)
+            return ProcessInfo.create(packageManager, app, true, true)
         }
     }
 
@@ -65,7 +68,8 @@ class InstalledAppsPlugin : AndroidFlutterPlugin() {
     private fun getInstalledApps(
         withIcon: Boolean,
         packageNamePrefix: String,
-        includeSystemApps: Boolean
+        includeSystemApps: Boolean,
+        withVersion: Boolean = false
     ): List<ProcessInfo> {
         val packageManager = activity.packageManager
         var installedApps = packageManager.getInstalledApplications(0)
@@ -88,7 +92,7 @@ class InstalledAppsPlugin : AndroidFlutterPlugin() {
             val threadPoolExecutor = Executors.newFixedThreadPool(3)
             installedApps.map { app ->
                 val task: Callable<ProcessInfo> = Callable {
-                    ProcessInfo.create(packageManager, app, withIcon)
+                    ProcessInfo.create(packageManager, app, withIcon, withVersion)
                 }
                 threadPoolExecutor.submit(task)
             }.map { future ->
@@ -101,7 +105,7 @@ class InstalledAppsPlugin : AndroidFlutterPlugin() {
         } else {
             // 不需要图标，直接创建ProcessInfo对象
             return installedApps.map { app ->
-                ProcessInfo.create(packageManager, app, false)
+                ProcessInfo.create(packageManager, app, false, withVersion)
             }
         }
     }

@@ -32,19 +32,25 @@ class ProcessInfo(name: CharSequence, packageName: String, icon: ByteArray?, ver
         fun create(
             packageManager: PackageManager,
             app: ApplicationInfo,
-            withIcon: Boolean = true
+            withIcon: Boolean = true,
+            withVersion: Boolean = false
         ): ProcessInfo {
             val name = packageManager.getApplicationLabel(app)
             val packageName = app.packageName
             val icon =
                 if (withIcon) drawableToByteArray(app.loadIcon(packageManager)) else ByteArray(0)
+            // versionName 需要一次跨进程 getPackageInfo 调用。逐个应用查询在冷启动
+            // （PackageManager 缓存未热）时可能累计到秒级以上，表现为选择应用页面长时间无响应
+            // （上游 #783 第 2 条）。列表页并不展示版本号，因此默认不查，仅在需要时显式开启。
             // 部分应用可能没有设置versionName，或在枚举过程中被卸载/更新导致
             // getPackageInfo抛出NameNotFoundException，将导致获取列表操作失败
-            val versionName = try {
-                packageManager.getPackageInfo(app.packageName, 0).versionName ?: ""
-            } catch (e: PackageManager.NameNotFoundException) {
-                ""
-            }
+            val versionName = if (withVersion) {
+                try {
+                    packageManager.getPackageInfo(app.packageName, 0).versionName ?: ""
+                } catch (e: PackageManager.NameNotFoundException) {
+                    ""
+                }
+            } else ""
 
             return ProcessInfo(name, packageName, icon, versionName)
         }

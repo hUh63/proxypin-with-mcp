@@ -421,7 +421,24 @@ class _HistoryRecordState extends State<HistoryRecord> {
 
   var searchEnabled = ValueNotifier(false);
 
+  /// 历史数据只在 initState 取一次。
+  ///
+  /// 如果建在 build 里（上游 #783 第 3 条）：从请求详情返回会触发本页重建，
+  /// 新的 Future 会让 [_FutureWidget] 先回到 loading 分支，把整个列表连同
+  /// 已应用的搜索条件一起卸载，等新 Future 完成后再以全新状态重建 ——
+  /// 表现就是"筛选后点进任意请求再返回，又变回全部链接"。
+  late final Future<List<HttpRequest>> _requestsFuture;
+
+  /// 列表容器同样只创建一次，避免重建时被换成新的实例。
+  ListenableList<HttpRequest>? _requests;
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestsFuture = HistoryStorage.instance.then((storage) => storage.getRequests(widget.history));
+  }
 
   @override
   void dispose() {
@@ -486,10 +503,10 @@ class _HistoryRecordState extends State<HistoryRecord> {
             )),
         body: futureWidget(
           loading: true,
-          HistoryStorage.instance.then((storage) => storage.getRequests(widget.history)),
+          _requestsFuture,
           (data) => RequestListWidget(
             proxyServer: widget.proxyServer,
-            list: ListenableList(data),
+            list: _requests ??= ListenableList(data),
             key: requestStateKey,
             selectionController: multiSelectController,
           ),

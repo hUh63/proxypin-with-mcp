@@ -13,7 +13,21 @@ class MultiSelectController {
 
   bool contains(String requestId) => selectedIds.contains(requestId);
 
+  ///是否处于"用户显式进入的多选会话"。
+  ///
+  /// 与 [selectionMode] 不同：单个请求被"选中/高亮"时 [selectionMode] 同样是 true，
+  /// 但那只是"有选中项"。上游 #783 第 6 条要求退出多选后恢复原有高亮，
+  /// 因此必须把这两种状态区分开。
+  bool _multiSelectSession = false;
+
+  ///进入多选前的高亮项快照，退出多选时恢复
+  List<String>? _highlightBeforeMultiSelect;
+  String? _anchorBeforeMultiSelect;
+
   void clear() {
+    _multiSelectSession = false;
+    _highlightBeforeMultiSelect = null;
+    _anchorBeforeMultiSelect = null;
     if (selectedIds.isEmpty && !selectionMode.value) {
       return;
     }
@@ -49,11 +63,40 @@ class MultiSelectController {
     _anchorId = requestId;
   }
 
+  /// 切换多选模式。
+  ///
+  /// 进入时记下当前高亮项，退出时恢复 —— 否则"请求高亮后进入多选、再退出"
+  /// 会把高亮一起清掉（上游 #783 第 6 条）。
+  /// 进入多选后仍从空选择开始（保持原有行为，避免误删原先高亮的那条请求）。
   void toggleSelectionMode([String? requestId]) {
-    if (selectionMode.value) {
+    if (_multiSelectSession) {
+      _multiSelectSession = false;
+      final highlight = _highlightBeforeMultiSelect;
+      final anchor = _anchorBeforeMultiSelect;
+      _highlightBeforeMultiSelect = null;
+      _anchorBeforeMultiSelect = null;
+
+      if (highlight != null && highlight.isNotEmpty) {
+        selectionMode.value = true;
+        selectedIds
+          ..clear()
+          ..addAll(highlight);
+        _anchorId = anchor;
+        return;
+      }
       clear();
-    } else {
-      enterSelectionMode(requestId);
+      return;
+    }
+
+    _highlightBeforeMultiSelect = List<String>.from(selectedIds);
+    _anchorBeforeMultiSelect = _anchorId;
+    _multiSelectSession = true;
+    selectedIds.clear();
+    _anchorId = null;
+    selectionMode.value = true;
+    if (requestId != null) {
+      selectedIds.add(requestId);
+      _anchorId = requestId;
     }
   }
 
