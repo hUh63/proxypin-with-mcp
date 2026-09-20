@@ -225,14 +225,14 @@ class XhrPendingCall {
 
 const XHR_PENDING_CALLS_KEY = "xhrPendingCalls";
 
-/// 轮询定时器句柄（存于 dartContext，便于空闲停止与释放时取消）
-const XHR_POLL_TIMER_KEY = "xhrPollTimer";
-
-/// "按需拉起轮询"的闭包（新请求入队时调用）
-const XHR_ENSURE_POLL_KEY = "xhrEnsurePoller";
-
-/// 是否已初始化（幂等标记）
+/// 是否已初始化（幂等标记，存于 dartContext）
 const XHR_INIT_KEY = "xhrInitialized";
+
+/// 每个运行时的 XHR 轮询定时器句柄与"按需拉起"闭包。
+/// 用 Expando（弱键）持有：运行时被回收后条目自动消失，也不把非序列化对象塞进
+/// flutter_js 自己的 dartContext 里（上游 #674）。
+final Expando<Timer> _xhrPollTimers = Expando<Timer>('xhrPollTimer');
+final Expando<void Function()> _xhrPollStarters = Expando<void Function()>('xhrPollStarter');
 
 http.Client? httpClient;
 
@@ -256,12 +256,9 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
   /// 否则该运行时留下的 20ms 轮询定时器会一直存在，长期运行（反复出现脚本超时）
   /// 会累积大量空转定时器，表现为 CPU 持续上升（上游 #674）。
   void disposeXhr() {
-    final timer = dartContext[XHR_POLL_TIMER_KEY];
-    if (timer is Timer) {
-      timer.cancel();
-    }
-    dartContext[XHR_POLL_TIMER_KEY] = null;
-    dartContext[XHR_ENSURE_POLL_KEY] = null;
+    _xhrPollTimers[this]?.cancel();
+    _xhrPollTimers[this] = null;
+    _xhrPollStarters[this] = null;
     dartContext[XHR_PENDING_CALLS_KEY] = [];
     dartContext[XHR_INIT_KEY] = false;
   }
@@ -310,7 +307,7 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
 
     // 幂等：同一运行时只初始化一次，避免重复注册消息回调、叠加轮询定时器（上游 #674）
     if (dartContext[XHR_INIT_KEY] == true) {
-      (dartContext[XHR_ENSURE_POLL_KEY] as void Function()?)?.call();
+      _xhrPollStarters[this]?.call();
       return;
     }
     dartContext[XHR_INIT_KEY] = true;
@@ -320,15 +317,15 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
     // 空闲时不再空转，避免长时间/停止抓包后 CPU 被一个空转定时器持续占用。
     // 新请求入队时（SendNative 回调）再次调用本闭包拉起。
     final void Function() ensurePoller = () {
-      final existing = dartContext[XHR_POLL_TIMER_KEY];
-      if (existing is Timer && existing.isActive) return;
+      final existing = _xhrPollTimers[this];
+      if (existing != null && existing.isActive) return;
 
-      dartContext[XHR_POLL_TIMER_KEY] = Timer.periodic(Duration(milliseconds: 20), (timer) {
+      _xhrPollTimers[this] = Timer.periodic(Duration(milliseconds: 20), (timer) {
       // exits if there is no pending call to remote
       if (!hasPendingXhrCalls()) {
         // 空闲：停掉轮询，释放定时器
         timer.cancel();
-        dartContext[XHR_POLL_TIMER_KEY] = null;
+        _xhrPollTimers[this] = null;
         return;
       }
 
@@ -444,7 +441,7 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
       });
       });
     };
-    dartContext[XHR_ENSURE_POLL_KEY] = ensurePoller;
+    _xhrPollStarters[this] = ensurePoller;
     ensurePoller();
 
     this.evaluate("""
@@ -502,7 +499,7 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
           ),
         );
         // 有新请求入队：拉起（可能已因空闲停止的）轮询（上游 #674）
-        (dartContext[XHR_ENSURE_POLL_KEY] as void Function()?)?.call();
+        _xhrPollStarters[this]?.call();
       } on Error catch (e) {
         if (_XHR_DEBUG) print('ERROR calling sendNative on Dart: >>>> $e');
       } on Exception catch (e) {
