@@ -20,6 +20,11 @@ class Platforms {
     return Platform.isAndroid;
   }
 
+  /// 判断是否是 iOS
+  static bool isIOS() {
+    return Platform.isIOS;
+  }
+
   /// 判断是否是ipad
   static Future<bool> isIpad() async {
     if (Platform.isIOS) {

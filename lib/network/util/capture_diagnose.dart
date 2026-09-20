@@ -227,8 +227,8 @@ class CaptureDiagnose {
         final peakMb = _toMb(memory['peakBytes']);
         final bufferedMb = _toMb(memory['bufferedBytes']);
         final connections = memory['connections'] ?? 0;
-        // iOS 给网络扩展的内存上限量级在 50MB，接近就该预警
-        final nearLimit = peakMb >= 45;
+        // iOS 给网络扩展的内存上限量级在 50MB，接近就该预警（用数值比较，不能用格式化后的字符串）
+        final nearLimit = _megaBytes(memory['peakBytes']) >= 45;
         items.add(DiagnoseItem(
           key: 'extension_memory',
           title: '扩展内存',
@@ -242,8 +242,10 @@ class CaptureDiagnose {
     return CaptureDiagnoseResult(items, requestCount: requests.length, latestRequestAgoSeconds: agoSeconds);
   }
 
-  static String _toMb(dynamic bytes) {
+  static double _megaBytes(dynamic bytes) {
     final value = bytes is num ? bytes.toDouble() : 0.0;
-    return (value / 1048576).toStringAsFixed(1);
+    return value / 1048576;
   }
+
+  static String _toMb(dynamic bytes) => _megaBytes(bytes).toStringAsFixed(1);
 }
