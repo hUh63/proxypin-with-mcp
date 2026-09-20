@@ -366,7 +366,7 @@ class SearchModel {
     }
 
     if (option == Option.requestBody) {
-      if (matches(request.bodyAsString)) {
+      if (matches(request.bodyPreview)) {
         return true;
       }
       // 仅在用户明确勾选了 WS 协议筛选时才扫描 WebSocket/SSE 等流式消息帧，避免大连接搜索卡顿
@@ -377,7 +377,7 @@ class SearchModel {
       }
     }
     if (option == Option.responseBody && response != null) {
-      if (matches(response.bodyAsString)) {
+      if (matches(response.bodyPreview)) {
         return true;
       }
       // 仅在用户明确勾选了 WS 协议筛选时才扫描 WebSocket/SSE 等流式消息帧，避免大连接搜索卡顿

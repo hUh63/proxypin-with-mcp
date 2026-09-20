@@ -113,7 +113,7 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
     //请求头
     try {
       if (_state == State.readHeader) {
-        _readHeader(data, result.data!);
+        _readHeader(data, result.data!, channelContext);
       }
 
       //请求体
@@ -208,10 +208,12 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
   }
 
   //读取请求头
-  void _readHeader(ByteBuf data, T message) {
+  void _readHeader(ByteBuf data, T message, ChannelContext channelContext) {
     if (_httpParse.parseHeaders(data, message.headers)) {
       _state = State.body;
-      bodyReader = BodyReader(message);
+      // 超过解析上限时可降级为"原样转发"的前提：客户端通道与上游通道都已建立（上游 #701）
+      bodyReader = BodyReader(message,
+          canRelay: channelContext.clientChannel != null && channelContext.serverChannel != null);
     }
   }
 

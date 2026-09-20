@@ -13,6 +13,7 @@ import '../../util/logger.dart';
 import '../../util/uri.dart';
 import 'file.dart';
 import 'md5.dart';
+import 'requests.dart';
 import 'require.dart';
 
 class JavaScriptRuntimePool {
@@ -127,6 +128,9 @@ class JavaScriptEngine {
     FileBridge.registerFile(flutterJs);
     // 上游 #719：注入全局 require(url) / loadLibrary(url)，支持加载第三方 JS 库
     RequireBridge.registerRequire(flutterJs);
+
+    // 上游 #645：注入全局 clearRequests() / removeRequest(id)，让脚本能自行清理列表
+    RequestsBridge.registerRequests(flutterJs);
 
     flutterJs.enableFetch2();
     return flutterJs;

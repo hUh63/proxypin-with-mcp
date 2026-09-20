@@ -23,6 +23,7 @@ import 'package:proxypin/network/util/compress.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/process_info.dart';
 import 'package:proxypin/network/util/random.dart';
+import 'package:proxypin/network/util/stream_decode.dart';
 
 import 'http_headers.dart';
 
@@ -82,6 +83,10 @@ abstract class HttpMessage {
 
   /// 裁剪前的原始 body 长度（[bodyTruncated] 为 true 时有效）
   int? originalBodyLength;
+
+  /// 只读预览解码是否因达到上限而截断（上游 #456）：
+  /// 经 [bodyPreview] / [decodeBodyStringBounded] 解码大压缩体时置位，供界面提示。
+  bool bodyDecodeTruncated = false;
 
   HttpMessage(this.protocolVersion);
 
@@ -196,6 +201,36 @@ abstract class HttpMessage {
     }
 
     return getBodyString();
+  }
+
+  /// 只读预览：**有界**解码（同步；与 [bodyAsString] 一样不处理 zstd）。
+  ///
+  /// 最多解出 `maxBytes`（默认 [StreamDecoder.limitBytes]），达到上限立即停止，
+  /// 避免大压缩体一次性解压把内存撑爆（上游 #456）。
+  /// 需要完整内容的场景（脚本改写、重写规则、代码导出）请继续用 [decodeBodyString]。
+  String get bodyPreview => getBodyStringBounded();
+
+  /// 见 [bodyPreview]。可指定字符集与上限。
+  String getBodyStringBounded({String? charset, int? maxBytes}) {
+    if (body == null || body?.isEmpty == true) return '';
+    // 已经全量解过一次，直接复用（那时内存早已付出，无需再解）
+    if (_bodyString != null) return _bodyString!;
+
+    charset ??= this.charset;
+    final result = StreamDecoder.decode(body!, headers.contentEncoding ?? '', maxBytes: maxBytes);
+    bodyDecodeTruncated = result.truncated || result.skipped;
+    return decodeBytesToText(result.bytes, charset);
+  }
+
+  /// 只读预览：**有界**解码（异步，含 zstd）。语义同 [decodeBodyString]，
+  /// 但不会因为解压出巨大内容而 OOM（上游 #456）。
+  Future<String> decodeBodyStringBounded({int? maxBytes}) async {
+    if (body == null || body?.isEmpty == true) return '';
+    if (_bodyString != null) return _bodyString!;
+
+    final result = await StreamDecoder.decodeAsync(body!, headers.contentEncoding ?? '', maxBytes: maxBytes);
+    bodyDecodeTruncated = result.truncated || result.skipped;
+    return decodeBytesToText(result.bytes, charset);
   }
 
   List<String> get cookies => headers.cookies;

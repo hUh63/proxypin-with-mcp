@@ -210,6 +210,22 @@ class McpBridge implements EventListener {
     }
     return false;
   }
+
+  /// 从抓包列表移除指定请求（供脚本 / MCP 使用，上游 #645）。
+  ///
+  /// 只影响列表展示，已发生的转发不受影响。
+  bool removeRequest(String requestId) {
+    final container = _requestContainer;
+    if (container == null || requestId.isEmpty) return false;
+
+    final targets = container.source.where((r) => r.requestId == requestId).toList();
+    if (targets.isEmpty) return false;
+
+    for (final target in targets) {
+      container.remove(target);
+    }
+    return true;
+  }
   
   /// 清理早期数据，保留最新的 N 条（内存优化）
   void cleanupEarlyData(int retain) {

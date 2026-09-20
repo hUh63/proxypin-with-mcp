@@ -224,8 +224,8 @@ class RequestComparator {
 
     // 请求体对比
     FieldCompare? bodyDiff;
-    final bodyA = requestA.bodyAsString;
-    final bodyB = requestB.bodyAsString;
+    final bodyA = requestA.bodyPreview;
+    final bodyB = requestB.bodyPreview;
     if (bodyA != bodyB) {
       bodyDiff = FieldCompare(
         fieldName: 'body',
@@ -271,8 +271,8 @@ class RequestComparator {
     // 响应体对比
     FieldCompare? responseBodyDiff;
     if (responseA != null && responseB != null) {
-      final rBodyA = responseA.bodyAsString;
-      final rBodyB = responseB.bodyAsString;
+      final rBodyA = responseA.bodyPreview;
+      final rBodyB = responseB.bodyPreview;
       if (rBodyA != rBodyB) {
         responseBodyDiff = FieldCompare(
           fieldName: 'body',

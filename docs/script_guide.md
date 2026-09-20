@@ -82,6 +82,28 @@ async function onRequest(context, request) {
 
 **实现细节**（`lib/network/components/js/require.dart`）：运行时初始化时注入全局 `require`，内部用 `fetch` 取源码 → `new Function('module','exports','require','globalThis','console', code)` 包装执行 → 结果按 URL 缓存到 `globalThis.__proxypinModuleCache`。**与其它功能的联动**：拉取走的是引擎自带网络栈（不受抓包代理影响），但脚本身份与请求改写仍受「脚本启用状态」「脚本执行顺序」控制。
 
+## 让脚本自己清理抓包列表（clearRequests / removeRequest）
+
+上游 #645：脚本改写完请求后，如果不希望这些被改写的请求留在列表里被人看到，可以直接调用：
+
+```javascript
+function onResponse(request, response) {
+  // 改完响应后，把这条请求从列表里移除（仅影响展示，转发早已完成）
+  removeRequest(request.requestId);
+  return response;
+}
+
+// 或者一次性清空整个列表（等同于点界面上的垃圾桶）
+// clearRequests();
+```
+
+- `removeRequest(requestId)`：按请求 ID 移除，返回 `true` / `false`；ID 取自 `request.requestId`（`onRequest` / `onResponse` 的 request 上都可读）
+- `clearRequests()`：清空当前抓包列表
+- 只影响**列表展示**，不会回滚或影响已经发生的转发；请求/响应仍是按脚本修改后的内容发出的
+- 两个函数都是同步返回，可在任意 `onRequest` / `onResponse` 里调用
+
+**实现细节**（`lib/network/components/js/requests.dart` + `mcp_bridge.dart` 的 `removeRequest` / `clearWithUI`）：运行时注入全局函数并通过 `SendNative` 同款的消息通道回调 Dart，落到主程序的请求容器上（`ListenableList`），因此列表、域名分组、详情页会同步刷新。
+
 ## 日志里输出图片（二维码等）
 
 上游 #873：脚本日志面板能直接渲染图片——把图片的 base64 拼成 data URI 交给 `console.log` 即可：

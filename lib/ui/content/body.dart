@@ -250,7 +250,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
 
   //判断是否是json格式
   bool isJsonText() {
-    var bodyString = widget.httpMessage?.bodyAsString;
+    var bodyString = widget.httpMessage?.bodyPreview;
     return bodyString != null &&
         (bodyString.startsWith('{') && bodyString.endsWith('}') ||
             bodyString.startsWith('[') && bodyString.endsWith(']'));
@@ -733,7 +733,7 @@ class _BodyState extends State<_Body> {
 
     final body = parent?.showDecoded == true && parent?.decoded?.text != null
         ? parent!.decoded!.text!
-        : await currentMessage.decodeBodyString();
+        : await currentMessage.decodeBodyStringBounded();
 
     if (viewType == ViewType.text) {
       return body;
@@ -791,12 +791,12 @@ class _BodyState extends State<_Body> {
 
     if (type == ViewType.formUrl) {
       return HighlightTextWidget(
-          text: _formatTextBodyIsolate({'type': type.name, 'body': message.getBodyString()}),
+          text: _formatTextBodyIsolate({'type': type.name, 'body': message.bodyPreview}),
           searchController: widget.searchController,
           contextMenuBuilder: contextMenu);
     }
 
-    return futureWidget(message.decodeBodyString(), initialData: message.getBodyString(), (body) {
+    final viewer = futureWidget(message.decodeBodyStringBounded(), initialData: message.bodyPreview, (body) {
       try {
         if (type == ViewType.jsonText) {
           var jsonObject = json.decode(body);
@@ -821,6 +821,35 @@ class _BodyState extends State<_Body> {
       return HighlightTextWidget(
           text: body, searchController: widget.searchController, contextMenuBuilder: contextMenu);
     });
+
+    // 「预览解码上限」浮层提示（上游 #456）：initialData 已在上一行触发有界解码，
+    // 此处读取的标记一定是本次渲染后的准确值。
+    if (message.bodyDecodeTruncated) {
+      return Stack(children: [
+        Positioned.fill(child: viewer),
+        Positioned(right: 10, bottom: 10, child: _decodeTruncatedChip()),
+      ]);
+    }
+    return viewer;
+  }
+
+  /// 预览被有界解码截断时的提示浮层
+  Widget _decodeTruncatedChip() {
+    final cs = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: '响应体较大，预览只解码到上限（可在「设置 → 抓包内容上限」调整）。'
+          '仅影响预览，不影响转发与已保存内容。',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+            color: cs.tertiaryContainer.withValues(alpha: 0.92), borderRadius: BorderRadius.circular(6)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.speed, size: 13, color: cs.onTertiaryContainer),
+          const SizedBox(width: 4),
+          Text('预览已截断', style: TextStyle(fontSize: 11, color: cs.onTertiaryContainer)),
+        ]),
+      ),
+    );
   }
 
   String? _languageForViewType(ViewType type, HttpMessage? message) {

@@ -33,6 +33,15 @@ class Result {
 class BodyReader {
   final HttpMessage message;
 
+  /// 超过解析上限时是否可以交给上层"原样转发"（对端连接已建立）。
+  ///
+  /// 响应方向总是可以（客户端通道 + 上游通道都在）；请求方向在还没连上上游时
+  /// 不能——那样会把请求体静默丢掉，所以那种情况保持原有报错。
+  final bool canRelay;
+
+  /// 超过解析上限后，仍保留多少字节用于界面展示（上游 #701）
+  static const int maxPreviewBytes = 256 * 1024;
+
   final BytesBuilder _bodyBuffer = BytesBuilder();
 
   /// chunked 解码器，仅在 Transfer-Encoding: chunked 时创建；
@@ -42,12 +51,38 @@ class BodyReader {
 
   bool _done = false;
 
-  BodyReader(this.message) : _chunkedDecoder = message.headers.isChunked ? ChunkedDecoder() : null;
+  /// 已判定超过解析上限（上游 #701）：此后不再解析，交给上层原样转发
+  bool _oversize = false;
+
+  BodyReader(this.message, {this.canRelay = false})
+      : _chunkedDecoder = message.headers.isChunked ? ChunkedDecoder() : null;
 
   Result readBody(Uint8List data) {
-    if (_bodyBuffer.length > Codec.maxBodyLength) {
+    if (_oversize) {
+      // 已超限：不再累积，也不再回传字节——dispatch 层已切换为原样转发，
+      // 保留在它自己 buffer 里的原始字节会完整送达对端。
+      return Result(false, supportedParse: false);
+    }
+
+    if (_bodyBuffer.length + data.length > Codec.maxBodyLength) {
+      // 上游 #701：此前直接抛 ParserException，用户看到的是"报错 + 响应为空"。
+      // 改为放弃解析、降级为原样转发：客户端仍能拿到完整响应，
+      // 列表里也能看到头部与前若干字节，同时不会把巨量 body 攒在内存里。
+      if (!canRelay) {
+        // 无可转发的对端（例如尚未连上上游的请求中段）：保持原行为，宁可报错也不静默丢包
+        _bodyBuffer.clear();
+        throw ParserException('Body length exceeds ${Codec.maxBodyLength}');
+      }
+
+      final received = _bodyBuffer.length + data.length;
+      final prefix = _bodyBuffer.toBytes();
       _bodyBuffer.clear();
-      throw ParserException('Body length exceeds ${Codec.maxBodyLength}');
+      _oversize = true;
+
+      message.body = prefix.length > maxPreviewBytes ? prefix.sublist(0, maxPreviewBytes) : prefix;
+      message.bodyTruncated = true;
+      message.originalBodyLength = message.contentLength > 0 ? message.contentLength : received;
+      return Result(false, supportedParse: false);
     }
 
     if (message.headers.contentType == 'video/x-flv' || message.headers.contentType.startsWith("text/event-stream")) {

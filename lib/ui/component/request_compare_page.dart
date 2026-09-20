@@ -211,9 +211,9 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
           else
             _buildCodeDiff(
               '请求体 A',
-              widget.requestA.bodyAsString,
+              widget.requestA.bodyPreview,
               '请求体 B',
-              widget.requestB.bodyAsString,
+              widget.requestB.bodyPreview,
             ),
         ],
       ),
@@ -260,9 +260,9 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
           if ((_result.responseBodyDiff?.hasChanged ?? false))
             _buildCodeDiff(
               '响应体 A',
-              widget.responseA?.bodyAsString ?? '',
+              widget.responseA?.bodyPreview ?? '',
               '响应体 B',
-              widget.responseB?.bodyAsString ?? '',
+              widget.responseB?.bodyPreview ?? '',
             ),
         ],
       ),

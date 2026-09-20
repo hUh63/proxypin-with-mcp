@@ -115,7 +115,7 @@ class AiAnalyzer {
       request.headers.forEach((k, v) => buf.writeln('  $k: ${_truncate(v.toString(), 200)}'));
     } catch (_) {}
     try {
-      final body = request.bodyAsString;
+      final body = request.bodyPreview;
       if (body.isNotEmpty) {
         buf.writeln('请求体(${request.headers.contentType}):');
         buf.writeln(_truncate(body, 3500));
@@ -131,7 +131,7 @@ class AiAnalyzer {
         response.headers.forEach((k, v) => buf.writeln('  $k: ${_truncate(v.toString(), 200)}'));
       } catch (_) {}
       try {
-        final body = response.bodyAsString;
+        final body = response.bodyPreview;
         if (body.isNotEmpty) {
           buf.writeln('响应体:');
           buf.writeln(_truncate(body, 3500));

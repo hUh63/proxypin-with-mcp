@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.22.82 (2026-09-20)
+
+### 修复：大响应"报错 + 空白"（上游 #701，属 #456 一族）
+
+解析层对超过 4 MB 的 body 直接抛 `ParserException`，用户看到的就是"响应 200 却没有内容"（#701 报的 10MB 响应）。
+
+- `lib/network/http/parse/body_reader.dart`：超过解析上限时不再抛异常，而是**降级为原样转发**（与 flv / SSE 同一条 `supportedParse=false` 通路）——客户端仍能拿到完整响应，列表里保留头部与前 256 KB 并标注 `bodyTruncated` / `originalBodyLength`；
+- 只有"上游尚未连上"的请求中段（无法转发）才保留原来的报错，避免把请求体静默丢掉；
+- `codec.dart` 在建立 body 读取器时带上该条件（`clientChannel` 与 `serverChannel` 都在）。
+
+### 新增：只读路径改为有界（增量）解码（上游 #456）
+
+`decodeBodyString` / `bodyAsString` 此前把整个压缩体一次性解压：压缩比 10 倍以上时，100MB 响应就能解出 1GB 级字符串——#456 的长时 OOM 主因之一。
+
+- 新增 `lib/network/util/stream_decode.dart`：
+  - gzip / deflate 用 `RawZLibFilter` **增量**喂入、累计输出，达到上限**立即停止**（压缩比再高也不会撑爆内存）；deflate 先按 raw 解，失败再回退 zlib 包装；
+  - br / zstd 无增量 API：输入超过上限就不解，解出后再截断；
+  - 任何失败都退回原始字节前缀，绝不抛异常；截断可能切断多字节字符，故用 `allowMalformed` 解码。
+- `HttpMessage` 新增 `bodyPreview` / `getBodyStringBounded()` / `decodeBodyStringBounded()`，以及 `bodyDecodeTruncated` 标记；解码上限默认 4 MB，若用户设置了「抓包内容上限」则与之一致；
+- 迁移**只读**消费方：详情预览（含右下角「预览已截断」提示）、列表搜索、请求对比（含对比页）、安全自检、AI 分析；
+- **需要完整内容的路径保持不变**（脚本改写、重写规则、请求编辑、代码导出），避免截断导致写回/导出失真。
+
+### 新增：脚本可自行清理抓包列表（上游 #645）
+
+- 新增 `lib/network/components/js/requests.dart`，脚本运行时注入全局 `clearRequests()` 与 `removeRequest(request.requestId)`；
+- `McpBridge.removeRequest(requestId)` 落到主程序请求容器（`ListenableList`），列表 / 域名分组 / 详情页同步刷新；
+- 只影响列表展示，不回滚已完成的转发。
+
+### 文档
+
+- 《脚本开发指南》新增「让脚本自己清理抓包列表」一节；《功能指南》补 v1.22.82 说明。
+
 ## v1.22.81 (2026-09-20)
 
 ### 新增：QPACK 动态表解码 —— HEADERS 里的动态引用不再"占位"（上游 #489 延续）

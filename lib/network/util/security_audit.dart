@@ -420,7 +420,8 @@ class SecurityAuditor {
     final length = message.body?.length ?? 0;
     if (length == 0 || length > maxBodyBytes) return '';
     try {
-      return message.bodyAsString;
+      // 有界解码：小压缩体也可能解出巨大内容，这里按本模块自己的上限截断（上游 #456）
+      return message.getBodyStringBounded(maxBytes: maxBodyBytes);
     } catch (_) {
       return '';
     }
