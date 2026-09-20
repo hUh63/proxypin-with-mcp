@@ -101,7 +101,10 @@ extension AudioManager {
     @objc fileprivate func audioSessionInterruption(notification: NSNotification) {
         guard self.openBackgroundAudioAutoplay else {return}
         guard let userinfo = notification.userInfo else {return}
-        guard let interruptionType: UInt = userinfo[AVAudioSessionInterruptionTypeKey] as! UInt?  else {return}
+        // 不要用 as! 强转：userInfo 里的值类型由系统决定，转不动就直接崩溃；
+        // 取不到时按原逻辑直接返回即可
+        guard let typeNumber = userinfo[AVAudioSessionInterruptionTypeKey] as? NSNumber else {return}
+        let interruptionType = typeNumber.uintValue
         if interruptionType == AVAudioSession.InterruptionType.began.rawValue {
             // 中断开始，音乐被暂停
             debugPrint("\(type(of:self)): 中断开始 userinfo:\(userinfo)")

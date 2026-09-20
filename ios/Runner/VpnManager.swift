@@ -109,7 +109,18 @@ extension VpnManager{
                 conf["proxyPassDomains"] = passDomains as NSArray
             }
 
-            let orignConf = manager.protocolConfiguration as! NETunnelProviderProtocol
+            // protocolConfiguration 正常一定是本 App 写入的 NETunnelProviderProtocol，
+            // 但已有配置缺失/类型不符时强转会直接崩溃——这里退化成重建一份配置
+            let orignConf: NETunnelProviderProtocol
+            if let exist = manager.protocolConfiguration as? NETunnelProviderProtocol {
+                orignConf = exist
+            } else {
+                print("VPN 配置缺失或类型不符，重建 provider protocol")
+                let fresh = NETunnelProviderProtocol()
+                fresh.serverAddress = "ProxyPin"
+                manager.protocolConfiguration = fresh
+                orignConf = fresh
+            }
  
             orignConf.providerConfiguration = conf
             manager.protocolConfiguration = orignConf

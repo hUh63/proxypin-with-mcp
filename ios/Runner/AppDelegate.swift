@@ -13,20 +13,36 @@ import NetworkExtension
 
         let controller: FlutterViewController = window?.rootViewController as! FlutterViewController
         let vpnChannel = FlutterMethodChannel.init(name: "com.proxy/proxyVpn", binaryMessenger: controller as! FlutterBinaryMessenger);
-            vpnChannel.setMethodCallHandler({(call: FlutterMethodCall, result: FlutterResult) -> Void in
-                if ("stopVpn" == call.method) {
-                    VpnManager.shared.disconnect()
-                } else if ("isRunning" == call.method){
-                    result(Bool(VpnManager.shared.isRunning()))
-                } else if ("restartVpn" == call.method){
-                    let arguments = call.arguments as? Dictionary<String, AnyObject>
-//                     VpnManager.shared.disconnect()
-                    VpnManager.shared.restartConnect(host: arguments?["proxyHost"] as? String ,port: arguments?["proxyPort"] as? Int, ipProxy: arguments?["ipProxy"] as? Bool, proxyPassDomains: arguments?["proxyPassDomains"] as? [String])
-                } else {
-                    let arguments = call.arguments as? Dictionary<String, AnyObject>
-                    VpnManager.shared.connect(host: arguments?["proxyHost"] as? String ,port: arguments?["proxyPort"] as? Int, ipProxy: arguments?["ipProxy"] as? Bool, proxyPassDomains: arguments?["proxyPassDomains"] as? [String])
-              }
-          })
+        vpnChannel.setMethodCallHandler({(call: FlutterMethodCall, result: FlutterResult) -> Void in
+            // 每个分支都必须回调 result：漏掉的话 Flutter 侧 `await invokeMethod` 永远不完成。
+            // 另外不能把"未知方法"兜底成一次 connect——那样任何新增的通道方法
+            // （例如 getQuicBlockedCount）都会意外拉起一次 VPN 连接。
+            let arguments = call.arguments as? Dictionary<String, AnyObject>
+            switch call.method {
+            case "isRunning":
+                result(Bool(VpnManager.shared.isRunning()))
+            case "startVpn":
+                VpnManager.shared.connect(host: arguments?["proxyHost"] as? String,
+                                          port: arguments?["proxyPort"] as? Int,
+                                          ipProxy: arguments?["ipProxy"] as? Bool,
+                                          proxyPassDomains: arguments?["proxyPassDomains"] as? [String])
+                result(nil)
+            case "stopVpn":
+                VpnManager.shared.disconnect()
+                result(nil)
+            case "restartVpn":
+                VpnManager.shared.restartConnect(host: arguments?["proxyHost"] as? String,
+                                                 port: arguments?["proxyPort"] as? Int,
+                                                 ipProxy: arguments?["ipProxy"] as? Bool,
+                                                 proxyPassDomains: arguments?["proxyPassDomains"] as? [String])
+                result(nil)
+            case "getQuicBlockedCount":
+                // iOS 不做 QUIC 拦截计数，明确返回 0
+                result(0)
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        })
 
         if #available(iOS 13.0.0, *) {
             PictureInPictureManager.regirst(flutter: controller as! FlutterBinaryMessenger)

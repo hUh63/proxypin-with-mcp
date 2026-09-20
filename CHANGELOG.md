@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.22.86 (2026-09-20)
+
+iOS 侧通道审计 + 崩溃加固（接 v1.22.85 的"原生不回 result ⇒ Dart 永久挂起"专项）。
+
+### 修复：iOS VPN 通道只在 isRunning 分支回结果，且"未知方法"会误触发一次连接
+
+- `ios/Runner/AppDelegate.swift` 的 `com.proxy/proxyVpn` handler 里只有 `isRunning` 调用了 `result`：`stopVpn` / `restartVpn` / 启动**全都不回结果**，Dart 侧 `await invokeMethod` 永远不会完成（挂起 + 泄漏）；
+- 更危险的是它的 `else` 分支：**任何未知方法都被当成"启动 VPN"**。例如 Dart 侧后来新增的 `getQuicBlockedCount`（Android 用来显示 QUIC 拦截计数）落到 iOS 就会用 `host = nil` 去拉起一次 VPN 连接；
+- 修复：改成显式 `switch`，每个分支都回 `result`，`getQuicBlockedCount` 明确返回 0，未知方法回 `FlutterMethodNotImplemented`。
+
+### 修复：iOS 小窗进入路径上的崩溃与不回结果（上游 #812 / #724 同族）
+
+- `ios/Runner/pip/PictureInPictureManager.swift` 的 handler 用 `arguments?["proxyPort"] as! Int` 与 `call.arguments as! String` 强解包——参数缺失或类型不符**直接崩溃**；`addData` 分支还完全不调 `result`；
+- `setupPip()` 里 `AVPictureInPictureController.init(playerLayer:)!` 是**可失败初始化器**（图层/播放器未就绪时返回 nil），而 `player.play()` 恰好是被注释掉的，返回 nil 就会崩在"进入小窗"这条路径上；
+- 修复：参数改为可选绑定（`as? NSNumber` → `intValue`）；每个分支都回 `result`；补上 `exitPictureInPictureMode` 的应答（Dart 侧存在同名封装）；小窗初始化的三处强解包改为守卫，不可用时打印日志并安静返回，不再崩溃。
+
+### 加固：另外两处原生强转（崩溃 → 退化）
+
+- `AudioManager` 的音频中断通知：`userinfo[...] as! UInt?` 改为 `as? NSNumber` + `uintValue`（`userInfo` 的类型由系统决定，转不动就崩）；
+- `VpnManager`：`manager.protocolConfiguration as! NETunnelProviderProtocol` 改为可选转换，类型不符/缺失时退化为重建一份 `NETunnelProviderProtocol`（原行为是直接崩溃）；常规路径行为不变。
+
+### Dart
+
+- `PictureInPicture.addData` / `exitPictureInPictureMode` 补 try/catch 与 3 秒超时：`addData` **每个请求都会调**（iOS 小窗里显示 URL），原生不回结果时不能挂住。
+
 ## v1.22.85 (2026-09-20)
 
 原生通道健壮性专项：把"原生 handler 抛异常 → 不回 result → Dart 侧 `await invokeMethod` **永久挂起**"这条链路上的坑逐个堵掉（v1.22.84 修的是小窗那一个）。

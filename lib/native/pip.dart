@@ -61,14 +61,32 @@ class PictureInPicture {
 
   ///退出画中画模式
   static Future<bool> exitPictureInPictureMode() async {
-    final bool exitPictureInPictureMode = await _channel.invokeMethod('exitPictureInPictureMode');
-    return exitPictureInPictureMode;
+    try {
+      final exited = await _channel
+          .invokeMethod<bool>('exitPictureInPictureMode')
+          .timeout(const Duration(seconds: 3), onTimeout: () => false);
+      inPip = false;
+      return exited == true;
+    } catch (e) {
+      logger.e('exitPictureInPictureMode failed', error: e);
+      inPip = false;
+      return false;
+    }
   }
 
   ///发送数据
+  ///
+  /// 每个请求都会调到这里（iOS 小窗里显示 URL），原生不回 result 时不能挂住，
+  /// 所以加超时兜底并吞掉异常。
   static Future<bool> addData(String text) async {
     if (Platform.isIOS && inPip) {
-      _channel.invokeMethod('addData', text.fixAutoLines());
+      try {
+        await _channel
+            .invokeMethod('addData', text.fixAutoLines())
+            .timeout(const Duration(seconds: 3), onTimeout: () => null);
+      } catch (e) {
+        logger.e('addData failed', error: e);
+      }
     }
     return false;
   }

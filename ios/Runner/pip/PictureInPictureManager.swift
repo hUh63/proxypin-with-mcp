@@ -36,14 +36,26 @@ class PictureInPictureManager: NSObject,AVPictureInPictureControllerDelegate {
 
         channel.setMethodCallHandler({(call: FlutterMethodCall, result: FlutterResult) -> Void in
 //            print("画中画 {call.method} methodCallHandler：\(UIApplication.shared.windows)")
-            if ("enterPictureInPictureMode" == call.method) {
-                let arguments = call.arguments as? Dictionary<String, AnyObject>
-                self.proxyPort = arguments?["proxyPort"] as! Int
+            // 每个分支都要回调 result；参数一律用可选绑定，避免 as! 强解包在
+            // 参数缺失/类型不符时直接崩溃
+            let arguments = call.arguments as? Dictionary<String, AnyObject>
+            switch call.method {
+            case "enterPictureInPictureMode":
+                if let port = (arguments?["proxyPort"] as? NSNumber)?.intValue {
+                    self.proxyPort = port
+                }
                 self.starPiP()
                 result(Bool(true))
-            } else if ("addData" == call.method) {
-                self.pipView?.addData(text: call.arguments as! String)
-                
+            case "addData":
+                if let text = call.arguments as? String {
+                    self.pipView?.addData(text: text)
+                }
+                result(nil)
+            case "exitPictureInPictureMode":
+                // Dart 侧存在同名封装，这里明确应答，避免调用方永久等待
+                result(Bool(true))
+            default:
+                result(FlutterMethodNotImplemented)
             }
         })
         
@@ -61,7 +73,14 @@ class PictureInPictureManager: NSObject,AVPictureInPictureControllerDelegate {
         if (playerLayer == nil) {
             setupPlayer()
         }
-            
+
+        // 资源缺失 / 播放器不可用时不继续：后续每一步都依赖这个 layer，
+        // 硬解包会直接崩溃
+        guard playerLayer != nil else {
+            print("画中画初始化失败：playerLayer 不可用")
+            return
+        }
+
         if (pipController == nil) {
             print("画中画初始化：\(UIApplication.shared.windows)")
             setupPip()
@@ -70,8 +89,11 @@ class PictureInPictureManager: NSObject,AVPictureInPictureControllerDelegate {
     
     // 配置播放器
     private func setupPlayer() {
-        let video = Bundle.main.url(forResource: "silience", withExtension: "mov")
-        let asset = AVAsset.init(url: video!)
+        guard let video = Bundle.main.url(forResource: "silience", withExtension: "mov") else {
+            print("画中画初始化失败：缺少 silience.mov 资源")
+            return
+        }
+        let asset = AVAsset.init(url: video)
         let playerItem = AVPlayerItem.init(asset: asset)
   
         let player = AVPlayer.init(playerItem: playerItem)
@@ -91,7 +113,16 @@ class PictureInPictureManager: NSObject,AVPictureInPictureControllerDelegate {
     
     // 配置画中画
     private func setupPip() {
-        pipController = AVPictureInPictureController.init(playerLayer: playerLayer!)!
+        // AVPictureInPictureController(playerLayer:) 是可失败初始化器：
+        // 设备/图层不就绪（例如 playerItem 尚未 ready）时返回 nil，
+        // 直接强解包会崩在"进入小窗"这条路径上。
+        guard let layer = playerLayer,
+              let controller = AVPictureInPictureController.init(playerLayer: layer) else {
+            print("画中画初始化失败：AVPictureInPictureController 不可用")
+            return
+        }
+
+        pipController = controller
         pipController.delegate = self
 //        if #available(iOS 14.2, *) {
 //            pipController.canStartPictureInPictureAutomaticallyFromInline = true
@@ -107,6 +138,12 @@ class PictureInPictureManager: NSObject,AVPictureInPictureControllerDelegate {
     // 开启/关闭 画中画
     func starPiP() {
         self.initPIP();
+        // 初始化失败时安静返回，不要在这个路径上崩掉
+        guard pipController != nil else {
+            print("画中画不可用，忽略本次进入请求")
+            return
+        }
+
         if pipController.isPictureInPictureActive {
             pipController.stopPictureInPicture()
         } else {
