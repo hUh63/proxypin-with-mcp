@@ -158,8 +158,9 @@ class StreamDecoder {
         final end = start + _inputChunk <= input.length ? start + _inputChunk : input.length;
         filter.process(input, start, end);
         // 不声明 end：输入本身可能被裁剪过，声明 end 反而会抛 "incomplete" 错误
+        // 注意：不同 SDK 的 processed() 返回类型可能是可空的，这里一并判空
         final produced = filter.processed(flush: true);
-        if (produced.isEmpty) continue;
+        if (produced == null || produced.isEmpty) continue;
 
         final remain = maxBytes - out.length;
         if (produced.length >= remain) {
