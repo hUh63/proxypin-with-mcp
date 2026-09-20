@@ -77,7 +77,16 @@ class PictureInPicturePlugin : AndroidFlutterPlugin() {
         channel!!.setMethodCallHandler { call, result ->
             when (call.method) {
                 "enterPictureInPictureMode" -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                        result.error("UNSUPPORTED", "Picture in picture requires Android O", null)
+                        return@setMethodCallHandler
+                    }
+
+                    // activity 是 lateinit：未 attach 时访问会抛 UninitializedPropertyAccessException，
+                    // 该异常同样被下面的 catch 兜住。这个 handler 一旦漏掉异常，result 就永远不会回调，
+                    // Flutter 侧的 `await invokeMethod` 会永久挂起——返回键会因此完全不响应
+                    // （既不进小窗、也不提示退出，上游 #812）。所以整体兜住并把错误回传。
+                    try {
                         proxyHost = call.argument<String>("proxyHost")
                         proxyPort = call.argument<Int>("proxyPort")
                         allowApps = call.argument<ArrayList<String>>("allowApps")
@@ -98,6 +107,9 @@ class PictureInPicturePlugin : AndroidFlutterPlugin() {
                         }
 
                         result.success(activity.enterPictureInPictureMode(param))
+                    } catch (e: Throwable) {
+                        Log.w("ProxyPin", "enterPictureInPictureMode failed", e)
+                        result.error("PIP_FAILED", e.message ?: e.toString(), null)
                     }
                 }
 

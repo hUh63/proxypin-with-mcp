@@ -36,6 +36,7 @@ import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/histories.dart';
 import 'package:proxypin/ui/component/app_dialog.dart';
 import 'package:proxypin/ui/component/memory_cleanup.dart';
@@ -138,6 +139,12 @@ class MobileHomeState extends State<MobileHomePage> implements EventListener, Li
     proxyServer = ProxyServer(widget.configuration);
     proxyServer.addListener(this);
     proxyServer.start();
+
+    // 预热本机地址：返回桌面进入小窗的窗口期很短，别把网卡枚举留在那一刻（上游 #812）
+    if (Platform.isAndroid) {
+      unawaited(localIp().catchError((_) => '127.0.0.1'));
+    }
+
     _remoteHistorySubscription = HistoryStorage.onRemoteImported.listen((item) => _openHistoryPage(item));
 
     // 订阅 MCP 通知与抓包控制事件（规则引擎/自动化任务发布）
@@ -328,51 +335,89 @@ class MobileHomeState extends State<MobileHomePage> implements EventListener, Li
 
   @override
   void onUserLeaveHint() {
-    enterPictureInPicture();
+    // 返回值无意义（失败时系统会保持原样），但不能让 Future 变成 unhandled error
+    unawaited(enterPictureInPicture());
   }
 
+  /// 进入小窗（画中画）。
+  ///
+  /// 这个函数处在 `onUserLeaveHint` 与返回键两条"用户手势"路径上，调用系统 API 的窗口很短，
+  /// 所以这里刻意只用**同步**数据源（`AppConfiguration.current` 与启动时缓存的代理地址），
+  /// 不再 `await` 配置读取 / 网卡枚举——那些 await 排在系统 API 之前时，
+  /// 冷启动首次离开应用会因为错过窗口期而"返回桌面却没有小窗"（上游 #812 / #703）。
+  ///
+  /// 另外整个过程包了 try/catch：早期版本一旦抛出（例如原生 channels 异常），
+  /// 调用方（返回键处理）会直接中断，既不进小窗、也不提示"再按一次退出"（上游 #812）。
   Future<bool> enterPictureInPicture() async {
-    if (Vpn.isVpnStarted) {
-      if (!Platform.isAndroid || !(await (AppConfiguration.instance)).pipEnabled.value) {
+    try {
+      if (!Vpn.isVpnStarted || !Platform.isAndroid) {
         return false;
       }
 
-      List<String>? appList =
+      if (AppConfiguration.current?.pipEnabled.value != true) {
+        return false;
+      }
+
+      // 优先用启动时缓存的地址（同步，零等待）；缓存缺失时（例如应用重启而 VPN 仍由
+      // 系统保留、启动回调没再走过）回退到异步取本机地址，保证行为不退化。
+      final host = PictureInPicture.proxyHost ?? await localIp();
+      final port = PictureInPicture.proxyPort ?? proxyServer.port;
+
+      List<String> appList =
           proxyServer.configuration.appWhitelistEnabled ? proxyServer.configuration.appWhitelist : [];
       List<String>? disallowApps;
       if (appList.isEmpty) {
         disallowApps = proxyServer.configuration.appBlacklist ?? [];
       }
 
-      return PictureInPicture.enterPictureInPictureMode(
-          Platform.isAndroid ? await localIp() : "127.0.0.1", proxyServer.port,
-          appList: appList, disallowApps: disallowApps);
+      return PictureInPicture.enterPictureInPictureMode(host, port, appList: appList, disallowApps: disallowApps);
+    } catch (e, t) {
+      logger.e('enter picture in picture failed', error: e, stackTrace: t);
+      return false;
     }
-    return false;
   }
+
+  /// 当前正在显示的画中画窗口路由。
+  ///
+  /// 用**引用**精确移除，而不是 `maybePop`：小窗期间用户可能在上面又打开了断点页 / 详情页，
+  /// `maybePop` 只会弹掉栈顶那一个，小窗路由就永久留在栈里——之后全屏看到的是这张
+  /// 空白的请求列表页，返回键行为也跟着错乱（上游 #724：断点用几次后卡在白页）。
+  /// 两个标志位同时保证重复回调不会 push 出多个小窗路由。
+  Route<void>? _pipWindowRoute;
 
   @override
   onPictureInPictureModeChanged(bool isInPictureInPictureMode) async {
-    if (isInPictureInPictureMode) {
-      Navigator.push(
-          context,
-          PageRouteBuilder(
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-              pageBuilder: (context, animation, secondaryAnimation) {
-                return PictureInPictureWindow(MobileApp.container,
-                    searchModel: MobileApp.requestStateKey.currentState?.currentSearchModel);
-              }));
+    if (!mounted) {
       return;
     }
 
-    if (!isInPictureInPictureMode) {
-      Navigator.maybePop(context);
-      Vpn.isRunning().then((value) {
-        Vpn.isVpnStarted = value;
-        SocketLaunch.startStatus.value = ValueWrap.of(value);
-      });
+    if (isInPictureInPictureMode) {
+      if (_pipWindowRoute != null) {
+        return;
+      }
+
+      final route = PageRouteBuilder<void>(
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return PictureInPictureWindow(MobileApp.container,
+                searchModel: MobileApp.requestStateKey.currentState?.currentSearchModel);
+          });
+      _pipWindowRoute = route;
+      unawaited(Navigator.of(context).push(route));
+      return;
     }
+
+    final route = _pipWindowRoute;
+    _pipWindowRoute = null;
+    if (route != null && route.isActive) {
+      Navigator.of(context).removeRoute(route);
+    }
+
+    Vpn.isRunning().then((value) {
+      Vpn.isVpnStarted = value;
+      SocketLaunch.startStatus.value = ValueWrap.of(value);
+    });
   }
 
   void showUpgradeNotice() {
@@ -514,6 +559,8 @@ class RequestPageState extends State<RequestPage> {
                   port = remoteDevice.value.port!;
                 }
 
+                // 记下代理地址，供返回桌面时同步进入小窗（不再 await 网卡枚举）
+                PictureInPicture.updateProxy(host, port);
                 Vpn.startVpn(host, port, proxyServer.configuration, ipProxy: remoteDevice.value.ipProxy);
               },
               onStop: () => Vpn.stopVpn()),

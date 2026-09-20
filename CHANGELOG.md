@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.22.84 (2026-09-20)
+
+本版针对 #783 同族的"小窗 / 窗口模式"问题（#724 / #812 / #703）做静态定位后的加固。
+四处都是**代码里可证实的缺陷**：路由未成对移除、原生异常不回传、进入小窗前排队了多次 await、失败会中断返回键逻辑。
+
+### 修复：小窗路由未成对移除 —— 残留白页 + 返回键错乱（上游 #724 / #783 第 5 条）
+
+- 进入小窗时 `Navigator.push` 无幂等保护，退出时用 `Navigator.maybePop()` 只弹**栈顶**那一个；
+- 小窗期间用户若在它上面又打开了断点页（`MultiSelect`/`BreakpointExecutor`）或请求详情页，退出小窗时被弹掉的是那个页面，**小窗路由永久留在栈里**：之后全屏看到的就是它那张几乎空白的请求列表页，返回键语义也跟着乱——这正好对应 #724 的"用几次断点后卡在不相关的白页"；
+- 现改为保存路由引用 + 幂等标记，退出时 `removeRoute` **精确移除**小窗路由本身（`lib/ui/mobile/mobile.dart`），并在状态未挂载时直接返回。
+
+### 修复：原生小窗接口异常不回传结果，Flutter 侧永久挂起（上游 #812）
+
+- `PictureInPicturePlugin` 的 `enterPictureInPictureMode` 处理器没有兜底：`activity` 是 `lateinit`（未 attach 时访问即抛异常），系统 `enterPictureInPictureMode()` 也可能抛 `IllegalStateException`；Android O 以下的设备更是**从不回调 `result`**；
+- 后果不只是"没进去小窗"：Flutter 侧 `await invokeMethod` 会**永久挂起**，于是返回键处理卡在那里——既不进小窗、也不提示"再按一次退出程序"，连退出都不响应，与 #812 描述的两个现象完全一致；
+- 现整个处理器包 try/catch（含 API 版本分支），失败一律 `result.error(...)` 回传，并在 Dart 侧加 3 秒超时兜底（`lib/native/pip.dart`），`inPip` 也按真实结果设置。
+
+### 修复：进入小窗前的多次 await 容易错过系统窗口期（上游 #812 / #703）
+
+- `onUserLeaveHint()` 之后留给调用系统 API 的窗口极短，而原实现在此前还排着 `await AppConfiguration.instance`（首次要读配置）与 `await localIp()`（要枚举网卡）——冷启动首次离开应用时这两步最慢，请求直接错过窗口期，表现为"返回桌面却没有小窗"；弹过更新提示后之所以"正常"，只是因为那段时间把这些 Future 预热完了；
+- 现改为只用同步数据源：`AppConfiguration.current`（与代码库其它处一致）+ 启动抓包时缓存下来的代理地址（`PictureInPicture.updateProxy`，在 `SocketLaunch.onStart` 里写入）；并在首页 `initState` 预热本机地址；缓存缺失时（应用重启而 VPN 仍由系统保留）仍回退到异步取地址，行为不退化。
+
+### 修复：进入小窗失败不再阻断返回键逻辑
+
+- `onUserLeaveHint` / `PopScope` 两条路径都补上异常兜底：`enterPictureInPicture()` 内部 try/catch 并返回 false，未 await 的调用点用 `unawaited`，避免 unhandled error；进入失败时返回键会正常走到"再按一次退出程序"分支，而不是静默失灵。
+
+### 说明
+
+- 以上四处的缺陷本身都是**代码可证实的**（路由栈管理、原生 result 回调、await 排队位置）；但 #812 里"冷启动首次必失败"的时序推断无法在本仓库内运行验证，仍需真机 logcat 复核（可过滤 `AppLifecycle` / `pictureInPicture` 日志）。
+
 ## v1.22.83 (2026-09-20)
 
 本版集中处理上游 #783 里「用一次就能撞见」的几处状态/性能问题，另补 #705 的写法提示。
