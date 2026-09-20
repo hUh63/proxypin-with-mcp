@@ -15,6 +15,7 @@
  */
 
 import 'package:proxypin/native/native_method.dart';
+import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/crts.dart';
@@ -171,7 +172,10 @@ class CaptureDiagnose {
           status: installed ? DiagnoseStatus.ok : DiagnoseStatus.error,
           detail: installed
               ? '已在系统信任库中'
-              : '未检测到根证书，HTTPS 会握手失败（列表里表现为成片的感叹号包）',
+              : (Platforms.isAndroid()
+                  ? '未检测到根证书：去「HTTPS 证书 → 安装根证书」按引导安装。'
+                      'Android 7 起用户证书默认不被大多数应用信任，要全应用生效需 root 装进系统证书目录'
+                  : '未检测到根证书，HTTPS 会握手失败（列表里表现为成片的感叹号包）'),
         ));
       } else {
         items.add(DiagnoseItem(
@@ -207,6 +211,39 @@ class CaptureDiagnose {
               : '共 ${requests.length} 条，最新一条在 $agoSeconds 秒前（当前没有新流量进来）'),
     ));
 
+    // 5. VPN 扩展内存水位（仅 iOS，上游 #903）
+    //    扩展是独立进程、有独立内存上限，超限会被系统杀掉（现象：网络全断 + 小窗消失）。
+    if (Platforms.isIOS()) {
+      final memory = await Vpn.vpnMemory();
+      if (memory == null) {
+        items.add(DiagnoseItem(
+          key: 'extension_memory',
+          title: '扩展内存',
+          status: DiagnoseStatus.info,
+          detail: '未取到（VPN 未启动时读不到扩展进程）',
+        ));
+      } else {
+        final rssMb = _toMb(memory['rssBytes']);
+        final peakMb = _toMb(memory['peakBytes']);
+        final bufferedMb = _toMb(memory['bufferedBytes']);
+        final connections = memory['connections'] ?? 0;
+        // iOS 给网络扩展的内存上限量级在 50MB，接近就该预警
+        final nearLimit = peakMb >= 45;
+        items.add(DiagnoseItem(
+          key: 'extension_memory',
+          title: '扩展内存',
+          status: nearLimit ? DiagnoseStatus.warn : DiagnoseStatus.ok,
+          detail: '当前 $rssMb MB，峰值 $peakMb MB，连接 $connections 条，待发缓冲 $bufferedMb MB'
+              '${nearLimit ? '（已接近扩展内存上限，建议降低并发或缩小待发缓冲上限）' : ''}',
+        ));
+      }
+    }
+
     return CaptureDiagnoseResult(items, requestCount: requests.length, latestRequestAgoSeconds: agoSeconds);
+  }
+
+  static String _toMb(dynamic bytes) {
+    final value = bytes is num ? bytes.toDouble() : 0.0;
+    return (value / 1048576).toStringAsFixed(1);
   }
 }

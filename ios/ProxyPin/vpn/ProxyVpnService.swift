@@ -22,6 +22,8 @@ class ProxyVpnService {
         self.socketIOService = SocketIOService(clientPacketWriter: packetFlow)
         let manager = ConnectionManager()
         manager.proxyAddress = proxyAddress
+        // 交给内存水位观测做统计来源（上游 #903），只读引用
+        MemoryMonitor.shared.statisticsSource = manager
         self.connectionHandler = ConnectionHandler(manager: manager, writer: packetFlow, ioService: socketIOService)
     }
     
@@ -47,7 +49,9 @@ class ProxyVpnService {
         }
 
         self.packetFlow.readPackets { (packets, protocols) in
-            
+            // 每次读包顺带采一次内存水位（内部按 10s 节流写日志，上游 #903）
+            MemoryMonitor.shared.sample(reason: "packets")
+
 //             os_log("Read %d packets", packets.count)
             for (i, packet) in packets.enumerated() {
                  self.connectionHandler.handlePacket(packet: packet, version: protocols[i])

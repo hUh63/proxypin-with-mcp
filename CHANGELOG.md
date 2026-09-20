@@ -1,5 +1,44 @@
 # Changelog
 
+## v1.22.88 (2026-09-21)
+
+### 修复：Android 上「CA 根证书 读取失败」（MissingPluginException）
+
+- 现象：Android 打开抓包自检，CA 根证书一项显示
+  `读取失败：MissingPluginException(No implementation found for method isCaInstalled on channel com.proxypin/method)`；
+  看起来像证书坏了，其实只是没人实现这个方法。
+- 根因：`com.proxypin/method` 通道**只有 iOS 实现**（`ios/Runner/Handlers/MethodHandler.swift`），
+  Android 侧从未注册；而抓包自检页对"移动端"统一调用了 `isCaInstalled`。
+- 修复三处：
+  1. Android 新增 `MethodHandlerPlugin`（通道 `com.proxypin/method`）：`isCaInstalled` 通过
+     `AndroidCAStore` 读取系统证书目录与用户凭据、按 DER 字节比对，**不需要 root**；
+     `requestLocalNetwork` 恒为 true；其余方法返回 `notImplemented`。
+  2. Dart 的 `NativeMethod` 原先只捕获 `PlatformException`，`MissingPluginException` 会漏到上层——
+     现在三个方法都兜住，未实现一律按"否"处理，不再让自检变成"读取失败"。
+  3. 自检页 Android 未安装时改为给安装引导（而不是照抄 iOS 的"HTTPS 会握手失败"），
+     并在 detail 里点明：Android 7 起用户证书默认不被大多数应用信任，要全应用生效需 root 装进系统证书目录。
+
+### 修复：导出根证书"点完没反应 / 找不到文件"
+
+`_exportFile` 与 `_downloadCert` 只在成功时提示，用户取消保存对话框或保存失败时**毫无反馈**，
+现象就是"点完导出，但根本没有根证书文件"。现在取消/失败也会提示，并写日志方便排查。
+
+### 新增：iOS 扩展内存水位观测（上游 #903）
+
+- iOS 给网络扩展的内存上限是**独立的**，超限时系统直接杀扩展进程（网络全断 + 小窗消失 + 日志为空）；
+  而 App 设置里的「内存清理」只清理 App 进程内的请求列表，对扩展无效。
+- 扩展新增 `MemoryMonitor`：读取 `phys_footprint`（不可用时退化 `resident_size`），记录峰值，
+  统计连接数 / 所有连接 `sendBuffer` 积压总量 / 单连接最大积压；每次读包采样一次，
+  按 10s 节流写系统日志（Console.app 搜索 `extension memory` 可见）。
+- 新增通道方法 `getVpnMemory`：App 通过 `sendProviderMessage` 向扩展拉取快照；
+  抓包自检页新增「扩展内存」一项，峰值接近 45MB 时预警。
+- 本项只做观测，不改变任何转发行为。
+
+### 新增文件
+
+- `ios/ProxyPin/vpn/utils/MemoryMonitor.swift`（已登记进 Xcode 工程）
+- `android/app/src/main/kotlin/com/network/proxy/plugin/MethodHandlerPlugin.kt`
+
 ## v1.22.87 (2026-09-20)
 
 iOS 的 VPN 扩展（IP 层代理 / `ios/ProxyPin`）专项健壮性审计。扩展是**独立进程**，它的任何一次 trap 都会让整条隧道、也就是设备上所有 App 的流量瞬间中断，所以本轮把所有"能崩/能静默卡死"的点都补齐了。

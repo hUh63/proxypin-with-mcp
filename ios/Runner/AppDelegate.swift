@@ -39,6 +39,12 @@ import NetworkExtension
             case "getQuicBlockedCount":
                 // iOS 不做 QUIC 拦截计数，明确返回 0
                 result(0)
+            case "getVpnMemory":
+                // 扩展的内存水位（上游 #903）。VPN 未启动 / 拿不到数据时回调 nil，
+                // Dart 侧按"不可读"处理，不当作错误。
+                VpnManager.shared.memorySnapshot { snapshot in
+                    result(snapshot)
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }

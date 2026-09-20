@@ -239,4 +239,23 @@ class ConnectionManager : CloseableConnection{
             os_log("Connection table full, evicted oldest connection %{public}@ for %{public}@", log: OSLog.default, type: .error, oldest.key, newKey)
         }
     }
+
+    /// 内存水位观测用（上游 #903）：连接数、所有连接 sendBuffer 积压总量、单连接最大积压。
+    /// sendBuffer 是在 channel 未 ready 时唯一的无上限增长点，所以单独量化它。
+    func statistics() -> (connections: Int, bufferedBytes: UInt64, maxBufferedBytes: UInt64) {
+        lock.lock()
+        let snapshot = Array(table.values)
+        lock.unlock()
+
+        var total: UInt64 = 0
+        var maxBytes: UInt64 = 0
+        for connection in snapshot {
+            let bytes = connection.bufferedByteCount
+            total += bytes
+            if bytes > maxBytes {
+                maxBytes = bytes
+            }
+        }
+        return (snapshot.count, total, maxBytes)
+    }
 }

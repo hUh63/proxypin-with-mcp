@@ -107,6 +107,11 @@ class Connection{
         return withLock { Date().timeIntervalSince(lastActiveAt) }
     }
 
+    /// sendBuffer 当前积压字节数（内存水位观测用，上游 #903）
+    var bufferedByteCount: UInt64 {
+        return withLock { UInt64(sendBuffer.count) }
+    }
+
     func addSendData(data: Data) {
         let isReady = withLock { () -> Bool in
             self.lastActiveAt = Date()

@@ -282,9 +282,15 @@ class _MobileSslState extends State<MobileSslWidget> {
     Uri? outputFile =
         await FilePicker.saveFile(dialogTitle: 'Please select the path to save:', fileName: name, bytes: bytes);
 
-    if (outputFile != null && mounted) {
-      AppLocalizations localizations = AppLocalizations.of(context)!;
+    if (!mounted) return;
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+    if (outputFile != null) {
       FlutterToastr.show(localizations.success, context);
+    } else {
+      // 原实现只在成功时提示，取消或保存失败时毫无反馈，
+      // 用户看到的现象就是"点了导出，但根本没有根证书文件"
+      logger.d('[HTTPS] export cancelled or failed: $name');
+      FlutterToastr.show(localizations.exportFailed, context);
     }
   }
 }
@@ -413,9 +419,14 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
     Uri? outputFile = await FilePicker.saveFile(
         dialogTitle: 'Please select the path to save:', fileName: name, bytes: await caFile.readAsBytes());
 
-    if (outputFile != null && mounted) {
-      AppLocalizations localizations = AppLocalizations.of(context)!;
+    if (!mounted) return;
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+    if (outputFile != null) {
       FlutterToastr.show(localizations.success, context);
+    } else {
+      // 同上：保存对话框取消/失败时给出反馈，否则用户会以为"根本没有根证书文件"
+      logger.d('[HTTPS] download cert cancelled or failed: $name');
+      FlutterToastr.show(localizations.exportFailed, context);
     }
   }
 

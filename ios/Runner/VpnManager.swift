@@ -209,4 +209,36 @@ extension VpnManager{
         return vpnStatus == VPNStatus.on
     }
 
+    /// 向扩展拉取内存水位快照（上游 #903）。扩展未运行或拿不到数据时回调 nil。
+    ///
+    /// 扩展（NEPacketTunnelProvider）与 App 是两个进程，只能通过 sendProviderMessage 通信；
+    /// 扩展侧在 handleAppMessage 里识别 "memory" 并回 JSON。
+    func memorySnapshot(_ complete: @escaping ([String: Any]?) -> Void) {
+        guard let session = activeVPN?.connection as? NETunnelProviderSession else {
+            complete(nil)
+            return
+        }
+        guard let request = "memory".data(using: .utf8) else {
+            complete(nil)
+            return
+        }
+
+        do {
+            try session.sendProviderMessage(request) { response in
+                var snapshot: [String: Any]?
+                if let response = response,
+                   let object = try? JSONSerialization.jsonObject(with: response) {
+                    snapshot = object as? [String: Any]
+                }
+                // 该回调线程不确定，统一回主线程再交给 Flutter，避免 result 在非主线程回调
+                DispatchQueue.main.async {
+                    complete(snapshot)
+                }
+            }
+        } catch {
+            print("memorySnapshot failed: \(error)")
+            complete(nil)
+        }
+    }
+
 }

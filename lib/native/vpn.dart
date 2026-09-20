@@ -101,4 +101,20 @@ class Vpn {
       return 0;
     }
   }
+
+  /// VPN 扩展进程的内存水位（仅 iOS，上游 #903）。
+  ///
+  /// 扩展有独立的内存上限，超限会被系统直接杀掉（表现为网络全断 + 小窗消失 + 日志为空）。
+  /// VPN 未启动、平台不支持或拿不到数据时返回 null，由调用方按"不可读"处理。
+  static Future<Map<String, dynamic>?> vpnMemory() async {
+    try {
+      final result = await proxyVpnChannel
+          .invokeMethod<Map<dynamic, dynamic>>("getVpnMemory")
+          .timeout(const Duration(seconds: 3));
+      return result?.map((key, value) => MapEntry(key.toString(), value));
+    } catch (e) {
+      logger.d("query vpn memory failed", error: e);
+      return null;
+    }
+  }
 }

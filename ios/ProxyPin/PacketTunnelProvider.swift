@@ -135,9 +135,16 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
-        // Add code here to handle the message.
-        if let handler = completionHandler {
-            NSLog("handleAppMessage ", messageData.debugDescription)
+        guard let handler = completionHandler else {
+            return
+        }
+        NSLog("handleAppMessage ", messageData.debugDescription)
+
+        // "memory"：App 主动拉取扩展的内存水位（上游 #903）。
+        // 其余消息维持原样回显，兼容既有调用方。
+        if String(data: messageData, encoding: .utf8) == "memory" {
+            handler(MemoryMonitor.shared.snapshotJson())
+        } else {
             handler(messageData)
         }
     }

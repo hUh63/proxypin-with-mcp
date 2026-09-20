@@ -15,16 +15,25 @@ class NativeMethod {
     } on PlatformException catch (e) {
       logger.e("[NativeMethod] requestLocalNetworkAccess error: '${e.message}'.");
       return false;
+    } on MissingPluginException {
+      // 本平台没有实现该通道（Android 侧曾长期缺失）：按"不可用"处理，不要抛给上层
+      logger.d("[NativeMethod] requestLocalNetwork is not implemented on this platform");
+      return false;
     }
   }
 
-  /// iOS: 检查给定 PEM 证书是否已安装到系统钥匙串
+  /// 检查给定 PEM 证书是否已安装到系统信任库（iOS 钥匙串 / Android AndroidCAStore）
   static Future<bool> isCaInstalled(String pem) async {
     try {
       final bool installed = await _channel.invokeMethod('isCaInstalled', {"pem": pem});
       return installed;
     } on PlatformException catch (e) {
       logger.e("[NativeMethod] isCaInstalled error: ${e.message}");
+      return false;
+    } on MissingPluginException {
+      // 兜底：未实现时按"未安装"处理，由上层给出安装引导。
+      // 曾经 Android 缺实现，MissingPluginException 直接冒到抓包自检页变成「CA 根证书 读取失败」。
+      logger.d("[NativeMethod] isCaInstalled is not implemented on this platform");
       return false;
     }
   }
@@ -41,7 +50,9 @@ class NativeMethod {
     } on PlatformException catch (e) {
       logger.e("[NativeMethod] evaluateChainTrusted error: ${e.message}");
       return false;
+    } on MissingPluginException {
+      logger.d("[NativeMethod] evaluateChainTrusted is not implemented on this platform");
+      return false;
     }
   }
-
 }

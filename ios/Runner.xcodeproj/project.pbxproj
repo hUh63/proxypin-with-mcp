@@ -38,6 +38,7 @@
 		9BCA28732C988E9D00C2B46C /* Packet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCA28722C988E9D00C2B46C /* Packet.swift */; };
 		9BCA28752C988EC400C2B46C /* TransportHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCA28742C988EC400C2B46C /* TransportHeader.swift */; };
 		9BCA28782C98902900C2B46C /* PacketUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCA28772C98902900C2B46C /* PacketUtil.swift */; };
+		A1B2C3D4E5F607182930A001 /* MemoryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F607182930A002 /* MemoryMonitor.swift */; };
 		9BCA287A2C989A7200C2B46C /* Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCA28792C989A7200C2B46C /* Connection.swift */; };
 		9BCA287D2C989A9F00C2B46C /* CloseableConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCA287C2C989A9F00C2B46C /* CloseableConnection.swift */; };
 		9BCA287F2C989AF300C2B46C /* NWProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCA287E2C989AF300C2B46C /* NWProtocol.swift */; };
@@ -147,6 +148,7 @@
 		9BCA28722C988E9D00C2B46C /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
 		9BCA28742C988EC400C2B46C /* TransportHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransportHeader.swift; sourceTree = "<group>"; };
 		9BCA28772C98902900C2B46C /* PacketUtil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketUtil.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F607182930A002 /* MemoryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMonitor.swift; sourceTree = "<group>"; };
 		9BCA28792C989A7200C2B46C /* Connection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connection.swift; sourceTree = "<group>"; };
 		9BCA287C2C989A9F00C2B46C /* CloseableConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloseableConnection.swift; sourceTree = "<group>"; };
 		9BCA287E2C989AF300C2B46C /* NWProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWProtocol.swift; sourceTree = "<group>"; };
@@ -356,6 +358,7 @@
 			children = (
 				9BE87B5D2DEA6BAB00F4FCEF /* TLS.swift */,
 				9BCA28772C98902900C2B46C /* PacketUtil.swift */,
+				A1B2C3D4E5F607182930A002 /* MemoryMonitor.swift */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -675,6 +678,7 @@
 				9B0912252A54593A001108B7 /* PacketTunnelProvider.swift in Sources */,
 				9BCA286D2C977E3800C2B46C /* TCPHeader.swift in Sources */,
 				9BCA28782C98902900C2B46C /* PacketUtil.swift in Sources */,
+				A1B2C3D4E5F607182930A001 /* MemoryMonitor.swift in Sources */,
 				9BCA288C2C995B3700C2B46C /* UDPHeader.swift in Sources */,
 				9BCA28732C988E9D00C2B46C /* Packet.swift in Sources */,
 				9BCA288A2C98C82000C2B46C /* SocketIOService.swift in Sources */,
