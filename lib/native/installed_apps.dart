@@ -8,6 +8,9 @@ class InstalledApps {
   /// [withVersion] 为 true 时逐个应用查询 versionName——这是一次跨进程调用，
   /// 冷启动时可能在几百个应用上累计到数秒（上游 #783 第 2 条）。
   /// UI 并不展示版本号，所以默认不查。
+  ///
+  /// 超时兜底：原生若因异常没回 result，`await invokeMethod` 会永久挂起，
+  /// 应用选择页会一直停在 loading。
   static Future<List<AppInfo>> getInstalledApps(
     bool withIcon, {
     String? packageNamePrefix,
@@ -19,12 +22,17 @@ class InstalledApps {
       "packageNamePrefix": packageNamePrefix,
       "includeSystemApps": includeSystemApps,
       "withVersion": withVersion,
-    }).then((value) => value?.map((e) => AppInfo.formJson(e)).toList() ?? []);
+    }).timeout(const Duration(seconds: 15)).then((value) => value?.map((e) => AppInfo.formJson(e)).toList() ?? []);
   }
 
+  /// 单个应用信息。
+  ///
+  /// 包已被卸载时原生会抛 NameNotFoundException——原生会回 error，
+  /// 调用方的 catchError 才会生效（白名单/黑名单页据此构造 inValid 占位）。
   static Future<AppInfo> getAppInfo(String packageName) async {
-    return _methodChannel
-        .invokeMethod<Map>('getAppInfo', {"packageName": packageName}).then((value) => AppInfo.formJson(value!));
+    final value = await _methodChannel
+        .invokeMethod<Map>('getAppInfo', {"packageName": packageName}).timeout(const Duration(seconds: 5));
+    return AppInfo.formJson(value!);
   }
 }
 

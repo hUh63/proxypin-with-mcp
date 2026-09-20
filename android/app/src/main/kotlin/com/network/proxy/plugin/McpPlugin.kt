@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Base64
+import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -150,8 +151,11 @@ class McpPlugin : FlutterPlugin {
                     try {
                         val response = handleFloatingBall(call)
                         result.success(response)
-                    } catch (e: Exception) {
-                        result.error("FB_ERROR", e.message, null)
+                    } catch (e: Throwable) {
+                        // 捕 Throwable：这里会走到 Shizuku / root / 反射相关代码，
+                        // 类加载失败等 Error 不是 Exception，漏掉就会不回 result
+                        Log.w("ProxyPin", "floatingBall ${call.method} failed", e)
+                        result.error("FB_ERROR", e.message ?: e.toString(), null)
                     }
                 }.start()
             }
@@ -162,8 +166,10 @@ class McpPlugin : FlutterPlugin {
                     val args = (call.arguments as? Map<*, *>)?.mapKeys { it.key.toString() } ?: emptyMap()
                     val response = handleMethod(method, args)
                     result.success(response)
-                } catch (e: Exception) {
-                    result.error("MCP_ERROR", e.message, null)
+                } catch (e: Throwable) {
+                    // 同上：Shizuku / 无障碍 / 反射路径可能抛 Error，必须回 result
+                    Log.w("ProxyPin", "mcp method failed", e)
+                    result.error("MCP_ERROR", e.message ?: e.toString(), null)
                 }
             }.start()
         }

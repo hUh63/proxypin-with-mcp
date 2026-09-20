@@ -1,5 +1,6 @@
 package com.network.proxy.plugin
 
+import android.util.Log
 import com.network.proxy.vpn.util.ProcessInfoManager
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -35,9 +36,18 @@ class ProcessInfoPlugin : AndroidFlutterPlugin() {
                     val port = call.argument<Int>("port")
                     if (port != null) {
                         CoroutineScope(Dispatchers.IO).launch {
-                            val appInfo = processInfoManager.getProcessInfoByPort(host, port)
-                            withContext(Dispatchers.Main) {
-                                result.success(appInfo)
+                            // 协程里抛异常不会有人接手：必须自己兜住并回 result，
+                            // 否则 Flutter 侧 await 永久挂起（抓包链路会卡在这一行）
+                            try {
+                                val appInfo = processInfoManager.getProcessInfoByPort(host, port)
+                                withContext(Dispatchers.Main) {
+                                    result.success(appInfo)
+                                }
+                            } catch (e: Throwable) {
+                                Log.w("ProxyPin", "getProcessByPort failed", e)
+                                withContext(Dispatchers.Main) {
+                                    result.error("PROCESS_INFO_FAILED", e.message ?: e.toString(), null)
+                                }
                             }
                         }
                     } else {
@@ -47,7 +57,17 @@ class ProcessInfoPlugin : AndroidFlutterPlugin() {
 
                 "getRemoteAddressByPort" -> {
                     val port = call.argument<Int>("port")
-                    result.success(processInfoManager.getRemoteAddressByPort(port!!))
+                    if (port == null) {
+                        result.error("INVALID_ARGUMENT", "Port is null", null)
+                        return@setMethodCallHandler
+                    }
+
+                    try {
+                        result.success(processInfoManager.getRemoteAddressByPort(port))
+                    } catch (e: Throwable) {
+                        Log.w("ProxyPin", "getRemoteAddressByPort failed", e)
+                        result.error("REMOTE_ADDR_FAILED", e.message ?: e.toString(), null)
+                    }
                 }
 
                 else -> {

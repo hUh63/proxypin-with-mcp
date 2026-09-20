@@ -52,18 +52,24 @@ class _AppWhitelistState extends State<AppWhitelist> {
 
   void _loadApps() async {
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-    var futures = <Future<AppInfo>>[];
-    for (var element in configuration.appWhitelist) {
-      futures.add(InstalledApps.getAppInfo(element).catchError((e) {
-        return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: element, inValid: true);
-      }));
-    }
-    var list = await Future.wait(futures);
-    if (mounted) {
+    try {
+      var futures = <Future<AppInfo>>[];
+      for (var element in configuration.appWhitelist) {
+        futures.add(InstalledApps.getAppInfo(element).catchError((e) {
+          return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: element, inValid: true);
+        }));
+      }
+      var list = await Future.wait(futures);
+      if (!mounted) return;
       setState(() {
         appInfoList = list;
         isLoading = false;
       });
+    } finally {
+      // 无论成功与否都必须结束 loading，否则页面会永远转圈
+      if (mounted && isLoading) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -202,18 +208,24 @@ class _AppBlacklistState extends State<AppBlacklist> {
 
   void _loadApps() async {
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-    var futures = <Future<AppInfo>>[];
-    for (var element in configuration.appBlacklist ?? []) {
-      futures.add(InstalledApps.getAppInfo(element).catchError((e) {
-        return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: element, inValid: true);
-      }));
-    }
-    var list = await Future.wait(futures);
-    if (mounted) {
+    try {
+      var futures = <Future<AppInfo>>[];
+      for (var element in configuration.appBlacklist ?? []) {
+        futures.add(InstalledApps.getAppInfo(element).catchError((e) {
+          return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: element, inValid: true);
+        }));
+      }
+      var list = await Future.wait(futures);
+      if (!mounted) return;
       setState(() {
         appInfoList = list;
         isLoading = false;
       });
+    } finally {
+      // 无论成功与否都必须结束 loading，否则页面会永远转圈
+      if (mounted && isLoading) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -354,6 +366,9 @@ class _InstalledAppsWidgetState extends State<InstalledAppsWidget> {
     try {
       loading.value = true;
       apps = await InstalledApps.getInstalledApps(false, includeSystemApps: includeSystemApps);
+    } catch (e) {
+      // 取列表失败（超时/原生报错）时不要留下异常的 Future，页面空列表即可重试
+      apps = apps ?? [];
     } finally {
       loading.value = false;
     }

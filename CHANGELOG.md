@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.22.85 (2026-09-20)
+
+原生通道健壮性专项：把"原生 handler 抛异常 → 不回 result → Dart 侧 `await invokeMethod` **永久挂起**"这条链路上的坑逐个堵掉（v1.22.84 修的是小窗那一个）。
+
+### 修复：白名单/黑名单页会永久转圈 —— 已卸载的应用（上游 #783）
+
+- 原生 `getAppInfo` 直接同步调 `packageManager.getApplicationInfo()`，**包被卸载后抛 `NameNotFoundException`，`result` 永不回调**；
+- Dart 侧其实早就写好了容错（`InstalledApps.getAppInfo(element).catchError(...)` 构造 `inValid` 占位的"未知应用"），但那只在 Future **以异常结束**时才生效——原生不回结果，`catchError` 永远不会触发；
+- 于是 `_loadApps()` 里的 `await Future.wait(futures)` 永不完成，`isLoading` 一直是 true，**页面永远转圈**（代码里那个"清除失效应用"按钮也正说明这是已知会出现的场景）；
+- 修复：原生包 try/catch 并 `result.error(...)`（让 Dart 的 `catchError` 按原设计生效）；顺带把 `getAppInfo` 挪到工作线程（它要 `loadIcon` 并压成 PNG，放在主线程会卡 UI）；UI 侧 `_loadApps` 改为 `try/finally`，无论成败都结束 loading。
+
+### 修复：VPN 通道全分支无兜底（上游 #812 同族）
+
+- `VpnServicePlugin` 的 4 个方法都没有异常兜底，且直接用 `host!!` / `port!!`——参数缺失即 NPE，`result` 永不回调，Dart 侧 `await isRunning()` 这类调用会永久挂住；
+- 修复：整个 handler 包 try/catch（含 API 版本分支），参数缺失回 `INVALID_ARGUMENT`，异常回 `VPN_ERROR`。
+
+### 修复：抓包链路会卡在处理进程信息（上游 #812 同族）
+
+- `ProcessInfoPlugin.getProcessByPort` 的协程里没有任何异常兜底，协程抛异常没人接手，`result` 永不回调；而 Dart 侧这个调用**在抓包链路上被 await**（`lib/network/util/process_info.dart`），一挂就会卡住该连接的处理；
+- `getRemoteAddressByPort` 同理，而且它更靠前——ssl 握手（`network.dart`）与请求派发（`channel_dispatcher.dart`）都会 await 它；
+- 修复：两处都包 try/catch 并回 error；`port!!` 改为显式校验。
+
+### 修复：MCP / 悬浮球通道只捕 `Exception`，漏掉 `Error`
+
+- `McpPlugin` 两个 handler 用的是 `catch (e: Exception)`；但这条链路上会走到 Shizuku、root、反射代码，**类加载失败等 `Error` 不是 `Exception`**，漏掉同样会导致不回 result；
+- 修复：改为 `catch (e: Throwable)`，并补日志。
+
+### 加固：Dart 侧关键调用加超时兜底
+
+- `Vpn.isRunning()`：加 2 秒超时（失败按"未运行"处理），原先若原生不回结果会永久挂起，而它处在小窗进入与状态刷新路径上；
+- `Vpn.startVpn/stopVpn/restartVpn`：统一经一个吞掉异常并记日志的内部方法下发，消除 unhandled async error（**保持原本的乐观状态语义不变**——`prepareVpn` 为 false 时系统会弹授权框，用户同意后才真正启动，这里不做回滚以免授权期间状态被错误标成"未启动"）；
+- `InstalledApps.getInstalledApps/getAppInfo`：分别加 15 秒 / 5 秒超时；
+- `ProcessInfoPlugin.getProcessByPort/getRemoteAddressByPort`：加 3 秒 / 1 秒超时，超时按"查不到"返回 null（调用方本来就接受 null）。
+
+### 说明
+
+- 以上除"已卸载应用导致白名单页转圈"是可复现的确定性缺陷外，其余属于把同类风险一次性堵住；真机可过滤 `ProxyPin` 标签的 `W` 级日志观察是否还有未回 result 的路径。
+
 ## v1.22.84 (2026-09-20)
 
 本版针对 #783 同族的"小窗 / 窗口模式"问题（#724 / #812 / #703）做静态定位后的加固。
