@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.22.87 (2026-09-20)
+
+iOS 的 VPN 扩展（IP 层代理 / `ios/ProxyPin`）专项健壮性审计。扩展是**独立进程**，它的任何一次 trap 都会让整条隧道、也就是设备上所有 App 的流量瞬间中断，所以本轮把所有"能崩/能静默卡死"的点都补齐了。
+
+### 修复：TCP 序号回绕会直接崩溃扩展进程
+
+Swift 的 `+` 在整数溢出时**无条件 trap**（release 也一样）。而 TCP 序号按 RFC 793 必须做 mod 2^32 运算——客户端的 ISN 是随机 32 位，只要它接近 `UInt32.max`，回 ACK 时 `sequenceNumber + 1` 就会溢出崩溃。同样的写法在扩展里有 8 处，全部改成 `&+`：
+
+- `ConnectionHandler`：`ackFinAck` / `sendFinAck` / `sendAckForDisorder` / `sendAck` / `sendLastAck` / `replySynAck`；
+- `TCPPacketFactory`：`createRstData` / `createSynAckPacketData`；
+- `SocketIOService.pushDataToClient`：`sendNext + buffer.count`——这里原注释写着"处理溢出问题"，但用的是 `+`，一条长连接累计发到 4GB 就会崩在注释旁边。
+
+顺带修掉 `sendAck` 里 `(... + 长度) % UInt32.max`：`% UInt32.max` 既拦不住溢出（`+` 会先 trap），又会在和正好等于 `UInt32.max` 时把序号算成 0。
+
+### 修复：TCP options 解析越界崩溃（畸形选项可稳定触发）
+
+`PacketUtil.isPacketCorrupted` 是"防御性校验"函数，但遇到畸形选项自己会崩——它读 `options[i + 1]` 却从不校验边界，且 `i += Int(options[i + 1]) - 2` 在长度字节小于 2 时会让 `i` 变成负数（下标为负同样崩溃）或原地死循环。该函数在**每个 ACK 报文**上都会跑。现在按选项类型做步进并全程校验边界，异常时直接判定为损坏。
+
+### 修复：UDP 接收循环会永久静默（DNS/QUIC 突然无响应且无日志）
+
+`SocketIOService.readUDP` 里 `guard let data = data, !data.isEmpty else { return }` 直接返回，**没有重新挂起 `receive`**——而 UDP 的零长度数据报是合法的、空读也可能出现。一旦命中，这条 UDP 连接就再也收不到任何数据，现象就是 DNS/QUIC 某一刻突然不通，日志里什么都没有。现在改为重新挂起。
+
+同时修掉两处相关隐患：UDP 读错误时不再只标个标志（改为与 TCP 一致的关闭连接），并且不再裸读写 `isAbortingConnection`（与原生的写入侧一致地取锁）。
+
+**特别说明（易错点）**：UDP 的 `isComplete` 语义与 TCP 完全不同。按 Apple 对 `nw_connection_receive_completion_t` 的说明，TCP 是"整条流的读取方向关闭"时才置位，而 UDP 是"**到达数据报末尾**"就置位——也就是每个数据报都是 `true`。所以 这里绝不能照抄 `readTCP` 的 `if isComplete { 关闭连接 }`，否则第一个 DNS 响应到达时连接就被关掉。代码里已写明这条注释。
+
+### 修复：ICMP 回包字节序错误（ping 一直不通）+ 一处对齐陷阱
+
+`ICMPPacketFactory.parseICMPPacket` 用 `withUnsafeBytes { $0.load(as: UInt16.self) }` 解析：
+
+- `load(as:)` **要求指针对齐**，而这里是在 `removeFirst()` 之后从奇数偏移取址，属于 misaligned raw pointer，会直接 trap；
+- `load(as:)` 读的是**本机字节序**（iOS 是小端），而写回时 `FixedWidthInteger.bytes` 用的是大端——`identifier` / `sequenceNumber` 被字节颠倒，回包的 id 与请求对不上，客户端的 ping 永远等不到应答。
+
+现在改成与其他解析器一致的逐字节大端解析，两个问题一起解决。另外 `packetToBuffer` 里对未知 ICMP 类型用了 `fatalError`，改为记录日志（扩展里一次 trap = 全设备断网）。
+
+### 加固：`isPrivateIP` 下标越界
+
+`Int(ip.split(separator: ".")[1])` 只要传入的字符串少于两段就直接越界崩溃；改为按八位组解析，段数不对时安全返回 `false`。
+
+### 小提示：App 里的"内存清理"清不到 VPN 扩展
+
+App 设置里的「内存清理」是"到内存限制自动清理**请求记录**，清理后保留最近 32 条"——它只作用于 App 进程里的抓包列表。iOS 的 VPN 扩展有**独立的内存上限**，两者互不相干。所以把阈值调到多少都不会减少扩展被系统回收的概率（详见上游 issue #903）。
+
 ## v1.22.86 (2026-09-20)
 
 iOS 侧通道审计 + 崩溃加固（接 v1.22.85 的"原生不回 result ⇒ Dart 永久挂起"专项）。

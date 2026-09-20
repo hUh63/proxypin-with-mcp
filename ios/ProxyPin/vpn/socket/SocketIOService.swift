@@ -164,8 +164,10 @@ class SocketIOService {
             }
 
             let unAck = connection.sendNext
-            //处理溢出问题
-            let nextUnAck = UInt32(truncatingIfNeeded: (connection.sendNext + UInt32(buffer.count)) % UInt32.max)
+            // 处理溢出问题：这里必须用 &+ 做 mod 2^32 加法。
+            // 原实现虽然写了注释「处理溢出问题」，但 `+` 本身在 Swift 里会先 overflow trap——
+            // 一条长连接累计发送到 4GB 时整个扩展进程会崩溃。
+            let nextUnAck = connection.sendNext &+ UInt32(buffer.count)
             connection.sendNext = nextUnAck
             connection.lastActiveAt = Date()
 
@@ -221,22 +223,39 @@ class SocketIOService {
             return
         }
 
-        channel.receive(minimumIncompleteLength: 1, maximumLength: 65507) { (data, context, isComplete, error) in
+        channel.receive(minimumIncompleteLength: 1, maximumLength: 65507) { (data, context, _, error) in
                 self.queue.async(flags: .barrier) {
                 if let error = error {
                     os_log("Failed to read from UDP socket: %@", log: OSLog.default, type: .error, error as CVarArg)
-                    connection.isAbortingConnection = true
+                    connection.withLock {
+                        connection.isAbortingConnection = true
+                    }
+                    connection.closeConnection()
                     return
                 }
 
+                // 注意：UDP 的 isComplete 语义与 TCP 完全不同——按 Apple 对 nw_connection_receive_completion_t
+                // 的说明，TCP 是「流读取方向关闭」时才置位，而 UDP 是「到达数据报末尾」就置位，
+                // 也就是每个数据报都是 true。所以这里绝对不能像 readTCP 那样用它判定「对端已关闭」并关连接，
+                // 否则第一个 DNS 响应到达时就会把连接关掉。
 //                os_log("Received UDP data packet length %d", log: OSLog.default, type: .debug, data?.count ?? 0)
 
                 guard let data = data, !data.isEmpty else {
+                    // 零长度 UDP 数据报是合法的，空读也可能出现。原实现直接 return，
+                    // receive 循环从此不再重新挂起 → 这条 UDP 连接永久静默（DNS/QUIC 突然没响应，
+                    // 且日志里什么都看不到）。重新挂起即可。
+                    self.receiveMessage(connection: connection)
                     return
                 }
                 
-                guard let ipHeader = connection.lastIpHeader, let udpHeader = connection.lastUdpHeader else {
+                // 头信息是 handleUDPPacket 在 synchronized(connection) 里写入的，这里也取锁读，避免竞态
+                let lastIpHeader = connection.withLock { connection.lastIpHeader }
+                let lastUdpHeader = connection.withLock { connection.lastUdpHeader }
+                guard let ipHeader = lastIpHeader, let udpHeader = lastUdpHeader else {
+                    // 极窄的竞态窗口（连接刚建好、回包比头信息赋值先到）：丢掉这一个数据报、
+                    // 继续接收即可。这里不能关连接——那会误杀一条正常连接。
                     os_log("Missing IP or UDP header for connection %{public}@", log: OSLog.default, type: .error, connection.description)
+                    self.receiveMessage(connection: connection)
                     return
                 }
                 

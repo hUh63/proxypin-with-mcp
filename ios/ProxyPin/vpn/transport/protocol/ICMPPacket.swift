@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os.log
 
 class ICMPPacket {
     // Two ICMP packets we can handle: simple ping & pong
@@ -43,19 +44,22 @@ class ICMPPacketFactory {
     
     static func parseICMPPacket(_ stream: inout Data) -> ICMPPacket? {
         guard stream.count >= 8 else { return nil }
-        
-        let type = stream.removeFirst()
-        let code = stream.removeFirst()
-        let checksum = stream.withUnsafeBytes { $0.load(as: UInt16.self) }
-        stream.removeFirst(2)
-        
-        let identifier = stream.withUnsafeBytes { $0.load(as: UInt16.self) }
-        stream.removeFirst(2)
-        let sequenceNumber = stream.withUnsafeBytes { $0.load(as: UInt16.self) }
-        stream.removeFirst(2)
-        
-        let data = Array(stream)
-        
+
+        // 逐字节按网络序（大端）解析。原实现用 `withUnsafeBytes { $0.load(as: UInt16.self) }`，
+        // 有两个问题：
+        //   1. load(as:) 要求指针对齐，而这里在 removeFirst() 之后是从奇数偏移取址，
+        //      属于 misaligned raw pointer，会直接 trap（ping 路径崩溃）；
+        //   2. load(as:) 读的是本机字节序（iOS 是小端），而写回时 FixedWidthInteger.bytes
+        //      用的是大端，identifier / sequenceNumber 会被字节颠倒——回包的 id 与请求对不上，
+        //      客户端的 ping 永远等不到应答。
+        let bytes = [UInt8](stream)
+        let type = bytes[0]
+        let code = bytes[1]
+        let checksum = UInt16(bytes[2]) << 8 | UInt16(bytes[3])
+        let identifier = UInt16(bytes[4]) << 8 | UInt16(bytes[5])
+        let sequenceNumber = UInt16(bytes[6]) << 8 | UInt16(bytes[7])
+        let data = Array(bytes[8...])
+
         return ICMPPacket(type: type, code: code, checksum: checksum, identifier: identifier, sequenceNumber: sequenceNumber, data: data)
     }
     
@@ -84,7 +88,9 @@ class ICMPPacketFactory {
             icmpDataBuffer.append(contentsOf: packet.sequenceNumber.bytes)
             icmpDataBuffer.append(contentsOf: packet.data)
         } else {
-            fatalError("Can't serialize unrecognized ICMP packet type")
+            // 不要用 fatalError：网络扩展里任何一次 trap 都会让整条隧道、
+            // 也就是设备上所有 App 的流量瞬间中断。这里退化成只回 ICMP 头，不再崩溃。
+            os_log("Unsupported ICMP packet type: %d", log: OSLog.default, type: .error, packet.type)
         }
         
         let checksum = PacketUtil.calculateChecksum(data: icmpDataBuffer, offset: 0, length: icmpDataBuffer.count)

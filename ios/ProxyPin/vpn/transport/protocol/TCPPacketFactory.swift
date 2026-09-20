@@ -120,7 +120,8 @@ class TCPPacketFactory {
         if tcp.ackNumber > 0 {
             seqNumber = tcp.ackNumber
         } else {
-            ackNumber = tcp.sequenceNumber + UInt32(dataLength)
+            // &+：序号按 RFC 793 做 mod 2^32 加法，用 `+` 在边界值上会溢出 trap
+            ackNumber = tcp.sequenceNumber &+ UInt32(dataLength)
         }
 
         tcp.ackNumber = ackNumber
@@ -178,8 +179,8 @@ class TCPPacketFactory {
        tcp.dataOffset = 5 // tcp header length 5 * 4 = 20 bytes
        tcp.options = nil
 
-       // ack = received sequence + 1
-       let ackNumber = tcpHeader.sequenceNumber + 1
+       // ack = received sequence + 1（&+：mod 2^32，客户端 SYN 序号在边界时用 `+` 会溢出 trap）
+       let ackNumber = tcpHeader.sequenceNumber &+ 1
        tcp.ackNumber = ackNumber
 
        // Server-generated initial sequence number

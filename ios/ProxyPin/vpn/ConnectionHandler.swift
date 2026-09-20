@@ -293,7 +293,9 @@ class ConnectionHandler {
     }
 
     func ackFinAck(ipHeader: IP4Header, tcpHeader: TCPHeader, connection: Connection?) {
-        let ackNumber = tcpHeader.sequenceNumber + 1
+        // 序号回绕必须用 &+（RFC 793 要求 mod 2^32 运算）：
+        // 客户端序号接近 UInt32.max 时，Swift 的 `+` 会因溢出直接 trap 崩溃扩展进程
+        let ackNumber = tcpHeader.sequenceNumber &+ 1
         let seqNumber = tcpHeader.ackNumber
         let finAckData = TCPPacketFactory.createFinAckData(ipHeader: ipHeader, tcpHeader: tcpHeader, ackToClient: ackNumber, seqToClient: seqNumber, isFin: true, isAck: true)
         write(data: finAckData)
@@ -314,7 +316,7 @@ class ConnectionHandler {
         let finAckData = TCPPacketFactory.createFinAckData(ipHeader: ipHeader, tcpHeader: tcpHeader, ackToClient: ackNumber, seqToClient: seqNumber, isFin: true, isAck: false)
         write(data: finAckData)
 
-        connection.sendNext = seqNumber + 1
+        connection.sendNext = seqNumber &+ 1
         connection.isClosingConnection = false
     }
     
@@ -342,7 +344,7 @@ class ConnectionHandler {
     }
     
     func sendAckForDisorder(ipHeader: IP4Header, tcpHeader: TCPHeader, acceptedDataLength: Int) {
-        let ackNumber = tcpHeader.sequenceNumber + UInt32(acceptedDataLength)
+        let ackNumber = tcpHeader.sequenceNumber &+ UInt32(acceptedDataLength)
 //        os_log("Sent disorder ack, ack# %{public}d", log: OSLog.default, type: .debug, ackNumber)
         let ackData = TCPPacketFactory.createResponseAckData(ipHeader: ipHeader, tcpHeader: tcpHeader, ackToClient: ackNumber)
         write(data: ackData)
@@ -350,7 +352,9 @@ class ConnectionHandler {
     
     func sendAck(ipHeader: IP4Header, tcpHeader: TCPHeader, acceptedDataLength: Int, connection: Connection) {
        synchronized(connection) {
-            let ackNumber = (tcpHeader.sequenceNumber + UInt32(acceptedDataLength)) % UInt32.max
+            // &+ 就是 mod 2^32。原写法是先做普通加法、再对 UInt32.max 取余：
+            // 既拦不住溢出（普通加法会先 trap 崩溃），又会在和正好等于 UInt32.max 时把序号算成 0。
+            let ackNumber = tcpHeader.sequenceNumber &+ UInt32(acceptedDataLength)
             connection.recSequence = ackNumber
             let ackData = TCPPacketFactory.createResponseAckData(ipHeader: ipHeader, tcpHeader: tcpHeader, ackToClient: ackNumber)
             self.write(data: ackData)
@@ -360,7 +364,7 @@ class ConnectionHandler {
     }
 
     private func sendLastAck(ip: IP4Header, tcp: TCPHeader) {
-        let data = TCPPacketFactory.createResponseAckData(ipHeader: ip, tcpHeader: tcp, ackToClient: tcp.sequenceNumber + 1)
+        let data = TCPPacketFactory.createResponseAckData(ipHeader: ip, tcpHeader: tcp, ackToClient: tcp.sequenceNumber &+ 1)
         self.write(data: data)
         os_log("Sent last ACK Packet to client with dest => %{public}@:%{public}d", log: OSLog.default, type: .debug, PacketUtil.intToIPAddress(ip.destinationIP), tcp.destinationPort)
     }
@@ -396,7 +400,7 @@ class ConnectionHandler {
         synchronized(connection) {
             connection.maxSegmentSize = Int(tcpTransport.maxSegmentSize)
             connection.sendUnAck = tcpTransport.sequenceNumber
-            connection.sendNext = tcpTransport.sequenceNumber + 1
+            connection.sendNext = tcpTransport.sequenceNumber &+ 1
             
             //client initial sequence has been incremented by 1 and set to ack
             connection.recSequence = tcpTransport.ackNumber

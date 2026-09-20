@@ -85,9 +85,19 @@ class ConnectionManager : CloseableConnection{
     }
 
     private func isPrivateIP(_ ip: String) -> Bool {
-        return ip.hasPrefix("10.") ||
-               ip.hasPrefix("172.") && (16...31).contains(Int(ip.split(separator: ".")[1]) ?? -1) ||
-               ip.hasPrefix("192.168.")
+        // 原实现是 `Int(ip.split(separator: ".")[1])`：只要传入的字符串少于两段就直接下标越界崩溃。
+        // 现在按八位组解析，段数不对时安全地判定为非私网地址。
+        let parts = ip.split(separator: ".").compactMap { Int($0) }
+        guard parts.count == 4 else {
+            return false
+        }
+        if parts[0] == 10 {
+            return true
+        }
+        if parts[0] == 172, (16...31).contains(parts[1]) {
+            return true
+        }
+        return parts[0] == 192 && parts[1] == 168
     }
 
     func createUDPConnection(ip: UInt32, port: UInt16, srcIp: UInt32, srcPort: UInt16) -> Connection {

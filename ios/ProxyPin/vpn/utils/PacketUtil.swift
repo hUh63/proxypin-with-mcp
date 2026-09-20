@@ -103,28 +103,44 @@ class PacketUtil {
             return false
         }
 
+        // options 直接来自客户端报文，可能是截断或伪造的：每一步都必须先校验边界。
+        // 原实现有两个危险点：
+        //   1. `options[i + 1]`：当 kind 5/15 恰好是最后一个字节时直接下标越界崩溃；
+        //   2. `i += Int(options[i + 1]) - 2`：长度字节小于 2 时 i 会回退成负数（同样崩溃），
+        //      或原地打转形成死循环，而本函数本身是"防御性校验"，不该由畸形选项把扩展搞崩。
         var i = 0
         while i < options.count {
-            let kind = options[i]
+            let kind = Int(options[i])
             switch kind {
-            case 0, 1:
-                break
-            case 2:
-                i += 3
-            case 3, 14:
-                i += 2
-            case 4:
+            case 0: // End of Option List
+                return false
+            case 1: // No Operation
                 i += 1
-            case 5, 15:
-                i += Int(options[i + 1]) - 2
-            case 8:
-                i += 9
+            case 2: // Maximum Segment Size
+                i += 4
+            case 3, 14: // Window Scale / Alternate Checksum Request
+                i += 3
+            case 4: // SACK Permitted
+                i += 2
+            case 5, 15: // SACK / Alternate Checksum Data
+                guard i + 1 < options.count else {
+                    os_log("Truncated TCP option: %d", log: OSLog.default, type: .error, kind)
+                    return true
+                }
+                let length = Int(options[i + 1])
+                guard length >= 2, i + length <= options.count else {
+                    os_log("Invalid TCP option length: %d, option: %d", log: OSLog.default, type: .error, length, kind)
+                    return true
+                }
+                i += length
+            case 8: // Timestamps
+                i += 10
             case 23:
                 return true
             default:
-                print("Unknown option: \(kind)")
+                os_log("Unknown TCP option: %d", log: OSLog.default, type: .debug, kind)
+                i += 1
             }
-            i += 1
         }
         return false
     }
