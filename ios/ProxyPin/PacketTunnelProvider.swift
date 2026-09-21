@@ -5,6 +5,7 @@
 //  Created by 汪红恩 on 2023/7/4.
 //
 
+import Foundation
 import NetworkExtension
 import Network
 import os.log

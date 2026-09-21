@@ -5,6 +5,12 @@
 //  Created by wanghongen on 2025/5/31.
 //
 
+// 注意：本文件此前没有任何 import，Data 是靠 ProxyPin-Bridging-Header.h 里
+// `#import "GBPing.h"` 间接带进来的 Foundation（bridging header 的导入对同 target 的
+// 所有 Swift 文件可见）。删掉那段 bridging import 后必须显式导入，否则报
+// "Cannot find type 'Data' in scope"。Swift 的模块导入不传递，别依赖别人的 import。
+import Foundation
+
 class TLS {
     
     static func isTLSClientHello(packetData: Data) -> Bool {
