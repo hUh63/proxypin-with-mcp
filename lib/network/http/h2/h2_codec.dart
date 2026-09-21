@@ -715,6 +715,15 @@ class Http2RequestDecoder extends Http2Codec<HttpRequest> {
     message.headers.forEach((key, values) {
       final lower = key.toLowerCase();
       if (forbidden.contains(lower)) return;
+      if (lower == 'te') {
+        // RFC 9113 §8.2.2：HTTP/2 里 te 只允许 "trailers" 这一个值，
+        // 其它值一律不得发送；严格 upstream（如 Google 前端）会直接拒绝该请求（上游 #871）。
+        if (!values.any((v) => v.trim().toLowerCase() == 'trailers')) {
+          return;
+        }
+        headers.add(Header.ascii('te', 'trailers'));
+        return;
+      }
       for (var value in values) {
         // 用 latin1 编码：h2 header value 是 opaque bytes，Cookie 或
         // Content-Disposition 里可能出现非 ASCII 字符，用 ascii.encode 会抛异常。

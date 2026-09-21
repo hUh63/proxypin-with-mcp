@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.22.89 (2026-09-21)
+
+### 修复：iOS 批量导出 Request / Response 报 "Is a directory"（上游 #893）
+
+- 现象：iOS 上列表页多选导出 Request / Response / Request+Response（**哪怕只选 1 条**）报
+  `FileSystemException: Cannot open file, path = .../Library/Caches/<UUID>/ (OS Error: Is a directory, errno = 21)`，
+  系统分享面板打不开；而同样入口导出 HAR、以及详情页单条分享都正常。
+- 根因：iOS/iPadOS 分支用的是 `XFile.fromData(...)` + `files.map((f) => f.name)` 交给 share_plus。
+  share_plus 需要把内存数据落到临时目录，但拿不到有效文件名时，落盘路径会退化成
+  `<tmp>/<uuid>/` 这种**目录**，于是打开"文件"时报 EISDIR。对照可知 HAR 用的是显式文件名列表
+  （`fileNameOverrides: [fileName]`）所以正常。
+- 修复：新增 `shareExportFiles()`——**先写真实临时文件，再用 `XFile(path)` 分享**，
+  文件名同时显式传给 `fileNameOverrides`，不再依赖 `XFile.name` 的取值行为；
+  分享完成后延迟 5 分钟清理临时目录（避免分享尚未完成就删文件）。
+  HAR 导出也统一走同一路径（同类隐患一并消除）。
+- 附带修正一处误导：原先代码里标注"修复 #893"的那段逻辑位于 **Android/桌面分支**，
+  而 #893 是 iOS 问题——iOS 分支从未被修到，本次才是真正的修复；注释已改准确。
+
+### 修复：HTTP/2 的 `te` 头违反 RFC 9113（#871 相关）
+
+- RFC 9113 §8.2.2 规定 h2 中 `te` 只允许取值 `trailers`，其它值一律不得出现。
+  原实现原样转发客户端的 `te` 值，严格的 upstream（如 Google 前端）会直接拒绝该请求。
+  现在只保留合法的 `te: trailers`，其余丢弃。
+- **诚实说明**：上游 #871（个别 API 子域经 ProxyPin 固定 403）**未能归因到 h2 编码路径**——
+  报告者实测"HTTP2 开关开/关结果相同""同域主站 200、仅该 API 子域 403"，说明问题不在 h2 头编码，
+  更可能在连接层特征或该 API 自身的校验。本次只补上这处能静态确认的协议违规，
+  其余需要真机抓原始字节比对才能继续。
+
+### 清理：iOS 扩展删除约 42KB 无人调用的代码
+
+- 删除 `ios/ProxyPin/vpn/socket/ClientPacketWriter.swift`：iOS 侧无任何引用
+  （Android 侧另有同名 Kotlin 实现，仍在用）。
+- 删除 `ios/ProxyPin/vpn/ping/` 整个目录（`GBPing.h/.m`、`GBPingSummary.h/.m`、`GBPingHelper.swift`、
+  `ICMPHeader.h`，合计约 40KB ObjC/Swift）：`ConnectionHandler.isReachable` 写死 `return true`，
+  从未调用该探测实现，`GBPingHelper` 也无任何引用。ICMP echo 回包由
+  `vpn/transport/protocol/ICMPPacket.swift` 处理，不受影响。
+- `ProxyPin-Bridging-Header.h` 移除 `#import "GBPing.h"`；`project.pbxproj` 同步删除 30 行登记。
+
 ## v1.22.88 (2026-09-21)
 
 ### 修复：Android 上「CA 根证书 读取失败」（MissingPluginException）

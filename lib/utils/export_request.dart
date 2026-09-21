@@ -145,6 +145,57 @@ Future<Map<String, dynamic>?> generateExportFileData(
   }
 }
 
+/// 把内存中的导出内容写成**真实临时文件**后交给系统分享（iOS / iPadOS 用）。
+///
+/// 修复 #893：iOS 上原先直接用 `XFile.fromData(bytes, name: ...)` 交给 share_plus，
+/// 但 share_plus 需要把内存数据落到临时目录时拿不到有效文件名，最终路径退化成
+/// `<tmp>/<uuid>/` 这样的**目录**，抛
+/// `FileSystemException: Cannot open file, path = .../Library/Caches/<UUID>/ (OS Error: Is a directory, errno = 21)`，
+/// 系统分享面板也不会打开（无论选 1 条还是多条）。
+/// 先写真实文件、再用 `XFile(path)` 分享即可绕开；文件名同时显式传给 fileNameOverrides，
+/// 不再依赖 `XFile.name` 在不同版本上的取值行为。
+Future<void> shareExportFiles(
+  List<Map<String, dynamic>> items, {
+  String mimeType = 'text/plain',
+  Rect? sharePositionOrigin,
+}) async {
+  final tempDir = await Directory.systemTemp.createTemp('proxypin_export_');
+  final files = <XFile>[];
+  final names = <String>[];
+
+  for (final item in items) {
+    final bytes = item['bytes'];
+    if (bytes is! Uint8List || bytes.isEmpty) {
+      continue;
+    }
+    final name = (item['fileName'] as String?)?.trim();
+    final fileName = (name == null || name.isEmpty) ? 'export.txt' : name;
+    final file = File('${tempDir.path}${Platform.pathSeparator}$fileName');
+    await file.writeAsBytes(bytes, flush: true);
+    files.add(XFile(file.path, name: fileName, mimeType: mimeType));
+    names.add(fileName);
+  }
+
+  if (files.isEmpty) {
+    throw StateError('no file to share');
+  }
+
+  await SharePlus.instance
+      .share(ShareParams(fileNameOverrides: names, files: files, sharePositionOrigin: sharePositionOrigin));
+
+  // 系统分享是异步读取文件的：延迟清理临时目录，避免分享尚未完成就把文件删掉。
+  // 未清理时也会落在 App 的 tmp 目录里，由系统回收。
+  Future.delayed(const Duration(minutes: 5), () {
+    try {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    } catch (e) {
+      logger.d('clean export temp dir failed: $e');
+    }
+  });
+}
+
 /// 批量导出请求 - 桌面端和手机端采用不同策略
 /// [requests] 请求列表
 /// [folderName] 文件夹名称/文件名前缀
@@ -180,7 +231,8 @@ Future<void> exportRequestsAsFiles(
       }
       if (selectedDirectory == null) return;
 
-      // 修复 #893: 检查路径是否为目录，防止 iOS 上"Is a directory"错误
+      // 用户选中的路径可能不是目录（桌面端允许手输文件名），这里兜一层：
+      // 不存在就建，选中的是文件则退回它的父目录
       final selectedDir = Directory(selectedDirectory);
       if (!await selectedDir.exists()) {
         await selectedDir.create(recursive: true);
@@ -238,14 +290,16 @@ Future<void> exportRequestsAsFiles(
         }
       }
     } else {
-      // 创建所有文件
-      List<XFile> files = [];
+      // 先在内存里备好每条请求的导出内容，再统一写成真实临时文件交给系统分享。
+      // 修复 #893：原实现直接 XFile.fromData 交给 share_plus，在 iOS 上会抛
+      // "Is a directory, errno = 21"（选 1 条也复现），分享面板打不开。
+      List<Map<String, dynamic>> items = [];
       for (var i = 0; i < requests.length; i++) {
         var request = requests[i];
         var data = await generateExportFileData(request, type, i);
         if (data == null) continue;
 
-        files.add(XFile.fromData(data['bytes'] as Uint8List, name: data['fileName'], mimeType: 'text/plain'));
+        items.add(data);
         successCount++;
       }
 
@@ -253,10 +307,9 @@ Future<void> exportRequestsAsFiles(
       if (await Platforms.isIpad() && context.mounted) {
         box = context.findRenderObject() as RenderBox?;
       }
-      await SharePlus.instance.share(ShareParams(
-          fileNameOverrides: files.map((f) => f.name).toList(),
-          files: files,
-          sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size));
+      await shareExportFiles(items,
+          mimeType: 'text/plain',
+          sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size);
     }
 
     onSuccess?.call(successCount);
@@ -287,10 +340,10 @@ Future<void> exportHarFile(
       }
 
       logger.d("Export HAR file: $fileName, size: ${bytes.length} bytes");
-      await SharePlus.instance.share(ShareParams(
-          sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
-          fileNameOverrides: [fileName],
-          files: [XFile.fromData(bytes, name: fileName, mimeType: "application/json")]));
+      // 与 Request/Response 批量导出保持同一策略：真实临时文件 + 显式文件名（#893 同类隐患）
+      await shareExportFiles([
+        {'fileName': fileName, 'bytes': Uint8List.fromList(bytes)}
+      ], mimeType: "application/json", sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size);
     }
 
     onSuccess?.call();
