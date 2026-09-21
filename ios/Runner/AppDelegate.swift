@@ -13,7 +13,11 @@ import NetworkExtension
 
         let controller: FlutterViewController = window?.rootViewController as! FlutterViewController
         let vpnChannel = FlutterMethodChannel.init(name: "com.proxy/proxyVpn", binaryMessenger: controller as! FlutterBinaryMessenger);
-        vpnChannel.setMethodCallHandler({(call: FlutterMethodCall, result: FlutterResult) -> Void in
+        // 注意：这里**不能**给闭包写显式类型标注 `(FlutterMethodCall, FlutterResult) -> Void`——
+        // 那会把 result 变成非逃逸参数，任何异步回调（如 getVpnMemory）都会编译失败：
+        // "Escaping closure captures non-escaping parameter 'result'"。
+        // 交给编译器按 setMethodCallHandler 的签名推断，result 才是 @escaping。
+        vpnChannel.setMethodCallHandler({ (call, result) in
             // 每个分支都必须回调 result：漏掉的话 Flutter 侧 `await invokeMethod` 永远不完成。
             // 另外不能把"未知方法"兜底成一次 connect——那样任何新增的通道方法
             // （例如 getQuicBlockedCount）都会意外拉起一次 VPN 连接。

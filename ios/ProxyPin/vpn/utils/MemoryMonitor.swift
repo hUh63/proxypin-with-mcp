@@ -28,6 +28,12 @@ final class MemoryMonitor {
     private var lastLogAt = Date.distantPast
     private let logInterval: TimeInterval = 10
 
+    private var lastSampleAt = Date.distantPast
+    private var lastBytes: UInt64 = 0
+    /// 采样最小间隔：readPackets 回调可能每秒触发上百次，
+    /// 不能让 task_info 这种系统调用跑在包处理热路径上
+    private let sampleInterval: TimeInterval = 1
+
     /// 连接统计来源，由 ProxyVpnService 创建 ConnectionManager 时注入。
     /// 用 weak：ConnectionManager 的生命周期由 ProxyVpnService 持有，这里只借用。
     weak var statisticsSource: ConnectionManager?
@@ -35,16 +41,29 @@ final class MemoryMonitor {
     private init() {}
 
     /// 采样一次：更新峰值，并按 `logInterval` 节流写日志。返回当前占用字节数。
+    ///
+    /// 内部按 `sampleInterval` 做去重：热路径上高频调用时直接返回上一次的值，
+    /// 避免把系统调用压进包处理循环。
     @discardableResult
     func sample(reason: String) -> UInt64 {
+        lock.lock()
+        let now = Date()
+        if now.timeIntervalSince(lastSampleAt) < sampleInterval {
+            let cached = lastBytes
+            lock.unlock()
+            return cached
+        }
+        lastSampleAt = now
+        lock.unlock()
+
         let bytes = MemoryMonitor.currentResidentBytes()
 
         lock.lock()
+        lastBytes = bytes
         if bytes > peakBytes {
             peakBytes = bytes
         }
         let peak = peakBytes
-        let now = Date()
         let shouldLog = now.timeIntervalSince(lastLogAt) >= logInterval
         if shouldLog {
             lastLogAt = now
@@ -70,14 +89,20 @@ final class MemoryMonitor {
         return statisticsSource?.statistics() ?? (connections: 0, bufferedBytes: 0, maxBufferedBytes: 0)
     }
 
-    /// 供 App 通过 sendProviderMessage 读取的快照
+    /// 供 App 通过 sendProviderMessage 读取的快照（用户主动拉取，不做节流，取即时值）
     func snapshot() -> [String: Any] {
-        let bytes = sample(reason: "snapshot")
-        let stats = statistics()
+        let bytes = MemoryMonitor.currentResidentBytes()
 
         lock.lock()
+        lastSampleAt = Date()
+        lastBytes = bytes
+        if bytes > peakBytes {
+            peakBytes = bytes
+        }
         let peak = peakBytes
         lock.unlock()
+
+        let stats = statistics()
 
         return [
             "rssBytes": Int(bytes),
