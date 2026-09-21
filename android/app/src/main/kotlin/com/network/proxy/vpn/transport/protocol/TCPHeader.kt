@@ -146,43 +146,65 @@ class TCPHeader(
     }
 
     private fun handleTcpOptions() {
-        if (options == null) {
-            return
-        }
+        val optionBytes = options ?: return
 
         var index = 0
-        val packet = ByteBuffer.wrap(options!!)
-        val optionsSize = options!!.size
+        val packet = ByteBuffer.wrap(optionBytes)
+        val optionsSize = optionBytes.size
 
+        // 防御：options 直接来自客户端报文，可能被截断或伪造。
+        // 原实现对每个字段都用裸 packet.get()，畸形选项会抛 BufferUnderflowException
+        // （会被 ProxyVpnThread 兜住，但结果是这个包的 ACK 处理被整体跳过、数据不再推给目标服务器）；
+        // 且 else 分支的 index = index + size - 2 里 size 是有符号 Byte，
+        // 取值 >127 时变成负数会让 index 回退，导致重复解析。
+        // 这里统一改成"每一步先看剩余长度，不足就停止解析"，长度字节按无符号处理。
         while (index < optionsSize) {
+            if (packet.remaining() < 1) {
+                break
+            }
             val optionKind = packet.get()
             index++
             if (optionKind == END_OF_OPTIONS_LIST || optionKind == NO_OPERATION) {
                 continue
             }
-            val size = packet.get()
+            if (packet.remaining() < 1) {
+                break
+            }
+            val size = packet.get().toInt() and 0xFF
             index++
+            if (size < 2) {
+                // 非法长度：继续解析只会让 index 回退，直接停止
+                break
+            }
             when (optionKind) {
                 MAX_SEGMENT_SIZE -> {
+                    if (packet.remaining() < 2) break
                     maxSegmentSize = packet.getShort()
                     index += 2
                 }
 
                 WINDOW_SCALE -> {
+                    if (packet.remaining() < 1) break
                     windowScale = packet.get()
                     index++
                 }
 
                 SELECTIVE_ACK_PERMITTED -> isSelectiveAckPermitted = true
                 TIME_STAMP -> {
+                    if (packet.remaining() < 8) break
                     timeStampSender = packet.getInt()
                     timeStampReplyTo = packet.getInt()
                     index += 8
                 }
 
                 else -> {
-                    skipRemainingOptions(packet, size.toInt())
-                    index = index + size - 2
+                    val skip = size - 2
+                    if (packet.remaining() < skip) {
+                        // 选项声明长度超出实际剩余内容：停止解析
+                        break
+                    }
+                    skipRemainingOptions(packet, size)
+                    index += skip
                 }
             }
         }

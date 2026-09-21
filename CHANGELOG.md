@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.22.90 (2026-09-21)
+
+### 修复：Android 上畸形 TCP options 会让该包的后续处理被整体跳过（与 iOS 同源）
+
+- `vpn/util/PacketUtil.kt` 的 `isPacketCorrupted` 里写着 `i = i + options[++i] - 2`，与 iOS 侧的
+  `isPacketCorrupted` 一字不差（同源于 netguard 的 Java 实现）：
+  ① kind 5/15 恰好位于 options 末尾时 `options[++i]` **数组越界**；
+  ② `options[++i]` 是有符号 Byte，取值 >127 会变成负数，使 `i` **回退**（重复解析）。
+  该函数在每个 ACK 包上都会调用。
+- 异常虽然会被 `ProxyVpnThread` 的 catch 兜住（不会崩），但它**中断了这个包的后续处理**——
+  `acceptAck` 之后的数据推送（PSH）等逻辑被整体跳过，表现为"个别请求莫名卡住/超时"。
+- 现在按选项类型步进并全程校验边界（末尾缺长度字节、长度 <2、长度越界一律判定为损坏），
+  与 iOS 实现对齐。
+
+### 修复：Android 的 TCP options 解析同样是裸 `ByteBuffer.get()`
+
+- `TCPHeader.handleTcpOptions` 对每个字段都用裸 `packet.get()` / `getShort()` / `getInt()`，
+  options 被截断时抛 `BufferUnderflowException`（同样导致该包后续处理被跳过）；
+  且 `else` 分支的 `index = index + size - 2` 中 `size` 是有符号 Byte，>127 时 `index` 会回退。
+- 现在每一步先检查 `packet.remaining()`，不足即停止解析；长度字节按无符号处理；长度 <2 直接停止。
+
+### 平台对照结论（本轮同步排查了其他平台原生层）
+
+- **Android 其余原生层未发现同类可崩点**：`ConnectionHandler`（`channel!!`、`lastIpHeader!!`）、
+  `ProcessInfoManager`（`activity!!`）等都有前置判空或 try/catch 兜底；VPN 读循环本身也有 try/catch。
+- **桌面原生层很薄**（抓包逻辑都在 Dart 侧）：Windows 只有崩溃处理器与系统代理清理，
+  macOS 只有 AppDelegate 与生命周期通道，Linux 是 Flutter 模板——均无报文解析逻辑，无同类缺陷。
+
 ## v1.22.89 (2026-09-21)
 
 ### 修复：iOS 批量导出 Request / Response 报 "Is a directory"（上游 #893）

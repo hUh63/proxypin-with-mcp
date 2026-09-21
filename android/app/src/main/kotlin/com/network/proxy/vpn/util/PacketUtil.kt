@@ -229,31 +229,43 @@ object PacketUtil {
      * @return boolean
      */
     fun isPacketCorrupted(tcpHeader: TCPHeader): Boolean {
-        val options = tcpHeader.options
-        if (options != null) {
-            var i = 0
-            while (i < options.size) {
-                val kind = options[i]
-                if (kind.toInt() == 0 || kind.toInt() == 1) {
-                } else if (kind.toInt() == 2) {
-                    i += 3
-                } else if (kind.toInt() == 3 || kind.toInt() == 14) {
-                    i += 2
-                } else if (kind.toInt() == 4) {
-                    i++
-                } else if (kind.toInt() == 5 || kind.toInt() == 15) {
-                    i = i + options[++i] - 2
-                } else if (kind.toInt() == 8) {
-                    i += 9
-                } else if (kind.toInt() == 23) {
-                    return true
-                } else {
+        val options = tcpHeader.options ?: return false
+
+        // 防御：options 直接来自客户端报文，可能被截断或伪造。
+        // 原实现 `i = i + options[++i] - 2` 有两个问题：
+        //   1. options[++i]：kind 5/15 恰好是最后一个字节时直接数组越界（抛异常，中断该包的 ACK 处理）；
+        //   2. options[++i] 是有符号 Byte，取值 >127 会变成负数，使 i 回退（重复解析甚至死循环）。
+        // 本函数本身就是"防御性校验"，不该由畸形选项把它自己搞崩（iOS 侧同名函数已同样修复）。
+        var i = 0
+        while (i < options.size) {
+            val kind = options[i].toInt() and 0xFF
+            when (kind) {
+                0 -> return false // End of Option List
+                1 -> i += 1 // No Operation
+                2 -> i += 4 // Maximum Segment Size
+                3, 14 -> i += 3 // Window Scale / Alternate Checksum Request
+                4 -> i += 2 // SACK Permitted
+                5, 15 -> { // SACK / Alternate Checksum Data
+                    if (i + 1 >= options.size) {
+                        Log.e(formatTag(PacketUtil::class.java.name), "truncated tcp option: $kind")
+                        return true
+                    }
+                    val length = options[i + 1].toInt() and 0xFF
+                    if (length < 2 || i + length > options.size) {
+                        Log.e(formatTag(PacketUtil::class.java.name), "invalid tcp option length: $length, option: $kind")
+                        return true
+                    }
+                    i += length
+                }
+                8 -> i += 10 // Timestamps
+                23 -> return true
+                else -> {
                     Log.e(
                         formatTag(PacketUtil::class.java.name),
                         "unknown option: $kind"
                     )
+                    i += 1
                 }
-                i++
             }
         }
         return false
