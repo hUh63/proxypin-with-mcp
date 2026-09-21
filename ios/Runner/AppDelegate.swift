@@ -42,9 +42,11 @@ import NetworkExtension
             case "getVpnMemory":
                 // 扩展的内存水位（上游 #903）。VPN 未启动 / 拿不到数据时回调 nil，
                 // Dart 侧按"不可读"处理，不当作错误。
-                VpnManager.shared.memorySnapshot { snapshot in
-                    result(snapshot)
-                }
+                // 注意：memorySnapshot 是异步的，其回调是 escaping 闭包；而本 handler 里的
+                // result 因显式标注了闭包类型而是非逃逸参数，直接捕获会报
+                // "Escaping closure captures non-escaping parameter 'result'"，
+                // 因此统一走一个以 @escaping 接收 result 的中转方法。
+                self.replyVpnMemory(result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -64,6 +66,16 @@ import NetworkExtension
 
     override func applicationWillTerminate(_ application: UIApplication) {
         VpnManager.shared.disconnect()
+    }
+
+    /// 把扩展内存快照回给 Flutter。
+    ///
+    /// `result` 必须以 `@escaping` 接收：memorySnapshot 的回调是异步 escaping 闭包，
+    /// 而 handler 内联的 result 参数是非逃逸的，直接捕获会编译报错。
+    private func replyVpnMemory(_ result: @escaping FlutterResult) {
+        VpnManager.shared.memorySnapshot { snapshot in
+            result(snapshot)
+        }
     }
 
     var timer: Timer?
