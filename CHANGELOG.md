@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.22.95 (2026-09-22)
+
+### 修复
+
+- 修掉把语言版本提升到 Dart 3.13 后才暴露出来的两处非法形参修饰符（上游遗留写法）：
+  `inputAddress(var host)` 改成 `String host`（`lib/ui/mobile/widgets/remote_device.dart`）、
+  命名参数上的 `final` 去掉（`lib/ui/component/search_condition.dart`）。
+  这两处在更严的语言版本下是编译错误，v1.22.94 因此在所有平台都没能构建成功。
+
 ## v1.22.94 (2026-09-22)
 
 ### 工程

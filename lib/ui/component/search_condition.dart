@@ -437,7 +437,7 @@ class SearchConditionsState extends State<SearchConditions> {
         children: [Expanded(flex: 4, child: child), Expanded(flex: 6, child: child2)]);
   }
 
-  Widget textField({String? initialValue, final ValueChanged<String>? onChanged, TextStyle? style}) {
+  Widget textField({String? initialValue, ValueChanged<String>? onChanged, TextStyle? style}) {
     Color color = Theme.of(context).colorScheme.primary;
 
     return ConstrainedBox(

@@ -349,7 +349,8 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
   }
 
   ///输入地址链接
-  inputAddress(var host) {
+  // 语言版本提升到 Dart 3.13 后，形参上的 var 修饰符是编译错误（上游遗留写法）
+  inputAddress(String host) {
     //输入账号密码连接
     host = host.substring(0, host.contains('.') ? host.lastIndexOf('.') + 1 : host.length);
     int? port = 9099;
