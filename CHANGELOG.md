@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.22.94 (2026-09-22)
+
+### 工程
+
+- **提交 `pubspec.lock`**：该文件此前被 `.gitignore` 忽略，导致每次 CI 都重新解析当时最新的
+  兼容依赖、构建不可复现（也是"某个依赖的 bug 早被上游修了但没人知道"的成因）。现在把
+  CI 里 `flutter pub get` 生成的结果原样提交，依赖树被锁住。
+- 同时把 `pubspec.yaml` 的 `environment.sdk` 由 `>=3.0.2` 提升到 `>=3.13.2`，与 lockfile 的
+  `sdks` 段对齐（`code_forge 10.14.0` 本身也要求 Dart ^3.13.2）。若本版在你本地报 SDK 版本不足，
+  升级 Flutter 即可。
+- 顺带说明：`Build Linux DEB (arm64)` 在 CI 上是 flutter-action 报
+  `Unable to determine Flutter version for channel: stable architecture: arm64`，
+  是 arm64 runner 上的外部问题（amd64 正常产出）。去掉 `continue-on-error` 之后它会如实标红，
+  而不是像以前那样静默跳过。
+
+## v1.22.93 (2026-09-22)
+
+### 修复
+
+- 修 v1.22.92 引入的编译错误：`HttpMessage` 上没有 `uri`，WebSocket 规则的 URL 匹配改用
+  `requestUrl`（`lib/network/handle/websocket_handle.dart`）。v1.22.92 因此没有产出任何安装包，
+  本版是第一个真正包含 WebSocket 帧级操纵与 Root 模式抓包的发布。
+
 ## v1.22.92 (2026-09-21)
 
 ### 新功能：WebSocket 帧级操纵（#839 Feature Request 1）
