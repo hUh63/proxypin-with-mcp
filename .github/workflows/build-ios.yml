@@ -41,7 +41,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo '-----BEGIN PUBSPEC.LOCK-----'
-          python3 -c "import base64;print(base64.b64encode(open('pubspec.lock','rb').read()).decode())"
+          cat pubspec.lock
           echo '-----END PUBSPEC.LOCK-----'
 
       - name: Build iOS (no codesign)

@@ -96,7 +96,7 @@ class WebSocketChannelHandler extends ChannelHandler<Uint8List> {
   List<WebSocketRule> _activeRules() {
     final manager = WebSocketRuleManager();
     if (!manager.globalEnabled) return const [];
-    final rules = manager.getMatchingRules(message.uri);
+    final rules = manager.getMatchingRules(message.requestUrl ?? '');
     if (rules.isEmpty) return const [];
     final fromClient = message is HttpRequest;
     return rules.where((rule) {
