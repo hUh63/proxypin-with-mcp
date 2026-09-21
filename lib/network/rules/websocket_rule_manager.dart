@@ -90,6 +90,10 @@ class WebSocketRuleManager {
     bool interceptOutgoing = true,
     bool interceptIncoming = true,
     String? description,
+    WsFrameAction action = WsFrameAction.observe,
+    String? payloadPattern,
+    String? replacement,
+    int delayMs = 0,
   }) async {
     final rule = WebSocketRule(
       id: 'rule_${DateTime.now().millisecondsSinceEpoch}',
@@ -100,8 +104,12 @@ class WebSocketRuleManager {
       interceptOutgoing: interceptOutgoing,
       interceptIncoming: interceptIncoming,
       description: description,
+      action: action,
+      payloadPattern: payloadPattern,
+      replacement: replacement,
+      delayMs: delayMs,
     );
-    
+
     _rules.add(rule);
     final prefs = await SharedPreferences.getInstance();
     await _saveRules(prefs);

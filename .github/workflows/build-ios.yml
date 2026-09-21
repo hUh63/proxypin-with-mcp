@@ -34,6 +34,16 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      # 临时步骤：本仓库此前没有提交 pubspec.lock（构建不可复现），
+      # 沙箱环境无法本地生成，这里把 pub 自己解析出的 lockfile 打印到日志，
+      # 取回并提交后即可删除本步骤。
+      - name: Dump lockfile for reproducibility
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo '-----BEGIN PUBSPEC.LOCK-----'
+          python3 -c "import base64;print(base64.b64encode(open('pubspec.lock','rb').read()).decode())"
+          echo '-----END PUBSPEC.LOCK-----'
+
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
 

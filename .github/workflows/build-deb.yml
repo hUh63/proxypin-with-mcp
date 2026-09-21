@@ -5,9 +5,9 @@ name: Build Linux DEB
 #
 # 架构说明：arm64 使用 GitHub 官方 arm64 runner（ubuntu-24.04-arm）。
 #   Flutter 对 Linux arm64 桌面的工具链仍在演进，flutter-action 在 arm64 runner 上
-#   未必能装成 SDK；因此这里做「可用则构建、不可用则优雅跳过」的自适应处理——
-#   Set up Flutter 失败由 continue-on-error 吞掉，后续步骤依据 outcome 跳过，
-#   既不会让流程变红，也不影响已有的 amd64 产物。
+#   未必能装成 SDK；这里保留「装得上就构建、装不上就跳过后续步骤」的自适应处理，
+#   但不再用 continue-on-error 把它吞掉：Set up Flutter 失败会让该 job 变红（问题可见），
+#   后续步骤依据 outcome 自动跳过，不会产生误导性的连锁失败。
 on:
   push:
     tags: [ 'v*' ]
@@ -19,8 +19,9 @@ permissions:
 jobs:
   build-deb:
     name: Build DEB (${{ matrix.arch }})
-    # 桌面端构建链路独立实验，不阻塞其它产物
-    continue-on-error: true
+    # 注意：不要在这里加 continue-on-error。
+    # 它并不能让本工作流"不阻塞其它产物"（各 workflow 本来就彼此独立），
+    # 只会把构建失败吞掉、让 run 仍然显示 success。
     strategy:
       fail-fast: false
       matrix:
@@ -45,7 +46,6 @@ jobs:
 
       - name: Set up Flutter
         id: flutter
-        continue-on-error: true
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'

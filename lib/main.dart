@@ -28,6 +28,8 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart' show LogManager, LogLevel;
 import 'package:proxypin/ui/mobile/setting/mcp_connection.dart';
 import 'package:proxypin/network/util/mtls.dart';
+import 'package:proxypin/network/rules/websocket_rule_manager.dart';
+import 'package:proxypin/network/util/root_proxy.dart';
 import 'package:proxypin/ui/component/chinese_font.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
@@ -48,6 +50,16 @@ import 'l10n/app_localizations.dart';
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
+
+  // 上游 #839 FR2：清理上次异常退出遗留的 root 抓包重定向规则。
+  // 残留规则的表现是“连着 WiFi 但所有 App 上不了网”，必须在启动时兜住；
+  // 没开过 root 模式的用户不会被唤起 su 授权框（内部有标记判断）。
+  unawaited(RootProxy.cleanupIfNeeded());
+
+  // 上游 #839 FR1：提前加载 WebSocket 帧级规则。
+  // 以前只有打开过“WebSocket 拦截”页面才会 init，
+  // 导致应用刚启动时规则列表是空的、帧操纵不生效。
+  unawaited(WebSocketRuleManager().init());
 
   // 把运行日志同步进内存队列，供「工具箱 → 日志」页实时查看
   logBridge = (level, message, error, stackTrace) {

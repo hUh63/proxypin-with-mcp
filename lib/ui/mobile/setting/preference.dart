@@ -20,6 +20,7 @@ import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/content/mcp_task_manager_page.dart';
 import 'package:proxypin/ui/content/websocket_intercept_manager.dart';
 import 'package:proxypin/ui/mobile/setting/config_management.dart';
+import 'package:proxypin/ui/mobile/setting/root_proxy.dart';
 import 'package:proxypin/ui/mobile/setting/theme.dart';
 
 ///设置
@@ -667,6 +668,26 @@ class _PreferenceState extends State<Preference> {
               ),
               trailing: maxRequestCount(context, localizations),
             ),
+            if (Platform.isAndroid) ...[
+              Divider(height: 0, thickness: 0.3, color: dividerColor),
+              ListTile(
+                leading: const Icon(Icons.settings_ethernet, color: Colors.deepOrange),
+                title: const Text('Root 模式抓包'),
+                subtitle: const Text(
+                  '用 root 权限把系统出站流量重定向到本机代理，'
+                  '绕过“检测到 VPN 就拒绝联网”的应用；'
+                  '需设备已 root，与 VPN 抓包互斥',
+                  style: TextStyle(fontSize: 12),
+                ),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RootProxySettingPage(proxyServer: widget.proxyServer),
+                  ),
+                ),
+              ),
+            ],
           ]),
           const SizedBox(height: 12),
           // WebSocket 实时流量推送（上游 #756）

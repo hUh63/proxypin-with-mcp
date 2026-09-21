@@ -25,6 +25,15 @@ enum RuleMatchMode {
   exact        // 完全匹配
 }
 
+/// 帧级动作（上游 #839 Feature Request 1）
+enum WsFrameAction {
+  observe, // 仅匹配记录，不干预转发（默认，兼容旧规则）
+  rewrite, // 改写帧内容
+  drop, // 丢弃该帧
+  delay, // 延迟转发
+  duplicate, // 重复发送一帧
+}
+
 /// WebSocket 拦截规则
 class WebSocketRule {
   final String id;
@@ -35,6 +44,20 @@ class WebSocketRule {
   final bool interceptOutgoing;  // 是否拦截发出的消息
   final bool interceptIncoming;  // 是否拦截接收的消息
   final String? description; // 规则描述
+
+  /// 帧级动作（上游 #839 FR1）。observe 表示只匹配、不改动字节，
+  /// 老规则同校后就是这个值，行为与以前一致。
+  final WsFrameAction action;
+
+  /// 帧内容匹配条件；为空表示匹配该方向的所有帧
+  final String? payloadPattern;
+
+  /// rewrite 动作使用的新内容
+  final String? replacement;
+
+  /// delay 动作的延迟毫秒数
+  final int delayMs;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -47,6 +70,10 @@ class WebSocketRule {
     this.interceptOutgoing = true,
     this.interceptIncoming = true,
     this.description,
+    this.action = WsFrameAction.observe,
+    this.payloadPattern,
+    this.replacement,
+    this.delayMs = 0,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
@@ -74,6 +101,30 @@ class WebSocketRule {
     }
   }
 
+  /// 帧内容是否命中本规则的 payloadPattern（上游 #839 FR1）。
+  /// pattern 为空时表示不限内容，该方向所有帧都算命中。
+  bool matchesPayload(String payload) {
+    final pattern = payloadPattern;
+    if (pattern == null || pattern.isEmpty) return true;
+
+    switch (mode) {
+      case RuleMatchMode.contains:
+        return payload.contains(pattern);
+      case RuleMatchMode.startsWith:
+        return payload.startsWith(pattern);
+      case RuleMatchMode.endsWith:
+        return payload.endsWith(pattern);
+      case RuleMatchMode.exact:
+        return payload == pattern;
+      case RuleMatchMode.regex:
+        try {
+          return RegExp(pattern).hasMatch(payload);
+        } catch (e) {
+          return false;
+        }
+    }
+  }
+
   /// 从 JSON 创建规则
   factory WebSocketRule.fromJson(Map<String, dynamic> json) {
     return WebSocketRule(
@@ -88,6 +139,13 @@ class WebSocketRule {
       interceptOutgoing: json['interceptOutgoing'] as bool? ?? true,
       interceptIncoming: json['interceptIncoming'] as bool? ?? true,
       description: json['description'] as String?,
+      action: WsFrameAction.values.firstWhere(
+        (e) => e.name == json['action'],
+        orElse: () => WsFrameAction.observe,
+      ),
+      payloadPattern: json['payloadPattern'] as String?,
+      replacement: json['replacement'] as String?,
+      delayMs: json['delayMs'] as int? ?? 0,
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt'] as String) 
           : null,
@@ -108,6 +166,10 @@ class WebSocketRule {
       'interceptOutgoing': interceptOutgoing,
       'interceptIncoming': interceptIncoming,
       'description': description,
+      'action': action.name,
+      'payloadPattern': payloadPattern,
+      'replacement': replacement,
+      'delayMs': delayMs,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -122,6 +184,10 @@ class WebSocketRule {
     bool? interceptOutgoing,
     bool? interceptIncoming,
     String? description,
+    WsFrameAction? action,
+    String? payloadPattern,
+    String? replacement,
+    int? delayMs,
   }) {
     return WebSocketRule(
       id: id,
@@ -132,6 +198,10 @@ class WebSocketRule {
       interceptOutgoing: interceptOutgoing ?? this.interceptOutgoing,
       interceptIncoming: interceptIncoming ?? this.interceptIncoming,
       description: description ?? this.description,
+      action: action ?? this.action,
+      payloadPattern: payloadPattern ?? this.payloadPattern,
+      replacement: replacement ?? this.replacement,
+      delayMs: delayMs ?? this.delayMs,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

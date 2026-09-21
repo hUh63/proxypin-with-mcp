@@ -17,8 +17,9 @@ permissions:
 jobs:
   build-desktop:
     name: Build ${{ matrix.name }}
-    # 桌面端构建独立实验，不阻塞其它产物
-    continue-on-error: true
+    # 注意：不要在这里加 continue-on-error。
+    # 它并不能让本工作流"不阻塞其它产物"（各 workflow 本来就彼此独立），
+    # 只会把构建失败吞掉、让 run 仍然显示 success。
     strategy:
       fail-fast: false
       matrix:

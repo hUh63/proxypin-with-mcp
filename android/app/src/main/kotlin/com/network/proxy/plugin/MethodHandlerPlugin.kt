@@ -1,5 +1,6 @@
 package com.network.proxy.plugin
 
+import android.content.Context
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
@@ -17,12 +18,16 @@ import java.security.cert.X509Certificate
  */
 class MethodHandlerPlugin : AndroidFlutterPlugin() {
 
+    /** 供 root 模式读取本 App uid（用于把自身流量排除在重定向之外，防止死循环） */
+    private var appContext: Context? = null
+
     companion object {
         private const val TAG = "MethodHandlerPlugin"
         const val CHANNEL = "com.proxypin/method"
     }
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        appContext = binding.applicationContext
         val channel = MethodChannel(binding.binaryMessenger, CHANNEL)
         // 整个 handler 必须兜住异常并回 result：漏掉的话 Flutter 侧 await 会永久挂起
         channel.setMethodCallHandler { call, result ->
@@ -36,6 +41,24 @@ class MethodHandlerPlugin : AndroidFlutterPlugin() {
 
                     // Android 侧不做钥匙串级别的证书链信任校验，交回 Dart 侧按自身策略处理
                     "evaluateChainTrusted" -> result.success(false)
+
+                    // ---- root 模式抓包（上游 #839 Feature Request 2）----
+                    // 只有用户在设置里主动开启时才会走到这几条，
+                    // 它们会执行 su，首次调用弹出 root 授权框属预期行为。
+                    "isRootAvailable" -> result.success(RootProxyManager.isRootAvailable())
+
+                    "isRootProxyRunning" -> result.success(RootProxyManager.isRootProxyRunning())
+
+                    "startRootProxy" -> {
+                        val port = call.argument<Int>("port") ?: 0
+                        val uid = appContext?.applicationInfo?.uid ?: -1
+                        val started = RootProxyManager.start(port, uid)
+                        result.success(mapOf("success" to started.first, "message" to started.second))
+                    }
+
+                    "stopRootProxy" -> result.success(mapOf("success" to RootProxyManager.stop()))
+
+                    "cleanupRootProxy" -> result.success(RootProxyManager.cleanupStale())
 
                     else -> result.notImplemented()
                 }
