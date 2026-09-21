@@ -45,7 +45,7 @@ dependencies:
   win32audio: ^1.5.0
   scrollable_positioned_list_nic: ^0.0.2
   tray_manager: ^0.5.3
-  code_forge: ^10.8.0
+  code_forge: ^10.14.0
   archive: ^4.0.0
   http: ^1.2.0
   provider: ^6.1.1

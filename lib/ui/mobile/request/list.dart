@@ -149,8 +149,12 @@ class RequestListState extends State<RequestListWidget> {
     if (maxCount > 0 && container.length > maxCount) {
       final overflow = container.length - maxCount;
       final removed = container.removeRange(0, overflow);
-      domainListKey.currentState?.clean();
-      requestSequenceKey.currentState?.clean();
+      // 上游 #839 Bug 3：这里必须用增量 remove，不能用 clean()。
+      // clean() 会清空并全量重建域名分组/请求列表（O(n)），而一旦到达上限，
+      // 之后**每个**新请求都会再触发一次全量重建 —— 高流量下这就是卡顿主因。
+      // remove() 只摘掉被丢弃的条目，同时还保住了用户的筛选与选中状态。
+      domainListKey.currentState?.remove(removed);
+      requestSequenceKey.currentState?.remove(removed);
       RequestRowState.removeAutoReadByIds(
         removed.map((request) => request.requestId),
       );
@@ -217,8 +221,9 @@ class RequestListState extends State<RequestListWidget> {
 
     var removeRange = container.removeRange(0, list.length - retain);
 
-    domainListKey.currentState?.clean();
-    requestSequenceKey.currentState?.clean();
+    // 上游 #839 Bug 3：同 add() 超限分支，增量移除而不是全量重建
+    domainListKey.currentState?.remove(removeRange);
+    requestSequenceKey.currentState?.remove(removeRange);
     RequestRowState.removeAutoReadByIds(
       removeRange.map((request) => request.requestId),
     );

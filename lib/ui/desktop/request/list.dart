@@ -262,8 +262,9 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     if (maxCount > 0 && container.length > maxCount) {
       final overflow = container.length - maxCount;
       final removed = container.removeRange(0, overflow);
-      domainListKey.currentState?.clean();
-      requestSequenceKey.currentState?.clean();
+      // 上游 #839 Bug 3：与移动端同理，改用增量 remove 避免每次都全量重建。
+      domainListKey.currentState?.remove(removed);
+      requestSequenceKey.currentState?.remove(removed);
       RequestWidget.removeAutoReadByIds(removed.map((request) => request.requestId));
       selectionController.prune(container.map((request) => request.requestId));
       MemoryCleanupMonitor.releaseAll(removed);
@@ -331,8 +332,9 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
     var removeRange = container.removeRange(0, list.length - retain);
 
-    domainListKey.currentState?.clean();
-    requestSequenceKey.currentState?.clean();
+    // 上游 #839 Bug 3：同 add() 超限分支，增量移除而不是全量重建
+    domainListKey.currentState?.remove(removeRange);
+    requestSequenceKey.currentState?.remove(removeRange);
 
     RequestWidget.removeAutoReadByIds(removeRange.map((request) => request.requestId));
     selectionController.prune(container.map((request) => request.requestId));

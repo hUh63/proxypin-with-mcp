@@ -15,7 +15,10 @@ permissions:
 jobs:
   build-ios:
     name: Build iOS (unsigned)
-    continue-on-error: true
+    # 注意：这里**不能**再用 continue-on-error。
+    # job 级 continue-on-error 会吞掉 iOS 编译失败，让 workflow run 仍显示 success，
+    # 而 Release 里会静默缺少 ios-unsigned.ipa（本仓曾因此误判两次）。
+    # 另外它也无法实现"不阻塞其它产物"——各 workflow 本来就彼此独立。
     runs-on: macos-latest
 
     steps:
