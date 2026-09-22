@@ -165,17 +165,36 @@ class CaptureDiagnose {
     try {
       final caPem = await CertificateManager.certificatePem();
       if (Platforms.isMobile()) {
-        final installed = await NativeMethod.isCaInstalled(caPem);
+        // 上游 #200/#652/#728/#741：安卓上“装了证书却抓不到 HTTPS”多半是装进了用户库，
+        // 所以这里把安装位置也测出来，直接把原因归属说清楚
+        final scope = Platforms.isAndroid() ? await NativeMethod.caInstallScope(caPem) : 'unknown';
+        String detail;
+        bool ok;
+        if (scope == 'system') {
+          ok = true;
+          detail = '已在系统信任库中';
+        } else if (scope == 'user') {
+          ok = false;
+          detail = '只在「用户证书库」：Android 7 起应用默认不信任用户证书，'
+              '所以会出现“证书装了但 HTTPS 抓不到或报错”。'
+              '要全应用生效需 root 装进系统证书目录'
+              '（Android 14+ 是 /apex/com.android.conscrypt/cacerts），'
+              '或给目标 App 配 network_security_config';
+        } else {
+          final installed = await NativeMethod.isCaInstalled(caPem);
+          ok = installed;
+          detail = installed
+              ? '已安装（未能区分系统库/用户库）'
+              : (Platforms.isAndroid()
+                  ? '未检测到根证书：去「HTTPS 证书 → 安装根证书」按引导安装；'
+                      '安装时请选「CA 证书」而不是「VPN 和应用证书」'
+                  : '未检测到根证书，HTTPS 会握手失败（列表里表现为成片的感叹号包）');
+        }
         items.add(DiagnoseItem(
           key: 'certificate',
           title: 'CA 根证书',
-          status: installed ? DiagnoseStatus.ok : DiagnoseStatus.error,
-          detail: installed
-              ? '已在系统信任库中'
-              : (Platforms.isAndroid()
-                  ? '未检测到根证书：去「HTTPS 证书 → 安装根证书」按引导安装。'
-                      'Android 7 起用户证书默认不被大多数应用信任，要全应用生效需 root 装进系统证书目录'
-                  : '未检测到根证书，HTTPS 会握手失败（列表里表现为成片的感叹号包）'),
+          status: ok ? DiagnoseStatus.ok : DiagnoseStatus.error,
+          detail: detail,
         ));
       } else {
         items.add(DiagnoseItem(

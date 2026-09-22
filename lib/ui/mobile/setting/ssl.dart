@@ -371,6 +371,10 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
           "Android 14: ${isCN ? "将证书挂载到" : "Mount the certificate to"} '/apex/com.android.conscrypt/cacerts' ${isCN ? "目录" : "Directory"}"
               .fixAutoLines()),
       const SizedBox(height: 5),
+      Text(
+          "${isCN ? "注意" : "Note"}: ${isCN ? "安装时要选【CA 证书】，选成【VPN 和应用证书】不会被应用信任；Android 14+ 的 CA 目录在 APEX 里，只把文件拷进去不一定生效，一般需要模块做 bind mount" : "Pick CA certificate (not VPN and app certificate) during install; on Android 14+ the CA directory lives in APEX, so copying the file alone may not take effect \u2014 a bind-mount module is usually required"}"
+              .fixAutoLines()),
+      const SizedBox(height: 5),
       ClipRRect(
           child: Align(
               alignment: Alignment.topCenter,

@@ -38,6 +38,14 @@ final class MemoryMonitor {
     /// 用 weak：ConnectionManager 的生命周期由 ProxyVpnService 持有，这里只借用。
     weak var statisticsSource: ConnectionManager?
 
+    /// 内存压力线（上游 #903）。
+    /// 超过就主动回收连接：iOS 给网络扩展的配额远小于 App 进程，
+    /// “先断几条连接”永远比“扩展被系统直接杀掉（全断网）”好。
+    private let pressureBytes: UInt64 = 45 * 1024 * 1024
+    private let severePressureBytes: UInt64 = 60 * 1024 * 1024
+    private var lastTrimAt = Date.distantPast
+    private let trimInterval: TimeInterval = 5
+
     private init() {}
 
     /// 采样一次：更新峰值，并按 `logInterval` 节流写日志。返回当前占用字节数。
@@ -81,7 +89,33 @@ final class MemoryMonitor {
                    Double(stats.bufferedBytes) / 1048576.0,
                    reason)
         }
+
+        if bytes >= pressureBytes {
+            trimConnectionsIfNeeded(bytes: bytes)
+        }
         return bytes
+    }
+
+    /// 内存越线时按活跃度裁剪连接（上游 #903）。
+    /// 每 trimInterval 秒最多做一次，避免在包处理热路径上反复扫表。
+    private func trimConnectionsIfNeeded(bytes: UInt64) {
+        lock.lock()
+        let now = Date()
+        guard now.timeIntervalSince(lastTrimAt) >= trimInterval else {
+            lock.unlock()
+            return
+        }
+        lastTrimAt = now
+        lock.unlock()
+
+        // 严重趋紧时留得更少；平时只把长尾切掉
+        let target = bytes >= severePressureBytes ? 48 : 128
+        let closed = statisticsSource?.trimToCount(target, reason: "extension memory \(bytes / 1048576)MB") ?? 0
+        if closed > 0 {
+            os_log("[extension memory] pressure rss=%.1fMB, trimmed %ld connections (target %ld)",
+                   log: OSLog.default, type: .default,
+                   Double(bytes) / 1048576.0, closed, target)
+        }
     }
 
     /// 当前连接数 / 所有连接 sendBuffer 积压总量 / 单连接最大积压

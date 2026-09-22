@@ -40,6 +40,23 @@ class NativeMethod {
     }
   }
 
+  /// Android：证书装在哪里 —— "system"（系统信任库）/ "user"（用户凭据）/ "none"。
+  ///
+  /// 其它平台返回 "unknown"（iOS 走钥匙串，没有这个区分）。
+  /// 上游 #200 / #652 / #728 / #741：“证书装了但抓不到 HTTPS”里有很大一部分
+  /// 是装进了用户库（Android 7 起应用默认不信任），这个结果能直接把原因指出来。
+  static Future<String> caInstallScope(String pem) async {
+    try {
+      final String? scope = await _channel.invokeMethod<String>('caInstallScope', {"pem": pem});
+      return scope ?? 'unknown';
+    } on PlatformException catch (e) {
+      logger.e("[NativeMethod] caInstallScope error: ${e.message}");
+      return 'unknown';
+    } on MissingPluginException {
+      return 'unknown';
+    }
+  }
+
   /// iOS: 基于 SSL 策略校验证书链（leaf + CA），仅当 CA 被系统信任时返回 true
   static Future<bool> evaluateChainTrusted(String leafPem, String caPem, {String? host}) async {
     try {

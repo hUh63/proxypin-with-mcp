@@ -42,6 +42,10 @@ class MethodHandlerPlugin : AndroidFlutterPlugin() {
                     // Android 侧不做钥匙串级别的证书链信任校验，交回 Dart 侧按自身策略处理
                     "evaluateChainTrusted" -> result.success(false)
 
+                    // 证书装在“系统信任库”还是“用户凭据”
+                    // （上游 #200 / #652 / #728 / #741 这类“装了证书但抓不到 HTTPS”的诊断用）
+                    "caInstallScope" -> result.success(caInstallScope(call.argument<String>("pem")))
+
                     // ---- root 模式抓包（上游 #839 Feature Request 2）----
                     // 只有用户在设置里主动开启时才会走到这几条，
                     // 它们会执行 su，首次调用弹出 root 授权框属预期行为。
@@ -76,6 +80,48 @@ class MethodHandlerPlugin : AndroidFlutterPlugin() {
      * （Magisk 模块或写 /system/etc/security/cacerts、Android 14+ 的 /apex/com.android.conscrypt/cacerts），
      * 以 "user:" 前缀出现的是用户在「设置 → 安全 → 加密与凭据」里手动安装的证书。按 DER 字节比对。
      */
+    /**
+     * 证书到底装在哪：返回 "system" / "user" / "none"。
+     *
+     * AndroidCAStore 的 alias 前缀天然区分两者："system:" 是预置或 root 写入
+     * 系统目录的，"user:" 是用户在「设置 → 安全 → 加密与凭据」里手动装的。
+     * Android 7 起应用默认不信任用户证书——所以这个区分直接决定了
+     * “抓不到 HTTPS”的原因归属（很多反馈里其实是装进了用户库）。
+     */
+    private fun caInstallScope(pem: String?): String {
+        if (pem.isNullOrBlank()) {
+            return "none"
+        }
+
+        val target = try {
+            CertificateFactory.getInstance("X.509")
+                .generateCertificate(ByteArrayInputStream(pem.toByteArray(Charsets.UTF_8))) as X509Certificate
+        } catch (e: Throwable) {
+            Log.w(TAG, "parse pem failed", e)
+            return "none"
+        }
+
+        return try {
+            val keyStore = KeyStore.getInstance("AndroidCAStore")
+            keyStore.load(null, null)
+            val aliases = keyStore.aliases()
+            var fallback = "none"
+            while (aliases.hasMoreElements()) {
+                val alias = aliases.nextElement()
+                val certificate = keyStore.getCertificate(alias) as? X509Certificate ?: continue
+                if (certificate.encoded.contentEquals(target.encoded)) {
+                    // 系统库优先：只要有一处是系统库，对 App 就生效
+                    if (alias.startsWith("system:")) return "system"
+                    fallback = "user"
+                }
+            }
+            fallback
+        } catch (e: Throwable) {
+            Log.w(TAG, "read AndroidCAStore failed", e)
+            "none"
+        }
+    }
+
     private fun isCaInstalled(pem: String?): Boolean {
         if (pem.isNullOrBlank()) {
             return false

@@ -19,7 +19,11 @@ class ConnectionManager : CloseableConnection{
     public var proxyAddress: NWEndpoint?
 
     private let defaultPorts: [UInt16] = [80, 443, 8080, 8088, 8888, 9000]
-    private let maxConnections = 384
+    /// 同时保持的连接上限（上游 #903 从 384 收紧）。
+    /// iOS 给网络扩展的内存配额远小于 App 进程，384 条连接各自的
+    /// socket + 发送缓冲在移动网络下很容易把扩展推到被系统杀掉的边缘；
+    /// 192 条对正常浏览与抓包都足够。
+    private let maxConnections = 192
     private let tcpSessionTimeout: TimeInterval = 30
     private let udpSessionTimeout: TimeInterval = 10
     private let dnsSessionTimeout: TimeInterval = 3
@@ -238,6 +242,41 @@ class ConnectionManager : CloseableConnection{
             oldest.value.takeChannelForClose()?.cancel()
             os_log("Connection table full, evicted oldest connection %{public}@ for %{public}@", log: OSLog.default, type: .error, oldest.key, newKey)
         }
+    }
+
+    /// 内存压力下按活跃度裁剪连接（上游 #903）。
+    ///
+    /// 与 `reapIdleConnections` 的区别：后者只在“表满”时按空闲超时清理，
+    /// 而这里是内存真紧张了主动让位——保留最近活跃的 target 条。
+    /// 宁可让几条连接重建，也不要让整个扩展被 jetsam 杀掉。
+    @discardableResult
+    func trimToCount(_ target: Int, reason: String) -> Int {
+        lock.lock()
+        let snapshot = table
+        lock.unlock()
+
+        let excess = snapshot.count - target
+        guard excess > 0 else { return 0 }
+
+        let victims = snapshot
+            .sorted { left, right in
+                left.value.withLock { left.value.lastActiveAt } < right.value.withLock { right.value.lastActiveAt }
+            }
+            .prefix(excess)
+
+        lock.lock()
+        var closed = 0
+        for (key, connection) in victims {
+            if table.removeValue(forKey: key) != nil {
+                connection.takeChannelForClose()?.cancel()
+                closed += 1
+            }
+        }
+        lock.unlock()
+
+        os_log("Trimmed %ld connections for %{public}@ (target %ld)",
+               log: OSLog.default, type: .default, closed, reason, target)
+        return closed
     }
 
     /// 内存水位观测用（上游 #903）：连接数、所有连接 sendBuffer 积压总量、单连接最大积压。

@@ -41,6 +41,11 @@ class Connection{
     //发送缓冲区，用于存储要从vpn客户端发送到目标主机的数据
     var sendBuffer = Data()
 
+    /// 单连接发送缓冲上限（上游 #903）。
+    /// channel 未 ready 时数据只能堆在这里，是扩展内存唯一的无上限增长点；
+    /// 超过就关掉这条连接——断一个请求，总比整个扩展被系统杀掉（全断网）强。
+    private let maxSendBufferBytes = 4 * 1024 * 1024
+
     var hasReceivedLastSegment = false
     
     //从客户端接收的最后一个数据包
@@ -88,6 +93,8 @@ class Connection{
             channel = nil
             isConnected = false
             isAbortingConnection = true
+            // 上游 #903：关闭时立刻放掉缓冲，不等 GC 慢慢回收
+            sendBuffer.removeAll()
             return currentChannel
         }
     }
@@ -109,13 +116,24 @@ class Connection{
     }
 
     func addSendData(data: Data) {
-        let isReady = withLock { () -> Bool in
+        let state = withLock { () -> (ready: Bool, overflow: Bool) in
             self.lastActiveAt = Date()
             self.sendBuffer.append(data)
-            return self.channel?.state == .ready
+            return (self.channel?.state == .ready, self.sendBuffer.count > self.maxSendBufferBytes)
         }
 
-        if !isReady {
+        // 上游 #903：缓冲溢出就断开本连接。
+        // 这里不能选择“丢弃新数据”——那会静默地把协议流改坏，对端只会卡死；
+        // 关连接至少是一个干净的失败，而且释放掉整个缓冲。
+        if state.overflow {
+            os_log("Connection %{public}@ send buffer overflow (> %ld bytes), closing",
+                   log: OSLog.default, type: .error, self.description, self.maxSendBufferBytes)
+            self.sendBuffer.removeAll()
+            closeConnection()
+            return
+        }
+
+        if !state.ready {
             os_log("Connection %{public}@ is not ready, cannot send data", log: OSLog.default, type: .debug, self.description)
             return
         }
