@@ -37,6 +37,17 @@ v1.24.5 起合流为一套：
   `mcp/transport/mcp_stdio_bridge.dart`（stdio 桥）、`mcp/transport/setup_script.dart`（客户端配置脚本）、
   `mcp/mcp_names.dart`（客户端注册名）。
 
+### 设置入口
+
+桌面与移动端各只有一个 MCP 设置页：
+
+- 桌面：设置页「MCP 服务」→ `DesktopMcpConnection`（服务开关 / 端口 / 自动启动 / 局域网与鉴权开关 / 工具开关），
+  右上角按钮进入客户端接入向导（`McpServiceDialog`，Claude Code / Codex / Cursor 一键注册）。
+- 移动：`McpConnectionPage`（服务开关 / 端口 / 自动启动 / 局域网与鉴权开关 / 访问令牌 / 客户端接入命令 /
+  工具开关 / 设备信息）。
+
+局域网访问默认关闭；开启后**默认要求 Bearer token**（`mcpAuthEnabled`，可关但 UI 会红字警示）。
+
 ### 工具分组（`get_tool_catalog` 可自助查询）
 
 capture / rules / breakpoint / scripts / ssl / environment / network_condition / websocket / quic /
@@ -74,7 +85,7 @@ device / security / runtime / server / meta
 
 | 文件 | 说明 |
 |------|------|
-| `lib/network/mcp/mcp_server.dart` | **新增** MCP Server（唯一服务主体），实现 JSON-RPC 协议与 **102 个工具**（自有 70 + 官方合流 32） |
+| `lib/network/mcp/mcp_server.dart` | **新增** MCP Server（唯一服务主体），实现 JSON-RPC 协议与 **88 个工具**（自有 58 + 官方合流 30，另有 10 个与官方重叠的自有工具与 2 个语义重复的官方工具已退役） |
 | `lib/network/mcp/mcp_bridge.dart` | **新增** 流量桥接器，连接 ProxyServer 和 McpServer |
 | `lib/native/mcp_screen.dart` | **新增** Dart 端 MethodChannel 桥接，封装设备控制 API |
 | `lib/network/bin/configuration.dart` | **修改** 添加 mcpPort 配置（默认 9010） |

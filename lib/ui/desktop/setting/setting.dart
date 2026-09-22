@@ -94,15 +94,13 @@ class _SettingState extends State<Setting> {
             onPressed: () => showCaptureBodyLimitDialog(context, widget.proxyServer.configuration),
             leadingIcon: Icons.data_usage),
         const Divider(),
-        item('MCP 连接', onPressed: showMcpConnection, leadingIcon: Icons.cloud),
+        item(localizations.mcpService, onPressed: showMcpConnection, leadingIcon: Icons.cloud),
         item('MCP 自动化', onPressed: showMcpAutomation, leadingIcon: Icons.auto_awesome),
         item('配置管理', onPressed: showConfigManagement, leadingIcon: Icons.settings_suggest),
         item('备份管理', onPressed: showBackupManagement, leadingIcon: Icons.backup),
         item('主题设置', onPressed: showThemeSetting, leadingIcon: Icons.palette),
         const Divider(),
         item(localizations.about, onPressed: showAbout, leadingIcon: Icons.info),
-        item(localizations.mcpService, onPressed: () => McpServiceDialog.show(context, widget.proxyServer)),
-        item(localizations.about, onPressed: showAbout),
       ],
     );
   }

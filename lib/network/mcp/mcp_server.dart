@@ -164,13 +164,17 @@ class McpServer {
 
       // 局域网模式：生成/复用 Bearer token（与官方实现一致），并写握手文件供 stdio 桥发现端口
       _lanMode = config.mcpAllowLan;
-      if (_lanMode) {
+      _authEnabled = config.mcpAuthEnabled;
+      if (_lanMode && _authEnabled) {
         _token = (config.mcpToken?.isNotEmpty ?? false) ? config.mcpToken : generateToken();
         config.mcpToken = _token;
         ConfigAutoSave.markChanged();
         logger.i('MCP LAN mode: Bearer token required for remote clients');
       } else {
         _token = null;
+        if (_lanMode) {
+          logger.w('MCP LAN mode without auth (mcpAuthEnabled=false): any host on the LAN can read traffic');
+        }
       }
       unawaited(_writeHandshake());
 
@@ -1033,17 +1037,6 @@ class McpServer {
           },
         ],
       },
-      {
-        'name': 'traffic_summary',
-        'description': 'Generate traffic summary for a time period',
-        'arguments': [
-          {
-            'name': 'minutes',
-            'description': 'Time range in minutes',
-            'required': false,
-          },
-        ],
-      },
     ];
   }
 
@@ -1206,12 +1199,19 @@ class McpServer {
 
   static const Set<String> _nativeToolNames = {'generate_code', 'update_script'};
 
+  /// 语义与自建工具重复、从工具表隐藏的官方工具（实现保留，可随时恢复）：
+  /// clear_session ≡ clear_requests；replay_flow ≡ replay_request。
+  static const Set<String> _shadowedOfficialTools = {'clear_session', 'replay_flow'};
+
   /// 官方工具源的默认脱敏开关（启动时从配置读取，默认开启）
   bool _redactEnabled = true;
 
   /// 局域网模式的 Bearer token（桌面回环模式为 null）
   String? _token;
   bool _lanMode = false;
+
+  /// 是否启用局域网 Bearer 鉴权（用户可关；关闭时局域网无鉴权，UI 需显式警示）
+  bool _authEnabled = true;
 
   /// 当前局域网鉴权 token（桌面回环模式返回 null）
   String? get token => _token;
@@ -1228,7 +1228,7 @@ class McpServer {
   /// 请求鉴权：仅局域网模式生效；[io.HttpRequest] 携带 Bearer token 或 ?token= 查询参数均可。
   bool _authorized(io.HttpRequest request) {
     final expected = _token;
-    if (!_lanMode || expected == null || expected.isEmpty) return true;
+    if (!_lanMode || !_authEnabled || expected == null || expected.isEmpty) return true;
     final auth = request.headers.value('authorization') ?? '';
     final bearer = auth.toLowerCase().startsWith('bearer ') ? auth.substring(7).trim() : '';
     final query = request.uri.queryParameters['token'] ?? '';
@@ -1288,6 +1288,7 @@ class McpServer {
     try {
       return _officialTools()
           .where((t) => !_nativeToolNames.contains(t.name))
+          .where((t) => !_shadowedOfficialTools.contains(t.name))
           .map((t) => t.toJson())
           .toList();
     } catch (e) {
@@ -1384,54 +1385,6 @@ class McpServer {
               'description': 'Enable/Disable SSL capture (MITM)',
             },
           },
-        },
-      },
-      {
-        'name': 'add_host_mapping',
-        'description': 'Add a domain mapping (like hosts file).',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'domain': {
-              'type': 'string',
-              'description': 'Domain name (e.g. example.com)',
-            },
-            'ip': {
-              'type': 'string',
-              'description': 'Target IP or domain (e.g. 127.0.0.1)',
-            },
-          },
-          'required': ['domain', 'ip'],
-        },
-      },
-      {
-        'name': 'add_response_rewrite',
-        'description':
-            'Mock/Rewrite response (headers, status code, or body) for a specific URL.',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'url_pattern': {
-              'type': 'string',
-              'description': 'URL pattern to match (e.g. "api.com/users")',
-            },
-            'rewrite_type': {
-              'type': 'string',
-              'description': 'Type: updateHeader, updateStatusCode, updateBody',
-              'enum': ['updateHeader', 'updateStatusCode', 'updateBody'],
-            },
-            'key': {
-              'type': 'string',
-              'description':
-                  'Header name (for updateHeader) or "body" for body replacement',
-            },
-            'value': {
-              'type': 'string',
-              'description':
-                  'New value (header value, status code, or body content)',
-            },
-          },
-          'required': ['url_pattern', 'rewrite_type', 'value'],
         },
       },
       {
@@ -1631,7 +1584,9 @@ Body Encoding Rules:
       },
       {
         'name': 'stop_proxy',
-        'description': 'Stop the ProxyPin server.',
+        'description':
+            'Stop the ProxyPin proxy server and release the listening port. Call this when the user asks to stop '
+                'capturing traffic, or before changing ports/config that require a restart.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
@@ -1660,51 +1615,6 @@ Body Encoding Rules:
         },
       },
       {
-        'name': 'block_url',
-        'description': 'Block requests or responses matching a URL pattern.',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'url_pattern': {
-              'type': 'string',
-              'description': 'URL pattern to block (supports wildcard *)',
-            },
-            'block_type': {
-              'type': 'string',
-              'description': 'Type: blockRequest or blockResponse',
-              'enum': ['blockRequest', 'blockResponse'],
-            },
-          },
-          'required': ['url_pattern', 'block_type'],
-        },
-      },
-      {
-        'name': 'add_request_rewrite',
-        'description':
-            'Add a request rewrite rule (modify headers, query params, or body).',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'url_pattern': {
-              'type': 'string',
-              'description': 'URL pattern to match',
-            },
-            'rewrite_type': {
-              'type': 'string',
-              'description': 'Type: updateHeader, updateQueryParam, updateBody',
-              'enum': ['updateHeader', 'updateQueryParam', 'updateBody'],
-            },
-            'key': {
-              'type': 'string',
-              'description':
-                  'Header name, query param name, or "body" for body replacement',
-            },
-            'value': {'type': 'string', 'description': 'New value'},
-          },
-          'required': ['url_pattern', 'rewrite_type', 'key', 'value'],
-        },
-      },
-      {
         'name': 'update_script',
         'description':
             'Update or create a JavaScript script for request/response modification.',
@@ -1726,7 +1636,9 @@ Body Encoding Rules:
       },
       {
         'name': 'get_scripts',
-        'description': 'Get all configured scripts.',
+        'description':
+            'List all configured JavaScript rewrite scripts with their enabled state and match rules. Call this when '
+                'the user asks which scripts exist, or before editing one with update_script.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
@@ -1789,21 +1701,6 @@ Body Encoding Rules:
       },
       // ==================== 安全分析工具（2.x 增强） ====================
       {
-        'name': 'analyze_auth',
-        'description':
-            'Analyze authentication information in requests (Authorization headers, tokens, cookies, API keys).',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'request_id': {
-              'type': 'string',
-              'description':
-                  'Specific request ID (optional, defaults to recent 100)',
-            },
-          },
-        },
-      },
-      {
         'name': 'find_sensitive_data',
         'description':
             'Search requests for sensitive data: passwords, API keys, secrets, tokens, private keys, phone numbers, ID cards.',
@@ -1855,84 +1752,7 @@ Body Encoding Rules:
           'required': ['domain'],
         },
       },
-      {
-        'name': 'calculate_entropy',
-        'description':
-            'Calculate Shannon entropy of a string (for evaluating randomness / key strength).',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'text': {
-              'type': 'string',
-              'description': 'Text to analyze (required)',
-            },
-          },
-          'required': ['text'],
-        },
-      },
       // ==================== Breakpoint Debugging Tools (1.3.1+) ====================
-      {
-        'name': 'add_breakpoint_rule',
-        'description':
-            'Add a breakpoint rule to intercept requests or responses for debugging. The request will be paused until manually resumed via UI.',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'url_pattern': {
-              'type': 'string',
-              'description':
-                  'URL regex pattern to match (e.g. "api.example.com/v1/.*")',
-            },
-            'name': {'type': 'string', 'description': 'Rule name (optional)'},
-            'intercept_request': {
-              'type': 'boolean',
-              'description': 'Intercept request (default true)',
-            },
-            'intercept_response': {
-              'type': 'boolean',
-              'description': 'Intercept response (default true)',
-            },
-            'method': {
-              'type': 'string',
-              'description':
-                  'HTTP method filter (GET, POST, etc.). Empty = all methods',
-              'enum': [
-                'GET',
-                'POST',
-                'PUT',
-                'DELETE',
-                'PATCH',
-                'HEAD',
-                'OPTIONS',
-              ],
-            },
-            'enabled': {
-              'type': 'boolean',
-              'description': 'Enable the rule (default true)',
-            },
-          },
-          'required': ['url_pattern'],
-        },
-      },
-      {
-        'name': 'remove_breakpoint_rule',
-        'description': 'Remove a breakpoint rule by URL pattern.',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'url_pattern': {
-              'type': 'string',
-              'description': 'URL pattern of the rule to remove',
-            },
-          },
-          'required': ['url_pattern'],
-        },
-      },
-      {
-        'name': 'list_breakpoint_rules',
-        'description': 'List all breakpoint rules and their status.',
-        'inputSchema': {'type': 'object', 'properties': {}},
-      },
       {
         'name': 'toggle_breakpoint',
         'description':
@@ -2525,65 +2345,6 @@ Body Encoding Rules:
           'ssl_capture': config.enableSsl,
         };
 
-      case 'add_host_mapping':
-        final domain = args['domain'];
-        final ip = args['ip'];
-        var hostsManager = await HostsManager.instance;
-        await hostsManager.addHosts(
-          HostsItem(host: domain, toAddress: ip, enabled: true),
-        );
-        await hostsManager.flushConfig();
-        return {
-          'status': 'success',
-          'message': 'Added host mapping: $domain -> $ip',
-        };
-
-      case 'add_response_rewrite':
-        final urlPattern = args['url_pattern'];
-        final rewriteTypeStr = args['rewrite_type'] ?? 'updateBody';
-        final key = args['key'];
-        final value = args['value'];
-
-        try {
-          var manager = await RequestRewriteManager.instance;
-
-          RewriteItem item;
-          RuleType ruleType;
-
-          if (rewriteTypeStr == 'updateHeader') {
-            // updateHeader 属于修改类型，应使用 responseUpdate
-            ruleType = RuleType.responseUpdate;
-            item = RewriteItem(RewriteType.updateHeader, true)
-              ..key = key
-              ..value = value;
-          } else if (rewriteTypeStr == 'updateStatusCode') {
-            // replaceResponseStatus 属于替换类型，使用 responseReplace
-            ruleType = RuleType.responseReplace;
-            item = RewriteItem(RewriteType.replaceResponseStatus, true)
-              ..statusCode = int.tryParse(value) ?? 200;
-          } else {
-            // updateBody -> replaceResponseBody 属于替换类型，使用 responseReplace
-            ruleType = RuleType.responseReplace;
-            item = RewriteItem(RewriteType.replaceResponseBody, true)
-              ..body = value;
-          }
-
-          var rule = RequestRewriteRule(
-            type: ruleType,
-            url: urlPattern,
-            name: 'MCP: Response $rewriteTypeStr for $urlPattern',
-          );
-
-          await manager.addRule(rule, [item]);
-          await manager.flushRequestRewriteConfig();
-          return {
-            'status': 'success',
-            'message': 'Added response rewrite rule for $urlPattern',
-          };
-        } catch (e) {
-          return {'error': 'Failed to add response rewrite rule: $e'};
-        }
-
       case 'export_har':
         final limit = (args['limit'] as num?)?.toInt() ?? 100;
         final requestIds = args['request_ids'];
@@ -2901,70 +2662,6 @@ Body Encoding Rules:
           return {'error': 'Failed to replay request: $e'};
         }
 
-      case 'block_url':
-        final urlPattern = args['url_pattern'];
-        final blockTypeStr = args['block_type'];
-
-        try {
-          var manager = await RequestBlockManager.instance;
-          var blockType = BlockType.nameOf(blockTypeStr);
-          var item = RequestBlockItem(true, urlPattern, blockType);
-          manager.addBlockRequest(item);
-          return {
-            'status': 'success',
-            'message': 'Added block rule for $urlPattern',
-          };
-        } catch (e) {
-          return {'error': 'Failed to add block rule: $e'};
-        }
-
-      case 'add_request_rewrite':
-        final urlPattern = args['url_pattern'];
-        final rewriteTypeStr = args['rewrite_type'];
-        final key = args['key'];
-        final value = args['value'];
-
-        try {
-          var manager = await RequestRewriteManager.instance;
-
-          RewriteItem item;
-          RuleType ruleType;
-
-          if (rewriteTypeStr == 'updateHeader') {
-            // updateHeader 属于修改类型，使用 requestUpdate
-            ruleType = RuleType.requestUpdate;
-            item = RewriteItem(RewriteType.updateHeader, true)
-              ..key = key
-              ..value = value;
-          } else if (rewriteTypeStr == 'updateQueryParam') {
-            // updateQueryParam 属于修改类型，使用 requestUpdate
-            ruleType = RuleType.requestUpdate;
-            item = RewriteItem(RewriteType.updateQueryParam, true)
-              ..key = key
-              ..value = value;
-          } else {
-            // updateBody -> replaceRequestBody 属于替换类型，使用 requestReplace
-            ruleType = RuleType.requestReplace;
-            item = RewriteItem(RewriteType.replaceRequestBody, true)
-              ..body = value;
-          }
-
-          var rule = RequestRewriteRule(
-            type: ruleType,
-            url: urlPattern,
-            name: 'MCP: $rewriteTypeStr $key',
-          );
-
-          await manager.addRule(rule, [item]);
-          await manager.flushRequestRewriteConfig();
-          return {
-            'status': 'success',
-            'message': 'Added request rewrite rule for $urlPattern',
-          };
-        } catch (e) {
-          return {'error': 'Failed to add request rewrite rule: $e'};
-        }
-
       case 'update_script':
         final name = args['name'];
         final urlPattern = args['url_pattern'];
@@ -3182,117 +2879,6 @@ Body Encoding Rules:
         }
 
       // ==================== 安全分析工具（2.x 增强） ====================
-      case 'analyze_auth':
-        // 分析请求中的认证信息（Authorization 头、Cookie、Token、ApiKey）
-        try {
-          final requestId = args['request_id'] as String?;
-          final requests = requestId != null
-              ? McpBridge().source
-                    .where((r) => r.requestId == requestId)
-                    .toList()
-              : McpBridge().source.take(100).toList();
-
-          final findings = <Map<String, dynamic>>[];
-          for (var req in requests) {
-            var authHeader = req.headers.get('authorization');
-            if (authHeader != null && authHeader.isNotEmpty) {
-              findings.add({
-                'type': 'authorization_header',
-                'request_id': req.requestId,
-                'url': req.requestUrl,
-                'scheme': authHeader.split(' ').first,
-                'preview': authHeader.length > 40
-                    ? '${authHeader.substring(0, 40)}...'
-                    : authHeader,
-              });
-            }
-
-            // 常见 Token 头
-            for (var header in [
-              'x-api-key',
-              'api-key',
-              'x-token',
-              'token',
-              'x-access-token',
-              'x-auth-token',
-            ]) {
-              var val = req.headers.get(header);
-              if (val != null && val.isNotEmpty) {
-                findings.add({
-                  'type': 'token_header',
-                  'request_id': req.requestId,
-                  'url': req.requestUrl,
-                  'header': header,
-                  'preview': val.length > 40
-                      ? '${val.substring(0, 40)}...'
-                      : val,
-                });
-              }
-            }
-
-            // URL 中的 token 参数
-            try {
-              var uri = Uri.parse(req.requestUrl);
-              for (var param in [
-                'token',
-                'access_token',
-                'api_key',
-                'apikey',
-                'sign',
-                'sig',
-              ]) {
-                if (uri.queryParameters.containsKey(param)) {
-                  var val = uri.queryParameters[param]!;
-                  findings.add({
-                    'type': 'url_query_token',
-                    'request_id': req.requestId,
-                    'url': req.requestUrl,
-                    'param': param,
-                    'preview': val.length > 40
-                        ? '${val.substring(0, 40)}...'
-                        : val,
-                  });
-                }
-              }
-            } catch (e, st) {
-              // URL 解析失败时静默忽略（可能是无效 URL）
-              debugPrint('[MCP Security] URL parse error: $e\n$st');
-            }
-
-            // Cookie 中的会话标识
-            var cookieHeader = req.headers.get('cookie');
-            if (cookieHeader != null && cookieHeader.isNotEmpty) {
-              var cookies = _parseCookies(cookieHeader);
-              for (var c in cookies) {
-                var name = (c['name'] ?? '').toLowerCase();
-                if (name.contains('session') ||
-                    name.contains('token') ||
-                    name.contains('auth') ||
-                    name.contains('jwt')) {
-                  findings.add({
-                    'type': 'cookie',
-                    'request_id': req.requestId,
-                    'url': req.requestUrl,
-                    'cookie_name': c['name'],
-                    'preview': (c['value'] ?? '').length > 40
-                        ? '${c['value']!.substring(0, 40)}...'
-                        : c['value'],
-                  });
-                }
-              }
-            }
-          }
-
-          return {
-            'count': findings.length,
-            'requests_scanned': requestId != null ? 1 : requests.length,
-            'findings': findings,
-            'warning': 'Sensitive credentials detected. Handle with care.',
-          };
-        } catch (e) {
-          return {'error': 'Failed to analyze auth: $e'};
-        }
-
       case 'find_sensitive_data':
         // 在请求/响应中搜索敏感数据（密钥、密码、手机号、身份证等）
         try {
@@ -3562,43 +3148,6 @@ Body Encoding Rules:
           return {'error': 'Failed to get domain summary: $e'};
         }
 
-      case 'calculate_entropy':
-        // 计算字符串的香农熵（用于评估随机性/密钥强度）
-        try {
-          final text = args['text'] as String? ?? args['value'] as String?;
-          if (text == null || text.isEmpty) {
-            return {'error': 'text parameter is required'};
-          }
-
-          var freq = <int, int>{};
-          for (var code in text.codeUnits) {
-            freq[code] = (freq[code] ?? 0) + 1;
-          }
-          var length = text.length;
-          var entropy = 0.0;
-          freq.forEach((_, count) {
-            var p = count / length;
-            entropy -= p * (p == 0 ? 0 : _log2(p));
-          });
-
-          // 参考 https://github.com/danielmiessler/SecLists 常见弱密钥模式
-          var isWeak = text.length < 16 || entropy < 3.0;
-          var hints = <String>[];
-          if (text.length < 16) hints.add('长度过短（<16），可能是弱密钥');
-          if (entropy < 3.0) hints.add('熵值低（<3.0），字符分布过于单一');
-
-          return {
-            'entropy': double.parse(entropy.toStringAsFixed(4)),
-            'length': text.length,
-            'unique_chars': freq.length,
-            'is_weak': isWeak,
-            'hints': hints,
-          };
-        } catch (e) {
-          return {'error': 'Failed to calculate entropy: $e'};
-        }
-
-      // ==================== Device Control Tools (Android only) ====================
       case 'get_device_info':
         if (!McpScreen.isSupported) {
           return {'error': 'Device control is only available on Android'};
@@ -3751,73 +3300,6 @@ Body Encoding Rules:
         }
 
       // ==================== Breakpoint Debugging Tools (1.3.1+) ====================
-      case 'add_breakpoint_rule':
-        try {
-          final urlPattern = args['url_pattern'] as String;
-          final ruleName = args['name'] as String? ?? 'MCP Breakpoint';
-          final interceptRequest = args['intercept_request'] as bool? ?? true;
-          final interceptResponse = args['intercept_response'] as bool? ?? true;
-          final methodStr = args['method'] as String?;
-          final enabled = args['enabled'] as bool? ?? true;
-
-          HttpMethod? method;
-          if (methodStr != null && methodStr.isNotEmpty) {
-            method = HttpMethod.valueOf(methodStr);
-          }
-
-          var manager = await RequestBreakpointManager.instance;
-          var rule = RequestBreakpointRule(
-            enabled: enabled,
-            name: ruleName,
-            url: urlPattern,
-            interceptRequest: interceptRequest,
-            interceptResponse: interceptResponse,
-            method: method,
-          );
-          manager.add(rule);
-          _notifyConfigChanged('breakpoint', {
-            'action': 'add',
-            'url': urlPattern,
-          });
-          return {
-            'status': 'success',
-            'message': 'Added breakpoint rule for $urlPattern',
-            'rule': rule.toJson(),
-          };
-        } catch (e) {
-          return {'error': 'Failed to add breakpoint rule: $e'};
-        }
-
-      case 'remove_breakpoint_rule':
-        try {
-          final urlPattern = args['url_pattern'] as String;
-          var manager = await RequestBreakpointManager.instance;
-          manager.list.removeWhere((r) => r.url == urlPattern);
-          await manager.save();
-          _notifyConfigChanged('breakpoint', {
-            'action': 'remove',
-            'url': urlPattern,
-          });
-          return {
-            'status': 'success',
-            'message': 'Removed breakpoint rule for $urlPattern',
-          };
-        } catch (e) {
-          return {'error': 'Failed to remove breakpoint rule: $e'};
-        }
-
-      case 'list_breakpoint_rules':
-        try {
-          var manager = await RequestBreakpointManager.instance;
-          return {
-            'enabled': manager.enabled,
-            'rules': manager.list.map((r) => r.toJson()).toList(),
-            'total': manager.list.length,
-          };
-        } catch (e) {
-          return {'error': 'Failed to list breakpoint rules: $e'};
-        }
-
       case 'toggle_breakpoint':
         try {
           final enabled = args['enabled'] as bool;

@@ -34,7 +34,6 @@ import 'package:proxypin/ui/mobile/menu/drawer.dart';
 import 'package:proxypin/ui/mobile/menu/weak_network_tile.dart';
 import 'package:proxypin/ui/mobile/setting/environment.dart';
 import 'package:proxypin/ui/mobile/setting/hosts.dart';
-import 'package:proxypin/ui/mobile/setting/mcp.dart';
 import 'package:proxypin/ui/mobile/setting/preference.dart';
 import 'package:proxypin/ui/mobile/mobile.dart';
 import 'package:proxypin/ui/mobile/request/favorite.dart';
@@ -365,10 +364,6 @@ class SettingPage extends StatelessWidget {
             ]),
           if (Platform.isAndroid) const SizedBox(height: 12),
           section([
-            ListTile(
-                title: Text(localizations.mcpService),
-                trailing: const Icon(Icons.keyboard_arrow_right),
-                onTap: () => navigator(context, MobileMcpSetting(proxyServer: proxyServer))),
             Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
             ListTile(
                 title: Text(localizations.setting),

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/mcp/mcp_names.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/native/mcp_screen.dart';
 import 'package:proxypin/utils/ip.dart';
@@ -409,6 +410,48 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     FlutterToastr.show(loc.mcpPortApplied(newPort.toString()), context);
   }
 
+  /// 重新生成局域网访问令牌（运行中会重启服务使旧令牌立即失效）
+  Future<void> _regenerateToken() async {
+    final c = Configuration.loaded;
+    if (c == null) return;
+    c.mcpToken = McpServer.generateToken();
+    ConfigAutoSave.markChanged();
+    try {
+      if (McpServer().isRunning) {
+        await McpServer().restart();
+      }
+    } catch (e) {
+      _showSnack('重新生成令牌失败：$e');
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// 各主流 AI 客户端的接入命令（合并自旧版独立设置页）
+  Map<String, String> _clientCommands(String endpoint) {
+    final token = McpServer().token ?? '';
+    final host = endpoint.replaceFirst('/mcp', '');
+    return {
+      'Claude Code': 'claude mcp add ${McpClientNames.mobile} -s user --transport http $endpoint'
+          '${token.isEmpty ? '' : ' --header "Authorization: Bearer $token"'}',
+      'Codex': 'export PROXYPIN_MCP_TOKEN="$token"\n'
+          'codex mcp add ${McpClientNames.mobile} --url $endpoint --bearer-token-env-var PROXYPIN_MCP_TOKEN',
+      'curl 自检': 'curl -s${token.isEmpty ? '' : ' -H "Authorization: Bearer $token"'} $endpoint '
+          '-H "Content-Type: application/json" '
+          '-d \'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\'',
+      '一键配置(shell)': token.isEmpty
+          ? '（需先开启局域网访问以生成令牌）'
+          : 'curl -s -H "Authorization: Bearer $token" $host/mcp/setup.sh | sh',
+      '一键配置(PowerShell)': token.isEmpty
+          ? '（需先开启局域网访问以生成令牌）'
+          : 'irm -Headers @{ Authorization = "Bearer $token" } $host/mcp/setup.ps1 | iex',
+    };
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
+  }
+
   /// 复制文本到剪贴板
   void _copyText(String text, String tip) {
     Clipboard.setData(ClipboardData(text: text));
@@ -465,6 +508,95 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // 远程接入与安全（合并自旧版独立设置页）
+                Card(
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: const Text('允许局域网访问'),
+                        subtitle: const Text('开启后同一网络内的设备可连接本机 MCP 服务', style: TextStyle(fontSize: 12)),
+                        value: Configuration.loaded?.mcpAllowLan ?? false,
+                        onChanged: (v) async {
+                          final c = Configuration.loaded;
+                          if (c == null) return;
+                          setState(() => c.mcpAllowLan = v);
+                          ConfigAutoSave.markChanged();
+                          if (v) await McpServer().restart();
+                        },
+                      ),
+                      const Divider(height: 0),
+                      SwitchListTile(
+                        title: const Text('访问令牌鉴权'),
+                        subtitle: Text(
+                          (Configuration.loaded?.mcpAuthEnabled ?? true)
+                              ? '要求 Bearer token（推荐）'
+                              : '已关闭：同一网络内任何设备都可读取抓包内容！',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: (Configuration.loaded?.mcpAuthEnabled ?? true) ? null : Colors.red,
+                          ),
+                        ),
+                        value: Configuration.loaded?.mcpAuthEnabled ?? true,
+                        onChanged: (v) async {
+                          final c = Configuration.loaded;
+                          if (c == null) return;
+                          setState(() => c.mcpAuthEnabled = v);
+                          ConfigAutoSave.markChanged();
+                          if (McpServer().isRunning) await McpServer().restart();
+                        },
+                      ),
+                      const Divider(height: 0),
+                      ListTile(
+                        leading: const Icon(Icons.key),
+                        title: const Text('访问令牌'),
+                        subtitle: Text(
+                          McpServer().token ?? '未生成（开启局域网访问后自动生成）',
+                          style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.copy, size: 18),
+                              tooltip: '复制',
+                              onPressed: () {
+                                final t = McpServer().token;
+                                if (t != null) _copyText(t, '令牌已复制');
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.refresh, size: 18),
+                              tooltip: '重新生成（旧令牌立即失效）',
+                              onPressed: _regenerateToken,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 0),
+                      ExpansionTile(
+                        leading: const Icon(Icons.terminal),
+                        title: const Text('AI 客户端接入命令'),
+                        subtitle: const Text('Claude Code / Codex / curl / 一键脚本', style: TextStyle(fontSize: 12)),
+                        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        children: [
+                          for (final entry in _clientCommands(apiUrl).entries)
+                            ListTile(
+                              dense: true,
+                              title: Text(entry.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                              subtitle: Text(entry.value,
+                                  style: const TextStyle(fontSize: 11, fontFamily: 'monospace')),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.copy, size: 16),
+                                onPressed: () => _copyText(entry.value, '已复制'),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 // MCP 服务开关与端口配置
                 Card(
                   child: Column(
@@ -980,8 +1112,6 @@ class _ToolTile extends StatelessWidget {
   /// 工具中文备注
   static const Map<String, String> _notes = {
     'set_config': '修改 ProxyPin 配置（系统代理、SSL 抓包开关）',
-    'add_host_mapping': '添加或修改 Host 映射，将域名指向指定 IP',
-    'add_response_rewrite': '添加响应重写规则（改状态码、响应头、响应体）',
     'export_har': '将抓包记录导出为 HAR 文件',
     'import_har': '导入 HAR 文件到抓包记录',
     'search_requests': '按 URL、方法、状态码、域名等条件搜索请求',
@@ -994,25 +1124,18 @@ class _ToolTile extends StatelessWidget {
     'get_proxy_status': '查询代理服务运行状态',
     'clear_requests': '清空抓包记录',
     'replay_request': '重放指定请求',
-    'block_url': '屏蔽指定 URL 的请求',
-    'add_request_rewrite': '添加请求重写规则',
     'update_script': '更新注入页面的 JS 脚本',
     'get_scripts': '获取已配置的 JS 脚本列表',
     'get_statistics': '获取抓包统计信息',
     'compare_requests': '对比两个请求的差异',
     'find_similar_requests': '查找与指定请求相似的请求',
     'extract_api_endpoints': '从抓包记录中提取 API 端点聚合信息',
-    'analyze_auth': '分析请求中的认证信息（Authorization、Token、Cookie、API Key）',
     'find_sensitive_data': '搜索请求中的敏感数据（密码、密钥、手机号、身份证等）',
     'get_cookie_info': '分析域名的 Cookie（值、HttpOnly、Secure、过期时间）',
     'get_domain_summary': '统计域名的流量摘要（方法、状态码、平均耗时、错误数）',
-    'calculate_entropy': '计算字符串香农熵，评估随机性与密钥强度',
     'get_pending_intercepts': '查看断点拦截队列中待处理的请求/响应',
     'approve_intercept': '放行断点拦截（可修改请求后放行）',
     'reject_intercept': '拒绝断点拦截（中止请求或丢弃响应）',
-    'add_breakpoint_rule': '添加断点拦截规则',
-    'remove_breakpoint_rule': '移除断点拦截规则',
-    'list_breakpoint_rules': '列出所有断点拦截规则',
     'toggle_breakpoint': '启用或停用断点拦截',
     'add_weak_network_rule': '添加弱网模拟规则（限速、延迟等）',
     'add_custom_network_profile': '添加自定义网络档位',

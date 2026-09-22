@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import 'dart:convert';
+import 'dart:io';
+
 import '../mcp_names.dart';
 
 /// 局域网一键配置脚本生成：手机端 MCP 服务下发脚本，电脑端 `curl | sh`
@@ -43,6 +46,108 @@ class McpSetupScript {
 
   static String powershell({required String endpoint, required String token}) =>
       _render(_psTemplate, endpoint: endpoint, token: token);
+
+  /// 支持的客户端类型（本机写入用）
+  static const List<String> clientKinds = ['claude', 'codex', 'cursor'];
+
+  /// 在**本机**直接写入客户端 MCP 配置（桌面端 App 与 AI 客户端同机时使用）。
+  ///
+  /// 与 [shell] / [powershell]（把脚本给另一台机器执行）互补：这里是 App 直接落地配置，
+  /// 采取「合并写入」——保留配置文件里的其它字段，只新增或覆盖目标 server 段，
+  /// 写入前先备份为 `<file>.bak`。返回可读的结果说明。
+  static Future<String> writeLocalConfig({
+    required String kind,
+    required String endpoint,
+    required String token,
+    String? home,
+  }) async {
+    final base = home ??
+        Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ??
+        '';
+    if (base.isEmpty) return '无法定位用户主目录，请改用一键脚本方式';
+
+    final name = McpClientNames.mobile; // 远程 HTTP 接入统一用 mobile 注册名
+    switch (kind) {
+      case 'claude':
+        final file = File('$base${Platform.pathSeparator}.claude.json');
+        final path_ = await _mergeJson(file, name, {
+          'type': 'http',
+          'url': endpoint,
+          if (token.isNotEmpty) 'headers': {'Authorization': 'Bearer $token'},
+        });
+        return '已写入 Claude Code 配置：$path_（备份为 .bak，重启 Claude Code 生效）';
+      case 'cursor':
+        final file = File('$base${Platform.pathSeparator}.cursor${Platform.pathSeparator}mcp.json');
+        final path_ = await _mergeJson(file, name, {
+          'url': endpoint,
+          if (token.isNotEmpty) 'headers': {'Authorization': 'Bearer $token'},
+        });
+        return '已写入 Cursor 配置：$path_（备份为 .bak，重启 Cursor 生效）';
+      case 'codex':
+        final file = File('$base${Platform.pathSeparator}.codex${Platform.pathSeparator}config.toml');
+        final path_ = await _mergeToml(
+          file,
+          name,
+          '[mcp_servers.$name]\n'
+          'url = "$endpoint"\n'
+          '${token.isNotEmpty ? 'http_headers = { Authorization = "Bearer $token" }\n' : ''}',
+        );
+        return '已写入 Codex 配置：$path_（备份为 .bak，重启 Codex 生效）';
+      default:
+        return '不支持的客户端：$kind（可选 ${clientKinds.join(' / ')}）';
+    }
+  }
+
+  /// 合并写入 JSON 配置：保留既有字段，只更新 mcpServers.<name>。
+  static Future<String> _mergeJson(File file, String serverName, Map<String, dynamic> entry) async {
+    Map<String, dynamic> root = <String, dynamic>{};
+    if (await file.exists()) {
+      final text = await file.readAsString();
+      if (text.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(text);
+          if (decoded is Map<String, dynamic>) root = decoded;
+        } catch (_) {
+          // 原文件损坏时不覆盖内容，交由 .bak 恢复；这里从空配置重建
+        }
+      }
+      await file.copy('${file.path}.bak');
+    } else {
+      await file.parent.create(recursive: true);
+    }
+    final servers = (root['mcpServers'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+    servers[serverName] = entry;
+    root['mcpServers'] = servers;
+    await file.writeAsString(const JsonEncoder.withIndent('  ').convert(root));
+    return file.path;
+  }
+
+  /// 合并写入 TOML：移除同名 server 段后追加新段，保留其它内容。
+  static Future<String> _mergeToml(File file, String serverName, String section) async {
+    var text = '';
+    if (await file.exists()) {
+      text = await file.readAsString();
+      await file.copy('${file.path}.bak');
+    } else {
+      await file.parent.create(recursive: true);
+    }
+    final header = '[mcp_servers.$serverName]';
+    final kept = <String>[];
+    var skipping = false;
+    for (final line in text.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('[')) {
+        skipping = trimmed == header;
+      }
+      if (!skipping) kept.add(line);
+    }
+    var body = kept.join('\n').replaceAll(RegExp(r'\n+$'), '');
+    if (body.isNotEmpty) body += '\n';
+    body += section;
+    await file.writeAsString(body);
+    return file.path;
+  }
 
   // 脚本中 $ 变量需转义为 \$；占位符在运行时替换为实际 endpoint/token。
   static const String _shellTemplate = r'''

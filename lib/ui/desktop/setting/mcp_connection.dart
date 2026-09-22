@@ -20,7 +20,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
+import 'package:proxypin/ui/desktop/toolbar/mcp_panel.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/desktop/setting/mcp_automation.dart';
 
@@ -183,6 +185,11 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.link),
+            onPressed: () => McpServiceDialog.show(context, ProxyServer.current!),
+            tooltip: '客户端接入向导（Claude Code / Codex / Cursor）',
+          ),
+          IconButton(
             icon: const Icon(Icons.auto_awesome),
             onPressed: () {
               MultiWindow.openWindow('MCP 自动化', 'McpAutomationWidget', size: const Size(900, 700));
@@ -196,6 +203,44 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
           : ListView(
               padding: const EdgeInsets.all(24),
               children: [
+                // 远程接入安全：局域网暴露与 Bearer 鉴权
+                Card(
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: const Text('允许局域网访问'),
+                        subtitle: const Text('开启后同一网络内的设备可连接本机 MCP 服务', style: TextStyle(fontSize: 12)),
+                        value: widget.configuration.mcpAllowLan,
+                        onChanged: (v) async {
+                          setState(() => widget.configuration.mcpAllowLan = v);
+                          ConfigAutoSave.markChanged();
+                          if (v) await McpServer().restart();
+                        },
+                      ),
+                      const Divider(height: 0),
+                      SwitchListTile(
+                        title: const Text('访问令牌鉴权'),
+                        subtitle: Text(
+                          widget.configuration.mcpAuthEnabled
+                              ? '要求 Bearer token（推荐）'
+                              : '已关闭：同一网络内任何设备都可读取抓包内容！',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: widget.configuration.mcpAuthEnabled ? null : Colors.red,
+                          ),
+                        ),
+                        value: widget.configuration.mcpAuthEnabled,
+                        onChanged: (v) async {
+                          setState(() => widget.configuration.mcpAuthEnabled = v);
+                          ConfigAutoSave.markChanged();
+                          if (McpServer().isRunning) await McpServer().restart();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 // MCP 服务开关与端口配置
                 Card(
                   child: Column(

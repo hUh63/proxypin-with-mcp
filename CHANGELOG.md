@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.24.8 (2026-09-23)
+
+### MCP 收口
+
+- **入口合一**：桌面设置页只保留一个 MCP 入口（原「MCP 连接」与「MCP 服务」两项合并），客户端接入向导
+  （Claude Code / Codex / Cursor 一键注册）改由该页右上角按钮进入；移动端删除重复的独立设置页
+  （`MobileMcpSetting`），统一到 `McpConnectionPage`，并把访问令牌管理与客户端接入命令并入其中。
+- **访问令牌开关**：新增 `mcpAuthEnabled`（默认开启）。关闭后局域网无鉴权，UI 以红字警示
+  「同一网络内任何设备都可读取抓包内容」；桌面与移动设置页均可切换，切换时自动重启服务。
+- **setup_script 完善**：在原有 shell / PowerShell 一键脚本之外，新增 `writeLocalConfig()`——可在本机直接
+  写入 Claude Code / Cursor / Codex 的 MCP 配置（合并写入、保留既有字段、写前备份为 `.bak`）。
+- **工具精简 102 → 88**：退役 10 个与官方重叠的自有工具（`add_host_mapping`、`add_request_rewrite`、
+  `add_response_rewrite`、`add_breakpoint_rule`、`list_breakpoint_rules`、`remove_breakpoint_rule`、
+  `block_url`、`calculate_entropy`、`analyze_auth`、`traffic_summary`），隐藏 2 个语义重复的官方工具
+  （`clear_session` ≡ `clear_requests`、`replay_flow` ≡ `replay_request`）；对应实现与 UI 中文描述表一并清理。
+  同名工具（`generate_code`、`update_script`）仍以自有实现为准。
+- **工具表静态自检**：新增自检脚本，覆盖「定义 ↔ 实现」双向一致、重名、命名规范、描述与 schema 完整性、
+  协议方法齐备（initialize / ping / tools/list / tools/call）。当前 88 个工具（自有 58 + 官方 30）全部通过。
+
 ## v1.24.7 (2026-09-23)
 
 ### 修复

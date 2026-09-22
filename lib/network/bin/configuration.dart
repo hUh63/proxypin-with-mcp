@@ -92,6 +92,9 @@ class Configuration {
   //MCP 局域网访问的 Bearer token（仅 mcpAllowLan 时使用；空表示尚未生成）
   String? mcpToken;
 
+  //MCP 局域网访问是否启用 Bearer 鉴权（默认开启；关闭后同一局域网内任何设备都能读取流量）
+  bool mcpAuthEnabled = true;
+
   //默认是否启动
   bool startup = false;
 
@@ -178,6 +181,7 @@ class Configuration {
     mcpEnabled = config['mcpEnabled'] ?? true;
     mcpRedactEnabled = config['mcpRedactEnabled'] ?? true;
     mcpToken = config['mcpToken'] as String?;
+    mcpAuthEnabled = config['mcpAuthEnabled'] ?? true;
     mcpAutoStart = config['mcpAutoStart'] ?? true;
     mcpAllowLan = config['mcpAllowLan'] ?? false;
     winTakeoverEnabled = config['winTakeoverEnabled'] ?? false;
@@ -280,6 +284,7 @@ class Configuration {
       'mcpEnabled': mcpEnabled,
       'mcpRedactEnabled': mcpRedactEnabled,
       if (mcpToken != null) 'mcpToken': mcpToken,
+      'mcpAuthEnabled': mcpAuthEnabled,
       'mcpAutoStart': mcpAutoStart,
       'mcpAllowLan': mcpAllowLan,
       'winTakeoverEnabled': winTakeoverEnabled,
