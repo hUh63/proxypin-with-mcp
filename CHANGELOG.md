@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.24.1 (2026-09-22)
+
+### 修复
+
+- 修 v1.24.0 合并上游 v1.3.2 后暴露的编译错误：
+  - `desktop.dart` / `mobile.dart`：上游把 `upgradeNoticeV30` 改名 `upgradeNoticeV32`，融合后残留旧判断导致 `Can't find '}'`
+  - `request.dart`：`selectedRequestId` 同时残留 ValueNotifier 与旧 static 字段（重复声明）
+  - `environment_manager.dart`：上游改用 `resolveBuiltIn` + `$` 前缀体系，删掉本 fork 遗留的私有回落
+  - `platform.dart`：`saveFileAdaptive` 返回类型随 file_picker 13（`saveFile` 返回 `Uri`）调整
+  - `mcp_server.dart`：`toMap()` 多值头改为返回 List 后，头差异比较统一按字符串归一
+  - `ssl.dart`（桌面 / 移动）：删掉 file_picker 迁移后残留的 `result.single` 读取
+  - `export_request.dart`：导出目录变量随上游实现（`getDirectoryPath`）改为可变
+  - `config_management.dart`（移动）：file_picker 13 已无 `allowMultiple` 参数
+
 ## v1.24.0 (2026-09-22)
 
 ### 同步上游 v1.3.2（24 commits / 141 文件）

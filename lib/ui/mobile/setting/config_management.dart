@@ -269,7 +269,6 @@ class _ConfigManagementState extends State<ConfigManagement> {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
-        allowMultiple: false,
       );
 
       if (result == null || result.isEmpty) {

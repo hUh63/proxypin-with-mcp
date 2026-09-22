@@ -223,7 +223,7 @@ Future<void> exportRequestsAsFiles(
       // 选择导出的父目录（saveFile 会在磁盘上创建空文件，导致无法再以同名创建文件夹）
       final baseDirectory = await FilePicker.getDirectoryPath();
       if (baseDirectory == null) return;
-      final selectedDirectory = '$baseDirectory/$folderName';
+      String selectedDirectory = '$baseDirectory/$folderName';
 
       // 用户选中的路径可能不是目录（桌面端允许手输文件名），这里兜一层：
       // 不存在就建，选中的是文件则退回它的父目录

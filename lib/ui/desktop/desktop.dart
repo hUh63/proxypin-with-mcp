@@ -163,7 +163,6 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
       McpServer().start();
     }
 
-    if (widget.appConfiguration.upgradeNoticeV30) {
     if (widget.appConfiguration.upgradeNoticeV32) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showUpgradeNotice();

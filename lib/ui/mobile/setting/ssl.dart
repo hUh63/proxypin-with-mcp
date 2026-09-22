@@ -209,7 +209,6 @@ class _MobileSslState extends State<MobileSslWidget> {
                 onPressed: () async {
                   var bytes = await file.xFile.readAsBytes();
                   try {
-                    var bytes = await result.single.xFile.readAsBytes();
                     if (bytes.isEmpty) {
                       throw Exception('读取到的文件为空，请重新选择 .p12 文件');
                     }

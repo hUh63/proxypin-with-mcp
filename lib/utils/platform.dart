@@ -38,7 +38,7 @@ class Platforms {
   /// 桌面端保存文件：只弹对话框选路径并返回，不自动写入。
   /// 调用方拿到路径后自行转换 bytes 并写入，避免用户取消时浪费性能。
   /// 移动端请直接使用 FilePicker.saveFile。
-  static Future<Uri?> saveFileAdaptive({
+  static Future<String?> saveFileAdaptive({
     required String fileName,
     FileType type = FileType.any,
     List<String>? allowedExtensions,

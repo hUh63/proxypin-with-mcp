@@ -4417,19 +4417,21 @@ Body Encoding Rules:
   }
 
   Map<String, dynamic> _compareHeaders(
-    Map<String, String> h1,
-    Map<String, String> h2,
+    Map<String, dynamic> h1,
+    Map<String, dynamic> h2,
   ) {
-    var added = <String, String>{};
-    var removed = <String, String>{};
+    // 上游 #901 起 toMap() 对多值头返回 List，这里统一按字符串比较，避免类型断言崩溃
+    String s(dynamic v) => v is List ? v.join(', ') : v.toString();
+    var added = <String, dynamic>{};
+    var removed = <String, dynamic>{};
     var changed = <String, Map<String, String>>{};
 
     // 检查新增和修改
     h2.forEach((key, value) {
       if (!h1.containsKey(key)) {
         added[key] = value;
-      } else if (h1[key] != value) {
-        changed[key] = {'old': h1[key]!, 'new': value};
+      } else if (s(h1[key]) != s(value)) {
+        changed[key] = {'old': s(h1[key]), 'new': s(value)};
       }
     });
 

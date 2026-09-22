@@ -176,7 +176,6 @@ class MobileHomeState extends State<MobileHomePage> implements EventListener, Li
       McpServer().start();
     }
 
-    if (widget.appConfiguration.upgradeNoticeV30) {
     // MCP 局域网服务：启用时随抓包一起启动，clear_session 同步清空界面列表
     McpService.instance.clearUiSession = () async {
       MobileApp.requestStateKey.currentState?.clean();

@@ -329,8 +329,7 @@ class EnvironmentManager extends ChangeNotifier {
     for (final v in global.variables) {
       if (v.enabled && v.key == name) return v.value;
     }
-    // 用户未定义时回落到内置通用变量（时间戳/日期/UUID 等）
-    return _builtinValue(name);
+    return null;
   }
 
   /// 共享 `Random` —— 用 `Random()`(非 secure)够 `$randomString` / `$randomInt` 使用。

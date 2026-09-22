@@ -109,12 +109,11 @@ class _MobileRequestRewriteState extends State<MobileRequestRewrite> {
     try {
       List json = jsonDecode(utf8.decode(await file.xFile.readAsBytes()));
 
-      final decoded = jsonDecode(text);
-      if (decoded is! List) {
+      if (json is! List) {
         throw const FormatException('内容不是有效的重写规则列表');
       }
 
-      for (var item in decoded) {
+      for (var item in json) {
         var rule = RequestRewriteRule.formJson(item);
         var items = (item['items'] as List).map((e) => RewriteItem.fromJson(e)).toList();
         await widget.requestRewrites.addRule(rule, items);

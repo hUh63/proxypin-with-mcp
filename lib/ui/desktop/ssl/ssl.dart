@@ -100,10 +100,8 @@ class _SslState extends State<SslWidget> {
                     TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
                     TextButton(
                       onPressed: () async {
-                        var bytes = await file.readAsBytes();
                         try {
-                          var file = File(result.single.xFile.path!);
-                          var bytes = await file.readAsBytes();
+                          var bytes = await file.xFile.readAsBytes();
                           if (bytes.isEmpty) {
                             throw Exception('读取到的文件为空，请重新选择 .p12 文件');
                           }

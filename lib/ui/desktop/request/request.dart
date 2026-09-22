@@ -107,8 +107,6 @@ class _RequestWidgetState extends State<RequestWidget> {
   /// 上游 #915: 以 requestId 记录单击选中行。
   /// 选中状态此前存在 State 实例字段里，列表头部插入新请求会触发
   /// ListView 元素回收/重建，State 销毁后选中高亮即丢失。
-  /// 按 requestId 判定后，无论元素如何回收重建都能恢复高亮。
-  static String? selectedRequestId;
 
   static LruCacheSet<String> autoReadRequests = LruCacheSet<String>(5000);
 
