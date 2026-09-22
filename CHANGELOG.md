@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.22.97 (2026-09-22)
+
+### 工程
+
+- **arm64 deb 从构建矩阵移除**：核实后确认它在 GitHub Actions 上无法产出，三条都是外部限制——
+  ① Flutter 官方没有 Linux arm64 的 SDK 产物（`releases_linux.json` 里只有 `stable/linux/`，
+  也不存在 `releases_linux_arm64.json`），arm64 runner 上 flutter-action 必然报
+  `Unable to determine Flutter version for channel: stable architecture: arm64`；
+  ② 从 x64 交叉编译被工具链直接拒绝（已实测：`Cross-build from Linux x64 host to Linux arm64
+  target is not currently supported.`）；③ `linux-arm64` 的 engine artifacts 也不存在（404）。
+  留着它只会让 workflow 长期标红，所以拿掉，并在 workflow 注释里写明原因与将来的恢复方法
+  （官方支持后把 matrix 里的 arm64 项加回 `ubuntu-24.04-arm` 即可）。
+
 ## v1.22.96 (2026-09-22)
 
 ### 修复
@@ -23,10 +36,12 @@
 
 ### 工程
 
-- **arm64 deb 改走官方交叉编译**：Flutter 官方**没有** Linux arm64 的 SDK 产物
-  （`releases_linux.json` 里只有 `stable/linux/`），所以 arm64 runner 上 flutter-action 必然报
-  `Unable to determine Flutter version ... architecture: arm64`。现在改用 Flutter 的
-  `--target-platform linux-arm64`，在 x64 runner 上装配 arm64 sysroot 做交叉编译。
+- **arm64 deb：核实后确认无法产出，已从构建矩阵移除**（避免 workflow 长期标红）。
+  三条都是外部限制：① Flutter 官方没有 Linux arm64 的 SDK 产物（`releases_linux.json`
+  只有 `stable/linux/`，也不存在 `releases_linux_arm64.json`）；② 从 x64 交叉编译被工具链直接拒绝
+  （实测：`Cross-build from Linux x64 host to Linux arm64 target is not currently supported.`）；
+  ③ `linux-arm64` 的 engine artifacts 也不存在（404）。等官方支持后，把 matrix 里的 arm64 项加回
+  `ubuntu-24.04-arm` 即可。
 
 ### 长尾 issue 甄别（本轮核对结论）
 
