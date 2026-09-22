@@ -355,12 +355,21 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
           child: Text(localizations.androidRootCADownload)),
       const SizedBox(height: 10),
       Text(
-        isCN ? "自动安装（需Root和system写权限，重启生效）" : "Auto install (Root & /system write, reboot required)",
+        isCN
+            ? "自动安装（需 Root；以 Magisk 模块方式写入，重启生效）\n"
+                "现代 Android 的 /system 与 /apex 都是只读的，所以不再直接拷贝，而是落成模块由开机时挂载"
+            : "Auto install (needs Root; written as a module, reboot required)\n"
+                "Modern Android keeps /system and /apex read-only, so instead of copying files we install a module",
         style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
       ),
       FilledButton(
         onPressed: _autoInstallCert,
         child: Text(isCN ? "一键自动安装到系统" : "Auto install to system"),
+      ),
+      const SizedBox(height: 6),
+      OutlinedButton(
+        onPressed: _removeSystemCert,
+        child: Text(isCN ? "移除已安装的系统证书" : "Remove installed system CA"),
       ),
       const SizedBox(height: 10),
       Text(
@@ -434,46 +443,120 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
     }
   }
 
+  /// 用 root 把 CA 装进系统信任库（上游 #833 / #652 / #741 / #727）。
+  ///
+  /// 为什么不再直接 cp 到 /system 或 /apex：现代 Android 上这两处都是**只读**的
+  /// （dm-verity / APEX），直接写必然失败——这正是“手上明明有 root 却装不上证书”的真正原因。
+  ///
+  /// 可靠做法是落成 Magisk 模块，由 Magisk 在开机时挂载；KernelSU / APatch 同样兼容
+  /// `/data/adb/modules` 这个目录。Android 14+ 的 CA 目录在 APEX 里（不是普通文件夹），
+  /// 所以模块再带一个 post-fs-data.sh，把证书并进 /apex/com.android.conscrypt/cacerts。
   Future<void> _autoInstallCert() async {
     bool isCN = localizations.localeName == 'zh';
 
     try {
       final caFile = await CertificateManager.certificateFile();
       final hash = await CertificateManager.systemCertificateName();
-      String? destPath;
-      final androidVersion = int.tryParse((await _getAndroidVersion()) ?? "");
-      if (androidVersion != null && androidVersion >= 14) {
-        destPath = '/apex/com.android.conscrypt/cacerts/$hash';
-      } else {
-        destPath = '/system/etc/security/cacerts/$hash';
-      }
       final caPath = caFile.path;
-      final shellCmd = 'cp $caPath $destPath && chmod 644 $destPath && chown root:root $destPath';
-      final result = await Process.run('su', ['-c', shellCmd]);
-      logger.d('Auto install cert result: ${result.stdout}, ${result.stderr}');
+
+      // shell 变量在 Dart 字符串里需要转义成 \$ 以避开插值
+      final script = """
+MOD=/data/adb/modules/proxypin_ca
+[ -d /data/adb/modules ] || { echo NO_MODULE_DIR; exit 3; }
+rm -rf "\$MOD"
+mkdir -p "\$MOD/system/etc/security/cacerts"
+cp "$caPath" "\$MOD/system/etc/security/cacerts/$hash"
+chmod 644 "\$MOD/system/etc/security/cacerts/$hash"
+printf 'id=proxypin_ca\nname=ProxyPin CA\nversion=1.0\nversionCode=1\nauthor=ProxyPin\ndescription=ProxyPin CA into system trust store\n' > "\$MOD/module.prop"
+cat > "\$MOD/post-fs-data.sh" <<'EOS'
+#!/system/bin/sh
+MODDIR=\${0%/*}
+APEX=/apex/com.android.conscrypt/cacerts
+[ -d "\$APEX" ] || exit 0
+TMP=/data/local/tmp/proxypin_cacerts
+rm -rf "\$TMP"; mkdir -p "\$TMP"
+cp -f \$APEX/* "\$TMP"/ 2>/dev/null
+cp -f \$MODDIR/system/etc/security/cacerts/* "\$TMP"/ 2>/dev/null
+chown root:root "\$TMP"/* 2>/dev/null
+chmod 644 "\$TMP"/* 2>/dev/null
+mount -t tmpfs tmpfs "\$APEX" 2>/dev/null || exit 0
+cp -f "\$TMP"/* "\$APEX"/ 2>/dev/null
+chown root:root "\$APEX"/* 2>/dev/null
+chmod 644 "\$APEX"/* 2>/dev/null
+EOS
+chmod 755 "\$MOD/post-fs-data.sh"
+echo INSTALLED
+""";
+
+      final result = await Process.run('su', ['-c', script]);
+      final output = '${result.stdout}${result.stderr}';
+      logger.d('Auto install cert (magisk module) result: $output');
+
       if (!mounted) return;
-      if (result.exitCode != 0) {
+
+      if (output.contains('NO_MODULE_DIR')) {
         FlutterToastr.show(
             !isCN
-                ? 'Certificate install failed. Please check root and /system write permission, or use Magisk module.'
-                : '证书安装失败，请确认Root权限和system写权限，或参考Magisk模块安装。',
+                ? 'No /data/adb/modules found: this device has no Magisk/KernelSU/APatch. Download the CA and install it as a module manually.'
+                : '未检测到 Magisk / KernelSU / APatch（无 /data/adb/modules）：请先下载证书，再用模块方式手动安装',
             context,
             rootNavigator: true,
-            duration: 5);
+            duration: 6);
         return;
       }
+
+      if (result.exitCode != 0 || !output.contains('INSTALLED')) {
+        FlutterToastr.show(
+            !isCN
+                ? 'Install failed ($output). Make sure root is granted.'
+                : '安装失败（$output），请确认已授予 root 权限',
+            context,
+            rootNavigator: true,
+            duration: 6);
+        return;
+      }
+
       FlutterToastr.show(
-        !isCN ? 'Certificate installed, reboot required' : '证书已安装，重启手机后生效',
+        !isCN
+            ? 'Installed as a Magisk module. Reboot to take effect.'
+            : '已以模块形式安装，重启手机后生效（Android 14+ 会自动并入 APEX 的 CA 目录）',
         context,
         rootNavigator: true,
-        duration: 5,
+        duration: 6,
       );
     } catch (e) {
       logger.d('auto install cert error：$e');
       FlutterToastr.show(
           !isCN
-              ? 'Auto install failed: $e. Please check root and /system write permission, or use Magisk module.'
-              : '自动安装失败：$e，请确认Root和system写权限，或参考Magisk模块安装。',
+              ? 'Auto install failed: $e. Make sure root is granted.'
+              : '自动安装失败：$e，请确认已授予 root 权限',
+          context,
+          rootNavigator: true,
+          duration: 5);
+    }
+  }
+
+  /// 移除本工具安装的系统证书（删掉模块目录，重启后生效）。
+  Future<void> _removeSystemCert() async {
+    bool isCN = localizations.localeName == 'zh';
+    try {
+      final result = await Process.run(
+          'su', ['-c', 'rm -rf /data/adb/modules/proxypin_ca && echo REMOVED']);
+      if (!mounted) return;
+      final ok = '${result.stdout}'.contains('REMOVED');
+      FlutterToastr.show(
+        ok
+            ? (isCN ? '已移除，重启手机后生效' : 'Removed. Reboot to take effect.')
+            : (isCN ? '移除失败，请确认 root 授权' : 'Remove failed. Make sure root is granted.'),
+        context,
+        rootNavigator: true,
+        duration: 5,
+      );
+    } catch (e) {
+      logger.d('remove system cert error：$e');
+      if (!mounted) return;
+      FlutterToastr.show(
+          isCN ? '移除失败：$e' : 'Remove failed: $e',
           context,
           rootNavigator: true,
           duration: 5);
