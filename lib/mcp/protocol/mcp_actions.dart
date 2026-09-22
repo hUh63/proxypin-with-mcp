@@ -111,7 +111,7 @@ class McpActions {
   McpTool _listRules() => McpTool(
         name: 'list_rules',
         description:
-            'List all debugging rules with their indices: breakpoints, blocks, map-local, rewrites/redirects, scripts. Use the returned index with the remove_* tools.',
+            'List all debugging rules with their indices: breakpoints, blocks, map-local, rewrites/redirects, scripts. Use the returned index with the remove_* tools. Call this first when you need a rule index for the remove_* and update_* tools, or an overview of all debugging rules.',
         inputSchema: {'type': 'object', 'properties': {}},
         handler: (_) async {
           var bp = await RequestBreakpointManager.instance;
@@ -184,7 +184,7 @@ class McpActions {
   McpTool _createBreakpoint() => McpTool(
         name: 'create_breakpoint',
         description:
-            'Create a request/response breakpoint. `url` is a REGEX matched against the full URL. Intercepts matching traffic for inspection/edit in the app.',
+            'Create a request/response breakpoint. `url` is a REGEX matched against the full URL. Intercepts matching traffic for inspection/edit in the app. Call this when the user wants to inspect or hand-edit a request or response before it is forwarded.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -214,7 +214,7 @@ class McpActions {
 
   McpTool _removeBreakpoint() => McpTool(
         name: 'remove_breakpoint',
-        description: 'Remove a breakpoint by index (see list_rules), or disable the breakpoint feature globally.',
+        description: 'Remove a breakpoint by index (see list_rules), or disable the breakpoint feature globally. Call this (get the index from list_rules) when the user wants to stop intercepting a URL, or turn breakpoints off entirely.',
         inputSchema: {
           'type': 'object',
           'properties': {'index': {'type': 'integer'}, 'enabled': {'type': 'boolean'}},
@@ -237,7 +237,7 @@ class McpActions {
   McpTool _updateBreakpoint() => McpTool(
         name: 'update_breakpoint',
         description:
-            'Update an existing breakpoint rule by index (see list_rules). Only the fields you pass change; omit the rest to keep them.',
+            'Update an existing breakpoint rule by index (see list_rules). Only the fields you pass change; omit the rest to keep them. Call this after list_rules when only part of an existing breakpoint rule needs to change.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -269,7 +269,7 @@ class McpActions {
 
   McpTool _createBlock() => McpTool(
         name: 'create_block',
-        description: 'Block matching requests or responses (blacklist). `url` is a wildcard pattern (e.g. *.example.com/*).',
+        description: 'Block matching requests or responses (blacklist). `url` is a wildcard pattern (e.g. *.example.com/*). Call this when the user wants to block specific requests or responses outright.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -290,7 +290,7 @@ class McpActions {
 
   McpTool _removeBlock() => McpTool(
         name: 'remove_block',
-        description: 'Remove a block rule by index, or enable/disable blocking globally.',
+        description: 'Remove a block rule by index, or enable/disable blocking globally. Call this (get the index from list_rules) when the user wants to unblock a URL, or disable blocking entirely.',
         inputSchema: {
           'type': 'object',
           'properties': {'index': {'type': 'integer'}, 'enabled': {'type': 'boolean'}},
@@ -312,7 +312,7 @@ class McpActions {
   McpTool _updateBlock() => McpTool(
         name: 'update_block',
         description:
-            'Update an existing block rule by index. `url` is a wildcard pattern (e.g. *.example.com/*). Only the fields you pass change.',
+            'Update an existing block rule by index. `url` is a wildcard pattern (e.g. *.example.com/*). Only the fields you pass change. Call this after list_rules when only part of an existing block rule needs to change.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -344,7 +344,7 @@ class McpActions {
   McpTool _createMapLocal() => McpTool(
         name: 'create_map_local',
         description:
-            'Map matching URL to a locally defined response (status/headers/body). `url` is a wildcard pattern. The mapped response replaces the server response.',
+            'Map matching URL to a locally defined response (status/headers/body). `url` is a wildcard pattern. The mapped response replaces the server response. Call this when the user wants to mock an endpoint with a fixed local response, for example to reproduce an error or stub a backend.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -379,7 +379,7 @@ class McpActions {
 
   McpTool _removeMapRule() => McpTool(
         name: 'remove_map_rule',
-        description: 'Remove a map-local/script rule by index, or enable/disable mapping globally.',
+        description: 'Remove a map-local/script rule by index, or enable/disable mapping globally. Call this (get the index from list_rules) when the user wants to stop mocking a URL, or disable mapping entirely.',
         inputSchema: {
           'type': 'object',
           'properties': {'index': {'type': 'integer'}, 'enabled': {'type': 'boolean'}},
@@ -402,7 +402,7 @@ class McpActions {
   McpTool _updateMapLocal() => McpTool(
         name: 'update_map_local',
         description:
-            'Update an existing map-local rule by index: its URL match and/or the locally served response (status/headers/body). Only the fields you pass change.',
+            'Update an existing map-local rule by index: its URL match and/or the locally served response (status/headers/body). Only the fields you pass change. Call this after list_rules when the mocked response or its URL match needs to change.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -438,7 +438,7 @@ class McpActions {
 
   McpTool _createRedirect() => McpTool(
         name: 'create_redirect',
-        description: 'Redirect (map remote) requests matching `url` wildcard to `target_url`.',
+        description: 'Redirect (map remote) requests matching `url` wildcard to `target_url`. Call this when the user wants to point an endpoint at a different host, for example staging to local.',
         inputSchema: {
           'type': 'object',
           'properties': {'url': {'type': 'string'}, 'target_url': {'type': 'string'}, 'name': {'type': 'string'}},
@@ -461,7 +461,7 @@ class McpActions {
 
   McpTool _removeRewriteRule() => McpTool(
         name: 'remove_rewrite_rule',
-        description: 'Remove a rewrite/redirect rule by index (see list_rules), or enable/disable rewriting globally.',
+        description: 'Remove a rewrite/redirect rule by index (see list_rules), or enable/disable rewriting globally. Call this (get the index from list_rules) when the user wants to delete a rewrite or redirect rule, or disable rewriting entirely.',
         inputSchema: {
           'type': 'object',
           'properties': {'index': {'type': 'integer'}, 'enabled': {'type': 'boolean'}},
@@ -484,7 +484,7 @@ class McpActions {
   McpTool _updateRedirect() => McpTool(
         name: 'update_redirect',
         description:
-            'Update an existing redirect rule by index: its URL wildcard match and/or target URL. Only the fields you pass change.',
+            'Update an existing redirect rule by index: its URL wildcard match and/or target URL. Only the fields you pass change. Call this after list_rules when the redirect target or its URL match needs to change.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -638,7 +638,7 @@ class McpActions {
   McpTool _createRewrite() => McpTool(
         name: 'create_rewrite',
         description:
-            'Create a rewrite rule. `type` is optional: requestUpdate/responseUpdate/requestReplace/responseReplace (use create_redirect for redirect). `operations` is a list of ops; each op has `op` (addHeader/updateHeader/removeHeader/addQueryParam/updateQueryParam/removeQueryParam/updateBody/replaceRequestLine/replaceRequestHeader/replaceRequestBody/replaceResponseStatus/replaceResponseHeader/replaceResponseBody) plus fields (`key`, `value`, `use_regex`, `method`, `path`, `query`, `status_code`, `headers`, `body`, `body_type`). If `type` is omitted it is inferred from the ops.',
+            'Create a rewrite rule. `type` is optional: requestUpdate/responseUpdate/requestReplace/responseReplace (use create_redirect for redirect). `operations` is a list of ops; each op has `op` (addHeader/updateHeader/removeHeader/addQueryParam/updateQueryParam/removeQueryParam/updateBody/replaceRequestLine/replaceRequestHeader/replaceRequestBody/replaceResponseStatus/replaceResponseHeader/replaceResponseBody) plus fields (`key`, `value`, `use_regex`, `method`, `path`, `query`, `status_code`, `headers`, `body`, `body_type`). If `type` is omitted it is inferred from the ops. Call this when the user wants to modify headers, query, path, status or body in flight.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -687,7 +687,7 @@ class McpActions {
   McpTool _updateRewrite() => McpTool(
         name: 'update_rewrite',
         description:
-            'Update a rewrite rule by index: URL wildcard, name, method, enabled, and/or replace its operations list. Only the fields you pass change; passing `operations` replaces the whole list. For redirect rules use update_redirect.',
+            'Update a rewrite rule by index: URL wildcard, name, method, enabled, and/or replace its operations list. Only the fields you pass change; passing `operations` replaces the whole list. For redirect rules use update_redirect. Call this after get_rewrite_detail when an existing rewrite rule needs changing.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -730,7 +730,7 @@ class McpActions {
 
   McpTool _getRewriteDetail() => McpTool(
         name: 'get_rewrite_detail',
-        description: 'Get one rewrite rule by index: URL, type, enabled, method and its operations list (op/key/value/use_regex/...).',
+        description: 'Get one rewrite rule by index: URL, type, enabled, method and its operations list (op/key/value/use_regex/...). Call this when the user wants to inspect or edit one specific rewrite rule.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -772,7 +772,7 @@ class McpActions {
   McpTool _listHosts() => McpTool(
         name: 'list_hosts',
         description:
-            'List host filter lists. Whitelist (when enabled) captures ONLY the listed hosts; blacklist skips the listed hosts. Returns patterns and enabled state for each list.',
+            'List host filter lists. Whitelist (when enabled) captures ONLY the listed hosts; blacklist skips the listed hosts. Returns patterns and enabled state for each list. Call this when the user asks what is being captured or skipped, or before adding a host pattern.',
         inputSchema: {'type': 'object', 'properties': {}},
         handler: (_) async {
           await Configuration.instance;
@@ -787,7 +787,7 @@ class McpActions {
 
   McpTool _addHost() => McpTool(
         name: 'add_host',
-        description: 'Add a host pattern to the whitelist or blacklist. `*` is a wildcard, e.g. "*.example.com".',
+        description: 'Add a host pattern to the whitelist or blacklist. `*` is a wildcard, e.g. "*.example.com". Call this when the user wants to limit capture to certain hosts, or to ignore noisy ones.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -810,7 +810,7 @@ class McpActions {
 
   McpTool _removeHost() => McpTool(
         name: 'remove_host',
-        description: 'Remove a host pattern from the whitelist or blacklist.',
+        description: 'Remove a host pattern from the whitelist or blacklist. Call this when the user wants to stop filtering a host.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -833,7 +833,7 @@ class McpActions {
 
   McpTool _setHostsEnabled() => McpTool(
         name: 'set_hosts_enabled',
-        description: 'Enable or disable a host filter list (whitelist/blacklist).',
+        description: 'Enable or disable a host filter list (whitelist/blacklist). Call this when the user wants to turn host filtering on or off without editing the patterns.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -855,7 +855,7 @@ class McpActions {
   McpTool _createScript() => McpTool(
         name: 'create_script',
         description:
-            'Create a JavaScript rule matching `urls` (comma separated or list). Provide `script`; if omitted a starter template is used. `remote_url` makes it a remote script fetched from the URL. The script runs on request/response and can modify them.',
+            'Create a JavaScript rule matching `urls` (comma separated or list). Provide `script`; if omitted a starter template is used. `remote_url` makes it a remote script fetched from the URL. The script runs on request/response and can modify them. Call this when the user wants custom logic that rewrite rules cannot express, such as signing or decrypting fields.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -891,7 +891,7 @@ class McpActions {
   McpTool _updateScript() => McpTool(
         name: 'update_script',
         description:
-            'Update an existing script rule by index: matching URLs, script body, name, enabled and/or remote_url. Only the fields you pass change.',
+            'Update an existing script rule by index: matching URLs, script body, name, enabled and/or remote_url. Only the fields you pass change. Call this after get_script_detail when an existing script rule needs changing.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -933,7 +933,7 @@ class McpActions {
 
   McpTool _getScriptTemplate() => McpTool(
         name: 'get_script_template',
-        description: 'Get the built-in JavaScript script template (onRequest/onResponse skeleton) to author scripts.',
+        description: 'Get the built-in JavaScript script template (onRequest/onResponse skeleton) to author scripts. Call this before create_script to start from the onRequest/onResponse skeleton.',
         inputSchema: {'type': 'object', 'properties': {}},
         handler: (_) async => {'template': ScriptManager.template},
       );
@@ -941,7 +941,7 @@ class McpActions {
   McpTool _getScriptDetail() => McpTool(
         name: 'get_script_detail',
         description:
-            'Get one script rule by index: name, urls, enabled, remoteUrl and its full JavaScript body (for remote scripts, the fetched/cached body).',
+            'Get one script rule by index: name, urls, enabled, remoteUrl and its full JavaScript body (for remote scripts, the fetched/cached body). Call this when the user wants to read or edit one specific script rule.',
         inputSchema: {
           'type': 'object',
           'properties': {'index': {'type': 'integer'}},
@@ -965,7 +965,7 @@ class McpActions {
 
   McpTool _removeScript() => McpTool(
         name: 'remove_script',
-        description: 'Remove a script rule by index, or enable/disable scripting globally.',
+        description: 'Remove a script rule by index, or enable/disable scripting globally. Call this when the user wants to delete a script rule, or disable scripting entirely.',
         inputSchema: {
           'type': 'object',
           'properties': {'index': {'type': 'integer'}, 'enabled': {'type': 'boolean'}},
@@ -990,7 +990,7 @@ class McpActions {
   McpTool _toggleRecording() => McpTool(
         name: 'toggle_recording',
         description:
-            'Start or stop traffic recording by starting/stopping the local proxy server. When enabled=false the system proxy is restored and capture halts.',
+            'Start or stop traffic recording by starting/stopping the local proxy server. When enabled=false the system proxy is restored and capture halts. Call this when the user wants to start or stop capture, especially when the desktop system proxy setting should follow.',
         inputSchema: {
           'type': 'object',
           'properties': {'enabled': {'type': 'boolean'}},
@@ -1012,7 +1012,7 @@ class McpActions {
   McpTool _enableSslProxying() => McpTool(
         name: 'enable_ssl_proxying',
         description:
-            'Enable HTTPS interception (SSL MITM) globally and ensure `domain` is not on the blacklist. The CA certificate must be trusted on the device first (see get_certificate_status).',
+            'Enable HTTPS interception (SSL MITM) globally and ensure `domain` is not on the blacklist. The CA certificate must be trusted on the device first (see get_certificate_status). Call this when the user wants to decrypt a specific HTTPS domain, after confirming the CA is trusted.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -1036,7 +1036,7 @@ class McpActions {
 
   McpTool _setSystemProxy() => McpTool(
         name: 'set_system_proxy',
-        description: 'Turn the operating-system HTTP/HTTPS proxy setting on or off (desktop only).',
+        description: 'Turn the operating-system HTTP/HTTPS proxy setting on or off (desktop only). Call this when the user wants the operating system itself to route through ProxyPin, or to stop doing so.',
         inputSchema: {
           'type': 'object',
           'properties': {'enabled': {'type': 'boolean'}},
@@ -1054,7 +1054,7 @@ class McpActions {
 
   McpTool _getCertificateStatus() => McpTool(
         name: 'get_certificate_status',
-        description: 'Get whether the ProxyPin root CA is installed/trusted on this machine (desktop).',
+        description: 'Get whether the ProxyPin root CA is installed/trusted on this machine (desktop). Call this first when HTTPS decryption does not work: it reports whether the CA is trusted on this machine.',
         inputSchema: {'type': 'object', 'properties': {}},
         handler: (_) async {
           if (certStatusProvider != null) {
@@ -1099,7 +1099,7 @@ class McpActions {
   McpTool _replayFlow() => McpTool(
         name: 'replay_flow',
         description:
-            'Re-send a captured request (by id) through the running proxy and return the fresh response (status, headers, body preview).',
+            'Re-send a captured request (by id) through the running proxy and return the fresh response (status, headers, body preview). Call this when the user wants to resend a captured flow and compare the fresh response.',
         inputSchema: {
           'type': 'object',
           'properties': {'id': {'type': 'string'}},
@@ -1116,7 +1116,7 @@ class McpActions {
   McpTool _sendRequest() => McpTool(
         name: 'send_request',
         description:
-            'Build and send a new HTTP request. Either provide `curl` (raw cURL command) or method/url/headers/body. Returns status, headers and a body preview.',
+            'Build and send a new HTTP request. Either provide `curl` (raw cURL command) or method/url/headers/body. Returns status, headers and a body preview. Call this when the user wants to send a request that was never captured, for example a hand-written API call.',
         inputSchema: {
           'type': 'object',
           'properties': {
@@ -1147,7 +1147,7 @@ class McpActions {
 
   McpTool _addFavorite() => McpTool(
         name: 'add_favorite',
-        description: 'Save a captured flow (by id) to Favorites for later reuse.',
+        description: 'Save a captured flow (by id) to Favorites for later reuse. Call this when the user wants to keep a flow for later reference.',
         inputSchema: {
           'type': 'object',
           'properties': {'id': {'type': 'string'}},
@@ -1162,7 +1162,7 @@ class McpActions {
 
   McpTool _clearSession() => McpTool(
         name: 'clear_session',
-        description: 'Clear all currently captured flows (both the MCP buffer and the app capture list). Destructive.',
+        description: 'Clear all currently captured flows (both the MCP buffer and the app capture list). Destructive. Call this when the user wants an empty capture list; it is destructive, so confirm the intent first.',
         inputSchema: {'type': 'object', 'properties': {'confirm': {'type': 'boolean'}}},
         handler: (a) async {
           if (a['confirm'] != true) {
@@ -1176,7 +1176,7 @@ class McpActions {
 
   McpTool _generateCode() => McpTool(
         name: 'generate_code',
-        description: 'Generate runnable code for a captured flow. language: curl (default), fetch (JS), or python (requests).',
+        description: 'Generate runnable code for a captured flow. language: curl (default), fetch (JS), or python (requests). Call this when the user wants runnable code for a captured flow in curl, fetch or python.',
         inputSchema: {
           'type': 'object',
           'properties': {

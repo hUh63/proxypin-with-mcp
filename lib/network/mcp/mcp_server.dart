@@ -1372,7 +1372,9 @@ class McpServer {
       {
         'name': 'set_config',
         'description':
-            'Update ProxyPin configuration (System Proxy, SSL Capture).',
+            'Update ProxyPin configuration (system proxy, SSL capture). Call this when ' 
+            'the user wants to turn system-wide proxy or HTTPS decryption on or off, or ' 
+            'change which hosts get captured.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1389,7 +1391,10 @@ class McpServer {
       },
       {
         'name': 'export_har',
-        'description': 'Export captured requests to HAR (HTTP Archive) format.',
+        'description':
+            'Export captured requests to HAR (HTTP Archive) format. Call this when the ' 
+            'user wants to save traffic into a file, or hand it to another tool such as ' 
+            'Chrome DevTools, Charles or Postman.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1407,7 +1412,10 @@ class McpServer {
       },
       {
         'name': 'import_har',
-        'description': 'Import HAR (HTTP Archive) data into ProxyPin session.',
+        'description':
+            'Import HAR (HTTP Archive) data into the current ProxyPin session. Call this ' 
+            'when the user has a .har file from another tool and wants to inspect or ' 
+            'replay it inside ProxyPin.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1422,7 +1430,10 @@ class McpServer {
       {
         'name': 'search_requests',
         'description':
-            'Search and filter captured HTTP requests with powerful filters.',
+            'Search and filter captured HTTP requests by URL, method, status code, header ' 
+            'or body content. Call this when the user asks for a subset such as all 500 ' 
+            'responses or every request containing a token, instead of listing ' 
+            'everything.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1467,7 +1478,9 @@ class McpServer {
       {
         'name': 'generate_code',
         'description':
-            'Generate code for a specific request in Python, JavaScript, Go, Node.js, or cURL.',
+            'Generate code for a specific request in Python, JavaScript, Go, Node.js or ' 
+            'cURL. Call this when the user wants to reproduce a captured call in code; ' 
+            'use get_curl when only a shell one-liner is needed.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1486,7 +1499,10 @@ class McpServer {
       },
       {
         'name': 'get_curl',
-        'description': 'Generate cURL command for a specific request.',
+        'description':
+            'Generate a cURL command for a specific request. Call this when the user ' 
+            'wants a quick copy-paste shell command; use generate_code when a real ' 
+            'language binding is needed.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1501,7 +1517,9 @@ class McpServer {
       {
         'name': 'get_recent_requests',
         'description':
-            'List recent HTTP requests. Supports domain / time-range filters, paging and a compact mode for token-efficient AI reads.',
+            'List recent HTTP requests, with domain and time filters, paging and a ' 
+            'compact mode for token-efficient reads. Call this first when the user asks ' 
+            'to see traffic, then follow up with get_request_details for a specific id.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1557,7 +1575,10 @@ Response includes:
 Body Encoding Rules:
 - bodyEncoding='utf8': Text data (JSON, HTML, XML, etc.), use directly
 - bodyEncoding='base64': Binary data (images, files, etc.), decode with base64.b64decode() in Python
-- bodyEncoding='none': Empty body''',
+- bodyEncoding='none': Empty body
+
+Call this when the user asks for the headers or body of one specific request; take the
+request_id from get_recent_requests or search_requests.''',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1571,7 +1592,10 @@ Body Encoding Rules:
       },
       {
         'name': 'start_proxy',
-        'description': 'Start the ProxyPin server on a specific port.',
+        'description':
+            'Start the ProxyPin server on a specific port. Call this when the user wants ' 
+            'to begin capturing, or right after stop_proxy; use get_proxy_status first if ' 
+            'unsure whether it is already running.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1591,18 +1615,26 @@ Body Encoding Rules:
       },
       {
         'name': 'get_proxy_status',
-        'description': 'Get current status of the proxy server.',
+        'description':
+            'Get the current status of the proxy server (running, port, address, LAN ' 
+            'mode). Call this when you need to know whether capture is active, or before ' 
+            'starting and stopping it.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'clear_requests',
         'description':
-            'Clear all captured requests (session history and UI list).',
+            'Clear all captured requests (session history and UI list). Call this when ' 
+            'the user wants a fresh start or to free memory; it discards data, so confirm ' 
+            'unless the traffic is obviously disposable.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'replay_request',
-        'description': 'Replay/resend a captured HTTP request.',
+        'description':
+            'Replay (resend) a captured HTTP request. Call this when the user wants to ' 
+            'repeat a call, for example to reproduce a bug or to verify a fix after ' 
+            'changing a script or a rewrite rule.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1617,7 +1649,9 @@ Body Encoding Rules:
       {
         'name': 'update_script',
         'description':
-            'Update or create a JavaScript script for request/response modification.',
+            'Create or update a JavaScript script that rewrites requests and responses. ' 
+            'Call this when the user wants to inject, mock or sign traffic; check ' 
+            'get_scripts or get_script_detail first if the script may already exist.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1644,13 +1678,17 @@ Body Encoding Rules:
       {
         'name': 'get_statistics',
         'description':
-            'Get statistics of captured requests (methods, status codes, domains, etc.).',
+            'Get statistics of captured requests (methods, status codes, domains, sizes, ' 
+            'durations). Call this when the user asks for an overview such as the error ' 
+            'rate or the busiest domains.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'compare_requests',
         'description':
-            'Compare two requests side by side (useful for debugging API changes).',
+            'Compare two requests side by side. Call this when the user wants to know ' 
+            'what differs between two calls, such as before and after a fix, or two login ' 
+            'attempts.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1669,7 +1707,9 @@ Body Encoding Rules:
       {
         'name': 'find_similar_requests',
         'description':
-            'Find requests similar to a given request (same URL pattern, method, etc.).',
+            'Find requests similar to a given one (same URL pattern, method). Call this ' 
+            'when the user wants to see every call to the same endpoint, for example to ' 
+            'check whether a behaviour is consistent.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1688,7 +1728,9 @@ Body Encoding Rules:
       {
         'name': 'extract_api_endpoints',
         'description':
-            'Extract and group unique API endpoints from captured requests.',
+            'Extract and group unique API endpoints from captured traffic. Call this when ' 
+            'the user wants the API surface of a host or an app rather than individual ' 
+            'requests.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1703,7 +1745,10 @@ Body Encoding Rules:
       {
         'name': 'find_sensitive_data',
         'description':
-            'Search requests for sensitive data: passwords, API keys, secrets, tokens, private keys, phone numbers, ID cards.',
+            'Search captured requests for sensitive data: passwords, API keys, tokens, ' 
+            'secrets, private keys, phone numbers and ID cards. Call this when the user ' 
+            'asks whether secrets leak in traffic, or wants a request checked before ' 
+            'sharing it.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1722,7 +1767,9 @@ Body Encoding Rules:
       {
         'name': 'get_cookie_info',
         'description':
-            'Get cookie analysis for a domain or request (names, values, HttpOnly, Secure, domains).',
+            'Get cookie analysis for a domain or request (names, values, HttpOnly, ' 
+            'Secure, domains). Call this when the user asks about session cookies or why ' 
+            'a request appears unauthenticated.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1740,7 +1787,9 @@ Body Encoding Rules:
       {
         'name': 'get_domain_summary',
         'description':
-            'Get traffic statistics summary for a domain (methods, status codes, avg duration, error count).',
+            'Get a traffic summary for one domain (methods, status codes, average ' 
+            'duration, error count). Call this when the user asks how a particular host ' 
+            'is behaving.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1756,7 +1805,9 @@ Body Encoding Rules:
       {
         'name': 'toggle_breakpoint',
         'description':
-            'Enable or disable the breakpoint debugging feature globally.',
+            'Enable or disable breakpoint debugging globally. Call this when the user ' 
+            'wants to pause traffic for manual inspection; pair it with ' 
+            'get_pending_intercepts, approve_intercept and reject_intercept.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1772,7 +1823,9 @@ Body Encoding Rules:
       {
         'name': 'add_weak_network_rule',
         'description':
-            'Add a weak network simulation rule for a URL pattern. Simulates bandwidth limiting, latency, jitter, packet loss, or offline mode.',
+            'Add a weak-network simulation rule for a URL pattern (bandwidth limit, ' 
+            'latency, jitter, packet loss or offline). Call this when the user wants to ' 
+            'test how an app behaves on a poor connection.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1796,7 +1849,9 @@ Body Encoding Rules:
       {
         'name': 'add_custom_network_profile',
         'description':
-            'Create a custom weak network profile with specific parameters.',
+            'Create a custom weak-network profile with specific parameters (bandwidth, ' 
+            'latency, jitter, loss rate). Call this before add_weak_network_rule when ' 
+            'none of the built-in profiles match the conditions to simulate.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1837,12 +1892,17 @@ Body Encoding Rules:
       },
       {
         'name': 'list_weak_network_rules',
-        'description': 'List all weak network simulation rules and profiles.',
+        'description':
+            'List all weak-network simulation rules and profiles. Call this when the user ' 
+            'asks which network conditions are configured, or to get a profile_id for ' 
+            'add_weak_network_rule.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'remove_weak_network_rule',
-        'description': 'Remove a weak network rule by URL pattern.',
+        'description':
+            'Remove a weak-network rule by URL pattern. Call this when the user wants to ' 
+            'stop simulating poor conditions for a specific pattern.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1857,7 +1917,8 @@ Body Encoding Rules:
       {
         'name': 'toggle_weak_network',
         'description':
-            'Enable or disable the weak network simulation feature globally.',
+            'Enable or disable weak-network simulation globally. Call this when the user ' 
+            'wants to turn the feature on or off without deleting individual rules.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1873,13 +1934,17 @@ Body Encoding Rules:
       {
         'name': 'list_environments',
         'description':
-            'List all environments and their variables. Shows which environment is currently active.',
+            'List all environments and their variables, and which one is active. Call ' 
+            'this when the user asks what variables exist, or before switching ' 
+            'environments.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'set_environment_variable',
         'description':
-            'Set or update an environment variable. Variables can be referenced in requests using {{variable_name}} syntax.',
+            'Set or update an environment variable, referenced in requests as ' 
+            '{{variable_name}}. Call this when the user wants to change a value such as a ' 
+            'host, token or version across many requests at once.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1904,7 +1969,9 @@ Body Encoding Rules:
       {
         'name': 'create_environment',
         'description':
-            'Create a new named environment (e.g. Dev, Staging, Prod).',
+            'Create a new named environment (e.g. Dev, Staging, Prod). Call this when the ' 
+            'user needs a separate variable set for a different backend, then use ' 
+            'set_active_environment to switch to it.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1916,7 +1983,9 @@ Body Encoding Rules:
       {
         'name': 'set_active_environment',
         'description':
-            'Set the active environment by ID, or pass null to deactivate (only Global remains).',
+            'Set the active environment by id, or pass null to deactivate it (only Global ' 
+            'remains). Call this when the user wants requests to pick up a different ' 
+            'variable set.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1931,7 +2000,9 @@ Body Encoding Rules:
       {
         'name': 'remove_environment',
         'description':
-            'Remove a named environment by ID. Cannot remove the Global environment.',
+            'Remove a named environment by id; the Global environment cannot be removed. ' 
+            'Call this when the user wants to delete a variable set that is no longer ' 
+            'needed.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1946,7 +2017,9 @@ Body Encoding Rules:
       {
         'name': 'toggle_environment_variables',
         'description':
-            'Enable or disable the environment variable feature globally.',
+            'Enable or disable the environment variable feature globally. Call this when ' 
+            'the user wants {{...}} placeholders left untouched, for example while ' 
+            'debugging substitution.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1962,18 +2035,26 @@ Body Encoding Rules:
       {
         'name': 'get_device_info',
         'description':
-            'Get Android device info (model, brand, Android version, WiFi IP, root/accessibility status).',
+            'Get Android device info (model, brand, Android version, WiFi IP, root and ' 
+            'accessibility status). Call this first when device automation is needed: the ' 
+            'root and accessibility flags tell you which other device tools will actually ' 
+            'work.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'get_current_activity',
-        'description': 'Get the current foreground activity/package name.',
+        'description':
+            'Get the current foreground activity and package name. Call this when the ' 
+            'user asks which app is in front, or before driving a specific app with the ' 
+            'tap and input tools.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'dump_ui',
         'description':
-            'Dump the current Android UI hierarchy as JSON array of elements.',
+            'Dump the current Android UI hierarchy as a JSON array of elements. Call this ' 
+            'when you need to locate a control by text or id before tapping it, which is ' 
+            'more reliable than guessing coordinates.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -1990,7 +2071,10 @@ Body Encoding Rules:
       },
       {
         'name': 'tap_screen',
-        'description': 'Perform a tap at the given screen coordinates.',
+        'description':
+            'Perform a tap at the given screen coordinates. Call this when the user wants ' 
+            'to press somewhere on the device; prefer dump_ui to find the coordinates ' 
+            'rather than guessing.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2003,7 +2087,9 @@ Body Encoding Rules:
       {
         'name': 'long_press',
         'description':
-            'Perform a long press at the given coordinates for a duration.',
+            'Perform a long press at the given coordinates for a duration. Call this when ' 
+            'a plain tap is not enough, for example to open a context menu or trigger a ' 
+            'copy action.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2019,7 +2105,10 @@ Body Encoding Rules:
       },
       {
         'name': 'swipe_screen',
-        'description': 'Perform a swipe gesture from one point to another.',
+        'description':
+            'Perform a swipe gesture from one point to another. Call this when the user ' 
+            'wants to scroll a list, dismiss a card or reveal a drawer; adjust the ' 
+            'duration for a fling instead of a slow drag.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2038,7 +2127,9 @@ Body Encoding Rules:
       {
         'name': 'key_event',
         'description':
-            'Send a key event. Keycodes: 3=HOME, 4=BACK, 26=POWER, 82=MENU, 187=RECENTS.',
+            'Send a hardware key event. Keycodes: 3=HOME, 4=BACK, 26=POWER, 82=MENU, ' 
+            '187=RECENTS. Call this when the user wants to navigate back or home, or wake ' 
+            'the screen.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2053,7 +2144,9 @@ Body Encoding Rules:
       },
       {
         'name': 'input_text',
-        'description': 'Set text on the currently focused input element.',
+        'description':
+            'Set text on the currently focused input element. Call this when the user ' 
+            'wants to type into a field; tap it first so that it has focus.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2065,18 +2158,25 @@ Body Encoding Rules:
       {
         'name': 'screenshot',
         'description':
-            'Take a screenshot and return as Base64 PNG (requires root).',
+            'Take a screenshot and return it as Base64 PNG (requires root). Call this ' 
+            'when the user wants to see the current screen, or to visually confirm the ' 
+            'result of a tap or input sequence.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'open_accessibility_settings',
-        'description': 'Open the Android accessibility settings page.',
+        'description':
+            'Open the Android accessibility settings page. Call this when the ' 
+            'accessibility permission is missing and the device tools (tap, dump_ui, ' 
+            'screenshot) are failing for that reason.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'shell',
         'description':
-            'Execute a shell command on the device (optionally with root, Shizuku or Dhizuku).',
+            'Execute a shell command on the device, optionally with root, Shizuku or ' 
+            'Dhizuku. Call this when the user needs something the dedicated tools do not ' 
+            'cover; it is powerful, so keep commands narrow and reversible.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2105,13 +2205,16 @@ Body Encoding Rules:
       {
         'name': 'get_pending_intercepts',
         'description':
-            'Get all requests/responses currently paused by breakpoint interception.',
+            'Get all requests and responses currently paused by breakpoint interception. ' 
+            'Call this when the user wants to see what is waiting for a decision, then ' 
+            'approve_intercept or reject_intercept each one.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'approve_intercept',
         'description':
-            'Approve (release) a paused intercept. Optionally modify the request before releasing.',
+            'Approve (release) a paused intercept, optionally modifying the request ' 
+            'first. Call this to let a frozen request continue, with or without edits.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2137,7 +2240,9 @@ Body Encoding Rules:
       {
         'name': 'reject_intercept',
         'description':
-            'Reject a paused intercept. Request is aborted, response is dropped.',
+            'Reject a paused intercept; the request is aborted and the response is ' 
+            'dropped. Call this when the user wants to block a specific call rather than ' 
+            'edit it.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2156,12 +2261,16 @@ Body Encoding Rules:
       // ==================== WebSocket Message Tools (v1.6.0+) ====================
       {
         'name': 'get_paused_websocket_messages',
-        'description': 'Get all WebSocket messages currently paused by interception.',
+        'description':
+            'Get all WebSocket messages currently paused by interception. Call this when ' 
+            'the user wants to inspect or decide on frozen WebSocket frames.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
       {
         'name': 'resume_websocket_message',
-        'description': 'Resume (release) a paused WebSocket message. Optionally modify the payload before releasing.',
+        'description':
+            'Resume (release) a paused WebSocket message, optionally replacing the ' 
+            'payload. Call this to let a frozen frame through, with or without edits.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2179,7 +2288,9 @@ Body Encoding Rules:
       },
       {
         'name': 'abort_websocket_message',
-        'description': 'Abort a paused WebSocket message. The message will be dropped.',
+        'description':
+            'Abort a paused WebSocket message so it is dropped. Call this when the user ' 
+            'wants to block a specific frame.',
         'inputSchema': {
           'type': 'object',
           'properties': {
