@@ -329,7 +329,7 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
       if (path == null) {
         return;
       }
-      var file = await File(path.toFilePath()).create(recursive: true);
+      var file = await File(path).create(recursive: true);
       await Har.writeFile(requests, file, title: fileName);
       if (mounted) FlutterToastr.show(localizations.exportSuccess, context);
     } catch (e) {

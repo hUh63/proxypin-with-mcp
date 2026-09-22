@@ -260,9 +260,9 @@ Future<void> _savePayload(BuildContext context, List<int> bytes) async {
   final decoded = WsPayloadDecoder.decode(Uint8List.fromList(bytes));
   final ext = decoded.imageFormat ??
       ((decoded.kind == WsPayloadKind.text || decoded.kind == WsPayloadKind.json) ? 'txt' : 'bin');
-  final Uri? path = await Platforms.saveFileAdaptive(fileName: 'websocket.$ext');
+  final String? path = await Platforms.saveFileAdaptive(fileName: 'websocket.$ext');
   if (path == null) return;
-  await File(path.toFilePath()).writeAsBytes(bytes);
+  await File(path).writeAsBytes(bytes);
   if (context.mounted) {
     CustomToast.success(AppLocalizations.of(context)!.saveSuccess).show(context);
   }

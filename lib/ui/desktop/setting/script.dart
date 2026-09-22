@@ -953,7 +953,7 @@ class _ScriptListState extends State<ScriptList> {
     if (indexes.isEmpty) return;
     //文件名称
     String fileName = 'proxypin-scripts.json';
-    Uri? path = await Platforms.saveFileAdaptive(fileName: fileName);
+    String? path = await Platforms.saveFileAdaptive(fileName: fileName);
     if (path == null) {
       return;
     }
@@ -972,7 +972,7 @@ class _ScriptListState extends State<ScriptList> {
       json.add(map);
     }
 
-    await File(path.toFilePath()).writeAsBytes(utf8.encode(jsonEncode(json)));
+    await File(path).writeAsBytes(utf8.encode(jsonEncode(json)));
     if (mounted) FlutterToastr.show(localizations.exportSuccess, context);
   }
 

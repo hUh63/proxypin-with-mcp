@@ -387,7 +387,7 @@ class _RequestMapListState extends State<RequestMapList> {
     if (indexes.isEmpty) return;
     //文件名称
     String fileName = 'request_map.json';
-    Uri? path = await Platforms.saveFileAdaptive(fileName: fileName);
+    String? path = await Platforms.saveFileAdaptive(fileName: fileName);
     if (path == null) {
       return;
     }
@@ -402,7 +402,7 @@ class _RequestMapListState extends State<RequestMapList> {
       json.add(map);
     }
 
-    await File(path.toFilePath()).writeAsBytes(utf8.encode(jsonEncode(json)));
+    await File(path).writeAsBytes(utf8.encode(jsonEncode(json)));
 
     if (mounted) FlutterToastr.show(localizations.exportSuccess, context);
   }

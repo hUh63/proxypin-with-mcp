@@ -136,11 +136,11 @@ class _SslState extends State<SslWidget> {
                   padding: const EdgeInsets.only(left: 10, right: 10),
                   child: Text(localizations.exportCA, style: const TextStyle(fontSize: 14))),
               onPressed: () async {
-                Uri? path = await Platforms.saveFileAdaptive(fileName: "ProxyPinCA.crt");
+                String? path = await Platforms.saveFileAdaptive(fileName: "ProxyPinCA.crt");
                 if (path == null) return;
 
                 var caFile = await CertificateManager.certificateFile();
-                await caFile.copy(path.toFilePath());
+                await caFile.copy(path);
               }),
           const Divider(thickness: 0.3, height: 8),
           MenuItemButton(
@@ -171,12 +171,12 @@ class _SslState extends State<SslWidget> {
                               TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
                               TextButton(
                                 onPressed: () async {
-                                  Uri? path = (await Platforms.saveFileAdaptive(
+                                  String? path = (await Platforms.saveFileAdaptive(
                                       fileName: "ProxyPinPkcs12.p12"));
                                   if (path == null) return;
                                   var p12Bytes = await CertificateManager.generatePkcs12(
                                       password?.isNotEmpty == true ? password : null);
-                                  await File(path.toFilePath()).writeAsBytes(p12Bytes);
+                                  await File(path).writeAsBytes(p12Bytes);
                                   if (context.mounted) Navigator.pop(context);
                                 },
                                 child: Text(localizations.export),
@@ -190,11 +190,11 @@ class _SslState extends State<SslWidget> {
                   padding: const EdgeInsets.only(left: 10, right: 10),
                   child: Text(localizations.exportPrivateKey, style: const TextStyle(fontSize: 14))),
               onPressed: () async {
-                Uri? path = await Platforms.saveFileAdaptive(fileName: "ProxyPinKey.pem");
+                String? path = await Platforms.saveFileAdaptive(fileName: "ProxyPinKey.pem");
                 if (path == null) return;
 
                 var keyFile = await CertificateManager.privateKeyFile();
-                await keyFile.copy(path.toFilePath());
+                await keyFile.copy(path);
               }),
         ],
         child: Padding(

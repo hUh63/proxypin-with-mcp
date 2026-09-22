@@ -364,7 +364,7 @@ class _FavoritesActions extends StatelessWidget {
                   onPressed: () async {
                     final path = await Platforms.saveFileAdaptive(fileName: 'favorites.json');
                     if (path == null) return;
-                    await FavoriteStorage.exportToFile(path.toFilePath());
+                    await FavoriteStorage.exportToFile(path);
                     if (context.mounted) CustomToast.success(localizations.exportSuccess).show(context);
                     onChanged();
                   },

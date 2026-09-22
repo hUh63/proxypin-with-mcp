@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.24.2 (2026-09-22)
+
+### 修复
+
+- 修 `Platforms.saveFileAdaptive` 返回类型引发的调用点不匹配：file_picker 13 的 `saveFile` 返回 `Uri`、
+  `getDirectoryPath` 返回路径字符串，这里统一返回文件路径 `String?`，并去掉 11 处调用点多余的 `toFilePath()`
+  （`body` / `web_socket` / `favorite` / `history` / `domains` / `request_map` / `request_rewrite` / `script` / `ssl`）
+
 ## v1.24.1 (2026-09-22)
 
 ### 修复

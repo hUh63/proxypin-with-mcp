@@ -329,14 +329,14 @@ class _HistoryListState extends State<_HistoryListWidget> {
     String fileName =
         '${item.name.contains("ProxyPin") ? '' : 'ProxyPin'}${item.name}.har'.replaceAll(" ", "_").replaceAll(":", "_");
 
-    final Uri? path = await Platforms.saveFileAdaptive(fileName: fileName);
+    final String? path = await Platforms.saveFileAdaptive(fileName: fileName);
     if (path == null) {
       return;
     }
 
     //获取请求
     List<HttpRequest> requests = await storage.getRequests(item);
-    var file = await File(path.toFilePath()).create();
+    var file = await File(path).create();
     await Har.writeFile(requests, file, title: item.name);
     if (mounted) FlutterToastr.show(localizations.exportSuccess, context);
     Future.delayed(const Duration(seconds: 30), () => item.requests = null);

@@ -441,12 +441,12 @@ class _RequestRuleListState extends State<RequestRuleList> {
       }
     }
 
-    Uri? path = await Platforms.saveFileAdaptive(fileName: fileName);
+    String? path = await Platforms.saveFileAdaptive(fileName: fileName);
     if (path == null) {
       return;
     }
 
-    await File(path.toFilePath()).writeAsBytes(utf8.encode(content));
+    await File(path).writeAsBytes(utf8.encode(content));
     if (mounted) FlutterToastr.show(localizations.exportSuccess, context);
   }
 
