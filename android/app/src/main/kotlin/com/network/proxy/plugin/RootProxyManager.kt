@@ -55,7 +55,7 @@ object RootProxyManager {
 
     /** 重定向是否正在生效（OUTPUT 链里还有我们的跳转） */
     fun isRootProxyRunning(): Boolean {
-        val (code, output) = run("iptables -t nat -S OUTPUT")
+        val (code, output) = run("iptables -w -t nat -S OUTPUT")
         if (code != 0) return false
         return output.lineSequence().any { it.contains("-j $CHAIN") }
     }
@@ -75,13 +75,13 @@ object RootProxyManager {
         stop()
 
         val script = buildString {
-            append("iptables -t nat -N $CHAIN; ")
-            append("iptables -t nat -A $CHAIN -d 127.0.0.0/8 -j RETURN; ")
+            append("iptables -w -t nat -N $CHAIN; ")
+            append("iptables -w -t nat -A $CHAIN -d 127.0.0.0/8 -j RETURN; ")
             if (appUid > 0) {
-                append("iptables -t nat -A $CHAIN -m owner --uid-owner $appUid -j RETURN; ")
+                append("iptables -w -t nat -A $CHAIN -m owner --uid-owner $appUid -j RETURN; ")
             }
-            append("iptables -t nat -A $CHAIN -p tcp -j REDIRECT --to-ports $port; ")
-            append("iptables -t nat -A OUTPUT -p tcp -j $CHAIN")
+            append("iptables -w -t nat -A $CHAIN -p tcp -j REDIRECT --to-ports $port; ")
+            append("iptables -w -t nat -A OUTPUT -p tcp -j $CHAIN")
         }
 
         val (code, output) = run(script)
@@ -100,9 +100,9 @@ object RootProxyManager {
     /** 关闭重定向并清理自建链。 */
     fun stop(): Boolean {
         // 先摘引用，再清链（顺序不可颠倒）
-        run("iptables -t nat -D OUTPUT -p tcp -j $CHAIN")
-        run("iptables -t nat -F $CHAIN")
-        val (code, _) = run("iptables -t nat -X $CHAIN")
+        run("iptables -w -t nat -D OUTPUT -p tcp -j $CHAIN")
+        run("iptables -w -t nat -F $CHAIN")
+        val (code, _) = run("iptables -w -t nat -X $CHAIN")
         Log.i(TAG, "root proxy stopped (exit=$code)")
         return code == 0
     }
@@ -115,7 +115,7 @@ object RootProxyManager {
      * 唤起 su 授权框。
      */
     fun cleanupStale(): Boolean {
-        val (code, output) = run("iptables -t nat -L $CHAIN -n")
+        val (code, output) = run("iptables -w -t nat -L $CHAIN -n")
         if (code != 0 || output.isBlank()) {
             return true
         }

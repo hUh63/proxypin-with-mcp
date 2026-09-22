@@ -21,6 +21,7 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/crts.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
+import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxy_manager/proxy_manager.dart';
 
@@ -211,6 +212,22 @@ class CaptureDiagnose {
         title: 'CA 根证书',
         status: DiagnoseStatus.warn,
         detail: '读取失败：$e',
+      ));
+    }
+
+    // 3.5 Windows 增强接管（上游 #577 / #896）
+    // 这个功能一直都存在，但默认关闭、入口又深，导致"某些进程抓不到"的用户
+    // 根本不知道可以打开它 —— 所以在自检里直接点出来。
+    if (Platform.isWindows) {
+      final takeoverOn = AppConfiguration.current?.winTakeoverEnabled ?? false;
+      items.add(DiagnoseItem(
+        key: 'win_takeover',
+        title: 'Windows 增强接管',
+        status: takeoverOn ? DiagnoseStatus.ok : DiagnoseStatus.info,
+        detail: takeoverOn
+            ? '已开启：WinHTTP 服务、CLI 工具（curl/git/node）等也会走代理'
+            : '未开启：自带网络栈的应用、WinHTTP 服务与 CLI 工具可能抓不到。'
+                '可在「偏好设置 → Windows 接管」打开（WinHTTP 部分需要管理员权限）',
       ));
     }
 

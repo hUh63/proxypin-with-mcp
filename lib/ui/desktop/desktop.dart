@@ -31,6 +31,7 @@ import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
+import 'package:proxypin/network/util/windows_takeover.dart';
 import 'package:proxypin/storage/histories.dart';
 import 'package:proxypin/ui/component/app_dialog.dart';
 import 'package:proxypin/ui/component/memory_cleanup.dart';
@@ -179,6 +180,16 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
       }
     } catch (e, t) {
       logger.e('系统代理自愈检查失败', error: e, stackTrace: t);
+    }
+
+    // 同理检查 Windows 增强接管的残留（WinHTTP + 代理环境变量）：
+    // 这两处不会随进程结束自动消失，残留会让整机代理到一个死端口。
+    try {
+      if (!widget.configuration.winTakeoverEnabled) {
+        await WindowsTakeover.repairStaleLayered(widget.configuration.port);
+      }
+    } catch (e, t) {
+      logger.e('Windows 接管自愈检查失败', error: e, stackTrace: t);
     }
   }
 

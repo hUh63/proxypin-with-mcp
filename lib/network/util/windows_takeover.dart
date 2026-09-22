@@ -152,6 +152,58 @@ class WindowsTakeover {
     return WindowsTakeoverResult(winHttp: winHttpOk, envVars: envOk, message: message);
   }
 
+  /// 启动自愈（上游 #886 的延伸）：清掉上次异常退出残留的 WinHTTP 代理与代理环境变量。
+  ///
+  /// 为什么需要：`netsh winhttp set proxy` 是**系统级**设置，`setx` 写的是用户级环境变量——
+  /// 两者都不会因为我们被强杀而自动消失。它们指向已经没人监听的 127.0.0.1:<本应用端口> 时，
+  /// 用户会表现为"网页打不开 / git、curl 全都连不上"。
+  ///
+  /// 只在"指向 127.0.0.1 且端口正好是本应用端口"时清理，避免误伤用户自己配的其它代理。
+  static Future<void> repairStaleLayered(int port) async {
+    if (!Platform.isWindows) return;
+
+    final needle = '127.0.0.1:$port';
+    final localhostNeedle = 'localhost:$port';
+
+    // 1) WinHTTP
+    try {
+      final r = await Process.run('netsh', ['winhttp', 'show', 'proxy'], runInShell: false);
+      final out = '${r.stdout}${r.stderr}';
+      if (r.exitCode == 0 && (out.contains(needle) || out.contains(localhostNeedle))) {
+        await Process.run('netsh', ['winhttp', 'reset', 'proxy'], runInShell: false);
+        logger.i('检测到残留的 WinHTTP 代理（指向本应用端口 $port），已重置');
+      }
+    } catch (e) {
+      logger.w('WinHTTP 残留检查失败', error: e);
+    }
+
+    // 2) 代理环境变量（用 reg 读用户级，当前进程环境可能还没继承到）
+    for (final name in _proxyEnvNames) {
+      try {
+        final value = await _userEnvValue(name);
+        if (value == null || value.isEmpty) continue;
+        if (!value.contains(needle) && !value.contains(localhostNeedle)) continue;
+        await Process.run('setx', [name, ''], runInShell: false);
+        logger.i('检测到残留的代理环境变量 $name=$value，已清空');
+      } catch (e) {
+        logger.w('代理环境变量残留检查失败', error: e);
+      }
+    }
+  }
+
+  /// 读用户级环境变量（HKCU\Environment）
+  static Future<String?> _userEnvValue(String name) async {
+    try {
+      final r = await Process.run(
+          'reg', ['query', r'HKCU\Environment', '/v', name], runInShell: false);
+      if (r.exitCode != 0) return null;
+      final match = RegExp('$name\\s+REG_[A-Z_]+\\s+(.*)').firstMatch('${r.stdout}');
+      return match?.group(1)?.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 还原：重置 WinHTTP 代理并清空代理环境变量
   static Future<void> disableLayered() async {
     if (!Platform.isWindows) return;
