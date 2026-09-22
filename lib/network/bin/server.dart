@@ -19,6 +19,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/util/root_proxy.dart';
 import 'package:proxypin/network/components/hosts.dart';
 import 'package:proxypin/network/components/interceptor.dart';
 import 'package:proxypin/network/components/network_condition.dart';
@@ -246,6 +247,15 @@ class ProxyServer {
       } catch (e) {
         logger.w('关闭代理服务器超时或失败（继续停止流程）', error: e);
       }
+    }
+    // 上游 #839 FR2：关掉代理时同步撤掉 root 模式的 iptables 重定向。
+    // 否则重定向还在、监听没了，设备会表现为“连着网但所有 App 上不了网”。
+    try {
+      if (await RootProxy.wasActive()) {
+        await RootProxy.stop().timeout(const Duration(seconds: 10));
+      }
+    } catch (e) {
+      logger.w('撤销 root 模式重定向失败（继续停止流程）', error: e);
     }
     // 停止抓包：按用户设置的「内容上限」统一裁剪列表里已抓消息体，及时释放驻留内存（上游 #674）。
     // 未设置上限（默认不限）时为空操作，行为与旧版一致。

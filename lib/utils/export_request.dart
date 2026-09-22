@@ -213,6 +213,7 @@ Future<void> exportRequestsAsFiles(
 }) async {
   try {
     int successCount = 0;
+  String? lastError;
     final total = requests.length;
 
     // 通知开始导出
@@ -286,6 +287,9 @@ Future<void> exportRequestsAsFiles(
           final progress = (i + 1) / total;
           onProgress?.call(progress);
         } catch (e) {
+          // 上游 #894：不能只记日志——用户看到的是“导出成功：0 请求”，
+          // 根本想不到是文件写不进去。把原因带上。
+          lastError ??= e.toString();
           logger.e('Export error: $e');
         }
       }
@@ -312,6 +316,18 @@ Future<void> exportRequestsAsFiles(
           sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size);
     }
 
+    if (successCount == 0 && requests.isNotEmpty) {
+      // 一条都没写成功就别报“导出成功：0 请求”了
+      logger.w('export wrote no file, ${requests.length} requests, last error: $lastError');
+      if (context.mounted) {
+        FlutterToastr.show(
+          '导出失败：${requests.length} 条请求都没写出文件'
+          '${lastError == null ? '' : '（$lastError）'}，可改用「导出 HAR」',
+          context,
+        );
+      }
+      return;
+    }
     onSuccess?.call(successCount);
   } catch (e, st) {
     logger.e('Export error: ', error: e, stackTrace: st);

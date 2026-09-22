@@ -75,6 +75,16 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
       return;
     }
 
+    // 抓包没跑就上重定向 = 把流量引到一个没人监听的端口，等于让设备断网
+    if (!widget.proxyServer.isRunning) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _message = '请先启动抓包：代理端口没在监听时开重定向会让设备上不了网';
+      });
+      return;
+    }
+
     // 与 VPN 抓包互斥：同时开启时两边会抢同一份流量
     if (Vpn.isVpnStarted) {
       if (!mounted) return;

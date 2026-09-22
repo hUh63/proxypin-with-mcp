@@ -342,7 +342,8 @@ class RequestSequenceState extends State<RequestSequence> with AutomaticKeepAliv
       final httpRequest = request.copy(uri: request.requestUrl);
       final proxyInfo = proxyServer.isRunning ? ProxyInfo.of('127.0.0.1', proxyServer.port) : null;
       try {
-        await HttpClients.proxyRequest(httpRequest, proxyInfo: proxyInfo, timeout: const Duration(seconds: 3));
+        // 上游 #892：批量重放原来只给 3 秒超时，稍慢的接口会成批失败（用户报“100 次只成功 70 次”）
+        await HttpClients.proxyRequest(httpRequest, proxyInfo: proxyInfo, timeout: const Duration(seconds: 10));
         RepeatTaskManager.instance.record(task, ok: true);
         if (mounted) {
           FlutterToastr.show(localizations.reSendRequest, rootNavigator: true, context);
