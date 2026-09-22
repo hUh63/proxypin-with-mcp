@@ -4291,8 +4291,11 @@ Body Encoding Rules:
 
       case 'get_ssl_proxying_list':
         {
-          Map<String, dynamic> pack(bool enabled, List<String> rules) =>
-              {'enabled': enabled, 'count': rules.length, 'rules': List<String>.from(rules)};
+          Map<String, dynamic> pack(bool enabled, List<RegExp> rules) => {
+                'enabled': enabled,
+                'count': rules.length,
+                'rules': rules.map((r) => r.pattern).toList(),
+              };
           return {
             'whitelist': pack(HostFilter.whitelist.enabled, HostFilter.whitelist.list),
             'blacklist': pack(HostFilter.blacklist.enabled, HostFilter.blacklist.list),

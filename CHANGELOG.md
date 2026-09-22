@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.24.7 (2026-09-23)
+
+### 修复
+
+- `get_ssl_proxying_list`：`HostFilter` 的白 / 黑名单是 `List<RegExp>`，改为输出正则文本，修正类型错误
+
 ## v1.24.6 (2026-09-23)
 
 ### 修复
