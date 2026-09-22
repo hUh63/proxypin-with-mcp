@@ -34,13 +34,6 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      # [temporary] 把解析后的 pubspec.lock 打到日志，便于本地取回并提交（用完即删）
-      - name: Dump pubspec.lock (temporary)
-        run: |
-          echo "-----BEGIN PUBSPEC.LOCK-----"
-          cat pubspec.lock
-          echo "-----END PUBSPEC.LOCK-----"
-
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
 

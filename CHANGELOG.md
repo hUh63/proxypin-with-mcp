@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.24.4 (2026-09-22)
+
+### 构建
+
+- 提交随新依赖解析的 `pubspec.lock`（file_picker 13.x、archive 4.2、logger 2.8 等），并移除 CI 中用于导出 lock 的临时步骤
+
 ## v1.24.3 (2026-09-22)
 
 ### 构建
