@@ -7,6 +7,7 @@ import 'dart:math' as math;
 
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/network/components/host_filter.dart';
 import 'package:proxypin/network/components/manager/hosts_manager.dart';
 import 'package:proxypin/network/components/manager/request_block_manager.dart';
 import 'package:proxypin/network/components/manager/request_rewrite_manager.dart';
@@ -22,6 +23,7 @@ import 'package:proxypin/mcp/capture/flow_store.dart';
 import 'package:proxypin/mcp/protocol/mcp_actions.dart';
 import 'package:proxypin/mcp/protocol/mcp_tool.dart';
 import 'package:proxypin/mcp/transport/mcp_stdio_bridge.dart';
+import 'package:proxypin/mcp/transport/setup_script.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
@@ -202,6 +204,17 @@ class McpServer {
           } else {
             _handleMcp(request);
           }
+        } else if (path == '/mcp/setup.sh' || path == '/mcp/setup.ps1') {
+          // 一键配置脚本：客户端在自己的机器上执行，脚本内嵌本服务的 endpoint 与 token
+          final host = request.headers.host ?? '127.0.0.1:$_port';
+          final endpoint = 'http://$host/mcp';
+          final script = path.endsWith('.sh')
+              ? McpSetupScript.shell(endpoint: endpoint, token: _token ?? '')
+              : McpSetupScript.powershell(endpoint: endpoint, token: _token ?? '');
+          final response = request.response;
+          response.headers.contentType = io.ContentType('text', 'plain', charset: 'utf-8');
+          response.write(script);
+          response.close();
         } else if (path == '/health') {
           // 健康检查端点，供客户端探测服务是否可用
           final response = request.response;
@@ -4320,7 +4333,6 @@ Body Encoding Rules:
             if (_lanMode) 'bearer_token': tok,
             'stdio_bridge': 'ProxyPin App 以 --mcp-stdio 参数启动即作为 stdio 桥转发到本地 HTTP',
           };
-          String take(String key) => (want == null || want.isEmpty || want == key) ? '' : null.toString();
           final claude = 'claude mcp add proxypin -s user --transport http $loopback';
           final codex = 'codex mcp add proxypin --url $loopback';
           final curl =

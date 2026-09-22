@@ -315,7 +315,7 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
   String _oneClickSh() {
     var token = McpServer().token ?? '';
     var ip = _lanIp ?? '';
-    var port = McpService.instance.port;
+    var port = McpServer().port;
     return 'curl -s -H "Authorization: Bearer $token" '
         'http://$ip:$port/mcp/setup.sh | sh';
   }
@@ -324,7 +324,7 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
   String _oneClickPs1() {
     var token = McpServer().token ?? '';
     var ip = _lanIp ?? '';
-    var port = McpService.instance.port;
+    var port = McpServer().port;
     return 'irm -Headers @{ Authorization = "Bearer $token" } '
         'http://$ip:$port/mcp/setup.ps1 | iex';
   }

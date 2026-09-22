@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.24.6 (2026-09-23)
+
+### 修复
+
+- `mcp_server.dart`：补 `HostFilter` / `McpSetupScript` 的 import（SSL 名单工具与一键配置脚本需要）
+- `ui/configuration.dart`：补 network 层 `Configuration` 的 import（MCP 配置转发需要）
+- `mobile/setting/mcp.dart`：清掉最后一处 `McpService.instance.port` 残留，`get_client_setup` 去掉无用辅助函数
+- 补回 `/mcp/setup.sh` 与 `/mcp/setup.ps1` 端点：上游服务层删除后被漏掉，而移动端设置页的一键配置命令仍在调用
+
 ## v1.24.5 (2026-09-23)
 
 ### 两套 MCP 合流为一套
