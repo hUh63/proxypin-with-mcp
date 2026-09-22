@@ -161,12 +161,8 @@ class _DomainFilterState extends State<DomainFilter> {
 
   //导入
   Future<void> import() async {
-    final result = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
         allowedExtensions: ['config'], type: FileType.custom, initialDirectory: "/Downloads");
-    if (result == null || result.isEmpty) {
-      return;
-    }
-    var file = result.single;
     if (file == null) {
       return;
     }

@@ -83,11 +83,11 @@ class _CertHashPageState extends State<CertHashPage> {
           Wrap(alignment: WrapAlignment.end, children: [
             ElevatedButton.icon(
                 onPressed: () async {
-                  var result = await FilePicker.pickFiles(
+                  final picked = await FilePicker.pickFile(
                       type: FileType.custom, allowedExtensions: ['crt', 'pem', 'cer', 'der']);
-                  if (result == null) return;
+                  if (picked == null) return;
 
-                  File file = File(result.single.xFile.path!);
+                  File file = File(picked.path!);
                   var bytes = await file.readAsBytes();
                   input.text = tryDerFormat(bytes) ?? String.fromCharCodes(bytes);
                   getSubjectName();

@@ -823,5 +823,6 @@
   "fuzzerStatus": "狀態",
   "fuzzerLength": "長度",
   "fuzzerDuration": "耗時",
-  "fuzzerClear": "清空"
+  "fuzzerClear": "清空",
+  "envInsertBuiltIn": "插入內建變數"
 }

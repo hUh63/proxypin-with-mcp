@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.24.0 (2026-09-22)
+
+### 同步上游 v1.3.2（24 commits / 141 文件）
+
+保留本 fork 的全部自研能力，同时吸收上游 v1.3.2 的功能与修复。
+
+**来自上游**
+
+- 内置 MCP 服务（`lib/mcp/**`）：与自建 MCP 并存，共用「MCP 服务」开关，默认关闭
+- 环境变量支持内置动态变量：`{{$date}}` `{{$datetime}}` `{{$timestamp}}` `{{$timestampMs}}` `{{$guid}}`/`{{$uuid}}`
+  `{{$randomString}}` `{{$randomInt}}`；`$` 前缀保证不会被同名用户变量 shadow
+- 请求重写规则支持上移/下移与拖动排序
+- 修复 Windows 右键菜单崩溃：改用自绘上下文菜单，移除 `flutter_desktop_context_menu`
+- `file_picker` 升级 13.x（federated API）：单文件 `pickFile`、`pickFiles` 返回 List、`saveFile` 返回 `Uri`、
+  目录选择 `getDirectoryPath`
+- 修复 h2c 明文 HTTP/2（prior-knowledge）抓包与转发、HTTP/2 流顺序保持
+- 修复 close-delimited 响应体被丢弃（#844）、不支持解析时对 null 通道强制解包导致的崩溃
+- 修复 Android VPN 目的端口同步记录（#530）、请求行 refresh 回调内存泄漏
+- 新增 IDNA 主机名归一化（#923），与既有 `idn.dart` 实现并存
+- 其他：Windows UAC 提权与 VC++ 运行库随包、更新镜像、窗口尺寸健壮性
+
+**保留本 fork 的既有改动**（上游同期未覆盖或实现不同）
+
+- #871 iOS HTTP/2 `:authority` 沿用客户端原始 Host 头（避免经代理后 403）
+- #922 详情页响应到达即刷新、#915 选中态按 requestId 记录（列表重建不丢高亮）
+- #902 保存文件走 `Platforms.saveFileAdaptive`；Android 图片保存写临时文件后走系统分享
+- #701/#456 大响应降级为原样转发 + 只读路径有界解码
+- #674 停止抓包资源释放、#645 脚本 `clearRequests()` / `removeRequest()`
+- #705 HostFilter 支持 URL 前缀过滤、#925 重写规则正则分组展开
+- #893 批量导出改走真实临时文件（修复 iOS "Is a directory"）
+- 自研能力：抓包自检、Fuzzer、采集方案、安全自检、Root 模式（iptables `-w`）、JS 还原、
+  Windows 增强接管与残留自愈
+
+### 已知取舍
+
+- 上游与自研各有一套上下文菜单、IDNA、内置变量、MCP 实现，本次一律**并存**而非替换；
+  上游实现更完整处（重写规则拖动排序、`getDirectoryPath`、`toMap()` 多值语义）已采用上游版本。
+
 ## v1.23.2 (2026-09-22)
 
 ### 文档

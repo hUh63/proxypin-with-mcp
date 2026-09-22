@@ -224,9 +224,8 @@ class _QrDecodeState extends State<_QrDecode> with AutomaticKeepAliveClientMixin
 
     if (Platforms.isDesktop()) {
       //<String>['jpg', 'png', 'jpeg']
-      var result = await FilePicker.pickFiles(type: FileType.image);
-      if (result == null || result.isEmpty) return null;
-      return result.single.xFile.path;
+      final file = await FilePicker.pickFile(type: FileType.image);
+      return file?.path;
     }
 
     return null;
@@ -352,26 +351,8 @@ class _QrEncodeState extends State<_QrEncode> with AutomaticKeepAliveClientMixin
     var imageBytes = await toImageBytes();
     if (imageBytes == null) return;
 
-    // 上游 #902：桌面端 saveFile 传入 bytes 在部分平台不会真正落盘（提示成功但文件不存在），
-    // 桌面端改为只弹保存框拿路径、由 dart:io 写入。
-    if (Platforms.isDesktop()) {
-      Uri? path = await Platforms.saveFileAdaptive(fileName: "qrcode.png", type: FileType.image);
-      if (path == null) return;
-      try {
-        await File(path.toFilePath()).writeAsBytes(imageBytes);
-        if (mounted) {
-          CustomToast.success(localizations.saveSuccess).show(context);
-        }
-      } catch (e) {
-        if (mounted) {
-          FlutterToastr.show('保存失败 / Save failed: $e', context, duration: 2, rootNavigator: true);
-        }
-      }
-      return;
-    }
-
-    Uri? path = await FilePicker.saveFile(fileName: "qrcode.png", bytes: imageBytes, type: FileType.image);
-    if (path == null) return;
+    final saved = await FilePicker.saveFile(fileName: "qrcode.png", bytes: imageBytes, type: FileType.image);
+    if (saved == null) return;
     if (mounted) {
       CustomToast.success(localizations.saveSuccess).show(context);
     }

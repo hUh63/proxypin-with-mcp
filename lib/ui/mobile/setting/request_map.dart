@@ -95,14 +95,13 @@ class _RequestMapPageState extends State<MobileRequestMapPage> {
 
   //导入js
   Future<void> import() async {
-    var result = await FilePicker.pickFiles(type: FileType.any);
-    if (result == null || result.isEmpty) {
+    final file = await FilePicker.pickFile(type: FileType.any);
+    if (file == null) {
       return;
     }
-    var file = result.single.xFile;
 
     try {
-      List json = jsonDecode(utf8.decode(await file.readAsBytes()));
+      List json = jsonDecode(utf8.decode(await file.xFile.readAsBytes()));
 
       var manager = (await RequestMapManager.instance);
       for (var item in json) {

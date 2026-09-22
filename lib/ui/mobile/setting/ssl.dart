@@ -185,8 +185,8 @@ class _MobileSslState extends State<MobileSslWidget> {
   }
 
   void importPk12() async {
-    var result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['p12', 'pfx']);
-    if (result == null || !mounted) return;
+    final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['p12', 'pfx']);
+    if (file == null || !mounted) return;
     //entry password
     showDialog(
         context: context,
@@ -207,6 +207,7 @@ class _MobileSslState extends State<MobileSslWidget> {
               TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
               TextButton(
                 onPressed: () async {
+                  var bytes = await file.xFile.readAsBytes();
                   try {
                     var bytes = await result.single.xFile.readAsBytes();
                     if (bytes.isEmpty) {
@@ -279,7 +280,7 @@ class _MobileSslState extends State<MobileSslWidget> {
 
     bytes ??= await file!.readAsBytes();
 
-    Uri? outputFile =
+    final outputFile =
         await FilePicker.saveFile(dialogTitle: 'Please select the path to save:', fileName: name, bytes: bytes);
 
     if (!mounted) return;
@@ -429,7 +430,7 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
 
   void _downloadCert(String name) async {
     var caFile = await CertificateManager.certificateFile();
-    Uri? outputFile = await FilePicker.saveFile(
+    final outputFile = await FilePicker.saveFile(
         dialogTitle: 'Please select the path to save:', fileName: name, bytes: await caFile.readAsBytes());
 
     if (!mounted) return;

@@ -246,31 +246,13 @@ class HttpHeaders {
     return json;
   }
 
-  ///转换json
-  /// 单值化后的 header 视图（脚本、MCP、搜索等按 name 取值的地方都用它）。
-  ///
-  /// 上游 #901：这里原先把多值一律用 ";" 连接，对 Set-Cookie 是**协议错误**——
-  /// 它是唯一禁止合并的响应头（其值本身就含分号和逗号），合并后会被当成
-  /// 一个 Cookie 解析，后一个 Cookie 的 Max-Age=0 / expires 会错误地作用到前一个上。
-  /// 现在按头类型分别处理：
-  ///   · Cookie      —— 用 "; " 连接（Cookie 请求头的规范形式）
-  ///   · Set-Cookie  —— 不合并，用换行分隔以保留“多个独立头”的语义
-  ///   · 其余多值头  —— 用 ", " 连接（RFC 9110 允许的合并形式）
-  Map<String, String> toMap() {
-    Map<String, String> json = {};
+  ///转换map。
+  /// 单值 header 保留字符串;多值 header(如 Set-Cookie)以数组形式暴露,
+  /// 避免用 `;` 合并导致 Set-Cookie 被浏览器误解析成单个 Cookie。
+  Map<String, dynamic> toMap() {
+    Map<String, dynamic> json = {};
     forEach((name, values) {
-      if (values.length == 1) {
-        json[name] = values.first;
-        return;
-      }
-      final lower = name.toLowerCase();
-      if (lower == 'set-cookie') {
-        json[name] = values.join('\n');
-      } else if (lower == 'cookie') {
-        json[name] = values.join('; ');
-      } else {
-        json[name] = values.join(', ');
-      }
+      json[name] = values.length == 1 ? values.first : List<String>.from(values);
     });
     return json;
   }

@@ -23,6 +23,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/mcp/transport/mcp_stdio_bridge.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart' show LogManager, LogLevel;
@@ -48,8 +49,21 @@ import 'l10n/app_localizations.dart';
 ///主入口
 ///@author wanghongen
 void main(List<String> args) async {
+  // MCP stdio 转发进程：不初始化任何 GUI/Rust，直接转发到 App 内 HTTP bridge
+  if (args.contains('--mcp-stdio')) {
+    await McpStdioBridge.run(args);
+    return;
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
-  await RustLib.init();
+  try {
+    await RustLib.init();
+  } catch (e) {
+    // code_forge Rust FFI initialization may fail on iOS 14.x due to
+    // deployment-target / cargokit-build incompatibilities. Degrade
+    // gracefully instead of crashing the whole app at startup.
+    print('RustLib.init failed: $e');
+  }
 
   // 上游 #839 FR2：清理上次异常退出遗留的 root 抓包重定向规则。
   // 残留规则的表现是“连着 WiFi 但所有 App 上不了网”，必须在启动时兜住；

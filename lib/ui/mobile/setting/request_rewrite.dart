@@ -101,23 +101,13 @@ class _MobileRequestRewriteState extends State<MobileRequestRewrite> {
 
   //导入
   Future<void> import() async {
-    var result = await FilePicker.pickFiles(type: FileType.any);
-    if (result == null || result.isEmpty) {
+    final file = await FilePicker.pickFile(type: FileType.any);
+    if (file == null) {
       return;
     }
-    var file = result.single.xFile;
 
     try {
-      var text = utf8.decode(await file.readAsBytes());
-      // 上游 #133：加密分享的内容需先输入口令解密
-      if (SecureShare.isEncrypted(text)) {
-        final password = await showSharePasswordDialog(context,
-            title: localizations.sharePasswordInputTitle,
-            subtitle: localizations.sharePasswordInputSubtitle,
-            confirmButtonText: localizations.shareDecrypt);
-        if (password == null) return;
-        text = SecureShare.decrypt(text, password);
-      }
+      List json = jsonDecode(utf8.decode(await file.xFile.readAsBytes()));
 
       final decoded = jsonDecode(text);
       if (decoded is! List) {
@@ -193,32 +183,25 @@ class _RequestRuleListState extends State<RequestRuleList> {
         body: Container(
             padding: const EdgeInsets.only(top: 10, bottom: 30),
             decoration: BoxDecoration(border: Border.all(color: Colors.grey.withValues(alpha: 0.2))),
-            child: Scrollbar(
-                child: ListView(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Container(
-                        width: 60,
-                        padding: const EdgeInsets.only(left: 10),
-                        child: Text(localizations.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    SizedBox(
-                        width: 48,
-                        child: Text(localizations.enable,
-                            maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
-                    const VerticalDivider(),
-                    const Expanded(child: Text("URL")),
-                    SizedBox(
-                        width: 60,
-                        child: Text(localizations.action,
-                            maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
-                  ],
-                ),
-                const Divider(thickness: 0.5),
-                Column(children: rows(widget.requestRewrites.rules))
-              ],
-            ))));
+            child: Column(children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(width: 60, padding: const EdgeInsets.only(left: 10), child: Text(localizations.name)),
+                  SizedBox(width: 46, child: Text(localizations.enable, textAlign: TextAlign.center)),
+                  const VerticalDivider(),
+                  const Expanded(child: Text("URL")),
+                  SizedBox(width: 60, child: Text(localizations.action, textAlign: TextAlign.center)),
+                ],
+              ),
+              const Divider(thickness: 0.5),
+              Expanded(
+                  child: ReorderableListView.builder(
+                      buildDefaultDragHandles: false,
+                      itemCount: widget.requestRewrites.rules.length,
+                      onReorderItem: _onReorder,
+                      itemBuilder: (context, index) => _buildRow(widget.requestRewrites.rules, index)))
+            ])));
   }
 
   Stack globalMenu() {
@@ -263,66 +246,86 @@ class _RequestRuleListState extends State<RequestRuleList> {
     ]);
   }
 
-  List<Widget> rows(List<RequestRewriteRule> list) {
+  Widget _buildRow(List<RequestRewriteRule> list, int index) {
     var primaryColor = Theme.of(context).colorScheme.primary;
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-    // 上游 #926：最新添加的规则显示在最上面（仅改显示顺序，不改存储顺序，避免影响匹配语义）
-    final total = list.length;
-    return List.generate(total, (displayIndex) {
-      final index = total - 1 - displayIndex;
-      return InkWell(
-          highlightColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          hoverColor: primaryColor.withValues(alpha: 0.3),
-          onLongPress: () => showMenus(index),
-          onTap: () async {
-            if (multiple) {
-              setState(() {
-                if (!selected.add(index)) {
-                  selected.remove(index);
-                }
-              });
-              return;
-            }
-            showEdit(index);
-          },
-          child: Container(
-              color: selected.contains(index)
-                  ? primaryColor.withValues(alpha: 0.8)
-                  : index.isEven
-                      ? Colors.grey.withValues(alpha: 0.1)
-                      : null,
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-              child: Row(
-                children: [
-                  SizedBox(
-                      width: 60,
-                      child: Text(list[index].name ?? "",
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
-                  SizedBox(
-                      width: 48,
-                      child: Center(
-                          child: SwitchWidget(
-                              scale: 0.8,
-                              value: list[index].enabled,
-                              onChanged: (val) {
-                                list[index].enabled = val;
-                                changed = true;
-                              }))),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: Text(list[index].url,
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
-                  const SizedBox(width: 6),
-                  SizedBox(
-                      width: 60,
-                      child: Text(!isCN ? list[index].type.name.camelCaseToSpaced() : list[index].type.label,
-                          maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 13))),
-                ],
-              )));
+    return ReorderableDragStartListener(
+        index: index,
+        key: ValueKey<RequestRewriteRule>(list[index]),
+        child: InkWell(
+            highlightColor: Colors.transparent,
+            splashColor: Colors.transparent,
+            hoverColor: primaryColor.withValues(alpha: 0.3),
+            onLongPress: () => showMenus(index),
+            onTap: () async {
+              if (multiple) {
+                setState(() {
+                  if (!selected.add(index)) {
+                    selected.remove(index);
+                  }
+                });
+                return;
+              }
+              showEdit(index);
+            },
+            child: Container(
+                color: selected.contains(index)
+                    ? primaryColor.withValues(alpha: 0.8)
+                    : index.isEven
+                        ? Colors.grey.withValues(alpha: 0.1)
+                        : null,
+                height: 45,
+                padding: const EdgeInsets.all(5),
+                child: Row(
+                  children: [
+                    SizedBox(
+                        width: 60,
+                        child: Text(list[index].name ?? "",
+                            overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                    SizedBox(
+                        width: 35,
+                        child: SwitchWidget(
+                            scale: 0.65,
+                            value: list[index].enabled,
+                            onChanged: (val) {
+                              list[index].enabled = val;
+                              changed = true;
+                            })),
+                    const SizedBox(width: 20),
+                    Expanded(child: Text(list[index].url, style: const TextStyle(fontSize: 13))),
+                    const SizedBox(width: 3),
+                    SizedBox(
+                        width: 60,
+                        child: Text(!isCN ? list[index].type.name.camelCaseToSpaced() : list[index].type.label,
+                            textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
+                  ],
+                ))));
+  }
+
+  ///拖拽排序：本地重排并持久化
+  void _onReorder(int oldIndex, int newIndex) {
+    final requestRewrites = widget.requestRewrites;
+    setState(() {
+      final rule = requestRewrites.rules.removeAt(oldIndex);
+      requestRewrites.rules.insert(newIndex, rule);
+      selected.clear();
     });
+    changed = true;
+  }
+
+  ///上移/下移规则：index 为当前列表下标，offset 为 ±1
+  void _moveRule(int index, int offset) {
+    final requestRewrites = widget.requestRewrites;
+    final target = index + offset;
+    if (target < 0 || target >= requestRewrites.rules.length) {
+      return;
+    }
+    setState(() {
+      final rule = requestRewrites.rules.removeAt(index);
+      requestRewrites.rules.insert(target, rule);
+      selected.clear();
+    });
+    changed = true;
   }
 
   Future<void> showEdit(int index) async {
@@ -367,6 +370,10 @@ class _RequestRuleListState extends State<RequestRuleList> {
                   rules[index].enabled = !rules[index].enabled;
                   changed = true;
                 }),
+            const Divider(thickness: 0.5, height: 5),
+            BottomSheetItem(text: localizations.moveUp, onPressed: () => _moveRule(index, -1)),
+            const Divider(thickness: 0.5, height: 5),
+            BottomSheetItem(text: localizations.moveDown, onPressed: () => _moveRule(index, 1)),
             const Divider(thickness: 0.5, height: 5),
             BottomSheetItem(
                 text: localizations.delete,

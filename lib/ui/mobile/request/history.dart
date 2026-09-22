@@ -209,13 +209,13 @@ class _MobileHistoryState extends State<MobileHistory> {
 
   //导入har
   Future<void> import(HistoryStorage storage) async {
-    var result = await FilePicker.pickFiles(type: FileType.any);
-    if (result == null || result.isEmpty) {
+    final file = await FilePicker.pickFile(type: FileType.any);
+    if (file == null) {
       return;
     }
 
     try {
-      var historyItem = await storage.addHarFile(result.single.xFile);
+      var historyItem = await storage.addHarFile(file.xFile);
       setState(() {
         toRequestsView(historyItem, storage);
         FlutterToastr.show(localizations.importSuccess, context);
@@ -487,7 +487,7 @@ class _HistoryRecordState extends State<HistoryRecord> {
                               multiSelectController.toggleSelectionMode();
                             },
                             child: IconText(
-                                icon: const Icon(Icons.checklist_rtl_outlined), text: localizations.selectAction)),
+                                icon: const Icon(Icons.checklist_rtl_outlined), text: localizations.select)),
                         PopupMenuItem(
                             onTap: () async {
                               var requests = requestStateKey.currentState?.currentView();

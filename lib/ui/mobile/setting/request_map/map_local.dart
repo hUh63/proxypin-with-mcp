@@ -176,11 +176,8 @@ class MobileMapLocaleState extends State<MobileMapLocal> {
           const SizedBox(width: 10),
           FilledButton(
               onPressed: () async {
-                final result = await FilePicker.pickFiles();
-                if (result == null || result.isEmpty) {
-                  return;
-                }
-                String? path = result.single.xFile.path;
+                final picked = await FilePicker.pickFile();
+                String? path = picked?.path;
 
                 if (path == null) {
                   return;

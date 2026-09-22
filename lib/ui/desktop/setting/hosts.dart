@@ -339,12 +339,8 @@ class _HostsDialogState extends State<HostsDialog> {
 
   //导入
   Future<void> import() async {
-    final result =
-        await FilePicker.pickFiles(allowedExtensions: ['json'], type: FileType.custom, initialDirectory: "/Downloads");
-    if (result == null || result.isEmpty) {
-      return;
-    }
-    var file = result.single;
+    final file = await FilePicker.pickFile(
+        allowedExtensions: ['json'], type: FileType.custom, initialDirectory: "/Downloads");
     if (file == null) {
       return;
     }
@@ -390,8 +386,8 @@ class _HostsDialogState extends State<HostsDialog> {
       var json = item.toJson();
       list.add(json);
     }
-    var path = await FilePicker.saveFile(fileName: fileName, bytes: utf8.encode(jsonEncode(list)));
-    if (path == null) {
+    final saved = await FilePicker.saveFile(fileName: fileName, bytes: utf8.encode(jsonEncode(list)));
+    if (saved == null) {
       return;
     }
     if (mounted) FlutterToastr.show(localizations.exportSuccess, context);

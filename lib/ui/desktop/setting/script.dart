@@ -172,8 +172,8 @@ class _ScriptWidgetState extends State<ScriptWidget> {
 
   //导入js
   Future<void> import() async {
-    var result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
-    final path = result?.single.xFile.path;
+    final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['json']);
+    final path = file?.path;
 
     if (path == null) {
       return;

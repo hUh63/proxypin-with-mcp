@@ -242,11 +242,11 @@ class X509Utils {
       if (sans != null && sans.isNotEmpty) {
         var sanList = ASN1Sequence();
         for (var s in sans) {
-          // 上游 #913：IP 地址必须用 iPAddress (context tag 7, 0x87) 编码二进制地址值，
-          // 使用 dNSName (0x82) 编码 IP 会导致部分客户端证书校验失败
-          final addr = InternetAddress.tryParse(s);
-          if (addr != null) {
-            sanList.add(ASN1OctetString(octets: addr.rawAddress, tag: 0x87));
+          var ipBytes = _ipAddressBytes(s);
+          if (ipBytes != null) {
+            //IP 地址必须使用 iPAddress(0x87) 类型并写入原始字节,
+            //若按 dNSName 编码, OkHttp/Android 等严格 HostnameVerifier 会校验失败
+            sanList.add(ASN1Object(tag: 0x87)..valueBytes = ipBytes);
           } else {
             sanList.add(ASN1PrintableString(stringValue: s, tag: 0x82));
           }
@@ -696,6 +696,17 @@ class X509Utils {
       }
     }
     return basicConstraints;
+  }
+
+  /// 解析 IPv4/IPv6 地址的原始字节(IPv4 4字节, IPv6 16字节), 非 IP 返回 null
+  ///
+  /// IPv6 可能携带方括号(如 `[::1]`), 需先去除
+  static Uint8List? _ipAddressBytes(String value) {
+    var host = value;
+    if (host.startsWith('[') && host.endsWith(']') && host.length > 2) {
+      host = host.substring(1, host.length - 1);
+    }
+    return InternetAddress.tryParse(host)?.rawAddress;
   }
 
   ///
