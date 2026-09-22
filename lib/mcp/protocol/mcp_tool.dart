@@ -38,3 +38,13 @@ class McpTool {
         'inputSchema': inputSchema,
       };
 }
+
+/// 可预期的工具调用错误，message 直接返回给模型。
+class ToolException implements Exception {
+  final String message;
+
+  ToolException(this.message);
+
+  @override
+  String toString() => message;
+}

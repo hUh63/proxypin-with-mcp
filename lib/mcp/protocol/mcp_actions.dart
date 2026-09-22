@@ -36,7 +36,6 @@ import 'package:proxypin/storage/favorites.dart';
 import 'package:proxypin/utils/curl.dart';
 import 'package:proxypin/utils/lang.dart';
 
-import 'mcp_server.dart';
 import 'mcp_tool.dart';
 
 /// 写工具面：规则读写、SSL/系统代理、重放/构造、收藏、清理、代码生成。

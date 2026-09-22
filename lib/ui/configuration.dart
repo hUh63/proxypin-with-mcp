@@ -132,13 +132,43 @@ class AppConfiguration {
   bool? minimizeToTray;
 
   /// 是否启用 MCP 服务
-  bool mcpEnabled = false;
+  // ---- MCP 配置：真源在 network 层 Configuration（MCP 服务读取它），这里仅做 UI 兼容转发 ----
+  // 合并两套 MCP 后，配置只保留一份，避免「设置页改了、服务读不到」。
+
+  bool get mcpEnabled {
+    final c = Configuration.loaded;
+    return c?.mcpEnabled ?? false;
+  }
+
+  set mcpEnabled(bool v) {
+    final c = Configuration.loaded;
+    if (c == null) return;
+    c.mcpEnabled = v;
+    ConfigAutoSave.markChanged();
+  }
 
   /// 导出给 AI 时是否脱敏 Authorization/Cookie
-  bool mcpRedactEnabled = true;
+  bool get mcpRedactEnabled {
+    final c = Configuration.loaded;
+    return c?.mcpRedactEnabled ?? true;
+  }
+
+  set mcpRedactEnabled(bool v) {
+    final c = Configuration.loaded;
+    if (c == null) return;
+    c.mcpRedactEnabled = v;
+    ConfigAutoSave.markChanged();
+  }
 
   /// 移动端 LAN 模式的访问 token（桌面 loopback 不用，留空即可）
-  String? mcpToken;
+  String? get mcpToken => Configuration.loaded?.mcpToken;
+
+  set mcpToken(String? v) {
+    final c = Configuration.loaded;
+    if (c == null) return;
+    c.mcpToken = v;
+    ConfigAutoSave.markChanged();
+  }
 
   AppConfiguration._();
 
@@ -283,9 +313,6 @@ class AppConfiguration {
       }
       minimizeToTray = config['minimizeToTray'];
 
-      mcpEnabled = config['mcpEnabled'] ?? false;
-      mcpRedactEnabled = config['mcpRedactEnabled'] ?? true;
-      mcpToken = config['mcpToken'] as String?;
     } catch (e) {
       logger.e(e);
     }
@@ -345,9 +372,6 @@ class AppConfiguration {
       if (Platforms.isDesktop()) 'panelRatio': panelRatio,
       if (Platforms.isDesktop()) 'minimizeToTray': minimizeToTray,
       // MCP 配置所有平台都写入
-      'mcpEnabled': mcpEnabled,
-      'mcpRedactEnabled': mcpRedactEnabled,
-      if (mcpToken != null) 'mcpToken': mcpToken,
     };
   }
 }

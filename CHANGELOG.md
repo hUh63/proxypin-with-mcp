@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.24.5 (2026-09-23)
+
+### 两套 MCP 合流为一套
+
+以本 fork 自建的 MCP 服务为主体（协议 2026-07-28、Streamable HTTP + SSE、自动化 / 规则引擎 / 调度器、
+设备自动化），把上游 v1.3.2 官方 MCP 的能力合并进来，对外只有**一套服务、一张工具表**。
+
+- **工具合流**：官方 32 个工具（规则 CRUD、断点、URL 拦截、Map Local、重定向、改写、Hosts 增删、
+  脚本 CRUD 与模板、SSL 代理开关、系统代理、证书状态、重放、构造请求发送、收藏、clear_session、
+  toggle_recording）作为「官方工具源」注册进自建 McpServer；同名工具（`generate_code`、`update_script`）
+  以本 fork 实现为准。对外工具数 **70 + 32 = 102**。
+- **单一服务**：删除上游独立的 `mcp/mcp_service.dart`、`mcp/transport/mcp_http_server.dart`、
+  `mcp/protocol/mcp_server.dart`（其 8 个只读工具自有实现已覆盖且更强）；`ToolException` 迁入
+  `mcp/protocol/mcp_tool.dart`。桌面与移动端只启动自建 `McpServer`，不再双开。
+- **单一配置源**：MCP 配置（端口 / 开关 / 自动启动 / 局域网 / 工具开关 / 脱敏 / token）统一收敛到
+  network 层 `Configuration`；UI 层 `AppConfiguration` 的同名字段改为转发，消除「设置页改了、服务读不到」。
+- **局域网安全**：新增 Bearer token 鉴权（`mcpAllowLan` 时强制校验，`/health` 放行），token 首次开启自动
+  生成并持久化；此前局域网暴露是**无鉴权**的。
+- **stdio 桥打通**：自建服务启动时写握手文件、停止时清理，桌面端 `--mcp-stdio` 桥据此发现端口，
+  IDE 可以直接本机拉起。
+- **工具集扩展**：新增 `get_ssl_proxying_list`（SSL 抓包白 / 黑名单）、`get_tool_catalog`（按能力分组的
+  工具目录，便于模型快速定位）、`get_client_setup`（端点 / token 与 Claude Code、Codex、Cursor、curl、
+  stdio 的接入命令）。
+
 ## v1.24.4 (2026-09-22)
 
 ### 构建

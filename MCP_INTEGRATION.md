@@ -21,6 +21,27 @@ ProxyPin 1.3.1 新增功能（已包含在本源码中）：
 - XML/HTML/CSS/JS 格式化工具
 - 文本差异对比工具
 
+## 两套 MCP 已合流（v1.24.5）
+
+历史上本仓库有两套 MCP：本 fork 自建的 `lib/network/mcp/**`，与上游 v1.3.2 官方新增的 `lib/mcp/**`。
+v1.24.5 起合流为一套：
+
+- **服务与协议**：只用自建的 `McpServer`（协议 `2026-07-28`，支持 Streamable HTTP / SSE / stateless，
+  自带自动化、规则引擎、调度器与设备自动化）。官方的 `mcp_service.dart` / `transport/mcp_http_server.dart` /
+  `protocol/mcp_server.dart` 已删除。
+- **工具**：官方那套的工具实现在 `lib/mcp/protocol/mcp_actions.dart`（`McpTool` 列表），作为「官方工具源」
+  注册进自建服务，与自有工具合成同一张 `tools/list`。同名工具以自有实现为准。
+- **配置**：唯一真源是 network 层 `Configuration`（`mcpPort` / `mcpEnabled` / `mcpAutoStart` / `mcpAllowLan` /
+  `mcpToolsEnabled` / `mcpRedactEnabled` / `mcpToken`）。
+- **保留的官方组件**：`mcp/capture/*`（FlowStore / FlowView / CurlBuilder / CertStatus / SensitiveData）、
+  `mcp/transport/mcp_stdio_bridge.dart`（stdio 桥）、`mcp/transport/setup_script.dart`（客户端配置脚本）、
+  `mcp/mcp_names.dart`（客户端注册名）。
+
+### 工具分组（`get_tool_catalog` 可自助查询）
+
+capture / rules / breakpoint / scripts / ssl / environment / network_condition / websocket / quic /
+device / security / runtime / server / meta
+
 ## MCP 架构
 
 ```
@@ -53,7 +74,7 @@ ProxyPin 1.3.1 新增功能（已包含在本源码中）：
 
 | 文件 | 说明 |
 |------|------|
-| `lib/network/mcp/mcp_server.dart` | **新增** MCP Server，实现 JSON-RPC 协议和 64 个工具 |
+| `lib/network/mcp/mcp_server.dart` | **新增** MCP Server（唯一服务主体），实现 JSON-RPC 协议与 **102 个工具**（自有 70 + 官方合流 32） |
 | `lib/network/mcp/mcp_bridge.dart` | **新增** 流量桥接器，连接 ProxyServer 和 McpServer |
 | `lib/native/mcp_screen.dart` | **新增** Dart 端 MethodChannel 桥接，封装设备控制 API |
 | `lib/network/bin/configuration.dart` | **修改** 添加 mcpPort 配置（默认 9010） |

@@ -20,7 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/mcp/mcp_names.dart';
-import 'package:proxypin/mcp/mcp_service.dart';
+import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/component/mcp_docs.dart';
@@ -62,11 +62,11 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
     if (mounted) setState(() => _lanIp = ip);
   }
 
-  bool get _running => McpService.instance.isRunning;
+  bool get _running => McpServer().isRunning;
 
   String? get _endpoint {
     var ip = _lanIp;
-    var port = McpService.instance.port;
+    var port = McpServer().port;
     if (ip == null || port == null) return null;
     return 'http://$ip:$port/mcp';
   }
@@ -77,14 +77,11 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
       _error = null;
     });
     cfg.mcpEnabled = enabled;
-    if (enabled) {
-      McpService.instance.attach(widget.proxyServer, existing: MobileApp.container.source);
-    }
     try {
       if (enabled) {
-        await McpService.instance.start(cfg);
+        await McpServer().restart();
       } else {
-        await McpService.instance.stop();
+        await McpServer().stop();
       }
     } catch (e) {
       cfg.mcpEnabled = false;
@@ -104,12 +101,11 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
       _busy = true;
       _error = null;
     });
-    cfg.mcpToken = McpService.generateToken();
+    cfg.mcpToken = McpServer.generateToken();
     cfg.flushConfig();
     try {
       if (_running) {
-        await McpService.instance.stop();
-        await McpService.instance.start(cfg);
+        await McpServer().restart();
       }
     } catch (e) {
       _error = '${l.mcpStartFailed}: $e';
@@ -175,7 +171,7 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
               leading: Icon(Icons.key_rounded, color: cs.primary),
               title: Text(l.mcpAccessToken, style: const TextStyle(fontSize: 14)),
               subtitle: SelectableText(
-                McpService.instance.token ?? '',
+                McpServer().token ?? '',
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5),
               ),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -187,7 +183,7 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
                 IconButton(
                   icon: const Icon(Icons.copy_all_rounded, size: 19),
                   onPressed: () {
-                    var t = McpService.instance.token;
+                    var t = McpServer().token;
                     if (t != null) _copy(t);
                   },
                 ),
@@ -300,14 +296,14 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
   }
 
   String _claudeCommand() {
-    var token = McpService.instance.token ?? '';
+    var token = McpServer().token ?? '';
     return 'claude mcp add ${McpClientNames.mobile} -s user --transport http ${_endpoint ?? ''} '
         '--header "Authorization: Bearer $token"';
   }
 
   /// Codex 远程 MCP 的 token 必须通过环境变量传入（CLI 不支持 --header）
   String _codexCommand() {
-    var token = McpService.instance.token ?? '';
+    var token = McpServer().token ?? '';
     return 'export PROXYPIN_MOBILE_TOKEN="$token"\n'
         'codex mcp remove ${McpClientNames.mobile} 2>/dev/null || true\n'
         'codex mcp add ${McpClientNames.mobile} --url ${_endpoint ?? ''} '
@@ -317,7 +313,7 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
   /// 电脑端一键配置（macOS/Linux）：拉取手机下发的 shell 脚本并执行，
   /// 自动探测并配置已安装的 Claude Code / Codex / Cursor / Gemini CLI。
   String _oneClickSh() {
-    var token = McpService.instance.token ?? '';
+    var token = McpServer().token ?? '';
     var ip = _lanIp ?? '';
     var port = McpService.instance.port;
     return 'curl -s -H "Authorization: Bearer $token" '
@@ -326,7 +322,7 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
 
   /// 电脑端一键配置（Windows PowerShell）
   String _oneClickPs1() {
-    var token = McpService.instance.token ?? '';
+    var token = McpServer().token ?? '';
     var ip = _lanIp ?? '';
     var port = McpService.instance.port;
     return 'irm -Headers @{ Authorization = "Bearer $token" } '
@@ -340,7 +336,7 @@ class _MobileMcpSettingState extends State<MobileMcpSetting> {
       'type': 'http',
       'url': _endpoint ?? '',
       'headers': {
-        'Authorization': 'Bearer ${McpService.instance.token ?? ''}',
+        'Authorization': 'Bearer ${McpServer().token ?? ''}',
       },
     };
     return const JsonEncoder.withIndent('  ').convert({

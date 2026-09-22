@@ -37,7 +37,6 @@ import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/network/util/logger.dart';
-import 'package:proxypin/mcp/mcp_service.dart';
 import 'package:proxypin/storage/histories.dart';
 import 'package:proxypin/ui/component/app_dialog.dart';
 import 'package:proxypin/ui/component/memory_cleanup.dart';
@@ -174,19 +173,6 @@ class MobileHomeState extends State<MobileHomePage> implements EventListener, Li
     // MCP 服务：默认启用且自动启动，应用启动即运行（可在 MCP 设置页关闭）
     if (widget.configuration.mcpEnabled && widget.configuration.mcpAutoStart) {
       McpServer().start();
-    }
-
-    // MCP 局域网服务：启用时随抓包一起启动，clear_session 同步清空界面列表
-    McpService.instance.clearUiSession = () async {
-      MobileApp.requestStateKey.currentState?.clean();
-    };
-    if (widget.appConfiguration.mcpEnabled) {
-      McpService.instance.attach(proxyServer, existing: MobileApp.container.source);
-      unawaited(McpService.instance.start(widget.appConfiguration).catchError((e) {
-        // 启动失败（如端口/绑定被拒）时持久化关闭，避免每次启动都重复失败
-        widget.appConfiguration.mcpEnabled = false;
-        widget.appConfiguration.flushConfig();
-      }));
     }
 
     if (widget.appConfiguration.upgradeNoticeV32) {

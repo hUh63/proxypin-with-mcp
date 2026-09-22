@@ -23,8 +23,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/mcp/capture/curl_builder.dart';
+import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/mcp/mcp_names.dart';
-import 'package:proxypin/mcp/mcp_service.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/util/file_read.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -270,7 +270,7 @@ class _McpServiceDialogState extends State<McpServiceDialog> {
 
   AppLocalizations get l => AppLocalizations.of(context)!;
 
-  bool get _running => McpService.instance.isRunning;
+  bool get _running => McpServer().isRunning;
 
   _McpClient _byName(String name) => _clients.firstWhere((c) => c.name == name, orElse: () => _clients.first);
 
@@ -287,14 +287,12 @@ class _McpServiceDialogState extends State<McpServiceDialog> {
       _error = null;
     });
     cfg.mcpEnabled = enabled;
-    if (enabled) {
-      McpService.instance.attach(widget.proxyServer, existing: desktopCaptureContainer);
-    }
     try {
       if (enabled) {
-        await McpService.instance.start(cfg);
+        // 合流后由自建 McpServer 统一承载（含官方工具源）；抓包索引已由 McpBridge 挂载
+        await McpServer().restart();
       } else {
-        await McpService.instance.stop();
+        await McpServer().stop();
       }
     } catch (e) {
       cfg.mcpEnabled = false;

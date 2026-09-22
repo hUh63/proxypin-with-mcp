@@ -18,6 +18,10 @@ import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/components/request_breakpoint.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/channel/host_port.dart';
+import 'package:proxypin/mcp/capture/flow_store.dart';
+import 'package:proxypin/mcp/protocol/mcp_actions.dart';
+import 'package:proxypin/mcp/protocol/mcp_tool.dart';
+import 'package:proxypin/mcp/transport/mcp_stdio_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
@@ -146,6 +150,7 @@ class McpServer {
       }
 
       _port = config.mcpPort;
+      _redactEnabled = config.mcpRedactEnabled;
 
       // 安全默认：仅监听回环地址；如需局域网访问，由用户在设置中显式开启 mcpAllowLan
       final bindAddress =
@@ -155,10 +160,34 @@ class McpServer {
       logger.i('MCP Server listening on http://${bindAddress.address}:$_port '
           '(allowLan=${config.mcpAllowLan})');
 
+      // 局域网模式：生成/复用 Bearer token（与官方实现一致），并写握手文件供 stdio 桥发现端口
+      _lanMode = config.mcpAllowLan;
+      if (_lanMode) {
+        _token = (config.mcpToken?.isNotEmpty ?? false) ? config.mcpToken : generateToken();
+        config.mcpToken = _token;
+        ConfigAutoSave.markChanged();
+        logger.i('MCP LAN mode: Bearer token required for remote clients');
+      } else {
+        _token = null;
+      }
+      unawaited(_writeHandshake());
+
       _server!.listen((request) {
         // CORS 处理
         if (request.method == 'OPTIONS') {
           _handleOptions(request);
+          return;
+        }
+
+        // 局域网模式鉴权（/health 放行，便于客户端探测存活）
+        if (request.uri.path != '/health' && !_authorized(request)) {
+          final unauthorized = request.response;
+          unauthorized.statusCode = io.HttpStatus.unauthorized;
+          unauthorized.headers.contentType = io.ContentType.json;
+          unauthorized.write(jsonEncode({
+            'error': 'Unauthorized: send Authorization: Bearer <token>',
+          }));
+          unauthorized.close();
           return;
         }
 
@@ -246,6 +275,8 @@ class McpServer {
     await _server?.close();
     _server = null;
 
+    // stdio 桥的握手文件与运行端口绑定，停止时一并清理
+    await _removeHandshake();
     // 清理 Streamable HTTP 会话
     _streamSessions.clear();
     // 手动停止时清除错误状态
@@ -1151,6 +1182,175 @@ class McpServer {
       },
       'details': completions,
     };
+  }
+
+  // ==================== 上游 proxypin v1.3.2 官方工具接入 ====================
+  //
+  // 本 fork 的 MCP 是唯一服务主体（协议 2026-07-28 + Streamable HTTP / SSE）。
+  // 官方那套（规则 CRUD、脚本、Hosts、SSL、重放构造、收藏等）在这里作为
+  // 「官方工具源」注册进来，与自有工具合成同一张工具表，对外只有一套工具清单。
+  // 同名工具（generate_code / update_script）以本 fork 实现为准。
+
+  static const Set<String> _nativeToolNames = {'generate_code', 'update_script'};
+
+  /// 官方工具源的默认脱敏开关（启动时从配置读取，默认开启）
+  bool _redactEnabled = true;
+
+  /// 局域网模式的 Bearer token（桌面回环模式为 null）
+  String? _token;
+  bool _lanMode = false;
+
+  /// 当前局域网鉴权 token（桌面回环模式返回 null）
+  String? get token => _token;
+
+  /// 是否绑定在非回环地址上（移动端局域网接入）
+  bool get lanMode => _lanMode;
+
+  /// 生成 48 位十六进制随机 token
+  static String generateToken() {
+    final random = math.Random.secure();
+    return List.generate(24, (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// 请求鉴权：仅局域网模式生效；[io.HttpRequest] 携带 Bearer token 或 ?token= 查询参数均可。
+  bool _authorized(io.HttpRequest request) {
+    final expected = _token;
+    if (!_lanMode || expected == null || expected.isEmpty) return true;
+    final auth = request.headers.value('authorization') ?? '';
+    final bearer = auth.toLowerCase().startsWith('bearer ') ? auth.substring(7).trim() : '';
+    final query = request.uri.queryParameters['token'] ?? '';
+    return bearer == expected || query == expected;
+  }
+
+  /// 握手文件：stdio 桥是独立进程、不共享内存，靠该文件发现当前 HTTP 端口。
+  Future<void> _writeHandshake() async {
+    try {
+      final file = await McpStdioBridge.handshakeFile();
+      await file.parent.create(recursive: true);
+      await file.writeAsString(jsonEncode({
+        'port': _port,
+        'lan': _lanMode,
+        'ts': DateTime.now().millisecondsSinceEpoch,
+      }));
+    } catch (e) {
+      logger.w('MCP handshake write failed: $e');
+    }
+  }
+
+  Future<void> _removeHandshake() async {
+    try {
+      final file = await McpStdioBridge.handshakeFile();
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      logger.w('MCP handshake cleanup failed: $e');
+    }
+  }
+
+  McpActions? _officialActions;
+  FlowStore? _officialFlowStore;
+  List<McpTool>? _officialToolCache;
+
+  /// 惰性构建官方工具源：抓包索引与 UI 同源（挂到同一个 [ProxyServer]）。
+  List<McpTool> _officialTools() {
+    if (_officialToolCache != null) return _officialToolCache!;
+    if (_officialActions == null) {
+      final store = FlowStore();
+      _officialFlowStore = store;
+      try {
+        ProxyServer.current?.addListener(store);
+      } catch (e) {
+        logger.w('MCP official FlowStore attach failed: $e');
+      }
+      _officialActions = McpActions(
+        store: store,
+        onClearSession: () async => McpBridge().onClearUI?.call(),
+        redactEnabled: () => _redactEnabled,
+      );
+    }
+    _officialToolCache = _officialActions!.tools();
+    return _officialToolCache!;
+  }
+
+  List<Map<String, dynamic>> _officialToolsJson() {
+    try {
+      return _officialTools()
+          .where((t) => !_nativeToolNames.contains(t.name))
+          .map((t) => t.toJson())
+          .toList();
+    } catch (e) {
+      logger.w('MCP official tools unavailable: $e');
+      return const [];
+    }
+  }
+
+  /// 工具分组（用于 get_tool_catalog）：按能力归类，便于模型快速定位工具。
+  String _toolGroup(String name) {
+    if (name.startsWith('tap_') ||
+        name.startsWith('swipe_') ||
+        name.startsWith('input_') ||
+        name.startsWith('key_') ||
+        const {'screenshot', 'dump_ui', 'long_press', 'get_current_activity', 'get_device_info',
+            'open_accessibility_settings'}.contains(name)) {
+      return 'device';
+    }
+    if (name.contains('security') ||
+        name.contains('sensitive') ||
+        name.startsWith('analyze_auth') ||
+        name.startsWith('api_security') ||
+        name.startsWith('api_key') ||
+        name == 'calculate_entropy') {
+      return 'security';
+    }
+    if (name.contains('ssl') || name.contains('cert')) return 'ssl';
+    if (name.contains('breakpoint') || name.contains('intercept')) return 'breakpoint';
+    if (name.contains('environment')) return 'environment';
+    if (name.contains('weak') || name.contains('network_condition') || name.contains('profile')) {
+      return 'network_condition';
+    }
+    if (name.contains('rewrite') ||
+        name.contains('rule') ||
+        name.contains('block') ||
+        name.contains('host') ||
+        name.contains('map') ||
+        name.contains('favorite') ||
+        name.contains('redirect')) {
+      return 'rules';
+    }
+    if (name.contains('script')) return 'scripts';
+    if (name.contains('quic')) return 'quic';
+    if (name.contains('websocket')) return 'websocket';
+    if (name.startsWith('start_') ||
+        name.startsWith('stop_') ||
+        name.contains('proxy_status') ||
+        name.startsWith('set_config')) {
+      return 'server';
+    }
+    if (name.contains('performance') || name.contains('diagnose') || name.contains('memory')) {
+      return 'runtime';
+    }
+    if (name.startsWith('mcp') || name.contains('catalog') || name.contains('client_setup')) return 'meta';
+    if (name.contains('har') ||
+        name.contains('curl') ||
+        name.contains('code') ||
+        name.contains('compare') ||
+        name.contains('replay') ||
+        name.contains('statistics') ||
+        name.contains('summary') ||
+        name.contains('domain') ||
+        name.contains('similar') ||
+        name.contains('endpoint') ||
+        name.contains('request') ||
+        name.contains('traffic')) {
+      return 'capture';
+    }
+    return 'other';
+  }
+
+  Future<dynamic> _executeOfficialTool(String name, Map<String, dynamic> args) async {
+    for (final tool in _officialTools()) {
+      if (tool.name == name) return await tool.handler(args);
+    }
+    throw Exception('Unknown tool: $name');
   }
 
   List<Map<String, dynamic>> _getToolsList() {
@@ -2232,6 +2432,41 @@ Body Encoding Rules:
                 'uses, whether capture is slowing things down, or wants a performance overview.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
+      // ---- 合并后的扩展工具 ----
+      {
+        'name': 'get_ssl_proxying_list',
+        'description':
+            'Show the SSL (HTTPS) capture scope: whitelist and blacklist domain rules and whether each is '
+                'enabled. Call this when the user asks why some HTTPS traffic is not decrypted, or wants to see '
+                'the current SSL capture rules.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+      {
+        'name': 'get_tool_catalog',
+        'description':
+            'Return this server\'s tool catalog grouped by capability (capture / rules / scripts / ssl / device / '
+                'security / environment / runtime / meta ...). Call this first when the task is broad or you are '
+                'unsure which tool to use, then call tools/list for the full JSON schema of the ones you need.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+      {
+        'name': 'get_client_setup',
+        'description':
+            'Return connection details for hooking an AI client up to this ProxyPin MCP server: endpoint, '
+                'whether a Bearer token is required, and ready-to-paste commands for Claude Code / Codex / curl, '
+                'plus the desktop stdio bridge command. Call this when the user asks how to connect an IDE or CLI.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'client': {
+              'type': 'string',
+              'description': 'Optional: claude | codex | cursor | curl | stdio (omit to get all)',
+            },
+          },
+        },
+      },
+      // 官方工具源（同名者已在本表中提供，见 _nativeToolNames）
+      ..._officialToolsJson(),
     ];
   }
 
@@ -4040,8 +4275,83 @@ Body Encoding Rules:
           return {'error': 'Failed to toggle environment variables: $e'};
         }
 
+
+      case 'get_ssl_proxying_list':
+        {
+          Map<String, dynamic> pack(bool enabled, List<String> rules) =>
+              {'enabled': enabled, 'count': rules.length, 'rules': List<String>.from(rules)};
+          return {
+            'whitelist': pack(HostFilter.whitelist.enabled, HostFilter.whitelist.list),
+            'blacklist': pack(HostFilter.blacklist.enabled, HostFilter.blacklist.list),
+            'semantics':
+                '白名单启用时只解密名单内域名；黑名单启用时跳过名单内域名（规则可写 host 或 URL 前缀）。',
+          };
+        }
+
+      case 'get_tool_catalog':
+        {
+          final groups = <String, List<String>>{};
+          for (final t in _getToolsList()) {
+            final name = t['name']?.toString() ?? '';
+            if (name.isEmpty || name == 'get_tool_catalog') continue;
+            groups.putIfAbsent(_toolGroup(name), () => <String>[]).add(name);
+          }
+          for (final v in groups.values) {
+            v.sort();
+          }
+          final sortedKeys = groups.keys.toList()..sort();
+          return {
+            'total': groups.values.fold<int>(0, (a, b) => a + b.length),
+            'groups': {for (final k in sortedKeys) k: groups[k]},
+            'note': '按能力分组；完整 JSON Schema 请调用 tools/list。',
+          };
+        }
+
+      case 'get_client_setup':
+        {
+          final port = _port ?? 9010;
+          final loopback = 'http://127.0.0.1:$port/mcp';
+          final tok = _token;
+          final want = args['client']?.toString().toLowerCase();
+          final out = <String, dynamic>{
+            'endpoint': _lanMode ? 'http://<device-ip>:$port/mcp' : loopback,
+            'transport': 'streamable-http',
+            'bearer_token_required': _lanMode,
+            if (_lanMode) 'bearer_token': tok,
+            'stdio_bridge': 'ProxyPin App 以 --mcp-stdio 参数启动即作为 stdio 桥转发到本地 HTTP',
+          };
+          String take(String key) => (want == null || want.isEmpty || want == key) ? '' : null.toString();
+          final claude = 'claude mcp add proxypin -s user --transport http $loopback';
+          final codex = 'codex mcp add proxypin --url $loopback';
+          final curl =
+              'curl -s $loopback -H "Content-Type: application/json" -d \'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\'';
+          if (want == null || want.isEmpty) {
+            out['commands'] = {
+              'claude_code': claude,
+              'codex': codex,
+              'curl': curl,
+            };
+          } else {
+            out['command'] = switch (want) {
+              'claude' => claude,
+              'codex' => codex,
+              'curl' => curl,
+              'stdio' => out['stdio_bridge'],
+              'cursor' => '在 Cursor 的 mcpServers 中配置: {"proxypin": {"url": "$loopback"}}',
+              _ => 'unknown client: $want (可选 claude | codex | cursor | curl | stdio)',
+            };
+          }
+          return out;
+        }
+
       default:
-        throw Exception('Unknown tool: $name');
+        // 自有工具未命中：转交官方工具源（规则 CRUD / 脚本 / Hosts / SSL / 构造请求等）
+        try {
+          return await _executeOfficialTool(name, args);
+        } on ToolException catch (e) {
+          // 可预期的参数/状态错误，直接回给模型，不吞成堆栈
+          return {'error': e.message, 'tool': name};
+        }
     }
   }
 

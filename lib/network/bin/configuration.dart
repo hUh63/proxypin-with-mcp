@@ -86,6 +86,12 @@ class Configuration {
   //MCP 工具启用状态（工具名 -> 是否启用），默认全部启用
   Map<String, bool> mcpToolsEnabled = {};
 
+  //MCP 输出是否默认脱敏敏感头（Authorization / Cookie 等），默认开启（上游 v1.3.2 行为）
+  bool mcpRedactEnabled = true;
+
+  //MCP 局域网访问的 Bearer token（仅 mcpAllowLan 时使用；空表示尚未生成）
+  String? mcpToken;
+
   //默认是否启动
   bool startup = false;
 
@@ -170,6 +176,8 @@ class Configuration {
     captureBodyLimitKB = config['captureBodyLimitKB'] ?? 0;
     mcpPort = config['mcpPort'] ?? 9010;
     mcpEnabled = config['mcpEnabled'] ?? true;
+    mcpRedactEnabled = config['mcpRedactEnabled'] ?? true;
+    mcpToken = config['mcpToken'] as String?;
     mcpAutoStart = config['mcpAutoStart'] ?? true;
     mcpAllowLan = config['mcpAllowLan'] ?? false;
     winTakeoverEnabled = config['winTakeoverEnabled'] ?? false;
@@ -270,6 +278,8 @@ class Configuration {
       'captureBodyLimitKB': captureBodyLimitKB,
       'mcpPort': mcpPort,
       'mcpEnabled': mcpEnabled,
+      'mcpRedactEnabled': mcpRedactEnabled,
+      if (mcpToken != null) 'mcpToken': mcpToken,
       'mcpAutoStart': mcpAutoStart,
       'mcpAllowLan': mcpAllowLan,
       'winTakeoverEnabled': winTakeoverEnabled,
