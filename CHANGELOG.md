@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.23.1 (2026-09-22)
+
+### 修复
+
+- 修 v1.23.0 引入的编译错误：自检页新增的「Windows 增强接管」项误用了 `AppConfiguration`
+  （`winTakeoverEnabled` 实际在 network 层的 `Configuration` 上），并且该文件缺少 `dart:io`。
+  v1.23.0 因此在所有平台都没能构建出来，本版是第一个真正包含该项与残留自愈的发布。
+
 ## v1.23.0 (2026-09-22)
 
 ### 确认 + 改进：Windows 增强接管

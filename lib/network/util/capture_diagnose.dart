@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+import 'dart:io';
+
 import 'package:proxypin/native/native_method.dart';
 import 'package:proxypin/native/vpn.dart';
+import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/crts.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
-import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxy_manager/proxy_manager.dart';
 
@@ -219,7 +221,7 @@ class CaptureDiagnose {
     // 这个功能一直都存在，但默认关闭、入口又深，导致"某些进程抓不到"的用户
     // 根本不知道可以打开它 —— 所以在自检里直接点出来。
     if (Platform.isWindows) {
-      final takeoverOn = AppConfiguration.current?.winTakeoverEnabled ?? false;
+      final takeoverOn = Configuration.loaded?.winTakeoverEnabled ?? false;
       items.add(DiagnoseItem(
         key: 'win_takeover',
         title: 'Windows 增强接管',
