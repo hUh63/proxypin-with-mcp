@@ -214,7 +214,9 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                         onChanged: (v) async {
                           setState(() => widget.configuration.mcpAllowLan = v);
                           ConfigAutoSave.markChanged();
-                          if (v) await McpServer().restart();
+                          // 开、关都要重启：只处理「开」会让服务在关闭后继续监听 0.0.0.0。
+                          // 未运行的实例不必被这个开关拉起来，下次启动时应用配置即可。
+                          if (McpServer().isRunning) await McpServer().restart();
                         },
                       ),
                       const Divider(height: 0),

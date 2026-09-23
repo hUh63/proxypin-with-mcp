@@ -133,20 +133,28 @@ class McpServer {
 
   bool get isRunning => _server != null;
 
-  /// 重启 MCP 服务器（用于端口变更后）
+  /// 重启 MCP 服务器（用于端口、局域网访问、鉴权等运行期配置变更后）。
+  ///
+  /// 这里必须用 `persistState: false` 停止：默认的 [stop] 会把
+  /// `mcpEnabled` 写成 false，紧接着 [start] 的启用检查会直接返回，
+  /// 表现为「点一下设置开关，MCP 服务就显示未运行」。
   Future<void> restart() async {
-    await stop();
-    await start();
+    await stop(persistState: false);
+    await start(force: true);
   }
 
-  Future<void> start() async {
+  /// 启动 MCP 服务器。
+  ///
+  /// [force] 为 true 时忽略配置里的启用开关，用于用户在设置中显式触发的重启
+  /// （切换局域网 / 鉴权等），同时也能自愈此前被误写成「已停止」的配置。
+  Future<void> start({bool force = false}) async {
     try {
       if (isRunning) return;
 
       var config = await Configuration.instance;
 
-      // 检查是否启用 MCP 服务
-      if (!config.mcpEnabled) {
+      // 检查是否启用 MCP 服务（force 表示这是用户的显式操作，跳过该检查）
+      if (!config.mcpEnabled && !force) {
         logger.i('MCP Server is disabled by configuration, skipping start');
         return;
       }
