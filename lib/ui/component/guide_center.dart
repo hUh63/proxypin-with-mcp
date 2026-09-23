@@ -43,6 +43,7 @@ class GuideCenter {
     GuideDoc('capture_plan', '采集方案指南', '功能指南', 'docs/capture_plan_guide.md', Icons.route_outlined),
     GuideDoc('security_audit', '安全自检指南', '功能指南', 'docs/security_audit_guide.md', Icons.shield_outlined),
     GuideDoc('mcp_runtime', 'MCP 运行时指南', '功能指南', 'docs/mcp_runtime_guide.md', Icons.dns_outlined),
+    GuideDoc('ssl_pinning', '抓不到 HTTPS 排查', '功能指南', 'docs/ssl_pinning_guide.md', Icons.enhanced_encryption_outlined),
     GuideDoc('js_restore', 'JS 还原指南', '功能指南', 'docs/js_restore_guide.md', Icons.auto_fix_high_outlined),
     GuideDoc('fuzzer', '手动 Fuzz 指南', '功能指南', 'docs/fuzzer_guide.md', Icons.science_outlined),
     GuideDoc('extension_guide', '扩展与定制指南', '功能指南', 'docs/extension_guide.md', Icons.extension_outlined),

@@ -96,6 +96,11 @@ class CaptureDiagnoseResult {
     if (_find('system_proxy')?.status == DiagnoseStatus.warn) {
       list.add('系统代理没有指向本应用：让用户在「偏好设置」打开系统代理，或确认是否被其它代理工具接管');
     }
+    if (_find('ssl_pinning')?.status == DiagnoseStatus.warn) {
+      list.add('存在疑似证书固定的域名：这类应用需要在设备上做运行时干预才能解密，'
+          '常见做法是靠 hook 框架（如 LSPosed 配合 TrustMeAlready 这类模块）。'
+          '请注意这属于对目标应用的干预，只应在你自己的设备、且在你拥有授权的范围内使用');
+    }
     if ((_find('traffic')?.status ?? DiagnoseStatus.ok) == DiagnoseStatus.warn) {
       list.add('当前没有新流量：先在被抓的应用/浏览器里发起一次请求，再让 AI 读取会话列表');
     }
@@ -104,7 +109,7 @@ class CaptureDiagnoseResult {
     list.add('若以上都正常仍抓不到，按这几类排查：'
         '① 目标走 QUIC/HTTP3（手机开「拦截 QUIC」、浏览器关 QUIC）；'
         '② Flutter 应用（Dart 自带根证书列表，不读系统 CA）；'
-        '③ 应用启用了证书固定（SSL Pinning）；'
+        '③ 应用启用了证书固定（SSL Pinning）—— 若上方出现「SSL 证书固定（疑似）」项即命中；'
         '④ Windows 上自带网络栈的进程（需「Windows 接管增强」或 TUN 类工具）；'
         '⑤ Mac App Store 沙箱应用（需 Network Extension/TUN，本仓未签名构建无法接管）');
 
@@ -217,6 +222,32 @@ class CaptureDiagnose {
       ));
     }
 
+    // 3.4 SSL 证书固定（疑似）
+    // 判据：某个域名只出现在 CONNECT 隧道里，从来没有一条解密后的 HTTPS 请求，
+    // 而 CA 又是正确安装的。「隧道通、内容读不到」这个组合最常见的原因就是
+    // 应用内置了证书固定（SSL Pinning），或者应用自带根证书列表、根本不读系统 CA。
+    // 这类应用通常表现为"打开就提示无网络/连接失败"，容易被误判成代理配错了。
+    var certReady = false;
+    for (final item in items) {
+      if (item.key == 'certificate' && item.status == DiagnoseStatus.ok) {
+        certReady = true;
+        break;
+      }
+    }
+    final connectOnlyHosts = _connectOnlyHosts(requests);
+    if (certReady && connectOnlyHosts.isNotEmpty) {
+      final sample = connectOnlyHosts.take(5).join('、');
+      items.add(DiagnoseItem(
+        key: 'ssl_pinning',
+        title: 'SSL 证书固定（疑似）',
+        status: DiagnoseStatus.warn,
+        detail: 'CA 证书已就绪，但有 ${connectOnlyHosts.length} 个域名只建立了 TLS 隧道、'
+            '内容始终读不到：$sample。'
+            '这通常意味着对方启用了证书固定（SSL Pinning），或自带根证书列表不读系统 CA。'
+            '注意这类应用并不是"没网络"——它拒绝了本工具的证书，所以主动断开了连接。',
+      ));
+    }
+
     // 3.5 Windows 增强接管（上游 #577 / #896）
     // 这个功能一直都存在，但默认关闭、入口又深，导致"某些进程抓不到"的用户
     // 根本不知道可以打开它 —— 所以在自检里直接点出来。
@@ -278,6 +309,29 @@ class CaptureDiagnose {
     }
 
     return CaptureDiagnoseResult(items, requestCount: requests.length, latestRequestAgoSeconds: agoSeconds);
+  }
+
+  /// 只建立了 CONNECT 隧道、却没有任何解密后请求的域名。
+  ///
+  /// 只看这两个集合的差集：出现过解密请求的域名即使也建过隧道，也不算嫌疑
+  /// （那说明解密是成功的）。宁可漏报也不误报。
+  static List<String> _connectOnlyHosts(List<HttpRequest> requests) {
+    final tunnelHosts = <String>{};
+    final decryptedHosts = <String>{};
+    for (final request in requests) {
+      final host = request.hostAndPort?.host?.toLowerCase();
+      if (host == null || host.isEmpty) continue;
+      if (request.method == HttpMethod.connect) {
+        tunnelHosts.add(host);
+      } else {
+        final url = request.requestUrl;
+        if (url != null && url.toLowerCase().startsWith('https://')) {
+          decryptedHosts.add(host);
+        }
+      }
+    }
+    final only = tunnelHosts.difference(decryptedHosts).toList()..sort();
+    return only;
   }
 
   static double _megaBytes(dynamic bytes) {

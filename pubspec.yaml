@@ -73,6 +73,7 @@ flutter:
     - docs/capture_plan_guide.md
     - docs/security_audit_guide.md
     - docs/mcp_runtime_guide.md
+    - docs/ssl_pinning_guide.md
     - docs/js_restore_guide.md
     - docs/fuzzer_guide.md
     - docs/overview.md
