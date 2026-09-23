@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.24.11 (2026-09-23)
+
+### 安全自检补齐注入痕迹识别（SQLi / XSS，被动）
+
+在原有 15 条规则之上新增 2 条：
+
+- `sql-error-signature`（高）：响应体出现数据库报错特征，覆盖 MySQL / PostgreSQL / SQL Server / Oracle / SQLite / 通用 SQLSTATE 六组指纹。命中说明该接口把 SQL 错误回显给了调用方。
+- `xss-reflection`（中）：HTML 响应里**逐字原样**回显了带 HTML 元字符的请求参数（query / 表单值，长度 4~256），且未做 HTML 实体编码。
+
+**形态依旧完全被动**：只读分析已抓流量，不发送任何请求、不构造 payload、不做注入探测。这两条读的是"响应里已经存在的证据"，不是"能不能打进去"——边界与原有规则一致。
+
+`xss-reflection` 用三重闸门控制误报，缺一不报：① 响应 Content-Type 是 HTML（回显在 JSON/JS 里不算 XSS 上下文）；② 请求侧存在自带 `<` `>` `"` `'` 的参数值；③ 该值在响应里逐字出现（已被 `&lt;` 转义的不算命中）。
+
+配套改动：
+
+- `SecurityAuditor` 引入风险分类 `transport / headers / credentials / sqli / xss / disclosure / privacy / custom`，新增 `categoryOf(rule)` 与报告级 `byCategory` 统计；`audit(...)` 支持 `onlyCategories` 过滤。
+- MCP `get_security_audit` 新增 `category` 参数（逗号分隔，例如 `sqli,xss`），返回新增 `by_category` 计数，每条 issue 带 `category` 字段。工具数不变（仍为 88）。
+- `docs/security_audit_guide.md` 同步：规则表、判定要点、实现说明、FAQ（新增"报了 SQL 报错是不是就等于有注入"一问答）。
+
+
 ## v1.24.10 (2026-09-23)
 
 ### 修复：点「允许局域网访问」后 MCP 服务显示未运行

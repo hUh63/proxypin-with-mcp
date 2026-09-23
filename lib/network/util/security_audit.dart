@@ -74,6 +74,16 @@ class SecurityAuditReport {
 
   int count(SecuritySeverity severity) => issues.where((issue) => issue.severity == severity).length;
 
+  /// 按分类统计（transport / headers / credentials / sqli / xss / disclosure / privacy / custom ...）
+  Map<String, int> get byCategory {
+    final result = <String, int>{};
+    for (final issue in issues) {
+      final key = SecurityAuditor.categoryOf(issue.rule);
+      result[key] = (result[key] ?? 0) + 1;
+    }
+    return result;
+  }
+
   bool get isClean => issues.isEmpty;
 }
 
@@ -85,7 +95,42 @@ class SecurityAuditor {
   /// 一次最多分析的请求数
   static const int maxRequests = 5000;
 
-  static SecurityAuditReport audit(List<HttpRequest> requests, {List<CustomSecurityRule> customRules = const []}) {
+  /// 规则 → 分类映射（供按类别筛选与统计）。
+  static const Map<String, String> _ruleCategories = {
+    'plaintext-http-sensitive': 'transport',
+    'plaintext-http-body': 'transport',
+    'http-1-0': 'transport',
+    'sensitive-in-url': 'credentials',
+    'plaintext-password-body': 'credentials',
+    'cookie-weak-flag': 'credentials',
+    'private-key-leak': 'credentials',
+    'secret-in-response': 'credentials',
+    'jwt-alg-none': 'credentials',
+    'jwt-no-expiry': 'credentials',
+    'missing-security-headers': 'headers',
+    'server-fingerprint': 'headers',
+    'cors-wildcard-credentials': 'headers',
+    'error-disclosure': 'disclosure',
+    'pii-in-response': 'privacy',
+    'sql-error-signature': 'sqli',
+    'xss-reflection': 'xss',
+  };
+
+  /// 取规则所属分类；自定义规则归 custom，未登记的归 general。
+  static String categoryOf(String rule) {
+    final known = _ruleCategories[rule];
+    if (known != null) return known;
+    return rule.startsWith('custom:') ? 'custom' : 'general';
+  }
+
+  /// 全部分类（供文档 / UI 枚举）。
+  static List<String> get categories => _ruleCategories.values.toSet().toList(growable: false);
+
+  static SecurityAuditReport audit(
+    List<HttpRequest> requests, {
+    List<CustomSecurityRule> customRules = const [],
+    Set<String>? onlyCategories,
+  }) {
     final seen = <String>{};
     final issues = <SecurityIssue>[];
     final limited = requests.length > maxRequests ? requests.sublist(requests.length - maxRequests) : requests;
@@ -105,6 +150,9 @@ class SecurityAuditor {
       }
     }
 
+    if (onlyCategories != null && onlyCategories.isNotEmpty) {
+      issues.removeWhere((issue) => !onlyCategories.contains(categoryOf(issue.rule)));
+    }
     issues.sort((a, b) {
       final byWeight = a.severity.weight.compareTo(b.severity.weight);
       if (byWeight != 0) return byWeight;
@@ -328,6 +376,36 @@ class SecurityAuditor {
         method: method, url: url, requestId: request.requestId,
       ));
     }
+
+    // 12. SQL 注入痕迹：响应回显了数据库报错（被动：只看已抓流量的响应特征，不发请求）
+    final sqlSignature = _detectSqlError(respBody);
+    if (sqlSignature != null) {
+      emit(_issue(
+        rule: 'sql-error-signature',
+        severity: SecuritySeverity.high,
+        title: '疑似 SQL 注入痕迹（数据库报错回显）',
+        detail: '响应中出现了 $sqlSignature 的数据库错误特征，说明该接口把 SQL 错误直接回显给了调用方；'
+            '若这条错误由客户端可控参数触发，则存在 SQL 注入风险。',
+        suggestion: '改用参数化查询 / 预编译语句，不要拼接 SQL；生产环境关闭数据库详细报错，统一返回通用错误信息。'
+            '（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）',
+        method: method, url: url, requestId: request.requestId,
+      ));
+    }
+
+    // 13. XSS 反射痕迹：HTML 响应原样回显了请求参数（被动：不构造任何 payload）
+    final xssMeta = _detectXssReflection(request, respBody, response);
+    if (xssMeta != null) {
+      emit(_issue(
+        rule: 'xss-reflection',
+        severity: SecuritySeverity.medium,
+        title: '疑似 XSS 反射痕迹（HTML 响应未编码回显参数）',
+        detail: '响应把请求参数值原样回显在 HTML 中，未做 HTML 实体编码，且回显内容含 $xssMeta 等特殊字符；'
+            '若该值可被攻击者控制，浏览器可能把它解析成标签或脚本。',
+        suggestion: '按输出上下文做编码（HTML 实体编码），页面配合 CSP；不要把请求参数直接拼进 HTML。'
+            '（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）',
+        method: method, url: url, requestId: request.requestId,
+      ));
+    }
   }
 
   /// 应用用户自定义规则。同样只读本地已抓到的数据，不产生任何请求。
@@ -388,6 +466,99 @@ class SecurityAuditor {
       }
     });
     return buffer.toString();
+  }
+
+  // ===== 注入痕迹检测（被动：只分析已抓流量，不发送任何请求、不构造 payload）=====
+
+  /// 数据库错误回显特征。命中说明该接口把 SQL 错误暴露给了调用方。
+  static final Map<String, RegExp> _sqlErrorSignatures = {
+    'MySQL': RegExp(
+        r'you have an error in your sql syntax|warning\s*:\s*mysql_|valid mysql result|'
+        r'check the manual that corresponds to your (mysql|mariadb) server|MySqlException',
+        caseSensitive: false),
+    'PostgreSQL': RegExp(
+        r'postgresql.{0,20}(error|exception)|warning\s*:\s*pg_|valid postgresql result|'
+        r'pg::(syntax|undefined)|syntax error at or near',
+        caseSensitive: false),
+    'SQL Server': RegExp(
+        r'microsoft ole db provider for (sql server|odbc drivers)|incorrect syntax near|'
+        r'unclosed quotation mark after the character string|\[microsoft\]\[odbc|'
+        r'sqlserver jdbc driver',
+        caseSensitive: false),
+    'Oracle': RegExp(
+        r'\bora-\d{5}\b|quoted string not properly terminated|oracle\.jdbc|oracle error',
+        caseSensitive: false),
+    'SQLite': RegExp(
+        r'sqlite[_/]jdbcdriver|sqliteexception|system\.data\.sqlite|warning\s*:\s*sqlite_|'
+        r'sqlite error',
+        caseSensitive: false),
+    'SQL': RegExp(
+        r'sqlstate\[[0-9a-z]{5}\]|sql command not properly ended|unexpected end of sql command|'
+        r'jdbc exception|sql syntax near',
+        caseSensitive: false),
+  };
+
+  /// 在响应文本中找数据库报错特征，命中返回数据库名，未命中返回 null。
+  static String? _detectSqlError(String responseText) {
+    if (responseText.isEmpty) return null;
+    for (final entry in _sqlErrorSignatures.entries) {
+      if (entry.value.hasMatch(responseText)) return entry.key;
+    }
+    return null;
+  }
+
+  static const int _minReflectionLength = 4;
+  static const int _maxReflectionLength = 256;
+
+  /// 收集"值得怀疑"的候选回显值：长度合理，且自带 HTML 元字符（否则编码与否无从判断）。
+  static List<String> _reflectionCandidates(HttpRequest request, String requestBody) {
+    final values = <String>[];
+    void add(String? value) {
+      if (value == null) return;
+      if (value.length < _minReflectionLength || value.length > _maxReflectionLength) return;
+      final hasMeta = value.contains('<') ||
+          value.contains('>') ||
+          value.contains('"') ||
+          value.contains("'");
+      if (!hasMeta || values.contains(value)) return;
+      values.add(value);
+    }
+
+    request.requestUri?.queryParametersAll.forEach((_, list) => list.forEach(add));
+
+    final contentType = request.headers.contentType.toLowerCase();
+    if (contentType.contains('form-urlencoded') && requestBody.isNotEmpty) {
+      for (final pair in requestBody.split('&')) {
+        final index = pair.indexOf('=');
+        if (index <= 0) continue;
+        try {
+          add(Uri.decodeQueryComponent(pair.substring(index + 1)));
+        } catch (_) {
+          // 非法编码，跳过该参数
+        }
+      }
+    }
+    return values;
+  }
+
+  /// 被动 XSS 反射检测：HTML 响应里原样回显了带 HTML 元字符的请求参数。
+  /// 命中则返回出现过的特殊字符描述，未命中返回 null。
+  static String? _detectXssReflection(
+      HttpRequest request, String responseBody, HttpMessage? response) {
+    if (response == null || responseBody.isEmpty) return null;
+    final mime = response.headers.contentType.toLowerCase();
+    if (!mime.contains('html')) return null;
+
+    for (final candidate in _reflectionCandidates(request, _safeBody(request))) {
+      if (!responseBody.contains(candidate)) continue;
+      final meta = <String>[];
+      if (candidate.contains('<')) meta.add('<');
+      if (candidate.contains('>')) meta.add('>');
+      if (candidate.contains('"')) meta.add('"');
+      if (candidate.contains("'")) meta.add("'");
+      return meta.join('、');
+    }
+    return null;
   }
 
   // ===== 工具方法 =====

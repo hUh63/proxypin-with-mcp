@@ -2355,11 +2355,15 @@ request_id from get_recent_requests or search_requests.''',
         'description':
             'Run the passive security self-audit over already-captured traffic: flags cleartext '
                 'HTTP, leaked secrets/tokens, cookies missing Secure/HttpOnly, missing security '
-                'response headers, verbose server fingerprints, over-permissive CORS and unsigned or '
-                'expiring JWTs. This is a read-only baseline check — it never sends requests or attack '
-                'payloads. Returns counts per severity plus the matched issues with fix suggestions. '
-                'Call this when the user asks whether the captured API has security problems or wants '
-                'a security review of recent traffic.',
+                'response headers, verbose server fingerprints, over-permissive CORS, unsigned or '
+                'expiring JWTs, plus two injection traces visible in the responses themselves — '
+                'database error messages echoed back (sqli) and request parameters reflected into '
+                'HTML without encoding (xss). Every check is passive and read-only: it only inspects '
+                'traffic you already captured and never sends requests, injects payloads or probes '
+                'targets. Returns counts per severity and per category, plus the matched issues with '
+                'fix suggestions. Call this when the user asks whether the captured API has security '
+                'problems, whether input handling looks unsafe, or wants a security review of recent '
+                'traffic.',
         'inputSchema': {
           'type': 'object',
           'properties': {
@@ -2367,6 +2371,11 @@ request_id from get_recent_requests or search_requests.''',
               'type': 'string',
               'enum': ['high', 'medium', 'low', 'info'],
               'description': 'Only return issues of this severity (optional)',
+            },
+            'category': {
+              'type': 'string',
+              'description': 'Only return issues in these categories, comma separated '
+                  '(transport, headers, credentials, sqli, xss, disclosure, privacy, custom)',
             },
             'limit': {
               'type': 'integer',
@@ -2689,9 +2698,20 @@ request_id from get_recent_requests or search_requests.''',
         final auditRequests = McpBridge().source.toList();
         final auditLimit = (args['limit'] as num?)?.toInt() ?? 100;
         final auditSeverity = args['severity'] as String?;
+        final auditCategoryArg = args['category'] as String?;
+        final auditCategories = (auditCategoryArg == null || auditCategoryArg.trim().isEmpty)
+            ? null
+            : auditCategoryArg
+                .split(',')
+                .map((s) => s.trim().toLowerCase())
+                .where((s) => s.isNotEmpty)
+                .toSet();
         final auditStore = await SecurityRuleStore.instance;
-        final auditReport =
-            SecurityAuditor.audit(auditRequests, customRules: auditStore.rules);
+        final auditReport = SecurityAuditor.audit(
+          auditRequests,
+          customRules: auditStore.rules,
+          onlyCategories: auditCategories,
+        );
         final auditIssues = (auditSeverity == null || auditSeverity.isEmpty)
             ? auditReport.issues
             : auditReport.issues
@@ -2701,6 +2721,7 @@ request_id from get_recent_requests or search_requests.''',
           'scanned_requests': auditReport.scannedRequests,
           'total_issues': auditReport.issues.length,
           'clean': auditReport.isClean,
+          'by_category': auditReport.byCategory,
           'summary': {
             'high': auditReport.count(SecuritySeverity.high),
             'medium': auditReport.count(SecuritySeverity.medium),
@@ -2711,6 +2732,7 @@ request_id from get_recent_requests or search_requests.''',
           'issues': auditIssues.take(auditLimit).map((i) {
             return {
               'rule': i.rule,
+              'category': SecurityAuditor.categoryOf(i.rule),
               'severity': i.severity.name,
               'title': i.title,
               'method': i.method,
