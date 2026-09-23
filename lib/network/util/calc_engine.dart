@@ -371,7 +371,7 @@ class CalcEngine {
     final text = inputValue.toString().trim();
 
     final bd = ByteData(8);
-    num numericValue;
+    double numericValue;
     BigInt rawBits;
     if (text.toLowerCase().startsWith('0x') ||
         (text.isNotEmpty && RegExp(r'^[0-9a-fA-F]+$').hasMatch(text) && text.length >= 8 && !text.contains('.'))) {
@@ -386,7 +386,7 @@ class CalcEngine {
         numericValue = bd.getFloat64(0, Endian.big);
       }
     } else {
-      numericValue = num.parse(text);
+      numericValue = double.parse(text);
       if (isSingle) {
         bd.setFloat32(0, numericValue, Endian.big);
         rawBits = BigInt.from(bd.getUint32(0, Endian.big));
@@ -418,7 +418,7 @@ class CalcEngine {
 
     return {
       'precision': isSingle ? 'float32' : 'float64',
-      'value': numericValue is double && numericValue.isNaN ? 'NaN' : numericValue,
+      'value': numericValue.isNaN ? 'NaN' : numericValue,
       'sign': sign == 0 ? '+' : '-',
       'raw_bits_hex': _hex(rawBits, bits),
       'binary': rawBits.toRadixString(2).padLeft(bits, '0'),

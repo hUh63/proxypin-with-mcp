@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.24.14 (2026-09-23)
+## v1.24.15 (2026-09-23)
 
 ### 计算器工具箱 + MCP 计算能力 + 批处理
 
@@ -14,6 +14,8 @@
 批处理的两处安全设计：batch 自己占一个并发名额，内部步骤**不再重复申请名额**（否则 N 个并发 batch 会互相等死）；每一步都走与其他入口相同的 `_runTool`，参数校验 / 并发闸 / 超时 / 指标 / 审计一个不少，并可按 `caller: batch` 过滤审计记录。
 
 工具数 90 → **92**（+`calculator`、+`batch`）。新增文档 `docs/calculator_guide.md`。
+
+> 修正：首版编译失败——`num.parse` 的返回类型是 `num`，而 `ByteData.setFloat32/64` 要求 `double`。已改为 `double.parse` 并把局部变量声明为 `double`。
 
 
 ## v1.24.13 (2026-09-23)
