@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.24.14 (2026-09-23)
+
+### 计算器工具箱 + MCP 计算能力 + 批处理
+
+移植 calculate-mcp（MIT）的能力范围，用 Dart 重新实现，**UI 与 MCP 共用同一套引擎**（`lib/network/util/calc_engine.dart`，30 个纯函数运算）。
+
+1. **工具箱新增「计算器」**（五个页签）：进制/补码（任意精度 + 8/16/32/64 位有符号/无符号补码、大端小端 hex、ASCII）、位运算（含逻辑右移 shr 与算术右移 sar 的区别、循环移位 rol/ror）、字节序翻转、IEEE754 浮点机器码拆解、CRC（crc32/crc16-ccitt/crc16-modbus/crc16-xmodem/crc16-ibm）与哈希（md5/sha1/sha256/sha512）。结果每行可点击复制。
+2. **编码器补充 Hex 编解码**（原来只有 URL / Base64 / Unicode / MD5）。
+3. **MCP 新增 `calculator` 工具**：一个入口覆盖全部 30 个运算，AI 在分析抓包时可直接算补码、校正字节序、验 CRC、做大数运算，不必靠模型自己猜算术。
+4. **MCP 新增 `batch` 工具**：在单次调用里按序执行多个工具调用，用 `{"$step": n, "field": "a.b"}` 引用前序结果，减少多步任务的往返开销。默认首错即停，最大 20 步，禁止嵌套 batch。
+
+批处理的两处安全设计：batch 自己占一个并发名额，内部步骤**不再重复申请名额**（否则 N 个并发 batch 会互相等死）；每一步都走与其他入口相同的 `_runTool`，参数校验 / 并发闸 / 超时 / 指标 / 审计一个不少，并可按 `caller: batch` 过滤审计记录。
+
+工具数 90 → **92**（+`calculator`、+`batch`）。新增文档 `docs/calculator_guide.md`。
+
+
 ## v1.24.13 (2026-09-23)
 
 ### 抓包自检：补上「SSL 证书固定（疑似）」判定

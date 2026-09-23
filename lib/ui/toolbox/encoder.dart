@@ -15,6 +15,7 @@ enum EncoderType {
   url,
   base64,
   unicode,
+  hex,
   md5;
 
   static EncoderType nameOf(String name) {
@@ -43,6 +44,7 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
     Tab(text: 'URL'),
     Tab(text: 'Base64'),
     Tab(text: 'Unicode'),
+    Tab(text: 'Hex'),
     Tab(text: 'MD5'),
   ];
 
@@ -158,6 +160,8 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
           result = base64.encode(utf8.encode(inputText));
         case EncoderType.md5:
           result = md5.convert(utf8.encode(inputText)).toString();
+        case EncoderType.hex:
+          result = utf8.encode(inputText).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
         case EncoderType.unicode:
           result = encodeToUnicode(inputText);
       }
@@ -185,6 +189,18 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
             result = utf8.decode(compressed);
           } catch (e) {
             result = String.fromCharCodes(compressed);
+          }
+        case EncoderType.hex:
+          var hexText = inputText.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+          if (hexText.length.isOdd) hexText = '0$hexText';
+          final bytes = <int>[];
+          for (var i = 0; i < hexText.length; i += 2) {
+            bytes.add(int.parse(hexText.substring(i, i + 2), radix: 16));
+          }
+          try {
+            result = utf8.decode(bytes);
+          } catch (e) {
+            result = String.fromCharCodes(bytes);
           }
         case EncoderType.md5:
         case EncoderType.unicode:

@@ -14,6 +14,7 @@ import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/ui/component/ai_analysis.dart';
 import 'package:proxypin/ui/toolbox/dev_tools.dart';
+import 'package:proxypin/ui/toolbox/calculator_page.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/mobile/request/request_editor.dart';
 import 'package:proxypin/ui/mobile/setting/mcp_connection.dart';
@@ -85,6 +86,15 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.wifi_tethering,
                       text: 'WebSocket',
                       tooltip: 'WebSocket'),
+                  IconText(
+                    icon: Icons.calculate_outlined,
+                    text: '计算器',
+                    tooltip: '进制/补码 · 位运算 · 字节序 · IEEE754 · CRC/哈希',
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => const CalculatorPage()));
+                    },
+                  ),
                   IconText(
                     icon: Icons.javascript,
                     text: 'JavaScript',

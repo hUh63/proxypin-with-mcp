@@ -27,6 +27,7 @@ import 'package:proxypin/mcp/transport/setup_script.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_runtime.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/calc_engine.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
 import 'package:proxypin/network/util/security_audit.dart';
 import 'package:proxypin/network/util/security_rule_store.dart';
@@ -1379,6 +1380,7 @@ class McpServer {
       return 'runtime';
     }
     if (name == 'keep_alive') return 'server';
+    if (name == 'calculator' || name == 'batch') return 'runtime';
     if (name == 'get_mcp_audit') return 'meta';
     if (name.startsWith('mcp') || name.contains('catalog') || name.contains('client_setup')) return 'meta';
     if (name.contains('har') ||
@@ -2512,9 +2514,174 @@ request_id from get_recent_requests or search_requests.''',
           },
         },
       },
+      {
+        'name': 'calculator',
+        'description':
+            'One entry point for 27 calculation / conversion operations - the whole calculator. '
+                'Pick `op`, then pass the matching arguments. Binary ops: int_convert (any-precision '
+                'integer to hex/dec/bin/oct plus 8/16/32/64-bit signed-unsigned complement, '
+                'big/little-endian hex and ASCII), bitwise (and/or/xor/not/shl/shr/sar/rol/ror), '
+                'endian_swap, ieee754 (float32/64 bit layout), crc (crc32/crc16_ccitt/crc16_modbus/'
+                'crc16_xmodem/crc16_ibm), hash (md5/sha1/sha256/sha512), mod_op (mod_pow/mod_inverse/'
+                'gcd/lcm), codec (base64/base64url/hex/url). Arithmetic: add, subtract, multiply, '
+                'division, modulo, sum, floor, ceiling, round (exact for integers via big integers). '
+                'Statistics: mean, median, mode, min, max. Trigonometry: sin, cos, tan, arcsin, '
+                'arccos, arctan, degrees_to_radians, radians_to_degrees. Call this when analysing '
+                'captured traffic and you need to decode an integer field, check a CRC, fix an '
+                'endianness mistake, or do arithmetic the model should not guess at.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'op': {
+              'type': 'string',
+              'enum': [
+                'int_convert', 'bitwise', 'endian_swap', 'ieee754', 'crc', 'hash', 'mod_op', 'codec',
+                'add', 'subtract', 'multiply', 'division', 'modulo', 'sum', 'floor', 'ceiling', 'round',
+                'mean', 'median', 'mode', 'min', 'max',
+                'sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan',
+                'degrees_to_radians', 'radians_to_degrees',
+              ],
+              'description': 'Which operation to run',
+            },
+            'value': {'type': ['string', 'number'], 'description': 'Primary input (accepts "0x..", "0b..", decimal)'},
+            'a': {'type': ['string', 'number'], 'description': 'Operand A'},
+            'b': {'type': ['string', 'number'], 'description': 'Operand B / shift amount'},
+            'values': {'type': 'array', 'description': 'Numeric array for sum / statistics ops'},
+            'width': {'type': 'integer', 'description': 'Bit width for int_convert / bitwise (default 64 / 32)'},
+            'widthBytes': {'type': 'integer', 'description': 'Byte width for endian_swap'},
+            'operation': {'type': 'string', 'description': 'Bitwise operation name'},
+            'shift': {'type': 'integer', 'description': 'Shift/rotate amount'},
+            'precision': {'type': 'string', 'enum': ['float32', 'float64'], 'description': 'IEEE754 precision'},
+            'algorithm': {'type': 'string', 'description': 'CRC or hash algorithm name'},
+            'action': {'type': 'string', 'description': 'Sub-action for crc/hash/mod_op/codec'},
+            'data': {'type': ['string', 'number'], 'description': 'Payload for crc / hash'},
+            'input': {'type': ['string', 'number'], 'description': 'Payload for codec / ieee754'},
+            'inputFormat': {'type': 'string', 'enum': ['hex', 'utf8', 'base64'], 'description': 'How to read data'},
+            'base': {'type': ['string', 'number'], 'description': 'mod_pow base'},
+            'exponent': {'type': ['string', 'number'], 'description': 'mod_pow exponent'},
+            'modulus': {'type': ['string', 'number'], 'description': 'modulus'},
+          },
+          'required': ['op'],
+        },
+      },
+      {
+        'name': 'batch',
+        'description':
+            'Run several MCP tool calls inside one request and chain their results, avoiding a '
+                'round trip per step. `steps` is an ordered array of {"tool": name, "args": {...}}; a '
+                'later step can pull a value out of an earlier result with a reference object of the '
+                'form {"\$step": 0, "field": "result.hex"} (field supports dotted paths). Steps run in '
+                'order; by default it stops at the first failure (set stop_on_error=false to continue). '
+                'Nesting batch inside batch is rejected. Call this when a task needs several dependent '
+                'steps, such as decode a base64 field then swap endianness then compute its CRC.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'steps': {
+              'type': 'array',
+              'description': 'Ordered list of {"tool": "...", "args": {...}} objects (max 20)',
+            },
+            'stop_on_error': {
+              'type': 'boolean',
+              'description': 'Stop at the first failed step (default true)',
+            },
+          },
+          'required': ['steps'],
+        },
+      },
       // 官方工具源（同名者已在本表中提供，见 _nativeToolNames）
       ..._officialToolsJson(),
     ];
+  }
+
+  /// 单次 batch 允许的最大步数（防止一次请求把服务拖住）。
+  static const int maxBatchSteps = 20;
+
+  /// 通用批处理：在一个请求里按序执行多个工具，并支持引用前序结果。
+  ///
+  /// 引用语法：`{"$step": 0, "field": "result.hex"}` —— 取第 0 步结果的
+  /// `result.hex` 字段（field 支持 `a.b` 点路径，省略 field 则取整份结果）。
+  /// 每一步都复用 [_runTool]，因此参数校验、并发闸、超时、指标与审计一个都不少。
+  Future<Map<String, dynamic>> _handleBatch(Map<String, dynamic> args) async {
+    final rawSteps = args['steps'];
+    if (rawSteps is! List || rawSteps.isEmpty) {
+      return {'error': 'steps must be a non-empty array of {"tool": ..., "args": {...}}'};
+    }
+    if (rawSteps.length > maxBatchSteps) {
+      return {'error': 'too many steps: ${rawSteps.length} (max $maxBatchSteps)'};
+    }
+    final stopOnError = args['stop_on_error'] as bool? ?? true;
+    final results = <Map<String, dynamic>>[];
+
+    for (var i = 0; i < rawSteps.length; i++) {
+      final raw = rawSteps[i];
+      if (raw is! Map) {
+        return {'error': 'step $i is not an object'};
+      }
+      final tool = raw['tool']?.toString();
+      if (tool == null || tool.isEmpty) {
+        return {'error': 'step $i is missing "tool"'};
+      }
+      if (tool == 'batch') {
+        return {'error': 'step $i: nested batch is not allowed'};
+      }
+      final resolved = _resolveStepRefs(raw['args'], results);
+      if (resolved is! Map) {
+        return {'error': 'step $i: args must be an object'};
+      }
+      final Map<String, dynamic> callArgs = Map<String, dynamic>.from(resolved);
+      // batch 已经持有并发名额，内部步骤不再重复申请，避免互等死锁
+      final result = await _runTool(tool, callArgs, caller: 'batch', acquireSlot: false);
+      final ok = !(result is Map && result.containsKey('error'));
+      results.add({
+        'step': i,
+        'tool': tool,
+        'ok': ok,
+        if (!ok) 'error': result is Map ? result['error']?.toString() : '$result',
+        'result': result,
+      });
+      if (!ok && stopOnError) break;
+    }
+
+    return {
+      'steps_total': rawSteps.length,
+      'steps_run': results.length,
+      'completed': results.where((r) => r['ok'] == true).length,
+      'results': results,
+    };
+  }
+
+  /// 递归解析步骤参数里的 `{"$step": n, "field": "..."}` 引用。
+  dynamic _resolveStepRefs(dynamic node, List<Map<String, dynamic>> results) {
+    if (node is Map) {
+      if (node.containsKey(r'$step')) {
+        final index = (node[r'$step'] as num?)?.toInt();
+        if (index == null || index < 0 || index >= results.length) {
+          return {'error': 'invalid \$step reference at step $index'};
+        }
+        dynamic value = results[index]['result'];
+        final field = node['field']?.toString();
+        if (field != null && field.isNotEmpty) {
+          for (final part in field.split('.')) {
+            if (value is Map && value.containsKey(part)) {
+              value = value[part];
+            } else {
+              return {'error': 'field "$field" not found in step $index result'};
+            }
+          }
+        }
+        return value;
+      }
+      final mapped = <String, dynamic>{};
+      for (final entry in node.entries) {
+        mapped[entry.key.toString()] = _resolveStepRefs(entry.value, results);
+      }
+      return mapped;
+    }
+    if (node is List) {
+      return node.map((e) => _resolveStepRefs(e, results)).toList();
+    }
+    return node;
   }
 
   /// 应用保活设置入口（供设置页调用）：开关变化后立即生效。
@@ -2650,13 +2817,14 @@ request_id from get_recent_requests or search_requests.''',
 
   /// 全部工具调用的统一入口：Schema 校验 → 并发闸 → per-tool 超时 → 指标与审计。
   Future<dynamic> _runTool(String name, Map<String, dynamic> args,
-      {String caller = 'http'}) {
+      {String caller = 'http', bool acquireSlot = true}) {
     return McpToolRuntime.run(
       name,
       args,
       () => _executeTool(name, args),
       inputSchema: _schemaIndex()[name],
       caller: caller,
+      acquireSlot: acquireSlot,
     );
   }
 
@@ -2994,6 +3162,16 @@ request_id from get_recent_requests or search_requests.''',
             'strict_validation': McpToolRuntime.strictValidation,
           },
         };
+
+      case 'calculator':
+        final calcOp = (args['op'] ?? '').toString();
+        if (calcOp.isEmpty) {
+          return {'error': 'op is required', 'supported': CalcEngine.operations};
+        }
+        return CalcEngine.run(calcOp, args);
+
+      case 'batch':
+        return await _handleBatch(args);
 
       case 'keep_alive':
         return await _handleKeepAlive(args);

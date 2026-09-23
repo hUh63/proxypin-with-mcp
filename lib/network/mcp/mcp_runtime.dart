@@ -333,6 +333,7 @@ class McpToolRuntime {
     Future<dynamic> Function() invoke, {
     Map<String, dynamic>? inputSchema,
     String caller = 'unknown',
+    bool acquireSlot = true,
   }) async {
     final startedAt = DateTime.now();
 
@@ -353,11 +354,17 @@ class McpToolRuntime {
       final timeout = Duration(milliseconds: timeoutMsFor(tool));
       // 超时只在闸内做：闸外再套一层 timeout 会在「等待名额」期间抛异常，
       // 绕过 gate 的 finally，导致并发名额泄漏。
-      final result = await gate.run(() => invoke().timeout(
+      //
+      // acquireSlot=false 用于 batch：batch 自己已经占了名额，内部步骤再申请
+      // 会导致「N 个 batch 各持 1 个名额、又都等下一个」的互等死锁。
+      Future<dynamic> invokeWithTimeout() => invoke().timeout(
             timeout,
             onTimeout: () => throw TimeoutException(
                 'Tool "$tool" timed out after ${timeout.inMilliseconds}ms'),
-          ));
+          );
+      final result = acquireSlot
+          ? await gate.run(invokeWithTimeout)
+          : await invokeWithTimeout();
       final ok = !(result is Map && result.containsKey('error'));
       McpMetrics.instance.recordCall(
           tool, DateTime.now().difference(startedAt).inMilliseconds, ok);
