@@ -25,6 +25,11 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
 import 'package:proxypin/utils/platform.dart';
 
+/// 应用版本的单一真源。与 `pubspec.yaml` 的 `version:` 保持一致，
+/// 对外暴露处（关于页、MCP initialize 的 serverInfo）都必须引用它，
+/// 避免出现「同一份代码声明多个版本号」的不一致。
+const String appVersion = '1.3.2';
+
 class Configuration {
   ///代理相关配置
   int port = 9099;
@@ -94,6 +99,12 @@ class Configuration {
 
   //MCP 局域网访问是否启用 Bearer 鉴权（默认开启；关闭后同一局域网内任何设备都能读取流量）
   bool mcpAuthEnabled = true;
+
+  //MCP 保活：开启后可通过 keep_alive 工具把本应用加入电池优化白名单并解除后台限制
+  bool mcpKeepAlive = false;
+
+  //MCP 参数强校验：按工具声明的 inputSchema 校验必填/类型/枚举/区间
+  bool mcpStrictValidation = true;
 
   //默认是否启动
   bool startup = false;
@@ -182,6 +193,8 @@ class Configuration {
     mcpRedactEnabled = config['mcpRedactEnabled'] ?? true;
     mcpToken = config['mcpToken'] as String?;
     mcpAuthEnabled = config['mcpAuthEnabled'] ?? true;
+    mcpKeepAlive = config['mcpKeepAlive'] ?? false;
+    mcpStrictValidation = config['mcpStrictValidation'] ?? true;
     mcpAutoStart = config['mcpAutoStart'] ?? true;
     mcpAllowLan = config['mcpAllowLan'] ?? false;
     winTakeoverEnabled = config['winTakeoverEnabled'] ?? false;
@@ -285,6 +298,8 @@ class Configuration {
       'mcpRedactEnabled': mcpRedactEnabled,
       if (mcpToken != null) 'mcpToken': mcpToken,
       'mcpAuthEnabled': mcpAuthEnabled,
+      'mcpKeepAlive': mcpKeepAlive,
+      'mcpStrictValidation': mcpStrictValidation,
       'mcpAutoStart': mcpAutoStart,
       'mcpAllowLan': mcpAllowLan,
       'winTakeoverEnabled': winTakeoverEnabled,

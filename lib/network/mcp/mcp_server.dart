@@ -25,6 +25,7 @@ import 'package:proxypin/mcp/protocol/mcp_tool.dart';
 import 'package:proxypin/mcp/transport/mcp_stdio_bridge.dart';
 import 'package:proxypin/mcp/transport/setup_script.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
+import 'package:proxypin/network/mcp/mcp_runtime.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
 import 'package:proxypin/network/util/security_audit.dart';
@@ -172,6 +173,9 @@ class McpServer {
 
       // 局域网模式：生成/复用 Bearer token（与官方实现一致），并写握手文件供 stdio 桥发现端口
       _lanMode = config.mcpAllowLan;
+      // 运行期开关同步到工具运行时
+      McpToolRuntime.strictValidation = config.mcpStrictValidation;
+      McpMetrics.instance.markStarted();
       _authEnabled = config.mcpAuthEnabled;
       if (_lanMode && _authEnabled) {
         _token = (config.mcpToken?.isNotEmpty ?? false) ? config.mcpToken : generateToken();
@@ -227,14 +231,37 @@ class McpServer {
           response.headers.contentType = io.ContentType('text', 'plain', charset: 'utf-8');
           response.write(script);
           response.close();
-        } else if (path == '/health') {
-          // 健康检查端点，供客户端探测服务是否可用
+        } else if (path == '/health' || path == '/healthz') {
+          // 健康检查端点，供客户端探测服务是否可用（保持轻量：只回状态与关键水位）
           final response = request.response;
           response.headers.contentType = io.ContentType.json;
           response.headers.add('Access-Control-Allow-Origin', '*');
-          response.write(
-            jsonEncode({'status': 'ok', 'server': 'ProxyPin MCP'}),
-          );
+          final m = McpMetrics.instance;
+          response.write(jsonEncode({
+            'status': 'ok',
+            'server': 'ProxyPin MCP',
+            'version': appVersion,
+            'protocol_version': protocolVersion,
+            'lan_mode': _lanMode,
+            'auth_enabled': _authEnabled,
+            'inflight': m.inflight,
+          }));
+          response.close();
+        } else if (path == '/metrics') {
+          // 运行指标：供外部监控 / 排查「服务是否健康、哪个工具在拖后腿」
+          final response = request.response;
+          response.headers.contentType = io.ContentType.json;
+          response.headers.add('Access-Control-Allow-Origin', '*');
+          response.write(jsonEncode({
+            'server': 'ProxyPin MCP',
+            'version': appVersion,
+            'protocol_version': protocolVersion,
+            'sessions': _streamSessions.length,
+            'sse_connections': _sseConnections.length,
+            'metrics': McpMetrics.instance.toJson(),
+            'gate': McpToolRuntime.gate.toJson(),
+            'audit_buffered': McpAuditLog.instance.length,
+          }));
           response.close();
         } else {
           final response = request.response;
@@ -824,7 +851,7 @@ class McpServer {
               // 不应声明为服务端能力，故此处不再声明
               'completions': {},
             },
-            'serverInfo': {'name': 'ProxyPin MCP', 'version': '1.3.1'},
+            'serverInfo': {'name': 'ProxyPin MCP', 'version': appVersion},
           });
 
         case 'notifications/initialized':
@@ -856,8 +883,9 @@ class McpServer {
           final Map<String, dynamic> args =
               rawArgs is Map ? Map<String, dynamic>.from(rawArgs) : {};
           try {
-            // 超时保护：避免设备类工具（MethodChannel）等长时间挂起占用连接
-            final result = await _executeTool(name, args).timeout(const Duration(seconds: 120));
+            // 统一入口：参数校验 → 并发闸 → per-tool 超时 → 指标与审计
+            final result = await _runTool(name, args,
+                caller: _lanMode ? 'lan' : 'loopback');
             // 统一错误语义：工具内部以 {'error': ...} 表示失败时，按 MCP 规范标记 isError
             final isErr = result is Map && result.containsKey('error');
             return response({
@@ -982,7 +1010,7 @@ class McpServer {
 
   /// 供 AI Agent 对话页执行 MCP 工具（文本协议自动调用）
   Future<dynamic> executeTool(String name, Map<String, dynamic> args) =>
-      _executeTool(name, args);
+      _runTool(name, args, caller: 'internal');
 
   /// 获取全部可用工具列表（别名，供 UI 页面调用）
   List<Map<String, dynamic>> getToolList() => _getToolsList();
@@ -1350,6 +1378,8 @@ class McpServer {
     if (name.contains('performance') || name.contains('diagnose') || name.contains('memory')) {
       return 'runtime';
     }
+    if (name == 'keep_alive') return 'server';
+    if (name == 'get_mcp_audit') return 'meta';
     if (name.startsWith('mcp') || name.contains('catalog') || name.contains('client_setup')) return 'meta';
     if (name.contains('har') ||
         name.contains('curl') ||
@@ -2426,9 +2456,208 @@ request_id from get_recent_requests or search_requests.''',
           },
         },
       },
+      {
+        'name': 'keep_alive',
+        'description':
+            'Manage Android keep-alive for this app (or another package) so the MCP server and '
+                'capture keep running in the background. Actions: status | enable | disable | apply | '
+                'restore. It works through the adb-shell command set (deviceidle whitelist, appops '
+                'RUN_*_IN_BACKGROUND, am set-inactive) executed over Shizuku, root or Dhizuku - no '
+                'extra app install is needed, but one of those permission channels must be available. '
+                'Call this when the user asks why capture stops in the background, wants the app to '
+                'survive battery optimisation, or asks to turn keep-alive on or off.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'action': {
+              'type': 'string',
+              'enum': ['status', 'enable', 'disable', 'apply', 'restore'],
+              'description': 'status=query only; enable/disable=persist the setting and apply; '
+                  'apply=force apply now; restore=undo the changes (default status)',
+            },
+            'mode': {
+              'type': 'string',
+              'enum': ['auto', 'root', 'shizuku', 'dhizuku'],
+              'description': 'Permission channel: auto picks the best available (default auto)',
+            },
+            'package': {
+              'type': 'string',
+              'description': 'Target package name; omit to use this app itself',
+            },
+          },
+        },
+      },
+      {
+        'name': 'get_mcp_audit',
+        'description':
+            'Read the MCP server audit log: recent tool calls with caller, duration, success flag, '
+                'error message and argument names (argument values are never recorded, to avoid '
+                'leaking captured traffic or credentials). Call this when the user asks what tools '
+                'were called, why an AI client failed, or wants to review recent MCP activity.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'limit': {
+              'type': 'integer',
+              'description': 'Maximum number of records to return (default 50, newest last)',
+            },
+            'tool': {
+              'type': 'string',
+              'description': 'Only return records for this tool name (optional)',
+            },
+            'only_failed': {
+              'type': 'boolean',
+              'description': 'Only return failed calls (optional)',
+            },
+          },
+        },
+      },
       // 官方工具源（同名者已在本表中提供，见 _nativeToolNames）
       ..._officialToolsJson(),
     ];
+  }
+
+  /// 应用保活设置入口（供设置页调用）：开关变化后立即生效。
+  Future<Map<String, dynamic>> setKeepAlive(bool enabled) =>
+      _handleKeepAlive({'action': enabled ? 'enable' : 'disable'});
+
+  /// 参数强校验开关（供设置页调用）：立即生效，无需重启服务。
+  void setStrictValidation(bool enabled) {
+    McpToolRuntime.strictValidation = enabled;
+  }
+
+  /// 本应用包名（与 android/app/build.gradle 的 applicationId 一致）。
+  static const String _appPackage = 'com.network.proxy';
+
+  /// 保活：把目标包加入电池优化白名单并解除后台限制。
+  ///
+  /// 命令集就是 adb shell 语义（deviceidle / appops / am），通过 Shizuku、root 或
+  /// Dhizuku 任一通道执行；不安装任何额外组件，也不需要重启设备。
+  Future<Map<String, dynamic>> _handleKeepAlive(Map<String, dynamic> args) async {
+    final action = (args['action'] as String? ?? 'status').toLowerCase();
+    final mode = (args['mode'] as String?)?.toLowerCase();
+    final pkgArg = (args['package'] as String?)?.trim();
+    final target = (pkgArg == null || pkgArg.isEmpty) ? _appPackage : pkgArg;
+    final config = await Configuration.instance;
+
+    // 只允许包名字符集，避免命令注入
+    if (!RegExp(r'^[A-Za-z0-9._]+$').hasMatch(target)) {
+      return {'error': 'Invalid package name: $target'};
+    }
+
+    if (action == 'status') {
+      final probe = 'dumpsys deviceidle whitelist | grep -F "$target" ; '
+          'cmd appops get "$target" RUN_IN_BACKGROUND ; '
+          'cmd appops get "$target" RUN_ANY_IN_BACKGROUND';
+      final out = await McpScreen.shell(probe, useSu: false, mode: mode, timeoutMs: 15000);
+      return {
+        'package': target,
+        'keep_alive_enabled': config.mcpKeepAlive,
+        'mode': mode ?? 'auto',
+        'raw': out,
+      };
+    }
+
+    if (action == 'enable' || action == 'disable') {
+      config.mcpKeepAlive = action == 'enable';
+      ConfigAutoSave.markChanged();
+    }
+
+    if (action == 'apply' || action == 'enable') {
+      return _keepAliveApply(target, mode);
+    }
+    if (action == 'restore' || action == 'disable') {
+      return _keepAliveRestore(target, mode);
+    }
+    return {
+      'error': 'Unknown action "$action"; expected status | enable | disable | apply | restore',
+    };
+  }
+
+  Future<Map<String, dynamic>> _keepAliveApply(String pkg, String? mode) async {
+    final commands = <String>[
+      'dumpsys deviceidle whitelist +$pkg',
+      'cmd appops set $pkg RUN_IN_BACKGROUND allow',
+      'cmd appops set $pkg RUN_ANY_IN_BACKGROUND allow',
+      'am set-inactive $pkg false',
+    ];
+    final results = <Map<String, dynamic>>[];
+    for (final command in commands) {
+      try {
+        final out = await McpScreen.shell(command, useSu: false, mode: mode, timeoutMs: 15000);
+        results.add({'command': command, 'ok': true, 'output': out});
+      } catch (e) {
+        results.add({'command': command, 'ok': false, 'error': e.toString()});
+      }
+    }
+    final failed = results.where((r) => r['ok'] != true).length;
+    return {
+      'package': pkg,
+      'action': 'apply',
+      'mode': mode ?? 'auto',
+      'applied': results.length - failed,
+      'failed': failed,
+      'details': results,
+      'note': failed == 0
+          ? 'Keep-alive applied. If the permission channel was unavailable, check Shizuku/root status first.'
+          : 'Some commands failed - usually means no shell-level channel (Shizuku/root/Dhizuku) is available.',
+    };
+  }
+
+  Future<Map<String, dynamic>> _keepAliveRestore(String pkg, String? mode) async {
+    final commands = <String>[
+      'dumpsys deviceidle whitelist -$pkg',
+      'cmd appops set $pkg RUN_IN_BACKGROUND default',
+      'cmd appops set $pkg RUN_ANY_IN_BACKGROUND default',
+    ];
+    final results = <Map<String, dynamic>>[];
+    for (final command in commands) {
+      try {
+        final out = await McpScreen.shell(command, useSu: false, mode: mode, timeoutMs: 15000);
+        results.add({'command': command, 'ok': true, 'output': out});
+      } catch (e) {
+        results.add({'command': command, 'ok': false, 'error': e.toString()});
+      }
+    }
+    return {
+      'package': pkg,
+      'action': 'restore',
+      'mode': mode ?? 'auto',
+      'details': results,
+    };
+  }
+
+  Map<String, Map<String, dynamic>>? _schemaIndexCache;
+
+  /// 工具名 → inputSchema 的索引（供统一参数校验）。
+  ///
+  /// 自有工具与官方工具源合并后构建一次并缓存。schema 里声明得不准的工具
+  /// 只是校验不到，不会因为缺 schema 而被拒绝调用。
+  Map<String, Map<String, dynamic>> _schemaIndex() {
+    final cached = _schemaIndexCache;
+    if (cached != null) return cached;
+    final index = <String, Map<String, dynamic>>{};
+    for (final tool in [..._getToolsList(), ..._officialToolsJson()]) {
+      final name = tool['name'];
+      final schema = tool['inputSchema'];
+      if (name is String && schema is Map) {
+        index[name] = Map<String, dynamic>.from(schema);
+      }
+    }
+    _schemaIndexCache = index;
+    return index;
+  }
+
+  /// 全部工具调用的统一入口：Schema 校验 → 并发闸 → per-tool 超时 → 指标与审计。
+  Future<dynamic> _runTool(String name, Map<String, dynamic> args,
+      {String caller = 'http'}) {
+    return McpToolRuntime.run(
+      name,
+      args,
+      () => _executeTool(name, args),
+      inputSchema: _schemaIndex()[name],
+      caller: caller,
+    );
   }
 
   Future<dynamic> _executeTool(String name, Map<String, dynamic> args) async {
@@ -2757,6 +2986,31 @@ request_id from get_recent_requests or search_requests.''',
           },
           'capture': McpBridge().getStatistics(),
           'captured_requests': McpBridge().source.length,
+          // MCP 服务自身的运行指标（调用量/失败率/并发水位），区别于上面的抓包统计
+          'mcp': {
+            'metrics': McpMetrics.instance.toJson(),
+            'gate': McpToolRuntime.gate.toJson(),
+            'audit_buffered': McpAuditLog.instance.length,
+            'strict_validation': McpToolRuntime.strictValidation,
+          },
+        };
+
+      case 'keep_alive':
+        return await _handleKeepAlive(args);
+
+      case 'get_mcp_audit':
+        final auditLimit = (args['limit'] as num?)?.toInt() ?? 50;
+        final auditTool = args['tool'] as String?;
+        final auditOnlyFailed = args['only_failed'] as bool?;
+        final records = McpAuditLog.instance.recent(
+          limit: auditLimit,
+          tool: auditTool,
+          onlyFailed: auditOnlyFailed,
+        );
+        return {
+          'buffered': McpAuditLog.instance.length,
+          'returned': records.length,
+          'records': records.map((r) => r.toJson()).toList(),
         };
 
       case 'clear_requests':

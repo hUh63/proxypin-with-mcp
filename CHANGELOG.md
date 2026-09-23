@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.24.12 (2026-09-23)
+
+### MCP 服务运行时增强
+
+借鉴独立 MCP 内核（LemonKernel）的设计，补齐我们此前缺的四件事，并修掉一个版本声明 bug。
+
+1. **版本单一真源**：`initialize` 此前对外硬编码 `version: '1.3.1'`，而 pubspec 已是 `1.3.2+37` —— 正是 LemonKernel 立项时批评的「版本三处打架」，我们自己也犯了。现统一到 `lib/network/bin/configuration.dart` 的 `appVersion`，关于页与 MCP 同源。
+2. **运行指标**：新增 `/healthz`（轻量探活）与 `/metrics`（会话数、SSE 连接、调用量/失败率/超时/被拒、并发水位、工具级耗时）。`get_performance_metrics` 增加 `mcp` 段，与原有的进程内存/抓包统计并列。
+3. **per-tool 超时 + 并发闸**：并发上限 16、队列 64、等待 5 秒，超限**立刻拒绝**而不是排队（避免连接与内存堆积）；每个工具可声明独立超时（设备类 30s、shell 60s、导出 60s、默认 120s）。
+4. **工具调用审计**：新增 `get_mcp_audit`，记录调用者/工具/耗时/结果/参数名——**不记录参数值**，避免审计日志变成新的泄露面；内存环形缓冲 500 条，支持按工具与失败过滤。
+5. **参数强校验**：按工具声明的 `inputSchema` 校验必填/类型/枚举/区间，失败提前返回 `Invalid arguments`。刻意保守：只校验声明过的参数、string 位置宽容接受数字、null 放行。设置页可关闭（默认开启）。
+6. **后台保活**：新增 `keep_alive` 工具与设置页开关，用 adb shell 语义命令集（`deviceidle whitelist` / `appops RUN_*_IN_BACKGROUND` / `am set-inactive`）将应用加入电池优化白名单并解除后台限制；通过 **Shizuku / root / Dhizuku** 三通道执行，`auto` 自动挑选。**不需要 root**：Shizuku 提供的 shell 权限即可。
+
+工具数 88 → **90**（+`keep_alive`、+`get_mcp_audit`）。新增 `lib/network/mcp/mcp_runtime.dart`，把「校验 → 并发闸 → 超时 → 指标 → 审计」收敛为单一入口，HTTP / SSE / stdio / UI 内部调用共用，避免某个入口漏审计。
+
+新增文档 `docs/mcp_runtime_guide.md`。
+
+
 ## v1.24.11 (2026-09-23)
 
 ### 安全自检补齐注入痕迹识别（SQLi / XSS，被动）

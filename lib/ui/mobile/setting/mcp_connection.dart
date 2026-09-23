@@ -548,6 +548,39 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         },
                       ),
                       const Divider(height: 0),
+                      SwitchListTile(
+                        title: const Text('后台保活'),
+                        subtitle: const Text(
+                            '把本应用加入电池优化白名单并解除后台限制，降低抓包与 MCP 服务被系统杀掉的可能（需 Shizuku / root / Dhizuku 之一）',
+                            style: TextStyle(fontSize: 12)),
+                        value: Configuration.loaded?.mcpKeepAlive ?? false,
+                        onChanged: (v) async {
+                          final c = Configuration.loaded;
+                          if (c == null) return;
+                          setState(() => c.mcpKeepAlive = v);
+                          ConfigAutoSave.markChanged();
+                          try {
+                            await McpServer().setKeepAlive(v);
+                          } catch (e) {
+                            debugPrint('keep-alive failed: $e');
+                          }
+                        },
+                      ),
+                      const Divider(height: 0),
+                      SwitchListTile(
+                        title: const Text('参数强校验'),
+                        subtitle: const Text('按工具声明的 inputSchema 校验参数，尽早提示调用错误（立即生效）',
+                            style: TextStyle(fontSize: 12)),
+                        value: Configuration.loaded?.mcpStrictValidation ?? true,
+                        onChanged: (v) async {
+                          final c = Configuration.loaded;
+                          if (c == null) return;
+                          setState(() => c.mcpStrictValidation = v);
+                          ConfigAutoSave.markChanged();
+                          McpServer().setStrictValidation(v);
+                        },
+                      ),
+                      const Divider(height: 0),
                       ListTile(
                         leading: const Icon(Icons.key),
                         title: const Text('访问令牌'),
