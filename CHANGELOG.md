@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.24.22 (2026-09-25)
+
+### 修复：WAF 变异模块编译失败
+
+两处 Dart 类型问题，都属于「一眼看不出、编译器才认得出」：
+
+1. `WafTechnique` 里访问 `_handlers` 不能只写名字——它是 `WafBypass` 的**静态**成员，Dart 会先在当前类里找，找不到就报 `The getter '_handlers' isn't defined for the type 'WafTechnique'`，必须写成 `WafBypass._handlers`。
+2. `RegExp` 匹配结果里 `m[0]` 的类型是 `String?`，直接调 `substring` 过不了编译，要先 `m[0]!`。
+
+
 ## v1.24.21 (2026-09-25)
 
 ### WAF 载荷变异工具 + 云端页编译修复

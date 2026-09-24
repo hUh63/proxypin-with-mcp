@@ -24,7 +24,7 @@ class WafTechnique {
   const WafTechnique(this.id, this.name, this.description);
 
   /// 具体变换。纯字符串处理，不做任何 IO。
-  String Function(String input) get apply => _handlers[id] ?? ((s) => s);
+  String Function(String input) get apply => WafBypass._handlers[id] ?? ((s) => s);
 }
 
 /// 一条变异结果。
@@ -90,8 +90,10 @@ class WafBypass {
     'keyword_replace': _keywordReplace,
     'quote_escape': (s) => s.replaceAll("'", '`').replaceAll('"', "'"),
     'concat_string': (s) => "'${s.replaceAll("'", "'||'")}'",
-    'newline_inject': (s) => s.replaceAllMapped(RegExp(r'[A-Za-z]{3,}'),
-        (m) => '${m[0].substring(0, 1)}\n${m[0].substring(1)}'),
+    'newline_inject': (s) => s.replaceAllMapped(RegExp(r'[A-Za-z]{3,}'), (m) {
+      final v = m[0]!;
+      return '${v.substring(0, 1)}\n${v.substring(1)}';
+    }),
     'chunked': (s) {
       final bytes = utf8.encode(s);
       if (bytes.isEmpty) {
