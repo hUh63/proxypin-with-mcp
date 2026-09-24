@@ -184,8 +184,38 @@ class CalcEngine {
     return '0x$text';
   }
 
+  /// 宽松取整：接受 int / double / 十进制或 0x、0b、0o 字符串。
+  ///
+  /// 两个调用方传进来的形态不同——工具箱 UI 传的是输入框文本（String），
+  /// MCP 传的是 JSON 数字或字符串。曾因此踩坑：`args['b'] as num?` 在遇到
+  /// 字符串时**直接抛 TypeError**（`as` 失败是抛错，不是返回 null），
+  /// 表现为「位运算一按计算就报 type 'String' is not a subtype of type 'num?'」。
+  /// 这里统一收口，不再对入参做强制类型转换。
+  static int? _intOf(Object? value, {int? fallback}) {
+    if (value == null) return fallback;
+    if (value is int) return value;
+    if (value is double) {
+      if (value == value.roundToDouble()) return value.toInt();
+      return fallback;
+    }
+    final text = value.toString().trim();
+    if (text.isEmpty) return fallback;
+    try {
+      return parseBigInt(text).toInt();
+    } on FormatException {
+      return fallback;
+    }
+  }
+
+  /// 解析位移量。越界（负数或超过 4096）返回 null，由调用方给出明确报错。
+  static int? _shiftOf(Map<String, dynamic> args) {
+    final shift = _intOf(args['shift'] ?? args['b'], fallback: 0) ?? 0;
+    if (shift < 0 || shift > 4096) return null;
+    return shift;
+  }
+
   static int _widthOf(Map<String, dynamic> args, {int fallback = 64}) {
-    final width = (args['width'] as num?)?.toInt() ?? fallback;
+    final width = _intOf(args['width'], fallback: fallback) ?? fallback;
     if (width <= 0 || width > 4096) throw FormatException('width out of range: $width');
     return width;
   }
@@ -270,10 +300,11 @@ class CalcEngine {
     final operation = (args['operation'] ?? args['op'] ?? 'and').toString().toLowerCase();
     final width = _widthOf(args, fallback: 32);
     final a = maskTo(parseBigInt(args['a']), width);
-    final b = args.containsKey('b') ? maskTo(parseBigInt(args['b']), width) : BigInt.zero;
-    final shiftArg = args['shift'] ?? args['b'];
-    final shift = (shiftArg as num?)?.toInt() ??
-        (int.tryParse((shiftArg ?? '').toString()) ?? 0);
+    final b = (args.containsKey('b') && args['b'] != null)
+        ? maskTo(parseBigInt(args['b']), width)
+        : BigInt.zero;
+    // 位移量只在位移类运算里解析，见下面的 _shiftOf —— 对 and/or/xor 来说
+    // 第二个操作数是参与运算的数，不是位移量，无条件解析会误判。
 
     BigInt result;
     switch (operation) {
@@ -289,21 +320,38 @@ class CalcEngine {
       case 'not':
         result = maskTo(~a, width);
         break;
-      case 'shl':
-        result = maskTo(a << shift, width);
+      case 'shl': {
+        final s = _shiftOf(args);
+        if (s == null) return {'error': 'shift out of range (0-4096)'};
+        result = maskTo(a << s, width);
         break;
-      case 'shr': // 逻辑右移：先按无符号看待
-        result = a >> shift;
+      }
+      case 'shr': {
+        // 逻辑右移：先按无符号看待
+        final s = _shiftOf(args);
+        if (s == null) return {'error': 'shift out of range (0-4096)'};
+        result = a >> s;
         break;
-      case 'sar': // 算术右移：先按有符号看待
-        result = maskTo(toSigned(a, width) >> shift, width);
+      }
+      case 'sar': {
+        // 算术右移：先按有符号看待
+        final s = _shiftOf(args);
+        if (s == null) return {'error': 'shift out of range (0-4096)'};
+        result = maskTo(toSigned(a, width) >> s, width);
         break;
-      case 'rol':
-        result = _rotateLeft(a, shift, width);
+      }
+      case 'rol': {
+        final s = _shiftOf(args);
+        if (s == null) return {'error': 'shift out of range (0-4096)'};
+        result = _rotateLeft(a, s, width);
         break;
-      case 'ror':
-        result = _rotateRight(a, shift, width);
+      }
+      case 'ror': {
+        final s = _shiftOf(args);
+        if (s == null) return {'error': 'shift out of range (0-4096)'};
+        result = _rotateRight(a, s, width);
         break;
+      }
       default:
         return {'error': 'Unknown bitwise operation: $operation'};
     }
@@ -338,7 +386,7 @@ class CalcEngine {
   static Map<String, dynamic> _endianSwap(Map<String, dynamic> args) {
     final input = args['value'] ?? args['hex'];
     if (input == null) return {'error': 'value (hex string) is required'};
-    final declared = (args['widthBytes'] as num?)?.toInt();
+    final declared = _intOf(args['widthBytes']);
     var bytes = _bytesFrom(input, 'hex');
     if (bytes.isEmpty) return {'error': 'value is empty'};
     if (declared != null && declared > 0) {

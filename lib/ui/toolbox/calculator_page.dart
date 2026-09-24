@@ -296,6 +296,9 @@ class _BitwiseTabState extends State<_BitwiseTab> {
   Map<String, dynamic>? _result;
 
   static const _ops = ['and', 'or', 'xor', 'not', 'shl', 'shr', 'sar', 'rol', 'ror'];
+  static const _shiftOps = {'shl', 'shr', 'sar', 'rol', 'ror'};
+
+  bool get _isShift => _shiftOps.contains(_operation);
 
   @override
   void initState() {
@@ -311,14 +314,18 @@ class _BitwiseTabState extends State<_BitwiseTab> {
   }
 
   void _compute() {
-    setState(() {
-      _result = CalcEngine.run('bitwise', {
-        'operation': _operation,
-        'a': _a.text,
-        'b': _b.text,
-        'width': _width,
-      });
-    });
+    final args = <String, dynamic>{
+      'operation': _operation,
+      'a': _a.text,
+      'width': _width,
+    };
+    if (_isShift) {
+      // 位移量按十进制传，避免「0x0FF0」被当成位移 4080 位
+      args['shift'] = _b.text;
+    } else if (_operation != 'not') {
+      args['b'] = _b.text;
+    }
+    setState(() => _result = CalcEngine.run('bitwise', args));
   }
 
   @override
@@ -335,7 +342,12 @@ class _BitwiseTabState extends State<_BitwiseTab> {
           onChanged: (v) => setState(() => _operation = v),
         ),
         _Field(label: '操作数 A', controller: _a),
-        if (needsB) _Field(label: '操作数 B / 位移量', controller: _b),
+        if (needsB)
+          _Field(
+            label: _isShift ? '位移量（十进制）' : '操作数 B',
+            controller: _b,
+            hint: _isShift ? '例如 4' : '例如 0x0FF0',
+          ),
         _Dropdown<int>(
           label: '位宽',
           value: _width,
