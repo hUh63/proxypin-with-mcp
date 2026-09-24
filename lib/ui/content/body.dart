@@ -31,6 +31,7 @@ import 'package:proxypin/network/components/manager/rewrite_rule.dart';
 import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/grpc_decoder.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:proxypin/ui/component/json/json_viewer.dart';
@@ -170,7 +171,8 @@ class HttpBodyState extends State<HttpBodyWidget> {
       return const SizedBox();
     }
 
-    var tabs = Tabs.of(widget.httpMessage?.contentType, isJsonText());
+    var tabs = Tabs.of(widget.httpMessage?.contentType, isJsonText(),
+        isGrpc: GrpcDecoder.looksLikeGrpc(widget.httpMessage?.headers.contentType));
 
     if (tabIndex > 0 && tabIndex >= tabs.list.length) tabIndex = tabs.list.length - 1;
     bodyKey.currentState?.changeState(widget.httpMessage, tabs.list[tabIndex]);
@@ -779,6 +781,10 @@ class _BodyState extends State<_Body> {
       return const SizedBox();
     }
 
+    if (type == ViewType.grpc) {
+      return _GrpcView(message: message);
+    }
+
     if (type == ViewType.image) {
       return Center(child: Image.memory(Uint8List.fromList(message.body ?? []), fit: BoxFit.scaleDown));
     }
@@ -908,8 +914,13 @@ class _BodyState extends State<_Body> {
 class Tabs {
   final List<ViewType> list = [];
 
-  static Tabs of(ContentType? contentType, bool isJsonText) {
+  static Tabs of(ContentType? contentType, bool isJsonText, {bool isGrpc = false}) {
     var tabs = Tabs();
+    if (isGrpc) {
+      // gRPC 的 body 是「长度前缀 + protobuf」的二进制，Text/Hex 看不出名堂，
+      // 单独给一个页签把字段摊开。
+      tabs.list.add(ViewType.grpc);
+    }
     if (contentType == null) {
       return tabs;
     }
@@ -964,6 +975,7 @@ enum ViewType {
   css("CSS"),
   js("JavaScript"),
   hex("Hex"),
+  grpc("gRPC"),
   ;
 
   final String title;
@@ -1030,6 +1042,103 @@ class HexViewer extends StatelessWidget {
       buffer.writeln();
     }
     return buffer.toString();
+  }
+}
+
+/// gRPC 消息视图：把长度前缀帧与 protobuf 字段摊开。
+///
+/// 没有 `.proto` 也能看——字段号、wire type、值，嵌套消息递归展开。
+/// 这样至少能回答「调了哪个方法、状态是几、传了哪些字段」。
+class _GrpcView extends StatelessWidget {
+  final HttpMessage? message;
+
+  const _GrpcView({this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final body = message?.body;
+    if (body == null || body.isEmpty) {
+      return const Center(child: Text('no gRPC body'));
+    }
+    final msg = message;
+    final decoded = GrpcDecoder.decode(
+      Uint8List.fromList(body),
+      contentType: msg?.headers.contentType,
+      path: msg is HttpRequest ? msg.requestUrl : null,
+    );
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(10),
+      child: SelectableText(
+        _render(decoded),
+        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+      ),
+    );
+  }
+
+  static String _render(Map<String, dynamic> d) {
+    final sb = StringBuffer();
+    final svc = d['service'];
+    final method = d['method'];
+    if (svc != null || method != null) {
+      sb.writeln('$svc/$method');
+    }
+    if (d['status_name'] != null) {
+      sb.writeln('status : ${d['status_name']} (${d['status']})');
+    }
+    if (d['message'] != null) {
+      sb.writeln('message: ${d['message']}');
+    }
+    sb.writeln('count  : ${d['frame_count'] ?? 0}');
+    if (d['summary'] != null) {
+      sb.writeln('summary: ${d['summary']}');
+    }
+    sb.writeln();
+    final frames = d['frames'];
+    if (frames is List) {
+      for (final f in frames) {
+        if (f is! Map) {
+          continue;
+        }
+        sb.writeln('#${f['index']}  ${f['length']} bytes${f['compressed'] == true ? '  [compressed]' : ''}');
+        final text = f['text'];
+        if (text != null) {
+          sb.writeln('  "$text"');
+        }
+        final fields = f['fields'];
+        if (fields is List) {
+          _writeFields(sb, fields, 2);
+        } else if (f['hex'] != null) {
+          sb.writeln('  [hex] ${f['hex']}');
+        }
+        sb.writeln();
+      }
+    }
+    if (d['note'] != null) {
+      sb.writeln('note: ${d['note']}');
+    }
+    return sb.toString();
+  }
+
+  static void _writeFields(StringBuffer sb, List fields, int indent) {
+    final pad = ' ' * indent;
+    for (final f in fields) {
+      if (f is! Map) {
+        continue;
+      }
+      final number = f['field'];
+      final kind = f['kind'];
+      if (kind == 'message' && f['fields'] is List) {
+        sb.writeln('$pad$number: {');
+        _writeFields(sb, f['fields'] as List, indent + 2);
+        sb.writeln('$pad}');
+      } else if (kind == 'bytes') {
+        sb.writeln('$pad$number: <bytes ${f['bytes']}> ${f['hex'] ?? ''}');
+      } else if (kind == 'string') {
+        sb.writeln('$pad$number: "${f['value']}"');
+      } else {
+        sb.writeln('$pad$number: ${f['value']}');
+      }
+    }
   }
 }
 

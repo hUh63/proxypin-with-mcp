@@ -26,6 +26,7 @@ import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/util/cert/cert_data.dart';
 import 'package:proxypin/network/util/crts.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/system_ca.dart';
 import 'package:proxypin/storage/local_storage.dart';
 import 'package:proxypin/storage/shared_preference_keys.dart';
 import 'package:proxypin/ui/component/utils.dart';
@@ -371,6 +372,34 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
         onPressed: _removeSystemCert,
         child: Text(isCN ? "移除已安装的系统证书" : "Remove installed system CA"),
       ),
+      const SizedBox(height: 16),
+      const Divider(),
+      Text(
+        isCN ? "没有 Magisk / KernelSU / APatch？" : "No Magisk / KernelSU / APatch?",
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        isCN
+            ? "用 root 直接把证书挂进系统信任库：运行时挂载，重启后失效，但完全可逆、不必重启设备。适合有 root 却没有模块管理器的机器。"
+            : "Mount the CA into the system trust store via root: a runtime mount that reverts on reboot, fully reversible, no device reboot needed. For rooted devices without a module manager.",
+        style: const TextStyle(fontSize: 12, color: Colors.grey),
+      ),
+      const SizedBox(height: 8),
+      FilledButton.tonal(
+        onPressed: _mountSystemCaRuntime,
+        child: Text(isCN ? "Root 直挂到系统信任库" : "Mount to system trust store (root)"),
+      ),
+      const SizedBox(height: 6),
+      OutlinedButton(
+        onPressed: _unmountSystemCaRuntime,
+        child: Text(isCN ? "卸载直挂" : "Unmount runtime CA"),
+      ),
+      const SizedBox(height: 4),
+      TextButton(
+        onPressed: _restartZygote,
+        child: Text(isCN ? "重启 zygote（让已启动的应用立刻生效）" : "Restart zygote (apply to running apps)"),
+      ),
       const SizedBox(height: 10),
       Text(
           "Android 13: ${isCN ? "将证书挂载到" : "Mount the certificate to"} '/system/etc/security/cacerts' ${isCN ? "目录" : "Directory"}"
@@ -561,6 +590,77 @@ echo INSTALLED
           rootNavigator: true,
           duration: 5);
     }
+  }
+
+  /// 没有 Magisk 时的兜底：用 root 运行时把 CA 直挂进系统信任库。
+  ///
+  /// 设备和证书都不出问题的话，装完重启目标应用就能抓到该应用的 HTTPS；
+  /// 想立刻让所有应用生效，再点「重启 zygote」。
+  Future<void> _mountSystemCaRuntime() async {
+    bool isCN = localizations.localeName == 'zh';
+    FlutterToastr.show(
+        isCN ? '正在挂载，请在弹出的授权框里允许 root' : 'Mounting, please grant root when prompted',
+        context,
+        rootNavigator: true,
+        duration: 3);
+    final result = await SystemCa.mountRuntime();
+    if (!mounted) return;
+    final ok = result.$1;
+    final msg = result.$2;
+    FlutterToastr.show(
+      ok
+          ? (isCN
+              ? '已挂进系统信任库（重启后失效）。重启目标应用即可生效，或点下方「重启 zygote」'
+              : 'Mounted into the system trust store (reverts on reboot). Restart the target app, or tap "Restart zygote".')
+          : (isCN ? '挂载失败：$msg' : 'Mount failed: $msg'),
+      context,
+      rootNavigator: true,
+      duration: 7,
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// 卸载直挂，系统信任库恢复原状。
+  Future<void> _unmountSystemCaRuntime() async {
+    bool isCN = localizations.localeName == 'zh';
+    final result = await SystemCa.unmountRuntime();
+    if (!mounted) return;
+    final ok = result.$1;
+    final msg = result.$2;
+    FlutterToastr.show(
+      ok
+          ? (isCN
+              ? '已卸载直挂，系统信任库恢复原状'
+              : 'Unmounted. The system trust store is back to its original state.')
+          : (isCN ? '卸载失败：$msg' : 'Unmount failed: $msg'),
+      context,
+      rootNavigator: true,
+      duration: 5,
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// 重启 zygote：让已启动的应用立刻感知新证书（界面会闪一下，属预期）。
+  Future<void> _restartZygote() async {
+    bool isCN = localizations.localeName == 'zh';
+    final result = await SystemCa.restartZygote();
+    if (!mounted) return;
+    final ok = result.$1;
+    final msg = result.$2;
+    FlutterToastr.show(
+      ok
+          ? (isCN
+              ? '已通知 zygote 重启，所有应用会短暂重启'
+              : 'zygote restart signalled; all apps will restart briefly')
+          : (isCN ? '重启失败：$msg' : 'Restart failed: $msg'),
+      context,
+      rootNavigator: true,
+      duration: 5,
+    );
   }
 
   Future<String?> _getAndroidVersion() async {

@@ -28,6 +28,7 @@ import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_runtime.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/calc_engine.dart';
+import 'package:proxypin/network/util/grpc_decoder.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
 import 'package:proxypin/network/util/security_audit.dart';
 import 'package:proxypin/network/util/security_rule_store.dart';
@@ -1380,7 +1381,7 @@ class McpServer {
       return 'runtime';
     }
     if (name == 'keep_alive') return 'server';
-    if (name == 'calculator' || name == 'batch') return 'runtime';
+    if (name == 'calculator' || name == 'batch' || name == 'decode_grpc') return 'runtime';
     if (name == 'get_mcp_audit') return 'meta';
     if (name.startsWith('mcp') || name.contains('catalog') || name.contains('client_setup')) return 'meta';
     if (name.contains('har') ||
@@ -2565,6 +2566,27 @@ request_id from get_recent_requests or search_requests.''',
         },
       },
       {
+        'name': 'decode_grpc',
+        'description':
+            'Decode a gRPC over HTTP/2 message without its .proto file: split the length-prefixed '
+                'frames, walk the protobuf wire format to recover field numbers, types and values '
+                '(nested messages included), and read grpc-status / grpc-message from the trailers. '
+                'Call this when you captured an application/grpc request or response and need to know '
+                'which service method was called, what fields were on the wire, or why the call failed.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'body': {'type': 'string', 'description': 'Raw gRPC message body (hex or base64, see bodyFormat)'},
+            'bodyFormat': {'type': 'string', 'enum': ['hex', 'base64'], 'description': 'How to read body (default hex)'},
+            'contentType': {'type': 'string', 'description': 'Message content-type, e.g. application/grpc'},
+            'path': {'type': 'string', 'description': 'HTTP/2 :path, e.g. /pkg.Service/Method'},
+            'grpcStatus': {'type': ['string', 'number'], 'description': 'Trailer grpc-status, if captured'},
+            'grpcMessage': {'type': 'string', 'description': 'Trailer grpc-message, if captured'},
+          },
+          'required': ['body'],
+        },
+      },
+      {
         'name': 'batch',
         'description':
             'Run several MCP tool calls inside one request and chain their results, avoiding a '
@@ -2592,6 +2614,56 @@ request_id from get_recent_requests or search_requests.''',
       // 官方工具源（同名者已在本表中提供，见 _nativeToolNames）
       ..._officialToolsJson(),
     ];
+  }
+
+  /// gRPC 解析：拆长度前缀帧 + protobuf wire format 盲解，不需要 .proto 也能看字段。
+  ///
+  /// 「解密」在这里分两层：TLS 那层由 MITM 解决了，剩下的 gRPC 语义层
+  /// （长度前缀分帧、protobuf 字段、trailer 里的 grpc-status）由解码器补上。
+  Map<String, dynamic> _decodeGrpc(Map<String, dynamic> args) {
+    final raw = (args['body'] ?? '').toString();
+    if (raw.isEmpty) {
+      return {'error': 'body is required'};
+    }
+    final format = (args['bodyFormat'] ?? 'hex').toString().toLowerCase();
+    Uint8List bytes;
+    try {
+      bytes = _bytesOf(raw, format);
+    } catch (e) {
+      return {'error': 'cannot parse body as $format: $e'};
+    }
+    final trailers = <String, String>{};
+    if (args['grpcStatus'] != null) {
+      trailers['grpc-status'] = '${args['grpcStatus']}';
+    }
+    if (args['grpcMessage'] != null) {
+      trailers['grpc-message'] = '${args['grpcMessage']}';
+    }
+    final decoded = GrpcDecoder.decode(
+      bytes,
+      contentType: args['contentType']?.toString(),
+      trailers: trailers.isEmpty ? null : trailers,
+      path: args['path']?.toString(),
+    );
+    decoded['summary'] = GrpcDecoder.summarize(decoded);
+    return decoded;
+  }
+
+  /// 把 hex / base64 文本还原成字节。
+  static Uint8List _bytesOf(String raw, String format) {
+    if (format == 'base64') {
+      return base64Decode(raw.trim());
+    }
+    var hex = raw.trim().replaceAll(RegExp(r'^0x', caseSensitive: false), '');
+    hex = hex.replaceAll(RegExp(r'[\s:_-]'), '');
+    if (hex.length.isOdd) {
+      hex = '0$hex';
+    }
+    final out = Uint8List(hex.length ~/ 2);
+    for (var i = 0; i < out.length; i++) {
+      out[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
+    }
+    return out;
   }
 
   /// 单次 batch 允许的最大步数（防止一次请求把服务拖住）。
@@ -3169,6 +3241,9 @@ request_id from get_recent_requests or search_requests.''',
           return {'error': 'op is required', 'supported': CalcEngine.operations};
         }
         return CalcEngine.run(calcOp, args);
+
+      case 'decode_grpc':
+        return _decodeGrpc(args);
 
       case 'batch':
         return await _handleBatch(args);
