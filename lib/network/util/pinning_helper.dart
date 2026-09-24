@@ -150,7 +150,7 @@ class PinningHelper {
       args = '$injectMode $pkg -l $_scriptPath';
     }
     final cmd = '(nohup $bin $args > $_logPath 2>&1 &) ; sleep 2; '
-        'if ps -A 2>/dev/null | grep -q "$bin"; then echo ATTACHED; else echo "FAILED: $(tail -n 3 $_logPath 2>/dev/null)"; fi';
+        'if ps -A 2>/dev/null | grep -q "$bin"; then echo ATTACHED; else echo "FAILED: \$(tail -n 3 $_logPath 2>/dev/null)"; fi';
     final r = await _su(cmd);
     if (r.$2.contains('ATTACHED')) {
       logger.i('[PinningHelper] attached to $pkg');
