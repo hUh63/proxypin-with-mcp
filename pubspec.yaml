@@ -88,6 +88,7 @@ flutter:
     - docs/extension_guide.md
     - docs/platform_limits.md
     - docs/tun_mode_evaluation.md
+    - docs/workspace_guide.md
     - CHANGELOG.md
     - README_CN.md
     - AGENTS.md

@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.24.18 (2026-09-24)
+
+### 工作区（本地 + 自定义服务端）· SSL Pinning 绕过辅助 · 多机来源标识
+
+**一、工作区**（工具箱 → 工作区）
+
+按项目/环境把抓包数据分开归档，不再全部堆在一个列表里。
+
+- **本地工作区**：新建 / 重命名 / 删除；「保存当前抓包」把当前列表整体存进工作区；「导入到历史」读回来在历史记录里翻。数据落盘是**标准 HAR**（`workspaces/<id>/data.har`），可以直接拿去别的工具看。
+- **自定义服务端**：填一个地址 + token，就能把工作区推到自己服务器、从服务器拉回来。契约只有 5 个接口，`docs/workspace_guide.md` 里附了**零依赖 Node.js 参考实现**。客户端直连服务端，不经过本工具代理端口。
+- 不配服务端也能完整使用本地工作区——它是可选的。
+
+**二、SSL Pinning 绕过辅助**（工具箱 → SSL Pinning）
+
+此前只能**诊断**「疑似证书固定」，现在补上干预手段：
+
+- 探测设备上的 frida 环境（root / frida-server / frida CLI / frida-inject），缺什么一眼看出；
+- **生成** hook 脚本，覆盖 Conscrypt `TrustManagerImpl`、`SSLContext.init`、OkHttp `CertificatePinner`、`HostnameVerifier` 等常见实现；
+- 设备上已有 frida-inject（或 frida CLI）时**一键注入**，支持 spawn 模式应对「启动即校验」，注入日志页内可查；没有也能生成脚本拿到电脑端用。
+
+仍然**不打包任何第三方二进制**（frida-server、Xposed 模块都不带），也仍然只应在自己拥有的设备、对有授权的目标使用。
+
+**三、多机镜像：来源设备可见可筛**
+
+多台设备把代理指向同一台 ProxyPin 时，请求详情新增 **Client Address**；搜索范围新增 **Client Host**，输入设备 IP 就能只看那一台的流量——按设备筛完正好归档到对应的工作区。
+
+
 ## v1.24.17 (2026-09-24)
 
 ### gRPC over HTTP/2 解帧 + 无 Magisk 设备的系统信任库「root 直挂」

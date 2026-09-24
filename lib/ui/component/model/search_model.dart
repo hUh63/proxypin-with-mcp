@@ -359,6 +359,13 @@ class SearchModel {
     if (option == Option.method) {
       return matches(request.method.name);
     }
+
+    if (option == Option.clientHost) {
+      // 请求的 remoteHost 是「发起方」的地址（请求从 clientChannel 读出，
+      // 其对端就是客户端）——多机镜像时即那台设备的 IP。
+      final host = request.remoteHost;
+      return host != null && matches(host);
+    }
     if (option == Option.responseContentType &&
         response != null &&
         matches(response.headers.contentType)) {
@@ -411,6 +418,12 @@ enum Option {
   requestBody,
   responseHeader,
   responseBody,
+
+  /// 来源地址（发起这次请求的客户端 IP）。
+  ///
+  /// 多台设备把代理指向同一台 ProxyPin 时，用它就能只看某一台的流量——
+  /// 这是「多机镜像」场景下区分设备最直接的办法。
+  clientHost,
 }
 
 /// 协议快速筛选

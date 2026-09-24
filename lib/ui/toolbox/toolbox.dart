@@ -15,6 +15,8 @@ import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/ui/component/ai_analysis.dart';
 import 'package:proxypin/ui/toolbox/dev_tools.dart';
 import 'package:proxypin/ui/toolbox/calculator_page.dart';
+import 'package:proxypin/ui/component/pinning_page.dart';
+import 'package:proxypin/ui/component/workspace_page.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/mobile/request/request_editor.dart';
 import 'package:proxypin/ui/mobile/setting/mcp_connection.dart';
@@ -409,6 +411,19 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.fact_check_outlined,
                       text: localizations.captureDiagnose,
                       tooltip: localizations.captureDiagnoseTip),
+                  IconText(
+                      onTap: () => Navigator.of(context)
+                          .push(MaterialPageRoute(builder: (context) => const PinningPage())),
+                      icon: Icons.lock_open_outlined,
+                      text: 'SSL Pinning',
+                      tooltip: '证书固定绕过辅助：检测 frida 环境 · 生成/部署 hook 脚本 · 一键注入'),
+                  IconText(
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) =>
+                              WorkspacePage(requestContainer: widget.requestContainer))),
+                      icon: Icons.workspaces,
+                      text: '工作区',
+                      tooltip: '按项目/环境分开管理抓包（标准 HAR 存储）· 可接自定义服务端做共享/备份'),
                 ],
               ),
               const Divider(thickness: 0.3),

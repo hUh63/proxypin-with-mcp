@@ -321,6 +321,10 @@ class General extends StatelessWidget {
       RowWidget("Remote Address",
           '${response?.remoteHost ?? ''}${response?.remotePort == null ? '' : ':${response?.remotePort}'}'),
       const SizedBox(height: 15),
+      // 发起方地址：多台设备接同一个 ProxyPin 时，靠它区分流量来自哪一台
+      RowWidget("Client Address",
+          '${request.remoteHost ?? ''}${request.remotePort == null ? '' : ':${request.remotePort}'}'),
+      const SizedBox(height: 15),
       RowWidget("Request Time", request.requestTime.formatMillisecond()),
       const SizedBox(height: 15),
       RowWidget("Duration", response?.costTime()),
