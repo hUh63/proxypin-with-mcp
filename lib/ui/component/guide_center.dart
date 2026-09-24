@@ -51,6 +51,7 @@ class GuideCenter {
     GuideDoc('platform_limits', '平台与技术边界', '功能指南', 'docs/platform_limits.md', Icons.construction_outlined),
     GuideDoc('tun_mode', 'TUN 模式可行性评估', '功能指南', 'docs/tun_mode_evaluation.md', Icons.lan_outlined),
     GuideDoc('workspace', '工作区指南', '功能指南', 'docs/workspace_guide.md', Icons.workspaces),
+    GuideDoc('cloud_server', '云端协同服务端', '功能指南', 'docs/cloud_server_guide.md', Icons.cloud_outlined),
     GuideDoc('script', '脚本开发指南', '功能指南', 'docs/script_guide.md', Icons.terminal_outlined),
     GuideDoc('rewrite', '请求重写指南', '功能指南', 'docs/rewrite_guide.md', Icons.edit_note_outlined),
     GuideDoc('environment', '环境变量指南', '功能指南', 'docs/environment_guide.md', Icons.text_snippet_outlined),

@@ -163,6 +163,16 @@ class Configuration {
 
   /// 加载配置
   Configuration.fromJson(Map<String, dynamic> config) {
+    applyJson(config);
+  }
+
+  /// 用 JSON 覆盖当前实例的字段。
+  ///
+  /// [fromJson] 与「备份恢复 / 配置导入」共用这一份赋值。以前备份恢复是
+  /// **手工挑字段**复制的，只搬了 18 个——MCP 局域网、保活、AI、QUIC 拦截、
+  /// 弱网、环境变量开关这些后加的字段全被丢掉，恢复了等于没恢复。现在只有
+  /// 一处赋值，新增字段不会再漏。
+  void applyJson(Map<String, dynamic> config) {
     port = config['port'] ?? port;
     enableSsl = config['enableSsl'] == true;
     startup = config['startup'] ?? Platforms.isDesktop();

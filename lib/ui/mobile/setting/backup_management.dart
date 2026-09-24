@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/util/backup_service.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/file_read.dart';
 
@@ -65,6 +67,31 @@ class _BackupManagementState extends State<BackupManagement> {
     }
   }
 
+  /// 立即创建一份全量备份（配置 + 证书 + 脚本 + 各管理器数据 + 工作区）。
+  ///
+  /// 补的是一个很实在的缺口：以前这页只有「查看 / 恢复 / 导出 / 删除」，
+  /// **没有任何创建入口**，而自动备份又因为没有任何调用点从未触发过——
+  /// 也就是说备份功能整体是死的：你看到的列表永远是空的。
+  Future<void> _createBackup() async {
+    setState(() => _isLoading = true);
+    try {
+      final info = await BackupService.create();
+      if (!mounted) return;
+      FlutterToastr.show(
+        '已创建备份：${info.name}（${info.items.length} 项）',
+        context,
+        rootNavigator: true,
+        duration: 4,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      FlutterToastr.show('备份失败：$e', context, rootNavigator: true, duration: 5);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+      await _loadBackups();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
@@ -77,6 +104,11 @@ class _BackupManagementState extends State<BackupManagement> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.save_alt),
+            onPressed: _isLoading ? null : _createBackup,
+            tooltip: '立即备份（配置+证书+脚本+工作区）',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadBackups,
@@ -233,27 +265,32 @@ class _BackupManagementState extends State<BackupManagement> {
     try {
       final file = File(backup.path);
       final jsonStr = await file.readAsString();
+      final decoded = jsonDecode(jsonStr);
+
+      // 全量备份（BackupService 生成）：含配置 + 证书 + 脚本 + 工作区
+      if (decoded is Map && decoded['format'] == 'proxypin-backup') {
+        final result = await BackupService.restore(file);
+        if (mounted) {
+          FlutterToastr.show(
+            result.configApplied
+                ? '已恢复 ${result.restored} 个文件，配置已生效'
+                : '已恢复 ${result.restored} 个文件（配置未生效${result.failed > 0 ? '，${result.failed} 项失败' : ''}）',
+            context,
+            rootNavigator: true,
+            duration: 5,
+          );
+          Navigator.of(context).pop(true);
+        }
+        return;
+      }
+
+      // 老格式：只有一个扁平配置对象
       final newConfig = await ConfigImportExport.importConfig(jsonStr);
 
-      // 应用新配置
+      // 全量应用：以前这里是逐字段复制，只搬了 18 个，MCP 局域网/保活/AI/QUIC
+      // 拦截这些后来新增的配置会被整个丢掉。applyJson 与 fromJson 共用一份赋值。
       final config = await Configuration.instance;
-      config.port = newConfig.port;
-      config.enableSsl = newConfig.enableSsl;
-      config.startup = newConfig.startup;
-      config.enableSystemProxy = newConfig.enableSystemProxy;
-      config.enableSocks5 = newConfig.enableSocks5;
-      config.proxyPassDomains = newConfig.proxyPassDomains;
-      config.externalProxy = newConfig.externalProxy;
-      config.appWhitelist = newConfig.appWhitelist;
-      config.appWhitelistEnabled = newConfig.appWhitelistEnabled;
-      config.appBlacklist = newConfig.appBlacklist;
-      config.historyCacheTime = newConfig.historyCacheTime;
-      config.captureBodyLimitKB = newConfig.captureBodyLimitKB;
-      config.mcpPort = newConfig.mcpPort;
-      config.mcpEnabled = newConfig.mcpEnabled;
-      config.mcpAutoStart = newConfig.mcpAutoStart;
-      config.mcpToolsEnabled = newConfig.mcpToolsEnabled;
-      config.enabledHttp2 = newConfig.enabledHttp2;
+      config.applyJson(newConfig.toJson());
 
       // 刷新配置
       config.flushConfig();

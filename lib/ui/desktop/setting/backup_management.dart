@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/util/backup_service.dart';
 import 'package:proxypin/network/util/file_read.dart';
 import 'package:proxypin/network/util/logger.dart';
 
@@ -95,6 +96,27 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
     }
   }
 
+  /// 立即创建一份全量备份（配置 + 证书 + 脚本 + 管理器数据 + 工作区）。
+  ///
+  /// 补的缺口：这页原先只有查看/恢复/导出/删除，**没有创建入口**，而自动备份
+  /// 又因没有任何调用点从未触发——备份列表永远是空的。
+  Future<void> _createBackup() async {
+    setState(() => _isLoading = true);
+    try {
+      final info = await BackupService.create();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已创建备份：${info.name}（${info.items.length} 项）')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('备份失败：$e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+      await _loadBackups();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,6 +124,11 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
         title: const Text('备份管理'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.save_alt),
+            onPressed: _isLoading ? null : _createBackup,
+            tooltip: '立即备份（配置+证书+脚本+工作区）',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadBackups,
@@ -284,8 +311,29 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
 
     if (confirmed == true) {
       try {
-        final content = await File(backup.path).readAsString();
-        await ConfigImportExport.importConfig(content);
+        final file = File(backup.path);
+        final content = await file.readAsString();
+        final decoded = jsonDecode(content);
+
+        // 全量备份（BackupService 生成）含配置 + 证书 + 脚本 + 工作区，走多文件恢复。
+        // 注意不能直接丢给 importConfig —— 顶层不是扁平配置对象，那样会解析成
+        // 一份「全是默认值」的配置并覆盖掉用户设置。
+        if (decoded is Map && decoded['format'] == 'proxypin-backup') {
+          final result = await BackupService.restore(file);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(
+                  '已恢复 ${result.restored} 个文件${result.configApplied ? '，配置已生效' : ''}${result.failed > 0 ? '，${result.failed} 项失败' : ''}'),
+            ));
+          }
+          return;
+        }
+
+        final parsed = await ConfigImportExport.importConfig(content);
+        // 以前这里把 importConfig 的返回值丢掉了 —— 它只是「构造一个新对象」，
+        // 不改单例，所以「恢复」其实什么都没做，却还提示了成功。
+        widget.configuration.applyJson(parsed.toJson());
+        await widget.configuration.flushConfig();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('备份已恢复')),

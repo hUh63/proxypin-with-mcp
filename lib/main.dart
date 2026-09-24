@@ -26,6 +26,7 @@ import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/mcp/transport/mcp_stdio_bridge.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/backup_service.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart' show LogManager, LogLevel;
 import 'package:proxypin/ui/mobile/setting/mcp_connection.dart';
 import 'package:proxypin/network/util/mtls.dart';
@@ -74,6 +75,10 @@ void main(List<String> args) async {
   // 以前只有打开过“WebSocket 拦截”页面才会 init，
   // 导致应用刚启动时规则列表是空的、帧操纵不生效。
   unawaited(WebSocketRuleManager().init());
+
+  // 自动备份：旧实现 autoBackupConfig() 有实现、有开关，却全仓没有调用点，
+  // 所以「自动备份」从来没触发过。这里按配置的间隔在启动后补一次。
+  unawaited(BackupService.autoBackupNow());
 
   // 把运行日志同步进内存队列，供「工具箱 → 日志」页实时查看
   logBridge = (level, message, error, stackTrace) {
