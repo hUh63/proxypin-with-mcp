@@ -101,8 +101,13 @@ class _CloudPageState extends State<CloudPage> {
   }
 
   void _toast(String msg, {int seconds = 5, bool error = false}) {
-    FlutterToastr.show(msg, context,
-        rootNavigator: true, duration: seconds, backgroundColor: error ? Colors.red : null);
+    // backgroundColor 是非空参数，不能传 null，所以按状态分两次调用
+    if (error) {
+      FlutterToastr.show(msg, context,
+          rootNavigator: true, duration: seconds, backgroundColor: Colors.red);
+    } else {
+      FlutterToastr.show(msg, context, rootNavigator: true, duration: seconds);
+    }
   }
 
   Future<void> _saveBaseUrl() async {

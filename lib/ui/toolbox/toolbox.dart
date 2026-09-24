@@ -18,6 +18,7 @@ import 'package:proxypin/ui/toolbox/calculator_page.dart';
 import 'package:proxypin/ui/component/pinning_page.dart';
 import 'package:proxypin/ui/component/workspace_page.dart';
 import 'package:proxypin/ui/component/cloud_page.dart';
+import 'package:proxypin/ui/component/waf_page.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/mobile/request/request_editor.dart';
 import 'package:proxypin/ui/mobile/setting/mcp_connection.dart';
@@ -402,6 +403,12 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.science_outlined,
                       text: localizations.fuzzer,
                       tooltip: localizations.fuzzerTips),
+                  IconText(
+                      onTap: () => Navigator.of(context)
+                          .push(MaterialPageRoute(builder: (context) => const WafPage())),
+                      icon: Icons.security_outlined,
+                      text: 'WAF 变异',
+                      tooltip: '载荷等价写法变异 + WAF 特征比对（本地变换，不发请求）'),
                   IconText(
                       onTap: () {
                         // 抓包自检：只读检测代理/证书/流量状态，并列出常见抓不到的原因
