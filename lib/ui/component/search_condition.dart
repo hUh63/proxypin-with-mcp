@@ -173,7 +173,7 @@ class SearchConditionsState extends State<SearchConditions> {
               options(localizations.requestBody, Option.requestBody),
               options(localizations.responseHeader, Option.responseHeader),
               options(localizations.responseBody, Option.responseBody),
-              options('Client Host', Option.clientHost),
+              options('Client Address', Option.clientHost),
             ],
           ),
           const SizedBox(height: 10),

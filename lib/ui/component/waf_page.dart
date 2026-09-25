@@ -17,12 +17,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/util/waf_bypass.dart';
+import 'package:proxypin/network/util/waf_probe.dart';
 
-/// WAF 载荷变异页。
+/// WAF 载荷变异 + 主动探测页。
 ///
-/// 定位成「变异助手」而不是「攻击器」：输入一条载荷，看它在各种等价写法下
-/// 长什么样；想真发出去，拿去请求构造 / 重放 / Fuzz 页自己发。
-/// 这样既有用，又不会变成一键打别人站点的东西。
+/// ① 认 WAF（被动比对你已抓到的响应）、② 生成本地变异、③ 主动探测（会真发请求）。
+/// ③ 需要显式勾选授权；串行发送、单次有总量上限，不做爆破/并发/自动利用。
 class WafPage extends StatefulWidget {
   const WafPage({super.key});
 
@@ -37,10 +37,26 @@ class _WafPageState extends State<WafPage> {
   List<WafVariant> _variants = const [];
   List<String> _fingerprints = const [];
 
+  // ---- 主动探测 ----
+  final _url = TextEditingController(
+      text: 'https://target.example.com/search?q={{PAYLOAD}}');
+  final _extraHeaders = TextEditingController();
+  final _body = TextEditingController();
+  String _method = 'GET';
+  bool _authorized = false;
+  bool _probing = false;
+  bool _cancel = false;
+  int _probeDone = 0;
+  int _probeTotal = 0;
+  List<WafProbeResult> _probeResults = const [];
+
   @override
   void dispose() {
     _payload.dispose();
     _response.dispose();
+    _url.dispose();
+    _extraHeaders.dispose();
+    _body.dispose();
     super.dispose();
   }
 
@@ -79,6 +95,87 @@ class _WafPageState extends State<WafPage> {
     _toast('已套用针对 $waf 的组合');
   }
 
+  /// 解析「一行一个」的请求头文本
+  Map<String, String> _parseHeaders(String text) {
+    final map = <String, String>{};
+    for (final line in text.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      final idx = trimmed.indexOf(':');
+      if (idx <= 0) continue;
+      map[trimmed.substring(0, idx).trim()] = trimmed.substring(idx + 1).trim();
+    }
+    return map;
+  }
+
+  Future<void> _startProbe() async {
+    if (!_authorized) {
+      _toast('请先勾选「已获得测试授权」');
+      return;
+    }
+    final url = _url.text.trim();
+    if (url.isEmpty) {
+      _toast('填一个目标 URL');
+      return;
+    }
+    final headerText = _extraHeaders.text;
+    final bodyText = _body.text;
+    if (!WafProbe.hasPlaceholder(url) &&
+        !WafProbe.hasPlaceholder(headerText) &&
+        !WafProbe.hasPlaceholder(bodyText)) {
+      _toast('至少要在一处放 {{PAYLOAD}} 标记注入位置');
+      return;
+    }
+    final payload = _payload.text;
+    if (payload.isEmpty) {
+      _toast('先填一条载荷');
+      return;
+    }
+    if (WafBypass.techniques.length + 1 > WafProbe.maxProbes) {
+      _toast('技术数超出单次上限');
+      return;
+    }
+
+    setState(() {
+      _probing = true;
+      _cancel = false;
+      _probeDone = 0;
+      _probeTotal = 0;
+      _probeResults = const [];
+    });
+
+    try {
+      final results = await WafProbe.probe(
+        url: url,
+        method: _method,
+        headers: _parseHeaders(headerText),
+        body: bodyText.isEmpty ? null : bodyText,
+        payload: payload,
+        techniques: _selected.toList(),
+        onProgress: (done, total) {
+          if (!mounted) return;
+          setState(() {
+            _probeDone = done;
+            _probeTotal = total;
+          });
+        },
+        isCancelled: () => _cancel,
+      );
+      if (!mounted) return;
+      setState(() {
+        _probeResults = results;
+        _probing = false;
+      });
+      final bypass =
+          results.where((r) => r.verdict == WafVerdict.passed).length;
+      _toast('探测结束：共 ${results.length} 条，疑似绕过 $bypass 条');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _probing = false);
+      _toast('探测出错：$e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,6 +192,9 @@ class _WafPageState extends State<WafPage> {
           const SizedBox(height: 12),
           _payloadCard(),
           const SizedBox(height: 12),
+          _probeCard(),
+          const SizedBox(height: 12),
+          if (_probeResults.isNotEmpty) ..._probeResults.map(_probeResultTile),
           if (_variants.isNotEmpty) ..._variants.map(_variantTile),
         ],
       ),
@@ -109,9 +209,10 @@ class _WafPageState extends State<WafPage> {
         borderRadius: BorderRadius.circular(6),
       ),
       child: const Text(
-        '只做本地字符串变换，不发任何请求。请仅用于你拥有或已获书面授权的目标——'
-        '未经授权尝试绕过他人系统的防护措施可能触犯法律。\n'
-        '变换结果可复制到「请求构造 / 重放 / 手动 Fuzz」里自行发送。',
+        '①② 只做本地字符串变换，不发任何请求；③ 的「主动探测」会真的把请求发出去，'
+        '所以必须先显式勾选授权。\n'
+        '请仅用于你拥有或已获书面授权的目标——未经授权尝试绕过他人系统的防护措施'
+        '可能触犯法律。探测为串行发送、单次有总量上限，不做爆破与并发。',
         style: TextStyle(fontSize: 12),
       ),
     );
@@ -228,6 +329,186 @@ class _WafPageState extends State<WafPage> {
     );
   }
 
+  Widget _probeCard() {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('③ 主动探测（会真的发请求）',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            const Text(
+              '在你想注入的位置写 {{PAYLOAD}}（URL / 头 / 体都行）。'
+              '先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。',
+              style: TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              children: ['GET', 'POST', 'PUT']
+                  .map((m) => ChoiceChip(
+                        label: Text(m, style: const TextStyle(fontSize: 11)),
+                        selected: _method == m,
+                        onSelected: (_) => setState(() => _method = m),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _url,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              decoration: const InputDecoration(
+                labelText: '目标 URL（含 {{PAYLOAD}}）',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _extraHeaders,
+              maxLines: 2,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              decoration: const InputDecoration(
+                labelText: '额外请求头（可选，一行一个）',
+                hintText: 'User-Agent: {{PAYLOAD}}',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _body,
+              maxLines: 2,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              decoration: const InputDecoration(
+                labelText: '请求体（可选）',
+                hintText: '{"q":"{{PAYLOAD}}"}',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            CheckboxListTile(
+              value: _authorized,
+              onChanged: (v) => setState(() => _authorized = v ?? false),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('我已获得对该目标的测试授权',
+                  style: TextStyle(fontSize: 12)),
+            ),
+            Row(children: [
+              FilledButton.icon(
+                onPressed: _probing ? null : _startProbe,
+                icon: const Icon(Icons.radar, size: 16),
+                label: const Text('开始探测'),
+              ),
+              const SizedBox(width: 10),
+              if (_probing) ...[
+                Expanded(
+                  child: LinearProgressIndicator(
+                    value: _probeTotal == 0 ? null : _probeDone / _probeTotal,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text('$_probeDone/$_probeTotal',
+                    style: const TextStyle(fontSize: 11)),
+                TextButton(
+                  onPressed: () => setState(() => _cancel = true),
+                  child: const Text('停止'),
+                ),
+              ] else if (_probeResults.isNotEmpty)
+                TextButton(
+                  onPressed: () => setState(() => _probeResults = const []),
+                  child: const Text('清空结果'),
+                ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _verdictColor(WafVerdict v) {
+    switch (v) {
+      case WafVerdict.passed:
+        return Colors.green;
+      case WafVerdict.blocked:
+        return Colors.red;
+      case WafVerdict.changed:
+        return Colors.orange;
+      case WafVerdict.failed:
+        return Colors.grey;
+      case WafVerdict.baseline:
+        return Colors.blue;
+    }
+  }
+
+  Widget _probeResultTile(WafProbeResult r) {
+    final color = _verdictColor(r.verdict);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+        childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+        leading: Icon(Icons.circle, size: 10, color: color),
+        title: Row(children: [
+          Expanded(
+            child: Text(r.name,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(WafProbe.verdictLabel(r.verdict),
+                style: TextStyle(fontSize: 10, color: color)),
+          ),
+        ]),
+        subtitle: Text(
+          r.error != null
+              ? r.error!
+              : 'HTTP ${r.statusCode ?? '-'} · ${r.bodyLength} 字节 · ${r.durationMs}ms',
+          style: const TextStyle(fontSize: 11, color: Colors.grey),
+        ),
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SelectableText(r.payload,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+          ),
+          if (r.bodySnippet.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(r.bodySnippet,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ),
+            ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: r.payload));
+                _toast('已复制载荷');
+              },
+              child: const Text('复制载荷'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _variantTile(WafVariant v) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -244,7 +525,8 @@ class _WafPageState extends State<WafPage> {
               Row(children: [
                 Expanded(
                   child: Text(v.name,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600),
                       overflow: TextOverflow.ellipsis),
                 ),
                 const Icon(Icons.copy, size: 14, color: Colors.grey),

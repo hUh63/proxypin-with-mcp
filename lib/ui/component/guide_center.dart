@@ -47,6 +47,7 @@ class GuideCenter {
     GuideDoc('calculator', '计算器与批处理', '功能指南', 'docs/calculator_guide.md', Icons.calculate_outlined),
     GuideDoc('js_restore', 'JS 还原指南', '功能指南', 'docs/js_restore_guide.md', Icons.auto_fix_high_outlined),
     GuideDoc('fuzzer', '手动 Fuzz 指南', '功能指南', 'docs/fuzzer_guide.md', Icons.science_outlined),
+    GuideDoc('waf', 'WAF 变异与探测', '功能指南', 'docs/waf_guide.md', Icons.security_outlined),
     GuideDoc('extension_guide', '扩展与定制指南', '功能指南', 'docs/extension_guide.md', Icons.extension_outlined),
     GuideDoc('platform_limits', '平台与技术边界', '功能指南', 'docs/platform_limits.md', Icons.construction_outlined),
     GuideDoc('tun_mode', 'TUN 模式可行性评估', '功能指南', 'docs/tun_mode_evaluation.md', Icons.lan_outlined),

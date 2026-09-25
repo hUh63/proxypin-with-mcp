@@ -12,6 +12,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';
 import 'package:proxypin/network/util/quic/quic_keylog.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
+import 'package:proxypin/ui/component/utils.dart';
 
 class QuicSessionsPage extends StatelessWidget {
   const QuicSessionsPage({super.key});
@@ -56,7 +57,10 @@ class QuicSessionsPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined, size: 20),
             tooltip: '清空记录',
-            onPressed: () => QuicProbe.instance.clear(),
+            onPressed: () => showConfirmDialog(context,
+                title: '清空记录',
+                content: '清空全部 QUIC 连接记录？已记录的会话与密钥日志不会恢复。',
+                onConfirm: () => QuicProbe.instance.clear()),
           ),
         ],
       ),

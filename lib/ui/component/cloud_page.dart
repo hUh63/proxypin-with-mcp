@@ -21,6 +21,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/cloud_client.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/workspaces.dart';
+import 'package:proxypin/ui/component/utils.dart';
 
 /// 云端页面：账号 / 工作区托管 / 实时协同 / 团队成员。
 ///
@@ -252,9 +253,17 @@ class _CloudPageState extends State<CloudPage> {
     if (id.isEmpty) {
       return;
     }
-    await CloudClient.deleteWorkspace(id);
-    await _loadCloudWorkspaces();
-    _toast(_isCN ? '已删除云端副本' : 'Removed from cloud', seconds: 3);
+    // 云端副本删掉就找不回来了，先确认
+    showConfirmDialog(context,
+        title: _isCN ? '删除' : 'Delete',
+        content: _isCN
+            ? '删除云端的这份工作区副本？删除后无法恢复。'
+            : 'Remove this workspace copy from the cloud? This cannot be undone.',
+        onConfirm: () async {
+          await CloudClient.deleteWorkspace(id);
+          await _loadCloudWorkspaces();
+          _toast(_isCN ? '已删除云端副本' : 'Removed from cloud', seconds: 3);
+        });
   }
 
   Future<void> _toggleRealtime(bool on) async {

@@ -365,7 +365,10 @@ class _RequestWidgetState extends State<RequestWidget> {
         widget.multiSelectController.selectOnly(widget.request.requestId);
         break;
       case _RequestMenuAction.delete:
-        widget.remove?.call(widget);
+        showConfirmDialog(context,
+            title: localizations.delete,
+            content: localizations.confirmContent,
+            onConfirm: () => widget.remove?.call(widget));
         break;
       case _RequestMenuAction.batchRepeat:
         widget.selectionHandlers.onRepeatSelected?.call();

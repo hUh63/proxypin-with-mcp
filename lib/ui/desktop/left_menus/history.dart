@@ -264,11 +264,16 @@ class _HistoryListState extends State<_HistoryListWidget> {
                 height: 35,
                 child: Text(localizations.delete, style: const TextStyle(fontSize: 13)),
                 onTap: () {
-                  if (item == widget.historyTask.history) {
-                    widget.historyTask.cancelTask();
-                  }
-                  storage.removeHistory(index);
-                  FlutterToastr.show(localizations.deleteSuccess, context);
+                  showConfirmDialog(context,
+                      title: localizations.delete,
+                      content: localizations.confirmContent,
+                      onConfirm: () {
+                        if (item == widget.historyTask.history) {
+                          widget.historyTask.cancelTask();
+                        }
+                        storage.removeHistory(index);
+                        FlutterToastr.show(localizations.deleteSuccess, context);
+                      });
                 }),
           ]).whenComplete(() => setState(() => selectIndex = -1));
         },

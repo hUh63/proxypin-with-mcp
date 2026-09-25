@@ -325,17 +325,23 @@ class _RequestBreakpointPageState extends State<RequestBreakpointPage> {
       PopupMenuItem(
         height: 32,
         child: Text(localizations.delete),
-        onTap: () async {
+        onTap: () {
           if (selected.isEmpty) return;
-          var list = selected.toList();
-          list.sort((a, b) => b.compareTo(a)); // Remove from end to avoid index shift issues
-          for (var i in list) {
-            rules.removeAt(i);
-          }
-          setState(() {
-            selected.clear();
-          });
-          await _save();
+          // 先快照，菜单关闭后 selected 可能已被清空
+          final indexes = selected.toList();
+          showConfirmDialog(context,
+              title: localizations.delete,
+              content: localizations.confirmContent,
+              onConfirm: () async {
+                indexes.sort((a, b) => b.compareTo(a)); // Remove from end to avoid index shift issues
+                for (var i in indexes) {
+                  rules.removeAt(i);
+                }
+                setState(() {
+                  selected.clear();
+                });
+                await _save();
+              });
         },
       ),
     ]);

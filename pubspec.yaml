@@ -77,6 +77,7 @@ flutter:
     - docs/calculator_guide.md
     - docs/js_restore_guide.md
     - docs/fuzzer_guide.md
+    - docs/waf_guide.md
     - docs/overview.md
     - docs/ai_analysis.md
     - docs/script_guide.md

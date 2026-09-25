@@ -1408,7 +1408,13 @@ class McpServer {
     throw Exception('Unknown tool: $name');
   }
 
-  List<Map<String, dynamic>> _getToolsList() {
+  /// 工具表构建结果（纯静态定义，构建一次即可，避免每次 tools/list 都重建 90+ 条长描述）
+  List<Map<String, dynamic>>? _toolsListCache;
+
+  List<Map<String, dynamic>> _getToolsList() =>
+      _toolsListCache ??= _buildToolsList();
+
+  List<Map<String, dynamic>> _buildToolsList() {
     return [
       {
         'name': 'set_config',

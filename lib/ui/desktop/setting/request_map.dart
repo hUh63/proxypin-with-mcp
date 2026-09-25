@@ -351,9 +351,14 @@ class _RequestMapListState extends State<RequestMapList> {
           height: 35,
           child: Text(localizations.delete),
           onTap: () async {
-            var manager = await RequestMapManager.instance;
-            await manager.deleteRule(index);
-            _refreshConfig();
+            showConfirmDialog(context,
+                title: localizations.delete,
+                content: localizations.confirmContent,
+                onConfirm: () async {
+                  var manager = await RequestMapManager.instance;
+                  await manager.deleteRule(index);
+                  _refreshConfig();
+                });
           }),
     ]).then((value) {
       if (mounted) {

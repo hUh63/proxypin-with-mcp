@@ -92,9 +92,15 @@ class _FavoritesState extends State<Favorites> {
                   index: index - 1,
                   panel: widget.panel,
                   onRemove: (Favorite favorite) {
-                    FavoriteStorage.removeFavorite(favorite);
-                    CustomToast.success(localizations.deleteFavoriteSuccess).show(context);
-                    setState(() {});
+                    // 单条删除也要确认：收藏删掉要重新找回来
+                    showConfirmDialog(context,
+                        title: localizations.delete,
+                        content: localizations.confirmContent,
+                        onConfirm: () {
+                          FavoriteStorage.removeFavorite(favorite);
+                          CustomToast.success(localizations.deleteFavoriteSuccess).show(context);
+                          setState(() {});
+                        });
                   },
                 );
               },

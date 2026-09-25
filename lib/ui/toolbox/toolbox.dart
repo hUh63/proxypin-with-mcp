@@ -408,7 +408,7 @@ class _ToolboxState extends State<Toolbox> {
                           .push(MaterialPageRoute(builder: (context) => const WafPage())),
                       icon: Icons.security_outlined,
                       text: 'WAF 变异',
-                      tooltip: '载荷等价写法变异 + WAF 特征比对（本地变换，不发请求）'),
+                      tooltip: '载荷等价写法变异 + WAF 特征比对 + 主动探测（探测会真发请求，需授权）'),
                   IconText(
                       onTap: () {
                         // 抓包自检：只读检测代理/证书/流量状态，并列出常见抓不到的原因
