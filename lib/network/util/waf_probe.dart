@@ -190,10 +190,21 @@ class WafProbe {
     return (a - b).abs() / max <= 0.15;
   }
 
-  /// 逐条探测。
+  /// 按技术筛出「真的会改变载荷」的变体（原样返回的没有探测价值）。
   ///
-  /// [url] / [headers] / [body] 里用 `{{PAYLOAD}}` 标记注入位置。
   /// [techniques] 为空表示全部技术。
+  static List<WafVariant> buildVariants(String payload, List<String> techniques) {
+    final all = WafBypass.mutateAll(payload);
+    final picked = techniques.isEmpty
+        ? all
+        : all.where((v) => techniques.contains(v.technique)).toList();
+    return picked.where((v) => v.output != payload).toList();
+  }
+
+  /// 一次发完（内部就是「一批发到底」的会话）。
+  ///
+  /// 条目多、想中途停下来看的场景，直接用 [WafProbeSession] 一批批发。
+  /// [url] / [headers] / [body] 里用 `{{PAYLOAD}}` 标记注入位置。
   /// 返回的列表第 0 条是基线。
   static Future<List<WafProbeResult>> probe({
     required String url,
@@ -208,68 +219,19 @@ class WafProbe {
     void Function(int done, int total)? onProgress,
     bool Function()? isCancelled,
   }) async {
-    final all = WafBypass.mutateAll(payload);
-    final variants = techniques.isEmpty
-        ? all
-        : all.where((v) => techniques.contains(v.technique)).toList();
-    // 只探测真的会改变载荷的技术（原样返回的没意义）
-    var effective = variants.where((v) => v.output != payload).toList();
-
-    // 总量夹在 [1, hardMaxProbes]：上限可配，但硬顶不可突破
-    final limit = maxProbes.clamp(1, hardMaxProbes);
-    if (effective.length + 1 > limit) {
-      effective = effective.sublist(0, limit - 1);
-    }
-    // 间隔同样夹一下，避免配成 0 变成无间隔冲击
-    final gap = delayMs < minDelayMs ? minDelayMs : delayMs;
-    final total = effective.length + 1;
-
-    final results = <WafProbeResult>[];
-
-    // 1) 基线：原始载荷
-    if (isCancelled?.call() == true) return results;
-    final base = await _sendOne(
+    final session = WafProbeSession(
       url: url,
+      payload: payload,
       method: method,
       headers: headers,
       body: body,
-      payload: payload,
-      technique: 'baseline',
-      name: '基线（原始载荷）',
+      variants: buildVariants(payload, techniques),
+      batchSize: maxProbes.clamp(1, hardMaxProbes),
+      delayMs: delayMs,
       timeoutSeconds: timeoutSeconds,
     );
-    results.add(base);
-    onProgress?.call(1, total);
-
-    // 2) 逐条变异（串行 + 间隔）
-    final baseOk = base.verdict != WafVerdict.failed;
-    for (var i = 0; i < effective.length; i++) {
-      if (isCancelled?.call() == true) break;
-      await Future.delayed(Duration(milliseconds: gap));
-      final v = effective[i];
-      final raw = await _sendOne(
-        url: url,
-        method: method,
-        headers: headers,
-        body: body,
-        payload: v.output,
-        technique: v.technique,
-        name: v.name,
-        timeoutSeconds: timeoutSeconds,
-      );
-      // 用基线对照后重新判定
-      final verdict = judge(
-        ok: raw.verdict != WafVerdict.failed,
-        statusCode: raw.statusCode,
-        bodyLength: raw.bodyLength,
-        bodySnippet: raw.bodySnippet,
-        baseStatus: baseOk ? base.statusCode : null,
-        baseLength: baseOk ? base.bodyLength : null,
-      );
-      results.add(raw.withVerdict(verdict));
-      onProgress?.call(i + 2, total);
-    }
-    return results;
+    await session.nextBatch(onProgress: onProgress, isCancelled: isCancelled);
+    return session.results;
   }
 
   static Future<WafProbeResult> _sendOne({
@@ -349,5 +311,113 @@ class WafProbe {
       case WafVerdict.failed:
         return '请求失败';
     }
+  }
+}
+
+/// 分批探测会话。
+///
+/// 为什么是分批而不是一次发完：条目多时（比如把整套字典喂进来）一次发完
+/// 既是一段长时间的持续请求，也失去了中途停下的机会。分批让人始终握着
+/// 「要不要继续」这个决定权，界面也不会被一个长任务卡住。
+class WafProbeSession {
+  final String url;
+  final String method;
+  final Map<String, String> headers;
+  final String? body;
+  final String payload;
+
+  /// 每批发多少条
+  final int batchSize;
+  final int delayMs;
+  final int timeoutSeconds;
+
+  final List<WafVariant> _queue;
+  final List<WafProbeResult> results = [];
+
+  int? _baseStatus;
+  int? _baseLength;
+  bool _baseDone = false;
+
+  WafProbeSession({
+    required this.url,
+    required this.payload,
+    this.method = 'GET',
+    this.headers = const {},
+    this.body,
+    required List<WafVariant> variants,
+    this.batchSize = WafProbe.defaultMaxProbes,
+    this.delayMs = WafProbe.defaultDelayMs,
+    this.timeoutSeconds = WafProbe.defaultTimeoutSeconds,
+  }) : _queue = List.of(variants);
+
+  /// 还没发的条数（不含基线）
+  int get remaining => _queue.length;
+
+  /// 队列已空（基线也发过了）
+  bool get finished => _baseDone && _queue.isEmpty;
+
+  /// 总条数（含基线）
+  int get totalCount => _queue.length + results.length + (_baseDone ? 0 : 1);
+
+  /// 发下一批。第一批会先补一条基线；基线只在第一批发。
+  Future<List<WafProbeResult>> nextBatch({
+    void Function(int done, int total)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    final batch = <WafProbeResult>[];
+    // 间隔夹一下下限，避免配成 0 变成无间隔冲击
+    final gap = delayMs < WafProbe.minDelayMs ? WafProbe.minDelayMs : delayMs;
+
+    if (!_baseDone) {
+      if (isCancelled?.call() == true) return batch;
+      final base = await WafProbe._sendOne(
+        url: url,
+        method: method,
+        headers: headers,
+        body: body,
+        payload: payload,
+        technique: 'baseline',
+        name: '基线（原始载荷）',
+        timeoutSeconds: timeoutSeconds,
+      );
+      _baseDone = true;
+      if (base.verdict != WafVerdict.failed) {
+        _baseStatus = base.statusCode;
+        _baseLength = base.bodyLength;
+      }
+      results.add(base);
+      batch.add(base);
+      onProgress?.call(results.length, totalCount);
+    }
+
+    final take = _queue.length < batchSize ? _queue.length : batchSize;
+    for (var i = 0; i < take; i++) {
+      if (isCancelled?.call() == true) break;
+      await Future.delayed(Duration(milliseconds: gap));
+      final v = _queue.removeAt(0);
+      final raw = await WafProbe._sendOne(
+        url: url,
+        method: method,
+        headers: headers,
+        body: body,
+        payload: v.output,
+        technique: v.technique,
+        name: v.name,
+        timeoutSeconds: timeoutSeconds,
+      );
+      // 用基线对照后判定
+      final verdict = WafProbe.judge(
+        ok: raw.verdict != WafVerdict.failed,
+        statusCode: raw.statusCode,
+        bodyLength: raw.bodyLength,
+        bodySnippet: raw.bodySnippet,
+        baseStatus: _baseStatus,
+        baseLength: _baseLength,
+      );
+      results.add(raw.withVerdict(verdict));
+      batch.add(results.last);
+      onProgress?.call(results.length, totalCount);
+    }
+    return batch;
   }
 }

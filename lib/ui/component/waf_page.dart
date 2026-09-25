@@ -54,6 +54,7 @@ class _WafPageState extends State<WafPage> {
   String _method = 'GET';
   bool _authorized = false;
   bool _probing = false;
+  WafProbeSession? _session;
   bool _cancel = false;
   int _probeDone = 0;
   int _probeTotal = 0;
@@ -162,25 +163,39 @@ class _WafPageState extends State<WafPage> {
       _toast('先填一条载荷');
       return;
     }
+    // 建会话：队列化，后面一批一批发
+    final session = WafProbeSession(
+      url: url,
+      payload: payload,
+      method: _method,
+      headers: _parseHeaders(headerText),
+      body: bodyText.isEmpty ? null : bodyText,
+      variants: WafProbe.buildVariants(payload, _selected.toList()),
+      batchSize: _maxProbes,
+      delayMs: _delayMs,
+      timeoutSeconds: _timeoutSec,
+    );
+
+    if (session.totalCount <= 1) {
+      _toast('当前选择下没有会产生变化的载荷，换个载荷或技术试试');
+      return;
+    }
+
     setState(() {
+      _session = session;
       _probing = true;
       _cancel = false;
       _probeDone = 0;
-      _probeTotal = 0;
+      _probeTotal = session.totalCount;
       _probeResults = const [];
     });
+    await _runBatch(session);
+  }
 
+  /// 发一批（第一批含基线）
+  Future<void> _runBatch(WafProbeSession session) async {
     try {
-      final results = await WafProbe.probe(
-        url: url,
-        method: _method,
-        headers: _parseHeaders(headerText),
-        body: bodyText.isEmpty ? null : bodyText,
-        payload: payload,
-        techniques: _selected.toList(),
-        delayMs: _delayMs,
-        timeoutSeconds: _timeoutSec,
-        maxProbes: _maxProbes,
+      await session.nextBatch(
         onProgress: (done, total) {
           if (!mounted) return;
           setState(() {
@@ -192,17 +207,32 @@ class _WafPageState extends State<WafPage> {
       );
       if (!mounted) return;
       setState(() {
-        _probeResults = results;
+        _probeResults = List.of(session.results);
         _probing = false;
       });
-      final bypass =
-          results.where((r) => r.verdict == WafVerdict.passed).length;
-      _toast('探测结束：共 ${results.length} 条，疑似绕过 $bypass 条');
+      if (session.finished) {
+        final bypass =
+            session.results.where((r) => r.verdict == WafVerdict.passed).length;
+        _toast('全部发完：共 ${session.results.length} 条，疑似绕过 $bypass 条');
+      } else {
+        _toast('本批完成，还剩 ${session.remaining} 条未发');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _probing = false);
       _toast('探测出错：$e');
     }
+  }
+
+  /// 继续下一批（沿用同一会话，基线不重发）
+  Future<void> _continueBatch() async {
+    final session = _session;
+    if (session == null || _probing || session.finished) return;
+    setState(() {
+      _probing = true;
+      _cancel = false;
+    });
+    await _runBatch(session);
   }
 
   @override
@@ -382,6 +412,9 @@ class _WafPageState extends State<WafPage> {
               style: TextStyle(
                   fontSize: 11, color: Theme.of(context).colorScheme.primary),
             ),
+            const SizedBox(height: 2),
+            Text('每批最多 $_maxProbes 条；一批发完由你决定要不要继续下一批，不会一口气全发出去。',
+                style: const TextStyle(fontSize: 10, color: Colors.grey)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -438,9 +471,19 @@ class _WafPageState extends State<WafPage> {
             ),
             Row(children: [
               FilledButton.icon(
-                onPressed: _probing ? null : _startProbe,
-                icon: const Icon(Icons.radar, size: 16),
-                label: const Text('开始探测'),
+                onPressed: _probing
+                    ? null
+                    : (_session == null || _session!.finished
+                        ? _startProbe
+                        : _continueBatch),
+                icon: Icon(
+                    (_session == null || _session!.finished)
+                        ? Icons.radar
+                        : Icons.skip_next,
+                    size: 16),
+                label: Text((_session == null || _session!.finished)
+                    ? '开始探测'
+                    : '继续下一批（剩 ${_session!.remaining}）'),
               ),
               const SizedBox(width: 10),
               if (_probing) ...[
@@ -458,7 +501,12 @@ class _WafPageState extends State<WafPage> {
                 ),
               ] else if (_probeResults.isNotEmpty)
                 TextButton(
-                  onPressed: () => setState(() => _probeResults = const []),
+                  onPressed: () => setState(() {
+                    _probeResults = const [];
+                    _session = null;
+                    _probeDone = 0;
+                    _probeTotal = 0;
+                  }),
                   child: const Text('清空结果'),
                 ),
             ]),
