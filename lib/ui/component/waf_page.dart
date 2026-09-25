@@ -18,6 +18,7 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/util/waf_bypass.dart';
 import 'package:proxypin/network/util/waf_probe.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// WAF 载荷变异 + 主动探测页。
 ///
@@ -31,6 +32,14 @@ class WafPage extends StatefulWidget {
 }
 
 class _WafPageState extends State<WafPage> {
+  // 高级设置（持久化）
+  static const _kDelay = 'waf_probe_delay_ms';
+  static const _kTimeout = 'waf_probe_timeout_s';
+  static const _kMax = 'waf_probe_max';
+  int _delayMs = WafProbe.defaultDelayMs;
+  int _timeoutSec = WafProbe.defaultTimeoutSeconds;
+  int _maxProbes = WafProbe.defaultMaxProbes;
+
   final _payload = TextEditingController(text: "1' OR '1'='1");
   final _response = TextEditingController();
   final Set<String> _selected = {'comment_split', 'case_mix'};
@@ -49,6 +58,28 @@ class _WafPageState extends State<WafPage> {
   int _probeDone = 0;
   int _probeTotal = 0;
   List<WafProbeResult> _probeResults = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((p) {
+      if (!mounted) return;
+      setState(() {
+        _delayMs = p.getInt(_kDelay) ?? WafProbe.defaultDelayMs;
+        _timeoutSec = p.getInt(_kTimeout) ?? WafProbe.defaultTimeoutSeconds;
+        _maxProbes = p.getInt(_kMax) ?? WafProbe.defaultMaxProbes;
+      });
+    });
+  }
+
+  /// 高级设置落盘
+  void _saveProbePrefs() {
+    SharedPreferences.getInstance().then((p) {
+      p.setInt(_kDelay, _delayMs);
+      p.setInt(_kTimeout, _timeoutSec);
+      p.setInt(_kMax, _maxProbes);
+    });
+  }
 
   @override
   void dispose() {
@@ -131,11 +162,6 @@ class _WafPageState extends State<WafPage> {
       _toast('先填一条载荷');
       return;
     }
-    if (WafBypass.techniques.length + 1 > WafProbe.maxProbes) {
-      _toast('技术数超出单次上限');
-      return;
-    }
-
     setState(() {
       _probing = true;
       _cancel = false;
@@ -152,6 +178,9 @@ class _WafPageState extends State<WafPage> {
         body: bodyText.isEmpty ? null : bodyText,
         payload: payload,
         techniques: _selected.toList(),
+        delayMs: _delayMs,
+        timeoutSeconds: _timeoutSec,
+        maxProbes: _maxProbes,
         onProgress: (done, total) {
           if (!mounted) return;
           setState(() {
@@ -193,6 +222,8 @@ class _WafPageState extends State<WafPage> {
           _payloadCard(),
           const SizedBox(height: 12),
           _probeCard(),
+          const SizedBox(height: 8),
+          _advancedCard(),
           const SizedBox(height: 12),
           if (_probeResults.isNotEmpty) ..._probeResults.map(_probeResultTile),
           if (_variants.isNotEmpty) ..._variants.map(_variantTile),
@@ -212,7 +243,7 @@ class _WafPageState extends State<WafPage> {
         '①② 只做本地字符串变换，不发任何请求；③ 的「主动探测」会真的把请求发出去，'
         '所以必须先显式勾选授权。\n'
         '请仅用于你拥有或已获书面授权的目标——未经授权尝试绕过他人系统的防护措施'
-        '可能触犯法律。探测为串行发送、单次有总量上限，不做爆破与并发。',
+        '可能触犯法律。探测为串行发送、单次有总量上限（默认 200 条），不做爆破与并发。',
         style: TextStyle(fontSize: 12),
       ),
     );
@@ -345,6 +376,12 @@ class _WafPageState extends State<WafPage> {
               '先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。',
               style: TextStyle(fontSize: 11, color: Colors.grey),
             ),
+            const SizedBox(height: 4),
+            Text(
+              '本次将探测（由 ①② 决定）：${_selectedNames()}',
+              style: TextStyle(
+                  fontSize: 11, color: Theme.of(context).colorScheme.primary),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -429,6 +466,70 @@ class _WafPageState extends State<WafPage> {
         ),
       ),
     );
+  }
+
+  Widget _slider(String label, int value, int min, int max, String display,
+      ValueChanged<int> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Text(label, style: const TextStyle(fontSize: 12)),
+          const Spacer(),
+          Text(display, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        ]),
+        Slider(
+          value: value.clamp(min, max).toDouble(),
+          min: min.toDouble(),
+          max: max.toDouble(),
+          onChanged: (v) => onChanged(v.round()),
+          onChangeEnd: (_) => _saveProbePrefs(),
+        ),
+      ],
+    );
+  }
+
+  Widget _advancedCard() {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+        title: const Text('高级设置',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        subtitle: Text('间隔 ${_delayMs}ms · 超时 ${_timeoutSec}s · 单次上限 $_maxProbes 条',
+            style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        children: [
+          _slider('请求间隔', _delayMs, WafProbe.minDelayMs, 5000, '${_delayMs}ms',
+              (v) => setState(() => _delayMs = v)),
+          _slider('单条超时', _timeoutSec, 3, 60, '${_timeoutSec}s',
+              (v) => setState(() => _timeoutSec = v)),
+          _slider('单次上限', _maxProbes, 10, WafProbe.hardMaxProbes, '$_maxProbes 条',
+              (v) => setState(() => _maxProbes = v)),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 6),
+              child: Text(
+                '间隔下限 ${WafProbe.minDelayMs}ms、总量硬顶 ${WafProbe.hardMaxProbes} 条，'
+                '这两条不可突破 —— 再往下就不是"探测"而是对目标的流量冲击了。',
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ①② 选定的技术名 —— ③ 实际会探测的就是这个集合
+  String _selectedNames() {
+    if (_selected.isEmpty) return '全部';
+    final names = <String>[];
+    for (final t in WafBypass.techniques) {
+      if (_selected.contains(t.id)) names.add(t.name);
+    }
+    return names.join('、');
   }
 
   Color _verdictColor(WafVerdict v) {

@@ -105,11 +105,20 @@ class WafProbeResult {
 ///
 /// 只对你拥有或已获书面授权的目标使用。
 class WafProbe {
-  /// 单次最多发送的请求数（含基线），防止被当成攻击流量
-  static const int maxProbes = 200;
+  /// 单次发送请求数的**默认**上限（含基线）。用户可在高级设置里调。
+  static const int defaultMaxProbes = 200;
 
-  /// 默认每条之间的间隔（毫秒）
+  /// 单次请求数的**硬顶**：无论用户怎么配都不会超过这个数，防止误配成失控流量
+  static const int hardMaxProbes = 2000;
+
+  /// 每条之间的**默认**间隔（毫秒）
   static const int defaultDelayMs = 300;
+
+  /// 间隔**下限**（毫秒）：再快就不是"探测"而是对目标的流量冲击了
+  static const int minDelayMs = 100;
+
+  /// 单条超时的默认值（秒）
+  static const int defaultTimeoutSeconds = 15;
 
   /// 这些状态码通常意味着「请求被挡在应用之外」
   static const Set<int> blockStatusCodes = {403, 406, 418, 419, 429, 501, 999};
@@ -194,7 +203,8 @@ class WafProbe {
     required String payload,
     List<String> techniques = const [],
     int delayMs = defaultDelayMs,
-    int timeoutSeconds = 15,
+    int timeoutSeconds = defaultTimeoutSeconds,
+    int maxProbes = defaultMaxProbes,
     void Function(int done, int total)? onProgress,
     bool Function()? isCancelled,
   }) async {
@@ -203,8 +213,15 @@ class WafProbe {
         ? all
         : all.where((v) => techniques.contains(v.technique)).toList();
     // 只探测真的会改变载荷的技术（原样返回的没意义）
-    final effective =
-        variants.where((v) => v.output != payload).toList();
+    var effective = variants.where((v) => v.output != payload).toList();
+
+    // 总量夹在 [1, hardMaxProbes]：上限可配，但硬顶不可突破
+    final limit = maxProbes.clamp(1, hardMaxProbes);
+    if (effective.length + 1 > limit) {
+      effective = effective.sublist(0, limit - 1);
+    }
+    // 间隔同样夹一下，避免配成 0 变成无间隔冲击
+    final gap = delayMs < minDelayMs ? minDelayMs : delayMs;
     final total = effective.length + 1;
 
     final results = <WafProbeResult>[];
@@ -228,9 +245,7 @@ class WafProbe {
     final baseOk = base.verdict != WafVerdict.failed;
     for (var i = 0; i < effective.length; i++) {
       if (isCancelled?.call() == true) break;
-      if (delayMs > 0) {
-        await Future.delayed(Duration(milliseconds: delayMs));
-      }
+      await Future.delayed(Duration(milliseconds: gap));
       final v = effective[i];
       final raw = await _sendOne(
         url: url,

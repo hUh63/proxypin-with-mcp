@@ -306,6 +306,83 @@ server.listen(PORT, '0.0.0.0', () =>
 
 ## 四、部署
 
+先分清部署在哪 —— 两种场景的默认姿势不一样：
+
+| | 内网机器 | 云主机（公网） |
+|---|---|---|
+| 监听地址 | `0.0.0.0`，同网段都能连 | `127.0.0.1`，公网只从反代进 |
+| 对外协议 | HTTP 就够 | **必须 HTTPS**（WSS 自动跟着走） |
+| 对外端口 | 8788 | 只开 443，8788 不对外 |
+| `SECRET` | 也要改 | 必须换成足够长的随机串 |
+| 客户端填 | `http://192.168.x.x:8788` | `https://cloud.example.com` |
+| 备份 | 手动拷 `db.json` | 定时拷 + 异地留一份 |
+
+下面给两种跑法；**同时部署两套**（内网一台 + 云上一台）见 4.3。
+
+### 4.1 内网机器（同网段直连）
+
+1. 服务端监听全网卡：`Environment=HOST=0.0.0.0`
+2. 放行入站端口：
+   - ufw：`sudo ufw allow 8788/tcp`
+   - firewalld：`sudo firewall-cmd --add-port=8788/tcp --permanent && sudo firewall-cmd --reload`
+   - Windows：高级安全防火墙 → 入站规则 → 新建 → 端口 → 8788 → 允许
+3. 查这台机器的内网 IP：`ip addr`（Linux）/ `ipconfig`（Windows）
+4. 客户端填 `http://<内网IP>:8788`
+
+**两个容易踩的点：**
+
+- **IP 会变**：路由器 DHCP 续租后地址可能变，客户端就得重填。给这台机器配静态 IP 或 DHCP 保留；用 `hostname.local`（mDNS）也行，但需要网段里有 avahi/Bonjour 解析。
+- **HTTP 是明文**：内网也一样。同网段的其他设备（同事电脑、访客 Wi-Fi、智能家居）都能在网线上读到你的 token 和抓包数据。介意的话按 4.2 加一层证书。
+
+### 4.2 云主机（公网）
+
+**别把 8788 直接开到公网。** 让服务端只监听本机，前面放一层反代做 TLS：
+
+1. 服务端只听本机：`Environment=HOST=127.0.0.1`
+2. 安全组 / 防火墙只放行 443（和 SSH），**不要开放 8788**
+3. Nginx 反代：
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name cloud.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/cloud.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cloud.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8788;
+        proxy_http_version 1.1;
+
+        # 实时协同走 WebSocket，这两行不能少
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600s;   # 实时连接是长连接，别让它被掐断
+    }
+}
+```
+
+证书用 certbot 签：`sudo certbot --nginx -d cloud.example.com`。
+
+4. 客户端填 `https://cloud.example.com` —— 客户端会自动把实时连接换成 `wss://`，不用手填。
+
+> **最容易漏的是 WebSocket 那两行**：漏了之后注册、登录、上传都正常，只有「实时协同」开关一直连不上，很容易误判成服务端坏了。
+
+### 4.3 内网和云上同时跑
+
+两边各跑一份、各存各的数据，客户端**同一时刻只能连一个**。三种做法：
+
+- **手动切地址**（最省事）：换网络时改一下客户端里的地址。适合"公司一台、家里一台"这种整段时间在同一网络的场景。
+- **把内网那台从云上穿出去**：云主机上做反向隧道
+  （`ssh -R 8788:127.0.0.1:8788 user@cloud`），再用 Nginx 反代到这条隧道。
+  这样客户端始终填一个云上地址、走到哪都能用，**而数据仍然留在你自己内网那台机器上**。
+- **组网直连**：Tailscale / WireGuard 把两边拉进一个虚拟内网，客户端填虚拟网段里的地址。
+
+不管哪种，**两边数据不会自动同步**（各存各的 `db.json`）。要么只用一边当主，要么定期把 `db.json` 拷过去覆盖。
+
 **常驻（systemd）**
 
 ```ini
@@ -355,6 +432,7 @@ CMD ["node", "cloud-server.js"]
 3. **公网暴露前先想清楚**：这里面是你全部的抓包数据，常含 Cookie、Token、手机号。
 4. **数据备份**：就一个 `db.json`，定时拷走即可（注意它是明文存 HAR 的）。
 5. 客户端**直连**服务端、不经本工具的代理；如果你在这台机器上同时开着抓包，记得把服务端域名加进 `proxyPassDomains` 或白名单，避免自己抓自己。
+6. **内网不等于安全**：内网部署时最容易省掉 `SECRET` 和 HTTPS —— 同网段的任何设备都能明文读到你的 token 和抓包数据。`SECRET` 无论内网还是公网都必须改。
 
 ---
 

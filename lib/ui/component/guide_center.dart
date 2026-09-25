@@ -256,10 +256,22 @@ class _GuideArticlePageState extends State<GuideArticlePage> {
 
 /// 轻量 Markdown 渲染视图（无第三方依赖）：
 /// 支持 #/##/### 标题、- 与 1. 列表、``` 代码块、> 引用、--- 分隔线、表格文本化、**粗体**。
-class MarkdownLiteView extends StatelessWidget {
+class MarkdownLiteView extends StatefulWidget {
   final String content;
 
   const MarkdownLiteView({super.key, required this.content});
+
+  @override
+  State<MarkdownLiteView> createState() => _MarkdownLiteViewState();
+}
+
+class _MarkdownLiteViewState extends State<MarkdownLiteView> {
+  /// 每页渲染多少个块。
+  ///
+  /// 整个 CHANGELOG 有 100+ 个版本、几千行，一次性构建所有 Widget 会让首帧
+  /// 明显卡顿（点开「更新日志」要顿一下），所以分页渲染，滚到底再加载下一页。
+  static const int _pageSize = 50;
+  int _visible = _pageSize;
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +293,7 @@ class MarkdownLiteView extends StatelessWidget {
             child: Text('渲染异常（已降级为纯文本）：$e',
                 style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error)),
           ),
-          SelectableText(content, style: const TextStyle(fontSize: 13.5, height: 1.5)),
+          SelectableText(widget.content, style: const TextStyle(fontSize: 13.5, height: 1.5)),
         ]),
       );
     }
@@ -289,7 +301,7 @@ class MarkdownLiteView extends StatelessWidget {
 
   Widget _build(BuildContext context) {
     final theme = Theme.of(context);
-    final lines = content.split('\n');
+    final lines = widget.content.split('\n');
     final widgets = <Widget>[];
     final buffer = <String>[];
     bool inCode = false;
@@ -523,9 +535,28 @@ class MarkdownLiteView extends StatelessWidget {
           style: const TextStyle(fontSize: 12, fontFamily: 'monospace')));
     }
 
+    // 分页渲染：先渲染前 _visible 个块，避免长文档首帧卡顿
+    final total = widgets.length;
+    final children = <Widget>[
+      ...(total > _visible ? widgets.sublist(0, _visible) : widgets),
+    ];
+    if (total > _visible) {
+      children.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Center(
+          child: OutlinedButton.icon(
+            onPressed: () => setState(() => _visible += _pageSize),
+            icon: const Icon(Icons.expand_more, size: 18),
+            label: Text('加载更多（已显示 $_visible / $total 段）',
+                style: const TextStyle(fontSize: 12)),
+          ),
+        ),
+      ));
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: widgets),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
     );
   }
 }
