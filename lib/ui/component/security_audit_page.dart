@@ -24,11 +24,17 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/security_audit.dart';
 import 'package:proxypin/network/util/security_rule_store.dart';
+import 'package:proxypin/network/util/security_verifier.dart';
+import 'package:proxypin/ui/component/security_ai_dialog.dart';
 import 'package:proxypin/ui/component/utils.dart';
 
-/// 安全自检页：对已抓到的流量做**被动**安全基线核查。
+/// 安全自检页：对已抓到的流量做安全基线核查，把发现按风险等级列出，
+/// 可导出 Markdown 报告、交给 AI 解读。
 ///
-/// 只分析、不发送任何请求，把发现按风险等级列出，可导出 Markdown 报告。
+/// - **被动**（默认）：只分析已有流量，不发任何请求；
+/// - **主动核验**（可选，需显式确认）：对**已抓到的域名**各发一次 GET，
+///   只看几个安全响应头在不在 —— 不扫端口、不投载荷；
+/// - **AI 分析**：把问题清单（不含响应体原文）交给 AI，拿回解读与修复建议。
 class SecurityAuditPage extends StatefulWidget {
   final List<HttpRequest> requests;
 
@@ -43,6 +49,7 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
   bool _loading = true;
   SecuritySeverity? _filter;
   SecurityRuleStore? _store;
+  bool _verifying = false;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -114,6 +121,17 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
               label: Text(localizations.securityAuditExport),
             ),
           const SizedBox(width: 8),
+          IconButton(
+            tooltip: 'AI 分析',
+            onPressed: report == null ? null : () => _aiAnalyze(report),
+            icon: const Icon(Icons.auto_awesome, size: 20),
+          ),
+          IconButton(
+            tooltip: '主动核验（对已抓到的域名各发一次，核对安全响应头）',
+            onPressed: _verifying ? null : _verify,
+            icon: const Icon(Icons.travel_explore, size: 20),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: _loading || report == null
@@ -391,6 +409,153 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
     await showDialog(
       context: context,
       builder: (context) => _SecurityRulesDialog(store: store),
+    );
+  }
+
+  Future<void> _aiAnalyze(SecurityAuditReport report) async {
+    await showDialog(
+      context: context,
+      builder: (_) => SecurityAiDialog(report: report),
+    );
+  }
+
+  /// 主动核验：先让用户确认范围与授权，再逐个域名发一次 GET 看响应头
+  Future<void> _verify() async {
+    if (_verifying) return;
+    final hosts = SecurityVerifier.hostsFrom(widget.requests);
+    if (hosts.isEmpty) {
+      FlutterToastr.show('抓包里还没有可核验的域名', context);
+      return;
+    }
+
+    var authorized = false;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('主动核验', style: TextStyle(fontSize: 16)),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('会对下面这些**已经在抓包里出现过**的域名，各发一次 GET，只看安全响应头：',
+                  style: TextStyle(fontSize: 12.5)),
+              const SizedBox(height: 6),
+              Text(hosts.join('、'),
+                  style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace')),
+              const SizedBox(height: 8),
+              Text(
+                  '共 ${hosts.length} 个域名，串行发送、每个之间隔 ${SecurityVerifier.defaultDelayMs}ms，'
+                  '上限 ${SecurityVerifier.maxHosts} 个。不扫端口、不投载荷。',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              const SizedBox(height: 4),
+              const Text('只对你拥有或已获授权的目标做这件事。',
+                  style: TextStyle(fontSize: 11, color: Colors.grey)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(
+            onPressed: () {
+              authorized = true;
+              Navigator.pop(ctx);
+            },
+            child: const Text('开始核验'),
+          ),
+        ],
+      ),
+    );
+    if (!authorized || !mounted) return;
+
+    setState(() => _verifying = true);
+    try {
+      final results = await SecurityVerifier.verifyAll(hosts, onProgress: (done, total) {
+        if (mounted) setState(() {});
+      });
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (_) => _VerifyResultDialog(results: results),
+      );
+    } catch (e) {
+      if (mounted) FlutterToastr.show('核验失败：$e', context);
+    } finally {
+      if (mounted) setState(() => _verifying = false);
+    }
+  }
+}
+
+/// 主动核验结果
+class _VerifyResultDialog extends StatelessWidget {
+  final List<VerifyResult> results;
+
+  const _VerifyResultDialog({required this.results});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('主动核验结果', style: TextStyle(fontSize: 16)),
+      content: SizedBox(
+        width: 540,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('只核对了下面这几个安全响应头在不在。缺了不代表就有漏洞，'
+                  '但值得去核对一下服务端配置。',
+                  style: TextStyle(fontSize: 11.5, color: Colors.grey)),
+              const SizedBox(height: 8),
+              for (final r in results) _hostBlock(context, r),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+      ],
+    );
+  }
+
+  Widget _hostBlock(BuildContext context, VerifyResult r) {
+    final cs = Theme.of(context).colorScheme;
+    if (!r.ok) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text('${r.host} —— 核验失败：${r.error}',
+            style: TextStyle(fontSize: 12, color: cs.error)),
+      );
+    }
+    final missing = r.missingHeaders;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Text(r.host,
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 6),
+            Text('HTTP ${r.statusCode ?? '-'}',
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          ]),
+          if (missing.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 2, left: 4),
+              child: Text('这几个响应头都在',
+                  style: TextStyle(fontSize: 11.5, color: Colors.green)),
+            )
+          else
+            for (final name in missing)
+              Padding(
+                padding: const EdgeInsets.only(top: 2, left: 4),
+                child: Text('缺 $name —— ${SecurityVerifier.headerChecks[name]}',
+                    style: const TextStyle(fontSize: 11.5, height: 1.35)),
+              ),
+        ],
+      ),
     );
   }
 }
