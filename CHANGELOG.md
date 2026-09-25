@@ -4,13 +4,13 @@
 
 ### 重构：`mcp_server.dart` 拆分
 
-`lib/network/mcp/mcp_server.dart` 长期 5000+ 行，其中 `_buildToolsList()` 一个方法就占 1200 余行
-（90 多个工具的完整 JSON Schema 定义）。用 Dart 的 `part` / `part of` 把它拆到
-`lib/network/mcp/mcp_tools_defs.dart`：
+`lib/network/mcp/mcp_server.dart` 长期 5000+ 行，其中工具定义表就占 1200 余行
+（90 多个工具的完整 JSON Schema）。把它拆到 `lib/network/mcp/mcp_tools_defs.dart`：
 
-- 两个文件同属一个 library，私有成员照常互相可见，**零语义变化** —— 拆分前后代码逐行一致，
-  只是换了存放位置；
-- 主文件 5042 → 3837 行，工具定义单独成文件，之后改工具不必再在 5000 行里翻找。
+- 用 Dart 的 `part` / `part of`：两个文件同属一个 library，私有成员照常互相可见，无需改 import；
+- **只把纯静态的工具定义**抽成 part 里的顶层函数 `_nativeToolsJson()`，主文件保留类方法
+  `_buildToolsList()` —— 它还要拼 `..._officialToolsJson()` 这类实例方法，而 part 不能续接类体；
+- 主文件 5042 → 3844 行，工具定义单独成文件，之后改工具不必再在 5000 行里翻找。
 
 
 ## v1.24.24 (2026-09-25)

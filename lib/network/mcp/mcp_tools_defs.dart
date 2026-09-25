@@ -1,7 +1,9 @@
 part of 'mcp_server.dart';
 
-  List<Map<String, dynamic>> _buildToolsList() {
-    return [
+/// `McpServer` 的工具定义表（从 mcp_server.dart 拆出，见 CHANGELOG v1.24.26）。
+/// 纯静态数据，不依赖实例状态，故放在顶层函数里。
+List<Map<String, dynamic>> _nativeToolsJson() {
+  return [
       {
         'name': 'set_config',
         'description':
@@ -1203,7 +1205,5 @@ request_id from get_recent_requests or search_requests.''',
           'required': ['steps'],
         },
       },
-      // 官方工具源（同名者已在本表中提供，见 _nativeToolNames）
-      ..._officialToolsJson(),
-    ];
-  }
+  ];
+}

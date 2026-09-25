@@ -1416,6 +1416,13 @@ class McpServer {
   List<Map<String, dynamic>> _getToolsList() =>
       _toolsListCache ??= _buildToolsList();
 
+  List<Map<String, dynamic>> _buildToolsList() {
+    return [
+      ..._nativeToolsJson(),
+      // 官方工具源（同名者已在本表中提供，见 _nativeToolNames）
+      ..._officialToolsJson(),
+    ];
+  }
 
   /// gRPC 解析：拆长度前缀帧 + protobuf wire format 盲解，不需要 .proto 也能看字段。
   ///
