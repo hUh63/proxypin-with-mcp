@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.24.25 (2026-09-25)
+
+### 重构：`mcp_server.dart` 拆分
+
+`lib/network/mcp/mcp_server.dart` 长期 5000+ 行，其中 `_buildToolsList()` 一个方法就占 1200 余行
+（90 多个工具的完整 JSON Schema 定义）。用 Dart 的 `part` / `part of` 把它拆到
+`lib/network/mcp/mcp_tools_defs.dart`：
+
+- 两个文件同属一个 library，私有成员照常互相可见，**零语义变化** —— 拆分前后代码逐行一致，
+  只是换了存放位置；
+- 主文件 5042 → 3837 行，工具定义单独成文件，之后改工具不必再在 5000 行里翻找。
+
+
 ## v1.24.24 (2026-09-25)
 
 ### 修复：移动端与桌面端剩余破坏性操作补二次确认
