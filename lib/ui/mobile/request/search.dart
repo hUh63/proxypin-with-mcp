@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:proxypin/ui/component/search_condition.dart';
 import 'package:proxypin/ui/component/search_history.dart';
+import 'package:proxypin/ui/component/utils.dart';
 
 import '../../component/model/search_model.dart';
 
@@ -119,10 +120,13 @@ class MobileSearchState extends State<MobileSearch> {
                             const Text('搜索历史', style: TextStyle(fontSize: 12, color: Colors.grey)),
                             const Spacer(),
                             GestureDetector(
-                              onTap: () async {
-                                await SearchHistory.clear();
-                                if (mounted) setState(() => _history = []);
-                              },
+                              onTap: () => showConfirmDialog(context,
+                                  title: '删除',
+                                  content: '清空搜索历史？',
+                                  onConfirm: () async {
+                                    await SearchHistory.clear();
+                                    if (mounted) setState(() => _history = []);
+                                  }),
                               child: const Icon(Icons.delete_outline, size: 14, color: Colors.grey),
                             ),
                           ]),

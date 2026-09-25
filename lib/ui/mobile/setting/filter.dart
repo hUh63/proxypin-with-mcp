@@ -356,9 +356,14 @@ class _DomainListState extends State<DomainList> {
                     child: Text(localizations.share)),
                 CupertinoActionSheetAction(
                     onPressed: () {
-                      widget.hostList.removeIndex([index]);
-                      onChanged();
                       Navigator.of(context).pop();
+                      showConfirmDialog(context,
+                          title: localizations.delete,
+                          content: localizations.confirmContent,
+                          onConfirm: () {
+                            widget.hostList.removeIndex([index]);
+                            onChanged();
+                          });
                     },
                     child: Text(localizations.delete)),
               ],

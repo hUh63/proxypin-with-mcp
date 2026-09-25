@@ -292,7 +292,10 @@ class _MobileRequestCryptoPageState extends State<MobileRequestCryptoPage> {
             BottomSheetItem(
                 text: l10n.delete,
                 onPressed: () {
-                  _removeRule(manager, index);
+                  showConfirmDialog(ctx,
+                      title: l10n.delete,
+                      content: l10n.confirmContent,
+                      onConfirm: () => _removeRule(manager, index));
                 }),
             Container(color: Theme.of(ctx).hoverColor, height: 8),
             TextButton(

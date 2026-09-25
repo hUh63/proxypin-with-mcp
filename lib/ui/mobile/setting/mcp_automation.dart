@@ -15,6 +15,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
+import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/utils/platform.dart';
 
 /// MCP 自动化配置页面
@@ -529,7 +530,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             ),
             trailing: IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _cancelTask(task),
+              onPressed: () => showConfirmDialog(context,
+                  title: '删除', content: '取消并删除这个定时任务？', onConfirm: () => _cancelTask(task)),
             ),
           ),
         );
@@ -991,7 +993,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                        onPressed: () => _removeEventListener(l),
+                        onPressed: () => showConfirmDialog(context,
+                            title: '删除',
+                            content: '移除这个事件监听器？',
+                            onConfirm: () => _removeEventListener(l)),
                       ),
                     ],
                   ),
@@ -1184,7 +1189,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                        onPressed: () => _deleteRule(rule),
+                        onPressed: () => showConfirmDialog(context,
+                            title: '删除',
+                            content: '删除这条规则？',
+                            onConfirm: () => _deleteRule(rule)),
                       ),
                     ],
                   ),
@@ -1795,7 +1803,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                   tooltip: '删除',
-                  onPressed: () => _deleteRoot(r),
+                  onPressed: () => showConfirmDialog(context,
+                      title: '删除',
+                      content: '删除这个 Root 配置？',
+                      onConfirm: () => _deleteRoot(r)),
                 ),
               ],
             ),
@@ -1882,11 +1893,14 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                  onPressed: () async {
-                    setState(() => _workflows.removeAt(index));
-                    await _saveWorkflows();
-                    FlutterToastr.show('工作流已删除', context, duration: 2, backgroundColor: Colors.green);
-                  },
+                  onPressed: () => showConfirmDialog(context,
+                      title: '删除',
+                      content: '删除这个工作流？',
+                      onConfirm: () async {
+                        setState(() => _workflows.removeAt(index));
+                        await _saveWorkflows();
+                        FlutterToastr.show('工作流已删除', context, duration: 2, backgroundColor: Colors.green);
+                      }),
                 ),
               ],
             ),

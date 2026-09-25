@@ -369,7 +369,12 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
       ),
       const SizedBox(height: 6),
       OutlinedButton(
-        onPressed: _removeSystemCert,
+        onPressed: () => showConfirmDialog(context,
+            title: isCN ? '移除系统证书' : 'Remove system CA',
+            content: isCN
+                ? '会删除写入系统信任库（Magisk 模块）的证书，之后 HTTPS 抓包会失败。确定移除？'
+                : 'This deletes the CA written into the system trust store (Magisk module); HTTPS capture will stop working. Continue?',
+            onConfirm: _removeSystemCert),
         child: Text(isCN ? "移除已安装的系统证书" : "Remove installed system CA"),
       ),
       const SizedBox(height: 16),
@@ -392,7 +397,12 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
       ),
       const SizedBox(height: 6),
       OutlinedButton(
-        onPressed: _unmountSystemCaRuntime,
+        onPressed: () => showConfirmDialog(context,
+            title: isCN ? '卸载直挂' : 'Unmount runtime CA',
+            content: isCN
+                ? '会卸载运行时挂载的系统证书，之后 HTTPS 抓包会失败。确定卸载？'
+                : 'This unmounts the runtime CA; HTTPS capture will stop working. Continue?',
+            onConfirm: _unmountSystemCaRuntime),
         child: Text(isCN ? "卸载直挂" : "Unmount runtime CA"),
       ),
       const SizedBox(height: 4),

@@ -273,10 +273,15 @@ class _HostsPageState extends State<HostsPage> {
       PopupMenuItem(
           height: 35,
           child: Text(localizations.delete),
-          onTap: () async {
-            setState(() {
-              widget.hostsManager.removeHosts([item]);
-            });
+          onTap: () {
+            showConfirmDialog(context,
+                title: localizations.delete,
+                content: localizations.confirmContent,
+                onConfirm: () {
+                  setState(() {
+                    widget.hostsManager.removeHosts([item]);
+                  });
+                });
           })
     ]).then((value) {
       setState(() {

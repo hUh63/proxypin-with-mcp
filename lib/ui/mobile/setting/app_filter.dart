@@ -20,6 +20,7 @@ import 'package:proxypin/native/installed_apps.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/utils/task.dart';
 
@@ -168,11 +169,16 @@ class _AppWhitelistState extends State<AppWhitelist> {
                               trailing: IconButton(
                                 icon: const Icon(Icons.delete),
                                 onPressed: () {
-                                  setState(() {
-                                    configuration.appWhitelist.remove(appInfo.packageName);
-                                    appInfoList.remove(appInfo);
-                                    changed = true;
-                                  });
+                                  showConfirmDialog(context,
+                                      title: '删除',
+                                      content: '从白名单里移除这个应用？',
+                                      onConfirm: () {
+                                        setState(() {
+                                          configuration.appWhitelist.remove(appInfo.packageName);
+                                          appInfoList.remove(appInfo);
+                                          changed = true;
+                                        });
+                                      });
                                 },
                               ),
                             );
@@ -307,11 +313,16 @@ class _AppBlacklistState extends State<AppBlacklist> {
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
                         onPressed: () {
-                          setState(() {
-                            configuration.appBlacklist?.remove(appInfo.packageName);
-                            appInfoList.remove(appInfo);
-                            changed = true;
-                          });
+                          showConfirmDialog(context,
+                              title: '删除',
+                              content: '从黑名单里移除这个应用？',
+                              onConfirm: () {
+                                setState(() {
+                                  configuration.appBlacklist?.remove(appInfo.packageName);
+                                  appInfoList.remove(appInfo);
+                                  changed = true;
+                                });
+                              });
                         },
                       ),
                     );

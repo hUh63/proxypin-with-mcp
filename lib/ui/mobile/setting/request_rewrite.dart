@@ -376,10 +376,15 @@ class _RequestRuleListState extends State<RequestRuleList> {
             const Divider(thickness: 0.5, height: 5),
             BottomSheetItem(
                 text: localizations.delete,
-                onPressed: () async {
-                  await widget.requestRewrites.removeIndex([index]);
-                  widget.requestRewrites.flushRequestRewriteConfig();
-                  if (mounted) FlutterToastr.show(localizations.deleteSuccess, context);
+                onPressed: () {
+                  showConfirmDialog(context,
+                      title: localizations.delete,
+                      content: localizations.confirmContent,
+                      onConfirm: () async {
+                        await widget.requestRewrites.removeIndex([index]);
+                        widget.requestRewrites.flushRequestRewriteConfig();
+                        if (mounted) FlutterToastr.show(localizations.deleteSuccess, context);
+                      });
                 }),
             Container(color: Theme.of(ctx).hoverColor, height: 8),
             TextButton(

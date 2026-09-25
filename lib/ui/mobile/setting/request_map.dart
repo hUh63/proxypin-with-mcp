@@ -313,10 +313,15 @@ class _RequestMapListState extends State<RequestMapList> {
             const Divider(thickness: 0.5, height: 5),
             BottomSheetItem(
                 text: localizations.delete,
-                onPressed: () async {
-                  var manager = await RequestMapManager.instance;
-                  await manager.deleteRule(index);
-                  _refreshConfig();
+                onPressed: () {
+                  showConfirmDialog(context,
+                      title: localizations.delete,
+                      content: localizations.confirmContent,
+                      onConfirm: () async {
+                        var manager = await RequestMapManager.instance;
+                        await manager.deleteRule(index);
+                        _refreshConfig();
+                      });
                 }),
           ]);
         }).then((value) {

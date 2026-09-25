@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/components/manager/request_block_manager.dart';
+import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/utils/lang.dart';
 
@@ -125,9 +126,14 @@ class _RequestBlockState extends State<MobileRequestBlock> {
             const Divider(thickness: 0.5, height: 5),
             BottomSheetItem(
                 text: localizations.delete,
-                onPressed: () async {
-                  await widget.requestBlockManager.removeBlockRequest(index);
-                  setState(() {});
+                onPressed: () {
+                  showConfirmDialog(context,
+                      title: localizations.delete,
+                      content: localizations.confirmContent,
+                      onConfirm: () async {
+                        await widget.requestBlockManager.removeBlockRequest(index);
+                        setState(() {});
+                      });
                 }),
             Container(color: Theme.of(context).hoverColor, height: 8),
             TextButton(

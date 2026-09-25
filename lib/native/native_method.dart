@@ -11,7 +11,9 @@ class NativeMethod {
   /// 返回 `true` 如果本地网络可用，否则返回 `false`。
   static Future<bool> requestLocalNetworkAccess() async {
     try {
-      final bool isAvailable = await _channel.invokeMethod('requestLocalNetwork');
+      final bool isAvailable = await _channel
+          .invokeMethod('requestLocalNetwork')
+          .timeout(const Duration(seconds: 10), onTimeout: () => false);
       logger.d("[NativeMethod] requestLocalNetworkAccess => $isAvailable");
       return isAvailable;
     } on PlatformException catch (e) {
@@ -27,7 +29,9 @@ class NativeMethod {
   /// 检查给定 PEM 证书是否已安装到系统信任库（iOS 钥匙串 / Android AndroidCAStore）
   static Future<bool> isCaInstalled(String pem) async {
     try {
-      final bool installed = await _channel.invokeMethod('isCaInstalled', {"pem": pem});
+      final bool installed = await _channel
+          .invokeMethod('isCaInstalled', {"pem": pem})
+          .timeout(const Duration(seconds: 10), onTimeout: () => false);
       return installed;
     } on PlatformException catch (e) {
       logger.e("[NativeMethod] isCaInstalled error: ${e.message}");
@@ -47,7 +51,9 @@ class NativeMethod {
   /// 是装进了用户库（Android 7 起应用默认不信任），这个结果能直接把原因指出来。
   static Future<String> caInstallScope(String pem) async {
     try {
-      final String? scope = await _channel.invokeMethod<String>('caInstallScope', {"pem": pem});
+      final String? scope = await _channel
+          .invokeMethod<String>('caInstallScope', {"pem": pem})
+          .timeout(const Duration(seconds: 10), onTimeout: () => null);
       return scope ?? 'unknown';
     } on PlatformException catch (e) {
       logger.e("[NativeMethod] caInstallScope error: ${e.message}");
@@ -60,11 +66,13 @@ class NativeMethod {
   /// iOS: 基于 SSL 策略校验证书链（leaf + CA），仅当 CA 被系统信任时返回 true
   static Future<bool> evaluateChainTrusted(String leafPem, String caPem, {String? host}) async {
     try {
-      final bool trusted = await _channel.invokeMethod('evaluateChainTrusted', {
+      final bool trusted = await _channel
+          .invokeMethod('evaluateChainTrusted', {
         'leafPem': leafPem,
         'caPem': caPem,
         if (host != null) 'host': host,
-      });
+      })
+          .timeout(const Duration(seconds: 10), onTimeout: () => false);
       return trusted;
     } on PlatformException catch (e) {
       logger.e("[NativeMethod] evaluateChainTrusted error: ${e.message}");

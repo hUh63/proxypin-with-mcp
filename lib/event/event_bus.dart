@@ -6,6 +6,8 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:proxypin/network/util/logger.dart';
+
 /// 事件基类
 abstract class AppEvent {
   final String type;
@@ -145,7 +147,7 @@ class EventBus {
         try {
           sub.handler(event);
         } catch (e, stack) {
-          print('EventBus: Error in event handler: $e\n$stack');
+          logger.e('EventBus: 事件处理器出错', error: e, stackTrace: stack);
         }
       }
     }

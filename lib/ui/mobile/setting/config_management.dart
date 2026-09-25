@@ -10,6 +10,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/mobile/setting/backup_management.dart';
 
@@ -359,6 +360,15 @@ class _ConfigManagementState extends State<ConfigManagement> {
 
   /// 上游 #920：从剪贴板读取配置文本并导入
   Future<void> _importFromClipboard(BuildContext context) async {
+    // 导入会覆盖当前配置，先确认
+    showConfirmDialog(context,
+        title: '导入配置',
+        content: '导入会覆盖当前配置，确定继续？',
+        onConfirm: () => _doImportFromClipboard(context));
+  }
+
+  /// 真正执行导入（确认后调用）
+  Future<void> _doImportFromClipboard(BuildContext context) async {
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim();

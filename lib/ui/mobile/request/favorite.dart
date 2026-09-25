@@ -128,8 +128,13 @@ class _FavoritesState extends State<MobileFavorites> {
                       favorite,
                       index: index,
                       onRemove: (Favorite favorite) async {
-                        await FavoriteStorage.removeFavorite(favorite);
-                        setState(() {});
+                        showConfirmDialog(context,
+                            title: localizations.delete,
+                            content: localizations.confirmContent,
+                            onConfirm: () async {
+                              await FavoriteStorage.removeFavorite(favorite);
+                              setState(() {});
+                            });
                       },
                       proxyServer: widget.proxyServer,
                     );

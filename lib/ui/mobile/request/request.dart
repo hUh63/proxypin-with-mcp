@@ -451,9 +451,14 @@ class RequestRowState extends State<RequestRow> {
                           icon: Icons.checklist_rtl_outlined),
                       right: itemButton(
                           onPressed: () {
-                            widget.onRemove?.call(request);
-                            FlutterToastr.show(localizations.deleteSuccess, availableContext);
-                            Navigator.maybePop(availableContext);
+                            showConfirmDialog(availableContext,
+                                title: localizations.delete,
+                                content: localizations.confirmContent,
+                                onConfirm: () {
+                                  widget.onRemove?.call(request);
+                                  FlutterToastr.show(localizations.deleteSuccess, availableContext);
+                                  Navigator.maybePop(availableContext);
+                                });
                           },
                           label: localizations.delete,
                           icon: Icons.delete_outline),

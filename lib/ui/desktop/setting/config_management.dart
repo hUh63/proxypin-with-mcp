@@ -11,6 +11,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/desktop/setting/backup_management.dart';
 
@@ -241,6 +242,15 @@ class _DesktopConfigManagementState extends State<DesktopConfigManagement> {
 
   /// 导入配置
   Future<void> _importConfig(BuildContext context) async {
+    // 导入会覆盖当前配置，先确认
+    showConfirmDialog(context,
+        title: '导入配置',
+        content: '导入会覆盖当前配置，确定继续？',
+        onConfirm: () => _doImportConfig(context));
+  }
+
+  /// 真正执行导入（确认后调用）
+  Future<void> _doImportConfig(BuildContext context) async {
     try {
       // file_picker 12.x API: 直接使用 FilePicker.pickFiles() 而非 FilePicker.platform.pickFiles()
       final files = await FilePicker.pickFiles(

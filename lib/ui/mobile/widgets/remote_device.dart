@@ -227,6 +227,21 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
       children: remoteDeviceList.map((remoteDevice) {
         return Dismissible(
             key: Key(remoteDevice.identification),
+            // 侧滑删除不可恢复，先让用户确认（confirmDismiss 需要 bool，故这里自己弹）
+            confirmDismiss: (_) => showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(localizations.delete),
+                  content: Text(localizations.confirmContent),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(localizations.cancel)),
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(localizations.confirm)),
+                  ],
+                )),
             onDismissed: (direction) async {
               remoteDeviceList.removeWhere((it) => it.equals(remoteDevice));
               await setRemoteDeviceList(prefs, remoteDeviceList);

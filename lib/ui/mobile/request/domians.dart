@@ -29,6 +29,7 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/ui/component/model/search_model.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
+import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/mobile/request/request_sequence.dart';
 import 'package:proxypin/utils/export_request.dart';
@@ -295,9 +296,14 @@ class DomainListState extends State<DomainList> with AutomaticKeepAliveClientMix
               BottomSheetItem(
                   text: localizations.deleteWhitelist,
                   onPressed: () {
-                    HostFilter.whitelist.remove(hostAndPort.host);
-                    configuration.flushConfig();
-                    FlutterToastr.show(localizations.deleteSuccess, context);
+                    showConfirmDialog(context,
+                        title: localizations.deleteWhitelist,
+                        content: localizations.confirmContent,
+                        onConfirm: () {
+                          HostFilter.whitelist.remove(hostAndPort.host);
+                          configuration.flushConfig();
+                          FlutterToastr.show(localizations.deleteSuccess, context);
+                        });
                   }),
               const Divider(thickness: 0.5, height: 5),
               BottomSheetItem(

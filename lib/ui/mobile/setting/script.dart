@@ -1000,10 +1000,15 @@ class _ScriptListState extends State<ScriptList> {
               const Divider(thickness: 0.5, height: 1),
               BottomSheetItem(
                   text: localizations.delete,
-                  onPressed: () async {
-                    await (await ScriptManager.instance).removeScript(index);
-                    _refreshScript(force: true);
-                    if (context.mounted) FlutterToastr.show(localizations.importSuccess, context);
+                  onPressed: () {
+                    showConfirmDialog(context,
+                        title: localizations.delete,
+                        content: localizations.confirmContent,
+                        onConfirm: () async {
+                          await (await ScriptManager.instance).removeScript(index);
+                          _refreshScript(force: true);
+                          if (context.mounted) FlutterToastr.show(localizations.importSuccess, context);
+                        });
                   }),
               Container(color: Theme.of(context).hoverColor, height: 8),
               TextButton(

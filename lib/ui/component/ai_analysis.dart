@@ -235,7 +235,24 @@ class _AiChatPageState extends State<AiChatPage> {
                       trailing: IconButton(
                         icon: const Icon(Icons.close, size: 18),
                         tooltip: '关闭并清除该对话',
-                        onPressed: () {
+                        onPressed: () async {
+                          final ok = await showDialog<bool>(
+                            context: sheetContext,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('删除对话', style: TextStyle(fontSize: 16)),
+                              content: const Text('删除后该对话的消息无法恢复。',
+                                  style: TextStyle(fontSize: 13)),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('取消')),
+                                FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('删除')),
+                              ],
+                            ),
+                          );
+                          if (ok != true || !mounted) return;
                           setSheetState(() => _deleteConversation(index));
                           if (mounted) setState(() {});
                         },

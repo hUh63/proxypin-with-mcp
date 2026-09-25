@@ -63,7 +63,7 @@ void main(List<String> args) async {
     // code_forge Rust FFI initialization may fail on iOS 14.x due to
     // deployment-target / cargokit-build incompatibilities. Degrade
     // gracefully instead of crashing the whole app at startup.
-    print('RustLib.init failed: $e');
+    logger.w('RustLib.init failed: $e');
   }
 
   // 上游 #839 FR2：清理上次异常退出遗留的 root 抓包重定向规则。
