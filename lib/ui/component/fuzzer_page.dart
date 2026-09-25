@@ -23,7 +23,10 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/fuzz_dictionary.dart';
 import 'package:proxypin/network/util/request_fuzzer.dart';
+import 'package:proxypin/ui/component/fuzz_dictionary_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 手动 Fuzz：把你自己写的取值逐条替换进一条请求发送，把响应摆在一起对照。
 ///
@@ -71,6 +74,7 @@ class _InjectionEditor {
 
 class _FuzzerPageState extends State<FuzzerPage> {
   static const int maxTemplates = 300;
+  static const String _kAnomalyRules = 'fuzz_anomaly_rules_v1';
 
   final TextEditingController _intervalController = TextEditingController(text: '200');
   final List<_InjectionEditor> _injections = [];
@@ -82,6 +86,10 @@ class _FuzzerPageState extends State<FuzzerPage> {
   final List<FuzzOutcome> _results = [];
   FuzzOutcome? _baseline;
 
+  /// 每条结果命中的比对规则（key = FuzzOutcome.index）
+  final Map<int, List<String>> _anomalyHits = {};
+  List<FuzzAnomalyRule> _rules = FuzzAnomaly.defaults();
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -89,6 +97,10 @@ class _FuzzerPageState extends State<FuzzerPage> {
     super.initState();
     _templates = widget.requests.toList().reversed.take(maxTemplates).toList();
     _injections.add(_InjectionEditor());
+    SharedPreferences.getInstance().then((p) {
+      if (!mounted) return;
+      setState(() => _rules = FuzzAnomaly.decode(p.getString(_kAnomalyRules)));
+    });
   }
 
   @override
@@ -143,6 +155,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
     setState(() {
       _running = true;
       _results.clear();
+      _anomalyHits.clear();
       _baseline = null;
     });
 
@@ -164,7 +177,12 @@ class _FuzzerPageState extends State<FuzzerPage> {
         final outcome = await RequestFuzzer.send(variant, index: i, payload: cases[i].label);
         final withDiff = _baseline == null ? outcome : outcome.withDiff(RequestFuzzer.diffOf(_baseline!, outcome));
         if (!mounted) break;
-        setState(() => _results.add(withDiff));
+        setState(() {
+          _results.add(withDiff);
+          // 按当前规则跟基线比一遍，命中什么就标什么
+          final hits = FuzzAnomaly.match(withDiff, _baseline, _rules);
+          if (hits.isNotEmpty) _anomalyHits[withDiff.index] = hits;
+        });
         if (_intervalMs > 0) {
           await Future.delayed(Duration(milliseconds: _intervalMs));
         }
@@ -386,6 +404,35 @@ class _FuzzerPageState extends State<FuzzerPage> {
               ),
             ),
           const SizedBox(height: 8),
+          Row(children: [
+            TextButton.icon(
+              onPressed: _running
+                  ? null
+                  : () async {
+                      final dict = await FuzzDictionaryDialog.show(context);
+                      if (dict == null || !mounted) return;
+                      try {
+                        final values = await FuzzDictionaryStore.resolve(dict);
+                        if (!mounted) return;
+                        setState(() => injection.values.text = values.join('\n'));
+                        FlutterToastr.show(
+                            '已填入「${dict.name}」共 ${values.length} 条', context,
+                            duration: 2);
+                      } catch (e) {
+                        if (!mounted) return;
+                        FlutterToastr.show('字典展开失败：$e', context,
+                            duration: 3, backgroundColor: Colors.red);
+                      }
+                    },
+              icon: const Icon(Icons.menu_book_outlined, size: 16),
+              label: const Text('从字典填充', style: TextStyle(fontSize: 12)),
+            ),
+            const Spacer(),
+            Text(
+                '${RequestFuzzer.parsePayloads(injection.values.text).length} 条',
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          ]),
+          const SizedBox(height: 4),
           TextField(
             controller: injection.values,
             enabled: !_running,
@@ -470,8 +517,100 @@ class _FuzzerPageState extends State<FuzzerPage> {
             ),
           ),
         ),
+        const SizedBox(height: 6),
+        _buildRules(cs),
       ],
     );
+  }
+
+  /// 判定规则设置：勾选启用、填参数。工具只按规则标差异，不下漏洞结论。
+  Widget _buildRules(ColorScheme cs) {
+    final enabledNames =
+        _rules.where((r) => r.enabled).map((r) => r.name).join('、');
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        title: const Text('判定规则（与基线比对）',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          enabledNames.isEmpty ? '未启用任何规则' : '已启用：$enabledNames',
+          style: const TextStyle(fontSize: 11, color: Colors.grey),
+        ),
+        children: [
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text('规则只负责标出「和基线不一样」，不代表这里就有漏洞 —— 结论由你下。',
+                style: TextStyle(fontSize: 10.5, color: Colors.grey)),
+          ),
+          for (final rule in _rules) _ruleRow(rule, cs),
+        ],
+      ),
+    );
+  }
+
+  Widget _ruleRow(FuzzAnomalyRule rule, ColorScheme cs) {
+    final needsParam = rule.id == FuzzAnomaly.keyword ||
+        rule.id == FuzzAnomaly.lengthChanged ||
+        rule.id == FuzzAnomaly.slower;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(children: [
+        SizedBox(
+          width: 34,
+          child: Checkbox(
+            value: rule.enabled,
+            onChanged: _running
+                ? null
+                : (v) => setState(() {
+                      final i = _rules.indexWhere((e) => e.id == rule.id);
+                      if (i >= 0) _rules[i] = _rules[i].copyWith(enabled: v ?? false);
+                      _saveRules();
+                    }),
+          ),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(rule.name, style: const TextStyle(fontSize: 12.5)),
+              Text(rule.description,
+                  style: const TextStyle(fontSize: 10.5, color: Colors.grey)),
+            ],
+          ),
+        ),
+        if (needsParam)
+          SizedBox(
+            width: 116,
+            child: TextFormField(
+              key: ValueKey(rule.id),
+              initialValue: rule.param,
+              enabled: !_running,
+              decoration: InputDecoration(
+                isDense: true,
+                border: const OutlineInputBorder(),
+                hintText: rule.id == FuzzAnomaly.keyword ? '关键字' : null,
+                suffixText: rule.id == FuzzAnomaly.slower
+                    ? 'ms'
+                    : (rule.id == FuzzAnomaly.keyword ? null : '%'),
+              ),
+              style: const TextStyle(fontSize: 12),
+              onChanged: (v) {
+                final i = _rules.indexWhere((e) => e.id == rule.id);
+                if (i >= 0) _rules[i] = _rules[i].copyWith(param: v);
+              },
+              onFieldSubmitted: (_) => _saveRules(),
+              onTapOutside: (_) => _saveRules(),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  void _saveRules() {
+    SharedPreferences.getInstance()
+        .then((p) => p.setString(_kAnomalyRules, FuzzAnomaly.encode(_rules)));
   }
 
   Widget _buildResults(ColorScheme cs) {
@@ -579,6 +718,28 @@ class _FuzzerPageState extends State<FuzzerPage> {
               Padding(
                 padding: const EdgeInsets.only(left: 30, top: 2),
                 child: Text(outcome.error!, style: TextStyle(fontSize: 11, color: cs.error), maxLines: 2),
+              ),
+            if (_anomalyHits[outcome.index]?.isNotEmpty == true)
+              Padding(
+                padding: const EdgeInsets.only(left: 30, top: 3),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    for (final hit in _anomalyHits[outcome.index]!)
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: cs.errorContainer.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(hit,
+                            style: TextStyle(
+                                fontSize: 10.5, color: cs.onErrorContainer)),
+                      ),
+                  ],
+                ),
               ),
           ],
         ),

@@ -381,3 +381,150 @@ class RequestFuzzer {
     return needsQuote ? '"$escaped"' : escaped;
   }
 }
+
+/// 一条「与基线比对」的判定规则。
+///
+/// 规则由你配，工具只负责按规则**标出差异** —— 不预置漏洞特征，
+/// 也不下「这里是漏洞」的结论。判定口径完全由 [param] 决定。
+class FuzzAnomalyRule {
+  /// 稳定 id，用于持久化配置
+  final String id;
+
+  /// 展示名
+  final String name;
+
+  /// 在比什么
+  final String description;
+
+  final bool enabled;
+
+  /// 规则参数：关键字规则=关键字；长度规则=百分比阈值；耗时规则=毫秒阈值
+  final String param;
+
+  const FuzzAnomalyRule({
+    required this.id,
+    required this.name,
+    required this.description,
+    this.enabled = false,
+    this.param = '',
+  });
+
+  FuzzAnomalyRule copyWith({bool? enabled, String? param}) => FuzzAnomalyRule(
+        id: id,
+        name: name,
+        description: description,
+        enabled: enabled ?? this.enabled,
+        param: param ?? this.param,
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'enabled': enabled, 'param': param};
+}
+
+/// 基线与变体的自动比对。
+///
+/// 默认只开「请求失败」（这个一定是异常）；其余规则由你按需打开并填参数。
+class FuzzAnomaly {
+  static const String failed = 'failed';
+  static const String statusChanged = 'status_changed';
+  static const String lengthChanged = 'length_changed';
+  static const String slower = 'slower';
+  static const String keyword = 'keyword';
+
+  static List<FuzzAnomalyRule> defaults() => const [
+        FuzzAnomalyRule(
+            id: failed, name: '请求失败', description: '连不上 / 超时 / 被中断', enabled: true),
+        FuzzAnomalyRule(
+            id: statusChanged, name: '状态码变化', description: '与基线的状态码不同'),
+        FuzzAnomalyRule(
+            id: lengthChanged,
+            name: '长度明显变化',
+            description: '响应体长度差超过阈值',
+            param: '20'),
+        FuzzAnomalyRule(
+            id: slower, name: '响应明显变慢', description: '比基线慢超过阈值', param: '500'),
+        FuzzAnomalyRule(
+            id: keyword, name: '命中关键字', description: '响应体出现你指定的关键字', param: ''),
+      ];
+
+  /// 按启用规则判定这一条命中了什么；返回命中的规则名（含参数）
+  static List<String> match(
+      FuzzOutcome outcome, FuzzOutcome? baseline, List<FuzzAnomalyRule> rules) {
+    final hits = <String>[];
+    for (final rule in rules) {
+      if (!rule.enabled) continue;
+      switch (rule.id) {
+        case failed:
+          if (!outcome.ok) hits.add(rule.name);
+          break;
+        case statusChanged:
+          if (baseline != null && outcome.statusCode != baseline.statusCode) {
+            hits.add(rule.name);
+          }
+          break;
+        case lengthChanged:
+          if (baseline != null &&
+              _lengthExceeded(baseline.bodyLength, outcome.bodyLength, rule.param)) {
+            hits.add('${rule.name}（${rule.param}%）');
+          }
+          break;
+        case slower:
+          if (baseline != null &&
+              _slowerThan(baseline.durationMs, outcome.durationMs, rule.param)) {
+            hits.add('${rule.name}（+${rule.param}ms）');
+          }
+          break;
+        case keyword:
+          final kw = rule.param.trim();
+          if (kw.isNotEmpty &&
+              outcome.body.toLowerCase().contains(kw.toLowerCase())) {
+            hits.add('${rule.name}（$kw）');
+          }
+          break;
+      }
+    }
+    return hits;
+  }
+
+  static bool _lengthExceeded(int baseLen, int len, String param) {
+    final threshold = (double.tryParse(param.trim()) ?? 20) / 100;
+    final max = baseLen > len ? baseLen : len;
+    if (max == 0) return false;
+    return (baseLen - len).abs() / max > threshold;
+  }
+
+  static bool _slowerThan(int baseMs, int ms, String param) {
+    final threshold = double.tryParse(param.trim()) ?? 500;
+    return (ms - baseMs) > threshold;
+  }
+
+  /// 规则配置的存取
+  static String encode(List<FuzzAnomalyRule> rules) =>
+      const JsonEncoder().convert(rules.map((e) => e.toJson()).toList());
+
+  static List<FuzzAnomalyRule> decode(String? raw) {
+    final defaults = FuzzAnomaly.defaults();
+    if (raw == null || raw.isEmpty) return defaults;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return defaults;
+      final saved = <String, Map<String, dynamic>>{};
+      for (final item in decoded) {
+        if (item is Map) {
+          final m = Map<String, dynamic>.from(item);
+          saved[(m['id'] ?? '').toString()] = m;
+        }
+      }
+      return defaults.map((d) {
+        final s = saved[d.id];
+        if (s == null) return d;
+        return d.copyWith(
+          enabled: s['enabled'] == true,
+          param: (s['param'] ?? d.param).toString(),
+        );
+      }).toList();
+    } catch (e) {
+      return defaults;
+    }
+  }
+}
