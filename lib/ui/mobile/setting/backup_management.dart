@@ -73,19 +73,20 @@ class _BackupManagementState extends State<BackupManagement> {
   /// **没有任何创建入口**，而自动备份又因为没有任何调用点从未触发过——
   /// 也就是说备份功能整体是死的：你看到的列表永远是空的。
   Future<void> _createBackup() async {
+    final localizations = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       final info = await BackupService.create();
       if (!mounted) return;
       FlutterToastr.show(
-        '已创建备份：${info.name}（${info.items.length} 项）',
+        localizations.backupCreated(info.name, info.items.length),
         context,
         rootNavigator: true,
         duration: 4,
       );
     } catch (e) {
       if (!mounted) return;
-      FlutterToastr.show('备份失败：$e', context, rootNavigator: true, duration: 5);
+      FlutterToastr.show(localizations.backupFailed(e.toString()), context, rootNavigator: true, duration: 5);
     } finally {
       if (mounted) setState(() => _isLoading = false);
       await _loadBackups();
@@ -98,21 +99,21 @@ class _BackupManagementState extends State<BackupManagement> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          '备份管理',
-          style: TextStyle(fontSize: 16),
+        title: Text(
+          localizations.desktopBackupManagement,
+          style: const TextStyle(fontSize: 16),
         ),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.save_alt),
             onPressed: _isLoading ? null : _createBackup,
-            tooltip: '立即备份（配置+证书+脚本+工作区）',
+            tooltip: localizations.backupNow,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadBackups,
-            tooltip: '刷新',
+            tooltip: localizations.refresh,
           ),
         ],
       ),
@@ -130,7 +131,7 @@ class _BackupManagementState extends State<BackupManagement> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '暂无备份文件',
+                        localizations.noBackupFiles,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey[600],
@@ -138,7 +139,7 @@ class _BackupManagementState extends State<BackupManagement> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '配置会自动备份到应用数据目录',
+                        localizations.backupAutoToAppDataDir,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[500],
@@ -172,43 +173,43 @@ class _BackupManagementState extends State<BackupManagement> {
                           ),
                         ),
                         subtitle: Text(
-                          '${_formatFileSize(backup.size)} • ${_formatTime(backup.modified)}${index == 0 ? ' • 最新' : ''}',
+                          '${_formatFileSize(backup.size)} • ${_formatTime(localizations, backup.modified)}${index == 0 ? ' • ${localizations.latestBackup}' : ''}',
                           style: const TextStyle(fontSize: 12),
                         ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) =>
                               _handleAction(context, backup, value),
                           itemBuilder: (context) => [
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'restore',
                               child: Row(
                                 children: [
-                                  Icon(Icons.restore, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('恢复'),
+                                  const Icon(Icons.restore, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(localizations.restoreBackup),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'export',
                               child: Row(
                                 children: [
-                                  Icon(Icons.share, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('导出'),
+                                  const Icon(Icons.share, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(localizations.exportBackup),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'delete',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete,
+                                  const Icon(Icons.delete,
                                       size: 20, color: Colors.red),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    '删除',
-                                    style: TextStyle(color: Colors.red),
+                                    localizations.deleteBackup,
+                                    style: const TextStyle(color: Colors.red),
                                   ),
                                 ],
                               ),
@@ -239,22 +240,23 @@ class _BackupManagementState extends State<BackupManagement> {
 
   Future<void> _restoreBackup(
       BuildContext context, BackupFile backup) async {
+    final localizations = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认恢复'),
+        title: Text(localizations.backupConfirmRestore),
         content: Text(
-          '恢复备份 "${backup.name}" 会覆盖当前配置，确定要继续吗？',
+          localizations.backupRestoreConfirm(backup.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
+            child: Text(localizations.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: const Text('确定'),
+            child: Text(localizations.backupOk),
           ),
         ],
       ),
@@ -273,8 +275,9 @@ class _BackupManagementState extends State<BackupManagement> {
         if (mounted) {
           FlutterToastr.show(
             result.configApplied
-                ? '已恢复 ${result.restored} 个文件，配置已生效'
-                : '已恢复 ${result.restored} 个文件（配置未生效${result.failed > 0 ? '，${result.failed} 项失败' : ''}）',
+                ? localizations.backupRestoredApplied(result.restored)
+                : localizations.backupRestoredNotApplied(result.restored,
+                    result.failed > 0 ? localizations.backupFailedSuffix(result.failed) : ''),
             context,
             rootNavigator: true,
             duration: 5,
@@ -297,7 +300,7 @@ class _BackupManagementState extends State<BackupManagement> {
 
       if (mounted) {
         FlutterToastr.show(
-          '配置已恢复',
+          localizations.backupConfigRestored,
           context,
           duration: 2,
           backgroundColor: Colors.green,
@@ -308,7 +311,7 @@ class _BackupManagementState extends State<BackupManagement> {
       logger.e('恢复备份失败', error: e, stackTrace: StackTrace.current);
       if (mounted) {
         FlutterToastr.show(
-          '恢复失败：${e.toString()}',
+          localizations.backupRestoreFailed(e.toString()),
           context,
           duration: 3,
           backgroundColor: Colors.red,
@@ -319,12 +322,13 @@ class _BackupManagementState extends State<BackupManagement> {
 
   Future<void> _exportBackup(
       BuildContext context, BackupFile backup) async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       final file = File(backup.path);
       final bytes = await file.readAsBytes();
 
       final outputPath = await FilePicker.saveFile(
-        dialogTitle: '选择保存位置',
+        dialogTitle: localizations.backupChooseSaveLocation,
         fileName: backup.name,
         type: FileType.custom,
         allowedExtensions: ['json'],
@@ -333,7 +337,7 @@ class _BackupManagementState extends State<BackupManagement> {
 
       if (outputPath != null && mounted) {
         FlutterToastr.show(
-          '已导出到：$outputPath',
+          localizations.backupExportedTo(outputPath),
           context,
           duration: 2,
           backgroundColor: Colors.green,
@@ -343,7 +347,7 @@ class _BackupManagementState extends State<BackupManagement> {
       logger.e('导出备份失败', error: e, stackTrace: StackTrace.current);
       if (mounted) {
         FlutterToastr.show(
-          '导出失败：${e.toString()}',
+          localizations.backupExportFailed(e.toString()),
           context,
           duration: 3,
           backgroundColor: Colors.red,
@@ -354,20 +358,21 @@ class _BackupManagementState extends State<BackupManagement> {
 
   Future<void> _deleteBackup(
       BuildContext context, BackupFile backup) async {
+    final localizations = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除备份 "${backup.name}" 吗？'),
+        title: Text(localizations.backupConfirmDelete),
+        content: Text(localizations.backupDeleteConfirm(backup.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
+            child: Text(localizations.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('删除'),
+            child: Text(localizations.deleteBackup),
           ),
         ],
       ),
@@ -382,7 +387,7 @@ class _BackupManagementState extends State<BackupManagement> {
 
       if (mounted) {
         FlutterToastr.show(
-          '备份已删除',
+          localizations.backupDeleted,
           context,
           duration: 2,
           backgroundColor: Colors.green,
@@ -392,7 +397,7 @@ class _BackupManagementState extends State<BackupManagement> {
       logger.e('删除备份失败', error: e, stackTrace: StackTrace.current);
       if (mounted) {
         FlutterToastr.show(
-          '删除失败：${e.toString()}',
+          localizations.backupDeleteFailed(e.toString()),
           context,
           duration: 3,
           backgroundColor: Colors.red,
@@ -407,13 +412,13 @@ class _BackupManagementState extends State<BackupManagement> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  String _formatTime(DateTime time) {
+  String _formatTime(AppLocalizations localizations, DateTime time) {
     final now = DateTime.now();
     final diff = now.difference(time);
 
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inHours < 1) return '${diff.inMinutes} 分钟前';
-    if (diff.inDays < 1) return '${diff.inHours} 小时前';
+    if (diff.inMinutes < 1) return localizations.backupJustNow;
+    if (diff.inHours < 1) return localizations.quicMinutesAgo(diff.inMinutes);
+    if (diff.inDays < 1) return localizations.quicHoursAgo(diff.inHours);
     return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')}';
   }
 }

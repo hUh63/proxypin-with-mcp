@@ -4170,4 +4170,626 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get cfgClipboardNotConfig => 'The clipboard content is not config JSON; copy the config text first';
+
+
+  @override
+  String get devToolCron => 'Cron expression';
+
+  @override
+  String get devToolJwt => 'JWT decode';
+
+  @override
+  String get devToolSha => 'SHA hash';
+
+  @override
+  String get devToolCronExampleWorkday => '9 AM on weekdays';
+
+  @override
+  String get devToolCronExampleMonthly => '8:30 on the 1st of each month';
+
+  @override
+  String get devToolCronExampleMidnight => 'Midnight every day';
+
+  @override
+  String get devToolCronExampleEvery15Min => 'Every 15 minutes';
+
+  @override
+  String get devToolCronExampleEvery2Hours => 'Every 2 hours';
+
+  @override
+  String get devToolCronExampleMondayNoon => 'Noon every Monday';
+
+  @override
+  String get devToolCronParseError => 'Cannot parse this expression; check each field';
+
+  @override
+  String get devToolCronHint => 'min hour day month weekday';
+
+  @override
+  String get devToolCronParse => 'Parse';
+
+  @override
+  String get devToolCronNextRuns => 'Next 6 run times';
+
+  @override
+  String get devToolCronFieldHelp => 'Field reference';
+
+  @override
+  String get devToolCronWildcardHint => 'Wildcards: * any  ·  , list  ·  - range  ·  / step';
+
+  @override
+  String get devToolCronExamples => 'Common examples (tap to fill)';
+
+  @override
+  String get devToolCronFieldMinute => 'Minute';
+
+  @override
+  String get devToolCronFieldHour => 'Hour';
+
+  @override
+  String get devToolCronFieldDay => 'Day';
+
+  @override
+  String get devToolCronFieldMonth => 'Month';
+
+  @override
+  String get devToolCronFieldWeek => 'Weekday';
+
+  @override
+  String get devToolCronFieldWeekRange => '0-6 (0 is Sunday)';
+
+  @override
+  String get devToolJwtInvalid => 'A JWT should have at least two Base64Url segments (header.payload.signature)';
+
+  @override
+  String devToolJwtDecodeFailed(String error) {
+    return 'Decode failed: $error';
+  }
+
+  @override
+  String devToolJwtExpiry(String time, String status) {
+    return '$time ($status)';
+  }
+
+  @override
+  String devToolJwtExpLabel(String time) {
+    return 'Expires at: $time';
+  }
+
+  @override
+  String get devToolJwtExpired => 'expired';
+
+  @override
+  String get devToolJwtValid => 'valid';
+
+  @override
+  String get devToolJwtLabel => 'Paste a JWT token';
+
+  @override
+  String get devToolJwtHint => 'You can paste an Authorization value with the Bearer prefix';
+
+  @override
+  String get devToolUuidCount => 'Count';
+
+  @override
+  String get devToolUuidUppercase => 'Uppercase';
+
+  @override
+  String get devToolUuidGenerate => 'Generate UUID v4';
+
+  @override
+  String get devToolUuidEmpty => 'Tap the button above to generate';
+
+  @override
+  String get devToolCopiedAll => 'Copied all';
+
+  @override
+  String get devToolCopyAll => 'Copy all';
+
+  @override
+  String get devToolShaInput => 'Input text';
+
+  @override
+  String get devToolShaNote => 'Computed over UTF-8; to verify files/binary, use the hex tool on captured traffic.';
+
+  @override
+  String get calcTitle => 'Calculator';
+
+  @override
+  String get calcTabIntConvert => 'Radix / Two\'s complement';
+
+  @override
+  String get calcTabBitwise => 'Bitwise';
+
+  @override
+  String get calcTabEndian => 'Endianness';
+
+  @override
+  String get calcTabCrcHash => 'CRC / Hash';
+
+  @override
+  String get calcEmptyHint => 'Enter a value and tap "Calculate" to see the result';
+
+  @override
+  String calcCopiedKey(String name) {
+    return 'Copied $name';
+  }
+
+  @override
+  String get calcCompute => 'Calculate';
+
+  @override
+  String get calcLabelValue => 'Value';
+
+  @override
+  String get calcIntValueHint => 'Accepts 0x / 0b / 0o / decimal, optional leading minus';
+
+  @override
+  String get calcLabelWidth => 'Bit width';
+
+  @override
+  String calcNBits(int bits) {
+    return '$bits bits';
+  }
+
+  @override
+  String get calcLabelOperation => 'Operation';
+
+  @override
+  String get calcLabelOperandA => 'Operand A';
+
+  @override
+  String get calcLabelShiftAmount => 'Shift amount (decimal)';
+
+  @override
+  String get calcLabelOperandB => 'Operand B';
+
+  @override
+  String get calcHintShiftExample => 'e.g. 4';
+
+  @override
+  String get calcHintOperandBExample => 'e.g. 0x0FF0';
+
+  @override
+  String get calcLabelHexData => 'Hex data';
+
+  @override
+  String get calcHintHexDataExample => 'e.g. 0x78563412';
+
+  @override
+  String get calcLabelByteWidth => 'Byte width';
+
+  @override
+  String get calcByteWidthAuto => 'Match input length';
+
+  @override
+  String calcNBytes(int bytes) {
+    return '$bytes bytes';
+  }
+
+  @override
+  String get calcLabelMachineOrValue => 'Machine code or number';
+
+  @override
+  String get calcIeeeHint => 'Hex machine code (e.g. 0x3f800000) or a decimal fraction (e.g. 1.5)';
+
+  @override
+  String get calcLabelPrecision => 'Precision';
+
+  @override
+  String get calcLabelAlgorithm => 'Algorithm';
+
+  @override
+  String get calcLabelInputFormat => 'Input format';
+
+  @override
+  String get calcLabelData => 'Data';
+
+
+  @override
+  String get wsPageTitle => 'Workspaces';
+
+  @override
+  String get wsPageNew => 'New workspace';
+
+  @override
+  String get wsPageNameHint => 'Name (e.g. "Payment module", "Test env")';
+
+  @override
+  String get wsPageRenameTitle => 'Rename workspace';
+
+  @override
+  String get wsPageDeleteTitle => 'Delete workspace';
+
+  @override
+  String wsPageDeleteConfirm(String name) {
+    return 'Delete "$name" and its local data? This cannot be undone.';
+  }
+
+  @override
+  String get wsPageNoCaptureData => 'No captured requests to save';
+
+  @override
+  String wsPageSavedTo(int count, String name) {
+    return 'Saved $count to "$name"';
+  }
+
+  @override
+  String wsPageSaveFailed(String error) {
+    return 'Save failed: $error';
+  }
+
+  @override
+  String get wsPageEmptyWorkspace => 'Workspace is empty';
+
+  @override
+  String wsPageImportedToHistory(int count) {
+    return 'Imported $count requests to history';
+  }
+
+  @override
+  String wsPageImportFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get wsPageServerTitle => 'Workspace server';
+
+  @override
+  String get wsPageServerUrlHint => 'Base URL (e.g. http://10.0.0.5:8787)';
+
+  @override
+  String get wsPageTokenTitle => 'Token (optional)';
+
+  @override
+  String get wsPageServerSaved => 'Server config saved';
+
+  @override
+  String get wsPageServerCleared => 'Server config cleared';
+
+  @override
+  String get wsPageServerNeeded => 'Configure the workspace server first';
+
+  @override
+  String wsPagePushed(int bytes) {
+    return 'Pushed to server ($bytes bytes)';
+  }
+
+  @override
+  String wsPagePushFailed(String error) {
+    return 'Push failed: $error';
+  }
+
+  @override
+  String get wsPageServerNoWorkspaces => 'Server has no workspaces';
+
+  @override
+  String wsPagePulled(int count) {
+    return 'Pulled $count workspaces';
+  }
+
+  @override
+  String wsPagePullFailed(String error) {
+    return 'Pull failed: $error';
+  }
+
+  @override
+  String get wsPageServerTooltip => 'Server settings';
+
+  @override
+  String get wsPagePullFromServer => 'Pull from server';
+
+  @override
+  String get wsPageEmptyHint => 'No workspace yet. Create one, save the current capture into it, and manage captures per project.';
+
+  @override
+  String get wsPageCustomServer => 'Custom server';
+
+  @override
+  String get wsPageServerNotConfiguredHint => 'Not configured. Only needed if you want to share/backup to your own server.';
+
+  @override
+  String get wsPageSaveCurrent => 'Save current capture';
+
+  @override
+  String get wsPageImportToHistory => 'Import to history';
+
+  @override
+  String get wsPagePushToServer => 'Push to server';
+
+  @override
+  String wsPageItemMeta(int count, String time) {
+    return '$count requests · $time';
+  }
+
+  @override
+  String get logViewReadyHint => 'Log viewer is ready: runtime logs will show up here in real time (up to 500 entries).';
+
+  @override
+  String get logViewExportSuccess => 'Logs exported';
+
+  @override
+  String get logViewExportFailed => 'Log export failed';
+
+  @override
+  String logViewExportError(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get logViewClearLogs => 'Clear logs';
+
+  @override
+  String get logViewClearConfirm => 'Clear all logs? This cannot be undone.';
+
+  @override
+  String get logViewCleared => 'Logs cleared';
+
+  @override
+  String get logViewTitle => 'Log management';
+
+  @override
+  String get logViewTapToPause => 'Recording, tap to pause';
+
+  @override
+  String get logViewTapToResume => 'Paused, tap to resume';
+
+  @override
+  String get logViewRecordingResumed => 'Log recording enabled';
+
+  @override
+  String get logViewRecordingPaused => 'Log recording paused';
+
+  @override
+  String get logViewMore => 'More';
+
+  @override
+  String get logViewSearchLogs => 'Search logs';
+
+  @override
+  String get logViewExportLogs => 'Export logs';
+
+  @override
+  String get logViewNoLogs => 'No logs yet';
+
+  @override
+  String get logViewStatTotal => 'Total';
+
+  @override
+  String get logViewStatDebug => 'Debug';
+
+  @override
+  String get logViewStatInfo => 'Info';
+
+  @override
+  String get logViewStatWarning => 'Warning';
+
+  @override
+  String get logViewStatError => 'Error';
+
+  @override
+  String get logViewTime => 'Time';
+
+  @override
+  String get logViewTag => 'Tag';
+
+  @override
+  String get logViewMessage => 'Message:';
+
+  @override
+  String get logViewStack => 'Stack:';
+
+  @override
+  String get cmpTitle => 'Request comparison';
+
+  @override
+  String get cmpTabOverview => 'Overview';
+
+  @override
+  String get cmpHasDiff => 'Differences found';
+
+  @override
+  String get cmpIdentical => 'Identical';
+
+  @override
+  String cmpTotalChanges(int count) {
+    return '$count changes in total';
+  }
+
+  @override
+  String get cmpFieldMethod => 'Method';
+
+  @override
+  String get cmpChangeStats => 'Change summary';
+
+  @override
+  String get cmpHeaderChanges => 'Header changes';
+
+  @override
+  String get cmpQueryChanges => 'Parameter changes';
+
+  @override
+  String get cmpBodyChanges => 'Body changes';
+
+  @override
+  String get cmpStatusChanges => 'Status code changes';
+
+  @override
+  String get cmpDetailedReport => 'Detailed report';
+
+  @override
+  String get cmpNoHeaderChanges => 'No header changes';
+
+  @override
+  String cmpOldValue(String value) {
+    return 'Old: $value';
+  }
+
+  @override
+  String cmpNewValue(String value) {
+    return 'New: $value';
+  }
+
+  @override
+  String get cmpNoBodyChanges => 'No body changes';
+
+  @override
+  String get cmpBodyA => 'Request body A';
+
+  @override
+  String get cmpBodyB => 'Request body B';
+
+  @override
+  String get cmpNoResponseData => 'No response data';
+
+  @override
+  String cmpResponseHeaderChanges(int count) {
+    return 'Response header changes ($count)';
+  }
+
+  @override
+  String get cmpNoChanges => 'No changes';
+
+  @override
+  String get cmpResponseBodyA => 'Response body A';
+
+  @override
+  String get cmpResponseBodyB => 'Response body B';
+
+  @override
+  String get cmpModified => 'Modified';
+
+  @override
+  String cmpRequestLabel(String label) {
+    return 'Request $label';
+  }
+
+  @override
+  String get cmpEmpty => '(empty)';
+
+
+  @override
+  String backupCreated(String name, int count) {
+    return 'Backup created: $name ($count items)';
+  }
+
+  @override
+  String backupFailed(String error) {
+    return 'Backup failed: $error';
+  }
+
+  @override
+  String get backupNow => 'Back up now (config + certificate + scripts + workspace)';
+
+  @override
+  String get backupAutoToAppDataDir => 'Configuration automatically backs up to the app data directory';
+
+  @override
+  String get backupOk => 'OK';
+
+  @override
+  String get backupConfirmRestore => 'Confirm restore';
+
+  @override
+  String backupRestoreConfirm(String name) {
+    return 'Restoring backup "$name" will overwrite the current configuration. Continue?';
+  }
+
+  @override
+  String get backupConfirmDelete => 'Confirm delete';
+
+  @override
+  String backupRestoredApplied(int restored) {
+    return 'Restored $restored files; the configuration is now in effect';
+  }
+
+  @override
+  String backupRestoredNotApplied(int restored, String failedSuffix) {
+    return 'Restored $restored files (configuration not applied$failedSuffix)';
+  }
+
+  @override
+  String backupFailedSuffix(int failed) {
+    return ', $failed items failed';
+  }
+
+  @override
+  String get backupAppliedSuffix => ', the configuration is now in effect';
+
+  @override
+  String get backupConfigRestored => 'Configuration restored';
+
+  @override
+  String backupRestoreFailed(String error) {
+    return 'Restore failed: $error';
+  }
+
+  @override
+  String backupRestoredSummary(int restored, String applied, String failed) {
+    return 'Restored $restored files$applied$failed';
+  }
+
+  @override
+  String get backupRestored => 'Backup restored';
+
+  @override
+  String get backupChooseSaveLocation => 'Choose a save location';
+
+  @override
+  String backupExportedTo(String path) {
+    return 'Exported to: $path';
+  }
+
+  @override
+  String get backupExportDialogTitle => 'Export backup file';
+
+  @override
+  String get backupExportSuccess => 'Exported successfully';
+
+  @override
+  String backupExportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String backupDeleteConfirm(String name) {
+    return 'Delete backup "$name"?';
+  }
+
+  @override
+  String backupDeleteConfirmDesktop(String name) {
+    return 'Delete backup file "$name"?\n\nThis cannot be undone.';
+  }
+
+  @override
+  String get backupDeleted => 'Backup deleted';
+
+  @override
+  String backupDeleteFailed(String error) {
+    return 'Delete failed: $error';
+  }
+
+  @override
+  String get backupDirNotFound => 'Backup directory does not exist';
+
+  @override
+  String backupRestoreConfirmDesktop(String name) {
+    return 'Restore backup file "$name"?\n\nThe current configuration will be overwritten.';
+  }
+
+  @override
+  String backupViewTitle(String name) {
+    return 'View backup: $name';
+  }
+
+  @override
+  String backupViewFailed(String error) {
+    return 'View failed: $error';
+  }
+
+  @override
+  String get backupCopied => 'Copied to clipboard';
+
+  @override
+  String get backupJustNow => 'Just now';
 }

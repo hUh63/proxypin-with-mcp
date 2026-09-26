@@ -4148,6 +4148,628 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get cfgClipboardNotConfig => '剪贴板内容不是配置 JSON，请先复制配置文本';
 
+
+  @override
+  String get devToolCron => 'Cron 表达式';
+
+  @override
+  String get devToolJwt => 'JWT 解码';
+
+  @override
+  String get devToolSha => 'SHA 哈希';
+
+  @override
+  String get devToolCronExampleWorkday => '工作日每天上午 9 点';
+
+  @override
+  String get devToolCronExampleMonthly => '每月 1 号 8:30';
+
+  @override
+  String get devToolCronExampleMidnight => '每天零点';
+
+  @override
+  String get devToolCronExampleEvery15Min => '每 15 分钟';
+
+  @override
+  String get devToolCronExampleEvery2Hours => '每 2 小时';
+
+  @override
+  String get devToolCronExampleMondayNoon => '每周一中午 12 点';
+
+  @override
+  String get devToolCronParseError => '无法解析该表达式，请检查各字段';
+
+  @override
+  String get devToolCronHint => '分 时 日 月 星期';
+
+  @override
+  String get devToolCronParse => '解析';
+
+  @override
+  String get devToolCronNextRuns => '接下来 6 次执行时间';
+
+  @override
+  String get devToolCronFieldHelp => '字段说明';
+
+  @override
+  String get devToolCronWildcardHint => '支持通配符：* 任意值 · , 列表 · - 范围 · / 步进';
+
+  @override
+  String get devToolCronExamples => '常用示例（点击填入）';
+
+  @override
+  String get devToolCronFieldMinute => '分钟';
+
+  @override
+  String get devToolCronFieldHour => '小时';
+
+  @override
+  String get devToolCronFieldDay => '日';
+
+  @override
+  String get devToolCronFieldMonth => '月';
+
+  @override
+  String get devToolCronFieldWeek => '星期';
+
+  @override
+  String get devToolCronFieldWeekRange => '0-6（0 为周日）';
+
+  @override
+  String get devToolJwtInvalid => 'JWT 应由两段以上 Base64Url 组成（header.payload.signature）';
+
+  @override
+  String devToolJwtDecodeFailed(String error) {
+    return '解码失败：$error';
+  }
+
+  @override
+  String devToolJwtExpiry(String time, String status) {
+    return '$time（$status）';
+  }
+
+  @override
+  String devToolJwtExpLabel(String time) {
+    return '过期时间：$time';
+  }
+
+  @override
+  String get devToolJwtExpired => '已过期';
+
+  @override
+  String get devToolJwtValid => '有效';
+
+  @override
+  String get devToolJwtLabel => '粘贴 JWT Token';
+
+  @override
+  String get devToolJwtHint => '支持直接粘贴带 Bearer 前缀的 Authorization 值';
+
+  @override
+  String get devToolUuidCount => '数量';
+
+  @override
+  String get devToolUuidUppercase => '大写';
+
+  @override
+  String get devToolUuidGenerate => '生成 UUID v4';
+
+  @override
+  String get devToolUuidEmpty => '点击上方按钮生成';
+
+  @override
+  String get devToolCopiedAll => '已复制全部';
+
+  @override
+  String get devToolCopyAll => '复制全部';
+
+  @override
+  String get devToolShaInput => '输入文本';
+
+  @override
+  String get devToolShaNote => '以 UTF-8 编码计算；文件/二进制校验请使用抓包数据的十六进制工具。';
+
+  @override
+  String get calcTitle => '计算器';
+
+  @override
+  String get calcTabIntConvert => '进制/补码';
+
+  @override
+  String get calcTabBitwise => '位运算';
+
+  @override
+  String get calcTabEndian => '字节序';
+
+  @override
+  String get calcTabCrcHash => 'CRC/哈希';
+
+  @override
+  String get calcEmptyHint => '输入后点「计算」查看结果';
+
+  @override
+  String calcCopiedKey(String name) {
+    return '已复制 $name';
+  }
+
+  @override
+  String get calcCompute => '计算';
+
+  @override
+  String get calcLabelValue => '数值';
+
+  @override
+  String get calcIntValueHint => '支持 0x / 0b / 0o / 十进制，可带负号';
+
+  @override
+  String get calcLabelWidth => '位宽';
+
+  @override
+  String calcNBits(int bits) {
+    return '$bits 位';
+  }
+
+  @override
+  String get calcLabelOperation => '运算';
+
+  @override
+  String get calcLabelOperandA => '操作数 A';
+
+  @override
+  String get calcLabelShiftAmount => '位移量（十进制）';
+
+  @override
+  String get calcLabelOperandB => '操作数 B';
+
+  @override
+  String get calcHintShiftExample => '例如 4';
+
+  @override
+  String get calcHintOperandBExample => '例如 0x0FF0';
+
+  @override
+  String get calcLabelHexData => '十六进制数据';
+
+  @override
+  String get calcHintHexDataExample => '例如 0x78563412';
+
+  @override
+  String get calcLabelByteWidth => '字节宽度';
+
+  @override
+  String get calcByteWidthAuto => '按输入长度';
+
+  @override
+  String calcNBytes(int bytes) {
+    return '$bytes 字节';
+  }
+
+  @override
+  String get calcLabelMachineOrValue => '机器码或数值';
+
+  @override
+  String get calcIeeeHint => '十六进制机器码（如 0x3f800000）或十进制小数（如 1.5）';
+
+  @override
+  String get calcLabelPrecision => '精度';
+
+  @override
+  String get calcLabelAlgorithm => '算法';
+
+  @override
+  String get calcLabelInputFormat => '输入格式';
+
+  @override
+  String get calcLabelData => '数据';
+
+
+  @override
+  String get wsPageTitle => '工作区';
+
+  @override
+  String get wsPageNew => '新建工作区';
+
+  @override
+  String get wsPageNameHint => '名称（如「支付模块」「测试环境」）';
+
+  @override
+  String get wsPageRenameTitle => '重命名工作区';
+
+  @override
+  String get wsPageDeleteTitle => '删除工作区';
+
+  @override
+  String wsPageDeleteConfirm(String name) {
+    return '「$name」及其本地数据会被删除，无法恢复。';
+  }
+
+  @override
+  String get wsPageNoCaptureData => '当前没有抓包数据可保存';
+
+  @override
+  String wsPageSavedTo(int count, String name) {
+    return '已保存 $count 条到「$name」';
+  }
+
+  @override
+  String wsPageSaveFailed(String error) {
+    return '保存失败：$error';
+  }
+
+  @override
+  String get wsPageEmptyWorkspace => '工作区里没有数据';
+
+  @override
+  String wsPageImportedToHistory(int count) {
+    return '已导入 $count 条到历史';
+  }
+
+  @override
+  String wsPageImportFailed(String error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String get wsPageServerTitle => '工作区服务端';
+
+  @override
+  String get wsPageServerUrlHint => '服务端地址（如 http://10.0.0.5:8787）';
+
+  @override
+  String get wsPageTokenTitle => '访问令牌（可留空）';
+
+  @override
+  String get wsPageServerSaved => '已保存服务端配置';
+
+  @override
+  String get wsPageServerCleared => '已清空服务端配置';
+
+  @override
+  String get wsPageServerNeeded => '请先配置工作区服务端';
+
+  @override
+  String wsPagePushed(int bytes) {
+    return '已推送到服务端（$bytes 字节）';
+  }
+
+  @override
+  String wsPagePushFailed(String error) {
+    return '推送失败：$error';
+  }
+
+  @override
+  String get wsPageServerNoWorkspaces => '服务端没有工作区';
+
+  @override
+  String wsPagePulled(int count) {
+    return '已拉取 $count 个工作区';
+  }
+
+  @override
+  String wsPagePullFailed(String error) {
+    return '拉取失败：$error';
+  }
+
+  @override
+  String get wsPageServerTooltip => '服务端配置';
+
+  @override
+  String get wsPagePullFromServer => '从服务端拉取';
+
+  @override
+  String get wsPageEmptyHint => '还没有工作区。建一个，把当前抓包存进去，就能按项目分开管理。';
+
+  @override
+  String get wsPageCustomServer => '自定义服务端';
+
+  @override
+  String get wsPageServerNotConfiguredHint => '未配置。只用本地工作区的话不需要它；想共享/备份到自己的服务器再填。';
+
+  @override
+  String get wsPageSaveCurrent => '保存当前抓包';
+
+  @override
+  String get wsPageImportToHistory => '导入到历史';
+
+  @override
+  String get wsPagePushToServer => '推送到服务端';
+
+  @override
+  String wsPageItemMeta(int count, String time) {
+    return '$count 条 · $time';
+  }
+
+  @override
+  String get logViewReadyHint => '日志记录已就绪：应用运行日志将实时显示在此（最多保留 500 条）';
+
+  @override
+  String get logViewExportSuccess => '日志导出成功';
+
+  @override
+  String get logViewExportFailed => '日志导出失败';
+
+  @override
+  String logViewExportError(String error) {
+    return '导出失败：$error';
+  }
+
+  @override
+  String get logViewClearLogs => '清除日志';
+
+  @override
+  String get logViewClearConfirm => '确定要清除所有日志吗？此操作不可恢复。';
+
+  @override
+  String get logViewCleared => '日志已清除';
+
+  @override
+  String get logViewTitle => '日志管理';
+
+  @override
+  String get logViewTapToPause => '正在记录，点击暂停';
+
+  @override
+  String get logViewTapToResume => '已暂停，点击开启';
+
+  @override
+  String get logViewRecordingResumed => '日志记录已开启';
+
+  @override
+  String get logViewRecordingPaused => '日志记录已暂停';
+
+  @override
+  String get logViewMore => '更多';
+
+  @override
+  String get logViewSearchLogs => '搜索日志';
+
+  @override
+  String get logViewExportLogs => '导出日志';
+
+  @override
+  String get logViewNoLogs => '暂无日志';
+
+  @override
+  String get logViewStatTotal => '总数';
+
+  @override
+  String get logViewStatDebug => '调试';
+
+  @override
+  String get logViewStatInfo => '信息';
+
+  @override
+  String get logViewStatWarning => '警告';
+
+  @override
+  String get logViewStatError => '错误';
+
+  @override
+  String get logViewTime => '时间';
+
+  @override
+  String get logViewTag => '标签';
+
+  @override
+  String get logViewMessage => '消息:';
+
+  @override
+  String get logViewStack => '堆栈:';
+
+  @override
+  String get cmpTitle => '请求对比';
+
+  @override
+  String get cmpTabOverview => '概览';
+
+  @override
+  String get cmpHasDiff => '存在差异';
+
+  @override
+  String get cmpIdentical => '完全相同';
+
+  @override
+  String cmpTotalChanges(int count) {
+    return '共 $count 处变化';
+  }
+
+  @override
+  String get cmpFieldMethod => '方法';
+
+  @override
+  String get cmpChangeStats => '变化统计';
+
+  @override
+  String get cmpHeaderChanges => '请求头变化';
+
+  @override
+  String get cmpQueryChanges => '参数变化';
+
+  @override
+  String get cmpBodyChanges => '请求体变化';
+
+  @override
+  String get cmpStatusChanges => '状态码变化';
+
+  @override
+  String get cmpDetailedReport => '详细报告';
+
+  @override
+  String get cmpNoHeaderChanges => '请求头无变化';
+
+  @override
+  String cmpOldValue(String value) {
+    return '旧：$value';
+  }
+
+  @override
+  String cmpNewValue(String value) {
+    return '新：$value';
+  }
+
+  @override
+  String get cmpNoBodyChanges => '请求体无变化';
+
+  @override
+  String get cmpBodyA => '请求体 A';
+
+  @override
+  String get cmpBodyB => '请求体 B';
+
+  @override
+  String get cmpNoResponseData => '无响应数据';
+
+  @override
+  String cmpResponseHeaderChanges(int count) {
+    return '响应头变化 ($count)';
+  }
+
+  @override
+  String get cmpNoChanges => '无变化';
+
+  @override
+  String get cmpResponseBodyA => '响应体 A';
+
+  @override
+  String get cmpResponseBodyB => '响应体 B';
+
+  @override
+  String get cmpModified => '已修改';
+
+  @override
+  String cmpRequestLabel(String label) {
+    return '请求 $label';
+  }
+
+  @override
+  String get cmpEmpty => '(空)';
+
+
+  @override
+  String backupCreated(String name, int count) {
+    return '已创建备份：$name（$count 项）';
+  }
+
+  @override
+  String backupFailed(String error) {
+    return '备份失败：$error';
+  }
+
+  @override
+  String get backupNow => '立即备份（配置+证书+脚本+工作区）';
+
+  @override
+  String get backupAutoToAppDataDir => '配置会自动备份到应用数据目录';
+
+  @override
+  String get backupOk => '确定';
+
+  @override
+  String get backupConfirmRestore => '确认恢复';
+
+  @override
+  String backupRestoreConfirm(String name) {
+    return '恢复备份 "$name" 会覆盖当前配置，确定要继续吗？';
+  }
+
+  @override
+  String get backupConfirmDelete => '确认删除';
+
+  @override
+  String backupRestoredApplied(int restored) {
+    return '已恢复 $restored 个文件，配置已生效';
+  }
+
+  @override
+  String backupRestoredNotApplied(int restored, String failedSuffix) {
+    return '已恢复 $restored 个文件（配置未生效$failedSuffix）';
+  }
+
+  @override
+  String backupFailedSuffix(int failed) {
+    return '，$failed 项失败';
+  }
+
+  @override
+  String get backupAppliedSuffix => '，配置已生效';
+
+  @override
+  String get backupConfigRestored => '配置已恢复';
+
+  @override
+  String backupRestoreFailed(String error) {
+    return '恢复失败：$error';
+  }
+
+  @override
+  String backupRestoredSummary(int restored, String applied, String failed) {
+    return '已恢复 $restored 个文件$applied$failed';
+  }
+
+  @override
+  String get backupRestored => '备份已恢复';
+
+  @override
+  String get backupChooseSaveLocation => '选择保存位置';
+
+  @override
+  String backupExportedTo(String path) {
+    return '已导出到：$path';
+  }
+
+  @override
+  String get backupExportDialogTitle => '导出备份文件';
+
+  @override
+  String get backupExportSuccess => '导出成功';
+
+  @override
+  String backupExportFailed(String error) {
+    return '导出失败：$error';
+  }
+
+  @override
+  String backupDeleteConfirm(String name) {
+    return '确定要删除备份 "$name" 吗？';
+  }
+
+  @override
+  String backupDeleteConfirmDesktop(String name) {
+    return '确定要删除备份文件 "$name" 吗？\n\n此操作不可撤销。';
+  }
+
+  @override
+  String get backupDeleted => '备份已删除';
+
+  @override
+  String backupDeleteFailed(String error) {
+    return '删除失败：$error';
+  }
+
+  @override
+  String get backupDirNotFound => '备份目录不存在';
+
+  @override
+  String backupRestoreConfirmDesktop(String name) {
+    return '确定要恢复备份文件 "$name" 吗？\n\n当前配置将被覆盖。';
+  }
+
+  @override
+  String backupViewTitle(String name) {
+    return '查看备份：$name';
+  }
+
+  @override
+  String backupViewFailed(String error) {
+    return '查看失败：$error';
+  }
+
+  @override
+  String get backupCopied => '已复制到剪贴板';
+
+  @override
+  String get backupJustNow => '刚刚';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

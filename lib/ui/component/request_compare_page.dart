@@ -6,6 +6,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/request_comparator.dart';
 
@@ -33,6 +34,8 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
   late ComparisonResult _result;
   final RequestComparator _comparator = RequestComparator();
 
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -55,14 +58,14 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('请求对比'),
+        title: Text(localizations.cmpTitle),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: '概览'),
-            Tab(text: '请求头'),
-            Tab(text: '请求体'),
-            Tab(text: '响应'),
+          tabs: [
+            Tab(text: localizations.cmpTabOverview),
+            Tab(text: localizations.requestHeader),
+            Tab(text: localizations.requestBody),
+            Tab(text: localizations.response),
           ],
         ),
       ),
@@ -97,7 +100,9 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _result.hasChanges ? '存在差异' : '完全相同',
+                    _result.hasChanges
+                        ? localizations.cmpHasDiff
+                        : localizations.cmpIdentical,
                     style: Theme.of(context)
                         .textTheme
                         .headlineSmall
@@ -105,7 +110,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '共 ${_result.totalChanges} 处变化',
+                    localizations.cmpTotalChanges(_result.totalChanges),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],
@@ -121,7 +126,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
           ),
           const SizedBox(height: 12),
           _buildComparisonCard(
-            '方法',
+            localizations.cmpFieldMethod,
             widget.requestA.method.name,
             widget.requestB.method.name,
             changed: _result.methodChanged,
@@ -133,12 +138,12 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('变化统计', style: Theme.of(context).textTheme.titleMedium),
+                  Text(localizations.cmpChangeStats, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
-                  _buildStatRow('请求头变化', _result.headerDiffs.length),
-                  _buildStatRow('参数变化', _result.queryDiffs.length),
-                  _buildStatRow('请求体变化', (_result.bodyDiff?.hasChanged ?? false) ? 1 : 0),
-                  if (_result.statusCodeChanged) _buildStatRow('状态码变化', 1),
+                  _buildStatRow(localizations.cmpHeaderChanges, _result.headerDiffs.length),
+                  _buildStatRow(localizations.cmpQueryChanges, _result.queryDiffs.length),
+                  _buildStatRow(localizations.cmpBodyChanges, (_result.bodyDiff?.hasChanged ?? false) ? 1 : 0),
+                  if (_result.statusCodeChanged) _buildStatRow(localizations.cmpStatusChanges, 1),
                 ],
               ),
             ),
@@ -151,7 +156,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('详细报告', style: Theme.of(context).textTheme.titleMedium),
+                  Text(localizations.cmpDetailedReport, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   SelectableText(
                     _result.detailedReport,
@@ -169,7 +174,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
   /// 请求头对比标签页
   Widget _buildHeadersTab() {
     if (_result.headerDiffs.isEmpty) {
-      return const Center(child: Text('请求头无变化'));
+      return Center(child: Text(localizations.cmpNoHeaderChanges));
     }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -185,10 +190,10 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (diff.oldValue != null)
-                  Text('旧：${diff.oldValue}',
+                  Text(localizations.cmpOldValue('${diff.oldValue}'),
                       style: TextStyle(color: diff.type == CompareType.removed ? Colors.red : null)),
                 if (diff.newValue != null)
-                  Text('新：${diff.newValue}',
+                  Text(localizations.cmpNewValue('${diff.newValue}'),
                       style: TextStyle(color: diff.type == CompareType.added ? Colors.green : null)),
               ],
             ),
@@ -207,12 +212,12 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_result.bodyDiff == null || !_result.bodyDiff!.hasChanged)
-            const Center(child: Text('请求体无变化'))
+            Center(child: Text(localizations.cmpNoBodyChanges))
           else
             _buildCodeDiff(
-              '请求体 A',
+              localizations.cmpBodyA,
               widget.requestA.bodyPreview,
-              '请求体 B',
+              localizations.cmpBodyB,
               widget.requestB.bodyPreview,
             ),
         ],
@@ -223,7 +228,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
   /// 响应标签页
   Widget _buildResponseTab() {
     if (widget.responseA == null && widget.responseB == null) {
-      return const Center(child: Text('无响应数据'));
+      return Center(child: Text(localizations.cmpNoResponseData));
     }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -232,17 +237,17 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
         children: [
           if (widget.responseA != null && widget.responseB != null)
             _buildComparisonCard(
-              '状态码',
+              localizations.statusCode,
               '${widget.responseA!.status.code}',
               '${widget.responseB!.status.code}',
               changed: _result.statusCodeChanged,
             ),
           const SizedBox(height: 16),
-          Text('响应头变化 (${_result.responseHeaderDiffs.length})',
+          Text(localizations.cmpResponseHeaderChanges(_result.responseHeaderDiffs.length),
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           if (_result.responseHeaderDiffs.isEmpty)
-            const Text('无变化')
+            Text(localizations.cmpNoChanges)
           else
             ..._result.responseHeaderDiffs.map((diff) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -259,9 +264,9 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
           const SizedBox(height: 16),
           if ((_result.responseBodyDiff?.hasChanged ?? false))
             _buildCodeDiff(
-              '响应体 A',
+              localizations.cmpResponseBodyA,
               widget.responseA?.bodyPreview ?? '',
-              '响应体 B',
+              localizations.cmpResponseBodyB,
               widget.responseB?.bodyPreview ?? '',
             ),
         ],
@@ -287,7 +292,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
                       color: Theme.of(context).colorScheme.tertiaryContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text('已修改', style: TextStyle(color: Colors.orange[800], fontSize: 12)),
+                    child: Text(localizations.cmpModified, style: TextStyle(color: Colors.orange[800], fontSize: 12)),
                   ),
               ],
             ),
@@ -312,7 +317,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('请求 $label', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+        Text(localizations.cmpRequestLabel(label), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
         const SizedBox(height: 4),
         SelectableText(value, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
       ],
@@ -351,7 +356,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
           Padding(
             padding: const EdgeInsets.all(8),
             child: SelectableText(
-              code.isEmpty ? '(空)' : code,
+              code.isEmpty ? localizations.cmpEmpty : code,
               style: const TextStyle(color: Colors.greenAccent, fontFamily: 'monospace', fontSize: 12),
             ),
           ),

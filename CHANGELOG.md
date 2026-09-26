@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.24.40 (2026-09-27)
+
+### 国际化（l10n）第七批：工具箱 / 工作区 / 日志 / 请求对比 / 备份管理
+
+**181 个 key、216 处替换**，覆盖 7 个文件：
+
+- `dev_tools.dart`（38 key，前缀 `devTool*`）：Cron 表达式解析器、JWT 解码、UUID 生成、
+  哈希计算四个子工具。Cron 的示例表达式改成 `static List _examples(loc)`；
+  `_evaluate()` 原本无 context 且被 `initState` 调用（那里取 l10n 会触发断言），
+  把「错误文案」改成标记位、到 `build` 里再取；
+- `calculator_page.dart`（29 key，前缀 `calc*`）：整数/位运算/字节序/CRC·哈希四个 Tab；
+- `workspace_page.dart`（32 key，前缀 `wsPage*`）+ `log_viewer_page.dart`（25 key，前缀 `logView*`）
+  + `request_compare_page.dart`（26 key，前缀 `cmp*`）；
+- `backup_management.dart`（移动 + 桌面，31 key，前缀 `backup*`）：两个版本**同句文案共用同一个
+  key**（如「已恢复 N 个文件」按句式差异拆成移动/桌面两条，公共片段 `backupFailedSuffix` 共用）。
+
+**几个值得记的点**：
+
+- 日志页在 `initState` 里记一条保底日志，取 l10n 会抛
+  `dependOnInheritedWidget...called before initState() completed`，改用
+  `addPostFrameCallback` 包一层；
+- 「工作区」相关文案**没有**可复用的 `ws*` —— 现有 57 个 `ws*` key 全是 **WebSocket**
+  的（`wsTraffic*` / `wsIntercept*`），差点误用，改新建 `wsPage*`；
+- 残留中文全部是 `logger.*` 日志与注释（backup 移动版 4 处、桌面版 1 处）。
+
+en / zh 各 **1897** 条。
+
+
 ## v1.24.39 (2026-09-27)
 
 ### 修复 v1.24.38 的编译错误 + 国际化第六批（5 个页面）

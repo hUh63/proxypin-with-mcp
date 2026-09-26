@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/network/util/calc_engine.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 
 /// 计算与编解码工具箱：进制/补码、位运算、字节序、IEEE754、CRC 与哈希。
 ///
@@ -41,17 +42,17 @@ class _CalculatorPageState extends State<CalculatorPage> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('计算器'),
+        title: Text(AppLocalizations.of(context)!.calcTitle),
         bottom: TabBar(
           controller: _controller,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(text: '进制/补码'),
-            Tab(text: '位运算'),
-            Tab(text: '字节序'),
-            Tab(text: 'IEEE754'),
-            Tab(text: 'CRC/哈希'),
+          tabs: [
+            Tab(text: AppLocalizations.of(context)!.calcTabIntConvert),
+            Tab(text: AppLocalizations.of(context)!.calcTabBitwise),
+            Tab(text: AppLocalizations.of(context)!.calcTabEndian),
+            const Tab(text: 'IEEE754'),
+            Tab(text: AppLocalizations.of(context)!.calcTabCrcHash),
           ],
         ),
       ),
@@ -151,9 +152,10 @@ class _ResultView extends StatelessWidget {
   Widget build(BuildContext context) {
     final result = data;
     if (result == null) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 8),
-        child: Text('输入后点「计算」查看结果', style: TextStyle(color: Colors.grey, fontSize: 12)),
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(AppLocalizations.of(context)!.calcEmptyHint,
+            style: const TextStyle(color: Colors.grey, fontSize: 12)),
       );
     }
     if (result.containsKey('error')) {
@@ -177,7 +179,8 @@ class _ResultView extends StatelessWidget {
           onTap: () {
             Clipboard.setData(ClipboardData(text: text));
             ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('已复制 ${e.key}'), duration: const Duration(seconds: 1)));
+                .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.calcCopiedKey(e.key)),
+                    duration: const Duration(seconds: 1)));
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -216,7 +219,9 @@ class _RunButton extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          FilledButton(onPressed: onPressed, child: const Text('计算')),
+          FilledButton(
+              onPressed: onPressed,
+              child: Text(AppLocalizations.of(context)!.calcCompute)),
         ],
       ),
     );
@@ -261,15 +266,15 @@ class _IntConvertTabState extends State<_IntConvertTab> {
       padding: const EdgeInsets.all(16),
       children: [
         _Field(
-          label: '数值',
+          label: AppLocalizations.of(context)!.calcLabelValue,
           controller: _value,
-          hint: '支持 0x / 0b / 0o / 十进制，可带负号',
+          hint: AppLocalizations.of(context)!.calcIntValueHint,
         ),
         _Dropdown<int>(
-          label: '位宽',
+          label: AppLocalizations.of(context)!.calcLabelWidth,
           value: _width,
           items: const [8, 16, 32, 64, 128],
-          labelOf: (v) => '$v 位',
+          labelOf: (v) => AppLocalizations.of(context)!.calcNBits(v),
           onChanged: (v) => setState(() => _width = v),
         ),
         _RunButton(onPressed: _compute),
@@ -335,24 +340,28 @@ class _BitwiseTabState extends State<_BitwiseTab> {
       padding: const EdgeInsets.all(16),
       children: [
         _Dropdown<String>(
-          label: '运算',
+          label: AppLocalizations.of(context)!.calcLabelOperation,
           value: _operation,
           items: _ops,
           labelOf: (v) => v,
           onChanged: (v) => setState(() => _operation = v),
         ),
-        _Field(label: '操作数 A', controller: _a),
+        _Field(label: AppLocalizations.of(context)!.calcLabelOperandA, controller: _a),
         if (needsB)
           _Field(
-            label: _isShift ? '位移量（十进制）' : '操作数 B',
+            label: _isShift
+                ? AppLocalizations.of(context)!.calcLabelShiftAmount
+                : AppLocalizations.of(context)!.calcLabelOperandB,
             controller: _b,
-            hint: _isShift ? '例如 4' : '例如 0x0FF0',
+            hint: _isShift
+                ? AppLocalizations.of(context)!.calcHintShiftExample
+                : AppLocalizations.of(context)!.calcHintOperandBExample,
           ),
         _Dropdown<int>(
-          label: '位宽',
+          label: AppLocalizations.of(context)!.calcLabelWidth,
           value: _width,
           items: const [8, 16, 32, 64],
-          labelOf: (v) => '$v 位',
+          labelOf: (v) => AppLocalizations.of(context)!.calcNBits(v),
           onChanged: (v) => setState(() => _width = v),
         ),
         _RunButton(onPressed: _compute),
@@ -399,12 +408,17 @@ class _EndianTabState extends State<_EndianTab> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _Field(label: '十六进制数据', controller: _value, hint: '例如 0x78563412'),
+        _Field(
+            label: AppLocalizations.of(context)!.calcLabelHexData,
+            controller: _value,
+            hint: AppLocalizations.of(context)!.calcHintHexDataExample),
         _Dropdown<int>(
-          label: '字节宽度',
+          label: AppLocalizations.of(context)!.calcLabelByteWidth,
           value: _widthBytes ?? 0,
           items: const [0, 2, 4, 8, 16],
-          labelOf: (v) => v == 0 ? '按输入长度' : '$v 字节',
+          labelOf: (v) => v == 0
+              ? AppLocalizations.of(context)!.calcByteWidthAuto
+              : AppLocalizations.of(context)!.calcNBytes(v),
           onChanged: (v) => setState(() => _widthBytes = v == 0 ? null : v),
         ),
         _RunButton(onPressed: _compute),
@@ -452,12 +466,12 @@ class _Ieee754TabState extends State<_Ieee754Tab> {
       padding: const EdgeInsets.all(16),
       children: [
         _Field(
-          label: '机器码或数值',
+          label: AppLocalizations.of(context)!.calcLabelMachineOrValue,
           controller: _value,
-          hint: '十六进制机器码（如 0x3f800000）或十进制小数（如 1.5）',
+          hint: AppLocalizations.of(context)!.calcIeeeHint,
         ),
         _Dropdown<String>(
-          label: '精度',
+          label: AppLocalizations.of(context)!.calcLabelPrecision,
           value: _precision,
           items: const ['float32', 'float64'],
           labelOf: (v) => v,
@@ -526,20 +540,20 @@ class _CrcHashTabState extends State<_CrcHashTab> {
       padding: const EdgeInsets.all(16),
       children: [
         _Dropdown<String>(
-          label: '算法',
+          label: AppLocalizations.of(context)!.calcLabelAlgorithm,
           value: _kind,
           items: [..._crcAlgorithms, ..._hashAlgorithms],
           labelOf: (v) => v,
           onChanged: (v) => setState(() => _kind = v),
         ),
         _Dropdown<String>(
-          label: '输入格式',
+          label: AppLocalizations.of(context)!.calcLabelInputFormat,
           value: _inputFormat,
           items: const ['hex', 'utf8', 'base64'],
           labelOf: (v) => v,
           onChanged: (v) => setState(() => _inputFormat = v),
         ),
-        _Field(label: '数据', controller: _data, lines: 3),
+        _Field(label: AppLocalizations.of(context)!.calcLabelData, controller: _data, lines: 3),
         _RunButton(onPressed: _compute),
         _ResultView(data: _result),
       ],

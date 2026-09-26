@@ -10,6 +10,7 @@ import 'package:proxypin/network/util/cron_expression.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 
 /// 在工具箱展示的入口页：单页 Tab 形式，减少多页面跳转
 class DevToolsPage extends StatefulWidget {
@@ -41,17 +42,17 @@ class _DevToolsPageState extends State<DevToolsPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('开发工具', style: TextStyle(fontSize: 16)),
+        title: Text(AppLocalizations.of(context)!.toolboxDevTools, style: const TextStyle(fontSize: 16)),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(text: 'Cron 表达式'),
-            Tab(text: 'JWT 解码'),
-            Tab(text: 'UUID'),
-            Tab(text: 'SHA 哈希'),
+          tabs: [
+            Tab(text: AppLocalizations.of(context)!.devToolCron),
+            Tab(text: AppLocalizations.of(context)!.devToolJwt),
+            const Tab(text: 'UUID'),
+            Tab(text: AppLocalizations.of(context)!.devToolSha),
           ],
         ),
       ),
@@ -79,15 +80,15 @@ class CronToolPage extends StatefulWidget {
 class _CronToolPageState extends State<CronToolPage> {
   final TextEditingController _controller = TextEditingController(text: '0 9 * * 1-5');
   List<DateTime> _nextTimes = [];
-  String? _error;
+  bool _error = false;
 
-  static const List<(String, String)> _examples = [
-    ('0 9 * * 1-5', '工作日每天上午 9 点'),
-    ('30 8 1 * *', '每月 1 号 8:30'),
-    ('0 0 * * *', '每天零点'),
-    ('*/15 * * * *', '每 15 分钟'),
-    ('0 */2 * * *', '每 2 小时'),
-    ('0 12 * * 1', '每周一中午 12 点'),
+  static List<(String, String)> _examples(AppLocalizations loc) => [
+    ('0 9 * * 1-5', loc.devToolCronExampleWorkday),
+    ('30 8 1 * *', loc.devToolCronExampleMonthly),
+    ('0 0 * * *', loc.devToolCronExampleMidnight),
+    ('*/15 * * * *', loc.devToolCronExampleEvery15Min),
+    ('0 */2 * * *', loc.devToolCronExampleEvery2Hours),
+    ('0 12 * * 1', loc.devToolCronExampleMondayNoon),
   ];
 
   @override
@@ -111,7 +112,7 @@ class _CronToolPageState extends State<CronToolPage> {
       if (next == null) {
         setState(() {
           _nextTimes = [];
-          _error = '无法解析该表达式，请检查各字段';
+          _error = true;
         });
         return;
       }
@@ -120,19 +121,20 @@ class _CronToolPageState extends State<CronToolPage> {
     }
     setState(() {
       _nextTimes = times;
-      _error = null;
+      _error = false;
     });
   }
 
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final fields = [
-      ('分钟', '0-59'),
-      ('小时', '0-23'),
-      ('日', '1-31'),
-      ('月', '1-12'),
-      ('星期', '0-6（0 为周日）'),
+      (loc.devToolCronFieldMinute, '0-59'),
+      (loc.devToolCronFieldHour, '0-23'),
+      (loc.devToolCronFieldDay, '1-31'),
+      (loc.devToolCronFieldMonth, '1-12'),
+      (loc.devToolCronFieldWeek, loc.devToolCronFieldWeekRange),
     ];
     final input = _controller.text.trim();
     final parts = input.isEmpty ? <String>[] : input.split(RegExp(r'\s+'));
@@ -143,23 +145,24 @@ class _CronToolPageState extends State<CronToolPage> {
         TextField(
           controller: _controller,
           decoration: InputDecoration(
-            labelText: 'Cron 表达式',
-            hintText: '分 时 日 月 星期',
+            labelText: loc.devToolCron,
+            hintText: loc.devToolCronHint,
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
               icon: const Icon(Icons.play_arrow, size: 20),
-              tooltip: '解析',
+              tooltip: loc.devToolCronParse,
               onPressed: () => _evaluate(_controller.text),
             ),
           ),
           onSubmitted: _evaluate,
         ),
         const SizedBox(height: 6),
-        if (_error != null)
-          Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+        if (_error)
+          Text(loc.devToolCronParseError,
+              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
         if (_nextTimes.isNotEmpty) ...[
           const SizedBox(height: 10),
-          Text('接下来 6 次执行时间',
+          Text(loc.devToolCronNextRuns,
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
           const SizedBox(height: 6),
           ..._nextTimes.map((t) => Padding(
@@ -177,7 +180,7 @@ class _CronToolPageState extends State<CronToolPage> {
               )),
         ],
         const Divider(height: 28),
-        Text('字段说明', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+        Text(loc.devToolCronFieldHelp, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
         const SizedBox(height: 6),
         Table(
           columnWidths: const {0: FlexColumnWidth(1.2), 1: FlexColumnWidth(1), 2: FlexColumnWidth(1.6)},
@@ -194,15 +197,15 @@ class _CronToolPageState extends State<CronToolPage> {
           ],
         ),
         const SizedBox(height: 8),
-        Text('支持通配符：* 任意值 · , 列表 · - 范围 · / 步进', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(loc.devToolCronWildcardHint, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const Divider(height: 28),
-        Text('常用示例（点击填入）', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+        Text(loc.devToolCronExamples, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final (expr, desc) in _examples)
+            for (final (expr, desc) in _examples(loc))
               ActionChip(
                 label: Text(desc, style: const TextStyle(fontSize: 12)),
                 tooltip: expr,
@@ -235,7 +238,7 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
   String? _error;
   Map<String, dynamic>? _claims;
 
-  void _decode() {
+  void _decode(AppLocalizations loc) {
     setState(() {
       _header = null;
       _payload = null;
@@ -245,7 +248,7 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
     final token = _controller.text.trim().replaceFirst(RegExp('^Bearer ', caseSensitive: false), '');
     final parts = token.split('.');
     if (parts.length < 2) {
-      setState(() => _error = 'JWT 应由两段以上 Base64Url 组成（header.payload.signature）');
+      setState(() => _error = loc.devToolJwtInvalid);
       return;
     }
     try {
@@ -259,7 +262,7 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
         _claims = claims is Map<String, dynamic> ? claims : null;
       });
     } catch (e) {
-      setState(() => _error = '解码失败：$e');
+      setState(() => _error = loc.devToolJwtDecodeFailed('$e'));
     }
   }
 
@@ -276,7 +279,9 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
     if (exp is! num) return null;
     final t = DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000);
     final expired = t.isBefore(DateTime.now());
-    return '${t.toLocal()}（${expired ? "已过期" : "有效"}）';
+    final loc = AppLocalizations.of(context)!;
+    return loc.devToolJwtExpiry('${t.toLocal()}',
+        expired ? loc.devToolJwtExpired : loc.devToolJwtValid);
   }
 
   @override
@@ -293,17 +298,17 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
         TextField(
           controller: _controller,
           maxLines: 5,
-          decoration: const InputDecoration(
-            labelText: '粘贴 JWT Token',
-            hintText: '支持直接粘贴带 Bearer 前缀的 Authorization 值',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.devToolJwtLabel,
+            hintText: AppLocalizations.of(context)!.devToolJwtHint,
+            border: const OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 10),
         FilledButton.icon(
-          onPressed: _decode,
+          onPressed: () => _decode(AppLocalizations.of(context)!),
           icon: const Icon(Icons.key, size: 18),
-          label: const Text('解码'),
+          label: Text(AppLocalizations.of(context)!.decode),
         ),
         if (_error != null) ...[
           const SizedBox(height: 10),
@@ -320,7 +325,8 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
         if (_expText() != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text('过期时间：${_expText()}', style: const TextStyle(fontSize: 13)),
+            child: Text(AppLocalizations.of(context)!.devToolJwtExpLabel(_expText()!),
+                style: const TextStyle(fontSize: 13)),
           ),
       ],
     );
@@ -333,10 +339,10 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
         const Spacer(),
         IconButton(
           icon: const Icon(Icons.copy, size: 16),
-          tooltip: '复制',
+          tooltip: AppLocalizations.of(context)!.copy,
           onPressed: () {
             Clipboard.setData(ClipboardData(text: body));
-            FlutterToastr.show('已复制', context);
+            FlutterToastr.show(AppLocalizations.of(context)!.aiCopied, context);
           },
         ),
       ]),
@@ -387,7 +393,7 @@ class _UuidToolPageState extends State<UuidToolPage> {
       padding: const EdgeInsets.all(14),
       children: [
         Row(children: [
-          const Text('数量', style: TextStyle(fontSize: 14)),
+          Text(AppLocalizations.of(context)!.devToolUuidCount, style: const TextStyle(fontSize: 14)),
           Expanded(
             child: Slider(
               value: _count.toDouble(),
@@ -400,20 +406,22 @@ class _UuidToolPageState extends State<UuidToolPage> {
           ),
           SwitchWidgetLite(
             value: _uppercase,
-            label: '大写',
+            label: AppLocalizations.of(context)!.devToolUuidUppercase,
             onChanged: (v) => setState(() => _uppercase = v),
           ),
         ]),
         FilledButton.icon(
           onPressed: _generate,
           icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('生成 UUID v4'),
+          label: Text(AppLocalizations.of(context)!.devToolUuidGenerate),
         ),
         const SizedBox(height: 10),
         if (_uuids.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 30),
-            child: Center(child: Text('点击上方按钮生成', style: TextStyle(color: Colors.grey.shade500))),
+            child: Center(
+                child: Text(AppLocalizations.of(context)!.devToolUuidEmpty,
+                    style: TextStyle(color: Colors.grey.shade500))),
           )
         else
           ..._uuids.map((u) => Card(
@@ -429,7 +437,7 @@ class _UuidToolPageState extends State<UuidToolPage> {
                   trailing: const Icon(Icons.copy, size: 16),
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: u));
-                    FlutterToastr.show('已复制', context);
+                    FlutterToastr.show(AppLocalizations.of(context)!.aiCopied, context);
                   },
                 ),
               )),
@@ -437,10 +445,10 @@ class _UuidToolPageState extends State<UuidToolPage> {
           TextButton.icon(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: _uuids.join('\n')));
-              FlutterToastr.show('已复制全部', context);
+              FlutterToastr.show(AppLocalizations.of(context)!.devToolCopiedAll, context);
             },
             icon: const Icon(Icons.copy_all, size: 16),
-            label: const Text('复制全部'),
+            label: Text(AppLocalizations.of(context)!.devToolCopyAll),
           ),
       ],
     );
@@ -500,9 +508,9 @@ class _ShaHashPageState extends State<ShaHashPage> {
           controller: _controller,
           maxLines: 4,
           onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(
-            labelText: '输入文本',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.devToolShaInput,
+            border: const OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 12),
@@ -513,10 +521,10 @@ class _ShaHashPageState extends State<ShaHashPage> {
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.copy, size: 16),
-              tooltip: '复制',
+              tooltip: AppLocalizations.of(context)!.copy,
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: entry.value));
-                FlutterToastr.show('已复制', context);
+                FlutterToastr.show(AppLocalizations.of(context)!.aiCopied, context);
               },
             ),
           ]),
@@ -532,7 +540,7 @@ class _ShaHashPageState extends State<ShaHashPage> {
           ),
           const SizedBox(height: 10),
         ],
-        Text('以 UTF-8 编码计算；文件/二进制校验请使用抓包数据的十六进制工具。',
+        Text(AppLocalizations.of(context)!.devToolShaNote,
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
       ],
     );

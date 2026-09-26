@@ -7886,6 +7886,1099 @@ Exporting the current config as a backup first is recommended.'**
   /// **'The clipboard content is not config JSON; copy the config text first'**
   String get cfgClipboardNotConfig;
 
+
+  /// No description provided for @devToolCron.
+  ///
+  /// In en, this message translates to:
+  /// **'Cron expression'**
+  String get devToolCron;
+
+  /// No description provided for @devToolJwt.
+  ///
+  /// In en, this message translates to:
+  /// **'JWT decode'**
+  String get devToolJwt;
+
+  /// No description provided for @devToolSha.
+  ///
+  /// In en, this message translates to:
+  /// **'SHA hash'**
+  String get devToolSha;
+
+  /// No description provided for @devToolCronExampleWorkday.
+  ///
+  /// In en, this message translates to:
+  /// **'9 AM on weekdays'**
+  String get devToolCronExampleWorkday;
+
+  /// No description provided for @devToolCronExampleMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'8:30 on the 1st of each month'**
+  String get devToolCronExampleMonthly;
+
+  /// No description provided for @devToolCronExampleMidnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Midnight every day'**
+  String get devToolCronExampleMidnight;
+
+  /// No description provided for @devToolCronExampleEvery15Min.
+  ///
+  /// In en, this message translates to:
+  /// **'Every 15 minutes'**
+  String get devToolCronExampleEvery15Min;
+
+  /// No description provided for @devToolCronExampleEvery2Hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Every 2 hours'**
+  String get devToolCronExampleEvery2Hours;
+
+  /// No description provided for @devToolCronExampleMondayNoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Noon every Monday'**
+  String get devToolCronExampleMondayNoon;
+
+  /// No description provided for @devToolCronParseError.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot parse this expression; check each field'**
+  String get devToolCronParseError;
+
+  /// No description provided for @devToolCronHint.
+  ///
+  /// In en, this message translates to:
+  /// **'min hour day month weekday'**
+  String get devToolCronHint;
+
+  /// No description provided for @devToolCronParse.
+  ///
+  /// In en, this message translates to:
+  /// **'Parse'**
+  String get devToolCronParse;
+
+  /// No description provided for @devToolCronNextRuns.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 6 run times'**
+  String get devToolCronNextRuns;
+
+  /// No description provided for @devToolCronFieldHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Field reference'**
+  String get devToolCronFieldHelp;
+
+  /// No description provided for @devToolCronWildcardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Wildcards: * any  ·  , list  ·  - range  ·  / step'**
+  String get devToolCronWildcardHint;
+
+  /// No description provided for @devToolCronExamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Common examples (tap to fill)'**
+  String get devToolCronExamples;
+
+  /// No description provided for @devToolCronFieldMinute.
+  ///
+  /// In en, this message translates to:
+  /// **'Minute'**
+  String get devToolCronFieldMinute;
+
+  /// No description provided for @devToolCronFieldHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Hour'**
+  String get devToolCronFieldHour;
+
+  /// No description provided for @devToolCronFieldDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get devToolCronFieldDay;
+
+  /// No description provided for @devToolCronFieldMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get devToolCronFieldMonth;
+
+  /// No description provided for @devToolCronFieldWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday'**
+  String get devToolCronFieldWeek;
+
+  /// No description provided for @devToolCronFieldWeekRange.
+  ///
+  /// In en, this message translates to:
+  /// **'0-6 (0 is Sunday)'**
+  String get devToolCronFieldWeekRange;
+
+  /// No description provided for @devToolJwtInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'A JWT should have at least two Base64Url segments (header.payload.signature)'**
+  String get devToolJwtInvalid;
+
+  /// No description provided for @devToolJwtDecodeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Decode failed: $error'**
+  String devToolJwtDecodeFailed(String error);
+
+  /// No description provided for @devToolJwtExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'$time ($status)'**
+  String devToolJwtExpiry(String time, String status);
+
+  /// No description provided for @devToolJwtExpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires at: $time'**
+  String devToolJwtExpLabel(String time);
+
+  /// No description provided for @devToolJwtExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'expired'**
+  String get devToolJwtExpired;
+
+  /// No description provided for @devToolJwtValid.
+  ///
+  /// In en, this message translates to:
+  /// **'valid'**
+  String get devToolJwtValid;
+
+  /// No description provided for @devToolJwtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a JWT token'**
+  String get devToolJwtLabel;
+
+  /// No description provided for @devToolJwtHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can paste an Authorization value with the Bearer prefix'**
+  String get devToolJwtHint;
+
+  /// No description provided for @devToolUuidCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get devToolUuidCount;
+
+  /// No description provided for @devToolUuidUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Uppercase'**
+  String get devToolUuidUppercase;
+
+  /// No description provided for @devToolUuidGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate UUID v4'**
+  String get devToolUuidGenerate;
+
+  /// No description provided for @devToolUuidEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the button above to generate'**
+  String get devToolUuidEmpty;
+
+  /// No description provided for @devToolCopiedAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied all'**
+  String get devToolCopiedAll;
+
+  /// No description provided for @devToolCopyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy all'**
+  String get devToolCopyAll;
+
+  /// No description provided for @devToolShaInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Input text'**
+  String get devToolShaInput;
+
+  /// No description provided for @devToolShaNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Computed over UTF-8; to verify files/binary, use the hex tool on captured traffic.'**
+  String get devToolShaNote;
+
+  /// No description provided for @calcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculator'**
+  String get calcTitle;
+
+  /// No description provided for @calcTabIntConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'Radix / Two\\'s complement'**
+  String get calcTabIntConvert;
+
+  /// No description provided for @calcTabBitwise.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitwise'**
+  String get calcTabBitwise;
+
+  /// No description provided for @calcTabEndian.
+  ///
+  /// In en, this message translates to:
+  /// **'Endianness'**
+  String get calcTabEndian;
+
+  /// No description provided for @calcTabCrcHash.
+  ///
+  /// In en, this message translates to:
+  /// **'CRC / Hash'**
+  String get calcTabCrcHash;
+
+  /// No description provided for @calcEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value and tap "Calculate" to see the result'**
+  String get calcEmptyHint;
+
+  /// No description provided for @calcCopiedKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied $name'**
+  String calcCopiedKey(String name);
+
+  /// No description provided for @calcCompute.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate'**
+  String get calcCompute;
+
+  /// No description provided for @calcLabelValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get calcLabelValue;
+
+  /// No description provided for @calcIntValueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepts 0x / 0b / 0o / decimal, optional leading minus'**
+  String get calcIntValueHint;
+
+  /// No description provided for @calcLabelWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bit width'**
+  String get calcLabelWidth;
+
+  /// No description provided for @calcNBits.
+  ///
+  /// In en, this message translates to:
+  /// **'$bits bits'**
+  String calcNBits(int bits);
+
+  /// No description provided for @calcLabelOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation'**
+  String get calcLabelOperation;
+
+  /// No description provided for @calcLabelOperandA.
+  ///
+  /// In en, this message translates to:
+  /// **'Operand A'**
+  String get calcLabelOperandA;
+
+  /// No description provided for @calcLabelShiftAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift amount (decimal)'**
+  String get calcLabelShiftAmount;
+
+  /// No description provided for @calcLabelOperandB.
+  ///
+  /// In en, this message translates to:
+  /// **'Operand B'**
+  String get calcLabelOperandB;
+
+  /// No description provided for @calcHintShiftExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 4'**
+  String get calcHintShiftExample;
+
+  /// No description provided for @calcHintOperandBExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 0x0FF0'**
+  String get calcHintOperandBExample;
+
+  /// No description provided for @calcLabelHexData.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex data'**
+  String get calcLabelHexData;
+
+  /// No description provided for @calcHintHexDataExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 0x78563412'**
+  String get calcHintHexDataExample;
+
+  /// No description provided for @calcLabelByteWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Byte width'**
+  String get calcLabelByteWidth;
+
+  /// No description provided for @calcByteWidthAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Match input length'**
+  String get calcByteWidthAuto;
+
+  /// No description provided for @calcNBytes.
+  ///
+  /// In en, this message translates to:
+  /// **'$bytes bytes'**
+  String calcNBytes(int bytes);
+
+  /// No description provided for @calcLabelMachineOrValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine code or number'**
+  String get calcLabelMachineOrValue;
+
+  /// No description provided for @calcIeeeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex machine code (e.g. 0x3f800000) or a decimal fraction (e.g. 1.5)'**
+  String get calcIeeeHint;
+
+  /// No description provided for @calcLabelPrecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Precision'**
+  String get calcLabelPrecision;
+
+  /// No description provided for @calcLabelAlgorithm.
+  ///
+  /// In en, this message translates to:
+  /// **'Algorithm'**
+  String get calcLabelAlgorithm;
+
+  /// No description provided for @calcLabelInputFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Input format'**
+  String get calcLabelInputFormat;
+
+  /// No description provided for @calcLabelData.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get calcLabelData;
+
+
+  /// No description provided for @wsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspaces'**
+  String get wsPageTitle;
+
+  /// No description provided for @wsPageNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New workspace'**
+  String get wsPageNew;
+
+  /// No description provided for @wsPageNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (e.g. "Payment module", "Test env")'**
+  String get wsPageNameHint;
+
+  /// No description provided for @wsPageRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename workspace'**
+  String get wsPageRenameTitle;
+
+  /// No description provided for @wsPageDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete workspace'**
+  String get wsPageDeleteTitle;
+
+  /// No description provided for @wsPageDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete "$name" and its local data? This cannot be undone.'**
+  String wsPageDeleteConfirm(String name);
+
+  /// No description provided for @wsPageNoCaptureData.
+  ///
+  /// In en, this message translates to:
+  /// **'No captured requests to save'**
+  String get wsPageNoCaptureData;
+
+  /// No description provided for @wsPageSavedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved $count to "$name"'**
+  String wsPageSavedTo(int count, String name);
+
+  /// No description provided for @wsPageSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed: $error'**
+  String wsPageSaveFailed(String error);
+
+  /// No description provided for @wsPageEmptyWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace is empty'**
+  String get wsPageEmptyWorkspace;
+
+  /// No description provided for @wsPageImportedToHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported $count requests to history'**
+  String wsPageImportedToHistory(int count);
+
+  /// No description provided for @wsPageImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: $error'**
+  String wsPageImportFailed(String error);
+
+  /// No description provided for @wsPageServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace server'**
+  String get wsPageServerTitle;
+
+  /// No description provided for @wsPageServerUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL (e.g. http://10.0.0.5:8787)'**
+  String get wsPageServerUrlHint;
+
+  /// No description provided for @wsPageTokenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token (optional)'**
+  String get wsPageTokenTitle;
+
+  /// No description provided for @wsPageServerSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Server config saved'**
+  String get wsPageServerSaved;
+
+  /// No description provided for @wsPageServerCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Server config cleared'**
+  String get wsPageServerCleared;
+
+  /// No description provided for @wsPageServerNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure the workspace server first'**
+  String get wsPageServerNeeded;
+
+  /// No description provided for @wsPagePushed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pushed to server ($bytes bytes)'**
+  String wsPagePushed(int bytes);
+
+  /// No description provided for @wsPagePushFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Push failed: $error'**
+  String wsPagePushFailed(String error);
+
+  /// No description provided for @wsPageServerNoWorkspaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Server has no workspaces'**
+  String get wsPageServerNoWorkspaces;
+
+  /// No description provided for @wsPagePulled.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulled $count workspaces'**
+  String wsPagePulled(int count);
+
+  /// No description provided for @wsPagePullFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull failed: $error'**
+  String wsPagePullFailed(String error);
+
+  /// No description provided for @wsPageServerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Server settings'**
+  String get wsPageServerTooltip;
+
+  /// No description provided for @wsPagePullFromServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull from server'**
+  String get wsPagePullFromServer;
+
+  /// No description provided for @wsPageEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No workspace yet. Create one, save the current capture into it, and manage captures per project.'**
+  String get wsPageEmptyHint;
+
+  /// No description provided for @wsPageCustomServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom server'**
+  String get wsPageCustomServer;
+
+  /// No description provided for @wsPageServerNotConfiguredHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured. Only needed if you want to share/backup to your own server.'**
+  String get wsPageServerNotConfiguredHint;
+
+  /// No description provided for @wsPageSaveCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Save current capture'**
+  String get wsPageSaveCurrent;
+
+  /// No description provided for @wsPageImportToHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Import to history'**
+  String get wsPageImportToHistory;
+
+  /// No description provided for @wsPagePushToServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Push to server'**
+  String get wsPagePushToServer;
+
+  /// No description provided for @wsPageItemMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'$count requests · $time'**
+  String wsPageItemMeta(int count, String time);
+
+  /// No description provided for @logViewReadyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Log viewer is ready: runtime logs will show up here in real time (up to 500 entries).'**
+  String get logViewReadyHint;
+
+  /// No description provided for @logViewExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs exported'**
+  String get logViewExportSuccess;
+
+  /// No description provided for @logViewExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Log export failed'**
+  String get logViewExportFailed;
+
+  /// No description provided for @logViewExportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: $error'**
+  String logViewExportError(String error);
+
+  /// No description provided for @logViewClearLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear logs'**
+  String get logViewClearLogs;
+
+  /// No description provided for @logViewClearConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all logs? This cannot be undone.'**
+  String get logViewClearConfirm;
+
+  /// No description provided for @logViewCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs cleared'**
+  String get logViewCleared;
+
+  /// No description provided for @logViewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log management'**
+  String get logViewTitle;
+
+  /// No description provided for @logViewTapToPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording, tap to pause'**
+  String get logViewTapToPause;
+
+  /// No description provided for @logViewTapToResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused, tap to resume'**
+  String get logViewTapToResume;
+
+  /// No description provided for @logViewRecordingResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Log recording enabled'**
+  String get logViewRecordingResumed;
+
+  /// No description provided for @logViewRecordingPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Log recording paused'**
+  String get logViewRecordingPaused;
+
+  /// No description provided for @logViewMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get logViewMore;
+
+  /// No description provided for @logViewSearchLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Search logs'**
+  String get logViewSearchLogs;
+
+  /// No description provided for @logViewExportLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Export logs'**
+  String get logViewExportLogs;
+
+  /// No description provided for @logViewNoLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs yet'**
+  String get logViewNoLogs;
+
+  /// No description provided for @logViewStatTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get logViewStatTotal;
+
+  /// No description provided for @logViewStatDebug.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug'**
+  String get logViewStatDebug;
+
+  /// No description provided for @logViewStatInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get logViewStatInfo;
+
+  /// No description provided for @logViewStatWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get logViewStatWarning;
+
+  /// No description provided for @logViewStatError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get logViewStatError;
+
+  /// No description provided for @logViewTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get logViewTime;
+
+  /// No description provided for @logViewTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag'**
+  String get logViewTag;
+
+  /// No description provided for @logViewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message:'**
+  String get logViewMessage;
+
+  /// No description provided for @logViewStack.
+  ///
+  /// In en, this message translates to:
+  /// **'Stack:'**
+  String get logViewStack;
+
+  /// No description provided for @cmpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request comparison'**
+  String get cmpTitle;
+
+  /// No description provided for @cmpTabOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get cmpTabOverview;
+
+  /// No description provided for @cmpHasDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Differences found'**
+  String get cmpHasDiff;
+
+  /// No description provided for @cmpIdentical.
+  ///
+  /// In en, this message translates to:
+  /// **'Identical'**
+  String get cmpIdentical;
+
+  /// No description provided for @cmpTotalChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'$count changes in total'**
+  String cmpTotalChanges(int count);
+
+  /// No description provided for @cmpFieldMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get cmpFieldMethod;
+
+  /// No description provided for @cmpChangeStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Change summary'**
+  String get cmpChangeStats;
+
+  /// No description provided for @cmpHeaderChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Header changes'**
+  String get cmpHeaderChanges;
+
+  /// No description provided for @cmpQueryChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameter changes'**
+  String get cmpQueryChanges;
+
+  /// No description provided for @cmpBodyChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Body changes'**
+  String get cmpBodyChanges;
+
+  /// No description provided for @cmpStatusChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Status code changes'**
+  String get cmpStatusChanges;
+
+  /// No description provided for @cmpDetailedReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed report'**
+  String get cmpDetailedReport;
+
+  /// No description provided for @cmpNoHeaderChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No header changes'**
+  String get cmpNoHeaderChanges;
+
+  /// No description provided for @cmpOldValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Old: $value'**
+  String cmpOldValue(String value);
+
+  /// No description provided for @cmpNewValue.
+  ///
+  /// In en, this message translates to:
+  /// **'New: $value'**
+  String cmpNewValue(String value);
+
+  /// No description provided for @cmpNoBodyChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No body changes'**
+  String get cmpNoBodyChanges;
+
+  /// No description provided for @cmpBodyA.
+  ///
+  /// In en, this message translates to:
+  /// **'Request body A'**
+  String get cmpBodyA;
+
+  /// No description provided for @cmpBodyB.
+  ///
+  /// In en, this message translates to:
+  /// **'Request body B'**
+  String get cmpBodyB;
+
+  /// No description provided for @cmpNoResponseData.
+  ///
+  /// In en, this message translates to:
+  /// **'No response data'**
+  String get cmpNoResponseData;
+
+  /// No description provided for @cmpResponseHeaderChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Response header changes ($count)'**
+  String cmpResponseHeaderChanges(int count);
+
+  /// No description provided for @cmpNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes'**
+  String get cmpNoChanges;
+
+  /// No description provided for @cmpResponseBodyA.
+  ///
+  /// In en, this message translates to:
+  /// **'Response body A'**
+  String get cmpResponseBodyA;
+
+  /// No description provided for @cmpResponseBodyB.
+  ///
+  /// In en, this message translates to:
+  /// **'Response body B'**
+  String get cmpResponseBodyB;
+
+  /// No description provided for @cmpModified.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get cmpModified;
+
+  /// No description provided for @cmpRequestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Request $label'**
+  String cmpRequestLabel(String label);
+
+  /// No description provided for @cmpEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get cmpEmpty;
+
+
+  /// No description provided for @backupCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup created: $name ($count items)'**
+  String backupCreated(String name, int count);
+
+  /// No description provided for @backupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup failed: $error'**
+  String backupFailed(String error);
+
+  /// No description provided for @backupNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up now (config + certificate + scripts + workspace)'**
+  String get backupNow;
+
+  /// No description provided for @backupAutoToAppDataDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration automatically backs up to the app data directory'**
+  String get backupAutoToAppDataDir;
+
+  /// No description provided for @backupOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get backupOk;
+
+  /// No description provided for @backupConfirmRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm restore'**
+  String get backupConfirmRestore;
+
+  /// No description provided for @backupRestoreConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring backup "$name" will overwrite the current configuration. Continue?'**
+  String backupRestoreConfirm(String name);
+
+  /// No description provided for @backupConfirmDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm delete'**
+  String get backupConfirmDelete;
+
+  /// No description provided for @backupRestoredApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored $restored files; the configuration is now in effect'**
+  String backupRestoredApplied(int restored);
+
+  /// No description provided for @backupRestoredNotApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored $restored files (configuration not applied$failedSuffix)'**
+  String backupRestoredNotApplied(int restored, String failedSuffix);
+
+  /// No description provided for @backupFailedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **', $failed items failed'**
+  String backupFailedSuffix(int failed);
+
+  /// No description provided for @backupAppliedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **', the configuration is now in effect'**
+  String get backupAppliedSuffix;
+
+  /// No description provided for @backupConfigRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration restored'**
+  String get backupConfigRestored;
+
+  /// No description provided for @backupRestoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed: $error'**
+  String backupRestoreFailed(String error);
+
+  /// No description provided for @backupRestoredSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored $restored files$applied$failed'**
+  String backupRestoredSummary(int restored, String applied, String failed);
+
+  /// No description provided for @backupRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored'**
+  String get backupRestored;
+
+  /// No description provided for @backupChooseSaveLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a save location'**
+  String get backupChooseSaveLocation;
+
+  /// No description provided for @backupExportedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported to: $path'**
+  String backupExportedTo(String path);
+
+  /// No description provided for @backupExportDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup file'**
+  String get backupExportDialogTitle;
+
+  /// No description provided for @backupExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported successfully'**
+  String get backupExportSuccess;
+
+  /// No description provided for @backupExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: $error'**
+  String backupExportFailed(String error);
+
+  /// No description provided for @backupDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete backup "$name"?'**
+  String backupDeleteConfirm(String name);
+
+  /// No description provided for @backupDeleteConfirmDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete backup file "$name"?
+
+This cannot be undone.'**
+  String backupDeleteConfirmDesktop(String name);
+
+  /// No description provided for @backupDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup deleted'**
+  String get backupDeleted;
+
+  /// No description provided for @backupDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete failed: $error'**
+  String backupDeleteFailed(String error);
+
+  /// No description provided for @backupDirNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup directory does not exist'**
+  String get backupDirNotFound;
+
+  /// No description provided for @backupRestoreConfirmDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore backup file "$name"?
+
+The current configuration will be overwritten.'**
+  String backupRestoreConfirmDesktop(String name);
+
+  /// No description provided for @backupViewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View backup: $name'**
+  String backupViewTitle(String name);
+
+  /// No description provided for @backupViewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'View failed: $error'**
+  String backupViewFailed(String error);
+
+  /// No description provided for @backupCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get backupCopied;
+
+  /// No description provided for @backupJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get backupJustNow;
+
 }
 
 class _AppLocalizationsDelegate

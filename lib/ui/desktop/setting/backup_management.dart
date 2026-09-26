@@ -101,16 +101,18 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
   /// 补的缺口：这页原先只有查看/恢复/导出/删除，**没有创建入口**，而自动备份
   /// 又因没有任何调用点从未触发——备份列表永远是空的。
   Future<void> _createBackup() async {
+    final localizations = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       final info = await BackupService.create();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已创建备份：${info.name}（${info.items.length} 项）')),
+        SnackBar(content: Text(localizations.backupCreated(info.name, info.items.length))),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('备份失败：$e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(localizations.backupFailed(e.toString()))));
     } finally {
       if (mounted) setState(() => _isLoading = false);
       await _loadBackups();
@@ -119,25 +121,27 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('备份管理'),
+        title: Text(localizations.desktopBackupManagement),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.save_alt),
             onPressed: _isLoading ? null : _createBackup,
-            tooltip: '立即备份（配置+证书+脚本+工作区）',
+            tooltip: localizations.backupNow,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadBackups,
-            tooltip: '刷新',
+            tooltip: localizations.refresh,
           ),
           IconButton(
             icon: const Icon(Icons.folder_open),
             onPressed: _openBackupFolder,
-            tooltip: '打开备份目录',
+            tooltip: localizations.openBackupFolder,
           ),
         ],
       ),
@@ -155,7 +159,7 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '暂无备份文件',
+                        localizations.noBackupFiles,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey[600],
@@ -163,7 +167,7 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '配置会自动备份到用户目录',
+                        localizations.autoBackupToUserDir,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[500],
@@ -195,49 +199,50 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
                           ),
                         ),
                         subtitle: Text(
-                          '${_formatFileSize(backup.size)} • ${_formatTime(backup.modified)}${index == 0 ? ' • 最新' : ''}',
+                          '${_formatFileSize(backup.size)} • ${_formatTime(backup.modified)}${index == 0 ? ' • ${localizations.latestBackup}' : ''}',
                           style: const TextStyle(fontSize: 12),
                         ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) => _handleAction(context, backup, value),
                           itemBuilder: (context) => [
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'restore',
                               child: Row(
                                 children: [
-                                  Icon(Icons.restore, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('恢复'),
+                                  const Icon(Icons.restore, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(localizations.restoreBackup),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'view',
                               child: Row(
                                 children: [
-                                  Icon(Icons.visibility, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('查看'),
+                                  const Icon(Icons.visibility, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(localizations.viewBackup),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'export',
                               child: Row(
                                 children: [
-                                  Icon(Icons.share, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('导出'),
+                                  const Icon(Icons.share, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(localizations.exportBackup),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'delete',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete, size: 20, color: Colors.red),
-                                  SizedBox(width: 8),
-                                  Text('删除', style: TextStyle(color: Colors.red)),
+                                  const Icon(Icons.delete, size: 20, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Text(localizations.deleteBackup,
+                                      style: const TextStyle(color: Colors.red)),
                                 ],
                               ),
                             ),
@@ -251,6 +256,7 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
   }
 
   Future<void> _openBackupFolder() async {
+    final localizations = AppLocalizations.of(context)!;
     // 与写入端保持一致：备份目录位于数据目录下的 proxypin_backups
     final home = await FileRead.homeDir();
     final backupDir = '${home.path}${Platform.pathSeparator}proxypin_backups';
@@ -267,7 +273,7 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('备份目录不存在')),
+        SnackBar(content: Text(localizations.backupDirNotFound)),
       );
     }
   }
@@ -290,20 +296,21 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
   }
 
   Future<void> _restoreBackup(BuildContext context, _BackupFile backup) async {
+    final localizations = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认恢复'),
-        content: Text('确定要恢复备份文件 "${backup.name}" 吗？\n\n当前配置将被覆盖。'),
+        title: Text(localizations.backupConfirmRestore),
+        content: Text(localizations.backupRestoreConfirmDesktop(backup.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(localizations.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('恢复'),
+            child: Text(localizations.restoreBackup),
           ),
         ],
       ),
@@ -322,8 +329,10 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
           final result = await BackupService.restore(file);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(
-                  '已恢复 ${result.restored} 个文件${result.configApplied ? '，配置已生效' : ''}${result.failed > 0 ? '，${result.failed} 项失败' : ''}'),
+              content: Text(localizations.backupRestoredSummary(
+                  result.restored,
+                  result.configApplied ? localizations.backupAppliedSuffix : '',
+                  result.failed > 0 ? localizations.backupFailedSuffix(result.failed) : '')),
             ));
           }
           return;
@@ -336,13 +345,13 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
         await widget.configuration.flushConfig();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('备份已恢复')),
+            SnackBar(content: Text(localizations.backupRestored)),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('恢复失败：$e')),
+            SnackBar(content: Text(localizations.backupRestoreFailed(e.toString()))),
           );
         }
       }
@@ -350,6 +359,7 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
   }
 
   Future<void> _viewBackup(BuildContext context, _BackupFile backup) async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       final content = await File(backup.path).readAsString();
       if (!context.mounted) return;
@@ -357,7 +367,7 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('查看备份：${backup.name}'),
+          title: Text(localizations.backupViewTitle(backup.name)),
           content: SizedBox(
             width: double.maxFinite,
             height: 400,
@@ -371,17 +381,17 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('关闭'),
+              child: Text(localizations.close),
             ),
             TextButton.icon(
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: content));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('已复制到剪贴板')),
+                  SnackBar(content: Text(localizations.backupCopied)),
                 );
               },
               icon: const Icon(Icons.copy),
-              label: const Text('复制'),
+              label: Text(localizations.copy),
             ),
           ],
         ),
@@ -389,16 +399,17 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('查看失败：$e')),
+          SnackBar(content: Text(localizations.backupViewFailed(e.toString()))),
         );
       }
     }
   }
 
   Future<void> _exportBackup(BuildContext context, _BackupFile backup) async {
+    final localizations = AppLocalizations.of(context)!;
     final content = await File(backup.path).readAsString();
     final result = await FilePicker.saveFile(
-      dialogTitle: '导出备份文件',
+      dialogTitle: localizations.backupExportDialogTitle,
       fileName: backup.name,
       type: FileType.custom,
       allowedExtensions: ['json'],
@@ -410,13 +421,13 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
         await File(result.path).writeAsBytes(utf8.encode(content));
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('导出成功')),
+            SnackBar(content: Text(localizations.backupExportSuccess)),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('导出失败：$e')),
+            SnackBar(content: Text(localizations.backupExportFailed(e.toString()))),
           );
         }
       }
@@ -424,20 +435,21 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
   }
 
   Future<void> _deleteBackup(BuildContext context, _BackupFile backup) async {
+    final localizations = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除备份文件 "${backup.name}" 吗？\n\n此操作不可撤销。'),
+        title: Text(localizations.backupConfirmDelete),
+        content: Text(localizations.backupDeleteConfirmDesktop(backup.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(localizations.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('删除'),
+            child: Text(localizations.deleteBackup),
           ),
         ],
       ),
@@ -449,13 +461,13 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
         await _loadBackups();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('备份已删除')),
+            SnackBar(content: Text(localizations.backupDeleted)),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除失败：$e')),
+            SnackBar(content: Text(localizations.backupDeleteFailed(e.toString()))),
           );
         }
       }

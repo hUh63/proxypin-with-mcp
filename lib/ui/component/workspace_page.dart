@@ -44,7 +44,6 @@ class _WorkspacePageState extends State<WorkspacePage> {
   bool _busy = false;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
-  bool get _isCN => localizations.localeName == 'zh';
 
   @override
   void initState() {
@@ -73,8 +72,8 @@ class _WorkspacePageState extends State<WorkspacePage> {
 
   Future<void> _create() async {
     final name = await _promptText(
-      title: _isCN ? '新建工作区' : 'New workspace',
-      label: _isCN ? '名称（如「支付模块」「测试环境」）' : 'Name',
+      title: localizations.wsPageNew,
+      label: localizations.wsPageNameHint,
     );
     if (name == null || name.trim().isEmpty) {
       return;
@@ -89,8 +88,8 @@ class _WorkspacePageState extends State<WorkspacePage> {
 
   Future<void> _rename(Workspace ws) async {
     final name = await _promptText(
-      title: _isCN ? '重命名工作区' : 'Rename workspace',
-      label: _isCN ? '名称' : 'Name',
+      title: localizations.wsPageRenameTitle,
+      label: localizations.name,
       initial: ws.name,
     );
     if (name == null || name.trim().isEmpty) {
@@ -102,10 +101,8 @@ class _WorkspacePageState extends State<WorkspacePage> {
 
   Future<void> _remove(Workspace ws) async {
     final ok = await _confirm(
-      title: _isCN ? '删除工作区' : 'Delete workspace',
-      content: _isCN
-          ? '「${ws.displayName}」及其本地数据会被删除，无法恢复。'
-          : '"${ws.displayName}" and its local data will be deleted.',
+      title: localizations.wsPageDeleteTitle,
+      content: localizations.wsPageDeleteConfirm(ws.displayName),
     );
     if (!ok) {
       return;
@@ -118,15 +115,15 @@ class _WorkspacePageState extends State<WorkspacePage> {
   Future<void> _saveCurrent(Workspace ws) async {
     final requests = widget.requestContainer;
     if (requests == null || requests.isEmpty) {
-      _toast(_isCN ? '当前没有抓包数据可保存' : 'No captured requests to save');
+      _toast(localizations.wsPageNoCaptureData);
       return;
     }
     setState(() => _busy = true);
     try {
       await _storage?.saveRequests(ws.id, List<HttpRequest>.from(requests));
-      _toast(_isCN ? '已保存 ${requests.length} 条到「${ws.displayName}」' : 'Saved ${requests.length} requests');
+      _toast(localizations.wsPageSavedTo(requests.length, ws.displayName));
     } catch (e) {
-      _toast(_isCN ? '保存失败：$e' : 'Save failed: $e');
+      _toast(localizations.wsPageSaveFailed('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -139,14 +136,14 @@ class _WorkspacePageState extends State<WorkspacePage> {
     try {
       final requests = await _storage?.loadRequests(ws.id) ?? const <HttpRequest>[];
       if (requests.isEmpty) {
-        _toast(_isCN ? '工作区里没有数据' : 'Workspace is empty');
+        _toast(localizations.wsPageEmptyWorkspace);
         return;
       }
       final history = await HistoryStorage.instance;
       await history.addRequests(requests, name: ws.displayName);
-      _toast(_isCN ? '已导入 ${requests.length} 条到历史' : 'Imported ${requests.length} requests to history');
+      _toast(localizations.wsPageImportedToHistory(requests.length));
     } catch (e) {
-      _toast(_isCN ? '导入失败：$e' : 'Import failed: $e');
+      _toast(localizations.wsPageImportFailed('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -156,16 +153,16 @@ class _WorkspacePageState extends State<WorkspacePage> {
 
   Future<void> _editConfig() async {
     final baseUrl = await _promptText(
-      title: _isCN ? '工作区服务端' : 'Workspace server',
-      label: _isCN ? '服务端地址（如 http://10.0.0.5:8787）' : 'Base URL',
+      title: localizations.wsPageServerTitle,
+      label: localizations.wsPageServerUrlHint,
       initial: _config.baseUrl,
     );
     if (baseUrl == null) {
       return;
     }
     final token = await _promptText(
-      title: _isCN ? '访问令牌（可留空）' : 'Token (optional)',
-      label: _isCN ? 'Bearer token' : 'Bearer token',
+      title: localizations.wsPageTokenTitle,
+      label: 'Bearer token',
       initial: _config.token,
     );
     if (token == null) {
@@ -176,13 +173,13 @@ class _WorkspacePageState extends State<WorkspacePage> {
     if (!mounted) return;
     setState(() => _config = config);
     _toast(config.isValid
-        ? (_isCN ? '已保存服务端配置' : 'Server config saved')
-        : (_isCN ? '已清空服务端配置' : 'Server config cleared'));
+        ? localizations.wsPageServerSaved
+        : localizations.wsPageServerCleared);
   }
 
   Future<void> _push(Workspace ws) async {
     if (!_config.isValid) {
-      _toast(_isCN ? '请先配置工作区服务端' : 'Configure the workspace server first');
+      _toast(localizations.wsPageServerNeeded);
       return;
     }
     setState(() => _busy = true);
@@ -198,9 +195,9 @@ class _WorkspacePageState extends State<WorkspacePage> {
       if (id.isNotEmpty) {
         await _storage?.markSynced(ws.id, id);
       }
-      _toast(_isCN ? '已推送到服务端（${har.length} 字节）' : 'Pushed to server');
+      _toast(localizations.wsPagePushed(har.length));
     } catch (e) {
-      _toast(_isCN ? '推送失败：$e' : 'Push failed: $e', seconds: 7);
+      _toast(localizations.wsPagePushFailed('$e'), seconds: 7);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -210,7 +207,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
   /// 从服务端拉取列表，为每个远端工作区在本地建一条并拉下数据。
   Future<void> _pullList() async {
     if (!_config.isValid) {
-      _toast(_isCN ? '请先配置工作区服务端' : 'Configure the workspace server first');
+      _toast(localizations.wsPageServerNeeded);
       return;
     }
     setState(() => _busy = true);
@@ -218,7 +215,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
     try {
       final remote = await WorkspaceServer.list(_config);
       if (remote.isEmpty) {
-        _toast(_isCN ? '服务端没有工作区' : 'Server has no workspaces');
+        _toast(localizations.wsPageServerNoWorkspaces);
         return;
       }
       var pulled = 0;
@@ -241,9 +238,9 @@ class _WorkspacePageState extends State<WorkspacePage> {
           pulled++;
         }
       }
-      _toast(_isCN ? '已拉取 $pulled 个工作区' : 'Pulled $pulled workspaces');
+      _toast(localizations.wsPagePulled(pulled));
     } catch (e) {
-      _toast(_isCN ? '拉取失败：$e' : 'Pull failed: $e', seconds: 7);
+      _toast(localizations.wsPagePullFailed('$e'), seconds: 7);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -299,10 +296,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(_isCN ? '工作区' : 'Workspaces', style: const TextStyle(fontSize: 16)),
+        title: Text(localizations.wsPageTitle, style: const TextStyle(fontSize: 16)),
         actions: [
-          IconButton(tooltip: _isCN ? '服务端配置' : 'Server', onPressed: _editConfig, icon: const Icon(Icons.cloud_outlined)),
-          IconButton(tooltip: _isCN ? '刷新' : 'Refresh', onPressed: _busy ? null : _load, icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: localizations.wsPageServerTooltip, onPressed: _editConfig, icon: const Icon(Icons.cloud_outlined)),
+          IconButton(tooltip: localizations.refresh, onPressed: _busy ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: _busy
@@ -317,13 +314,13 @@ class _WorkspacePageState extends State<WorkspacePage> {
                     FilledButton.icon(
                       onPressed: _create,
                       icon: const Icon(Icons.add, size: 18),
-                      label: Text(_isCN ? '新建工作区' : 'New workspace'),
+                      label: Text(localizations.wsPageNew),
                     ),
                     const SizedBox(width: 10),
                     OutlinedButton.icon(
                       onPressed: _pullList,
                       icon: const Icon(Icons.cloud_download_outlined, size: 18),
-                      label: Text(_isCN ? '从服务端拉取' : 'Pull from server'),
+                      label: Text(localizations.wsPagePullFromServer),
                     ),
                   ],
                 ),
@@ -332,9 +329,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     child: Text(
-                      _isCN
-                          ? '还没有工作区。建一个，把当前抓包存进去，就能按项目分开管理。'
-                          : 'No workspace yet. Create one and save the current capture into it.',
+                      localizations.wsPageEmptyHint,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
@@ -359,7 +354,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 Icon(_config.isValid ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
                     size: 18, color: _config.isValid ? Colors.green : Colors.grey),
                 const SizedBox(width: 6),
-                Text(_isCN ? '自定义服务端' : 'Custom server',
+                Text(localizations.wsPageCustomServer,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
               ],
             ),
@@ -367,9 +362,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
             Text(
               _config.isValid
                   ? _config.baseUrl
-                  : (_isCN
-                      ? '未配置。只用本地工作区的话不需要它；想共享/备份到自己的服务器再填。'
-                      : 'Not configured. Only needed if you want to share/backup to your own server.'),
+                  : localizations.wsPageServerNotConfiguredHint,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -401,7 +394,8 @@ class _WorkspacePageState extends State<WorkspacePage> {
             ),
             const SizedBox(height: 2),
             Text(
-              '${ws.requestCount} ${_isCN ? '条' : 'requests'} · ${ws.updatedAt.toString().split('.').first}',
+              localizations.wsPageItemMeta(
+                  ws.requestCount, ws.updatedAt.toString().split('.').first),
               style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
             const SizedBox(height: 8),
@@ -409,11 +403,11 @@ class _WorkspacePageState extends State<WorkspacePage> {
               spacing: 6,
               runSpacing: 6,
               children: [
-                _action(_isCN ? '保存当前抓包' : 'Save current', Icons.download_outlined, () => _saveCurrent(ws)),
-                _action(_isCN ? '导入到历史' : 'Import to history', Icons.history, () => _restore(ws)),
-                _action(_isCN ? '推送到服务端' : 'Push', Icons.cloud_upload_outlined, () => _push(ws)),
-                _action(_isCN ? '重命名' : 'Rename', Icons.edit_outlined, () => _rename(ws)),
-                _action(_isCN ? '删除' : 'Delete', Icons.delete_outline, () => _remove(ws), danger: true),
+                _action(localizations.wsPageSaveCurrent, Icons.download_outlined, () => _saveCurrent(ws)),
+                _action(localizations.wsPageImportToHistory, Icons.history, () => _restore(ws)),
+                _action(localizations.wsPagePushToServer, Icons.cloud_upload_outlined, () => _push(ws)),
+                _action(localizations.rename, Icons.edit_outlined, () => _rename(ws)),
+                _action(localizations.delete, Icons.delete_outline, () => _remove(ws), danger: true),
               ],
             ),
           ],
