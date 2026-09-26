@@ -211,7 +211,7 @@ class _MobileSslState extends State<MobileSslWidget> {
                   var bytes = await file.xFile.readAsBytes();
                   try {
                     if (bytes.isEmpty) {
-                      throw Exception('读取到的文件为空，请重新选择 .p12 文件');
+                      throw Exception(localizations.sslP12FileEmpty);
                     }
                     await CertificateManager.importPkcs12(bytes, password?.isNotEmpty == true ? password : null);
                     if (context.mounted) {
@@ -356,72 +356,56 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
           child: Text(localizations.androidRootCADownload)),
       const SizedBox(height: 10),
       Text(
-        isCN
-            ? "自动安装（需 Root；以 Magisk 模块方式写入，重启生效）\n"
-                "现代 Android 的 /system 与 /apex 都是只读的，所以不再直接拷贝，而是落成模块由开机时挂载"
-            : "Auto install (needs Root; written as a module, reboot required)\n"
-                "Modern Android keeps /system and /apex read-only, so instead of copying files we install a module",
+        localizations.sslAutoInstallHint,
         style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
       ),
       FilledButton(
         onPressed: _autoInstallCert,
-        child: Text(isCN ? "一键自动安装到系统" : "Auto install to system"),
+        child: Text(localizations.sslAutoInstallToSystem),
       ),
       const SizedBox(height: 6),
       OutlinedButton(
         onPressed: () => showConfirmDialog(context,
-            title: isCN ? '移除系统证书' : 'Remove system CA',
-            content: isCN
-                ? '会删除写入系统信任库（Magisk 模块）的证书，之后 HTTPS 抓包会失败。确定移除？'
-                : 'This deletes the CA written into the system trust store (Magisk module); HTTPS capture will stop working. Continue?',
+            title: localizations.sslRemoveSystemCA,
+            content: localizations.sslRemoveSystemCAConfirm,
             onConfirm: _removeSystemCert),
-        child: Text(isCN ? "移除已安装的系统证书" : "Remove installed system CA"),
+        child: Text(localizations.sslRemoveInstalledSystemCA),
       ),
       const SizedBox(height: 16),
       const Divider(),
       Text(
-        isCN ? "没有 Magisk / KernelSU / APatch？" : "No Magisk / KernelSU / APatch?",
+        localizations.sslNoModuleManager,
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
       const SizedBox(height: 4),
       Text(
-        isCN
-            ? "用 root 直接把证书挂进系统信任库：运行时挂载，重启后失效，但完全可逆、不必重启设备。适合有 root 却没有模块管理器的机器。"
-            : "Mount the CA into the system trust store via root: a runtime mount that reverts on reboot, fully reversible, no device reboot needed. For rooted devices without a module manager.",
+        localizations.sslRuntimeMountDesc,
         style: const TextStyle(fontSize: 12, color: Colors.grey),
       ),
       const SizedBox(height: 8),
       FilledButton.tonal(
         onPressed: _mountSystemCaRuntime,
-        child: Text(isCN ? "Root 直挂到系统信任库" : "Mount to system trust store (root)"),
+        child: Text(localizations.sslMountToTrustStore),
       ),
       const SizedBox(height: 6),
       OutlinedButton(
         onPressed: () => showConfirmDialog(context,
-            title: isCN ? '卸载直挂' : 'Unmount runtime CA',
-            content: isCN
-                ? '会卸载运行时挂载的系统证书，之后 HTTPS 抓包会失败。确定卸载？'
-                : 'This unmounts the runtime CA; HTTPS capture will stop working. Continue?',
+            title: localizations.sslUnmountRuntimeCA,
+            content: localizations.sslUnmountRuntimeCAConfirm,
             onConfirm: _unmountSystemCaRuntime),
-        child: Text(isCN ? "卸载直挂" : "Unmount runtime CA"),
+        child: Text(localizations.sslUnmountRuntimeCA),
       ),
       const SizedBox(height: 4),
       TextButton(
         onPressed: _restartZygote,
-        child: Text(isCN ? "重启 zygote（让已启动的应用立刻生效）" : "Restart zygote (apply to running apps)"),
+        child: Text(localizations.sslRestartZygote),
       ),
       const SizedBox(height: 10),
-      Text(
-          "Android 13: ${isCN ? "将证书挂载到" : "Mount the certificate to"} '/system/etc/security/cacerts' ${isCN ? "目录" : "Directory"}"
-              .fixAutoLines()),
+      Text(localizations.sslAndroid13MountHint.fixAutoLines()),
       const SizedBox(height: 5),
-      Text(
-          "Android 14: ${isCN ? "将证书挂载到" : "Mount the certificate to"} '/apex/com.android.conscrypt/cacerts' ${isCN ? "目录" : "Directory"}"
-              .fixAutoLines()),
+      Text(localizations.sslAndroid14MountHint.fixAutoLines()),
       const SizedBox(height: 5),
-      Text(
-          "${isCN ? "注意" : "Note"}: ${isCN ? "安装时要选【CA 证书】，选成【VPN 和应用证书】不会被应用信任；Android 14+ 的 CA 目录在 APEX 里，只把文件拷进去不一定生效，一般需要模块做 bind mount" : "Pick CA certificate (not VPN and app certificate) during install; on Android 14+ the CA directory lives in APEX, so copying the file alone may not take effect \u2014 a bind-mount module is usually required"}"
-              .fixAutoLines()),
+      Text(localizations.sslAndroidCaInstallNote.fixAutoLines()),
       const SizedBox(height: 5),
       ClipRRect(
           child: Align(
@@ -491,7 +475,6 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
   /// `/data/adb/modules` 这个目录。Android 14+ 的 CA 目录在 APEX 里（不是普通文件夹），
   /// 所以模块再带一个 post-fs-data.sh，把证书并进 /apex/com.android.conscrypt/cacerts。
   Future<void> _autoInstallCert() async {
-    bool isCN = localizations.localeName == 'zh';
 
     try {
       final caFile = await CertificateManager.certificateFile();
@@ -535,9 +518,7 @@ echo INSTALLED
 
       if (output.contains('NO_MODULE_DIR')) {
         FlutterToastr.show(
-            !isCN
-                ? 'No /data/adb/modules found: this device has no Magisk/KernelSU/APatch. Download the CA and install it as a module manually.'
-                : '未检测到 Magisk / KernelSU / APatch（无 /data/adb/modules）：请先下载证书，再用模块方式手动安装',
+            localizations.sslNoModuleDirMsg,
             context,
             rootNavigator: true,
             duration: 6);
@@ -546,9 +527,7 @@ echo INSTALLED
 
       if (result.exitCode != 0 || !output.contains('INSTALLED')) {
         FlutterToastr.show(
-            !isCN
-                ? 'Install failed ($output). Make sure root is granted.'
-                : '安装失败（$output），请确认已授予 root 权限',
+            localizations.sslInstallFailedRoot(output),
             context,
             rootNavigator: true,
             duration: 6);
@@ -556,9 +535,7 @@ echo INSTALLED
       }
 
       FlutterToastr.show(
-        !isCN
-            ? 'Installed as a Magisk module. Reboot to take effect.'
-            : '已以模块形式安装，重启手机后生效（Android 14+ 会自动并入 APEX 的 CA 目录）',
+        localizations.sslModuleInstalled,
         context,
         rootNavigator: true,
         duration: 6,
@@ -566,9 +543,7 @@ echo INSTALLED
     } catch (e) {
       logger.d('auto install cert error：$e');
       FlutterToastr.show(
-          !isCN
-              ? 'Auto install failed: $e. Make sure root is granted.'
-              : '自动安装失败：$e，请确认已授予 root 权限',
+          localizations.sslAutoInstallFailedRoot('$e'),
           context,
           rootNavigator: true,
           duration: 5);
@@ -577,7 +552,6 @@ echo INSTALLED
 
   /// 移除本工具安装的系统证书（删掉模块目录，重启后生效）。
   Future<void> _removeSystemCert() async {
-    bool isCN = localizations.localeName == 'zh';
     try {
       final result = await Process.run(
           'su', ['-c', 'rm -rf /data/adb/modules/proxypin_ca && echo REMOVED']);
@@ -585,8 +559,8 @@ echo INSTALLED
       final ok = '${result.stdout}'.contains('REMOVED');
       FlutterToastr.show(
         ok
-            ? (isCN ? '已移除，重启手机后生效' : 'Removed. Reboot to take effect.')
-            : (isCN ? '移除失败，请确认 root 授权' : 'Remove failed. Make sure root is granted.'),
+            ? localizations.sslRemovedReboot
+            : localizations.sslRemoveFailedRoot,
         context,
         rootNavigator: true,
         duration: 5,
@@ -595,7 +569,7 @@ echo INSTALLED
       logger.d('remove system cert error：$e');
       if (!mounted) return;
       FlutterToastr.show(
-          isCN ? '移除失败：$e' : 'Remove failed: $e',
+          localizations.sslRemoveFailedError('$e'),
           context,
           rootNavigator: true,
           duration: 5);
@@ -607,9 +581,8 @@ echo INSTALLED
   /// 设备和证书都不出问题的话，装完重启目标应用就能抓到该应用的 HTTPS；
   /// 想立刻让所有应用生效，再点「重启 zygote」。
   Future<void> _mountSystemCaRuntime() async {
-    bool isCN = localizations.localeName == 'zh';
     FlutterToastr.show(
-        isCN ? '正在挂载，请在弹出的授权框里允许 root' : 'Mounting, please grant root when prompted',
+        localizations.sslMountingGrantRoot,
         context,
         rootNavigator: true,
         duration: 3);
@@ -618,11 +591,7 @@ echo INSTALLED
     final ok = result.$1;
     final msg = result.$2;
     FlutterToastr.show(
-      ok
-          ? (isCN
-              ? '已挂进系统信任库（重启后失效）。重启目标应用即可生效，或点下方「重启 zygote」'
-              : 'Mounted into the system trust store (reverts on reboot). Restart the target app, or tap "Restart zygote".')
-          : (isCN ? '挂载失败：$msg' : 'Mount failed: $msg'),
+      ok ? localizations.sslMountedTrustStore : localizations.sslMountFailed(msg),
       context,
       rootNavigator: true,
       duration: 7,
@@ -634,17 +603,12 @@ echo INSTALLED
 
   /// 卸载直挂，系统信任库恢复原状。
   Future<void> _unmountSystemCaRuntime() async {
-    bool isCN = localizations.localeName == 'zh';
     final result = await SystemCa.unmountRuntime();
     if (!mounted) return;
     final ok = result.$1;
     final msg = result.$2;
     FlutterToastr.show(
-      ok
-          ? (isCN
-              ? '已卸载直挂，系统信任库恢复原状'
-              : 'Unmounted. The system trust store is back to its original state.')
-          : (isCN ? '卸载失败：$msg' : 'Unmount failed: $msg'),
+      ok ? localizations.sslUnmountedRestored : localizations.sslUnmountFailed(msg),
       context,
       rootNavigator: true,
       duration: 5,
@@ -656,17 +620,12 @@ echo INSTALLED
 
   /// 重启 zygote：让已启动的应用立刻感知新证书（界面会闪一下，属预期）。
   Future<void> _restartZygote() async {
-    bool isCN = localizations.localeName == 'zh';
     final result = await SystemCa.restartZygote();
     if (!mounted) return;
     final ok = result.$1;
     final msg = result.$2;
     FlutterToastr.show(
-      ok
-          ? (isCN
-              ? '已通知 zygote 重启，所有应用会短暂重启'
-              : 'zygote restart signalled; all apps will restart briefly')
-          : (isCN ? '重启失败：$msg' : 'Restart failed: $msg'),
+      ok ? localizations.sslZygoteRestarted : localizations.sslZygoteRestartFailed(msg),
       context,
       rootNavigator: true,
       duration: 5,
@@ -766,7 +725,6 @@ class CertStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
     Color color;
     IconData icon;
     String title;
@@ -775,12 +733,12 @@ class CertStatusCard extends StatelessWidget {
     if (!installed) {
       color = Colors.red;
       icon = Icons.error_outline;
-      title = isCN ? '证书未安装' : 'Certificate Not Installed';
-      subtitle = isCN ? '点击“安装根证书”进行安装' : 'Tap "Install Root CA" to proceed';
+      title = AppLocalizations.of(context)!.sslCertNotInstalled;
+      subtitle = AppLocalizations.of(context)!.sslTapInstallRootCA;
     } else if (!trusted) {
       color = Colors.orange;
       icon = Icons.warning_amber_rounded;
-      title = isCN ? '证书未信任' : 'Certificate Not Trusted';
+      title = AppLocalizations.of(context)!.sslCertNotTrusted;
       subtitle = AppLocalizations.of(context)!.trustCaDescribe;
     } else {
       return SizedBox();
@@ -904,17 +862,17 @@ class _IosCaInstallState extends State<IosCaInstall> {
     if (!installed) {
       color = Colors.red;
       icon = Icons.error_outline;
-      title = isCN ? '证书未安装' : 'Certificate Not Installed';
+      title = AppLocalizations.of(context)!.sslCertNotInstalled;
       subtitle = '${localizations.download} & ${localizations.installCaDescribe}';
     } else if (!trusted) {
       color = Colors.orange;
       icon = Icons.warning_amber_rounded;
-      title = isCN ? '证书未信任' : 'Certificate Not Trusted';
+      title = AppLocalizations.of(context)!.sslCertNotTrusted;
       subtitle = localizations.trustCaDescribe;
     } else {
       color = Colors.green;
       icon = Icons.verified_rounded;
-      title = isCN ? '证书已安装并信任' : 'Certificate Installed & Trusted';
+      title = AppLocalizations.of(context)!.sslCertInstalledTrusted;
     }
 
     return Card(
@@ -980,7 +938,7 @@ class _IosCaInstallState extends State<IosCaInstall> {
 
   Widget _guideSection(bool isCN) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(isCN ? '指引' : 'Guide', style: const TextStyle(fontWeight: FontWeight.w600)),
+      Text(localizations.sslGuide, style: const TextStyle(fontWeight: FontWeight.w600)),
       const SizedBox(height: 6),
       TextButton(onPressed: () => _downloadCert(), child: Text("1. ${localizations.downloadRootCa}")),
       TextButton(onPressed: _copyProxyLink, child: Text(localizations.downloadRootCaNote)),

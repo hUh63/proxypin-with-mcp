@@ -196,9 +196,9 @@ class _AiChatPageState extends State<AiChatPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
                 child: Row(children: [
-                  const Expanded(
+                  Expanded(
                       child: Text(AppLocalizations.of(context)!.aiConversations,
-                          style: TextStyle(fontWeight: FontWeight.w600))),
+                          style: const TextStyle(fontWeight: FontWeight.w600))),
                   TextButton.icon(
                     onPressed: () {
                       Navigator.of(sheetContext).pop();
@@ -299,8 +299,8 @@ class _AiChatPageState extends State<AiChatPage> {
       context: context,
       builder: (context) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Padding(
-              padding: EdgeInsets.all(12),
+          Padding(
+              padding: const EdgeInsets.all(12),
               child: Text(AppLocalizations.of(context)!.aiPickAttachment,
                   style: const TextStyle(fontWeight: FontWeight.w600))),
           ListTile(
@@ -421,9 +421,9 @@ class _AiChatPageState extends State<AiChatPage> {
           controller: controller,
           autofocus: true,
           maxLines: 6,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: AppLocalizations.of(context)!.aiAttachTextHint,
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
@@ -657,14 +657,19 @@ class _AiChatPageState extends State<AiChatPage> {
                 ),
         ),
         if (_sending)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 4),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-              SizedBox(width: 8),
-              Text(AppLocalizations.of(context)!.aiThinking,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            ]),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: 8),
+                  Text(AppLocalizations.of(context)!.aiThinking,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                ]),
           ),
         // 输入区
         SafeArea(
@@ -850,10 +855,13 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                         value: p.baseUrl,
                         child: Text(p.name,
                             maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: const TextStyle(fontSize: 13))),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                       value: 'custom',
                       child: Text(AppLocalizations.of(context)!.aiCustomService,
-                          maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: TextStyle(fontSize: 13))),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          style: const TextStyle(fontSize: 13))),
                 ],
                 onChanged: (v) {
                   if (v == null) return;
@@ -897,9 +905,9 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
               const SizedBox(height: 10),
               TextField(
                 controller: modelController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: AppLocalizations.of(context)!.aiModelLabel,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -925,10 +933,10 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
               TextField(
                 controller: extraPromptController,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: AppLocalizations.of(context)!.aiAgentExtra,
                   hintText: AppLocalizations.of(context)!.aiAgentExtraHint,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),

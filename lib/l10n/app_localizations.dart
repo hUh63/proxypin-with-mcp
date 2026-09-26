@@ -3623,6 +3623,846 @@ Code blocks have "Demo" and "Copy" buttons at the bottom right.'**
   /// **'AI settings saved'**
   String get aiConfigSaved;
 
+
+  /// No description provided for @quicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QUIC Connections'**
+  String get quicTitle;
+
+  /// No description provided for @quicKeylogTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a key log (SSLKEYLOGFILE) to enable 1-RTT stream decryption'**
+  String get quicKeylogTooltip;
+
+  /// No description provided for @quicCopySessionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the session list (tab-separated, paste straight into a spreadsheet)'**
+  String get quicCopySessionsTooltip;
+
+  /// No description provided for @quicNoSni.
+  ///
+  /// In en, this message translates to:
+  /// **'(no SNI)'**
+  String get quicNoSni;
+
+  /// No description provided for @quicPacketsBytes.
+  ///
+  /// In en, this message translates to:
+  /// **'$packets packets / $bytes'**
+  String quicPacketsBytes(int packets, String bytes);
+
+  /// No description provided for @quicLastActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Last activity $time'**
+  String quicLastActivity(String time);
+
+  /// No description provided for @quicCopiedSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied $count sessions'**
+  String quicCopiedSessions(int count);
+
+  /// No description provided for @quicRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh (waiting for new QUIC packets)'**
+  String get quicRefreshTooltip;
+
+  /// No description provided for @quicClearRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear records'**
+  String get quicClearRecords;
+
+  /// No description provided for @quicClearConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all QUIC connection records? Recorded sessions and key logs cannot be restored.'**
+  String get quicClearConfirm;
+
+  /// No description provided for @quicBannerNoKeylog.
+  ///
+  /// In en, this message translates to:
+  /// **'Only QUIC connection-level metadata is shown (which domains use QUIC and connection stats). HTTP/3 content is encrypted with TLS 1.3 and cannot be decrypted by default; import a key log (SSLKEYLOGFILE) from the key icon at top right and matching connections will automatically decrypt 1-RTT stream data; or turn on Intercept QUIC to force a TCP fallback and capture full requests.'**
+  String get quicBannerNoKeylog;
+
+  /// No description provided for @quicBannerKeylogLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported $keys keys (covering $connections connections). Matching connections decrypt 1-RTT automatically (client direction only; HEADERS is QPACK-decoded including the dynamic table). For connections that did not match, turn on Intercept QUIC to fall back to TCP.'**
+  String quicBannerKeylogLoaded(int keys, int connections);
+
+  /// No description provided for @quicNoSniUnresolved.
+  ///
+  /// In en, this message translates to:
+  /// **'(SNI not resolved)'**
+  String get quicNoSniUnresolved;
+
+  /// No description provided for @quicSessionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'QUIC $version · $remote · first seen $firstSeen · last activity $ago'**
+  String quicSessionSummary(String version, String remote, String firstSeen, String ago);
+
+  /// No description provided for @quicSessionIds.
+  ///
+  /// In en, this message translates to:
+  /// **'connection $dcid… · $packets packets / $frames frames · $bytes$decrypted'**
+  String quicSessionIds(String dcid, int packets, int frames, String bytes, String decrypted);
+
+  /// No description provided for @quicDecryptedSegments.
+  ///
+  /// In en, this message translates to:
+  /// **' · $count segments decrypted'**
+  String quicDecryptedSegments(int count);
+
+  /// No description provided for @quicTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QUIC packet volume in the last 10 minutes'**
+  String get quicTimelineTitle;
+
+  /// No description provided for @quicTimelineNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get quicTimelineNoData;
+
+  /// No description provided for @quicTimelineSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'$packets packets · $bytes · traffic in $buckets buckets'**
+  String quicTimelineSummary(int packets, String bytes, int buckets);
+
+  /// No description provided for @quicTenMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'10 minutes ago'**
+  String get quicTenMinutesAgo;
+
+  /// No description provided for @quicPerCellTenSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'10s per cell'**
+  String get quicPerCellTenSeconds;
+
+  /// No description provided for @quicNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get quicNow;
+
+  /// No description provided for @quicImportedNKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported $keys keys, covering $connections connections'**
+  String quicImportedNKeys(int keys, int connections);
+
+  /// No description provided for @quicNoNewKeyEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No new key entries were parsed (make sure the file is in NSS key log format)'**
+  String get quicNoNewKeyEntries;
+
+  /// No description provided for @quicImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: $error'**
+  String quicImportFailed(String error);
+
+  /// No description provided for @quicDecryptedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'$host · Decrypted content'**
+  String quicDecryptedTitle(String host);
+
+  /// No description provided for @quicDecryptedAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'$segments segments in total (client direction, 1-RTT). HEADERS is QPACK-compressed: static and dynamic table references are both decoded, and the dynamic table is restored in order from this connection\\'s QPACK encoder stream$table.'**
+  String quicDecryptedAbout(int segments, String table);
+
+  /// No description provided for @quicQpackTableUsed.
+  ///
+  /// In en, this message translates to:
+  /// **' ($inserted inserted, $live live)'**
+  String quicQpackTableUsed(int inserted, int live);
+
+  /// No description provided for @quicQpackTableUnused.
+  ///
+  /// In en, this message translates to:
+  /// **' (this connection does not use the dynamic table)'**
+  String get quicQpackTableUnused;
+
+  /// No description provided for @quicHttp3Headers.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP/3 headers · $count QPACK-decoded entries'**
+  String quicHttp3Headers(int count);
+
+  /// No description provided for @quicStatConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get quicStatConnections;
+
+  /// No description provided for @quicStatHosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Hosts'**
+  String get quicStatHosts;
+
+  /// No description provided for @quicStatPackets.
+  ///
+  /// In en, this message translates to:
+  /// **'Packets'**
+  String get quicStatPackets;
+
+  /// No description provided for @quicStatTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic'**
+  String get quicStatTraffic;
+
+  /// No description provided for @quicStatActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get quicStatActive;
+
+  /// No description provided for @quicSecondsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'$seconds seconds ago'**
+  String quicSecondsAgo(int seconds);
+
+  /// No description provided for @quicMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'$minutes minutes ago'**
+  String quicMinutesAgo(int minutes);
+
+  /// No description provided for @quicHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'$hours hours ago'**
+  String quicHoursAgo(int hours);
+
+  /// No description provided for @quicEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No QUIC connections captured yet'**
+  String get quicEmptyTitle;
+
+  /// No description provided for @quicEmptyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'After VPN capture is on, when a target app uses QUIC/HTTP3 (video, some social and game apps), its connections are recorded automatically: SNI host, QUIC version, connection ID and packet/frame stats.'**
+  String get quicEmptyDesc;
+
+  /// No description provided for @quicEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: most apps use TCP/HTTP2 by default. To see QUIC records, temporarily turn Intercept QUIC off in preferences and restart capture; decrypting payloads still requires turning Intercept QUIC on to fall back to TCP.'**
+  String get quicEmptyHint;
+
+
+  /// No description provided for @pinningDeployDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Script deployed to $path'**
+  String pinningDeployDone(String path);
+
+  /// No description provided for @pinningDeployFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Deploy failed: $reason'**
+  String pinningDeployFailed(String reason);
+
+  /// No description provided for @pinningNeedPackage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the target package name'**
+  String get pinningNeedPackage;
+
+  /// No description provided for @pinningAttaching.
+  ///
+  /// In en, this message translates to:
+  /// **'Attaching…'**
+  String get pinningAttaching;
+
+  /// No description provided for @pinningAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached: $result'**
+  String pinningAttached(String result);
+
+  /// No description provided for @pinningAttachFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach failed: $result'**
+  String pinningAttachFailed(String result);
+
+  /// No description provided for @pinningStopDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Injection stopped'**
+  String get pinningStopDone;
+
+  /// No description provided for @pinningStopFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop failed'**
+  String get pinningStopFailed;
+
+  /// No description provided for @pinningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SSL Pinning Bypass Helper'**
+  String get pinningTitle;
+
+  /// No description provided for @pinningRefreshEnv.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh environment'**
+  String get pinningRefreshEnv;
+
+  /// No description provided for @pinningAndroidOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Android only'**
+  String get pinningAndroidOnly;
+
+  /// No description provided for @pinningViewLog.
+  ///
+  /// In en, this message translates to:
+  /// **'View log'**
+  String get pinningViewLog;
+
+  /// No description provided for @pinningNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Use only on devices you own and on apps you are authorized to test. Bypassing certificate pinning is runtime intervention into the target process. No third-party binaries (frida-server, Xposed modules) are bundled.'**
+  String get pinningNotice;
+
+  /// No description provided for @pinningEnvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get pinningEnvTitle;
+
+  /// No description provided for @pinningChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'checking…'**
+  String get pinningChecking;
+
+  /// No description provided for @pinningReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to attach'**
+  String get pinningReady;
+
+  /// No description provided for @pinningNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Not ready. Need root + frida-inject (recommended) or frida CLI on device. You can still generate the script and run it from a PC.'**
+  String get pinningNotReady;
+
+  /// No description provided for @pinningStep1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Generate & deploy hook script'**
+  String get pinningStep1Title;
+
+  /// No description provided for @pinningStep1Hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Covers Conscrypt TrustManagerImpl, SSLContext.init, OkHttp CertificatePinner, HostnameVerifier.'**
+  String get pinningStep1Hint;
+
+  /// No description provided for @pinningDeploy.
+  ///
+  /// In en, this message translates to:
+  /// **'Deploy to device'**
+  String get pinningDeploy;
+
+  /// No description provided for @pinningScriptCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Script copied'**
+  String get pinningScriptCopied;
+
+  /// No description provided for @pinningCopyScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy script'**
+  String get pinningCopyScript;
+
+  /// No description provided for @pinningStep2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Attach to target app'**
+  String get pinningStep2Title;
+
+  /// No description provided for @pinningPackageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Package name'**
+  String get pinningPackageHint;
+
+  /// No description provided for @pinningSpawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Spawn mode (app checks on launch)'**
+  String get pinningSpawn;
+
+  /// No description provided for @pinningAttach.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get pinningAttach;
+
+  /// No description provided for @pinningOtherOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Other options'**
+  String get pinningOtherOptions;
+
+  /// No description provided for @pinningOtherHint.
+  ///
+  /// In en, this message translates to:
+  /// **'· First rule out "CA not installed": layer 1 is solved by installing the CA into the system store.
+· With Magisk/LSPosed, a ready-made pinning-bypass module is simpler.
+· Flutter apps use Dart\\'s own root list and need separate handling.'**
+  String get pinningOtherHint;
+
+  /// No description provided for @cloudServerSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL saved'**
+  String get cloudServerSaved;
+
+  /// No description provided for @cloudNeedCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter username and password'**
+  String get cloudNeedCredentials;
+
+  /// No description provided for @cloudAuthFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed: $error'**
+  String cloudAuthFailed(String error);
+
+  /// No description provided for @cloudSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get cloudSignedIn;
+
+  /// No description provided for @cloudSignedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed out'**
+  String get cloudSignedOut;
+
+  /// No description provided for @cloudNoLocalWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'No local workspace yet'**
+  String get cloudNoLocalWorkspace;
+
+  /// No description provided for @cloudPickWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a workspace'**
+  String get cloudPickWorkspace;
+
+  /// No description provided for @cloudPushFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Push failed: $error'**
+  String cloudPushFailed(String error);
+
+  /// No description provided for @cloudPushed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pushed to cloud'**
+  String get cloudPushed;
+
+  /// No description provided for @cloudRemoteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote workspace is empty'**
+  String get cloudRemoteEmpty;
+
+  /// No description provided for @cloudPulled.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulled $count requests'**
+  String cloudPulled(int count);
+
+  /// No description provided for @cloudPullFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull failed: $error'**
+  String cloudPullFailed(String error);
+
+  /// No description provided for @cloudDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this workspace copy from the cloud? This cannot be undone.'**
+  String get cloudDeleteConfirm;
+
+  /// No description provided for @cloudDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from cloud'**
+  String get cloudDeleted;
+
+  /// No description provided for @cloudRealtimeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime connect failed'**
+  String get cloudRealtimeFailed;
+
+  /// No description provided for @cloudTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud'**
+  String get cloudTitle;
+
+  /// No description provided for @cloudServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get cloudServer;
+
+  /// No description provided for @cloudServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own server. A runnable Node implementation ships with the docs.'**
+  String get cloudServerHint;
+
+  /// No description provided for @cloudAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get cloudAccount;
+
+  /// No description provided for @cloudSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get cloudSignOut;
+
+  /// No description provided for @cloudSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get cloudSignIn;
+
+  /// No description provided for @cloudRegister.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get cloudRegister;
+
+  /// No description provided for @cloudRealtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime'**
+  String get cloudRealtime;
+
+  /// No description provided for @cloudRealtimeOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected — changes from others arrive live'**
+  String get cloudRealtimeOn;
+
+  /// No description provided for @cloudRealtimeOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get cloudRealtimeOff;
+
+  /// No description provided for @cloudWorkspaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud workspaces'**
+  String get cloudWorkspaces;
+
+  /// No description provided for @cloudPushLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Push a local workspace'**
+  String get cloudPushLocal;
+
+  /// No description provided for @cloudNoRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on the server yet'**
+  String get cloudNoRemote;
+
+  /// No description provided for @cloudPull.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull'**
+  String get cloudPull;
+
+  /// No description provided for @cloudDeleteRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete on server'**
+  String get cloudDeleteRemote;
+
+  /// No description provided for @cloudTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get cloudTeam;
+
+  /// No description provided for @cloudTapRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'(tap refresh)'**
+  String get cloudTapRefresh;
+
+  /// No description provided for @cloudInviteUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite user'**
+  String get cloudInviteUser;
+
+  /// No description provided for @cloudInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited $name'**
+  String cloudInvited(String name);
+
+  /// No description provided for @cloudInviteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite failed: $error'**
+  String cloudInviteFailed(String error);
+
+  /// No description provided for @cloudInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get cloudInvite;
+
+
+  /// No description provided for @sslP12FileEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected file is empty, please choose the .p12 file again'**
+  String get sslP12FileEmpty;
+
+  /// No description provided for @sslAutoInstallHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto install (needs Root; written as a module, reboot required)
+Modern Android keeps /system and /apex read-only, so instead of copying files we install a module'**
+  String get sslAutoInstallHint;
+
+  /// No description provided for @sslAutoInstallToSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto install to system'**
+  String get sslAutoInstallToSystem;
+
+  /// No description provided for @sslRemoveSystemCA.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove system CA'**
+  String get sslRemoveSystemCA;
+
+  /// No description provided for @sslRemoveSystemCAConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes the CA written into the system trust store (Magisk module); HTTPS capture will stop working. Continue?'**
+  String get sslRemoveSystemCAConfirm;
+
+  /// No description provided for @sslRemoveInstalledSystemCA.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove installed system CA'**
+  String get sslRemoveInstalledSystemCA;
+
+  /// No description provided for @sslNoModuleManager.
+  ///
+  /// In en, this message translates to:
+  /// **'No Magisk / KernelSU / APatch?'**
+  String get sslNoModuleManager;
+
+  /// No description provided for @sslRuntimeMountDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Mount the CA into the system trust store via root: a runtime mount that reverts on reboot, fully reversible, no device reboot needed. For rooted devices without a module manager.'**
+  String get sslRuntimeMountDesc;
+
+  /// No description provided for @sslMountToTrustStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Mount to system trust store (root)'**
+  String get sslMountToTrustStore;
+
+  /// No description provided for @sslUnmountRuntimeCA.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmount runtime CA'**
+  String get sslUnmountRuntimeCA;
+
+  /// No description provided for @sslUnmountRuntimeCAConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This unmounts the runtime CA; HTTPS capture will stop working. Continue?'**
+  String get sslUnmountRuntimeCAConfirm;
+
+  /// No description provided for @sslRestartZygote.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart zygote (apply to running apps)'**
+  String get sslRestartZygote;
+
+  /// No description provided for @sslAndroid13MountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Android 13: Mount the certificate to \\'/system/etc/security/cacerts\\' directory'**
+  String get sslAndroid13MountHint;
+
+  /// No description provided for @sslAndroid14MountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Android 14: Mount the certificate to \\'/apex/com.android.conscrypt/cacerts\\' directory'**
+  String get sslAndroid14MountHint;
+
+  /// No description provided for @sslAndroidCaInstallNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Pick CA certificate (not VPN and app certificate) during install; on Android 14+ the CA directory lives in APEX, so copying the file alone may not take effect — a bind-mount module is usually required'**
+  String get sslAndroidCaInstallNote;
+
+  /// No description provided for @sslNoModuleDirMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'No /data/adb/modules found: this device has no Magisk/KernelSU/APatch. Download the CA and install it as a module manually.'**
+  String get sslNoModuleDirMsg;
+
+  /// No description provided for @sslInstallFailedRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Install failed ($output). Make sure root is granted.'**
+  String sslInstallFailedRoot(String output);
+
+  /// No description provided for @sslModuleInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed as a Magisk module. Reboot to take effect.'**
+  String get sslModuleInstalled;
+
+  /// No description provided for @sslAutoInstallFailedRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto install failed: $error. Make sure root is granted.'**
+  String sslAutoInstallFailedRoot(String error);
+
+  /// No description provided for @sslRemovedReboot.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed. Reboot to take effect.'**
+  String get sslRemovedReboot;
+
+  /// No description provided for @sslRemoveFailedRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove failed. Make sure root is granted.'**
+  String get sslRemoveFailedRoot;
+
+  /// No description provided for @sslRemoveFailedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove failed: $error'**
+  String sslRemoveFailedError(String error);
+
+  /// No description provided for @sslMountingGrantRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Mounting, please grant root when prompted'**
+  String get sslMountingGrantRoot;
+
+  /// No description provided for @sslMountedTrustStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Mounted into the system trust store (reverts on reboot). Restart the target app, or tap "Restart zygote".'**
+  String get sslMountedTrustStore;
+
+  /// No description provided for @sslMountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mount failed: $message'**
+  String sslMountFailed(String message);
+
+  /// No description provided for @sslUnmountedRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmounted. The system trust store is back to its original state.'**
+  String get sslUnmountedRestored;
+
+  /// No description provided for @sslUnmountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmount failed: $message'**
+  String sslUnmountFailed(String message);
+
+  /// No description provided for @sslZygoteRestarted.
+  ///
+  /// In en, this message translates to:
+  /// **'zygote restart signalled; all apps will restart briefly'**
+  String get sslZygoteRestarted;
+
+  /// No description provided for @sslZygoteRestartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart failed: $message'**
+  String sslZygoteRestartFailed(String message);
+
+  /// No description provided for @sslCertNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate Not Installed'**
+  String get sslCertNotInstalled;
+
+  /// No description provided for @sslTapInstallRootCA.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap "Install Root CA" to proceed'**
+  String get sslTapInstallRootCA;
+
+  /// No description provided for @sslCertNotTrusted.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate Not Trusted'**
+  String get sslCertNotTrusted;
+
+  /// No description provided for @sslCertInstalledTrusted.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate Installed & Trusted'**
+  String get sslCertInstalledTrusted;
+
+  /// No description provided for @sslGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get sslGuide;
+
 }
 
 class _AppLocalizationsDelegate

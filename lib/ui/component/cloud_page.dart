@@ -50,7 +50,6 @@ class _CloudPageState extends State<CloudPage> {
   StreamSubscription<bool>? _statusSub;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
-  bool get _isCN => localizations.localeName == 'zh';
 
   @override
   void initState() {
@@ -114,14 +113,14 @@ class _CloudPageState extends State<CloudPage> {
   Future<void> _saveBaseUrl() async {
     await CloudClient.setBaseUrl(_baseUrl.text);
     if (!mounted) return;
-    _toast(_isCN ? '服务端地址已保存' : 'Server URL saved', seconds: 2);
+    _toast(localizations.cloudServerSaved, seconds: 2);
   }
 
   Future<void> _auth({required bool register}) async {
     final user = _username.text.trim();
     final pass = _password.text;
     if (user.isEmpty || pass.isEmpty) {
-      _toast(_isCN ? '请填写用户名和密码' : 'Enter username and password', error: true);
+      _toast(localizations.cloudNeedCredentials, error: true);
       return;
     }
     setState(() => _busy = true);
@@ -131,12 +130,12 @@ class _CloudPageState extends State<CloudPage> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (!result.$1) {
-      _toast(_isCN ? '失败：${result.$2}' : 'Failed: ${result.$2}', seconds: 6, error: true);
+      _toast(localizations.cloudAuthFailed(result.$2), seconds: 6, error: true);
       return;
     }
     _password.clear();
     await _load();
-    _toast(_isCN ? '已登录' : 'Signed in', seconds: 2);
+    _toast(localizations.cloudSignedIn, seconds: 2);
   }
 
   Future<void> _logout() async {
@@ -148,7 +147,7 @@ class _CloudPageState extends State<CloudPage> {
       _members = const [];
       _realtime = false;
     });
-    _toast(_isCN ? '已退出登录' : 'Signed out', seconds: 2);
+    _toast(localizations.cloudSignedOut, seconds: 2);
   }
 
   Future<void> _loadCloudWorkspaces() async {
@@ -176,14 +175,13 @@ class _CloudPageState extends State<CloudPage> {
     final storage = await WorkspaceStorage.instance;
     final locals = storage.items;
     if (locals.isEmpty) {
-      _toast(_isCN ? '本地还没有工作区' : 'No local workspace yet');
+      _toast(localizations.cloudNoLocalWorkspace);
       return;
     }
     final picked = await showDialog<Workspace>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: Text(_isCN ? '选择要推送的工作区' : 'Pick a workspace',
-            style: const TextStyle(fontSize: 16)),
+        title: Text(localizations.cloudPickWorkspace, style: const TextStyle(fontSize: 16)),
         children: locals
             .map((w) => SimpleDialogOption(
                   onPressed: () => Navigator.pop(ctx, w),
@@ -205,13 +203,13 @@ class _CloudPageState extends State<CloudPage> {
         serverId: picked.serverId,
       );
       if (r['_error'] != null) {
-        _toast(_isCN ? '推送失败：${r['_error']}' : 'Push failed: ${r['_error']}', seconds: 7, error: true);
+        _toast(localizations.cloudPushFailed('${r['_error']}'), seconds: 7, error: true);
       } else {
         final id = '${r['id'] ?? r['_id'] ?? ''}';
         if (id.isNotEmpty) {
           await storage.markSynced(picked.id, id);
         }
-        _toast(_isCN ? '已推送到云端' : 'Pushed to cloud', seconds: 3);
+        _toast(localizations.cloudPushed, seconds: 3);
         await _loadCloudWorkspaces();
       }
     } finally {
@@ -230,7 +228,7 @@ class _CloudPageState extends State<CloudPage> {
       final storage = await WorkspaceStorage.instance;
       final result = await CloudClient.pullWorkspace(id);
       if (result.$1.isEmpty) {
-        _toast(_isCN ? '云端这份是空的' : 'Remote workspace is empty', error: true);
+        _toast(localizations.cloudRemoteEmpty, error: true);
         return;
       }
       final name = '${item['name'] ?? id}';
@@ -240,9 +238,9 @@ class _CloudPageState extends State<CloudPage> {
         await storage.markSynced(ws.id, id);
       }
       final count = await storage.writeHarJson(ws.id, result.$1);
-      _toast(_isCN ? '已拉到本地（$count 条）' : 'Pulled $count requests', seconds: 4);
+      _toast(localizations.cloudPulled(count), seconds: 4);
     } catch (e) {
-      _toast(_isCN ? '拉取失败：$e' : 'Pull failed: $e', seconds: 7, error: true);
+      _toast(localizations.cloudPullFailed('$e'), seconds: 7, error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -255,14 +253,12 @@ class _CloudPageState extends State<CloudPage> {
     }
     // 云端副本删掉就找不回来了，先确认
     showConfirmDialog(context,
-        title: _isCN ? '删除' : 'Delete',
-        content: _isCN
-            ? '删除云端的这份工作区副本？删除后无法恢复。'
-            : 'Remove this workspace copy from the cloud? This cannot be undone.',
+        title: localizations.delete,
+        content: localizations.cloudDeleteConfirm,
         onConfirm: () async {
           await CloudClient.deleteWorkspace(id);
           await _loadCloudWorkspaces();
-          _toast(_isCN ? '已删除云端副本' : 'Removed from cloud', seconds: 3);
+          _toast(localizations.cloudDeleted, seconds: 3);
         });
   }
 
@@ -273,7 +269,7 @@ class _CloudPageState extends State<CloudPage> {
       await Future.delayed(const Duration(milliseconds: 600));
       if (!mounted) return;
       if (!CloudRealtime.instance.connected) {
-        _toast(_isCN ? '实时连接失败，检查服务端与登录状态' : 'Realtime connect failed', error: true);
+        _toast(localizations.cloudRealtimeFailed, error: true);
       }
     } else {
       await CloudRealtime.instance.disconnect();
@@ -288,10 +284,10 @@ class _CloudPageState extends State<CloudPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(_isCN ? '云端协同' : 'Cloud', style: const TextStyle(fontSize: 16)),
+        title: Text(localizations.cloudTitle, style: const TextStyle(fontSize: 16)),
         actions: [
           IconButton(
-            tooltip: _isCN ? '刷新' : 'Refresh',
+            tooltip: localizations.refresh,
             onPressed: _busy
                 ? null
                 : () async {
@@ -329,7 +325,7 @@ class _CloudPageState extends State<CloudPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_isCN ? '服务端' : 'Server', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(localizations.cloudServer, style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             TextField(
               controller: _baseUrl,
@@ -341,12 +337,10 @@ class _CloudPageState extends State<CloudPage> {
               ),
             ),
             const SizedBox(height: 8),
-            FilledButton(onPressed: _busy ? null : _saveBaseUrl, child: Text(_isCN ? '保存' : 'Save')),
+            FilledButton(onPressed: _busy ? null : _saveBaseUrl, child: Text(localizations.save)),
             const SizedBox(height: 4),
             Text(
-              _isCN
-                  ? '自己部署的服务端地址。文档里有可直接运行的 Node 实现（含账号与实时推送）。'
-                  : 'Your own server. A runnable Node implementation ships with the docs.',
+              localizations.cloudServerHint,
               style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
           ],
@@ -368,10 +362,10 @@ class _CloudPageState extends State<CloudPage> {
               Icon(account != null ? Icons.person : Icons.person_outline,
                   size: 18, color: account != null ? Colors.green : Colors.grey),
               const SizedBox(width: 6),
-              Text(_isCN ? '账号' : 'Account', style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(localizations.cloudAccount, style: const TextStyle(fontWeight: FontWeight.w600)),
               const Spacer(),
               if (account != null)
-                TextButton(onPressed: _logout, child: Text(_isCN ? '退出登录' : 'Sign out')),
+                TextButton(onPressed: _logout, child: Text(localizations.cloudSignOut)),
             ]),
             if (account != null)
               Text(account.displayName.isEmpty ? account.username : account.displayName,
@@ -381,7 +375,7 @@ class _CloudPageState extends State<CloudPage> {
                 controller: _username,
                 style: const TextStyle(fontSize: 13),
                 decoration: InputDecoration(
-                    labelText: _isCN ? '用户名' : 'Username', isDense: true, border: const OutlineInputBorder()),
+                    labelText: localizations.username, isDense: true, border: const OutlineInputBorder()),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -389,17 +383,17 @@ class _CloudPageState extends State<CloudPage> {
                 obscureText: true,
                 style: const TextStyle(fontSize: 13),
                 decoration: InputDecoration(
-                    labelText: _isCN ? '密码' : 'Password', isDense: true, border: const OutlineInputBorder()),
+                    labelText: localizations.password, isDense: true, border: const OutlineInputBorder()),
               ),
               const SizedBox(height: 8),
               Row(children: [
                 FilledButton(
                     onPressed: _busy ? null : () => _auth(register: false),
-                    child: Text(_isCN ? '登录' : 'Sign in')),
+                    child: Text(localizations.cloudSignIn)),
                 const SizedBox(width: 10),
                 OutlinedButton(
                     onPressed: _busy ? null : () => _auth(register: true),
-                    child: Text(_isCN ? '注册' : 'Register')),
+                    child: Text(localizations.cloudRegister)),
               ]),
             ],
           ],
@@ -420,15 +414,13 @@ class _CloudPageState extends State<CloudPage> {
               Icon(_realtime ? Icons.sync : Icons.sync_disabled,
                   size: 18, color: _realtime ? Colors.green : Colors.grey),
               const SizedBox(width: 6),
-              Text(_isCN ? '实时协同' : 'Realtime',
+              Text(localizations.cloudRealtime,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               const Spacer(),
               Switch(value: _realtime, onChanged: _busy ? null : _toggleRealtime),
             ]),
             Text(
-              _realtime
-                  ? (_isCN ? '已连接，别人的改动会实时推过来' : 'Connected — changes from others arrive live')
-                  : (_isCN ? '未连接' : 'Not connected'),
+              _realtime ? localizations.cloudRealtimeOn : localizations.cloudRealtimeOff,
               style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
             if (_eventLog.isNotEmpty) ...[
@@ -467,16 +459,16 @@ class _CloudPageState extends State<CloudPage> {
             Row(children: [
               const Icon(Icons.cloud_outlined, size: 18),
               const SizedBox(width: 6),
-              Text(_isCN ? '云端工作区' : 'Cloud workspaces',
+              Text(localizations.cloudWorkspaces,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
             ]),
             const SizedBox(height: 8),
             FilledButton.tonal(
                 onPressed: _busy ? null : _pushLocal,
-                child: Text(_isCN ? '把本地工作区推上去' : 'Push a local workspace')),
+                child: Text(localizations.cloudPushLocal)),
             const SizedBox(height: 8),
             if (_cloudWorkspaces.isEmpty)
-              Text(_isCN ? '云端暂无工作区' : 'Nothing on the server yet',
+              Text(localizations.cloudNoRemote,
                   style: const TextStyle(fontSize: 12, color: Colors.grey))
             else
               ..._cloudWorkspaces.map((item) {
@@ -493,12 +485,12 @@ class _CloudPageState extends State<CloudPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        tooltip: _isCN ? '拉到本地' : 'Pull',
+                        tooltip: localizations.cloudPull,
                         icon: const Icon(Icons.download_outlined, size: 18),
                         onPressed: _busy ? null : () => _pullRemote(item),
                       ),
                       IconButton(
-                        tooltip: _isCN ? '删除云端副本' : 'Delete on server',
+                        tooltip: localizations.cloudDeleteRemote,
                         icon: const Icon(Icons.delete_outline, size: 18),
                         onPressed: _busy ? null : () => _deleteRemote(item),
                       ),
@@ -523,11 +515,11 @@ class _CloudPageState extends State<CloudPage> {
             Row(children: [
               const Icon(Icons.group_outlined, size: 18),
               const SizedBox(width: 6),
-              Text(_isCN ? '团队成员' : 'Team', style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(localizations.cloudTeam, style: const TextStyle(fontWeight: FontWeight.w600)),
             ]),
             const SizedBox(height: 6),
             if (_members.isEmpty)
-              Text(_isCN ? '（点右上角刷新查看）' : '(tap refresh)',
+              Text(localizations.cloudTapRefresh,
                   style: const TextStyle(fontSize: 12, color: Colors.grey))
             else
               Wrap(
@@ -551,7 +543,7 @@ class _CloudPageState extends State<CloudPage> {
                   controller: _inviteName,
                   style: const TextStyle(fontSize: 13),
                   decoration: InputDecoration(
-                      labelText: _isCN ? '邀请用户名' : 'Invite user',
+                      labelText: localizations.cloudInviteUser,
                       isDense: true,
                       border: const OutlineInputBorder()),
                 ),
@@ -565,12 +557,15 @@ class _CloudPageState extends State<CloudPage> {
                         if (name.isEmpty) return;
                         final r = await CloudClient.invite(name);
                         if (!mounted) return;
-                        _toast(r.$1 ? (_isCN ? '已邀请 $name' : 'Invited $name') : (_isCN ? '邀请失败：${r.$2}' : 'Invite failed: ${r.$2}'),
+                        _toast(
+                            r.$1
+                                ? localizations.cloudInvited(name)
+                                : localizations.cloudInviteFailed(r.$2),
                             error: !r.$1);
                         _inviteName.clear();
                         await _loadMembers();
                       },
-                child: Text(_isCN ? '邀请' : 'Invite'),
+                child: Text(localizations.cloudInvite),
               ),
             ]),
           ],

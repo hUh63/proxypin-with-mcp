@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';
 import 'package:proxypin/network/util/quic/quic_keylog.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
@@ -19,47 +20,50 @@ class QuicSessionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QUIC 连接',
-            style: TextStyle(fontSize: 16),
+        title: Text(loc.quicTitle,
+            style: const TextStyle(fontSize: 16),
             maxLines: 1,
             overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
             icon: const Icon(Icons.key_outlined, size: 20),
-            tooltip: '导入密钥日志（SSLKEYLOGFILE）后即可解密 1-RTT 流数据',
+            tooltip: loc.quicKeylogTooltip,
             onPressed: () => _importKeylog(context),
           ),
           IconButton(
             icon: const Icon(Icons.copy_all_outlined, size: 20),
-            tooltip: '复制会话列表（制表符分隔，可直接贴进表格）',
+            tooltip: loc.quicCopySessionsTooltip,
             onPressed: () async {
               final sessions = QuicProbe.instance.sessions
                 ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
               if (sessions.isEmpty) return;
               final text = sessions
-                  .map((s) => '${s.host.isEmpty ? '(无SNI)' : s.host}\t${s.version}\t${s.remote}\t'
-                      '${s.packets}包 / ${_humanBytes(s.bytes)}\t最后活动 ${_time(s.lastSeen)}')
+                  .map((s) => '${s.host.isEmpty ? loc.quicNoSni : s.host}\t${s.version}\t${s.remote}\t'
+                      '${loc.quicPacketsBytes(s.packets, _humanBytes(s.bytes))}\t'
+                      '${loc.quicLastActivity(_time(s.lastSeen))}')
                   .join('\n');
               await Clipboard.setData(ClipboardData(text: text));
               if (context.mounted) {
-                FlutterToastr.show('已复制 ${sessions.length} 条会话记录', context, duration: 2);
+                FlutterToastr.show(loc.quicCopiedSessions(sessions.length), context,
+                    duration: 2);
               }
             },
           ),
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
-            tooltip: '刷新（等待新的 QUIC 包到达）',
+            tooltip: loc.quicRefreshTooltip,
             onPressed: () => QuicProbe.instance.revision.value++,
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined, size: 20),
-            tooltip: '清空记录',
+            tooltip: loc.quicClearRecords,
             onPressed: () => showConfirmDialog(context,
-                title: '清空记录',
-                content: '清空全部 QUIC 连接记录？已记录的会话与密钥日志不会恢复。',
+                title: loc.quicClearRecords,
+                content: loc.quicClearConfirm,
                 onConfirm: () => QuicProbe.instance.clear()),
           ),
         ],
@@ -80,14 +84,9 @@ class QuicSessionsPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 QuicKeylogStore.instance.isEmpty
-                    ? '仅展示 QUIC 连接级元数据（哪些域名在走 QUIC、连接统计）。'
-                        'HTTP/3 内容受 TLS 1.3 加密，默认无法解为明文；'
-                        '点右上角「钥匙」导入密钥日志（SSLKEYLOGFILE）后，命中的连接会自动解密 1-RTT 流数据；'
-                        '或开启「拦截 QUIC」强制定向 TCP 抓取完整请求。'
-                    : '已导入 ${QuicKeylogStore.instance.entryCount} 条密钥（覆盖 '
-                        '${QuicKeylogStore.instance.connectionCount} 个连接）。'
-                        '命中连接自动解密 1-RTT（仅客户端方向；HEADERS 按 QPACK 解码，含动态表）。'
-                        '未命中的连接请开启「拦截 QUIC」回落 TCP 抓取。',
+                    ? loc.quicBannerNoKeylog
+                    : loc.quicBannerKeylogLoaded(QuicKeylogStore.instance.entryCount,
+                        QuicKeylogStore.instance.connectionCount),
                 style: TextStyle(
                     fontSize: 11, color: cs.onTertiaryContainer, height: 1.4),
               ),
@@ -112,7 +111,7 @@ class QuicSessionsPage extends StatelessWidget {
                           size: 18, color: cs.onPrimaryContainer),
                     ),
                     title: Text(
-                      s.host.isNotEmpty ? s.host : '（未解出 SNI）',
+                      s.host.isNotEmpty ? s.host : loc.quicNoSniUnresolved,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight:
@@ -125,10 +124,8 @@ class QuicSessionsPage extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     subtitle: Text(
-                      'QUIC ${s.version} · ${s.remote} · 首见 ${_time(s.firstSeen)} · 最后活动 ${_ago(s.lastSeen)}\n'
-                      '连接 ${s.dcid.length >= 6 ? s.dcid.substring(0, 6) : s.dcid}… · '
-                      '${s.packets} 包 / ${s.frames} 帧 · ${_humanBytes(s.bytes)}'
-                      '${s.decrypted.isNotEmpty ? ' · 已解密 ${s.decrypted.length} 段' : ''}',
+                      '${loc.quicSessionSummary(s.version, s.remote, _time(s.firstSeen), _ago(loc, s.lastSeen))}\n'
+                      '${loc.quicSessionIds(s.dcid.length >= 6 ? s.dcid.substring(0, 6) : s.dcid, s.packets, s.frames, _humanBytes(s.bytes), s.decrypted.isNotEmpty ? loc.quicDecryptedSegments(s.decrypted.length) : '')}',
                       style: TextStyle(
                         fontSize: 11,
                         color: s.decrypted.isNotEmpty ? Colors.green.shade700 : cs.onSurfaceVariant,
@@ -172,12 +169,14 @@ class QuicSessionsPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('最近 10 分钟 QUIC 包量', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              Text(AppLocalizations.of(context)!.quicTimelineTitle,
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
               const Spacer(),
               Text(
                 activeBuckets == 0
-                    ? '暂无数据'
-                    : '共 $total 包 · ${_humanBytes(totalBytes)} · $activeBuckets 段有流量',
+                    ? AppLocalizations.of(context)!.quicTimelineNoData
+                    : AppLocalizations.of(context)!
+                        .quicTimelineSummary(total, _humanBytes(totalBytes), activeBuckets),
                 style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
               ),
             ],
@@ -207,11 +206,14 @@ class QuicSessionsPage extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              Text('10 分钟前', style: TextStyle(fontSize: 10, color: cs.outline)),
+              Text(AppLocalizations.of(context)!.quicTenMinutesAgo,
+                  style: TextStyle(fontSize: 10, color: cs.outline)),
               const Spacer(),
-              Text('每格 10 秒', style: TextStyle(fontSize: 10, color: cs.outline)),
+              Text(AppLocalizations.of(context)!.quicPerCellTenSeconds,
+                  style: TextStyle(fontSize: 10, color: cs.outline)),
               const Spacer(),
-              Text('现在', style: TextStyle(fontSize: 10, color: cs.outline)),
+              Text(AppLocalizations.of(context)!.quicNow,
+                  style: TextStyle(fontSize: 10, color: cs.outline)),
             ],
           ),
         ],
@@ -232,8 +234,9 @@ class QuicSessionsPage extends StatelessWidget {
       if (context.mounted) {
         FlutterToastr.show(
           added > 0
-              ? '已导入 $added 条密钥，覆盖 ${QuicKeylogStore.instance.connectionCount} 个连接'
-              : '没有解析到新的密钥条目（请确认文件是 NSS key log 格式）',
+              ? AppLocalizations.of(context)!
+                  .quicImportedNKeys(added, QuicKeylogStore.instance.connectionCount)
+              : AppLocalizations.of(context)!.quicNoNewKeyEntries,
           context,
           duration: 3,
         );
@@ -241,7 +244,10 @@ class QuicSessionsPage extends StatelessWidget {
       QuicProbe.instance.revision.value++;
     } catch (e) {
       if (context.mounted) {
-        FlutterToastr.show('导入失败：$e', context, duration: 3);
+        FlutterToastr.show(
+            AppLocalizations.of(context)!.quicImportFailed('$e'),
+            context,
+            duration: 3);
       }
     }
   }
@@ -252,17 +258,25 @@ class QuicSessionsPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${session.host.isEmpty ? '(未解出 SNI)' : session.host} · 解密内容',
-            style: const TextStyle(fontSize: 15), maxLines: 2, overflow: TextOverflow.ellipsis),
+        title: Text(
+            AppLocalizations.of(context)!.quicDecryptedTitle(session.host.isEmpty
+                ? AppLocalizations.of(context)!.quicNoSniUnresolved
+                : session.host),
+            style: const TextStyle(fontSize: 15),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640, maxHeight: 440),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '共 ${session.decrypted.length} 段（客户端发送方向，1-RTT）。'
-                'HEADERS 为 QPACK 压缩：静态表与动态表引用均已解码，动态表由本连接的'
-                '「QPACK 编码器流」按序还原${session.qpackTable.insertCount > 0 ? '（已插入 ${session.qpackTable.insertCount} 条，当前存活 ${session.qpackTable.length} 条）' : '（本连接未使用动态表）'}。',
+                AppLocalizations.of(context)!.quicDecryptedAbout(
+                    session.decrypted.length,
+                    session.qpackTable.insertCount > 0
+                        ? AppLocalizations.of(context)!.quicQpackTableUsed(
+                            session.qpackTable.insertCount, session.qpackTable.length)
+                        : AppLocalizations.of(context)!.quicQpackTableUnused),
                 style: TextStyle(fontSize: 11.5, height: 1.45, color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 10),
@@ -297,7 +311,9 @@ class QuicSessionsPage extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('HTTP/3 头部 · QPACK 已解码 ${item.headers.length} 项',
+                                  Text(
+                                      AppLocalizations.of(context)!
+                                          .quicHttp3Headers(item.headers.length),
                                       style: TextStyle(
                                           fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w600)),
                                   const SizedBox(height: 4),
@@ -318,7 +334,9 @@ class QuicSessionsPage extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context)!.close)),
         ],
       ),
     );
@@ -353,11 +371,12 @@ class QuicSessionsPage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          cell('连接', '${sessions.length}'),
-          cell('域名', '${hosts.length}'),
-          cell('包', '$packets'),
-          cell('流量', _humanBytes(bytes)),
-          cell('活跃', '$active', color: active > 0 ? Colors.green : cs.onSurfaceVariant),
+          cell(AppLocalizations.of(context)!.quicStatConnections, '${sessions.length}'),
+          cell(AppLocalizations.of(context)!.quicStatHosts, '${hosts.length}'),
+          cell(AppLocalizations.of(context)!.quicStatPackets, '$packets'),
+          cell(AppLocalizations.of(context)!.quicStatTraffic, _humanBytes(bytes)),
+          cell(AppLocalizations.of(context)!.quicStatActive, '$active',
+              color: active > 0 ? Colors.green : cs.onSurfaceVariant),
         ],
       ),
     );
@@ -369,11 +388,11 @@ class QuicSessionsPage extends StatelessWidget {
     return '${(bytes / 1024 / 1024).toStringAsFixed(1)}M';
   }
 
-  static String _ago(DateTime t) {
+  static String _ago(AppLocalizations loc, DateTime t) {
     final seconds = DateTime.now().difference(t).inSeconds;
-    if (seconds < 60) return '$seconds 秒前';
-    if (seconds < 3600) return '${seconds ~/ 60} 分钟前';
-    return '${seconds ~/ 3600} 小时前';
+    if (seconds < 60) return loc.quicSecondsAgo(seconds);
+    if (seconds < 3600) return loc.quicMinutesAgo(seconds ~/ 60);
+    return loc.quicHoursAgo(seconds ~/ 3600);
   }
 
   Widget _empty(ColorScheme cs, BuildContext context) {
@@ -385,19 +404,17 @@ class QuicSessionsPage extends StatelessWidget {
           children: [
             Icon(Icons.hub_outlined, size: 44, color: cs.outlineVariant),
             const SizedBox(height: 14),
-            const Text('尚未捕获到 QUIC 连接',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.quicEmptyTitle,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Text(
-              '开启 VPN 抓包后，目标应用使用 QUIC/HTTP3 时（如视频、部分社交与游戏应用），'
-              '会自动记录其连接：域名(SNI)、QUIC 版本、连接 ID 与包/帧统计。',
+              AppLocalizations.of(context)!.quicEmptyDesc,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant, height: 1.6),
             ),
             const SizedBox(height: 16),
             Text(
-              '提示：多数应用默认走 TCP/HTTP2，若需看到 QUIC 记录，可在偏好设置临时关闭「拦截 QUIC」后重开抓包；'
-              '业务明文仍需开启「拦截 QUIC」回落 TCP 后抓取。',
+              AppLocalizations.of(context)!.quicEmptyHint,
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: 11.5, color: cs.outline, height: 1.5),

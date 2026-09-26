@@ -1843,6 +1843,492 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get aiConfigSaved => 'AI 配置已保存';
 
+
+  @override
+  String get quicTitle => 'QUIC 连接';
+
+  @override
+  String get quicKeylogTooltip => '导入密钥日志（SSLKEYLOGFILE）后即可解密 1-RTT 流数据';
+
+  @override
+  String get quicCopySessionsTooltip => '复制会话列表（制表符分隔，可直接贴进表格）';
+
+  @override
+  String get quicNoSni => '(无SNI)';
+
+  @override
+  String quicPacketsBytes(int packets, String bytes) {
+    return '$packets包 / $bytes';
+  }
+
+  @override
+  String quicLastActivity(String time) {
+    return '最后活动 $time';
+  }
+
+  @override
+  String quicCopiedSessions(int count) {
+    return '已复制 $count 条会话记录';
+  }
+
+  @override
+  String get quicRefreshTooltip => '刷新（等待新的 QUIC 包到达）';
+
+  @override
+  String get quicClearRecords => '清空记录';
+
+  @override
+  String get quicClearConfirm => '清空全部 QUIC 连接记录？已记录的会话与密钥日志不会恢复。';
+
+  @override
+  String get quicBannerNoKeylog => '仅展示 QUIC 连接级元数据（哪些域名在走 QUIC、连接统计）。HTTP/3 内容受 TLS 1.3 加密，默认无法解为明文；点右上角「钥匙」导入密钥日志（SSLKEYLOGFILE）后，命中的连接会自动解密 1-RTT 流数据；或开启「拦截 QUIC」强制定向 TCP 抓取完整请求。';
+
+  @override
+  String quicBannerKeylogLoaded(int keys, int connections) {
+    return '已导入 $keys 条密钥（覆盖 $connections 个连接）。命中连接自动解密 1-RTT（仅客户端方向；HEADERS 按 QPACK 解码，含动态表）。未命中的连接请开启「拦截 QUIC」回落 TCP 抓取。';
+  }
+
+  @override
+  String get quicNoSniUnresolved => '（未解出 SNI）';
+
+  @override
+  String quicSessionSummary(String version, String remote, String firstSeen, String ago) {
+    return 'QUIC $version · $remote · 首见 $firstSeen · 最后活动 $ago';
+  }
+
+  @override
+  String quicSessionIds(String dcid, int packets, int frames, String bytes, String decrypted) {
+    return '连接 $dcid… · $packets 包 / $frames 帧 · $bytes$decrypted';
+  }
+
+  @override
+  String quicDecryptedSegments(int count) {
+    return ' · 已解密 $count 段';
+  }
+
+  @override
+  String get quicTimelineTitle => '最近 10 分钟 QUIC 包量';
+
+  @override
+  String get quicTimelineNoData => '暂无数据';
+
+  @override
+  String quicTimelineSummary(int packets, String bytes, int buckets) {
+    return '共 $packets 包 · $bytes · $buckets 段有流量';
+  }
+
+  @override
+  String get quicTenMinutesAgo => '10 分钟前';
+
+  @override
+  String get quicPerCellTenSeconds => '每格 10 秒';
+
+  @override
+  String get quicNow => '现在';
+
+  @override
+  String quicImportedNKeys(int keys, int connections) {
+    return '已导入 $keys 条密钥，覆盖 $connections 个连接';
+  }
+
+  @override
+  String get quicNoNewKeyEntries => '没有解析到新的密钥条目（请确认文件是 NSS key log 格式）';
+
+  @override
+  String quicImportFailed(String error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String quicDecryptedTitle(String host) {
+    return '$host · 解密内容';
+  }
+
+  @override
+  String quicDecryptedAbout(int segments, String table) {
+    return '共 $segments 段（客户端发送方向，1-RTT）。HEADERS 为 QPACK 压缩：静态表与动态表引用均已解码，动态表由本连接的「QPACK 编码器流」按序还原$table。';
+  }
+
+  @override
+  String quicQpackTableUsed(int inserted, int live) {
+    return '（已插入 $inserted 条，当前存活 $live 条）';
+  }
+
+  @override
+  String get quicQpackTableUnused => '（本连接未使用动态表）';
+
+  @override
+  String quicHttp3Headers(int count) {
+    return 'HTTP/3 头部 · QPACK 已解码 $count 项';
+  }
+
+  @override
+  String get quicStatConnections => '连接';
+
+  @override
+  String get quicStatHosts => '域名';
+
+  @override
+  String get quicStatPackets => '包';
+
+  @override
+  String get quicStatTraffic => '流量';
+
+  @override
+  String get quicStatActive => '活跃';
+
+  @override
+  String quicSecondsAgo(int seconds) {
+    return '$seconds 秒前';
+  }
+
+  @override
+  String quicMinutesAgo(int minutes) {
+    return '$minutes 分钟前';
+  }
+
+  @override
+  String quicHoursAgo(int hours) {
+    return '$hours 小时前';
+  }
+
+  @override
+  String get quicEmptyTitle => '尚未捕获到 QUIC 连接';
+
+  @override
+  String get quicEmptyDesc => '开启 VPN 抓包后，目标应用使用 QUIC/HTTP3 时（如视频、部分社交与游戏应用），会自动记录其连接：域名(SNI)、QUIC 版本、连接 ID 与包/帧统计。';
+
+  @override
+  String get quicEmptyHint => '提示：多数应用默认走 TCP/HTTP2，若需看到 QUIC 记录，可在偏好设置临时关闭「拦截 QUIC」后重开抓包；业务明文仍需开启「拦截 QUIC」回落 TCP 后抓取。';
+
+
+  @override
+  String pinningDeployDone(String path) {
+    return '脚本已部署到 $path';
+  }
+
+  @override
+  String pinningDeployFailed(String reason) {
+    return '部署失败：$reason';
+  }
+
+  @override
+  String get pinningNeedPackage => '请填写目标应用包名';
+
+  @override
+  String get pinningAttaching => '正在注入…';
+
+  @override
+  String pinningAttached(String result) {
+    return '已注入：$result';
+  }
+
+  @override
+  String pinningAttachFailed(String result) {
+    return '注入失败：$result';
+  }
+
+  @override
+  String get pinningStopDone => '已停止注入';
+
+  @override
+  String get pinningStopFailed => '停止失败';
+
+  @override
+  String get pinningTitle => 'SSL Pinning 绕过辅助';
+
+  @override
+  String get pinningRefreshEnv => '刷新环境';
+
+  @override
+  String get pinningAndroidOnly => '仅 Android 支持';
+
+  @override
+  String get pinningViewLog => '查看注入日志';
+
+  @override
+  String get pinningNotice => '仅在你拥有的设备上、对你**有授权**的目标应用使用（自己的应用，或已获书面授权的应用）。\n绕过证书固定属于对目标进程的运行时干预，未经授权使用可能违反对方协议或法律。\n本工具不内置任何第三方二进制（frida-server / Xposed 模块都不带）。';
+
+  @override
+  String get pinningEnvTitle => '环境检测';
+
+  @override
+  String get pinningChecking => '检测中…';
+
+  @override
+  String get pinningReady => '可以注入：设备端已具备 frida 工具';
+
+  @override
+  String get pinningNotReady => '还不能注入。需要：① root 已授权；② 设备上有 frida-inject（推荐，可脱离电脑）或 frida CLI。\n没有也行——脚本照样能生成，你把它拿到电脑上用 frida -U -f <包名> -l 脚本 注入。';
+
+  @override
+  String get pinningStep1Title => '① 生成并部署 hook 脚本';
+
+  @override
+  String get pinningStep1Hint => '覆盖常见实现：Conscrypt TrustManagerImpl、SSLContext.init、OkHttp CertificatePinner、HostnameVerifier。';
+
+  @override
+  String get pinningDeploy => '部署到设备';
+
+  @override
+  String get pinningScriptCopied => '脚本已复制';
+
+  @override
+  String get pinningCopyScript => '复制脚本';
+
+  @override
+  String get pinningStep2Title => '② 注入到目标应用';
+
+  @override
+  String get pinningPackageHint => '包名（如 com.example.app）';
+
+  @override
+  String get pinningSpawn => '启动时注入（应对「启动即校验」）';
+
+  @override
+  String get pinningAttach => '注入';
+
+  @override
+  String get pinningOtherOptions => '还有别的办法吗？';
+
+  @override
+  String get pinningOtherHint => '· 先确认不是「证书没装好」：抓包自检里第 2 层才是证书固定，第 1 层装系统证书就能解决（见证书页）。\n· 有 Magisk/LSPosed 的设备，用现成的 pinning 绕过模块更省事，与本工具是并列关系。\n· Flutter 应用用 Dart 自己的根证书列表，不读系统 CA，需要专门处理。';
+
+  @override
+  String get cloudServerSaved => '服务端地址已保存';
+
+  @override
+  String get cloudNeedCredentials => '请填写用户名和密码';
+
+  @override
+  String cloudAuthFailed(String error) {
+    return '失败：$error';
+  }
+
+  @override
+  String get cloudSignedIn => '已登录';
+
+  @override
+  String get cloudSignedOut => '已退出登录';
+
+  @override
+  String get cloudNoLocalWorkspace => '本地还没有工作区';
+
+  @override
+  String get cloudPickWorkspace => '选择要推送的工作区';
+
+  @override
+  String cloudPushFailed(String error) {
+    return '推送失败：$error';
+  }
+
+  @override
+  String get cloudPushed => '已推送到云端';
+
+  @override
+  String get cloudRemoteEmpty => '云端这份是空的';
+
+  @override
+  String cloudPulled(int count) {
+    return '已拉到本地（$count 条）';
+  }
+
+  @override
+  String cloudPullFailed(String error) {
+    return '拉取失败：$error';
+  }
+
+  @override
+  String get cloudDeleteConfirm => '删除云端的这份工作区副本？删除后无法恢复。';
+
+  @override
+  String get cloudDeleted => '已删除云端副本';
+
+  @override
+  String get cloudRealtimeFailed => '实时连接失败，检查服务端与登录状态';
+
+  @override
+  String get cloudTitle => '云端协同';
+
+  @override
+  String get cloudServer => '服务端';
+
+  @override
+  String get cloudServerHint => '自己部署的服务端地址。文档里有可直接运行的 Node 实现（含账号与实时推送）。';
+
+  @override
+  String get cloudAccount => '账号';
+
+  @override
+  String get cloudSignOut => '退出登录';
+
+  @override
+  String get cloudSignIn => '登录';
+
+  @override
+  String get cloudRegister => '注册';
+
+  @override
+  String get cloudRealtime => '实时协同';
+
+  @override
+  String get cloudRealtimeOn => '已连接，别人的改动会实时推过来';
+
+  @override
+  String get cloudRealtimeOff => '未连接';
+
+  @override
+  String get cloudWorkspaces => '云端工作区';
+
+  @override
+  String get cloudPushLocal => '把本地工作区推上去';
+
+  @override
+  String get cloudNoRemote => '云端暂无工作区';
+
+  @override
+  String get cloudPull => '拉到本地';
+
+  @override
+  String get cloudDeleteRemote => '删除云端副本';
+
+  @override
+  String get cloudTeam => '团队成员';
+
+  @override
+  String get cloudTapRefresh => '（点右上角刷新查看）';
+
+  @override
+  String get cloudInviteUser => '邀请用户名';
+
+  @override
+  String cloudInvited(String name) {
+    return '已邀请 $name';
+  }
+
+  @override
+  String cloudInviteFailed(String error) {
+    return '邀请失败：$error';
+  }
+
+  @override
+  String get cloudInvite => '邀请';
+
+
+  @override
+  String get sslP12FileEmpty => '读取到的文件为空，请重新选择 .p12 文件';
+
+  @override
+  String get sslAutoInstallHint => '自动安装（需 Root；以 Magisk 模块方式写入，重启生效）\n现代 Android 的 /system 与 /apex 都是只读的，所以不再直接拷贝，而是落成模块由开机时挂载';
+
+  @override
+  String get sslAutoInstallToSystem => '一键自动安装到系统';
+
+  @override
+  String get sslRemoveSystemCA => '移除系统证书';
+
+  @override
+  String get sslRemoveSystemCAConfirm => '会删除写入系统信任库（Magisk 模块）的证书，之后 HTTPS 抓包会失败。确定移除？';
+
+  @override
+  String get sslRemoveInstalledSystemCA => '移除已安装的系统证书';
+
+  @override
+  String get sslNoModuleManager => '没有 Magisk / KernelSU / APatch？';
+
+  @override
+  String get sslRuntimeMountDesc => '用 root 直接把证书挂进系统信任库：运行时挂载，重启后失效，但完全可逆、不必重启设备。适合有 root 却没有模块管理器的机器。';
+
+  @override
+  String get sslMountToTrustStore => 'Root 直挂到系统信任库';
+
+  @override
+  String get sslUnmountRuntimeCA => '卸载直挂';
+
+  @override
+  String get sslUnmountRuntimeCAConfirm => '会卸载运行时挂载的系统证书，之后 HTTPS 抓包会失败。确定卸载？';
+
+  @override
+  String get sslRestartZygote => '重启 zygote（让已启动的应用立刻生效）';
+
+  @override
+  String get sslAndroid13MountHint => 'Android 13: 将证书挂载到 \'/system/etc/security/cacerts\' 目录';
+
+  @override
+  String get sslAndroid14MountHint => 'Android 14: 将证书挂载到 \'/apex/com.android.conscrypt/cacerts\' 目录';
+
+  @override
+  String get sslAndroidCaInstallNote => '注意: 安装时要选【CA 证书】，选成【VPN 和应用证书】不会被应用信任；Android 14+ 的 CA 目录在 APEX 里，只把文件拷进去不一定生效，一般需要模块做 bind mount';
+
+  @override
+  String get sslNoModuleDirMsg => '未检测到 Magisk / KernelSU / APatch（无 /data/adb/modules）：请先下载证书，再用模块方式手动安装';
+
+  @override
+  String sslInstallFailedRoot(String output) {
+    return '安装失败（$output），请确认已授予 root 权限';
+  }
+
+  @override
+  String get sslModuleInstalled => '已以模块形式安装，重启手机后生效（Android 14+ 会自动并入 APEX 的 CA 目录）';
+
+  @override
+  String sslAutoInstallFailedRoot(String error) {
+    return '自动安装失败：$error，请确认已授予 root 权限';
+  }
+
+  @override
+  String get sslRemovedReboot => '已移除，重启手机后生效';
+
+  @override
+  String get sslRemoveFailedRoot => '移除失败，请确认 root 授权';
+
+  @override
+  String sslRemoveFailedError(String error) {
+    return '移除失败：$error';
+  }
+
+  @override
+  String get sslMountingGrantRoot => '正在挂载，请在弹出的授权框里允许 root';
+
+  @override
+  String get sslMountedTrustStore => '已挂进系统信任库（重启后失效）。重启目标应用即可生效，或点下方「重启 zygote」';
+
+  @override
+  String sslMountFailed(String message) {
+    return '挂载失败：$message';
+  }
+
+  @override
+  String get sslUnmountedRestored => '已卸载直挂，系统信任库恢复原状';
+
+  @override
+  String sslUnmountFailed(String message) {
+    return '卸载失败：$message';
+  }
+
+  @override
+  String get sslZygoteRestarted => '已通知 zygote 重启，所有应用会短暂重启';
+
+  @override
+  String sslZygoteRestartFailed(String message) {
+    return '重启失败：$message';
+  }
+
+  @override
+  String get sslCertNotInstalled => '证书未安装';
+
+  @override
+  String get sslTapInstallRootCA => '点击“安装根证书”进行安装';
+
+  @override
+  String get sslCertNotTrusted => '证书未信任';
+
+  @override
+  String get sslCertInstalledTrusted => '证书已安装并信任';
+
+  @override
+  String get sslGuide => '指引';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

@@ -39,7 +39,6 @@ class _PinningPageState extends State<PinningPage> {
   String _log = '';
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
-  bool get _isCN => localizations.localeName == 'zh';
 
   @override
   void initState() {
@@ -73,33 +72,31 @@ class _PinningPageState extends State<PinningPage> {
     final r = await PinningHelper.deployScript();
     if (!mounted) return;
     _toast(r.$1
-        ? (_isCN ? '脚本已部署到 ${r.$2}' : 'Script deployed to ${r.$2}')
-        : (_isCN ? '部署失败：${r.$2}' : 'Deploy failed: ${r.$2}'));
+        ? localizations.pinningDeployDone(r.$2)
+        : localizations.pinningDeployFailed(r.$2));
   }
 
   Future<void> _attach() async {
     final pkg = _package.text.trim();
     if (pkg.isEmpty) {
-      _toast(_isCN ? '请填写目标应用包名' : 'Enter the target package name');
+      _toast(localizations.pinningNeedPackage);
       return;
     }
-    _toast(_isCN ? '正在注入…' : 'Attaching…', seconds: 2);
+    _toast(localizations.pinningAttaching, seconds: 2);
     final r = await PinningHelper.attach(pkg, spawn: _spawn);
     if (!mounted) return;
     if (r.$1) {
-      _toast(_isCN ? '已注入：${r.$2}' : 'Attached: ${r.$2}', seconds: 6);
+      _toast(localizations.pinningAttached(r.$2), seconds: 6);
       _loadLog();
     } else {
-      _toast(_isCN ? '注入失败：${r.$2}' : 'Attach failed: ${r.$2}', seconds: 7);
+      _toast(localizations.pinningAttachFailed(r.$2), seconds: 7);
     }
   }
 
   Future<void> _stop() async {
     final r = await PinningHelper.stop();
     if (!mounted) return;
-    _toast(r.$1
-        ? (_isCN ? '已停止注入' : 'Injection stopped')
-        : (_isCN ? '停止失败' : 'Stop failed'));
+    _toast(r.$1 ? localizations.pinningStopDone : localizations.pinningStopFailed);
   }
 
   Future<void> _loadLog() async {
@@ -113,11 +110,10 @@ class _PinningPageState extends State<PinningPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(_isCN ? 'SSL Pinning 绕过辅助' : 'SSL Pinning Bypass Helper',
-            style: const TextStyle(fontSize: 16)),
+        title: Text(localizations.pinningTitle, style: const TextStyle(fontSize: 16)),
         actions: [
           IconButton(
-            tooltip: _isCN ? '刷新环境' : 'Refresh',
+            tooltip: localizations.pinningRefreshEnv,
             onPressed: _checking ? null : _refresh,
             icon: _checking
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
@@ -126,7 +122,7 @@ class _PinningPageState extends State<PinningPage> {
         ],
       ),
       body: !PinningHelper.supported
-          ? Center(child: Text(_isCN ? '仅 Android 支持' : 'Android only'))
+          ? Center(child: Text(localizations.pinningAndroidOnly))
           : ListView(
               padding: const EdgeInsets.all(12),
               children: [
@@ -139,9 +135,9 @@ class _PinningPageState extends State<PinningPage> {
                 _step2(),
                 const SizedBox(height: 12),
                 Row(children: [
-                  OutlinedButton(onPressed: _stop, child: Text(_isCN ? '停止注入' : 'Stop')),
+                  OutlinedButton(onPressed: _stop, child: Text(localizations.stop)),
                   const SizedBox(width: 10),
-                  TextButton(onPressed: _loadLog, child: Text(_isCN ? '查看注入日志' : 'View log')),
+                  TextButton(onPressed: _loadLog, child: Text(localizations.pinningViewLog)),
                 ]),
                 if (_log.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -171,13 +167,7 @@ class _PinningPageState extends State<PinningPage> {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        _isCN
-            ? '仅在你拥有的设备上、对你**有授权**的目标应用使用（自己的应用，或已获书面授权的应用）。\n'
-                '绕过证书固定属于对目标进程的运行时干预，未经授权使用可能违反对方协议或法律。\n'
-                '本工具不内置任何第三方二进制（frida-server / Xposed 模块都不带）。'
-            : 'Use only on devices you own and on apps you are authorized to test. '
-                'Bypassing certificate pinning is runtime intervention into the target process. '
-                'No third-party binaries (frida-server, Xposed modules) are bundled.',
+        localizations.pinningNotice,
         style: const TextStyle(fontSize: 12),
       ),
     );
@@ -192,11 +182,11 @@ class _PinningPageState extends State<PinningPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_isCN ? '环境检测' : 'Environment',
+            Text(localizations.pinningEnvTitle,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             if (env == null)
-              Text(_isCN ? '检测中…' : 'checking…')
+              Text(localizations.pinningChecking)
             else ...[
               _envRow('root', env.root),
               _envRow('frida-server', env.fridaServer),
@@ -204,13 +194,7 @@ class _PinningPageState extends State<PinningPage> {
               _envRow('frida-inject', env.fridaInject),
               const SizedBox(height: 6),
               Text(
-                env.canInject
-                    ? (_isCN ? '可以注入：设备端已具备 frida 工具' : 'Ready to attach')
-                    : (_isCN
-                        ? '还不能注入。需要：① root 已授权；② 设备上有 frida-inject（推荐，可脱离电脑）或 frida CLI。\n'
-                            '没有也行——脚本照样能生成，你把它拿到电脑上用 frida -U -f <包名> -l 脚本 注入。'
-                        : 'Not ready. Need root + frida-inject (recommended) or frida CLI on device. '
-                            'You can still generate the script and run it from a PC.'),
+                env.canInject ? localizations.pinningReady : localizations.pinningNotReady,
                 style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
               ),
             ],
@@ -235,25 +219,23 @@ class _PinningPageState extends State<PinningPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_isCN ? '① 生成并部署 hook 脚本' : '1. Generate & deploy hook script',
+        Text(localizations.pinningStep1Title,
             style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
         Text(
-          _isCN
-              ? '覆盖常见实现：Conscrypt TrustManagerImpl、SSLContext.init、OkHttp CertificatePinner、HostnameVerifier。'
-              : 'Covers Conscrypt TrustManagerImpl, SSLContext.init, OkHttp CertificatePinner, HostnameVerifier.',
+          localizations.pinningStep1Hint,
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         const SizedBox(height: 8),
         Row(children: [
-          FilledButton(onPressed: _deploy, child: Text(_isCN ? '部署到设备' : 'Deploy to device')),
+          FilledButton(onPressed: _deploy, child: Text(localizations.pinningDeploy)),
           const SizedBox(width: 10),
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: PinningHelper.buildScript()));
-              _toast(_isCN ? '脚本已复制' : 'Script copied', seconds: 2);
+              _toast(localizations.pinningScriptCopied, seconds: 2);
             },
-            child: Text(_isCN ? '复制脚本' : 'Copy script'),
+            child: Text(localizations.pinningCopyScript),
           ),
         ]),
       ],
@@ -264,14 +246,14 @@ class _PinningPageState extends State<PinningPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_isCN ? '② 注入到目标应用' : '2. Attach to target app',
+        Text(localizations.pinningStep2Title,
             style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextField(
           controller: _package,
           style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
           decoration: InputDecoration(
-            labelText: _isCN ? '包名（如 com.example.app）' : 'Package name',
+            labelText: localizations.pinningPackageHint,
             isDense: true,
             border: const OutlineInputBorder(),
           ),
@@ -281,12 +263,12 @@ class _PinningPageState extends State<PinningPage> {
           dense: true,
           value: _spawn,
           onChanged: (v) => setState(() => _spawn = v),
-          title: Text(_isCN ? '启动时注入（应对「启动即校验」）' : 'Spawn mode (app checks on launch)',
+          title: Text(localizations.pinningSpawn,
               style: const TextStyle(fontSize: 13)),
         ),
         FilledButton.tonal(
           onPressed: _attach,
-          child: Text(_isCN ? '注入' : 'Attach'),
+          child: Text(localizations.pinningAttach),
         ),
       ],
     );
@@ -296,17 +278,11 @@ class _PinningPageState extends State<PinningPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_isCN ? '还有别的办法吗？' : 'Other options',
+        Text(localizations.pinningOtherOptions,
             style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
         Text(
-          _isCN
-              ? '· 先确认不是「证书没装好」：抓包自检里第 2 层才是证书固定，第 1 层装系统证书就能解决（见证书页）。\n'
-                  '· 有 Magisk/LSPosed 的设备，用现成的 pinning 绕过模块更省事，与本工具是并列关系。\n'
-                  '· Flutter 应用用 Dart 自己的根证书列表，不读系统 CA，需要专门处理。'
-              : '· First rule out "CA not installed": layer 1 is solved by installing the CA into the system store.\n'
-                  '· With Magisk/LSPosed, a ready-made pinning-bypass module is simpler.\n'
-                  '· Flutter apps use Dart\'s own root list and need separate handling.',
+          localizations.pinningOtherHint,
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],

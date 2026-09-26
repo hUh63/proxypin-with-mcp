@@ -328,10 +328,10 @@ class _WafPageState extends State<WafPage> {
                 ),
             ]),
             if (_fingerprints.isNotEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(AppLocalizations.of(context)!.wafPickNameHint,
-                    style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
               ),
           ],
         ),
@@ -435,10 +435,10 @@ class _WafPageState extends State<WafPage> {
             TextField(
               controller: _url,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: AppLocalizations.of(context)!.wafTargetUrl,
                 isDense: true,
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
@@ -446,11 +446,11 @@ class _WafPageState extends State<WafPage> {
               controller: _extraHeaders,
               maxLines: 2,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: AppLocalizations.of(context)!.wafExtraHeaders,
                 hintText: 'User-Agent: {{PAYLOAD}}',
                 isDense: true,
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
@@ -458,11 +458,11 @@ class _WafPageState extends State<WafPage> {
               controller: _body,
               maxLines: 2,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: AppLocalizations.of(context)!.wafBodyOptional,
                 hintText: '{"q":"{{PAYLOAD}}"}',
                 isDense: true,
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
             ),
             CheckboxListTile(
@@ -566,10 +566,10 @@ class _WafPageState extends State<WafPage> {
               WafProbe.hardMaxProbes,
               AppLocalizations.of(context)!.wafNRecords(_maxProbes),
               (v) => setState(() => _maxProbes = v)),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Padding(
-              padding: EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 6),
               child: Text(
                 AppLocalizations.of(context)!.wafLimitsHard(
                     WafProbe.minDelayMs, WafProbe.hardMaxProbes),

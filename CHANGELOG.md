@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.24.37 (2026-09-27)
+
+### 修复 l10n 引入的编译错误 + 国际化第四批（4 个页面）
+
+**修复**：v1.24.35 / v1.24.36 的 `flutter build` 全部失败，报
+`Error: Not a constant expression` / `Method invocation is not a constant expression`。
+原因是**外层的 `const`**：我只删掉了 `Text` 自己的 `const`，但像
+
+```dart
+decoration: const InputDecoration(
+  labelText: AppLocalizations.of(context)!.xxx,   // ← 落在 const 上下文里
+  border: OutlineInputBorder(),
+),
+```
+
+这种，`InputDecoration` 前面的 `const` 会把整棵子树变成常量上下文，里面的 l10n 调用合法不了。
+共 **12 处**（`waf_page.dart` 5 处、`ai_analysis.dart` 7 处）：把外层 `const` 删掉，
+再把原本靠它撑着的成员各自补上 `const`（如 `border: const OutlineInputBorder()`）。
+
+为防再犯，加了 `_constcheck.py`：把每个文件里的字符串/注释剥掉后，解析所有
+`const Xxx(...)` 的括号范围，检查区间内是否出现 l10n 调用。全库当前 **0 冲突**。
+
+**第四批国际化**（4 个页面，139 个 key）：
+
+- `quic_sessions_page.dart`（41 key，前缀 `quic*`）：标题、导入密钥日志、复制会话列表、
+  空态、时间线、QPACK 解码说明、连接表头等；
+- `pinning_page.dart`（28 key，前缀 `pinning*`）+ `cloud_page.dart`（36 key，前缀 `cloud*`）：
+  这两个原本是 `_isCN ? '中文' : 'English'` 的硬编码二选一，改成走 l10n；
+  顺带删掉了因此失去引用的 `_isCN` getter；
+- `ssl.dart`（34 key，前缀 `ssl*`）：证书安装/卸载/挂载各状态、Android 13/14 提示、
+  失败反馈。5 处 `bool isCN = localizations.localeName == 'zh';` 同样清理。
+
+现 en / zh 各 **1149** 条，key 集合完全一致。这四个文件代码内中文已清零
+（`ssl.dart` 仅剩 1 处 `logger.d` 日志，按约定保留）。
+
+
 ## v1.24.36 (2026-09-26)
 
 ### 国际化（l10n）第三批：AI 分析页

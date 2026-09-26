@@ -1878,4 +1878,490 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiConfigSaved => 'AI settings saved';
+
+
+  @override
+  String get quicTitle => 'QUIC Connections';
+
+  @override
+  String get quicKeylogTooltip => 'Import a key log (SSLKEYLOGFILE) to enable 1-RTT stream decryption';
+
+  @override
+  String get quicCopySessionsTooltip => 'Copy the session list (tab-separated, paste straight into a spreadsheet)';
+
+  @override
+  String get quicNoSni => '(no SNI)';
+
+  @override
+  String quicPacketsBytes(int packets, String bytes) {
+    return '$packets packets / $bytes';
+  }
+
+  @override
+  String quicLastActivity(String time) {
+    return 'Last activity $time';
+  }
+
+  @override
+  String quicCopiedSessions(int count) {
+    return 'Copied $count sessions';
+  }
+
+  @override
+  String get quicRefreshTooltip => 'Refresh (waiting for new QUIC packets)';
+
+  @override
+  String get quicClearRecords => 'Clear records';
+
+  @override
+  String get quicClearConfirm => 'Clear all QUIC connection records? Recorded sessions and key logs cannot be restored.';
+
+  @override
+  String get quicBannerNoKeylog => 'Only QUIC connection-level metadata is shown (which domains use QUIC and connection stats). HTTP/3 content is encrypted with TLS 1.3 and cannot be decrypted by default; import a key log (SSLKEYLOGFILE) from the key icon at top right and matching connections will automatically decrypt 1-RTT stream data; or turn on Intercept QUIC to force a TCP fallback and capture full requests.';
+
+  @override
+  String quicBannerKeylogLoaded(int keys, int connections) {
+    return 'Imported $keys keys (covering $connections connections). Matching connections decrypt 1-RTT automatically (client direction only; HEADERS is QPACK-decoded including the dynamic table). For connections that did not match, turn on Intercept QUIC to fall back to TCP.';
+  }
+
+  @override
+  String get quicNoSniUnresolved => '(SNI not resolved)';
+
+  @override
+  String quicSessionSummary(String version, String remote, String firstSeen, String ago) {
+    return 'QUIC $version · $remote · first seen $firstSeen · last activity $ago';
+  }
+
+  @override
+  String quicSessionIds(String dcid, int packets, int frames, String bytes, String decrypted) {
+    return 'connection $dcid… · $packets packets / $frames frames · $bytes$decrypted';
+  }
+
+  @override
+  String quicDecryptedSegments(int count) {
+    return ' · $count segments decrypted';
+  }
+
+  @override
+  String get quicTimelineTitle => 'QUIC packet volume in the last 10 minutes';
+
+  @override
+  String get quicTimelineNoData => 'No data';
+
+  @override
+  String quicTimelineSummary(int packets, String bytes, int buckets) {
+    return '$packets packets · $bytes · traffic in $buckets buckets';
+  }
+
+  @override
+  String get quicTenMinutesAgo => '10 minutes ago';
+
+  @override
+  String get quicPerCellTenSeconds => '10s per cell';
+
+  @override
+  String get quicNow => 'Now';
+
+  @override
+  String quicImportedNKeys(int keys, int connections) {
+    return 'Imported $keys keys, covering $connections connections';
+  }
+
+  @override
+  String get quicNoNewKeyEntries => 'No new key entries were parsed (make sure the file is in NSS key log format)';
+
+  @override
+  String quicImportFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String quicDecryptedTitle(String host) {
+    return '$host · Decrypted content';
+  }
+
+  @override
+  String quicDecryptedAbout(int segments, String table) {
+    return '$segments segments in total (client direction, 1-RTT). HEADERS is QPACK-compressed: static and dynamic table references are both decoded, and the dynamic table is restored in order from this connection\'s QPACK encoder stream$table.';
+  }
+
+  @override
+  String quicQpackTableUsed(int inserted, int live) {
+    return ' ($inserted inserted, $live live)';
+  }
+
+  @override
+  String get quicQpackTableUnused => ' (this connection does not use the dynamic table)';
+
+  @override
+  String quicHttp3Headers(int count) {
+    return 'HTTP/3 headers · $count QPACK-decoded entries';
+  }
+
+  @override
+  String get quicStatConnections => 'Connections';
+
+  @override
+  String get quicStatHosts => 'Hosts';
+
+  @override
+  String get quicStatPackets => 'Packets';
+
+  @override
+  String get quicStatTraffic => 'Traffic';
+
+  @override
+  String get quicStatActive => 'Active';
+
+  @override
+  String quicSecondsAgo(int seconds) {
+    return '$seconds seconds ago';
+  }
+
+  @override
+  String quicMinutesAgo(int minutes) {
+    return '$minutes minutes ago';
+  }
+
+  @override
+  String quicHoursAgo(int hours) {
+    return '$hours hours ago';
+  }
+
+  @override
+  String get quicEmptyTitle => 'No QUIC connections captured yet';
+
+  @override
+  String get quicEmptyDesc => 'After VPN capture is on, when a target app uses QUIC/HTTP3 (video, some social and game apps), its connections are recorded automatically: SNI host, QUIC version, connection ID and packet/frame stats.';
+
+  @override
+  String get quicEmptyHint => 'Tip: most apps use TCP/HTTP2 by default. To see QUIC records, temporarily turn Intercept QUIC off in preferences and restart capture; decrypting payloads still requires turning Intercept QUIC on to fall back to TCP.';
+
+
+  @override
+  String pinningDeployDone(String path) {
+    return 'Script deployed to $path';
+  }
+
+  @override
+  String pinningDeployFailed(String reason) {
+    return 'Deploy failed: $reason';
+  }
+
+  @override
+  String get pinningNeedPackage => 'Enter the target package name';
+
+  @override
+  String get pinningAttaching => 'Attaching…';
+
+  @override
+  String pinningAttached(String result) {
+    return 'Attached: $result';
+  }
+
+  @override
+  String pinningAttachFailed(String result) {
+    return 'Attach failed: $result';
+  }
+
+  @override
+  String get pinningStopDone => 'Injection stopped';
+
+  @override
+  String get pinningStopFailed => 'Stop failed';
+
+  @override
+  String get pinningTitle => 'SSL Pinning Bypass Helper';
+
+  @override
+  String get pinningRefreshEnv => 'Refresh environment';
+
+  @override
+  String get pinningAndroidOnly => 'Android only';
+
+  @override
+  String get pinningViewLog => 'View log';
+
+  @override
+  String get pinningNotice => 'Use only on devices you own and on apps you are authorized to test. Bypassing certificate pinning is runtime intervention into the target process. No third-party binaries (frida-server, Xposed modules) are bundled.';
+
+  @override
+  String get pinningEnvTitle => 'Environment';
+
+  @override
+  String get pinningChecking => 'checking…';
+
+  @override
+  String get pinningReady => 'Ready to attach';
+
+  @override
+  String get pinningNotReady => 'Not ready. Need root + frida-inject (recommended) or frida CLI on device. You can still generate the script and run it from a PC.';
+
+  @override
+  String get pinningStep1Title => '1. Generate & deploy hook script';
+
+  @override
+  String get pinningStep1Hint => 'Covers Conscrypt TrustManagerImpl, SSLContext.init, OkHttp CertificatePinner, HostnameVerifier.';
+
+  @override
+  String get pinningDeploy => 'Deploy to device';
+
+  @override
+  String get pinningScriptCopied => 'Script copied';
+
+  @override
+  String get pinningCopyScript => 'Copy script';
+
+  @override
+  String get pinningStep2Title => '2. Attach to target app';
+
+  @override
+  String get pinningPackageHint => 'Package name';
+
+  @override
+  String get pinningSpawn => 'Spawn mode (app checks on launch)';
+
+  @override
+  String get pinningAttach => 'Attach';
+
+  @override
+  String get pinningOtherOptions => 'Other options';
+
+  @override
+  String get pinningOtherHint => '· First rule out "CA not installed": layer 1 is solved by installing the CA into the system store.\n· With Magisk/LSPosed, a ready-made pinning-bypass module is simpler.\n· Flutter apps use Dart\'s own root list and need separate handling.';
+
+  @override
+  String get cloudServerSaved => 'Server URL saved';
+
+  @override
+  String get cloudNeedCredentials => 'Enter username and password';
+
+  @override
+  String cloudAuthFailed(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String get cloudSignedIn => 'Signed in';
+
+  @override
+  String get cloudSignedOut => 'Signed out';
+
+  @override
+  String get cloudNoLocalWorkspace => 'No local workspace yet';
+
+  @override
+  String get cloudPickWorkspace => 'Pick a workspace';
+
+  @override
+  String cloudPushFailed(String error) {
+    return 'Push failed: $error';
+  }
+
+  @override
+  String get cloudPushed => 'Pushed to cloud';
+
+  @override
+  String get cloudRemoteEmpty => 'Remote workspace is empty';
+
+  @override
+  String cloudPulled(int count) {
+    return 'Pulled $count requests';
+  }
+
+  @override
+  String cloudPullFailed(String error) {
+    return 'Pull failed: $error';
+  }
+
+  @override
+  String get cloudDeleteConfirm => 'Remove this workspace copy from the cloud? This cannot be undone.';
+
+  @override
+  String get cloudDeleted => 'Removed from cloud';
+
+  @override
+  String get cloudRealtimeFailed => 'Realtime connect failed';
+
+  @override
+  String get cloudTitle => 'Cloud';
+
+  @override
+  String get cloudServer => 'Server';
+
+  @override
+  String get cloudServerHint => 'Your own server. A runnable Node implementation ships with the docs.';
+
+  @override
+  String get cloudAccount => 'Account';
+
+  @override
+  String get cloudSignOut => 'Sign out';
+
+  @override
+  String get cloudSignIn => 'Sign in';
+
+  @override
+  String get cloudRegister => 'Register';
+
+  @override
+  String get cloudRealtime => 'Realtime';
+
+  @override
+  String get cloudRealtimeOn => 'Connected — changes from others arrive live';
+
+  @override
+  String get cloudRealtimeOff => 'Not connected';
+
+  @override
+  String get cloudWorkspaces => 'Cloud workspaces';
+
+  @override
+  String get cloudPushLocal => 'Push a local workspace';
+
+  @override
+  String get cloudNoRemote => 'Nothing on the server yet';
+
+  @override
+  String get cloudPull => 'Pull';
+
+  @override
+  String get cloudDeleteRemote => 'Delete on server';
+
+  @override
+  String get cloudTeam => 'Team';
+
+  @override
+  String get cloudTapRefresh => '(tap refresh)';
+
+  @override
+  String get cloudInviteUser => 'Invite user';
+
+  @override
+  String cloudInvited(String name) {
+    return 'Invited $name';
+  }
+
+  @override
+  String cloudInviteFailed(String error) {
+    return 'Invite failed: $error';
+  }
+
+  @override
+  String get cloudInvite => 'Invite';
+
+
+  @override
+  String get sslP12FileEmpty => 'The selected file is empty, please choose the .p12 file again';
+
+  @override
+  String get sslAutoInstallHint => 'Auto install (needs Root; written as a module, reboot required)\nModern Android keeps /system and /apex read-only, so instead of copying files we install a module';
+
+  @override
+  String get sslAutoInstallToSystem => 'Auto install to system';
+
+  @override
+  String get sslRemoveSystemCA => 'Remove system CA';
+
+  @override
+  String get sslRemoveSystemCAConfirm => 'This deletes the CA written into the system trust store (Magisk module); HTTPS capture will stop working. Continue?';
+
+  @override
+  String get sslRemoveInstalledSystemCA => 'Remove installed system CA';
+
+  @override
+  String get sslNoModuleManager => 'No Magisk / KernelSU / APatch?';
+
+  @override
+  String get sslRuntimeMountDesc => 'Mount the CA into the system trust store via root: a runtime mount that reverts on reboot, fully reversible, no device reboot needed. For rooted devices without a module manager.';
+
+  @override
+  String get sslMountToTrustStore => 'Mount to system trust store (root)';
+
+  @override
+  String get sslUnmountRuntimeCA => 'Unmount runtime CA';
+
+  @override
+  String get sslUnmountRuntimeCAConfirm => 'This unmounts the runtime CA; HTTPS capture will stop working. Continue?';
+
+  @override
+  String get sslRestartZygote => 'Restart zygote (apply to running apps)';
+
+  @override
+  String get sslAndroid13MountHint => 'Android 13: Mount the certificate to \'/system/etc/security/cacerts\' directory';
+
+  @override
+  String get sslAndroid14MountHint => 'Android 14: Mount the certificate to \'/apex/com.android.conscrypt/cacerts\' directory';
+
+  @override
+  String get sslAndroidCaInstallNote => 'Note: Pick CA certificate (not VPN and app certificate) during install; on Android 14+ the CA directory lives in APEX, so copying the file alone may not take effect — a bind-mount module is usually required';
+
+  @override
+  String get sslNoModuleDirMsg => 'No /data/adb/modules found: this device has no Magisk/KernelSU/APatch. Download the CA and install it as a module manually.';
+
+  @override
+  String sslInstallFailedRoot(String output) {
+    return 'Install failed ($output). Make sure root is granted.';
+  }
+
+  @override
+  String get sslModuleInstalled => 'Installed as a Magisk module. Reboot to take effect.';
+
+  @override
+  String sslAutoInstallFailedRoot(String error) {
+    return 'Auto install failed: $error. Make sure root is granted.';
+  }
+
+  @override
+  String get sslRemovedReboot => 'Removed. Reboot to take effect.';
+
+  @override
+  String get sslRemoveFailedRoot => 'Remove failed. Make sure root is granted.';
+
+  @override
+  String sslRemoveFailedError(String error) {
+    return 'Remove failed: $error';
+  }
+
+  @override
+  String get sslMountingGrantRoot => 'Mounting, please grant root when prompted';
+
+  @override
+  String get sslMountedTrustStore => 'Mounted into the system trust store (reverts on reboot). Restart the target app, or tap "Restart zygote".';
+
+  @override
+  String sslMountFailed(String message) {
+    return 'Mount failed: $message';
+  }
+
+  @override
+  String get sslUnmountedRestored => 'Unmounted. The system trust store is back to its original state.';
+
+  @override
+  String sslUnmountFailed(String message) {
+    return 'Unmount failed: $message';
+  }
+
+  @override
+  String get sslZygoteRestarted => 'zygote restart signalled; all apps will restart briefly';
+
+  @override
+  String sslZygoteRestartFailed(String message) {
+    return 'Restart failed: $message';
+  }
+
+  @override
+  String get sslCertNotInstalled => 'Certificate Not Installed';
+
+  @override
+  String get sslTapInstallRootCA => 'Tap "Install Root CA" to proceed';
+
+  @override
+  String get sslCertNotTrusted => 'Certificate Not Trusted';
+
+  @override
+  String get sslCertInstalledTrusted => 'Certificate Installed & Trusted';
+
+  @override
+  String get sslGuide => 'Guide';
 }
