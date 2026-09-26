@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 
 /// 内置文档中心：离线查看全部功能使用教程、规范文档与开发文档。
 ///
@@ -112,7 +113,8 @@ class _GuideCenterPageState extends State<GuideCenterPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('使用文档', style: TextStyle(fontSize: 16)),
+        title: Text(AppLocalizations.of(context)!.guideTitle,
+            style: const TextStyle(fontSize: 16)),
         centerTitle: true,
       ),
       body: Column(
@@ -209,26 +211,22 @@ class _GuideArticlePageState extends State<GuideArticlePage> {
               showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                        title: const Text('重点标记说明', style: TextStyle(fontSize: 15)),
-                        content: const Text(
-                          '文档中的重点使用多种标记方式呈现：\n\n'
-                          '• ==黄色高亮==：关键操作步骤\n'
-                          '• 粗体（主题色）：重要概念与入口\n'
-                          '• __实线下划线__：需要特别注意的设置\n'
-                          '• ~橙色波浪线~：易错点提醒\n'
-                          '• ~~删除线~~：已废弃或不推荐的做法\n'
-                          '• 等宽底色：命令、路径、代码\n\n'
-                          '代码块右下角提供「示例」（演示说明）与「复制」按钮。',
-                          style: TextStyle(fontSize: 13, height: 1.6),
+                        title: Text(AppLocalizations.of(context)!.guideMarkLegendTitle,
+                            style: const TextStyle(fontSize: 15)),
+                        content: Text(
+                          AppLocalizations.of(context)!.guideMarkLegend,
+                          style: const TextStyle(fontSize: 13, height: 1.6),
                         ),
                         actions: [
                           TextButton(
                               onPressed: () {
                                 Clipboard.setData(ClipboardData(
-                                    text: '重点标记语法：**粗体** ==高亮== __下划线__ ~~删除线~~ ~波浪线~ 代码；代码块上方可加 <!--demo:说明--> 提供示例说明。'));
-                                FlutterToastr.show('标记语法已复制', context);
+                                    text: AppLocalizations.of(context)!.guideMarkSyntax));
+                                FlutterToastr.show(
+                                    AppLocalizations.of(context)!.guideMarkCopied, context);
                               },
-                              child: const Text('复制语法')),
+                              child: Text(
+                                  AppLocalizations.of(context)!.guideCopySyntax)),
                           TextButton(
                               onPressed: () {
                                 // 清除本地阅读缓存，下次进入按默认重新渲染
@@ -238,9 +236,12 @@ class _GuideArticlePageState extends State<GuideArticlePage> {
                                   if (mounted) setState(() => _content = content);
                                 });
                                 Navigator.pop(context);
-                                FlutterToastr.show('已恢复默认标记', context, backgroundColor: Colors.green);
+                                FlutterToastr.show(
+                                    AppLocalizations.of(context)!.guideMarkReset,
+                                    context,
+                                    backgroundColor: Colors.green);
                               },
-                              child: const Text('重置')),
+                              child: Text(AppLocalizations.of(context)!.reset)),
                         ],
                       ));
             },
@@ -290,8 +291,9 @@ class _MarkdownLiteViewState extends State<MarkdownLiteView> {
               color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text('渲染异常（已降级为纯文本）：$e',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error)),
+            child: Text(AppLocalizations.of(context)!.guideRenderError('$e'),
+                style: TextStyle(
+                    fontSize: 12, color: Theme.of(context).colorScheme.error)),
           ),
           SelectableText(widget.content, style: const TextStyle(fontSize: 13.5, height: 1.5)),
         ]),
@@ -412,28 +414,39 @@ class _MarkdownLiteViewState extends State<MarkdownLiteView> {
                     showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                              title: Text('示例 · $lastHeading', style: const TextStyle(fontSize: 15)),
+                              title: Text(
+                                  AppLocalizations.of(context)!
+                                      .guideDemoTitle(lastHeading),
+                                  style: const TextStyle(fontSize: 15)),
                               content: Text(
-                                demo ?? '这段代码/配置演示了「$lastHeading」章节的用法。将其填入对应功能页即可复现效果。',
+                                demo ??
+                                    AppLocalizations.of(context)!
+                                        .guideDemoDefault(lastHeading),
                                 style: const TextStyle(fontSize: 13.5, height: 1.5),
                               ),
                               actions: [
-                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('知道了')),
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.guideGotIt)),
                               ],
                             ));
                   },
                   icon: const Icon(Icons.play_circle_outline, size: 15),
-                  label: const Text('示例', style: TextStyle(fontSize: 11)),
+                  label: Text(AppLocalizations.of(context)!.guideDemo,
+                      style: const TextStyle(fontSize: 11)),
                   style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 6)),
                 ),
                 TextButton.icon(
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: displayCode));
-                    FlutterToastr.show('代码已复制', context);
+                    FlutterToastr.show(
+                        AppLocalizations.of(context)!.guideCodeCopied, context);
                   },
                   icon: const Icon(Icons.copy, size: 14),
-                  label: const Text('复制', style: TextStyle(fontSize: 11)),
+                  label: Text(AppLocalizations.of(context)!.copy,
+                      style: const TextStyle(fontSize: 11)),
                   style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 6)),
                 ),
@@ -547,7 +560,8 @@ class _MarkdownLiteViewState extends State<MarkdownLiteView> {
           child: OutlinedButton.icon(
             onPressed: () => setState(() => _visible += _pageSize),
             icon: const Icon(Icons.expand_more, size: 18),
-            label: Text('加载更多（已显示 $_visible / $total 段）',
+            label: Text(
+                AppLocalizations.of(context)!.guideLoadMore(_visible, total),
                 style: const TextStyle(fontSize: 12)),
           ),
         ),

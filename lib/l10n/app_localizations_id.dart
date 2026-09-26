@@ -1485,4 +1485,142 @@ class AppLocalizationsId extends AppLocalizations {
   String securityAiApplyConfirm(String key, String value, String reason) {
     return 'Set "$key" to $value?\n\nAI\'s reason: $reason';
   }
+
+
+  @override
+  String get wafTitle => 'WAF Payload Mutation';
+
+  @override
+  String get wafLoadFirst => 'Enter a payload first';
+
+  @override
+  String get wafPasteResponse => 'Paste the response headers or block page snippet';
+
+  @override
+  String wafAppliedCombo(String waf) {
+    return 'Applied the combo for $waf';
+  }
+
+  @override
+  String get wafNeedAuth => 'Check "I have authorization to test this target" first';
+
+  @override
+  String get wafNeedUrl => 'Enter a target URL';
+
+  @override
+  String get wafNeedPlaceholder => 'Put a {{PAYLOAD}} marker somewhere to inject';
+
+  @override
+  String get wafNoVariant => 'Nothing under the current selection changes the request. Try another payload or technique.';
+
+  @override
+  String wafDoneAll(int total, int bypass) {
+    return 'All sent: $total total, $bypass suspected bypass';
+  }
+
+  @override
+  String get wafDisclaimer => '① and ② only transform strings locally and send nothing; ③ "active probing" really sends requests, so you must check the authorization box first.\nUse only on targets you own or are authorized to test — attempting to bypass someone else\'s protections without authorization may be illegal. Probing is serial, batched (default 200 per batch), with no brute force and no concurrency.';
+
+  @override
+  String get wafStep1Title => '① Identify the WAF (optional)';
+
+  @override
+  String get wafStep1Hint => 'Paste response headers or a block page you already captured; it matches by signature — no active probing.';
+
+  @override
+  String get wafPickNameHint => 'Tap a WAF name to apply the recommended combo';
+
+  @override
+  String get wafStep2Title => '② Enter a payload and choose mutations';
+
+  @override
+  String get wafStep3Title => '③ Active probing (really sends requests)';
+
+  @override
+  String get wafStep3Hint => 'Put {{PAYLOAD}} where you want to inject (URL / header / body). A baseline with the original payload goes first, then each checked technique, comparing responses to see which one wasn\'t blocked.';
+
+  @override
+  String wafWillProbe(String names) {
+    return 'This run will probe (decided by ①②): $names';
+  }
+
+  @override
+  String wafBatchHint(int max) {
+    return 'Up to $max per batch; after each batch it stops and you decide whether to continue — nothing is fired off all at once.';
+  }
+
+  @override
+  String get wafExtraHeaders => 'Extra request headers (optional, one per line)';
+
+  @override
+  String get wafAuthCheckbox => 'I have authorization to test this target';
+
+  @override
+  String wafNextBatch(int remaining) {
+    return 'Continue next batch ($remaining left)';
+  }
+
+  @override
+  String wafLimitsHard(int min, int max) {
+    return 'Delay floor $min ms, hard cap $max records — these two can\'t be crossed. Beyond that it stops being "probing" and becomes a traffic flood against the target.';
+  }
+
+  @override
+  String get wafPayloadCopied => 'Payload copied';
+
+  @override
+  String wafCopied(String name) {
+    return 'Copied: $name';
+  }
+
+
+  @override
+  String get guideTitle => 'User Guide';
+
+  @override
+  String get guideMarkLegendTitle => 'Markup Legend';
+
+  @override
+  String get guideMarkLegend => 'Highlights in docs are shown with several markup styles:\n\n• ==yellow highlight==: key steps\n• bold (theme color): important concepts and entry points\n• __underline__: settings that need extra attention\n• ~orange wavy~: common mistakes\n• ~~strikethrough~~: deprecated or discouraged\n• monospace background: commands, paths, code\n\nCode blocks have "Demo" and "Copy" buttons at the bottom right.';
+
+  @override
+  String get guideMarkSyntax => 'Markup syntax: **bold** ==highlight== __underline__ ~~strikethrough~~ ~wavy~ code; a code block can take <!--demo:text--> for a demo note.';
+
+  @override
+  String get guideMarkCopied => 'Markup syntax copied';
+
+  @override
+  String get guideCopySyntax => 'Copy syntax';
+
+  @override
+  String get guideMarkReset => 'Default markup restored';
+
+  @override
+  String guideRenderError(String error) {
+    return 'Render error (fell back to plain text): $error';
+  }
+
+  @override
+  String guideDemoTitle(String heading) {
+    return 'Demo · $heading';
+  }
+
+  @override
+  String guideDemoDefault(String heading) {
+    return 'This code/config demonstrates usage in the "$heading" section. Drop it into the matching feature page to reproduce.';
+  }
+
+  @override
+  String get guideGotIt => 'Got it';
+
+  @override
+  String get guideDemo => 'Demo';
+
+  @override
+  String get guideCodeCopied => 'Code copied';
+
+  @override
+  String guideLoadMore(int visible, int total) {
+    return 'Load more ($visible / $total shown)';
+  }
 }

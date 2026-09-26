@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.24.34 (2026-09-26)
+
+### 国际化（l10n）第二批：WAF 页 + 使用文档中心
+
+延续 v1.24.33 的机制，这一版清掉两个纯 UI 文件：
+
+- **`waf_page.dart`**（24 个 key，前缀 `waf*`）：全部 25 处 toast / 标题 / 提示 /
+  免责声明 / 分批按钮。含插值的几条改成带占位符的 arb 条目
+  （`wafDoneAll(total, bypass)`、`wafNextBatch(remaining)`、`wafLimitsHard(min, max)` 等），
+  不再手工拼字符串；
+- **`guide_center.dart`**（14 个 key，前缀 `guide*`）：AppBar 标题、标记说明弹窗、
+  复制/重置/知道了/示例 按钮、渲染降级提示、加载更多等。
+
+**刻意不做**：`guide_center.dart` 里那 27 个 `GuideDoc('id', '中文标题', ...)` 标题
+**不提取** —— 它们对应的 `docs/*.md` 只有中文版，把标题翻译了、点进去还是中文，
+反而更割裂。等文档有英文版时再一起处理。
+
+两文件现在都不含任何硬编码中文（`guide_center` 仅剩文档标题与注释）。
+
+
 ## v1.24.33 (2026-09-26)
 
 ### 国际化（l10n）第一批：安全自检 AI 分析对话框

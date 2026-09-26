@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/util/waf_bypass.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/waf_probe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -99,7 +100,7 @@ class _WafPageState extends State<WafPage> {
   void _generate() {
     final payload = _payload.text;
     if (payload.isEmpty) {
-      _toast('先填一条载荷');
+      _toast(AppLocalizations.of(context)!.wafLoadFirst);
       return;
     }
     final selected = _selected.toList();
@@ -113,7 +114,7 @@ class _WafPageState extends State<WafPage> {
   void _detect() {
     final text = _response.text;
     if (text.trim().isEmpty) {
-      _toast('把响应的头或拦截页片段贴进来');
+      _toast(AppLocalizations.of(context)!.wafPasteResponse);
       return;
     }
     setState(() => _fingerprints = WafBypass.detectFrom(text));
@@ -124,7 +125,7 @@ class _WafPageState extends State<WafPage> {
       ..clear()
       ..addAll(WafBypass.suggestFor(waf)));
     _generate();
-    _toast('已套用针对 $waf 的组合');
+    _toast(AppLocalizations.of(context)!.wafAppliedCombo(waf));
   }
 
   /// 解析「一行一个」的请求头文本
@@ -142,12 +143,12 @@ class _WafPageState extends State<WafPage> {
 
   Future<void> _startProbe() async {
     if (!_authorized) {
-      _toast('请先勾选「已获得测试授权」');
+      _toast(AppLocalizations.of(context)!.wafNeedAuth);
       return;
     }
     final url = _url.text.trim();
     if (url.isEmpty) {
-      _toast('填一个目标 URL');
+      _toast(AppLocalizations.of(context)!.wafNeedUrl);
       return;
     }
     final headerText = _extraHeaders.text;
@@ -155,12 +156,12 @@ class _WafPageState extends State<WafPage> {
     if (!WafProbe.hasPlaceholder(url) &&
         !WafProbe.hasPlaceholder(headerText) &&
         !WafProbe.hasPlaceholder(bodyText)) {
-      _toast('至少要在一处放 {{PAYLOAD}} 标记注入位置');
+      _toast(AppLocalizations.of(context)!.wafNeedPlaceholder);
       return;
     }
     final payload = _payload.text;
     if (payload.isEmpty) {
-      _toast('先填一条载荷');
+      _toast(AppLocalizations.of(context)!.wafLoadFirst);
       return;
     }
     // 建会话：队列化，后面一批一批发
@@ -177,7 +178,7 @@ class _WafPageState extends State<WafPage> {
     );
 
     if (session.totalCount <= 1) {
-      _toast('当前选择下没有会产生变化的载荷，换个载荷或技术试试');
+      _toast(AppLocalizations.of(context)!.wafNoVariant);
       return;
     }
 
@@ -213,7 +214,8 @@ class _WafPageState extends State<WafPage> {
       if (session.finished) {
         final bypass =
             session.results.where((r) => r.verdict == WafVerdict.passed).length;
-        _toast('全部发完：共 ${session.results.length} 条，疑似绕过 $bypass 条');
+        _toast(AppLocalizations.of(context)!
+            .wafDoneAll(session.results.length, bypass));
       } else {
         _toast('本批完成，还剩 ${session.remaining} 条未发');
       }
@@ -240,7 +242,8 @@ class _WafPageState extends State<WafPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('WAF 载荷变异', style: TextStyle(fontSize: 16)),
+        title: Text(AppLocalizations.of(context)!.wafTitle,
+            style: const TextStyle(fontSize: 16)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(12),
@@ -269,12 +272,9 @@ class _WafPageState extends State<WafPage> {
         color: Colors.orange.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Text(
-        '①② 只做本地字符串变换，不发任何请求；③ 的「主动探测」会真的把请求发出去，'
-        '所以必须先显式勾选授权。\n'
-        '请仅用于你拥有或已获书面授权的目标——未经授权尝试绕过他人系统的防护措施'
-        '可能触犯法律。探测为串行发送、单次有总量上限（默认 200 条），不做爆破与并发。',
-        style: TextStyle(fontSize: 12),
+      child: Text(
+        AppLocalizations.of(context)!.wafDisclaimer,
+        style: const TextStyle(fontSize: 12),
       ),
     );
   }
@@ -287,11 +287,11 @@ class _WafPageState extends State<WafPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('① 认一下是什么 WAF（可选）',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.wafStep1Title,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            const Text('把你已经抓到的响应头或拦截页片段贴进来，按特征比对——不主动探测。',
-                style: TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(AppLocalizations.of(context)!.wafStep1Hint,
+                style: const TextStyle(fontSize: 11, color: Colors.grey)),
             const SizedBox(height: 8),
             TextField(
               controller: _response,
@@ -326,7 +326,7 @@ class _WafPageState extends State<WafPage> {
             if (_fingerprints.isNotEmpty)
               const Padding(
                 padding: EdgeInsets.only(top: 4),
-                child: Text('点一下 WAF 名字即可套用推荐组合',
+                child: Text(AppLocalizations.of(context)!.wafPickNameHint,
                     style: TextStyle(fontSize: 11, color: Colors.grey)),
               ),
           ],
@@ -343,8 +343,8 @@ class _WafPageState extends State<WafPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('② 输入载荷并选择变异方式',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.wafStep2Title,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextField(
               controller: _payload,
@@ -398,22 +398,21 @@ class _WafPageState extends State<WafPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('③ 主动探测（会真的发请求）',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.wafStep3Title,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            const Text(
-              '在你想注入的位置写 {{PAYLOAD}}（URL / 头 / 体都行）。'
-              '先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。',
-              style: TextStyle(fontSize: 11, color: Colors.grey),
+            Text(
+              AppLocalizations.of(context)!.wafStep3Hint,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
             const SizedBox(height: 4),
             Text(
-              '本次将探测（由 ①② 决定）：${_selectedNames()}',
+              AppLocalizations.of(context)!.wafWillProbe(_selectedNames()),
               style: TextStyle(
                   fontSize: 11, color: Theme.of(context).colorScheme.primary),
             ),
             const SizedBox(height: 2),
-            Text('每批最多 $_maxProbes 条；一批发完由你决定要不要继续下一批，不会一口气全发出去。',
+            Text(AppLocalizations.of(context)!.wafBatchHint(_maxProbes),
                 style: const TextStyle(fontSize: 10, color: Colors.grey)),
             const SizedBox(height: 8),
             Wrap(
@@ -442,7 +441,7 @@ class _WafPageState extends State<WafPage> {
               maxLines: 2,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               decoration: const InputDecoration(
-                labelText: '额外请求头（可选，一行一个）',
+                labelText: AppLocalizations.of(context)!.wafExtraHeaders,
                 hintText: 'User-Agent: {{PAYLOAD}}',
                 isDense: true,
                 border: OutlineInputBorder(),
@@ -466,7 +465,7 @@ class _WafPageState extends State<WafPage> {
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('我已获得对该目标的测试授权',
+              title: Text(AppLocalizations.of(context)!.wafAuthCheckbox,
                   style: TextStyle(fontSize: 12)),
             ),
             Row(children: [
@@ -483,7 +482,8 @@ class _WafPageState extends State<WafPage> {
                     size: 16),
                 label: Text((_session == null || _session!.finished)
                     ? '开始探测'
-                    : '继续下一批（剩 ${_session!.remaining}）'),
+                    : AppLocalizations.of(context)!
+                        .wafNextBatch(_session!.remaining)),
               ),
               const SizedBox(width: 10),
               if (_probing) ...[
@@ -559,9 +559,9 @@ class _WafPageState extends State<WafPage> {
             child: Padding(
               padding: EdgeInsets.only(bottom: 6),
               child: Text(
-                '间隔下限 ${WafProbe.minDelayMs}ms、总量硬顶 ${WafProbe.hardMaxProbes} 条，'
-                '这两条不可突破 —— 再往下就不是"探测"而是对目标的流量冲击了。',
-                style: TextStyle(fontSize: 10, color: Colors.grey),
+                AppLocalizations.of(context)!.wafLimitsHard(
+                    WafProbe.minDelayMs, WafProbe.hardMaxProbes),
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ),
           ),
@@ -648,7 +648,7 @@ class _WafPageState extends State<WafPage> {
             child: TextButton(
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: r.payload));
-                _toast('已复制载荷');
+                _toast(AppLocalizations.of(context)!.wafPayloadCopied);
               },
               child: const Text('复制载荷'),
             ),
@@ -664,7 +664,7 @@ class _WafPageState extends State<WafPage> {
       child: InkWell(
         onTap: () {
           Clipboard.setData(ClipboardData(text: v.output));
-          _toast('已复制：${v.name}');
+          _toast(AppLocalizations.of(context)!.wafCopied(v.name));
         },
         child: Padding(
           padding: const EdgeInsets.all(10),

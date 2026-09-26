@@ -2937,6 +2937,246 @@ abstract class AppLocalizations {
 AI\\'s reason: $reason'**
   String securityAiApplyConfirm(String key, String value, String reason);
 
+
+  /// No description provided for @wafTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WAF Payload Mutation'**
+  String get wafTitle;
+
+  /// No description provided for @wafLoadFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a payload first'**
+  String get wafLoadFirst;
+
+  /// No description provided for @wafPasteResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the response headers or block page snippet'**
+  String get wafPasteResponse;
+
+  /// No description provided for @wafAppliedCombo.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied the combo for $waf'**
+  String wafAppliedCombo(String waf);
+
+  /// No description provided for @wafNeedAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Check "I have authorization to test this target" first'**
+  String get wafNeedAuth;
+
+  /// No description provided for @wafNeedUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a target URL'**
+  String get wafNeedUrl;
+
+  /// No description provided for @wafNeedPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Put a {{PAYLOAD}} marker somewhere to inject'**
+  String get wafNeedPlaceholder;
+
+  /// No description provided for @wafNoVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing under the current selection changes the request. Try another payload or technique.'**
+  String get wafNoVariant;
+
+  /// No description provided for @wafDoneAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All sent: $total total, $bypass suspected bypass'**
+  String wafDoneAll(int total, int bypass);
+
+  /// No description provided for @wafDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'① and ② only transform strings locally and send nothing; ③ "active probing" really sends requests, so you must check the authorization box first.
+Use only on targets you own or are authorized to test — attempting to bypass someone else\\'s protections without authorization may be illegal. Probing is serial, batched (default 200 per batch), with no brute force and no concurrency.'**
+  String get wafDisclaimer;
+
+  /// No description provided for @wafStep1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'① Identify the WAF (optional)'**
+  String get wafStep1Title;
+
+  /// No description provided for @wafStep1Hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste response headers or a block page you already captured; it matches by signature — no active probing.'**
+  String get wafStep1Hint;
+
+  /// No description provided for @wafPickNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a WAF name to apply the recommended combo'**
+  String get wafPickNameHint;
+
+  /// No description provided for @wafStep2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'② Enter a payload and choose mutations'**
+  String get wafStep2Title;
+
+  /// No description provided for @wafStep3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'③ Active probing (really sends requests)'**
+  String get wafStep3Title;
+
+  /// No description provided for @wafStep3Hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Put {{PAYLOAD}} where you want to inject (URL / header / body). A baseline with the original payload goes first, then each checked technique, comparing responses to see which one wasn\\'t blocked.'**
+  String get wafStep3Hint;
+
+  /// No description provided for @wafWillProbe.
+  ///
+  /// In en, this message translates to:
+  /// **'This run will probe (decided by ①②): $names'**
+  String wafWillProbe(String names);
+
+  /// No description provided for @wafBatchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to $max per batch; after each batch it stops and you decide whether to continue — nothing is fired off all at once.'**
+  String wafBatchHint(int max);
+
+  /// No description provided for @wafExtraHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra request headers (optional, one per line)'**
+  String get wafExtraHeaders;
+
+  /// No description provided for @wafAuthCheckbox.
+  ///
+  /// In en, this message translates to:
+  /// **'I have authorization to test this target'**
+  String get wafAuthCheckbox;
+
+  /// No description provided for @wafNextBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue next batch ($remaining left)'**
+  String wafNextBatch(int remaining);
+
+  /// No description provided for @wafLimitsHard.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay floor $min ms, hard cap $max records — these two can\\'t be crossed. Beyond that it stops being "probing" and becomes a traffic flood against the target.'**
+  String wafLimitsHard(int min, int max);
+
+  /// No description provided for @wafPayloadCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload copied'**
+  String get wafPayloadCopied;
+
+  /// No description provided for @wafCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied: $name'**
+  String wafCopied(String name);
+
+
+  /// No description provided for @guideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Guide'**
+  String get guideTitle;
+
+  /// No description provided for @guideMarkLegendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup Legend'**
+  String get guideMarkLegendTitle;
+
+  /// No description provided for @guideMarkLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights in docs are shown with several markup styles:
+
+• ==yellow highlight==: key steps
+• bold (theme color): important concepts and entry points
+• __underline__: settings that need extra attention
+• ~orange wavy~: common mistakes
+• ~~strikethrough~~: deprecated or discouraged
+• monospace background: commands, paths, code
+
+Code blocks have "Demo" and "Copy" buttons at the bottom right.'**
+  String get guideMarkLegend;
+
+  /// No description provided for @guideMarkSyntax.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup syntax: **bold** ==highlight== __underline__ ~~strikethrough~~ ~wavy~ code; a code block can take <!--demo:text--> for a demo note.'**
+  String get guideMarkSyntax;
+
+  /// No description provided for @guideMarkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup syntax copied'**
+  String get guideMarkCopied;
+
+  /// No description provided for @guideCopySyntax.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy syntax'**
+  String get guideCopySyntax;
+
+  /// No description provided for @guideMarkReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Default markup restored'**
+  String get guideMarkReset;
+
+  /// No description provided for @guideRenderError.
+  ///
+  /// In en, this message translates to:
+  /// **'Render error (fell back to plain text): $error'**
+  String guideRenderError(String error);
+
+  /// No description provided for @guideDemoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo · $heading'**
+  String guideDemoTitle(String heading);
+
+  /// No description provided for @guideDemoDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'This code/config demonstrates usage in the "$heading" section. Drop it into the matching feature page to reproduce.'**
+  String guideDemoDefault(String heading);
+
+  /// No description provided for @guideGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get guideGotIt;
+
+  /// No description provided for @guideDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo'**
+  String get guideDemo;
+
+  /// No description provided for @guideCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get guideCodeCopied;
+
+  /// No description provided for @guideLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more ($visible / $total shown)'**
+  String guideLoadMore(int visible, int total);
+
 }
 
 class _AppLocalizationsDelegate

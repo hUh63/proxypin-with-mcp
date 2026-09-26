@@ -1453,6 +1453,144 @@ class AppLocalizationsZh extends AppLocalizations {
     return '把「$key」设为 $value？\n\nAI 给的理由：$reason';
   }
 
+
+  @override
+  String get wafTitle => 'WAF 载荷变异';
+
+  @override
+  String get wafLoadFirst => '先填一条载荷';
+
+  @override
+  String get wafPasteResponse => '把响应的头或拦截页片段贴进来';
+
+  @override
+  String wafAppliedCombo(String waf) {
+    return '已套用针对 $waf 的组合';
+  }
+
+  @override
+  String get wafNeedAuth => '请先勾选「已获得测试授权」';
+
+  @override
+  String get wafNeedUrl => '填一个目标 URL';
+
+  @override
+  String get wafNeedPlaceholder => '至少要在一处放 {{PAYLOAD}} 标记注入位置';
+
+  @override
+  String get wafNoVariant => '当前选择下没有会产生变化的载荷，换个载荷或技术试试';
+
+  @override
+  String wafDoneAll(int total, int bypass) {
+    return '全部发完：共 $total 条，疑似绕过 $bypass 条';
+  }
+
+  @override
+  String get wafDisclaimer => '①② 只做本地字符串变换，不发任何请求；③ 的「主动探测」会真的把请求发出去，所以必须先显式勾选授权。\n请仅用于你拥有或已获书面授权的目标——未经授权尝试绕过他人系统的防护措施可能触犯法律。探测为串行发送、分批推进（默认每批 200 条），不做爆破与并发。';
+
+  @override
+  String get wafStep1Title => '① 认一下是什么 WAF（可选）';
+
+  @override
+  String get wafStep1Hint => '把你已经抓到的响应头或拦截页片段贴进来，按特征比对——不主动探测。';
+
+  @override
+  String get wafPickNameHint => '点一下 WAF 名字即可套用推荐组合';
+
+  @override
+  String get wafStep2Title => '② 输入载荷并选择变异方式';
+
+  @override
+  String get wafStep3Title => '③ 主动探测（会真的发请求）';
+
+  @override
+  String get wafStep3Hint => '在你想注入的位置写 {{PAYLOAD}}（URL / 头 / 体都行）。先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。';
+
+  @override
+  String wafWillProbe(String names) {
+    return '本次将探测（由 ①② 决定）：$names';
+  }
+
+  @override
+  String wafBatchHint(int max) {
+    return '每批最多 $max 条；一批发完由你决定要不要继续下一批，不会一口气全发出去。';
+  }
+
+  @override
+  String get wafExtraHeaders => '额外请求头（可选，一行一个）';
+
+  @override
+  String get wafAuthCheckbox => '我已获得对该目标的测试授权';
+
+  @override
+  String wafNextBatch(int remaining) {
+    return '继续下一批（剩 $remaining）';
+  }
+
+  @override
+  String wafLimitsHard(int min, int max) {
+    return '间隔下限 $minms、总量硬顶 $max 条，这两条不可突破 —— 再往下就不是「探测」而是对目标的流量冲击了。';
+  }
+
+  @override
+  String get wafPayloadCopied => '已复制载荷';
+
+  @override
+  String wafCopied(String name) {
+    return '已复制：$name';
+  }
+
+
+  @override
+  String get guideTitle => '使用文档';
+
+  @override
+  String get guideMarkLegendTitle => '重点标记说明';
+
+  @override
+  String get guideMarkLegend => '文档中的重点使用多种标记方式呈现：\n\n• ==黄色高亮==：关键操作步骤\n• 粗体（主题色）：重要概念与入口\n• __实线下划线__：需要特别注意的设置\n• ~橙色波浪线~：易错点提醒\n• ~~删除线~~：已废弃或不推荐的做法\n• 等宽底色：命令、路径、代码\n\n代码块右下角提供「示例」（演示说明）与「复制」按钮。';
+
+  @override
+  String get guideMarkSyntax => '重点标记语法：**粗体** ==高亮== __下划线__ ~~删除线~~ ~波浪线~ 代码；代码块上方可加 <!--demo:说明--> 提供示例说明。';
+
+  @override
+  String get guideMarkCopied => '标记语法已复制';
+
+  @override
+  String get guideCopySyntax => '复制语法';
+
+  @override
+  String get guideMarkReset => '已恢复默认标记';
+
+  @override
+  String guideRenderError(String error) {
+    return '渲染异常（已降级为纯文本）：$error';
+  }
+
+  @override
+  String guideDemoTitle(String heading) {
+    return '示例 · $heading';
+  }
+
+  @override
+  String guideDemoDefault(String heading) {
+    return '这段代码/配置演示了「$heading」章节的用法。将其填入对应功能页即可复现效果。';
+  }
+
+  @override
+  String get guideGotIt => '知道了';
+
+  @override
+  String get guideDemo => '示例';
+
+  @override
+  String get guideCodeCopied => '代码已复制';
+
+  @override
+  String guideLoadMore(int visible, int total) {
+    return '加载更多（已显示 $visible / $total 段）';
+  }
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
