@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.24.39 (2026-09-27)
+
+### 修复 v1.24.38 的编译错误 + 国际化第六批（5 个页面）
+
+**修复**（v1.24.38 的构建全挂，3 类错误）：
+
+- `mcp_connection.dart`：`_updateFloatingBall` 里 `final loc = ...` 声明在 **try 块内**，
+  而 `catch` 块里也要用 —— 作用域不通，报 `The getter 'loc' isn't defined`。把声明提到 try 之前；
+- 同文件 `shizukuGranted` 一行被替换成了**两行**（`shizukuGranted / shizukuGranted`），
+  造成 `Expected ',' before this`，删掉重复行；
+- `capture_diagnose.dart`：`proxy.port` 是 `int?`，传给 arb 生成的 `int` 形参报类型错，
+  改成 `proxy.port!`。
+
+**第六批国际化**（5 个页面、115 个 key）：
+
+- `security_audit_page.dart`（13 key，前缀 `auditPage*`）+ `capture_diagnose_page.dart`
+  （16 key，前缀 `diagPage*`）：主动核验对话框、6 组「常见原因」等；
+- `mcp_connection.dart`（桌面端，11 key，前缀 `mcpConnDesk*`，另有 **33 个复用**移动端已有的 key）：
+  桌面版与移动版文案高度重合，这里坚持「同句文案不另造 key」；
+- `preference.dart`（47 key，前缀 `pref*`）+ `config_management.dart`（28 key，前缀 `cfg*`）。
+
+**一个值得记的坑**：`prefWanUnit` 没做成 `{n}` 插值 —— 因为 arb 里 `{n}0K` 会让生成器产出
+`$n0K`，Dart 会把 `n0K` 当标识符导致编译失败。改成「无参单位后缀」拼接
+（`'${option ~/ 10000}${loc.prefWanUnit}'`，中「万」/ 英「0K」），语义不变且安全。
+`_l10n.py` 的生成逻辑也相应加固：占位符后紧跟字母数字时一律写成 `${name}`。
+
+**刻意保留**：`preference.dart` 里语言选项的**自称**（`简体中文` / `繁體中文` / `Tiếng Việt`
+/ `ไทย` / `Español` / `English`）—— 这些在英文界面下也应显示各自语言的写法，不该翻译。
+
+en / zh 各 **1716** 条，`const` 冲突全库 0。
+
+
 ## v1.24.38 (2026-09-27)
 
 ### 国际化（l10n）第五批：MCP 自动化 / MCP 连接 / 安全自检 / 抓包诊断

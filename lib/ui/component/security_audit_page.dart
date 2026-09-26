@@ -123,12 +123,12 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
             ),
           const SizedBox(width: 8),
           IconButton(
-            tooltip: 'AI 分析',
+            tooltip: localizations.aiTitle,
             onPressed: report == null ? null : () => _aiAnalyze(report),
             icon: const Icon(Icons.auto_awesome, size: 20),
           ),
           IconButton(
-            tooltip: '主动核验（对已抓到的域名各发一次，核对安全响应头）',
+            tooltip: localizations.auditPageVerifyTooltip,
             onPressed: _verifying ? null : _verify,
             icon: const Icon(Icons.travel_explore, size: 20),
           ),
@@ -425,7 +425,7 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
     if (_verifying) return;
     final hosts = SecurityVerifier.hostsFrom(widget.requests);
     if (hosts.isEmpty) {
-      FlutterToastr.show('抓包里还没有可核验的域名', context);
+      FlutterToastr.show(localizations.auditPageNoVerifiableHosts, context);
       return;
     }
 
@@ -433,37 +433,37 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('主动核验', style: TextStyle(fontSize: 16)),
+        title: Text(localizations.auditPageVerifyTitle, style: const TextStyle(fontSize: 16)),
         content: SizedBox(
           width: 440,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('会对下面这些**已经在抓包里出现过**的域名，各发一次 GET，只看安全响应头：',
-                  style: TextStyle(fontSize: 12.5)),
+              Text(localizations.auditPageVerifyIntro,
+                  style: const TextStyle(fontSize: 12.5)),
               const SizedBox(height: 6),
               Text(hosts.join('、'),
                   style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace')),
               const SizedBox(height: 8),
               Text(
-                  '共 ${hosts.length} 个域名，串行发送、每个之间隔 ${SecurityVerifier.defaultDelayMs}ms，'
-                  '上限 ${SecurityVerifier.maxHosts} 个。不扫端口、不投载荷。',
+                  localizations.auditPageVerifyScope(
+                      hosts.length, SecurityVerifier.defaultDelayMs, SecurityVerifier.maxHosts),
                   style: const TextStyle(fontSize: 11, color: Colors.grey)),
               const SizedBox(height: 4),
-              const Text('只对你拥有或已获授权的目标做这件事。',
-                  style: TextStyle(fontSize: 11, color: Colors.grey)),
+              Text(localizations.auditPageVerifyAuthz,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
           FilledButton(
             onPressed: () {
               authorized = true;
               Navigator.pop(ctx);
             },
-            child: const Text('开始核验'),
+            child: Text(localizations.auditPageVerifyStart),
           ),
         ],
       ),
@@ -481,7 +481,7 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
         builder: (_) => _VerifyResultDialog(results: results),
       );
     } catch (e) {
-      if (mounted) FlutterToastr.show('核验失败：$e', context);
+      if (mounted) FlutterToastr.show(localizations.auditPageVerifyFailed('$e'), context);
     } finally {
       if (mounted) setState(() => _verifying = false);
     }
@@ -497,7 +497,8 @@ class _VerifyResultDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('主动核验结果', style: TextStyle(fontSize: 16)),
+      title: Text(AppLocalizations.of(context)!.auditPageVerifyResultTitle,
+          style: const TextStyle(fontSize: 16)),
       content: SizedBox(
         width: 540,
         child: SingleChildScrollView(
@@ -505,9 +506,8 @@ class _VerifyResultDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('只核对了下面这几个安全响应头在不在。缺了不代表就有漏洞，'
-                  '但值得去核对一下服务端配置。',
-                  style: TextStyle(fontSize: 11.5, color: Colors.grey)),
+              Text(AppLocalizations.of(context)!.auditPageVerifyResultIntro,
+                  style: const TextStyle(fontSize: 11.5, color: Colors.grey)),
               const SizedBox(height: 8),
               for (final r in results) _hostBlock(context, r),
             ],
@@ -515,7 +515,9 @@ class _VerifyResultDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.close)),
       ],
     );
   }
@@ -525,7 +527,8 @@ class _VerifyResultDialog extends StatelessWidget {
     if (!r.ok) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Text('${r.host} —— 核验失败：${r.error}',
+        child: Text(
+            AppLocalizations.of(context)!.auditPageVerifyHostFailed(r.host, r.error ?? ''),
             style: TextStyle(fontSize: 12, color: cs.error)),
       );
     }
@@ -543,16 +546,18 @@ class _VerifyResultDialog extends StatelessWidget {
                 style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           ]),
           if (missing.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 2, left: 4),
-              child: Text('这几个响应头都在',
-                  style: TextStyle(fontSize: 11.5, color: Colors.green)),
+            Padding(
+              padding: const EdgeInsets.only(top: 2, left: 4),
+              child: Text(AppLocalizations.of(context)!.auditPageVerifyHeadersAllPresent,
+                  style: const TextStyle(fontSize: 11.5, color: Colors.green)),
             )
           else
             for (final name in missing)
               Padding(
                 padding: const EdgeInsets.only(top: 2, left: 4),
-                child: Text('缺 $name —— ${SecurityVerifier.headerChecks[name]}',
+                child: Text(
+                    AppLocalizations.of(context)!.auditPageVerifyHeaderMissing(
+                        name, SecurityVerifier.headerChecks[name] ?? ''),
                     style: const TextStyle(fontSize: 11.5, height: 1.35)),
               ),
         ],

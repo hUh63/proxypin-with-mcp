@@ -142,6 +142,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   /// 通知原生悬浮球服务（启用/更新/关闭）
   Future<void> _updateFloatingBall({bool showFeedback = false}) async {
     if (!Platform.isAndroid) return;
+    final loc = AppLocalizations.of(context)!;
     try {
       final result = await _floatingChannel.invokeMethod(floatingBallEnabled ? 'start' : 'stop', {
         'autoDock': floatingBallAutoDock,
@@ -150,7 +151,6 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
         'running': McpServer().isRunning,
       });
       if (!mounted) return;
-      final loc = AppLocalizations.of(context)!;
       // 缺少悬浮窗权限：原生已跳转系统设置页，这里给出明确提示
       if (result is Map && result['needOverlayPermission'] == true) {
         FlutterToastr.show(loc.mcpConnFloatingBallNeedOverlayPermission,
@@ -968,7 +968,6 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         leading: const Icon(Icons.security),
                         title: const Text('Shizuku'),
                         trailing: Text(
-                          shizukuGranted
                           shizukuGranted
                               ? loc.mcpAuthGranted
                               : (hasShizuku

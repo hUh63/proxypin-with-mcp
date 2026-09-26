@@ -125,14 +125,15 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
   }
 
   Future<void> _applyPort() async {
+    final loc = AppLocalizations.of(context)!;
     final newPort = int.tryParse(_portController.text.trim());
     if (newPort == null || newPort < 1 || newPort > 65535) {
-      _showSnackBar('端口无效（1-65535）');
+      _showSnackBar(loc.mcpPortInvalid);
       return;
     }
 
     if (newPort == _configuredPort) {
-      _showSnackBar('端口未改变');
+      _showSnackBar(loc.mcpPortUnchanged);
       return;
     }
 
@@ -146,7 +147,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
     setState(() {
       _configuredPort = newPort;
     });
-    _showSnackBar('端口已应用：$newPort');
+    _showSnackBar(loc.mcpPortApplied(newPort.toString()));
   }
 
   void _copyText(String text, String tip) {
@@ -163,6 +164,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final mcpServer = McpServer();
     final port = _configuredPort;
     final ip = _deviceIp ?? '127.0.0.1';
@@ -181,20 +183,20 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MCP 连接设置'),
+        title: Text(loc.desktopMcpConnection),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.link),
             onPressed: () => McpServiceDialog.show(context, ProxyServer.current!),
-            tooltip: '客户端接入向导（Claude Code / Codex / Cursor）',
+            tooltip: loc.mcpConnDeskClientWizard,
           ),
           IconButton(
             icon: const Icon(Icons.auto_awesome),
             onPressed: () {
-              MultiWindow.openWindow('MCP 自动化', 'McpAutomationWidget', size: const Size(900, 700));
+              MultiWindow.openWindow(loc.mcpAutoTitle, 'McpAutomationWidget', size: const Size(900, 700));
             },
-            tooltip: '自动化配置',
+            tooltip: loc.mcpConnAutomationConfig,
           ),
         ],
       ),
@@ -208,8 +210,8 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                   child: Column(
                     children: [
                       SwitchListTile(
-                        title: const Text('允许局域网访问'),
-                        subtitle: const Text('开启后同一网络内的设备可连接本机 MCP 服务', style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpAllowLan),
+                        subtitle: Text(loc.mcpConnAllowLanHint, style: const TextStyle(fontSize: 12)),
                         value: widget.configuration.mcpAllowLan,
                         onChanged: (v) async {
                           setState(() => widget.configuration.mcpAllowLan = v);
@@ -221,11 +223,11 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('访问令牌鉴权'),
+                        title: Text(loc.mcpConnTokenAuth),
                         subtitle: Text(
                           widget.configuration.mcpAuthEnabled
-                              ? '要求 Bearer token（推荐）'
-                              : '已关闭：同一网络内任何设备都可读取抓包内容！',
+                              ? loc.mcpConnTokenAuthRequired
+                              : loc.mcpConnTokenAuthDisabled,
                           style: TextStyle(
                             fontSize: 12,
                             color: widget.configuration.mcpAuthEnabled ? null : Colors.red,
@@ -240,10 +242,10 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('后台保活'),
-                        subtitle: const Text(
-                            '把本应用加入电池优化白名单并解除后台限制，降低抓包与 MCP 服务被系统杀掉的可能（需 Shizuku / root / Dhizuku 之一）',
-                            style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpConnKeepAlive),
+                        subtitle: Text(
+                            loc.mcpConnKeepAliveDesc,
+                            style: const TextStyle(fontSize: 12)),
                         value: widget.configuration.mcpKeepAlive,
                         onChanged: (v) async {
                           setState(() => widget.configuration.mcpKeepAlive = v);
@@ -257,9 +259,9 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('参数强校验'),
-                        subtitle: const Text('按工具声明的 inputSchema 校验参数，尽早提示调用错误（立即生效）',
-                            style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpConnStrictValidation),
+                        subtitle: Text(loc.mcpConnStrictValidationDesc,
+                            style: const TextStyle(fontSize: 12)),
                         value: widget.configuration.mcpStrictValidation,
                         onChanged: (v) async {
                           setState(() => widget.configuration.mcpStrictValidation = v);
@@ -277,15 +279,15 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                   child: Column(
                     children: [
                       SwitchListTile(
-                        title: const Text('MCP 服务'),
+                        title: Text(loc.mcpService),
                         subtitle: Text(
                           _mcpEnabled
                               ? (isRunning
-                                    ? '运行中，端口 $port'
+                                    ? loc.mcpServiceRunning(port.toString())
                                     : (lastError != null
-                                          ? '出错：$lastError'
-                                          : '已启用（未运行）'))
-                              : '已停用',
+                                          ? loc.mcpServiceError(lastError)
+                                          : loc.mcpServiceEnabledNotRunning))
+                              : loc.mcpServiceDisabled,
                           style: const TextStyle(fontSize: 12),
                         ),
                         secondary: Icon(
@@ -301,10 +303,10 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('自动启动'),
-                        subtitle: const Text(
-                          '应用启动时自动运行 MCP 服务（默认开启）',
-                          style: TextStyle(fontSize: 12),
+                        title: Text(loc.mcpConnAutoStart),
+                        subtitle: Text(
+                          loc.mcpAutoStartDescribe,
+                          style: const TextStyle(fontSize: 12),
                         ),
                         secondary: const Icon(Icons.power, color: Colors.blue),
                         value: _mcpAutoStart,
@@ -316,17 +318,17 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('端口配置', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(loc.mcpConnDeskPortConfig, style: const TextStyle(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
                             Row(
                               children: [
                                 Expanded(
                                   child: TextField(
                                     controller: _portController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'MCP 服务端口',
+                                    decoration: InputDecoration(
+                                      labelText: loc.mcpConnDeskServicePort,
                                       hintText: '9010',
-                                      border: OutlineInputBorder(),
+                                      border: const OutlineInputBorder(),
                                     ),
                                     keyboardType: TextInputType.number,
                                   ),
@@ -334,7 +336,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                                 const SizedBox(width: 16),
                                 ElevatedButton(
                                   onPressed: _applyPort,
-                                  child: const Text('应用'),
+                                  child: Text(loc.securityAiApply),
                                 ),
                               ],
                             ),
@@ -353,17 +355,17 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('连接信息', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(loc.mcpConnConnectionInfo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 16),
                         _buildInfoRow('MCP URL', apiUrl, Icons.link),
                         const SizedBox(height: 8),
                         _buildInfoRow('SSE URL', sseUrl, Icons.http),
                         const SizedBox(height: 8),
-                        _buildInfoRow('IP 地址', ip, Icons.wifi),
+                        _buildInfoRow(loc.mcpConnDeskIpAddress, ip, Icons.wifi),
                         const SizedBox(height: 8),
-                        _buildInfoRow('端口', port.toString(), Icons.settings),
+                        _buildInfoRow(loc.mcpPort, port.toString(), Icons.settings),
                         const SizedBox(height: 8),
-                        _buildInfoRow('状态', isRunning ? '运行中' : '已停止', isRunning ? Icons.check_circle : Icons.stop),
+                        _buildInfoRow(loc.mcpStatus, isRunning ? loc.mcpStatusRunning : loc.mcpStatusStopped, isRunning ? Icons.check_circle : Icons.stop),
                       ],
                     ),
                   ),
@@ -377,11 +379,11 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('AI 配置指南', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(loc.mcpConnAiConfigGuide, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 12),
-                        const Text(
-                          '在您的 AI 工具（如 Cursor、Windsurf 等）中添加以下配置：',
-                          style: TextStyle(fontSize: 14),
+                        Text(
+                          loc.mcpConnDeskAiConfigHint,
+                          style: const TextStyle(fontSize: 14),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -400,9 +402,9 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton.icon(
-                              onPressed: () => _copyText(configJson, '配置已复制'),
+                              onPressed: () => _copyText(configJson, loc.mcpConnDeskConfigCopied),
                               icon: const Icon(Icons.copy, size: 16),
-                              label: const Text('复制配置'),
+                              label: Text(loc.mcpConnDeskCopyConfig),
                             ),
                           ],
                         ),
@@ -419,23 +421,23 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('控制模式', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(loc.mcpConnControlMode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 12),
-                        const Text(
-                          'ProxyPin MCP 支持两种连接方式：',
-                          style: TextStyle(fontSize: 14),
+                        Text(
+                          loc.mcpConnDeskControlModeDesc,
+                          style: const TextStyle(fontSize: 14),
                         ),
                         const SizedBox(height: 8),
                         _buildModeItem(
-                          'MCP (推荐)',
-                          '标准 MCP 协议，支持完整功能',
+                          loc.mcpConnDeskModeMcpTitle,
+                          loc.mcpConnDeskModeMcpDesc,
                           Icons.star,
                           Colors.blue,
                         ),
                         const SizedBox(height: 8),
                         _buildModeItem(
                           'SSE',
-                          'Server-Sent Events，兼容旧客户端',
+                          loc.mcpConnDeskModeSseDesc,
                           Icons.stream,
                           Colors.orange,
                         ),
@@ -453,7 +455,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('可用工具', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(loc.mcpConnAvailableTools, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           const SizedBox(height: 12),
                           ...tools.map((tool) {
                             final name = tool['name'] as String;
@@ -476,6 +478,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
   }
 
   Widget _buildInfoRow(String label, String value, IconData icon) {
+    final loc = AppLocalizations.of(context)!;
     return Row(
       children: [
         Icon(icon, size: 18, color: Colors.grey[600]),
@@ -495,8 +498,8 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
         ),
         IconButton(
           icon: const Icon(Icons.copy, size: 16),
-          onPressed: () => _copyText(value, '已复制'),
-          tooltip: '复制',
+          onPressed: () => _copyText(value, loc.mcpCopied),
+          tooltip: loc.mcpCopy,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),

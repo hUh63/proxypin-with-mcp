@@ -86,10 +86,10 @@ class _CaptureDiagnosePageState extends State<CaptureDiagnosePage> {
     final result = _result;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('抓包自检'),
+        title: Text(AppLocalizations.of(context)!.captureDiagnose),
         actions: [
           IconButton(
-            tooltip: '重新检测',
+            tooltip: AppLocalizations.of(context)!.diagPageRerun,
             onPressed: _loading ? null : _run,
             icon: const Icon(Icons.refresh, size: 20),
           ),
@@ -104,8 +104,7 @@ class _CaptureDiagnosePageState extends State<CaptureDiagnosePage> {
               Icon(Icons.fact_check_outlined, size: 16, color: cs.primary),
               const SizedBox(width: 6),
               Expanded(
-                child: Text('检查本机抓包链路是否通畅；只做只读检测，不会改你的系统设置。'
-                    '同样的结论也能通过 MCP 工具 diagnose_capture 交给 AI。',
+                child: Text(AppLocalizations.of(context)!.diagPageTip,
                     style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
               ),
             ],
@@ -173,7 +172,8 @@ class _CaptureDiagnosePageState extends State<CaptureDiagnosePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('先做这几步', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(AppLocalizations.of(context)!.diagPageNextSteps,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           for (final tip in result.suggestions(AppLocalizations.of(context)!))
             Padding(
@@ -187,13 +187,14 @@ class _CaptureDiagnosePageState extends State<CaptureDiagnosePage> {
 
   Widget _buildCommonCauses(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const items = <(String, String)>[
-      ('走 QUIC / HTTP3 的目标', '手机端开「拦截 QUIC」让应用回落 TCP；桌面浏览器可在 chrome://flags 里关闭 QUIC 后重试'),
-      ('Flutter 应用', 'Dart 自带一份根证书列表，不读系统 CA —— 装了证书也抓不到 HTTPS。需在应用侧信任，或改抓其网络库调用'),
-      ('启用了证书固定（SSL Pinning）的应用', '应用内置了证书指纹，MITM 会被拒绝，表现为成片的握手失败（感叹号包）'),
-      ('Windows 上自带网络栈的进程', '系统代理管不到它们。用「偏好设置 → Windows 接管增强」，仍不行则把 ProxyPin 挂到支持 TUN 的工具下'),
-      ('Mac App Store 上架的应用', '沙箱 + 强制签名，系统代理无效，需要 Network Extension/TUN（本仓未签名构建，做不了）'),
-      ('只改了代理但应用不理会', '换应用自身的代理设置，或用支持 TUN 的工具统一接管'),
+    final loc = AppLocalizations.of(context)!;
+    final items = <(String, String)>[
+      (loc.diagPageCauseQuicTitle, loc.diagPageCauseQuicDesc),
+      (loc.diagPageCauseFlutterTitle, loc.diagPageCauseFlutterDesc),
+      (loc.diagPageCausePinningTitle, loc.diagPageCausePinningDesc),
+      (loc.diagPageCauseWinStackTitle, loc.diagPageCauseWinStackDesc),
+      (loc.diagPageCauseMasTitle, loc.diagPageCauseMasDesc),
+      (loc.diagPageCauseProxyIgnoredTitle, loc.diagPageCauseProxyIgnoredDesc),
     ];
 
     return Column(
@@ -203,7 +204,8 @@ class _CaptureDiagnosePageState extends State<CaptureDiagnosePage> {
           children: [
             Icon(Icons.help_outline, size: 16, color: cs.primary),
             const SizedBox(width: 6),
-            const Text('抓不到流量？按这几条对号入座', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.diagPageCommonCausesTitle,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ],
         ),
         const SizedBox(height: 8),

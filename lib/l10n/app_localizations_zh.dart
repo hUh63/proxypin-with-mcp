@@ -3778,6 +3778,376 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get diagExtMemNearLimit => '（已接近扩展内存上限，建议降低并发或缩小待发缓冲上限）';
 
+
+  @override
+  String get auditPageVerifyTooltip => '主动核验（对已抓到的域名各发一次，核对安全响应头）';
+
+  @override
+  String get auditPageNoVerifiableHosts => '抓包里还没有可核验的域名';
+
+  @override
+  String get auditPageVerifyTitle => '主动核验';
+
+  @override
+  String get auditPageVerifyIntro => '会对下面这些**已经在抓包里出现过**的域名，各发一次 GET，只看安全响应头：';
+
+  @override
+  String auditPageVerifyScope(int hosts, int delay, int max) {
+    return '共 $hosts 个域名，串行发送、每个之间隔 \$$delayms，上限 $max 个。不扫端口、不投载荷。';
+  }
+
+  @override
+  String get auditPageVerifyAuthz => '只对你拥有或已获授权的目标做这件事。';
+
+  @override
+  String get auditPageVerifyStart => '开始核验';
+
+  @override
+  String auditPageVerifyFailed(String error) {
+    return '核验失败：$error';
+  }
+
+  @override
+  String get auditPageVerifyResultTitle => '主动核验结果';
+
+  @override
+  String get auditPageVerifyResultIntro => '只核对了下面这几个安全响应头在不在。缺了不代表就有漏洞，但值得去核对一下服务端配置。';
+
+  @override
+  String auditPageVerifyHostFailed(String host, String error) {
+    return '$host —— 核验失败：$error';
+  }
+
+  @override
+  String get auditPageVerifyHeadersAllPresent => '这几个响应头都在';
+
+  @override
+  String auditPageVerifyHeaderMissing(String name, String desc) {
+    return '缺 $name —— $desc';
+  }
+
+  @override
+  String get diagPageRerun => '重新检测';
+
+  @override
+  String get diagPageTip => '检查本机抓包链路是否通畅；只做只读检测，不会改你的系统设置。同样的结论也能通过 MCP 工具 diagnose_capture 交给 AI。';
+
+  @override
+  String get diagPageNextSteps => '先做这几步';
+
+  @override
+  String get diagPageCauseQuicTitle => '走 QUIC / HTTP3 的目标';
+
+  @override
+  String get diagPageCauseQuicDesc => '手机端开「拦截 QUIC」让应用回落 TCP；桌面浏览器可在 chrome://flags 里关闭 QUIC 后重试';
+
+  @override
+  String get diagPageCauseFlutterTitle => 'Flutter 应用';
+
+  @override
+  String get diagPageCauseFlutterDesc => 'Dart 自带一份根证书列表，不读系统 CA —— 装了证书也抓不到 HTTPS。需在应用侧信任，或改抓其网络库调用';
+
+  @override
+  String get diagPageCausePinningTitle => '启用了证书固定（SSL Pinning）的应用';
+
+  @override
+  String get diagPageCausePinningDesc => '应用内置了证书指纹，MITM 会被拒绝，表现为成片的握手失败（感叹号包）';
+
+  @override
+  String get diagPageCauseWinStackTitle => 'Windows 上自带网络栈的进程';
+
+  @override
+  String get diagPageCauseWinStackDesc => '系统代理管不到它们。用「偏好设置 → Windows 接管增强」，仍不行则把 ProxyPin 挂到支持 TUN 的工具下';
+
+  @override
+  String get diagPageCauseMasTitle => 'Mac App Store 上架的应用';
+
+  @override
+  String get diagPageCauseMasDesc => '沙箱 + 强制签名，系统代理无效，需要 Network Extension/TUN（本仓未签名构建，做不了）';
+
+  @override
+  String get diagPageCauseProxyIgnoredTitle => '只改了代理但应用不理会';
+
+  @override
+  String get diagPageCauseProxyIgnoredDesc => '换应用自身的代理设置，或用支持 TUN 的工具统一接管';
+
+  @override
+  String get diagPageCommonCausesTitle => '抓不到流量？按这几条对号入座';
+
+
+  @override
+  String get mcpConnDeskClientWizard => '客户端接入向导（Claude Code / Codex / Cursor）';
+
+  @override
+  String get mcpConnDeskPortConfig => '端口配置';
+
+  @override
+  String get mcpConnDeskServicePort => 'MCP 服务端口';
+
+  @override
+  String get mcpConnDeskIpAddress => 'IP 地址';
+
+  @override
+  String get mcpConnDeskAiConfigHint => '在您的 AI 工具（如 Cursor、Windsurf 等）中添加以下配置：';
+
+  @override
+  String get mcpConnDeskConfigCopied => '配置已复制';
+
+  @override
+  String get mcpConnDeskCopyConfig => '复制配置';
+
+  @override
+  String get mcpConnDeskControlModeDesc => 'ProxyPin MCP 支持两种连接方式：';
+
+  @override
+  String get mcpConnDeskModeMcpTitle => 'MCP (推荐)';
+
+  @override
+  String get mcpConnDeskModeMcpDesc => '标准 MCP 协议，支持完整功能';
+
+  @override
+  String get mcpConnDeskModeSseDesc => 'Server-Sent Events，兼容旧客户端';
+
+
+  @override
+  String get prefSplashTitle => '启动页';
+
+  @override
+  String get prefSplashDesc => '默认使用系统原生启动页，可切换为自定义品牌页';
+
+  @override
+  String get prefSplashBackground => '背景';
+
+  @override
+  String get prefSplashBgOff => '原启动页（默认）';
+
+  @override
+  String get prefSplashBgGradient => '渐变品牌页';
+
+  @override
+  String get prefSplashBgCustom => '自定义图片';
+
+  @override
+  String get prefSplashBgTransparent => '跟随主题（推荐）';
+
+  @override
+  String get prefSplashDuration => '展示时长';
+
+  @override
+  String prefSplashDurationSeconds(String seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
+  String get prefSplashDurationFixed => '原启动页为系统画面，不支持自定义时长';
+
+  @override
+  String get prefSplashNotSelected => '未选择';
+
+  @override
+  String get prefSplashSelectedTapChange => '已设置，点击更换';
+
+  @override
+  String get prefSplashSubtitleLabel => '自定义小字';
+
+  @override
+  String get prefSplashSubtitleDefault => '默认显示版本信息';
+
+  @override
+  String get prefSplashSubtitleUnsupported => '原启动页不支持自定义小字，切换为渐变/透明后可用';
+
+  @override
+  String get prefSplashSubtitleField => '副标题文本';
+
+  @override
+  String get prefSplashSubtitleHint => '留空恢复默认（显示版本信息）';
+
+  @override
+  String get prefMtls => '双向认证 (mTLS)';
+
+  @override
+  String get prefMtlsChainLabel => '客户端证书链 (PEM)';
+
+  @override
+  String get prefMtlsKeyLabel => '客户端私钥 (PEM，未加密)';
+
+  @override
+  String get prefMtlsHint => '证书链包含 -----BEGIN CERTIFICATE-----，私钥包含 -----BEGIN PRIVATE KEY-----（不支持加密私钥）。配置后对新建立的 HTTPS 连接生效。';
+
+  @override
+  String get prefMtlsSelectBoth => '请先选择证书链与私钥文件';
+
+  @override
+  String get prefMtlsChainInvalid => '证书链文件格式不正确（需要 PEM）';
+
+  @override
+  String get prefMtlsKeyInvalid => '私钥文件格式不正确（需要未加密 PEM）';
+
+  @override
+  String get prefMtlsLoadFailed => '证书加载失败，请检查文件内容';
+
+  @override
+  String get prefMtlsEnabled => 'mTLS 已启用';
+
+  @override
+  String get prefRootDenied => '未获得 Root 授权，无法执行系统级回落';
+
+  @override
+  String get prefSysFallbackOn => '系统级回落已启用：UDP:443 将被丢弃（重启系统后失效）';
+
+  @override
+  String get prefSysFallbackOff => '系统级回落已停用';
+
+  @override
+  String prefExecFailed(String error) {
+    return '执行失败：$error';
+  }
+
+  @override
+  String get prefIptablesUnavailable => 'iptables 不可用';
+
+  @override
+  String get prefMonet => '莫奈取色';
+
+  @override
+  String get prefMonetDesc => 'Android 12+ 跟随壁纸配色（主题与启动页自动取色）';
+
+  @override
+  String get prefPredictiveBack => '预测性返回';
+
+  @override
+  String get prefPredictiveBackDesc => 'Android 14+ 返回手势预测动画（Material 3 页面转场）';
+
+  @override
+  String get prefCaptureBodyLimit => '抓包内容上限';
+
+  @override
+  String get prefBlockQuic => '拦截 QUIC (UDP:443)';
+
+  @override
+  String prefQuicBlocked(int count) {
+    return '已拦截 $count 个 QUIC 包，强制回落 TCP 使流量可抓包';
+  }
+
+  @override
+  String get prefQuicBlockDesc => '丢弃 UDP 443 强制应用回落 TCP，使 HTTPS 流量可抓包';
+
+  @override
+  String get prefQuicBlockOff => '已关闭，重新启动抓包后生效';
+
+  @override
+  String get prefSysFallbackDesc => '系统级回落（需 Root + iptables）：丢弃全部 UDP:443 强制回落 TCP，重启系统后失效';
+
+  @override
+  String get prefDisable => '停用';
+
+  @override
+  String get prefMtlsEnabledTapConfig => '已启用 · 点击配置客户端证书';
+
+  @override
+  String get prefMtlsDesc => '与上游服务器 TLS 握手时提供客户端证书（PEM）';
+
+  @override
+  String get prefRootMode => 'Root 模式抓包';
+
+  @override
+  String get prefRootModeDesc => '用 root 权限把系统出站流量重定向到本机代理，绕过“检测到 VPN 就拒绝联网”的应用；需设备已 root，与 VPN 抓包互斥';
+
+  @override
+  String get prefWanUnit => '万';
+
+  @override
+  String get cfgManagement => '配置管理';
+
+  @override
+  String get cfgManagementDesc => '导入/导出配置，备份或恢复设置';
+
+  @override
+  String get cfgExport => '导出配置';
+
+  @override
+  String get cfgExportDesc => '将当前配置导出为 JSON 文件，用于备份或分享';
+
+  @override
+  String get cfgImport => '导入配置';
+
+  @override
+  String get cfgImportDesc => '从 JSON 文件导入配置，会覆盖当前配置';
+
+  @override
+  String get cfgCopyToClipboard => '复制配置到剪贴板';
+
+  @override
+  String get cfgCopyToClipboardDesc => '生成配置文本，粘贴到其它设备即可导入（无需传文件）';
+
+  @override
+  String get cfgImportFromClipboard => '从剪贴板导入配置';
+
+  @override
+  String get cfgImportFromClipboardDesc => '读取剪贴板里的配置文本，会覆盖当前配置';
+
+  @override
+  String get cfgBackupDesc => '查看、恢复或删除自动备份的配置文件';
+
+  @override
+  String get cfgNotice => '注意事项';
+
+  @override
+  String get cfgNoticeBody => '• 导出配置会包含所有代理设置、过滤规则、MCP 配置等\n• 导入配置会完全覆盖当前配置，请谨慎操作\n• 建议定期导出配置进行备份\n• 配置文件为 JSON 格式，可用文本编辑器查看';
+
+  @override
+  String get cfgExporting => '正在导出配置';
+
+  @override
+  String get cfgExportPreparing => '请稍候，正在准备导出文件...';
+
+  @override
+  String get cfgPreparing => '准备中...';
+
+  @override
+  String get cfgSelectSaveLocation => '选择保存位置';
+
+  @override
+  String cfgExportedTo(String path) {
+    return '配置已导出到：$path';
+  }
+
+  @override
+  String cfgExportFailed(String error) {
+    return '导出失败：$error';
+  }
+
+  @override
+  String get cfgConfirmImport => '确认导入';
+
+  @override
+  String get cfgImportConfirmBody => '导入配置会完全覆盖当前配置，确定要继续吗？\n\n建议先导出当前配置进行备份。';
+
+  @override
+  String get cfgImportSuccessRestart => '配置导入成功，部分设置可能需要重启应用后生效';
+
+  @override
+  String cfgImportFailed(String error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String get cfgCopied => '配置已复制到剪贴板，在其它设备粘贴导入即可';
+
+  @override
+  String cfgCopyFailed(String error) {
+    return '复制失败：$error';
+  }
+
+  @override
+  String get cfgImportConfirmBodyShort => '导入会覆盖当前配置，确定继续？';
+
+  @override
+  String get cfgClipboardEmpty => '剪贴板里没有文本';
+
+  @override
+  String get cfgClipboardNotConfig => '剪贴板内容不是配置 JSON，请先复制配置文本';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

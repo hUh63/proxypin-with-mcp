@@ -7188,6 +7188,704 @@ Chain multiple script nodes in order'**
   /// **' (approaching the extension memory limit; consider reducing concurrency or lowering the buffered-send cap)'**
   String get diagExtMemNearLimit;
 
+
+  /// No description provided for @auditPageVerifyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Active verification (one request per captured domain, checking security headers)'**
+  String get auditPageVerifyTooltip;
+
+  /// No description provided for @auditPageNoVerifiableHosts.
+  ///
+  /// In en, this message translates to:
+  /// **'No verifiable domains captured yet'**
+  String get auditPageNoVerifiableHosts;
+
+  /// No description provided for @auditPageVerifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active verification'**
+  String get auditPageVerifyTitle;
+
+  /// No description provided for @auditPageVerifyIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'It sends one GET each to the domains below that **already appeared in the captured traffic**, looking only at the security response headers:'**
+  String get auditPageVerifyIntro;
+
+  /// No description provided for @auditPageVerifyScope.
+  ///
+  /// In en, this message translates to:
+  /// **'$hosts domains in total, sent one after another with a \$$delayms gap, up to $max. No port scanning, no payloads.'**
+  String auditPageVerifyScope(int hosts, int delay, int max);
+
+  /// No description provided for @auditPageVerifyAuthz.
+  ///
+  /// In en, this message translates to:
+  /// **'Only do this for targets you own or are authorized to test.'**
+  String get auditPageVerifyAuthz;
+
+  /// No description provided for @auditPageVerifyStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start verification'**
+  String get auditPageVerifyStart;
+
+  /// No description provided for @auditPageVerifyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed: $error'**
+  String auditPageVerifyFailed(String error);
+
+  /// No description provided for @auditPageVerifyResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification results'**
+  String get auditPageVerifyResultTitle;
+
+  /// No description provided for @auditPageVerifyResultIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'This only checked whether the security response headers below are present. Missing does not mean a vulnerability, but the server configuration is worth a look.'**
+  String get auditPageVerifyResultIntro;
+
+  /// No description provided for @auditPageVerifyHostFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'$host — verification failed: $error'**
+  String auditPageVerifyHostFailed(String host, String error);
+
+  /// No description provided for @auditPageVerifyHeadersAllPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'All of these response headers are present'**
+  String get auditPageVerifyHeadersAllPresent;
+
+  /// No description provided for @auditPageVerifyHeaderMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing $name — $desc'**
+  String auditPageVerifyHeaderMissing(String name, String desc);
+
+  /// No description provided for @diagPageRerun.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-run'**
+  String get diagPageRerun;
+
+  /// No description provided for @diagPageTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks whether the local capture path works. Read-only detection; it never changes your system settings. The same conclusion can be handed to AI via the MCP tool diagnose_capture.'**
+  String get diagPageTip;
+
+  /// No description provided for @diagPageNextSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here'**
+  String get diagPageNextSteps;
+
+  /// No description provided for @diagPageCauseQuicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Targets that use QUIC / HTTP3'**
+  String get diagPageCauseQuicTitle;
+
+  /// No description provided for @diagPageCauseQuicDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable "Block QUIC" on the phone so the app falls back to TCP; on desktop browsers, disable QUIC in chrome://flags and retry'**
+  String get diagPageCauseQuicDesc;
+
+  /// No description provided for @diagPageCauseFlutterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flutter apps'**
+  String get diagPageCauseFlutterTitle;
+
+  /// No description provided for @diagPageCauseFlutterDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Dart ships its own root CA list and does not read the system CA, so HTTPS stays unreadable even with a certificate installed. Trust it inside the app, or capture its network library calls instead'**
+  String get diagPageCauseFlutterDesc;
+
+  /// No description provided for @diagPageCausePinningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps with certificate pinning (SSL Pinning) enabled'**
+  String get diagPageCausePinningTitle;
+
+  /// No description provided for @diagPageCausePinningDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The app has a certificate fingerprint built in, so MITM is rejected and you see waves of handshake failures (exclamation-mark packets)'**
+  String get diagPageCausePinningDesc;
+
+  /// No description provided for @diagPageCauseWinStackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Processes on Windows with their own network stack'**
+  String get diagPageCauseWinStackTitle;
+
+  /// No description provided for @diagPageCauseWinStackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The system proxy cannot reach them. Use "Preferences → Enhanced Windows Takeover"; if that still fails, put ProxyPin behind a TUN-capable tool'**
+  String get diagPageCauseWinStackDesc;
+
+  /// No description provided for @diagPageCauseMasTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps from the Mac App Store'**
+  String get diagPageCauseMasTitle;
+
+  /// No description provided for @diagPageCauseMasDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Sandboxed and strictly signed, the system proxy is ineffective and Network Extension/TUN is required (unsigned builds from this repository cannot do it)'**
+  String get diagPageCauseMasDesc;
+
+  /// No description provided for @diagPageCauseProxyIgnoredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy changed but the app ignores it'**
+  String get diagPageCauseProxyIgnoredTitle;
+
+  /// No description provided for @diagPageCauseProxyIgnoredDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to the app\\'s own proxy settings, or take over uniformly with a TUN-capable tool'**
+  String get diagPageCauseProxyIgnoredDesc;
+
+  /// No description provided for @diagPageCommonCausesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing captured? Match your case below'**
+  String get diagPageCommonCausesTitle;
+
+
+  /// No description provided for @mcpConnDeskClientWizard.
+  ///
+  /// In en, this message translates to:
+  /// **'Client connection wizard (Claude Code / Codex / Cursor)'**
+  String get mcpConnDeskClientWizard;
+
+  /// No description provided for @mcpConnDeskPortConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Port settings'**
+  String get mcpConnDeskPortConfig;
+
+  /// No description provided for @mcpConnDeskServicePort.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP service port'**
+  String get mcpConnDeskServicePort;
+
+  /// No description provided for @mcpConnDeskIpAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'IP Address'**
+  String get mcpConnDeskIpAddress;
+
+  /// No description provided for @mcpConnDeskAiConfigHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the following configuration to your AI tool (such as Cursor, Windsurf, etc.):'**
+  String get mcpConnDeskAiConfigHint;
+
+  /// No description provided for @mcpConnDeskConfigCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration copied'**
+  String get mcpConnDeskConfigCopied;
+
+  /// No description provided for @mcpConnDeskCopyConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy config'**
+  String get mcpConnDeskCopyConfig;
+
+  /// No description provided for @mcpConnDeskControlModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'ProxyPin MCP supports two connection methods:'**
+  String get mcpConnDeskControlModeDesc;
+
+  /// No description provided for @mcpConnDeskModeMcpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP (recommended)'**
+  String get mcpConnDeskModeMcpTitle;
+
+  /// No description provided for @mcpConnDeskModeMcpDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard MCP protocol with full features'**
+  String get mcpConnDeskModeMcpDesc;
+
+  /// No description provided for @mcpConnDeskModeSseDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Server-Sent Events, compatible with legacy clients'**
+  String get mcpConnDeskModeSseDesc;
+
+
+  /// No description provided for @prefSplashTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Splash Screen'**
+  String get prefSplashTitle;
+
+  /// No description provided for @prefSplashDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the system splash screen by default; you can switch to a custom branded page'**
+  String get prefSplashDesc;
+
+  /// No description provided for @prefSplashBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get prefSplashBackground;
+
+  /// No description provided for @prefSplashBgOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Original splash (default)'**
+  String get prefSplashBgOff;
+
+  /// No description provided for @prefSplashBgGradient.
+  ///
+  /// In en, this message translates to:
+  /// **'Gradient branded page'**
+  String get prefSplashBgGradient;
+
+  /// No description provided for @prefSplashBgCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom image'**
+  String get prefSplashBgCustom;
+
+  /// No description provided for @prefSplashBgTransparent.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow theme (recommended)'**
+  String get prefSplashBgTransparent;
+
+  /// No description provided for @prefSplashDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Display duration'**
+  String get prefSplashDuration;
+
+  /// No description provided for @prefSplashDurationSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'$seconds s'**
+  String prefSplashDurationSeconds(String seconds);
+
+  /// No description provided for @prefSplashDurationFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'The original splash screen is a system screen and does not support a custom duration'**
+  String get prefSplashDurationFixed;
+
+  /// No description provided for @prefSplashNotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not selected'**
+  String get prefSplashNotSelected;
+
+  /// No description provided for @prefSplashSelectedTapChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Set, tap to change'**
+  String get prefSplashSelectedTapChange;
+
+  /// No description provided for @prefSplashSubtitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom caption'**
+  String get prefSplashSubtitleLabel;
+
+  /// No description provided for @prefSplashSubtitleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows version info by default'**
+  String get prefSplashSubtitleDefault;
+
+  /// No description provided for @prefSplashSubtitleUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'The original splash screen does not support a custom caption; switch to gradient/transparent to enable it'**
+  String get prefSplashSubtitleUnsupported;
+
+  /// No description provided for @prefSplashSubtitleField.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption text'**
+  String get prefSplashSubtitleField;
+
+  /// No description provided for @prefSplashSubtitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to restore the default (version info)'**
+  String get prefSplashSubtitleHint;
+
+  /// No description provided for @prefMtls.
+  ///
+  /// In en, this message translates to:
+  /// **'Mutual TLS (mTLS)'**
+  String get prefMtls;
+
+  /// No description provided for @prefMtlsChainLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client certificate chain (PEM)'**
+  String get prefMtlsChainLabel;
+
+  /// No description provided for @prefMtlsKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client private key (PEM, unencrypted)'**
+  String get prefMtlsKeyLabel;
+
+  /// No description provided for @prefMtlsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate chain contains -----BEGIN CERTIFICATE-----, and the private key contains -----BEGIN PRIVATE KEY----- (encrypted keys are not supported). Applies to newly established HTTPS connections after configuration.'**
+  String get prefMtlsHint;
+
+  /// No description provided for @prefMtlsSelectBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the certificate chain and private key files first'**
+  String get prefMtlsSelectBoth;
+
+  /// No description provided for @prefMtlsChainInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect certificate chain format (PEM required)'**
+  String get prefMtlsChainInvalid;
+
+  /// No description provided for @prefMtlsKeyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect private key format (unencrypted PEM required)'**
+  String get prefMtlsKeyInvalid;
+
+  /// No description provided for @prefMtlsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load the certificate; check the file contents'**
+  String get prefMtlsLoadFailed;
+
+  /// No description provided for @prefMtlsEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'mTLS enabled'**
+  String get prefMtlsEnabled;
+
+  /// No description provided for @prefRootDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Root permission not granted; system-level fallback cannot run'**
+  String get prefRootDenied;
+
+  /// No description provided for @prefSysFallbackOn.
+  ///
+  /// In en, this message translates to:
+  /// **'System-level fallback enabled: UDP:443 will be dropped (stops working after a system reboot)'**
+  String get prefSysFallbackOn;
+
+  /// No description provided for @prefSysFallbackOff.
+  ///
+  /// In en, this message translates to:
+  /// **'System-level fallback disabled'**
+  String get prefSysFallbackOff;
+
+  /// No description provided for @prefExecFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed: $error'**
+  String prefExecFailed(String error);
+
+  /// No description provided for @prefIptablesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'iptables unavailable'**
+  String get prefIptablesUnavailable;
+
+  /// No description provided for @prefMonet.
+  ///
+  /// In en, this message translates to:
+  /// **'Monet theming'**
+  String get prefMonet;
+
+  /// No description provided for @prefMonetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Android 12+: colors follow the wallpaper (theme and splash screen pick colors automatically)'**
+  String get prefMonetDesc;
+
+  /// No description provided for @prefPredictiveBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Predictive back'**
+  String get prefPredictiveBack;
+
+  /// No description provided for @prefPredictiveBackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Android 14+ predictive back gesture animation (Material 3 page transitions)'**
+  String get prefPredictiveBackDesc;
+
+  /// No description provided for @prefCaptureBodyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture body limit'**
+  String get prefCaptureBodyLimit;
+
+  /// No description provided for @prefBlockQuic.
+  ///
+  /// In en, this message translates to:
+  /// **'Intercept QUIC (UDP:443)'**
+  String get prefBlockQuic;
+
+  /// No description provided for @prefQuicBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Intercepted $count QUIC packets; forcing a fallback to TCP so traffic can be captured'**
+  String prefQuicBlocked(int count);
+
+  /// No description provided for @prefQuicBlockDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop UDP 443 to force apps back to TCP so HTTPS traffic can be captured'**
+  String get prefQuicBlockDesc;
+
+  /// No description provided for @prefQuicBlockOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turned off; takes effect after restarting capture'**
+  String get prefQuicBlockOff;
+
+  /// No description provided for @prefSysFallbackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'System-level fallback (requires Root + iptables): drop all UDP:443 to force a fallback to TCP; stops working after a system reboot'**
+  String get prefSysFallbackDesc;
+
+  /// No description provided for @prefDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get prefDisable;
+
+  /// No description provided for @prefMtlsEnabledTapConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled · tap to configure the client certificate'**
+  String get prefMtlsEnabledTapConfig;
+
+  /// No description provided for @prefMtlsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide a client certificate (PEM) during the TLS handshake with the upstream server'**
+  String get prefMtlsDesc;
+
+  /// No description provided for @prefRootMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Root-mode capture'**
+  String get prefRootMode;
+
+  /// No description provided for @prefRootModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirect the outbound traffic of the system to the local proxy with root privileges, bypassing apps that refuse to connect when a VPN is detected; the device must be rooted and this is mutually exclusive with VPN capture'**
+  String get prefRootModeDesc;
+
+  /// No description provided for @prefWanUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'0K'**
+  String get prefWanUnit;
+
+  /// No description provided for @cfgManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Config Management'**
+  String get cfgManagement;
+
+  /// No description provided for @cfgManagementDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Import/export config, back up or restore settings'**
+  String get cfgManagementDesc;
+
+  /// No description provided for @cfgExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Config'**
+  String get cfgExport;
+
+  /// No description provided for @cfgExportDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Export the current config as a JSON file for backup or sharing'**
+  String get cfgExportDesc;
+
+  /// No description provided for @cfgImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Config'**
+  String get cfgImport;
+
+  /// No description provided for @cfgImportDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Import config from a JSON file; the current config will be overwritten'**
+  String get cfgImportDesc;
+
+  /// No description provided for @cfgCopyToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy config to clipboard'**
+  String get cfgCopyToClipboard;
+
+  /// No description provided for @cfgCopyToClipboardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate config text; paste it on another device to import (no file transfer needed)'**
+  String get cfgCopyToClipboardDesc;
+
+  /// No description provided for @cfgImportFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Import config from clipboard'**
+  String get cfgImportFromClipboard;
+
+  /// No description provided for @cfgImportFromClipboardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the config text from the clipboard; the current config will be overwritten'**
+  String get cfgImportFromClipboardDesc;
+
+  /// No description provided for @cfgBackupDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'View, restore or delete automatically backed-up config files'**
+  String get cfgBackupDesc;
+
+  /// No description provided for @cfgNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get cfgNotice;
+
+  /// No description provided for @cfgNoticeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'• Exporting includes all proxy settings, filter rules, MCP config and more
+• Importing completely overwrites the current config, so proceed with care
+• Exporting the config regularly as a backup is recommended
+• The config file is in JSON format and can be viewed in a text editor'**
+  String get cfgNoticeBody;
+
+  /// No description provided for @cfgExporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting config'**
+  String get cfgExporting;
+
+  /// No description provided for @cfgExportPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait, preparing the export file...'**
+  String get cfgExportPreparing;
+
+  /// No description provided for @cfgPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing...'**
+  String get cfgPreparing;
+
+  /// No description provided for @cfgSelectSaveLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose save location'**
+  String get cfgSelectSaveLocation;
+
+  /// No description provided for @cfgExportedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Config exported to: $path'**
+  String cfgExportedTo(String path);
+
+  /// No description provided for @cfgExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: $error'**
+  String cfgExportFailed(String error);
+
+  /// No description provided for @cfgConfirmImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm import'**
+  String get cfgConfirmImport;
+
+  /// No description provided for @cfgImportConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing the config will completely overwrite the current config. Continue?
+
+Exporting the current config as a backup first is recommended.'**
+  String get cfgImportConfirmBody;
+
+  /// No description provided for @cfgImportSuccessRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Config imported successfully; some settings may need an app restart to take effect'**
+  String get cfgImportSuccessRestart;
+
+  /// No description provided for @cfgImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: $error'**
+  String cfgImportFailed(String error);
+
+  /// No description provided for @cfgCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Config copied to the clipboard; paste it on another device to import'**
+  String get cfgCopied;
+
+  /// No description provided for @cfgCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy failed: $error'**
+  String cfgCopyFailed(String error);
+
+  /// No description provided for @cfgImportConfirmBodyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing will overwrite the current config. Continue?'**
+  String get cfgImportConfirmBodyShort;
+
+  /// No description provided for @cfgClipboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no text in the clipboard'**
+  String get cfgClipboardEmpty;
+
+  /// No description provided for @cfgClipboardNotConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard content is not config JSON; copy the config text first'**
+  String get cfgClipboardNotConfig;
+
 }
 
 class _AppLocalizationsDelegate

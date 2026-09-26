@@ -57,7 +57,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '配置管理',
+          localizations.cfgManagement,
           style: const TextStyle(fontSize: 16),
         ),
         centerTitle: true,
@@ -68,40 +68,40 @@ class _ConfigManagementState extends State<ConfigManagement> {
           section([
             ListTile(
               leading: const Icon(Icons.file_download, color: Colors.green),
-              title: const Text('导出配置'),
-              subtitle: const Text('将当前配置导出为 JSON 文件，用于备份或分享'),
+              title: Text(localizations.cfgExport),
+              subtitle: Text(localizations.cfgExportDesc),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _exportConfig(context, localizations),
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
               leading: const Icon(Icons.file_upload, color: Colors.blue),
-              title: const Text('导入配置'),
-              subtitle: const Text('从 JSON 文件导入配置，会覆盖当前配置'),
+              title: Text(localizations.cfgImport),
+              subtitle: Text(localizations.cfgImportDesc),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _importConfig(context, localizations),
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
               leading: const Icon(Icons.content_copy, color: Colors.teal),
-              title: const Text('复制配置到剪贴板'),
-              subtitle: const Text('生成配置文本，粘贴到其它设备即可导入（无需传文件）'),
+              title: Text(localizations.cfgCopyToClipboard),
+              subtitle: Text(localizations.cfgCopyToClipboardDesc),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _exportToClipboard(context),
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
               leading: const Icon(Icons.content_paste, color: Colors.orange),
-              title: const Text('从剪贴板导入配置'),
-              subtitle: const Text('读取剪贴板里的配置文本，会覆盖当前配置'),
+              title: Text(localizations.cfgImportFromClipboard),
+              subtitle: Text(localizations.cfgImportFromClipboardDesc),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _importFromClipboard(context),
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
               leading: const Icon(Icons.backup, color: Colors.purple),
-              title: const Text('备份管理'),
-              subtitle: const Text('查看、恢复或删除自动备份的配置文件'),
+              title: Text(localizations.desktopBackupManagement),
+              subtitle: Text(localizations.cfgBackupDesc),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.push(
@@ -124,13 +124,13 @@ class _ConfigManagementState extends State<ConfigManagement> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                      SizedBox(width: 8),
+                      const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                      const SizedBox(width: 8),
                       Text(
-                        '注意事项',
-                        style: TextStyle(
+                        localizations.cfgNotice,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.orange,
                         ),
@@ -138,12 +138,9 @@ class _ConfigManagementState extends State<ConfigManagement> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    '• 导出配置会包含所有代理设置、过滤规则、MCP 配置等\n'
-                    '• 导入配置会完全覆盖当前配置，请谨慎操作\n'
-                    '• 建议定期导出配置进行备份\n'
-                    '• 配置文件为 JSON 格式，可用文本编辑器查看',
-                    style: TextStyle(fontSize: 12, color: Colors.black87),
+                  Text(
+                    localizations.cfgNoticeBody,
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
                   ),
                 ],
               ),
@@ -171,18 +168,18 @@ class _ConfigManagementState extends State<ConfigManagement> {
           return StatefulBuilder(
             builder: (context, setDialogState) {
               return AlertDialog(
-                title: const Row(
+                title: Row(
                   children: [
-                    CircularProgressIndicator(strokeWidth: 2, value: null),
-                    SizedBox(width: 12),
-                    Text('正在导出配置'),
+                    const CircularProgressIndicator(strokeWidth: 2, value: null),
+                    const SizedBox(width: 12),
+                    Text(localizations.cfgExporting),
                   ],
                 ),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('请稍候，正在准备导出文件...'),
+                    Text(localizations.cfgExportPreparing),
                     const SizedBox(height: 16),
                     LinearProgressIndicator(
                       value: exportProgress > 0 ? exportProgress : null,
@@ -190,7 +187,9 @@ class _ConfigManagementState extends State<ConfigManagement> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      exportProgress > 0 ? '${(exportProgress * 100).toInt()}%' : '准备中...',
+                      exportProgress > 0
+                          ? '${(exportProgress * 100).toInt()}%'
+                          : localizations.cfgPreparing,
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
@@ -199,7 +198,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
                   if (!isExporting)
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('关闭'),
+                      child: Text(localizations.close),
                     ),
                 ],
               );
@@ -224,7 +223,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
 
       // 使用 FilePicker v12+ API 保存文件 (直接传入 bytes)
       Uri? outputPath = await FilePicker.saveFile(
-        dialogTitle: '选择保存位置',
+        dialogTitle: localizations.cfgSelectSaveLocation,
         fileName: defaultName,
         type: FileType.custom,
         allowedExtensions: ['json'],
@@ -238,7 +237,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
 
       if (mounted) {
         FlutterToastr.show(
-          '配置已导出到：${outputPath.path}',
+          localizations.cfgExportedTo(outputPath.path),
           context,
           duration: 3,
           backgroundColor: Colors.green,
@@ -253,7 +252,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
       }
       if (mounted) {
         FlutterToastr.show(
-          '导出失败：${e.toString()}',
+          localizations.cfgExportFailed(e.toString()),
           context,
           duration: 3,
           backgroundColor: Colors.red,
@@ -286,21 +285,19 @@ class _ConfigManagementState extends State<ConfigManagement> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('确认导入'),
-          content: const Text(
-            '导入配置会完全覆盖当前配置，确定要继续吗？\n\n建议先导出当前配置进行备份。',
-          ),
+          title: Text(localizations.cfgConfirmImport),
+          content: Text(localizations.cfgImportConfirmBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('取消'),
+              child: Text(localizations.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
               ),
-              child: const Text('确定'),
+              child: Text(localizations.mcpAutoConfirm),
             ),
           ],
         ),
@@ -318,7 +315,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
 
       if (mounted) {
         FlutterToastr.show(
-          '配置导入成功，部分设置可能需要重启应用后生效',
+          localizations.cfgImportSuccessRestart,
           context,
           duration: 3,
           backgroundColor: Colors.green,
@@ -332,7 +329,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
       logger.e('导入配置失败', error: e, stackTrace: StackTrace.current);
       if (mounted) {
         FlutterToastr.show(
-          '导入失败：${e.toString()}',
+          localizations.cfgImportFailed(e.toString()),
           context,
           duration: 3,
           backgroundColor: Colors.red,
@@ -343,17 +340,18 @@ class _ConfigManagementState extends State<ConfigManagement> {
 
   /// 上游 #920：把配置文本复制到剪贴板，方便在设备间直接粘贴传递
   Future<void> _exportToClipboard(BuildContext context) async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       final jsonStr = configuration.exportConfig();
       await Clipboard.setData(ClipboardData(text: jsonStr));
       if (mounted) {
-        FlutterToastr.show('配置已复制到剪贴板，在其它设备粘贴导入即可', context, duration: 3, backgroundColor: Colors.green);
+        FlutterToastr.show(localizations.cfgCopied, context, duration: 3, backgroundColor: Colors.green);
         logger.i('配置已复制到剪贴板');
       }
     } catch (e) {
       logger.e('复制配置到剪贴板失败', error: e, stackTrace: StackTrace.current);
       if (mounted) {
-        FlutterToastr.show('复制失败：${e.toString()}', context, duration: 3, backgroundColor: Colors.red);
+        FlutterToastr.show(localizations.cfgCopyFailed(e.toString()), context, duration: 3, backgroundColor: Colors.red);
       }
     }
   }
@@ -361,26 +359,28 @@ class _ConfigManagementState extends State<ConfigManagement> {
   /// 上游 #920：从剪贴板读取配置文本并导入
   Future<void> _importFromClipboard(BuildContext context) async {
     // 导入会覆盖当前配置，先确认
+    final localizations = AppLocalizations.of(context)!;
     showConfirmDialog(context,
-        title: '导入配置',
-        content: '导入会覆盖当前配置，确定继续？',
+        title: localizations.cfgImport,
+        content: localizations.cfgImportConfirmBodyShort,
         onConfirm: () => _doImportFromClipboard(context));
   }
 
   /// 真正执行导入（确认后调用）
   Future<void> _doImportFromClipboard(BuildContext context) async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim();
       if (text == null || text.isEmpty) {
         if (mounted) {
-          FlutterToastr.show('剪贴板里没有文本', context, duration: 2, backgroundColor: Colors.orange);
+          FlutterToastr.show(localizations.cfgClipboardEmpty, context, duration: 2, backgroundColor: Colors.orange);
         }
         return;
       }
       if (!text.startsWith('{')) {
         if (mounted) {
-          FlutterToastr.show('剪贴板内容不是配置 JSON，请先复制配置文本', context, duration: 3, backgroundColor: Colors.red);
+          FlutterToastr.show(localizations.cfgClipboardNotConfig, context, duration: 3, backgroundColor: Colors.red);
         }
         return;
       }
@@ -389,14 +389,14 @@ class _ConfigManagementState extends State<ConfigManagement> {
       _applyImportedConfig(newConfig);
 
       if (mounted) {
-        FlutterToastr.show('配置导入成功，部分设置可能需要重启应用后生效', context, duration: 3, backgroundColor: Colors.green);
+        FlutterToastr.show(localizations.cfgImportSuccessRestart, context, duration: 3, backgroundColor: Colors.green);
         logger.i('配置已从剪贴板导入');
         setState(() {});
       }
     } catch (e) {
       logger.e('从剪贴板导入配置失败', error: e, stackTrace: StackTrace.current);
       if (mounted) {
-        FlutterToastr.show('导入失败：${e.toString()}', context, duration: 3, backgroundColor: Colors.red);
+        FlutterToastr.show(localizations.cfgImportFailed(e.toString()), context, duration: 3, backgroundColor: Colors.red);
       }
     }
   }

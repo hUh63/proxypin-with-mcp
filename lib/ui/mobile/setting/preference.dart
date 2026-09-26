@@ -82,6 +82,7 @@ class _PreferenceState extends State<Preference> {
 
   /// 启动页设置区块：开关 / 背景（原启动页·渐变·自定义图片·透明）/ 时长 / 自定义小字
   Widget _buildSplashSection(Color dividerColor) {
+    final localizations = AppLocalizations.of(context)!;
     // 展示时长与自定义小字仅在非"原启动页"模式下可编辑
     final splashDetailEditable =
         appConfiguration.splashEnabled && appConfiguration.splashBackground != 'off';
@@ -94,8 +95,8 @@ class _PreferenceState extends State<Preference> {
       ),
       child: Column(children: [
         ListTile(
-          title: const Text('启动页'),
-          subtitle: const Text('默认使用系统原生启动页，可切换为自定义品牌页', style: TextStyle(fontSize: 12)),
+          title: Text(localizations.prefSplashTitle),
+          subtitle: Text(localizations.prefSplashDesc, style: const TextStyle(fontSize: 12)),
           trailing: SwitchWidget(
             value: appConfiguration.splashEnabled,
             scale: 0.8,
@@ -108,15 +109,15 @@ class _PreferenceState extends State<Preference> {
         // 背景模式始终可见，便于直接切换
         Divider(height: 0, thickness: 0.3, color: dividerColor),
         ListTile(
-          title: const Text('背景'),
+          title: Text(localizations.prefSplashBackground),
           trailing: DropdownButton<String>(
             value: appConfiguration.splashBackground,
             underline: const SizedBox(),
-            items: const [
-              DropdownMenuItem(value: 'off', child: Text('原启动页（默认）')),
-              DropdownMenuItem(value: 'gradient', child: Text('渐变品牌页')),
-              DropdownMenuItem(value: 'custom', child: Text('自定义图片')),
-              DropdownMenuItem(value: 'transparent', child: Text('跟随主题（推荐）')),
+            items: [
+              DropdownMenuItem(value: 'off', child: Text(localizations.prefSplashBgOff)),
+              DropdownMenuItem(value: 'gradient', child: Text(localizations.prefSplashBgGradient)),
+              DropdownMenuItem(value: 'custom', child: Text(localizations.prefSplashBgCustom)),
+              DropdownMenuItem(value: 'transparent', child: Text(localizations.prefSplashBgTransparent)),
             ],
             onChanged: (v) {
               if (v == null) return;
@@ -133,12 +134,12 @@ class _PreferenceState extends State<Preference> {
         // 展示时长与自定义小字：选原启动页时禁用并说明（系统启动画面不支持注入内容）
         Divider(height: 0, thickness: 0.3, color: dividerColor),
         ListTile(
-          title: Text('展示时长',
+          title: Text(localizations.prefSplashDuration,
               style: TextStyle(fontSize: 14, color: splashDetailEditable ? null : Colors.grey)),
           subtitle: Text(
             splashDetailEditable
-                ? '${(appConfiguration.splashDurationMs / 1000).toStringAsFixed(2)} 秒'
-                : '原启动页为系统画面，不支持自定义时长',
+                ? localizations.prefSplashDurationSeconds((appConfiguration.splashDurationMs / 1000).toStringAsFixed(2))
+                : localizations.prefSplashDurationFixed,
             style: TextStyle(fontSize: 12, color: splashDetailEditable ? null : Colors.grey),
           ),
           trailing: SizedBox(
@@ -161,9 +162,11 @@ class _PreferenceState extends State<Preference> {
           if (appConfiguration.splashBackground == 'custom') ...[
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
-              title: const Text('自定义图片'),
+              title: Text(localizations.prefSplashBgCustom),
               subtitle: Text(
-                appConfiguration.splashBackgroundPath == null ? '未选择' : '已设置，点击更换',
+                appConfiguration.splashBackgroundPath == null
+                    ? localizations.prefSplashNotSelected
+                    : localizations.prefSplashSelectedTapChange,
                 style: const TextStyle(fontSize: 12),
               ),
               trailing: const Icon(Icons.image_outlined, size: 20),
@@ -172,14 +175,14 @@ class _PreferenceState extends State<Preference> {
           ],
           Divider(height: 0, thickness: 0.3, color: dividerColor),
           ListTile(
-            title: Text('自定义小字',
+            title: Text(localizations.prefSplashSubtitleLabel,
                 style: TextStyle(fontSize: 14, color: splashDetailEditable ? null : Colors.grey)),
             subtitle: Text(
               splashDetailEditable
                   ? (appConfiguration.splashSubtitle?.isNotEmpty == true
                       ? appConfiguration.splashSubtitle!
-                      : '默认显示版本信息')
-                  : '原启动页不支持自定义小字，切换为渐变/透明后可用',
+                      : localizations.prefSplashSubtitleDefault)
+                  : localizations.prefSplashSubtitleUnsupported,
               style: TextStyle(fontSize: 12, color: splashDetailEditable ? null : Colors.grey),
               maxLines: 2,
             ),
@@ -214,26 +217,27 @@ class _PreferenceState extends State<Preference> {
 
   /// 编辑启动页自定义小字
   Future<void> _editSplashSubtitle() async {
+    final localizations = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: appConfiguration.splashSubtitle ?? '');
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('自定义小字'),
+        title: Text(localizations.prefSplashSubtitleLabel),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLength: 40,
-          decoration: const InputDecoration(
-            labelText: '副标题文本',
-            hintText: '留空恢复默认（显示版本信息）',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: localizations.prefSplashSubtitleField,
+            hintText: localizations.prefSplashSubtitleHint,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('确定'),
+            child: Text(localizations.mcpAutoConfirm),
           ),
         ],
       ),
@@ -245,6 +249,7 @@ class _PreferenceState extends State<Preference> {
 
   /// mTLS 证书配置弹窗：选择证书链与私钥（PEM），启用后对新连接生效
   Future<bool> _showMtlsDialog() async {
+    final localizations = AppLocalizations.of(context)!;
     final chainController = TextEditingController(text: configuration.mtlsChainPath ?? '');
     final keyController = TextEditingController(text: configuration.mtlsKeyPath ?? '');
     var loading = false;
@@ -253,7 +258,7 @@ class _PreferenceState extends State<Preference> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('双向认证 (mTLS)', style: TextStyle(fontSize: 16)),
+          title: Text(localizations.prefMtls, style: const TextStyle(fontSize: 16)),
           content: SizedBox(
             width: 420,
             child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -261,7 +266,7 @@ class _PreferenceState extends State<Preference> {
                 controller: chainController,
                 readOnly: true,
                 decoration: InputDecoration(
-                  labelText: '客户端证书链 (PEM)',
+                  labelText: localizations.prefMtlsChainLabel,
                   border: const OutlineInputBorder(),
                   isDense: true,
                   suffixIcon: IconButton(
@@ -281,7 +286,7 @@ class _PreferenceState extends State<Preference> {
                 controller: keyController,
                 readOnly: true,
                 decoration: InputDecoration(
-                  labelText: '客户端私钥 (PEM，未加密)',
+                  labelText: localizations.prefMtlsKeyLabel,
                   border: const OutlineInputBorder(),
                   isDense: true,
                   suffixIcon: IconButton(
@@ -297,29 +302,29 @@ class _PreferenceState extends State<Preference> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                '证书链包含 -----BEGIN CERTIFICATE-----，私钥包含 -----BEGIN PRIVATE KEY-----（不支持加密私钥）。配置后对新建立的 HTTPS 连接生效。',
-                style: TextStyle(fontSize: 11, color: Colors.grey),
+              Text(
+                localizations.prefMtlsHint,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
             ]),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(localizations.cancel)),
             ElevatedButton(
               onPressed: () async {
                 final chain = chainController.text.trim();
                 final key = keyController.text.trim();
                 if (chain.isEmpty || key.isEmpty) {
-                  FlutterToastr.show('请先选择证书链与私钥文件', context, backgroundColor: Colors.orange);
+                  FlutterToastr.show(localizations.prefMtlsSelectBoth, context, backgroundColor: Colors.orange);
                   return;
                 }
                 if (!Mtls.looksLikePem(chain, 'CERTIFICATE')) {
-                  FlutterToastr.show('证书链文件格式不正确（需要 PEM）', context, backgroundColor: Colors.red);
+                  FlutterToastr.show(localizations.prefMtlsChainInvalid, context, backgroundColor: Colors.red);
                   return;
                 }
                 if (!Mtls.looksLikePem(key, 'PRIVATE KEY') && !Mtls.looksLikePem(key, 'EC PRIVATE KEY') &&
                     !Mtls.looksLikePem(key, 'RSA PRIVATE KEY')) {
-                  FlutterToastr.show('私钥文件格式不正确（需要未加密 PEM）', context, backgroundColor: Colors.red);
+                  FlutterToastr.show(localizations.prefMtlsKeyInvalid, context, backgroundColor: Colors.red);
                   return;
                 }
                 setState(() => loading = true);
@@ -327,7 +332,7 @@ class _PreferenceState extends State<Preference> {
                 if (!ok) {
                   setState(() => loading = false);
                   if (context.mounted) {
-                    FlutterToastr.show('证书加载失败，请检查文件内容', context, backgroundColor: Colors.red);
+                    FlutterToastr.show(localizations.prefMtlsLoadFailed, context, backgroundColor: Colors.red);
                   }
                   return;
                 }
@@ -339,7 +344,7 @@ class _PreferenceState extends State<Preference> {
               },
               child: loading
                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('启用'),
+                  : Text(localizations.enable),
             ),
           ],
         ),
@@ -348,7 +353,7 @@ class _PreferenceState extends State<Preference> {
 
     if (result == true && mounted) {
       setState(() {});
-      FlutterToastr.show('mTLS 已启用', context, backgroundColor: Colors.green);
+      FlutterToastr.show(localizations.prefMtlsEnabled, context, backgroundColor: Colors.green);
       return true;
     }
     return false;
@@ -357,10 +362,11 @@ class _PreferenceState extends State<Preference> {
   @override
   /// 系统级 QUIC 回落（#489 root 能力）：iptables 丢弃全部 UDP:443 强制回落 TCP
   Future<void> _systemQuicFallback(bool enable) async {
+    final localizations = AppLocalizations.of(context)!;
     final rootOk = await McpScreen.requestRootAuthorization();
     if (!rootOk) {
       if (mounted) {
-        FlutterToastr.show('未获得 Root 授权，无法执行系统级回落', context,
+        FlutterToastr.show(localizations.prefRootDenied, context,
             backgroundColor: Colors.orange);
       }
       return;
@@ -373,8 +379,11 @@ class _PreferenceState extends State<Preference> {
     if (mounted) {
       FlutterToastr.show(
         ok
-            ? (enable ? '系统级回落已启用：UDP:443 将被丢弃（重启系统后失效）' : '系统级回落已停用')
-            : '执行失败：${r['stderr'] ?? r['error'] ?? 'iptables 不可用'}',
+            ? (enable
+                ? localizations.prefSysFallbackOn
+                : localizations.prefSysFallbackOff)
+            : localizations.prefExecFailed(
+                '${r['stderr'] ?? r['error'] ?? localizations.prefIptablesUnavailable}'),
         context,
         duration: 4,
         backgroundColor: ok ? Colors.green : Colors.red,
@@ -447,10 +456,10 @@ class _PreferenceState extends State<Preference> {
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
-              title: const Text('莫奈取色'),
-              subtitle: const Text(
-                'Android 12+ 跟随壁纸配色（主题与启动页自动取色）',
-                style: TextStyle(fontSize: 12),
+              title: Text(localizations.prefMonet),
+              subtitle: Text(
+                localizations.prefMonetDesc,
+                style: const TextStyle(fontSize: 12),
               ),
               trailing: SwitchWidget(
                 value: appConfiguration.monetEnabled,
@@ -465,10 +474,10 @@ class _PreferenceState extends State<Preference> {
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
-              title: const Text('预测性返回'),
-              subtitle: const Text(
-                'Android 14+ 返回手势预测动画（Material 3 页面转场）',
-                style: TextStyle(fontSize: 12),
+              title: Text(localizations.prefPredictiveBack),
+              subtitle: Text(
+                localizations.prefPredictiveBackDesc,
+                style: const TextStyle(fontSize: 12),
               ),
               trailing: SwitchWidget(
                 value: appConfiguration.predictiveBackEnabled,
@@ -502,7 +511,7 @@ class _PreferenceState extends State<Preference> {
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
-              title: const Text('抓包内容上限'),
+              title: Text(localizations.prefCaptureBodyLimit),
               subtitle: Text(captureBodyLimitLabel(configuration.captureBodyLimitKB),
                   style: const TextStyle(fontSize: 12)),
               trailing: const Icon(Icons.data_usage, size: 20),
@@ -511,11 +520,11 @@ class _PreferenceState extends State<Preference> {
             if (Platform.isAndroid) ...[
               Divider(height: 0, thickness: 0.3, color: dividerColor),
               ListTile(
-                title: const Text('拦截 QUIC (UDP:443)'),
+                title: Text(localizations.prefBlockQuic),
                 subtitle: Text(
                   _quicCount > 0
-                      ? '已拦截 $_quicCount 个 QUIC 包，强制回落 TCP 使流量可抓包'
-                      : '丢弃 UDP 443 强制应用回落 TCP，使 HTTPS 流量可抓包',
+                      ? localizations.prefQuicBlocked(_quicCount)
+                      : localizations.prefQuicBlockDesc,
                   style: const TextStyle(fontSize: 12),
                 ),
                 trailing: SwitchWidget(
@@ -525,7 +534,7 @@ class _PreferenceState extends State<Preference> {
                     setState(() => configuration.blockQuic = value);
                     configuration.flushConfig();
                     if (!value) {
-                      FlutterToastr.show('已关闭，重新启动抓包后生效', context);
+                      FlutterToastr.show(localizations.prefQuicBlockOff, context);
                     }
                   },
                 ),
@@ -538,7 +547,7 @@ class _PreferenceState extends State<Preference> {
                   children: [
                     Expanded(
                       child: Text(
-                        '系统级回落（需 Root + iptables）：丢弃全部 UDP:443 强制回落 TCP，重启系统后失效',
+                        localizations.prefSysFallbackDesc,
                         style: TextStyle(
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -548,22 +557,22 @@ class _PreferenceState extends State<Preference> {
                     TextButton.icon(
                       onPressed: () => _systemQuicFallback(true),
                       icon: const Icon(Icons.power_settings_new, size: 15),
-                      label: const Text('启用', style: TextStyle(fontSize: 12)),
+                      label: Text(localizations.enable, style: const TextStyle(fontSize: 12)),
                     ),
                     TextButton(
                       onPressed: () => _systemQuicFallback(false),
-                      child: const Text('停用', style: TextStyle(fontSize: 12)),
+                      child: Text(localizations.prefDisable, style: const TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
               ),
               Divider(height: 0, thickness: 0.3, color: dividerColor),
               ListTile(
-                title: const Text('双向认证 (mTLS)'),
+                title: Text(localizations.prefMtls),
                 subtitle: Text(
                   configuration.mtlsEnabled
-                      ? '已启用 · 点击配置客户端证书'
-                      : '与上游服务器 TLS 握手时提供客户端证书（PEM）',
+                      ? localizations.prefMtlsEnabledTapConfig
+                      : localizations.prefMtlsDesc,
                   style: const TextStyle(fontSize: 12),
                 ),
                 trailing: SwitchWidget(
@@ -672,12 +681,10 @@ class _PreferenceState extends State<Preference> {
               Divider(height: 0, thickness: 0.3, color: dividerColor),
               ListTile(
                 leading: const Icon(Icons.settings_ethernet, color: Colors.deepOrange),
-                title: const Text('Root 模式抓包'),
-                subtitle: const Text(
-                  '用 root 权限把系统出站流量重定向到本机代理，'
-                  '绕过“检测到 VPN 就拒绝联网”的应用；'
-                  '需设备已 root，与 VPN 抓包互斥',
-                  style: TextStyle(fontSize: 12),
+                title: Text(localizations.prefRootMode),
+                subtitle: Text(
+                  localizations.prefRootModeDesc,
+                  style: const TextStyle(fontSize: 12),
                 ),
                 trailing: const Icon(Icons.chevron_right, size: 20),
                 onTap: () => Navigator.push(
@@ -797,8 +804,8 @@ class _PreferenceState extends State<Preference> {
           section([
             ListTile(
               leading: const Icon(Icons.settings_backup_restore, color: Colors.blue),
-              title: const Text('配置管理'),
-              subtitle: const Text('导入/导出配置，备份或恢复设置'),
+              title: Text(localizations.cfgManagement),
+              subtitle: Text(localizations.cfgManagementDesc),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.push(
@@ -986,7 +993,7 @@ class _PreferenceState extends State<Preference> {
               option == 0
                   ? localizations.unlimited
                   : option >= 10000
-                  ? '${option ~/ 10000}万'
+                  ? '${option ~/ 10000}${localizations.prefWanUnit}'
                   : '$option',
             ),
           ),

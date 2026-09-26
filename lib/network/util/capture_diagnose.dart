@@ -139,10 +139,11 @@ class CaptureDiagnose {
           title: loc.diagItemSystemProxy,
           status: matched ? DiagnoseStatus.ok : DiagnoseStatus.warn,
           detail: matched
-              ? loc.diagSystemProxyMatched(proxy!.host, proxy.port)
+              ? loc.diagSystemProxyMatched(proxy!.host, proxy.port!)
               : (proxy == null
                   ? loc.diagSystemProxyOff
-                  : loc.diagSystemProxyMismatch(proxy.host, proxy.port, expected)),
+                  : loc.diagSystemProxyMismatch(
+                      proxy.host, proxy.port!, expected)),
         ));
       } catch (e) {
         items.add(DiagnoseItem(

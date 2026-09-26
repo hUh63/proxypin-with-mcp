@@ -3800,4 +3800,374 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get diagExtMemNearLimit => ' (approaching the extension memory limit; consider reducing concurrency or lowering the buffered-send cap)';
+
+
+  @override
+  String get auditPageVerifyTooltip => 'Active verification (one request per captured domain, checking security headers)';
+
+  @override
+  String get auditPageNoVerifiableHosts => 'No verifiable domains captured yet';
+
+  @override
+  String get auditPageVerifyTitle => 'Active verification';
+
+  @override
+  String get auditPageVerifyIntro => 'It sends one GET each to the domains below that **already appeared in the captured traffic**, looking only at the security response headers:';
+
+  @override
+  String auditPageVerifyScope(int hosts, int delay, int max) {
+    return '$hosts domains in total, sent one after another with a \$$delayms gap, up to $max. No port scanning, no payloads.';
+  }
+
+  @override
+  String get auditPageVerifyAuthz => 'Only do this for targets you own or are authorized to test.';
+
+  @override
+  String get auditPageVerifyStart => 'Start verification';
+
+  @override
+  String auditPageVerifyFailed(String error) {
+    return 'Verification failed: $error';
+  }
+
+  @override
+  String get auditPageVerifyResultTitle => 'Verification results';
+
+  @override
+  String get auditPageVerifyResultIntro => 'This only checked whether the security response headers below are present. Missing does not mean a vulnerability, but the server configuration is worth a look.';
+
+  @override
+  String auditPageVerifyHostFailed(String host, String error) {
+    return '$host — verification failed: $error';
+  }
+
+  @override
+  String get auditPageVerifyHeadersAllPresent => 'All of these response headers are present';
+
+  @override
+  String auditPageVerifyHeaderMissing(String name, String desc) {
+    return 'Missing $name — $desc';
+  }
+
+  @override
+  String get diagPageRerun => 'Re-run';
+
+  @override
+  String get diagPageTip => 'Checks whether the local capture path works. Read-only detection; it never changes your system settings. The same conclusion can be handed to AI via the MCP tool diagnose_capture.';
+
+  @override
+  String get diagPageNextSteps => 'Start here';
+
+  @override
+  String get diagPageCauseQuicTitle => 'Targets that use QUIC / HTTP3';
+
+  @override
+  String get diagPageCauseQuicDesc => 'Enable "Block QUIC" on the phone so the app falls back to TCP; on desktop browsers, disable QUIC in chrome://flags and retry';
+
+  @override
+  String get diagPageCauseFlutterTitle => 'Flutter apps';
+
+  @override
+  String get diagPageCauseFlutterDesc => 'Dart ships its own root CA list and does not read the system CA, so HTTPS stays unreadable even with a certificate installed. Trust it inside the app, or capture its network library calls instead';
+
+  @override
+  String get diagPageCausePinningTitle => 'Apps with certificate pinning (SSL Pinning) enabled';
+
+  @override
+  String get diagPageCausePinningDesc => 'The app has a certificate fingerprint built in, so MITM is rejected and you see waves of handshake failures (exclamation-mark packets)';
+
+  @override
+  String get diagPageCauseWinStackTitle => 'Processes on Windows with their own network stack';
+
+  @override
+  String get diagPageCauseWinStackDesc => 'The system proxy cannot reach them. Use "Preferences → Enhanced Windows Takeover"; if that still fails, put ProxyPin behind a TUN-capable tool';
+
+  @override
+  String get diagPageCauseMasTitle => 'Apps from the Mac App Store';
+
+  @override
+  String get diagPageCauseMasDesc => 'Sandboxed and strictly signed, the system proxy is ineffective and Network Extension/TUN is required (unsigned builds from this repository cannot do it)';
+
+  @override
+  String get diagPageCauseProxyIgnoredTitle => 'Proxy changed but the app ignores it';
+
+  @override
+  String get diagPageCauseProxyIgnoredDesc => 'Switch to the app\'s own proxy settings, or take over uniformly with a TUN-capable tool';
+
+  @override
+  String get diagPageCommonCausesTitle => 'Nothing captured? Match your case below';
+
+
+  @override
+  String get mcpConnDeskClientWizard => 'Client connection wizard (Claude Code / Codex / Cursor)';
+
+  @override
+  String get mcpConnDeskPortConfig => 'Port settings';
+
+  @override
+  String get mcpConnDeskServicePort => 'MCP service port';
+
+  @override
+  String get mcpConnDeskIpAddress => 'IP Address';
+
+  @override
+  String get mcpConnDeskAiConfigHint => 'Add the following configuration to your AI tool (such as Cursor, Windsurf, etc.):';
+
+  @override
+  String get mcpConnDeskConfigCopied => 'Configuration copied';
+
+  @override
+  String get mcpConnDeskCopyConfig => 'Copy config';
+
+  @override
+  String get mcpConnDeskControlModeDesc => 'ProxyPin MCP supports two connection methods:';
+
+  @override
+  String get mcpConnDeskModeMcpTitle => 'MCP (recommended)';
+
+  @override
+  String get mcpConnDeskModeMcpDesc => 'Standard MCP protocol with full features';
+
+  @override
+  String get mcpConnDeskModeSseDesc => 'Server-Sent Events, compatible with legacy clients';
+
+
+  @override
+  String get prefSplashTitle => 'Splash Screen';
+
+  @override
+  String get prefSplashDesc => 'Uses the system splash screen by default; you can switch to a custom branded page';
+
+  @override
+  String get prefSplashBackground => 'Background';
+
+  @override
+  String get prefSplashBgOff => 'Original splash (default)';
+
+  @override
+  String get prefSplashBgGradient => 'Gradient branded page';
+
+  @override
+  String get prefSplashBgCustom => 'Custom image';
+
+  @override
+  String get prefSplashBgTransparent => 'Follow theme (recommended)';
+
+  @override
+  String get prefSplashDuration => 'Display duration';
+
+  @override
+  String prefSplashDurationSeconds(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get prefSplashDurationFixed => 'The original splash screen is a system screen and does not support a custom duration';
+
+  @override
+  String get prefSplashNotSelected => 'Not selected';
+
+  @override
+  String get prefSplashSelectedTapChange => 'Set, tap to change';
+
+  @override
+  String get prefSplashSubtitleLabel => 'Custom caption';
+
+  @override
+  String get prefSplashSubtitleDefault => 'Shows version info by default';
+
+  @override
+  String get prefSplashSubtitleUnsupported => 'The original splash screen does not support a custom caption; switch to gradient/transparent to enable it';
+
+  @override
+  String get prefSplashSubtitleField => 'Caption text';
+
+  @override
+  String get prefSplashSubtitleHint => 'Leave empty to restore the default (version info)';
+
+  @override
+  String get prefMtls => 'Mutual TLS (mTLS)';
+
+  @override
+  String get prefMtlsChainLabel => 'Client certificate chain (PEM)';
+
+  @override
+  String get prefMtlsKeyLabel => 'Client private key (PEM, unencrypted)';
+
+  @override
+  String get prefMtlsHint => 'The certificate chain contains -----BEGIN CERTIFICATE-----, and the private key contains -----BEGIN PRIVATE KEY----- (encrypted keys are not supported). Applies to newly established HTTPS connections after configuration.';
+
+  @override
+  String get prefMtlsSelectBoth => 'Select the certificate chain and private key files first';
+
+  @override
+  String get prefMtlsChainInvalid => 'Incorrect certificate chain format (PEM required)';
+
+  @override
+  String get prefMtlsKeyInvalid => 'Incorrect private key format (unencrypted PEM required)';
+
+  @override
+  String get prefMtlsLoadFailed => 'Failed to load the certificate; check the file contents';
+
+  @override
+  String get prefMtlsEnabled => 'mTLS enabled';
+
+  @override
+  String get prefRootDenied => 'Root permission not granted; system-level fallback cannot run';
+
+  @override
+  String get prefSysFallbackOn => 'System-level fallback enabled: UDP:443 will be dropped (stops working after a system reboot)';
+
+  @override
+  String get prefSysFallbackOff => 'System-level fallback disabled';
+
+  @override
+  String prefExecFailed(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String get prefIptablesUnavailable => 'iptables unavailable';
+
+  @override
+  String get prefMonet => 'Monet theming';
+
+  @override
+  String get prefMonetDesc => 'Android 12+: colors follow the wallpaper (theme and splash screen pick colors automatically)';
+
+  @override
+  String get prefPredictiveBack => 'Predictive back';
+
+  @override
+  String get prefPredictiveBackDesc => 'Android 14+ predictive back gesture animation (Material 3 page transitions)';
+
+  @override
+  String get prefCaptureBodyLimit => 'Capture body limit';
+
+  @override
+  String get prefBlockQuic => 'Intercept QUIC (UDP:443)';
+
+  @override
+  String prefQuicBlocked(int count) {
+    return 'Intercepted $count QUIC packets; forcing a fallback to TCP so traffic can be captured';
+  }
+
+  @override
+  String get prefQuicBlockDesc => 'Drop UDP 443 to force apps back to TCP so HTTPS traffic can be captured';
+
+  @override
+  String get prefQuicBlockOff => 'Turned off; takes effect after restarting capture';
+
+  @override
+  String get prefSysFallbackDesc => 'System-level fallback (requires Root + iptables): drop all UDP:443 to force a fallback to TCP; stops working after a system reboot';
+
+  @override
+  String get prefDisable => 'Turn off';
+
+  @override
+  String get prefMtlsEnabledTapConfig => 'Enabled · tap to configure the client certificate';
+
+  @override
+  String get prefMtlsDesc => 'Provide a client certificate (PEM) during the TLS handshake with the upstream server';
+
+  @override
+  String get prefRootMode => 'Root-mode capture';
+
+  @override
+  String get prefRootModeDesc => 'Redirect the outbound traffic of the system to the local proxy with root privileges, bypassing apps that refuse to connect when a VPN is detected; the device must be rooted and this is mutually exclusive with VPN capture';
+
+  @override
+  String get prefWanUnit => '0K';
+
+  @override
+  String get cfgManagement => 'Config Management';
+
+  @override
+  String get cfgManagementDesc => 'Import/export config, back up or restore settings';
+
+  @override
+  String get cfgExport => 'Export Config';
+
+  @override
+  String get cfgExportDesc => 'Export the current config as a JSON file for backup or sharing';
+
+  @override
+  String get cfgImport => 'Import Config';
+
+  @override
+  String get cfgImportDesc => 'Import config from a JSON file; the current config will be overwritten';
+
+  @override
+  String get cfgCopyToClipboard => 'Copy config to clipboard';
+
+  @override
+  String get cfgCopyToClipboardDesc => 'Generate config text; paste it on another device to import (no file transfer needed)';
+
+  @override
+  String get cfgImportFromClipboard => 'Import config from clipboard';
+
+  @override
+  String get cfgImportFromClipboardDesc => 'Read the config text from the clipboard; the current config will be overwritten';
+
+  @override
+  String get cfgBackupDesc => 'View, restore or delete automatically backed-up config files';
+
+  @override
+  String get cfgNotice => 'Notes';
+
+  @override
+  String get cfgNoticeBody => '• Exporting includes all proxy settings, filter rules, MCP config and more\n• Importing completely overwrites the current config, so proceed with care\n• Exporting the config regularly as a backup is recommended\n• The config file is in JSON format and can be viewed in a text editor';
+
+  @override
+  String get cfgExporting => 'Exporting config';
+
+  @override
+  String get cfgExportPreparing => 'Please wait, preparing the export file...';
+
+  @override
+  String get cfgPreparing => 'Preparing...';
+
+  @override
+  String get cfgSelectSaveLocation => 'Choose save location';
+
+  @override
+  String cfgExportedTo(String path) {
+    return 'Config exported to: $path';
+  }
+
+  @override
+  String cfgExportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get cfgConfirmImport => 'Confirm import';
+
+  @override
+  String get cfgImportConfirmBody => 'Importing the config will completely overwrite the current config. Continue?\n\nExporting the current config as a backup first is recommended.';
+
+  @override
+  String get cfgImportSuccessRestart => 'Config imported successfully; some settings may need an app restart to take effect';
+
+  @override
+  String cfgImportFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get cfgCopied => 'Config copied to the clipboard; paste it on another device to import';
+
+  @override
+  String cfgCopyFailed(String error) {
+    return 'Copy failed: $error';
+  }
+
+  @override
+  String get cfgImportConfirmBodyShort => 'Importing will overwrite the current config. Continue?';
+
+  @override
+  String get cfgClipboardEmpty => 'There is no text in the clipboard';
+
+  @override
+  String get cfgClipboardNotConfig => 'The clipboard content is not config JSON; copy the config text first';
 }
