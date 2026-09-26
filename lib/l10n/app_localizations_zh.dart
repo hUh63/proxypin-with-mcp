@@ -1475,7 +1475,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get wafNeedUrl => '填一个目标 URL';
 
   @override
-  String get wafNeedPlaceholder => '至少要在一处放 {{PAYLOAD}} 标记注入位置';
+  String wafNeedPlaceholder(String mark) {
+    return '至少要在一处放 $mark 标记注入位置';
+  }
 
   @override
   String get wafNoVariant => '当前选择下没有会产生变化的载荷，换个载荷或技术试试';
@@ -1504,7 +1506,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get wafStep3Title => '③ 主动探测（会真的发请求）';
 
   @override
-  String get wafStep3Hint => '在你想注入的位置写 {{PAYLOAD}}（URL / 头 / 体都行）。先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。';
+  String wafStep3Hint(String mark) {
+    return '在你想注入的位置写 $mark（URL / 头 / 体都行）。先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。';
+  }
 
   @override
   String wafWillProbe(String names) {
@@ -1590,6 +1594,74 @@ class AppLocalizationsZh extends AppLocalizations {
   String guideLoadMore(int visible, int total) {
     return '加载更多（已显示 $visible / $total 段）';
   }
+
+
+  @override
+  String wafBatchDone(int remaining) {
+    return '本批完成，还剩 $remaining 条未发';
+  }
+
+  @override
+  String wafProbeError(String error) {
+    return '探测出错：$error';
+  }
+
+  @override
+  String get wafCompare => '比对';
+
+  @override
+  String get wafNotIdentified => '未识别';
+
+  @override
+  String get wafGenerate => '生成';
+
+  @override
+  String get wafClearSelection => '清空选择';
+
+  @override
+  String get wafTargetUrl => '目标 URL';
+
+  @override
+  String get wafBodyOptional => '请求体（可选）';
+
+  @override
+  String get wafStartProbe => '开始探测';
+
+  @override
+  String get wafClearResults => '清空结果';
+
+  @override
+  String get wafAdvanced => '高级设置';
+
+  @override
+  String wafAdvancedSummary(int delay, int timeout, int max) {
+    return '间隔 $delayms · 超时 $timeouts · 单次上限 $max 条';
+  }
+
+  @override
+  String get wafInterval => '请求间隔';
+
+  @override
+  String get wafTimeout => '单条超时';
+
+  @override
+  String get wafMaxProbes => '单次上限';
+
+  @override
+  String wafNRecords(int count) {
+    return '$count 条';
+  }
+
+  @override
+  String get wafAll => '全部';
+
+  @override
+  String wafResultMeta(String status, int bytes, int ms) {
+    return 'HTTP $status · $bytes 字节 · $msms';
+  }
+
+  @override
+  String get wafCopyPayload => '复制载荷';
 
 }
 

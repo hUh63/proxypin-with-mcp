@@ -1511,7 +1511,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get wafNeedUrl => 'Enter a target URL';
 
   @override
-  String get wafNeedPlaceholder => 'Put a {{PAYLOAD}} marker somewhere to inject';
+  String wafNeedPlaceholder(String mark) {
+    return 'Put a $mark marker somewhere to inject';
+  }
 
   @override
   String get wafNoVariant => 'Nothing under the current selection changes the request. Try another payload or technique.';
@@ -1540,7 +1542,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get wafStep3Title => '③ Active probing (really sends requests)';
 
   @override
-  String get wafStep3Hint => 'Put {{PAYLOAD}} where you want to inject (URL / header / body). A baseline with the original payload goes first, then each checked technique, comparing responses to see which one wasn\'t blocked.';
+  String wafStep3Hint(String mark) {
+    return 'Put $mark where you want to inject (URL / header / body). A baseline with the original payload goes first, then each checked technique, comparing responses to see which one wasn\'t blocked.';
+  }
 
   @override
   String wafWillProbe(String names) {
@@ -1626,4 +1630,72 @@ class AppLocalizationsEs extends AppLocalizations {
   String guideLoadMore(int visible, int total) {
     return 'Load more ($visible / $total shown)';
   }
+
+
+  @override
+  String wafBatchDone(int remaining) {
+    return 'Batch done, $remaining left to send';
+  }
+
+  @override
+  String wafProbeError(String error) {
+    return 'Probe error: $error';
+  }
+
+  @override
+  String get wafCompare => 'Match';
+
+  @override
+  String get wafNotIdentified => 'Not identified';
+
+  @override
+  String get wafGenerate => 'Generate';
+
+  @override
+  String get wafClearSelection => 'Clear selection';
+
+  @override
+  String get wafTargetUrl => 'Target URL';
+
+  @override
+  String get wafBodyOptional => 'Request body (optional)';
+
+  @override
+  String get wafStartProbe => 'Start probing';
+
+  @override
+  String get wafClearResults => 'Clear results';
+
+  @override
+  String get wafAdvanced => 'Advanced';
+
+  @override
+  String wafAdvancedSummary(int delay, int timeout, int max) {
+    return 'Delay $delayms · Timeout $timeouts · Max $max per batch';
+  }
+
+  @override
+  String get wafInterval => 'Request delay';
+
+  @override
+  String get wafTimeout => 'Per-request timeout';
+
+  @override
+  String get wafMaxProbes => 'Max per batch';
+
+  @override
+  String wafNRecords(int count) {
+    return '$count';
+  }
+
+  @override
+  String get wafAll => 'All';
+
+  @override
+  String wafResultMeta(String status, int bytes, int ms) {
+    return 'HTTP $status · $bytes bytes · $msms';
+  }
+
+  @override
+  String get wafCopyPayload => 'Copy payload';
 }

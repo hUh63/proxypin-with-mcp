@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.24.35 (2026-09-26)
+
+### 修复 v1.24.34 的 CI 失败 + 补齐 waf_page 漏网文案
+
+**修复**：v1.24.34 的 `flutter pub get` 报 `ICU Syntax Error`，构建全挂。原因是我把
+`{{PAYLOAD}}` 原样写进了 arb —— arb 的值走 ICU MessageFormat，`{` 是占位符语法，
+`{{` 直接解析失败（报 `Expected "identifier" but found "{"`）。
+
+- `wafNeedPlaceholder` / `wafStep3Hint` 改成**参数化**：arb 里写 `{mark}`，代码传 `'{{PAYLOAD}}'`；
+- `wafTargetUrl` 干脆去掉花括号字样（占位符说明在 `wafStep3Hint` 与输入框 hint 里已有）。
+
+**顺带补上 v1.24.34 漏掉的 20 处**：上一版我靠 `grep` 找中文字面量，结果**漏报**了
+`waf_page.dart` 里 20 处（比对/生成/停止/高级设置/请求间隔/清空结果/复制载荷…）。
+这次改用逐字符扫描（`_zhscan.py`）重新过了一遍，`waf_page.dart` 现在代码内中文 **0 处**。
+
+> 工具链也补齐了：`_arbcheck.py`（查 arb 裸花括号 / 未声明占位符）、
+> `_zhscan.py`（精确列中文字面量，替代不可靠的 grep）。
+
+
 ## v1.24.34 (2026-09-26)
 
 ### 国际化（l10n）第二批：WAF 页 + 使用文档中心

@@ -156,7 +156,7 @@ class _WafPageState extends State<WafPage> {
     if (!WafProbe.hasPlaceholder(url) &&
         !WafProbe.hasPlaceholder(headerText) &&
         !WafProbe.hasPlaceholder(bodyText)) {
-      _toast(AppLocalizations.of(context)!.wafNeedPlaceholder);
+      _toast(AppLocalizations.of(context)!.wafNeedPlaceholder('{{PAYLOAD}}'));
       return;
     }
     final payload = _payload.text;
@@ -217,12 +217,13 @@ class _WafPageState extends State<WafPage> {
         _toast(AppLocalizations.of(context)!
             .wafDoneAll(session.results.length, bypass));
       } else {
-        _toast('本批完成，还剩 ${session.remaining} 条未发');
+        _toast(AppLocalizations.of(context)!
+            .wafBatchDone(session.remaining));
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _probing = false);
-      _toast('探测出错：$e');
+      _toast(AppLocalizations.of(context)!.wafProbeError('$e'));
     }
   }
 
@@ -305,10 +306,13 @@ class _WafPageState extends State<WafPage> {
             ),
             const SizedBox(height: 8),
             Row(children: [
-              FilledButton.tonal(onPressed: _detect, child: const Text('比对')),
+              FilledButton.tonal(
+                  onPressed: _detect,
+                  child: Text(AppLocalizations.of(context)!.wafCompare)),
               const SizedBox(width: 10),
               if (_fingerprints.isEmpty)
-                const Text('未识别', style: TextStyle(fontSize: 12, color: Colors.grey))
+                Text(AppLocalizations.of(context)!.wafNotIdentified,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey))
               else
                 Expanded(
                   child: Wrap(
@@ -377,11 +381,13 @@ class _WafPageState extends State<WafPage> {
             ),
             const SizedBox(height: 10),
             Row(children: [
-              FilledButton(onPressed: _generate, child: const Text('生成')),
+              FilledButton(
+                  onPressed: _generate,
+                  child: Text(AppLocalizations.of(context)!.wafGenerate)),
               const SizedBox(width: 10),
               TextButton(
                 onPressed: () => setState(() => _selected.clear()),
-                child: const Text('清空选择'),
+                child: Text(AppLocalizations.of(context)!.wafClearSelection),
               ),
             ]),
           ],
@@ -402,7 +408,7 @@ class _WafPageState extends State<WafPage> {
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
-              AppLocalizations.of(context)!.wafStep3Hint,
+              AppLocalizations.of(context)!.wafStep3Hint('{{PAYLOAD}}'),
               style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
             const SizedBox(height: 4),
@@ -430,7 +436,7 @@ class _WafPageState extends State<WafPage> {
               controller: _url,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               decoration: const InputDecoration(
-                labelText: '目标 URL（含 {{PAYLOAD}}）',
+                labelText: AppLocalizations.of(context)!.wafTargetUrl,
                 isDense: true,
                 border: OutlineInputBorder(),
               ),
@@ -453,7 +459,7 @@ class _WafPageState extends State<WafPage> {
               maxLines: 2,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               decoration: const InputDecoration(
-                labelText: '请求体（可选）',
+                labelText: AppLocalizations.of(context)!.wafBodyOptional,
                 hintText: '{"q":"{{PAYLOAD}}"}',
                 isDense: true,
                 border: OutlineInputBorder(),
@@ -481,7 +487,7 @@ class _WafPageState extends State<WafPage> {
                         : Icons.skip_next,
                     size: 16),
                 label: Text((_session == null || _session!.finished)
-                    ? '开始探测'
+                    ? AppLocalizations.of(context)!.wafStartProbe
                     : AppLocalizations.of(context)!
                         .wafNextBatch(_session!.remaining)),
               ),
@@ -497,7 +503,7 @@ class _WafPageState extends State<WafPage> {
                     style: const TextStyle(fontSize: 11)),
                 TextButton(
                   onPressed: () => setState(() => _cancel = true),
-                  child: const Text('停止'),
+                  child: Text(AppLocalizations.of(context)!.stop),
                 ),
               ] else if (_probeResults.isNotEmpty)
                 TextButton(
@@ -507,7 +513,7 @@ class _WafPageState extends State<WafPage> {
                     _probeDone = 0;
                     _probeTotal = 0;
                   }),
-                  child: const Text('清空结果'),
+                  child: Text(AppLocalizations.of(context)!.wafClearResults),
                 ),
             ]),
           ],
@@ -543,16 +549,22 @@ class _WafPageState extends State<WafPage> {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 12),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-        title: const Text('高级设置',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-        subtitle: Text('间隔 ${_delayMs}ms · 超时 ${_timeoutSec}s · 单次上限 $_maxProbes 条',
+        title: Text(AppLocalizations.of(context)!.wafAdvanced,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        subtitle: Text(
+            AppLocalizations.of(context)!
+                .wafAdvancedSummary(_delayMs, _timeoutSec, _maxProbes),
             style: const TextStyle(fontSize: 11, color: Colors.grey)),
         children: [
-          _slider('请求间隔', _delayMs, WafProbe.minDelayMs, 5000, '${_delayMs}ms',
+          _slider(AppLocalizations.of(context)!.wafInterval, _delayMs,
+              WafProbe.minDelayMs, 5000, '${_delayMs}ms',
               (v) => setState(() => _delayMs = v)),
-          _slider('单条超时', _timeoutSec, 3, 60, '${_timeoutSec}s',
+          _slider(AppLocalizations.of(context)!.wafTimeout, _timeoutSec, 3, 60,
+              '${_timeoutSec}s',
               (v) => setState(() => _timeoutSec = v)),
-          _slider('单次上限', _maxProbes, 10, WafProbe.hardMaxProbes, '$_maxProbes 条',
+          _slider(AppLocalizations.of(context)!.wafMaxProbes, _maxProbes, 10,
+              WafProbe.hardMaxProbes,
+              AppLocalizations.of(context)!.wafNRecords(_maxProbes),
               (v) => setState(() => _maxProbes = v)),
           const Align(
             alignment: Alignment.centerLeft,
@@ -572,7 +584,7 @@ class _WafPageState extends State<WafPage> {
 
   /// ①② 选定的技术名 —— ③ 实际会探测的就是这个集合
   String _selectedNames() {
-    if (_selected.isEmpty) return '全部';
+    if (_selected.isEmpty) return AppLocalizations.of(context)!.wafAll;
     final names = <String>[];
     for (final t in WafBypass.techniques) {
       if (_selected.contains(t.id)) names.add(t.name);
@@ -623,7 +635,8 @@ class _WafPageState extends State<WafPage> {
         subtitle: Text(
           r.error != null
               ? r.error!
-              : 'HTTP ${r.statusCode ?? '-'} · ${r.bodyLength} 字节 · ${r.durationMs}ms',
+              : AppLocalizations.of(context)!.wafResultMeta(
+                  '${r.statusCode ?? '-'}', r.bodyLength, r.durationMs),
           style: const TextStyle(fontSize: 11, color: Colors.grey),
         ),
         children: [
@@ -650,7 +663,7 @@ class _WafPageState extends State<WafPage> {
                 Clipboard.setData(ClipboardData(text: r.payload));
                 _toast(AppLocalizations.of(context)!.wafPayloadCopied);
               },
-              child: const Text('复制载荷'),
+              child: Text(AppLocalizations.of(context)!.wafCopyPayload),
             ),
           ),
         ],

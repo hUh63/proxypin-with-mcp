@@ -2978,7 +2978,7 @@ AI\\'s reason: $reason'**
   ///
   /// In en, this message translates to:
   /// **'Put a {{PAYLOAD}} marker somewhere to inject'**
-  String get wafNeedPlaceholder;
+  String wafNeedPlaceholder(String mark);
 
   /// No description provided for @wafNoVariant.
   ///
@@ -3033,7 +3033,7 @@ Use only on targets you own or are authorized to test — attempting to bypass s
   ///
   /// In en, this message translates to:
   /// **'Put {{PAYLOAD}} where you want to inject (URL / header / body). A baseline with the original payload goes first, then each checked technique, comparing responses to see which one wasn\\'t blocked.'**
-  String get wafStep3Hint;
+  String wafStep3Hint(String mark);
 
   /// No description provided for @wafWillProbe.
   ///
@@ -3176,6 +3176,121 @@ Code blocks have "Demo" and "Copy" buttons at the bottom right.'**
   /// In en, this message translates to:
   /// **'Load more ($visible / $total shown)'**
   String guideLoadMore(int visible, int total);
+
+
+  /// No description provided for @wafBatchDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch done, $remaining left to send'**
+  String wafBatchDone(int remaining);
+
+  /// No description provided for @wafProbeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Probe error: $error'**
+  String wafProbeError(String error);
+
+  /// No description provided for @wafCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Match'**
+  String get wafCompare;
+
+  /// No description provided for @wafNotIdentified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not identified'**
+  String get wafNotIdentified;
+
+  /// No description provided for @wafGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get wafGenerate;
+
+  /// No description provided for @wafClearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get wafClearSelection;
+
+  /// No description provided for @wafTargetUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Target URL (with {{PAYLOAD}})'**
+  String get wafTargetUrl;
+
+  /// No description provided for @wafBodyOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Request body (optional)'**
+  String get wafBodyOptional;
+
+  /// No description provided for @wafStartProbe.
+  ///
+  /// In en, this message translates to:
+  /// **'Start probing'**
+  String get wafStartProbe;
+
+  /// No description provided for @wafClearResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear results'**
+  String get wafClearResults;
+
+  /// No description provided for @wafAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get wafAdvanced;
+
+  /// No description provided for @wafAdvancedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay $delayms · Timeout $timeouts · Max $max per batch'**
+  String wafAdvancedSummary(int delay, int timeout, int max);
+
+  /// No description provided for @wafInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Request delay'**
+  String get wafInterval;
+
+  /// No description provided for @wafTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-request timeout'**
+  String get wafTimeout;
+
+  /// No description provided for @wafMaxProbes.
+  ///
+  /// In en, this message translates to:
+  /// **'Max per batch'**
+  String get wafMaxProbes;
+
+  /// No description provided for @wafNRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'$count'**
+  String wafNRecords(int count);
+
+  /// No description provided for @wafAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get wafAll;
+
+  /// No description provided for @wafResultMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP $status · $bytes bytes · $msms'**
+  String wafResultMeta(String status, int bytes, int ms);
+
+  /// No description provided for @wafCopyPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy payload'**
+  String get wafCopyPayload;
 
 }
 
