@@ -1700,6 +1700,186 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get wafCopyPayload => 'Copy payload';
 
+
+  @override
+  String get aiNewChat => 'New chat';
+
+  @override
+  String get aiClearChatTitle => 'Clear current chat';
+
+  @override
+  String get aiClearChatConfirm => 'This clears all messages in the current chat and cannot be undone.';
+
+  @override
+  String get aiConversations => 'Conversations';
+
+  @override
+  String get aiClearCurrent => 'Clear current';
+
+  @override
+  String get aiNewConversation => 'New chat';
+
+  @override
+  String aiNMessages(int count) {
+    return '$count messages';
+  }
+
+  @override
+  String get aiCloseAndClear => 'Close and clear this chat';
+
+  @override
+  String get aiDeleteChatTitle => 'Delete chat';
+
+  @override
+  String get aiDeleteChatConfirm => 'Messages in this chat can\'t be recovered after deletion.';
+
+  @override
+  String get aiPickAttachment => 'Choose what to attach';
+
+  @override
+  String get aiAttachRequests => 'Captured requests';
+
+  @override
+  String get aiAttachRequestsSub => 'Multi-select from the latest 30';
+
+  @override
+  String get aiAttachEndpoints => 'API endpoint list';
+
+  @override
+  String get aiAttachEndpointsSub => 'Auto-extract all endpoints with stats';
+
+  @override
+  String get aiAttachText => 'Custom text';
+
+  @override
+  String get aiAttachTextSub => 'Paste anything as context';
+
+  @override
+  String get aiNoRequests => 'No captured requests';
+
+  @override
+  String get aiPickRequests => 'Choose captured requests (multi-select)';
+
+  @override
+  String aiStatus(int code) {
+    return 'Status $code';
+  }
+
+  @override
+  String get aiNoResponse => 'No response';
+
+  @override
+  String get aiAttachTextHint => 'Paste anything as context for the AI';
+
+  @override
+  String aiAnalyzeFailed(String error) {
+    return 'Analysis failed: $error';
+  }
+
+  @override
+  String get aiTitle => 'AI Analysis';
+
+  @override
+  String get aiAgentOn => 'Agent mode on: AI can call ProxyPin features automatically';
+
+  @override
+  String get aiAgentOff => 'Agent mode off: only manual messages';
+
+  @override
+  String get aiAttachTooltip => 'Attach info (multi-select)';
+
+  @override
+  String get aiConvTooltip => 'Conversations (new / switch / delete / clear)';
+
+  @override
+  String get aiConfigTooltip => 'AI settings';
+
+  @override
+  String get aiThinking => 'AI is thinking…';
+
+  @override
+  String get aiInputAgent => 'Ask (Agent mode: AI can fetch data)';
+
+  @override
+  String get aiInputPlain => 'Type a question';
+
+  @override
+  String get aiEmptyTitle => 'Chat with AI to analyze captured traffic';
+
+  @override
+  String get aiEmptyHint1 => 'Tap 📎 at top right to attach requests / endpoint list / text';
+
+  @override
+  String get aiEmptyHint2 => 'Turn on 🤖 Agent mode to let AI call ProxyPin features';
+
+  @override
+  String aiToolCalled(String name) {
+    return 'Called tool $name';
+  }
+
+  @override
+  String get aiCopied => 'Copied';
+
+  @override
+  String get aiConfigTitle => 'AI Analysis Settings';
+
+  @override
+  String get aiEnable => 'Enable AI Analysis';
+
+  @override
+  String get aiEnableSub => 'OpenAI-compatible API; data is sent to the service you configure';
+
+  @override
+  String get aiProvider => 'Provider';
+
+  @override
+  String get aiCustomService => 'Custom service…';
+
+  @override
+  String get aiBaseUrl => 'Base URL';
+
+  @override
+  String get aiBaseUrlHelper => 'Custom provider — enter an OpenAI-compatible URL';
+
+  @override
+  String get aiModelLabel => 'Model';
+
+  @override
+  String get aiAgentSection => 'Agent mode';
+
+  @override
+  String get aiAgentHint2 => 'Once on, AI can call ProxyPin tools to fetch data';
+
+  @override
+  String aiMaxRounds(int count) {
+    return 'Max tool rounds: $count';
+  }
+
+  @override
+  String get aiAgentExtra => 'Agent extra instructions';
+
+  @override
+  String get aiAgentExtraHint => 'e.g. check security risks first; POST only…';
+
+  @override
+  String get aiImportOk => 'Config imported';
+
+  @override
+  String aiImportFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get aiImportFromFile => 'Import config from file (JSON)';
+
+  @override
+  String aiJsonFormatHint(String example) {
+    return 'JSON format: $example';
+  }
+
+  @override
+  String get aiConfigSaved => 'AI settings saved';
+
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).

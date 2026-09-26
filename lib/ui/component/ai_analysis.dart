@@ -13,6 +13,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/ai_analyzer.dart';
 import 'package:proxypin/network/http/http.dart';
@@ -85,7 +86,7 @@ class _ChatMessage {
 class _AiConversation {
   String title;
   final List<_ChatMessage> messages;
-  _AiConversation({this.title = '新对话', List<_ChatMessage>? messages})
+  _AiConversation({this.title = '', List<_ChatMessage>? messages})
       : messages = messages ?? [];
 }
 
@@ -135,11 +136,17 @@ class _AiChatPageState extends State<AiChatPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('清除当前对话', style: TextStyle(fontSize: 16)),
-        content: const Text('将清空当前对话的全部消息，且不可恢复。', style: TextStyle(fontSize: 13)),
+        title: Text(AppLocalizations.of(ctx)!.aiClearChatTitle,
+            style: const TextStyle(fontSize: 16)),
+        content: Text(AppLocalizations.of(ctx)!.aiClearChatConfirm,
+            style: const TextStyle(fontSize: 13)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('清除')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(AppLocalizations.of(ctx)!.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(AppLocalizations.of(ctx)!.clear)),
         ],
       ),
     );
@@ -147,7 +154,7 @@ class _AiChatPageState extends State<AiChatPage> {
     setState(() {
       _conversations[_activeConversation]
         ..messages.clear()
-        ..title = '新对话';
+        ..title = '';
     });
   }
 
@@ -163,7 +170,9 @@ class _AiChatPageState extends State<AiChatPage> {
   /// 删除会话（至少保留一个）
   void _deleteConversation(int index) {
     if (_conversations.length <= 1) {
-      _conversations[0]..messages.clear()..title = '新对话';
+      _conversations[0]
+        ..messages.clear()
+        ..title = '';
       _activeConversation = 0;
     } else {
       _conversations.removeAt(index);
@@ -188,7 +197,7 @@ class _AiChatPageState extends State<AiChatPage> {
                 padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
                 child: Row(children: [
                   const Expanded(
-                      child: Text('对话列表',
+                      child: Text(AppLocalizations.of(context)!.aiConversations,
                           style: TextStyle(fontWeight: FontWeight.w600))),
                   TextButton.icon(
                     onPressed: () {
@@ -196,14 +205,16 @@ class _AiChatPageState extends State<AiChatPage> {
                       _clearCurrentConversation();
                     },
                     icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                    label: const Text('清除当前', style: TextStyle(fontSize: 13)),
+                    label: Text(AppLocalizations.of(context)!.aiClearCurrent,
+                        style: const TextStyle(fontSize: 13)),
                   ),
                   TextButton.icon(
                     onPressed: () {
                       _newConversation();
                     },
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('新建对话', style: TextStyle(fontSize: 13)),
+                    label: Text(AppLocalizations.of(context)!.aiNewConversation,
+                        style: const TextStyle(fontSize: 13)),
                   ),
                 ]),
               ),
@@ -223,32 +234,41 @@ class _AiChatPageState extends State<AiChatPage> {
                         color: active ? Theme.of(context).colorScheme.primary : null,
                       ),
                       title: Text(
-                        conv.title,
+                        conv.title.isEmpty
+                            ? AppLocalizations.of(context)!.aiNewChat
+                            : conv.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: active ? FontWeight.w600 : null),
                       ),
-                      subtitle: Text('${conv.messages.length} 条消息',
+                      subtitle: Text(
+                          AppLocalizations.of(context)!
+                              .aiNMessages(conv.messages.length),
                           style: const TextStyle(fontSize: 11)),
                       trailing: IconButton(
                         icon: const Icon(Icons.close, size: 18),
-                        tooltip: '关闭并清除该对话',
+                        tooltip: AppLocalizations.of(context)!.aiCloseAndClear,
                         onPressed: () async {
                           final ok = await showDialog<bool>(
                             context: sheetContext,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('删除对话', style: TextStyle(fontSize: 16)),
-                              content: const Text('删除后该对话的消息无法恢复。',
+                              title: Text(
+                                  AppLocalizations.of(context)!.aiDeleteChatTitle,
+                                  style: const TextStyle(fontSize: 16)),
+                              content: Text(
+                                  AppLocalizations.of(context)!.aiDeleteChatConfirm,
                                   style: TextStyle(fontSize: 13)),
                               actions: [
                                 TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('取消')),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.cancel)),
                                 FilledButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('删除')),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.delete)),
                               ],
                             ),
                           );
@@ -281,23 +301,27 @@ class _AiChatPageState extends State<AiChatPage> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Padding(
               padding: EdgeInsets.all(12),
-              child: Text('选择要附加的信息', style: TextStyle(fontWeight: FontWeight.w600))),
+              child: Text(AppLocalizations.of(context)!.aiPickAttachment,
+                  style: const TextStyle(fontWeight: FontWeight.w600))),
           ListTile(
             leading: const Icon(Icons.receipt_long_outlined),
-            title: const Text('抓包请求'),
-            subtitle: const Text('从最近 30 条中多选', style: TextStyle(fontSize: 12)),
+            title: Text(AppLocalizations.of(context)!.aiAttachRequests),
+            subtitle: Text(AppLocalizations.of(context)!.aiAttachRequestsSub,
+                style: const TextStyle(fontSize: 12)),
             onTap: () => Navigator.pop(context, 'requests'),
           ),
           ListTile(
             leading: const Icon(Icons.api),
-            title: const Text('API 端点清单'),
-            subtitle: const Text('自动提取全部端点与统计', style: TextStyle(fontSize: 12)),
+            title: Text(AppLocalizations.of(context)!.aiAttachEndpoints),
+            subtitle: Text(AppLocalizations.of(context)!.aiAttachEndpointsSub,
+                style: const TextStyle(fontSize: 12)),
             onTap: () => Navigator.pop(context, 'endpoints'),
           ),
           ListTile(
             leading: const Icon(Icons.notes),
-            title: const Text('自定义文本'),
-            subtitle: const Text('粘贴任意内容作为上下文', style: TextStyle(fontSize: 12)),
+            title: Text(AppLocalizations.of(context)!.aiAttachText),
+            subtitle: Text(AppLocalizations.of(context)!.aiAttachTextSub,
+                style: const TextStyle(fontSize: 12)),
             onTap: () => Navigator.pop(context, 'text'),
           ),
         ]),
@@ -308,7 +332,9 @@ class _AiChatPageState extends State<AiChatPage> {
     } else if (choice == 'endpoints') {
       final source = McpBridge().getRecentRequests(limit: 200);
       if (source.isEmpty) {
-        if (mounted) FlutterToastr.show('暂无抓包请求', context);
+        if (mounted) {
+          FlutterToastr.show(AppLocalizations.of(context)!.aiNoRequests, context);
+        }
         return;
       }
       setState(() => _attachments.add(_Attachment.endpoints(source)));
@@ -321,7 +347,7 @@ class _AiChatPageState extends State<AiChatPage> {
   Future<void> _pickRequests() async {
     final requests = McpBridge().getRecentRequests(limit: 30);
     if (requests.isEmpty) {
-      FlutterToastr.show('暂无抓包请求', context);
+      FlutterToastr.show(AppLocalizations.of(context)!.aiNoRequests, context);
       return;
     }
     final selected = <HttpRequest>{};
@@ -336,11 +362,12 @@ class _AiChatPageState extends State<AiChatPage> {
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [
-                  const Text('选择抓包请求（可多选）', style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text(AppLocalizations.of(context)!.aiPickRequests,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   const Spacer(),
                   TextButton(
                       onPressed: () => Navigator.pop(context, selected.isNotEmpty),
-                      child: const Text('确定')),
+                      child: Text(AppLocalizations.of(context)!.confirm)),
                 ]),
               ),
               const Divider(height: 1),
@@ -360,9 +387,11 @@ class _AiChatPageState extends State<AiChatPage> {
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 13)),
                       subtitle: req.response != null
-                          ? Text('状态码 ${req.response!.status.code}',
+                          ? Text(AppLocalizations.of(context)!
+                              .aiStatus(req.response!.status.code),
                               style: const TextStyle(fontSize: 11))
-                          : const Text('未响应', style: TextStyle(fontSize: 11)),
+                          : Text(AppLocalizations.of(context)!.aiNoResponse,
+                              style: const TextStyle(fontSize: 11)),
                       onChanged: (v) => setSheet(() {
                         v == true ? selected.add(req) : selected.remove(req);
                       }),
@@ -386,26 +415,30 @@ class _AiChatPageState extends State<AiChatPage> {
     final text = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('自定义文本', style: TextStyle(fontSize: 16)),
+        title: Text(AppLocalizations.of(context)!.aiAttachText,
+            style: const TextStyle(fontSize: 16)),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLines: 6,
           decoration: const InputDecoration(
-            hintText: '粘贴任意内容作为 AI 的上下文',
+            hintText: AppLocalizations.of(context)!.aiAttachTextHint,
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context)!.cancel)),
           ElevatedButton(
               onPressed: () => Navigator.pop(context, controller.text.trim()),
-              child: const Text('确定')),
+              child: Text(AppLocalizations.of(context)!.confirm)),
         ],
       ),
     );
     if (text != null && text.isNotEmpty) {
-      setState(() => _attachments.add(_Attachment.text('文本', text)));
+      setState(() =>
+          _attachments.add(_Attachment.text(AppLocalizations.of(context)!.text, text)));
     }
   }
 
@@ -424,7 +457,7 @@ class _AiChatPageState extends State<AiChatPage> {
     final conv = _conversations[_activeConversation];
     setState(() {
       // 首条消息自动命名会话
-      if (conv.messages.isEmpty && conv.title == '新对话') {
+      if (conv.messages.isEmpty && conv.title.isEmpty) {
         conv.title = text.length > 14 ? '${text.substring(0, 14)}…' : text;
       }
       conv.messages.add(_ChatMessage(role: 'user', content: text, attachments: attachments));
@@ -474,7 +507,10 @@ class _AiChatPageState extends State<AiChatPage> {
     } catch (e) {
       setState(() {
         if (mounted) {
-          conv.messages.add(_ChatMessage(role: 'assistant', content: '分析失败：$e', isError: true));
+          conv.messages.add(_ChatMessage(
+              role: 'assistant',
+              content: AppLocalizations.of(context)!.aiAnalyzeFailed('$e'),
+              isError: true));
         }
       });
     } finally {
@@ -527,12 +563,15 @@ class _AiChatPageState extends State<AiChatPage> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI分析', style: TextStyle(fontSize: 16, overflow: TextOverflow.ellipsis)),
+        title: Text(AppLocalizations.of(context)!.aiTitle,
+            style: const TextStyle(fontSize: 16, overflow: TextOverflow.ellipsis)),
         centerTitle: true,
         actions: [
           // Agent 模式开关：AI 自动调用 ProxyPin 功能
           Tooltip(
-            message: _agentMode ? 'Agent 模式已开启：AI 可自动调用 ProxyPin 功能' : 'Agent 模式已关闭：仅接收手动消息',
+            message: _agentMode
+                ? AppLocalizations.of(context)!.aiAgentOn
+                : AppLocalizations.of(context)!.aiAgentOff,
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () {
@@ -543,7 +582,9 @@ class _AiChatPageState extends State<AiChatPage> {
                   config.flushConfig();
                 }
                 FlutterToastr.show(
-                  _agentMode ? 'Agent 模式已开启，AI 可自动调用 ProxyPin 功能' : 'Agent 模式已关闭，仅接收手动消息',
+                  _agentMode
+                      ? AppLocalizations.of(context)!.aiAgentOn
+                      : AppLocalizations.of(context)!.aiAgentOff,
                   context,
                   backgroundColor: _agentMode ? Colors.green : Colors.grey,
                 );
@@ -560,18 +601,18 @@ class _AiChatPageState extends State<AiChatPage> {
           ),
           IconButton(
             icon: const Icon(Icons.attach_file, size: 20),
-            tooltip: '附加信息（可多选）',
+            tooltip: AppLocalizations.of(context)!.aiAttachTooltip,
             onPressed: _pickAttachment,
           ),
           // 多对话管理：新建 / 切换 / 删除 / 清除当前
           IconButton(
             icon: const Icon(Icons.forum_outlined, size: 20),
-            tooltip: '对话列表（新建/切换/删除/清除）',
+            tooltip: AppLocalizations.of(context)!.aiConvTooltip,
             onPressed: _showConversationSheet,
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, size: 20),
-            tooltip: 'AI 配置',
+            tooltip: AppLocalizations.of(context)!.aiConfigTooltip,
             onPressed: () async {
               await showAiSettingsDialog(context);
               setState(() {});
@@ -621,7 +662,8 @@ class _AiChatPageState extends State<AiChatPage> {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
               SizedBox(width: 8),
-              Text('AI 正在思考…', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(AppLocalizations.of(context)!.aiThinking,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ]),
           ),
         // 输入区
@@ -637,7 +679,9 @@ class _AiChatPageState extends State<AiChatPage> {
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _send(),
                   decoration: InputDecoration(
-                    hintText: _agentMode ? '提问（Agent 模式：AI 可自动查数据）' : '输入问题',
+                    hintText: _agentMode
+                        ? AppLocalizations.of(context)!.aiInputAgent
+                        : AppLocalizations.of(context)!.aiInputPlain,
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -661,12 +705,13 @@ class _AiChatPageState extends State<AiChatPage> {
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Icon(Icons.auto_awesome, size: 44, color: cs.primary.withValues(alpha: 0.5)),
         const SizedBox(height: 12),
-        const Text('与 AI 对话分析抓包数据', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+        Text(AppLocalizations.of(context)!.aiEmptyTitle,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
-        Text('点击右上角 📎 附加多条请求 / 端点清单 / 文本',
+        Text(AppLocalizations.of(context)!.aiEmptyHint1,
             style: TextStyle(fontSize: 12, color: cs.outline)),
         const SizedBox(height: 4),
-        Text('开启 🤖 Agent 模式可让 AI 自动调用 ProxyPin 功能',
+        Text(AppLocalizations.of(context)!.aiEmptyHint2,
             style: TextStyle(fontSize: 12, color: cs.outline)),
       ]),
     );
@@ -717,7 +762,8 @@ class _AiChatPageState extends State<AiChatPage> {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(Icons.build_circle_outlined, size: 12, color: cs.tertiary),
                 const SizedBox(width: 4),
-                Text('已调用工具 $name', style: TextStyle(fontSize: 11, color: cs.tertiary)),
+                Text(AppLocalizations.of(context)!.aiToolCalled(name),
+                    style: TextStyle(fontSize: 11, color: cs.tertiary)),
               ]),
             ),
           if (!isUser && !msg.isError) ...[
@@ -725,7 +771,7 @@ class _AiChatPageState extends State<AiChatPage> {
             GestureDetector(
               onTap: () {
                 Clipboard.setData(ClipboardData(text: msg.content));
-                FlutterToastr.show('已复制', context);
+                FlutterToastr.show(AppLocalizations.of(context)!.aiCopied, context);
               },
               child: Icon(Icons.copy, size: 13, color: cs.outline),
             ),
@@ -775,21 +821,24 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: const Text('AI 分析配置', style: TextStyle(fontSize: 16)),
+        title: Text(AppLocalizations.of(context)!.aiConfigTitle,
+            style: const TextStyle(fontSize: 16)),
         content: SizedBox(
           width: 440,
           child: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('启用 AI 分析', style: TextStyle(fontSize: 14)),
-                subtitle: const Text('OpenAI 兼容接口，数据将发送到你配置的服务',
-                    style: TextStyle(fontSize: 12)),
+                title: Text(AppLocalizations.of(context)!.aiEnable,
+                    style: const TextStyle(fontSize: 14)),
+                subtitle: Text(AppLocalizations.of(context)!.aiEnableSub,
+                    style: const TextStyle(fontSize: 12)),
                 value: enabled,
                 onChanged: (v) => setState(() => enabled = v),
               ),
               const SizedBox(height: 4),
-              const Text('服务商', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(AppLocalizations.of(context)!.aiProvider,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
               DropdownButtonFormField<String>(
                   isExpanded: true,
                 value: selectedProvider,
@@ -803,7 +852,7 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                             maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: const TextStyle(fontSize: 13))),
                   const DropdownMenuItem(
                       value: 'custom',
-                      child: Text('自定义服务…',
+                      child: Text(AppLocalizations.of(context)!.aiCustomService,
                           maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: TextStyle(fontSize: 13))),
                 ],
                 onChanged: (v) {
@@ -826,11 +875,13 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                 controller: baseUrlController,
                 enabled: selectedProvider == 'custom',
                 decoration: InputDecoration(
-                  labelText: '接口地址 (Base URL)',
+                  labelText: AppLocalizations.of(context)!.aiBaseUrl,
                   hintText: 'https://api.openai.com/v1',
                   border: const OutlineInputBorder(),
                   isDense: true,
-                  helperText: selectedProvider == 'custom' ? '自定义服务商，填 OpenAI 兼容地址' : null,
+                  helperText: selectedProvider == 'custom'
+                      ? AppLocalizations.of(context)!.aiBaseUrlHelper
+                      : null,
                 ),
               ),
               const SizedBox(height: 10),
@@ -847,7 +898,7 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
               TextField(
                 controller: modelController,
                 decoration: const InputDecoration(
-                  labelText: '模型',
+                  labelText: AppLocalizations.of(context)!.aiModelLabel,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -855,10 +906,13 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
               const SizedBox(height: 14),
               const Divider(height: 1),
               const SizedBox(height: 8),
-              Text('Agent 模式', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              Text('开启 🤖 后 AI 可自动调用 ProxyPin 工具查数据',
-                  style: TextStyle(fontSize: 11, color: Colors.grey)),
-              Text('最大工具轮数：${config.aiAgentMaxRounds}',
+              Text(AppLocalizations.of(context)!.aiAgentSection,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(AppLocalizations.of(context)!.aiAgentHint2,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              Text(
+                  AppLocalizations.of(context)!
+                      .aiMaxRounds(config.aiAgentMaxRounds),
                   style: const TextStyle(fontSize: 12)),
               Slider(
                 value: config.aiAgentMaxRounds.toDouble(),
@@ -872,8 +926,8 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                 controller: extraPromptController,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                  labelText: 'Agent 附加指令',
-                  hintText: '如：优先检查安全风险；只看 POST 请求…',
+                  labelText: AppLocalizations.of(context)!.aiAgentExtra,
+                  hintText: AppLocalizations.of(context)!.aiAgentExtraHint,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -899,25 +953,34 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                       if (data['model'] is String) modelController.text = data['model'];
                       if (data['enabled'] is bool) enabled = data['enabled'];
                     });
-                    if (context.mounted) FlutterToastr.show('配置已导入', context, backgroundColor: Colors.green);
+                    if (context.mounted) {
+                      FlutterToastr.show(AppLocalizations.of(context)!.aiImportOk,
+                          context, backgroundColor: Colors.green);
+                    }
                   } catch (e) {
                     if (context.mounted) {
-                      FlutterToastr.show('导入失败：$e', context, backgroundColor: Colors.red);
+                      FlutterToastr.show(
+                          AppLocalizations.of(context)!.aiImportFailed('$e'), context,
+                          backgroundColor: Colors.red);
                     }
                   }
                 },
                 icon: const Icon(Icons.upload_file, size: 16),
-                label: const Text('从文件导入配置 (JSON)'),
+                label: Text(AppLocalizations.of(context)!.aiImportFromFile),
               ),
-              const Text(
-                'JSON 格式：{"baseUrl": "...", "apiKey": "...", "model": "...", "enabled": true}',
-                style: TextStyle(fontSize: 10, color: Colors.grey),
+              Text(
+                AppLocalizations.of(context)!
+                    .aiJsonFormatHint(
+                        '{"baseUrl": "...", "apiKey": "...", "model": "...", "enabled": true}'),
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ]),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(AppLocalizations.of(context)!.cancel)),
           ElevatedButton(
             onPressed: () {
               config.aiEnabled = enabled;
@@ -928,7 +991,7 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
               config.flushConfig();
               Navigator.pop(context, true);
             },
-            child: const Text('保存'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -936,7 +999,8 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
   );
 
   if (result == true && context.mounted) {
-    FlutterToastr.show('AI 配置已保存', context, backgroundColor: Colors.green);
+    FlutterToastr.show(AppLocalizations.of(context)!.aiConfigSaved, context,
+        backgroundColor: Colors.green);
   }
   return result;
 }

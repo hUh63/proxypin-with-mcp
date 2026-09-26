@@ -3292,6 +3292,337 @@ Code blocks have "Demo" and "Copy" buttons at the bottom right.'**
   /// **'Copy payload'**
   String get wafCopyPayload;
 
+
+  /// No description provided for @aiNewChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get aiNewChat;
+
+  /// No description provided for @aiClearChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear current chat'**
+  String get aiClearChatTitle;
+
+  /// No description provided for @aiClearChatConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This clears all messages in the current chat and cannot be undone.'**
+  String get aiClearChatConfirm;
+
+  /// No description provided for @aiConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get aiConversations;
+
+  /// No description provided for @aiClearCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear current'**
+  String get aiClearCurrent;
+
+  /// No description provided for @aiNewConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get aiNewConversation;
+
+  /// No description provided for @aiNMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'$count messages'**
+  String aiNMessages(int count);
+
+  /// No description provided for @aiCloseAndClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Close and clear this chat'**
+  String get aiCloseAndClear;
+
+  /// No description provided for @aiDeleteChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat'**
+  String get aiDeleteChatTitle;
+
+  /// No description provided for @aiDeleteChatConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages in this chat can\\'t be recovered after deletion.'**
+  String get aiDeleteChatConfirm;
+
+  /// No description provided for @aiPickAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to attach'**
+  String get aiPickAttachment;
+
+  /// No description provided for @aiAttachRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Captured requests'**
+  String get aiAttachRequests;
+
+  /// No description provided for @aiAttachRequestsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-select from the latest 30'**
+  String get aiAttachRequestsSub;
+
+  /// No description provided for @aiAttachEndpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'API endpoint list'**
+  String get aiAttachEndpoints;
+
+  /// No description provided for @aiAttachEndpointsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-extract all endpoints with stats'**
+  String get aiAttachEndpointsSub;
+
+  /// No description provided for @aiAttachText.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom text'**
+  String get aiAttachText;
+
+  /// No description provided for @aiAttachTextSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste anything as context'**
+  String get aiAttachTextSub;
+
+  /// No description provided for @aiNoRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No captured requests'**
+  String get aiNoRequests;
+
+  /// No description provided for @aiPickRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose captured requests (multi-select)'**
+  String get aiPickRequests;
+
+  /// No description provided for @aiStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status $code'**
+  String aiStatus(int code);
+
+  /// No description provided for @aiNoResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'No response'**
+  String get aiNoResponse;
+
+  /// No description provided for @aiAttachTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste anything as context for the AI'**
+  String get aiAttachTextHint;
+
+  /// No description provided for @aiAnalyzeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis failed: $error'**
+  String aiAnalyzeFailed(String error);
+
+  /// No description provided for @aiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Analysis'**
+  String get aiTitle;
+
+  /// No description provided for @aiAgentOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent mode on: AI can call ProxyPin features automatically'**
+  String get aiAgentOn;
+
+  /// No description provided for @aiAgentOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent mode off: only manual messages'**
+  String get aiAgentOff;
+
+  /// No description provided for @aiAttachTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach info (multi-select)'**
+  String get aiAttachTooltip;
+
+  /// No description provided for @aiConvTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations (new / switch / delete / clear)'**
+  String get aiConvTooltip;
+
+  /// No description provided for @aiConfigTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'AI settings'**
+  String get aiConfigTooltip;
+
+  /// No description provided for @aiThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'AI is thinking…'**
+  String get aiThinking;
+
+  /// No description provided for @aiInputAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask (Agent mode: AI can fetch data)'**
+  String get aiInputAgent;
+
+  /// No description provided for @aiInputPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a question'**
+  String get aiInputPlain;
+
+  /// No description provided for @aiEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with AI to analyze captured traffic'**
+  String get aiEmptyTitle;
+
+  /// No description provided for @aiEmptyHint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap 📎 at top right to attach requests / endpoint list / text'**
+  String get aiEmptyHint1;
+
+  /// No description provided for @aiEmptyHint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on 🤖 Agent mode to let AI call ProxyPin features'**
+  String get aiEmptyHint2;
+
+  /// No description provided for @aiToolCalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Called tool $name'**
+  String aiToolCalled(String name);
+
+  /// No description provided for @aiCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get aiCopied;
+
+  /// No description provided for @aiConfigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Analysis Settings'**
+  String get aiConfigTitle;
+
+  /// No description provided for @aiEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable AI Analysis'**
+  String get aiEnable;
+
+  /// No description provided for @aiEnableSub.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI-compatible API; data is sent to the service you configure'**
+  String get aiEnableSub;
+
+  /// No description provided for @aiProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get aiProvider;
+
+  /// No description provided for @aiCustomService.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom service…'**
+  String get aiCustomService;
+
+  /// No description provided for @aiBaseUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL'**
+  String get aiBaseUrl;
+
+  /// No description provided for @aiBaseUrlHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom provider — enter an OpenAI-compatible URL'**
+  String get aiBaseUrlHelper;
+
+  /// No description provided for @aiModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get aiModelLabel;
+
+  /// No description provided for @aiAgentSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent mode'**
+  String get aiAgentSection;
+
+  /// No description provided for @aiAgentHint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Once on, AI can call ProxyPin tools to fetch data'**
+  String get aiAgentHint2;
+
+  /// No description provided for @aiMaxRounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Max tool rounds: $count'**
+  String aiMaxRounds(int count);
+
+  /// No description provided for @aiAgentExtra.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent extra instructions'**
+  String get aiAgentExtra;
+
+  /// No description provided for @aiAgentExtraHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. check security risks first; POST only…'**
+  String get aiAgentExtraHint;
+
+  /// No description provided for @aiImportOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Config imported'**
+  String get aiImportOk;
+
+  /// No description provided for @aiImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: $error'**
+  String aiImportFailed(String error);
+
+  /// No description provided for @aiImportFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import config from file (JSON)'**
+  String get aiImportFromFile;
+
+  /// No description provided for @aiJsonFormatHint.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON format: $example'**
+  String aiJsonFormatHint(String example);
+
+  /// No description provided for @aiConfigSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'AI settings saved'**
+  String get aiConfigSaved;
+
 }
 
 class _AppLocalizationsDelegate

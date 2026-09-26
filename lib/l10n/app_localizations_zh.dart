@@ -1663,6 +1663,186 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get wafCopyPayload => '复制载荷';
 
+
+  @override
+  String get aiNewChat => '新对话';
+
+  @override
+  String get aiClearChatTitle => '清除当前对话';
+
+  @override
+  String get aiClearChatConfirm => '将清空当前对话的全部消息，且不可恢复。';
+
+  @override
+  String get aiConversations => '对话列表';
+
+  @override
+  String get aiClearCurrent => '清除当前';
+
+  @override
+  String get aiNewConversation => '新建对话';
+
+  @override
+  String aiNMessages(int count) {
+    return '$count 条消息';
+  }
+
+  @override
+  String get aiCloseAndClear => '关闭并清除该对话';
+
+  @override
+  String get aiDeleteChatTitle => '删除对话';
+
+  @override
+  String get aiDeleteChatConfirm => '删除后该对话的消息无法恢复。';
+
+  @override
+  String get aiPickAttachment => '选择要附加的信息';
+
+  @override
+  String get aiAttachRequests => '抓包请求';
+
+  @override
+  String get aiAttachRequestsSub => '从最近 30 条中多选';
+
+  @override
+  String get aiAttachEndpoints => 'API 端点清单';
+
+  @override
+  String get aiAttachEndpointsSub => '自动提取全部端点与统计';
+
+  @override
+  String get aiAttachText => '自定义文本';
+
+  @override
+  String get aiAttachTextSub => '粘贴任意内容作为上下文';
+
+  @override
+  String get aiNoRequests => '暂无抓包请求';
+
+  @override
+  String get aiPickRequests => '选择抓包请求（可多选）';
+
+  @override
+  String aiStatus(int code) {
+    return '状态码 $code';
+  }
+
+  @override
+  String get aiNoResponse => '未响应';
+
+  @override
+  String get aiAttachTextHint => '粘贴任意内容作为 AI 的上下文';
+
+  @override
+  String aiAnalyzeFailed(String error) {
+    return '分析失败：$error';
+  }
+
+  @override
+  String get aiTitle => 'AI 分析';
+
+  @override
+  String get aiAgentOn => 'Agent 模式已开启，AI 可自动调用 ProxyPin 功能';
+
+  @override
+  String get aiAgentOff => 'Agent 模式已关闭，仅接收手动消息';
+
+  @override
+  String get aiAttachTooltip => '附加信息（可多选）';
+
+  @override
+  String get aiConvTooltip => '对话列表（新建/切换/删除/清除）';
+
+  @override
+  String get aiConfigTooltip => 'AI 配置';
+
+  @override
+  String get aiThinking => 'AI 正在思考…';
+
+  @override
+  String get aiInputAgent => '提问（Agent 模式：AI 可自动查数据）';
+
+  @override
+  String get aiInputPlain => '输入问题';
+
+  @override
+  String get aiEmptyTitle => '与 AI 对话分析抓包数据';
+
+  @override
+  String get aiEmptyHint1 => '点击右上角 📎 附加多条请求 / 端点清单 / 文本';
+
+  @override
+  String get aiEmptyHint2 => '开启 🤖 Agent 模式可让 AI 自动调用 ProxyPin 功能';
+
+  @override
+  String aiToolCalled(String name) {
+    return '已调用工具 $name';
+  }
+
+  @override
+  String get aiCopied => '已复制';
+
+  @override
+  String get aiConfigTitle => 'AI 分析配置';
+
+  @override
+  String get aiEnable => '启用 AI 分析';
+
+  @override
+  String get aiEnableSub => 'OpenAI 兼容接口，数据将发送到你配置的服务';
+
+  @override
+  String get aiProvider => '服务商';
+
+  @override
+  String get aiCustomService => '自定义服务…';
+
+  @override
+  String get aiBaseUrl => '接口地址 (Base URL)';
+
+  @override
+  String get aiBaseUrlHelper => '自定义服务商，填 OpenAI 兼容地址';
+
+  @override
+  String get aiModelLabel => '模型';
+
+  @override
+  String get aiAgentSection => 'Agent 模式';
+
+  @override
+  String get aiAgentHint2 => '开启 🤖 后 AI 可自动调用 ProxyPin 工具查数据';
+
+  @override
+  String aiMaxRounds(int count) {
+    return '最大工具轮数：$count';
+  }
+
+  @override
+  String get aiAgentExtra => 'Agent 附加指令';
+
+  @override
+  String get aiAgentExtraHint => '如：优先检查安全风险；只看 POST 请求…';
+
+  @override
+  String get aiImportOk => '配置已导入';
+
+  @override
+  String aiImportFailed(String error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String get aiImportFromFile => '从文件导入配置 (JSON)';
+
+  @override
+  String aiJsonFormatHint(String example) {
+    return 'JSON 格式：$example';
+  }
+
+  @override
+  String get aiConfigSaved => 'AI 配置已保存';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
