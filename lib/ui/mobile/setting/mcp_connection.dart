@@ -82,8 +82,12 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   int floatingBallColor = 0xFF6750A4; // 预置主色
   int floatingBallAlpha = 255; // 透明度 0-255（默认不透明，避免"看起来还是透"）
 
-  String get floatingBallColorDesc =>
-      '颜色 #${floatingBallColor.toRadixString(16).substring(2).toUpperCase()} · 透明度 ${(floatingBallAlpha / 255 * 100).round()}%';
+  String get floatingBallColorDesc {
+    final loc = AppLocalizations.of(context)!;
+    final hex = floatingBallColor.toRadixString(16).substring(2).toUpperCase();
+    final percent = (floatingBallAlpha / 255 * 100).round();
+    return loc.mcpConnFloatingBallColorDesc(hex, percent);
+  }
 
   static const _floatingChannel = MethodChannel('com.proxy/floatingBall');
 
@@ -146,49 +150,56 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
         'running': McpServer().isRunning,
       });
       if (!mounted) return;
+      final loc = AppLocalizations.of(context)!;
       // 缺少悬浮窗权限：原生已跳转系统设置页，这里给出明确提示
       if (result is Map && result['needOverlayPermission'] == true) {
-        FlutterToastr.show('悬浮球需要"显示在其他应用上层"权限，已为你打开系统设置，授权后回来重新开启',
+        FlutterToastr.show(loc.mcpConnFloatingBallNeedOverlayPermission,
             context, duration: 4, backgroundColor: Colors.orange);
         return;
       }
       // 启动/停止失败：展示原生返回的具体原因（不再静默无反应）
       if (result is Map && result['success'] == false) {
+        final reason =
+            (result['error'] ?? loc.mcpConnUnknownReason).toString();
         FlutterToastr.show(
-            '悬浮球${floatingBallEnabled ? "启动" : "停止"}失败：${result['error'] ?? '未知原因'}',
+            floatingBallEnabled
+                ? loc.mcpConnFloatingBallStartFailed(reason)
+                : loc.mcpConnFloatingBallStopFailed(reason),
             context, duration: 4, backgroundColor: Colors.red);
         return;
       }
       // 用户手动开启时给出成功反馈 + 厂商系统拦截的兜底引导
       if (showFeedback && floatingBallEnabled) {
-        FlutterToastr.show('悬浮球已开启；若屏幕上看不到，请检查系统「显示悬浮窗」与厂商「后台弹出界面」权限',
+        FlutterToastr.show(loc.mcpConnFloatingBallStartedHint,
             context, duration: 4, backgroundColor: Colors.green);
       }
     } catch (e) {
       logger.w('悬浮球服务调用失败', error: e);
       if (mounted && showFeedback) {
-        FlutterToastr.show('悬浮球调用失败：$e', context, duration: 4, backgroundColor: Colors.red);
+        FlutterToastr.show(loc.mcpConnFloatingBallCallFailed(e.toString()), context,
+            duration: 4, backgroundColor: Colors.red);
       }
     }
   }
 
   /// 悬浮球样式自定义：预置颜色 + 取色器 + 透明度 + 实时预览
   Future<void> _showFloatingBallStyleDialog() async {
+    final loc = AppLocalizations.of(context)!;
     var color = Color(floatingBallColor);
     var alpha = floatingBallAlpha;
     final presets = <String, Color>{
-      'M3 紫': const Color(0xFF6750A4),
-      '深海蓝': const Color(0xFF1565C0),
-      '翡翠绿': const Color(0xFF2E7D32),
-      '珊瑚橙': const Color(0xFFEF6C00),
-      '玫瑰红': const Color(0xFFC2185B),
-      '石墨黑': const Color(0xFF37474F),
+      loc.mcpConnPresetM3Purple: const Color(0xFF6750A4),
+      loc.mcpConnPresetDeepSeaBlue: const Color(0xFF1565C0),
+      loc.mcpConnPresetEmeraldGreen: const Color(0xFF2E7D32),
+      loc.mcpConnPresetCoralOrange: const Color(0xFFEF6C00),
+      loc.mcpConnPresetRoseRed: const Color(0xFFC2185B),
+      loc.mcpConnPresetGraphiteBlack: const Color(0xFF37474F),
     };
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('自定义悬浮球', style: TextStyle(fontSize: 16)),
+          title: Text(loc.mcpConnCustomFloatingBall, style: const TextStyle(fontSize: 16)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               // 实时预览：液态玻璃球（渐变 + 高光 + 波纹），与真实悬浮球一致
@@ -215,7 +226,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('预置颜色', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(loc.mcpConnPresetColors, style: const TextStyle(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 10,
@@ -246,12 +257,13 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
               ),
               const SizedBox(height: 12),
               // 取色器（滑杆调 RGB 简化实现）
-              const Text('自定义颜色（RGB）', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(loc.mcpConnCustomColorRgb, style: const TextStyle(fontSize: 12, color: Colors.grey)),
               _colorSlider('R', color.red, (v) => setDialogState(() => color = Color.fromARGB(255, v, color.green, color.blue))),
               _colorSlider('G', color.green, (v) => setDialogState(() => color = Color.fromARGB(255, color.red, v, color.blue))),
               _colorSlider('B', color.blue, (v) => setDialogState(() => color = Color.fromARGB(255, color.red, color.green, v))),
               const SizedBox(height: 8),
-              Text('透明度 ${(alpha / 255 * 100).round()}%', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(loc.mcpConnOpacityPercent((alpha / 255 * 100).round()),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
               Slider(
                 value: alpha.toDouble(),
                 min: 80,
@@ -261,13 +273,13 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
             ]),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(loc.cancel)),
             ElevatedButton(
               onPressed: () {
                 setDialogState(() {});
                 Navigator.pop(context, true);
               },
-              child: const Text('确定'),
+              child: Text(loc.mcpConnConfirm),
             ),
           ],
         ),
@@ -412,6 +424,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
 
   /// 重新生成局域网访问令牌（运行中会重启服务使旧令牌立即失效）
   Future<void> _regenerateToken() async {
+    final loc = AppLocalizations.of(context)!;
     final c = Configuration.loaded;
     if (c == null) return;
     c.mcpToken = McpServer.generateToken();
@@ -421,13 +434,14 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
         await McpServer().restart();
       }
     } catch (e) {
-      _showSnack('重新生成令牌失败：$e');
+      _showSnack(loc.mcpConnRegenerateTokenFailed(e.toString()));
     }
     if (mounted) setState(() {});
   }
 
   /// 各主流 AI 客户端的接入命令（合并自旧版独立设置页）
   Map<String, String> _clientCommands(String endpoint) {
+    final loc = AppLocalizations.of(context)!;
     final token = McpServer().token ?? '';
     final host = endpoint.replaceFirst('/mcp', '');
     return {
@@ -435,14 +449,14 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
           '${token.isEmpty ? '' : ' --header "Authorization: Bearer $token"'}',
       'Codex': 'export PROXYPIN_MCP_TOKEN="$token"\n'
           'codex mcp add ${McpClientNames.mobile} --url $endpoint --bearer-token-env-var PROXYPIN_MCP_TOKEN',
-      'curl 自检': 'curl -s${token.isEmpty ? '' : ' -H "Authorization: Bearer $token"'} $endpoint '
+      loc.mcpConnCurlSelfCheck: 'curl -s${token.isEmpty ? '' : ' -H "Authorization: Bearer $token"'} $endpoint '
           '-H "Content-Type: application/json" '
           '-d \'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\'',
-      '一键配置(shell)': token.isEmpty
-          ? '（需先开启局域网访问以生成令牌）'
+      loc.mcpConnOneClickConfigShell: token.isEmpty
+          ? loc.mcpConnNeedLanAccessForToken
           : 'curl -s -H "Authorization: Bearer $token" $host/mcp/setup.sh | sh',
-      '一键配置(PowerShell)': token.isEmpty
-          ? '（需先开启局域网访问以生成令牌）'
+      loc.mcpConnOneClickConfigPowershell: token.isEmpty
+          ? loc.mcpConnNeedLanAccessForToken
           : 'irm -Headers @{ Authorization = "Bearer $token" } $host/mcp/setup.ps1 | iex',
     };
   }
@@ -460,6 +474,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final mcpServer = McpServer();
     final port = _configuredPort;
     final ip = _deviceIp ?? '127.0.0.1';
@@ -488,7 +503,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MCP 设置'),
+        title: Text(loc.mcpConnSettingsTitle),
         centerTitle: true,
         actions: [
           IconButton(
@@ -499,7 +514,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 MaterialPageRoute(builder: (context) => const McpAutomationPage()),
               );
             },
-            tooltip: '自动化配置',
+            tooltip: loc.mcpConnAutomationConfig,
           ),
         ],
       ),
@@ -513,8 +528,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                   child: Column(
                     children: [
                       SwitchListTile(
-                        title: const Text('允许局域网访问'),
-                        subtitle: const Text('开启后同一网络内的设备可连接本机 MCP 服务', style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpAllowLan),
+                        subtitle: Text(loc.mcpConnAllowLanHint,
+                            style: const TextStyle(fontSize: 12)),
                         value: Configuration.loaded?.mcpAllowLan ?? false,
                         onChanged: (v) async {
                           final c = Configuration.loaded;
@@ -528,11 +544,11 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('访问令牌鉴权'),
+                        title: Text(loc.mcpConnTokenAuth),
                         subtitle: Text(
                           (Configuration.loaded?.mcpAuthEnabled ?? true)
-                              ? '要求 Bearer token（推荐）'
-                              : '已关闭：同一网络内任何设备都可读取抓包内容！',
+                              ? loc.mcpConnTokenAuthRequired
+                              : loc.mcpConnTokenAuthDisabled,
                           style: TextStyle(
                             fontSize: 12,
                             color: (Configuration.loaded?.mcpAuthEnabled ?? true) ? null : Colors.red,
@@ -549,10 +565,10 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('后台保活'),
-                        subtitle: const Text(
-                            '把本应用加入电池优化白名单并解除后台限制，降低抓包与 MCP 服务被系统杀掉的可能（需 Shizuku / root / Dhizuku 之一）',
-                            style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpConnKeepAlive),
+                        subtitle: Text(
+                            loc.mcpConnKeepAliveDesc,
+                            style: const TextStyle(fontSize: 12)),
                         value: Configuration.loaded?.mcpKeepAlive ?? false,
                         onChanged: (v) async {
                           final c = Configuration.loaded;
@@ -568,9 +584,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('参数强校验'),
-                        subtitle: const Text('按工具声明的 inputSchema 校验参数，尽早提示调用错误（立即生效）',
-                            style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpConnStrictValidation),
+                        subtitle: Text(loc.mcpConnStrictValidationDesc,
+                            style: const TextStyle(fontSize: 12)),
                         value: Configuration.loaded?.mcpStrictValidation ?? true,
                         onChanged: (v) async {
                           final c = Configuration.loaded;
@@ -583,9 +599,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       const Divider(height: 0),
                       ListTile(
                         leading: const Icon(Icons.key),
-                        title: const Text('访问令牌'),
+                        title: Text(loc.mcpAccessToken),
                         subtitle: Text(
-                          McpServer().token ?? '未生成（开启局域网访问后自动生成）',
+                          McpServer().token ?? loc.mcpConnTokenNotGenerated,
                           style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
                         ),
                         trailing: Row(
@@ -593,15 +609,15 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                           children: [
                             IconButton(
                               icon: const Icon(Icons.copy, size: 18),
-                              tooltip: '复制',
+                              tooltip: loc.mcpCopy,
                               onPressed: () {
                                 final t = McpServer().token;
-                                if (t != null) _copyText(t, '令牌已复制');
+                                if (t != null) _copyText(t, loc.mcpConnTokenCopied);
                               },
                             ),
                             IconButton(
                               icon: const Icon(Icons.refresh, size: 18),
-                              tooltip: '重新生成（旧令牌立即失效）',
+                              tooltip: loc.mcpConnRegenerateTokenTooltip,
                               onPressed: _regenerateToken,
                             ),
                           ],
@@ -610,8 +626,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       const Divider(height: 0),
                       ExpansionTile(
                         leading: const Icon(Icons.terminal),
-                        title: const Text('AI 客户端接入命令'),
-                        subtitle: const Text('Claude Code / Codex / curl / 一键脚本', style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpConnClientCommands),
+                        subtitle: Text(loc.mcpConnClientCommandsSubtitle,
+                            style: const TextStyle(fontSize: 12)),
                         childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         children: [
                           for (final entry in _clientCommands(apiUrl).entries)
@@ -622,7 +639,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                                   style: const TextStyle(fontSize: 11, fontFamily: 'monospace')),
                               trailing: IconButton(
                                 icon: const Icon(Icons.copy, size: 16),
-                                onPressed: () => _copyText(entry.value, '已复制'),
+                                onPressed: () => _copyText(entry.value, loc.mcpCopied),
                               ),
                             ),
                         ],
@@ -637,15 +654,15 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                   child: Column(
                     children: [
                       SwitchListTile(
-                        title: const Text('MCP 服务'),
+                        title: Text(loc.mcpService),
                         subtitle: Text(
                           _mcpEnabled
                               ? (isRunning
-                                    ? '运行中，端口 $port'
+                                    ? loc.mcpServiceRunning(port.toString())
                                     : (lastError != null
-                                          ? '出错：$lastError'
-                                          : '已启用（未运行）'))
-                              : '已停用',
+                                          ? loc.mcpServiceError(lastError)
+                                          : loc.mcpServiceEnabledNotRunning))
+                              : loc.mcpServiceDisabled,
                           style: const TextStyle(fontSize: 12),
                         ),
                         secondary: Icon(
@@ -663,10 +680,10 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('自动启动'),
-                        subtitle: const Text(
-                          '应用启动时自动运行 MCP 服务（默认开启）',
-                          style: TextStyle(fontSize: 12),
+                        title: Text(loc.mcpConnAutoStart),
+                        subtitle: Text(
+                          loc.mcpAutoStartDescribe,
+                          style: const TextStyle(fontSize: 12),
                         ),
                         secondary: const Icon(
                           Icons.auto_awesome,
@@ -684,7 +701,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         ),
                         child: Row(
                           children: [
-                            const Text('服务端口'),
+                            Text(loc.mcpConnServicePort),
                             const SizedBox(width: 16),
                             Expanded(
                               child: SizedBox(
@@ -712,7 +729,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                             const SizedBox(width: 8),
                             FilledButton(
                               onPressed: _applyPort,
-                              child: const Text('应用'),
+                              child: Text(loc.securityAiApply),
                             ),
                           ],
                         ),
@@ -723,10 +740,10 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 const SizedBox(height: 16),
 
                 // 连接信息
-                Text('连接信息', style: Theme.of(context).textTheme.titleMedium),
+                Text(loc.mcpConnConnectionInfo, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
                 Text(
-                  'MCP 协议版本：${McpServer.protocolVersion}（无状态核心，兼容旧版握手）',
+                  loc.mcpConnProtocolVersion(McpServer.protocolVersion),
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 8),
@@ -734,38 +751,38 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                   child: Column(
                     children: [
                       ListTile(
-                        title: const Text('设备 IP'),
+                        title: Text(loc.mcpConnDeviceIp),
                         subtitle: Text(ip),
                         trailing: IconButton(
                           icon: const Icon(Icons.copy, size: 20),
-                          onPressed: () => _copyText(ip, '已复制设备 IP'),
+                          onPressed: () => _copyText(ip, loc.mcpConnDeviceIpCopied),
                         ),
                       ),
                       const Divider(height: 0),
                       ListTile(
-                        title: const Text('API URL（Streamable HTTP）'),
+                        title: Text(loc.mcpConnApiUrl),
                         subtitle: Text(apiUrl),
                         trailing: IconButton(
                           icon: const Icon(Icons.copy, size: 20),
-                          onPressed: () => _copyText(apiUrl, '已复制 API URL'),
+                          onPressed: () => _copyText(apiUrl, loc.mcpConnApiUrlCopied),
                         ),
                       ),
                       const Divider(height: 0),
                       ListTile(
-                        title: const Text('SSE URL（旧版传输）'),
+                        title: Text(loc.mcpConnSseUrl),
                         subtitle: Text(sseUrl),
                         trailing: IconButton(
                           icon: const Icon(Icons.copy, size: 20),
-                          onPressed: () => _copyText(sseUrl, '已复制 SSE URL'),
+                          onPressed: () => _copyText(sseUrl, loc.mcpConnSseUrlCopied),
                         ),
                       ),
                       const Divider(height: 0),
                       ListTile(
-                        title: const Text('Health Check（健康检查）'),
+                        title: Text(loc.mcpConnHealthCheck),
                         subtitle: Text(healthUrl),
                         trailing: IconButton(
                           icon: const Icon(Icons.copy, size: 20),
-                          onPressed: () => _copyText(healthUrl, '已复制 Health Check URL'),
+                          onPressed: () => _copyText(healthUrl, loc.mcpConnHealthCheckUrlCopied),
                         ),
                       ),
                     ],
@@ -774,10 +791,10 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 const SizedBox(height: 16),
 
                 // 悬浮球设置
-                Text('悬浮球', style: Theme.of(context).textTheme.titleMedium),
+                Text(loc.mcpConnFloatingBall, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
                 Text(
-                  '桌面悬浮球显示 MCP 运行状态，点击弹出快捷面板；前台服务可提升应用保活能力',
+                  loc.mcpConnFloatingBallDesc,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 8),
@@ -790,13 +807,14 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                           size: 20,
                           color: _overlayPermissionGranted ? Colors.green : Colors.orange,
                         ),
-                        title: const Text('悬浮球权限'),
+                        title: Text(loc.mcpConnFloatingBallPermission),
                         subtitle: Text(
-                          _overlayPermissionGranted ? '已授权"显示在其他应用上层"' : '未授权——点击前往系统设置开启，否则悬浮球无法显示',
+                          _overlayPermissionGranted ? loc.mcpConnOverlayGranted : loc.mcpConnOverlayNotGranted,
                           style: const TextStyle(fontSize: 12),
                         ),
                         trailing: _overlayPermissionGranted
-                            ? const Text('已授权', style: TextStyle(fontSize: 12, color: Colors.green))
+                            ? Text(loc.mcpAuthGranted,
+                                style: const TextStyle(fontSize: 12, color: Colors.green))
                             : const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () async {
                           if (!_overlayPermissionGranted) {
@@ -812,11 +830,11 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('启用悬浮球'),
+                        title: Text(loc.mcpConnEnableFloatingBall),
                         subtitle: Text(
                           _overlayPermissionGranted
-                              ? '悬浮窗展示 MCP 状态，提升保活能力'
-                              : '请先完成上方悬浮球权限授权',
+                              ? loc.mcpConnFloatingBallEnabledDesc
+                              : loc.mcpConnFloatingBallPermissionRequired,
                           style: const TextStyle(fontSize: 12),
                         ),
                         value: floatingBallEnabled,
@@ -829,8 +847,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
-                        title: const Text('3 秒无操作自动贴边'),
-                        subtitle: const Text('悬浮球自动吸附屏幕边缘，避免遮挡', style: TextStyle(fontSize: 12)),
+                        title: Text(loc.mcpConnAutoDock),
+                        subtitle: Text(loc.mcpConnAutoDockDesc,
+                            style: const TextStyle(fontSize: 12)),
                         value: floatingBallAutoDock,
                         onChanged: floatingBallEnabled
                             ? (v) {
@@ -841,7 +860,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       ListTile(
-                        title: const Text('自定义悬浮球样式'),
+                        title: Text(loc.mcpConnCustomFloatingBallStyle),
                         subtitle: Text(floatingBallColorDesc, style: const TextStyle(fontSize: 12)),
                         trailing: const Icon(Icons.palette_outlined, size: 20),
                         onTap: floatingBallEnabled ? _showFloatingBallStyleDialog : null,
@@ -852,7 +871,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 const SizedBox(height: 16),
 
                 // AI 配置指南
-                Text('AI 配置指南', style: Theme.of(context).textTheme.titleMedium),
+                Text(loc.mcpConnAiConfigGuide, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Card(
                   child: Column(
@@ -861,11 +880,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                         child: Text(
-                          '将以下配置写入 AI 客户端的 MCP 配置文件中，即可让 '
-                          'Cursor / Windsurf / Claude Desktop / Cherry Studio '
-                          '等支持 MCP 的 AI 工具读取抓包数据并控制 ProxyPin。'
-                          '请确保手机与电脑处于同一局域网，且 MCP 服务已开启。'
-                          '服务器同时支持最新无状态协议（2026-07-28）与旧版握手协议。',
+                          loc.mcpConnAiConfigGuideDesc,
                           style: TextStyle(
                             fontSize: 13,
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
@@ -900,7 +915,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                               child: IconButton(
                                 icon: const Icon(Icons.copy, size: 20),
                                 onPressed: () =>
-                                    _copyText(configJson, '已复制 AI 配置'),
+                                    _copyText(configJson, loc.mcpConnAiConfigCopied),
                               ),
                             ),
                           ],
@@ -912,21 +927,21 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 const SizedBox(height: 16),
 
                 // 控制模式
-                Text('控制模式', style: Theme.of(context).textTheme.titleMedium),
+                Text(loc.mcpConnControlMode, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Card(
                   child: Column(
                     children: [
                       ListTile(
                         leading: const Icon(Icons.settings_applications),
-                        title: const Text('当前模式'),
+                        title: Text(loc.mcpConnCurrentMode),
                         trailing: Text(
                           switch (mode) {
                             'none' => 'none',
                             'root' => 'Root',
                             'shizuku' => 'Shizuku',
                             'dhizuku' => 'Dhizuku',
-                            'accessibility' => '无障碍',
+                            'accessibility' => loc.mcpConnAccessibility,
                             _ => mode,
                           },
                           style: TextStyle(
@@ -940,9 +955,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       const Divider(height: 0),
                       ListTile(
                         leading: const Icon(Icons.admin_panel_settings),
-                        title: const Text('Root 权限'),
+                        title: Text(loc.mcpConnRootPermission),
                         trailing: Text(
-                          hasRoot ? '可用' : '不可用',
+                          hasRoot ? loc.mcpConnAvailable : loc.mcpConnUnavailable,
                           style: TextStyle(
                             color: hasRoot ? Colors.green : Colors.grey,
                           ),
@@ -954,8 +969,11 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         title: const Text('Shizuku'),
                         trailing: Text(
                           shizukuGranted
-                              ? '已授权'
-                              : (hasShizuku ? '未授权' : '未连接'),
+                          shizukuGranted
+                              ? loc.mcpAuthGranted
+                              : (hasShizuku
+                                    ? loc.mcpConnNotGranted
+                                    : loc.notConnected),
                           style: TextStyle(
                             color: shizukuGranted
                                 ? Colors.green
@@ -968,7 +986,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         leading: const Icon(Icons.verified_user),
                         title: const Text('Dhizuku'),
                         trailing: Text(
-                          hasDhizuku ? '可用' : '不可用',
+                          hasDhizuku ? loc.mcpConnAvailable : loc.mcpConnUnavailable,
                           style: TextStyle(
                             color: hasDhizuku ? Colors.green : Colors.grey,
                           ),
@@ -977,9 +995,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       const Divider(height: 0),
                       ListTile(
                         leading: const Icon(Icons.accessibility),
-                        title: const Text('无障碍服务'),
+                        title: Text(loc.mcpConnAccessibilityService),
                         trailing: Text(
-                          accessibilityEnabled ? '可用' : '未开启',
+                          accessibilityEnabled ? loc.mcpConnAvailable : loc.mcpConnNotEnabled,
                           style: TextStyle(
                             color: accessibilityEnabled
                                 ? Colors.green
@@ -996,7 +1014,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                     width: double.infinity,
                     child: FilledButton.icon(
                       icon: const Icon(Icons.accessibility),
-                      label: const Text('打开无障碍设置'),
+                      label: Text(loc.mcpConnOpenAccessibilitySettings),
                       onPressed: () async {
                         await McpScreen.openAccessibilitySettings();
                       },
@@ -1013,14 +1031,15 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         size: 20,
                         color: shizukuGranted ? Colors.green : null,
                       ),
-                      label: Text(shizukuGranted ? 'Shizuku 已授权' : '请求 Shizuku 授权'),
+                      label: Text(
+                          shizukuGranted ? loc.mcpConnShizukuGranted : loc.mcpConnRequestShizuku),
                       onPressed: () async {
                         final ok = await McpScreen.requestShizukuAuthorization();
                         if (!mounted) return;
                         FlutterToastr.show(
                           ok
-                              ? 'Shizuku 已授权'
-                              : '未完成授权：请确认 Shizuku 正在运行，并到 Shizuku 应用中选择本应用授权；或在弹窗中选择“允许”',
+                              ? loc.mcpConnShizukuGranted
+                              : loc.mcpConnShizukuAuthIncomplete,
                           context,
                           duration: 3,
                           backgroundColor: ok ? Colors.green : Colors.orange,
@@ -1038,12 +1057,12 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.admin_panel_settings),
-                      label: const Text('请求 Root 授权'),
+                      label: Text(loc.mcpConnRequestRoot),
                       onPressed: () async {
                         final ok = await McpScreen.requestRootAuthorization();
                         if (!mounted) return;
                         FlutterToastr.show(
-                          ok ? 'Root 已授权' : '授权未完成：请在 Magisk/KernelSU 弹窗中允许，或确认设备已 Root',
+                          ok ? loc.mcpConnRootGranted : loc.mcpConnRootAuthIncomplete,
                           context,
                           duration: 3,
                           backgroundColor: ok ? Colors.green : Colors.orange,
@@ -1061,12 +1080,12 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.verified_user),
-                      label: const Text('请求 Dhizuku 授权'),
+                      label: Text(loc.mcpConnRequestDhizuku),
                       onPressed: () async {
                         final ok = await McpScreen.requestDhizukuAuthorization();
                         if (!mounted) return;
                         FlutterToastr.show(
-                          ok ? 'Dhizuku 已授权' : '授权未完成：请确认已安装 Dhizuku 并完成 Owner 激活',
+                          ok ? loc.mcpConnDhizukuGranted : loc.mcpConnDhizukuAuthIncomplete,
                           context,
                           duration: 3,
                           backgroundColor: ok ? Colors.green : Colors.orange,
@@ -1084,12 +1103,12 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 Row(
                   children: [
                     Text(
-                      '可用工具',
+                      loc.mcpConnAvailableTools,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '共 ${tools.length} 个',
+                      loc.mcpConnToolCount(tools.length),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -1099,7 +1118,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '关闭的工具将从工具列表中隐藏，AI 无法调用。',
+                  loc.mcpConnDisabledToolsHint,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 8),
@@ -1122,7 +1141,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                 Center(
                   child: TextButton.icon(
                     icon: const Icon(Icons.refresh),
-                    label: const Text('刷新'),
+                    label: Text(loc.refresh),
                     onPressed: _loadInfo,
                   ),
                 ),
@@ -1145,61 +1164,62 @@ class _ToolTile extends StatelessWidget {
   });
 
   /// 工具中文备注
-  static const Map<String, String> _notes = {
-    'set_config': '修改 ProxyPin 配置（系统代理、SSL 抓包开关）',
-    'export_har': '将抓包记录导出为 HAR 文件',
-    'import_har': '导入 HAR 文件到抓包记录',
-    'search_requests': '按 URL、方法、状态码、域名等条件搜索请求',
-    'generate_code': '根据请求生成代码（curl、Python、Go、JavaScript、Node.js）',
-    'get_curl': '生成请求对应的 cURL 命令',
-    'get_recent_requests': '获取最近抓到的请求列表',
-    'get_request_details': '获取指定请求的完整详情（请求/响应头与体、Cookie）',
-    'start_proxy': '启动代理服务',
-    'stop_proxy': '停止代理服务',
-    'get_proxy_status': '查询代理服务运行状态',
-    'clear_requests': '清空抓包记录',
-    'replay_request': '重放指定请求',
-    'update_script': '更新注入页面的 JS 脚本',
-    'get_scripts': '获取已配置的 JS 脚本列表',
-    'get_statistics': '获取抓包统计信息',
-    'compare_requests': '对比两个请求的差异',
-    'find_similar_requests': '查找与指定请求相似的请求',
-    'extract_api_endpoints': '从抓包记录中提取 API 端点聚合信息',
-    'find_sensitive_data': '搜索请求中的敏感数据（密码、密钥、手机号、身份证等）',
-    'get_cookie_info': '分析域名的 Cookie（值、HttpOnly、Secure、过期时间）',
-    'get_domain_summary': '统计域名的流量摘要（方法、状态码、平均耗时、错误数）',
-    'get_pending_intercepts': '查看断点拦截队列中待处理的请求/响应',
-    'approve_intercept': '放行断点拦截（可修改请求后放行）',
-    'reject_intercept': '拒绝断点拦截（中止请求或丢弃响应）',
-    'toggle_breakpoint': '启用或停用断点拦截',
-    'add_weak_network_rule': '添加弱网模拟规则（限速、延迟等）',
-    'add_custom_network_profile': '添加自定义网络档位',
-    'list_weak_network_rules': '列出所有弱网规则',
-    'remove_weak_network_rule': '移除弱网规则',
-    'toggle_weak_network': '启用或停用弱网模拟',
-    'list_environments': '列出所有环境',
-    'set_environment_variable': '设置环境变量值',
-    'create_environment': '创建新环境',
-    'set_active_environment': '切换当前活动环境',
-    'remove_environment': '删除指定环境',
-    'toggle_environment_variables': '启用或停用环境变量',
-    'get_device_info': '获取设备信息（型号、系统版本、Root 状态）',
-    'get_current_activity': '获取当前前台 Activity',
-    'dump_ui': '导出当前界面的 UI 层级树',
-    'tap_screen': '模拟点击屏幕坐标',
-    'long_press': '模拟长按屏幕坐标',
-    'swipe_screen': '模拟滑动屏幕',
-    'key_event': '发送按键事件（如返回键、音量键）',
-    'input_text': '向当前输入框输入文本',
-    'screenshot': '截取当前屏幕',
-    'open_accessibility_settings': '打开系统无障碍设置页',
-    'shell': '执行 Shell 命令（支持 Root/Shizuku/Dhizuku 模式）',
+  static Map<String, String> _notes(AppLocalizations loc) => <String, String>{
+    'set_config': loc.mcpConnToolSetConfig,
+    'export_har': loc.mcpConnToolExportHar,
+    'import_har': loc.mcpConnToolImportHar,
+    'search_requests': loc.mcpConnToolSearchRequests,
+    'generate_code': loc.mcpConnToolGenerateCode,
+    'get_curl': loc.mcpConnToolGetCurl,
+    'get_recent_requests': loc.mcpConnToolGetRecentRequests,
+    'get_request_details': loc.mcpConnToolGetRequestDetails,
+    'start_proxy': loc.mcpConnToolStartProxy,
+    'stop_proxy': loc.mcpConnToolStopProxy,
+    'get_proxy_status': loc.mcpConnToolGetProxyStatus,
+    'clear_requests': loc.mcpConnToolClearRequests,
+    'replay_request': loc.mcpConnToolReplayRequest,
+    'update_script': loc.mcpConnToolUpdateScript,
+    'get_scripts': loc.mcpConnToolGetScripts,
+    'get_statistics': loc.mcpConnToolGetStatistics,
+    'compare_requests': loc.mcpConnToolCompareRequests,
+    'find_similar_requests': loc.mcpConnToolFindSimilarRequests,
+    'extract_api_endpoints': loc.mcpConnToolExtractApiEndpoints,
+    'find_sensitive_data': loc.mcpConnToolFindSensitiveData,
+    'get_cookie_info': loc.mcpConnToolGetCookieInfo,
+    'get_domain_summary': loc.mcpConnToolGetDomainSummary,
+    'get_pending_intercepts': loc.mcpConnToolGetPendingIntercepts,
+    'approve_intercept': loc.mcpConnToolApproveIntercept,
+    'reject_intercept': loc.mcpConnToolRejectIntercept,
+    'toggle_breakpoint': loc.mcpConnToolToggleBreakpoint,
+    'add_weak_network_rule': loc.mcpConnToolAddWeakNetworkRule,
+    'add_custom_network_profile': loc.mcpConnToolAddCustomNetworkProfile,
+    'list_weak_network_rules': loc.mcpConnToolListWeakNetworkRules,
+    'remove_weak_network_rule': loc.mcpConnToolRemoveWeakNetworkRule,
+    'toggle_weak_network': loc.mcpConnToolToggleWeakNetwork,
+    'list_environments': loc.mcpConnToolListEnvironments,
+    'set_environment_variable': loc.mcpConnToolSetEnvironmentVariable,
+    'create_environment': loc.mcpConnToolCreateEnvironment,
+    'set_active_environment': loc.mcpConnToolSetActiveEnvironment,
+    'remove_environment': loc.mcpConnToolRemoveEnvironment,
+    'toggle_environment_variables': loc.mcpConnToolToggleEnvironmentVariables,
+    'get_device_info': loc.mcpConnToolGetDeviceInfo,
+    'get_current_activity': loc.mcpConnToolGetCurrentActivity,
+    'dump_ui': loc.mcpConnToolDumpUi,
+    'tap_screen': loc.mcpConnToolTapScreen,
+    'long_press': loc.mcpConnToolLongPress,
+    'swipe_screen': loc.mcpConnToolSwipeScreen,
+    'key_event': loc.mcpConnToolKeyEvent,
+    'input_text': loc.mcpConnToolInputText,
+    'screenshot': loc.mcpConnToolScreenshot,
+    'open_accessibility_settings': loc.mcpConnToolOpenAccessibilitySettings,
+    'shell': loc.mcpConnToolShell,
   };
 
   @override
   Widget build(BuildContext context) {
     final name = tool['name'] as String? ?? '';
-    final note = _notes[name] ?? (tool['description'] as String? ?? '');
+    final note = _notes(AppLocalizations.of(context)!)[name] ??
+        (tool['description'] as String? ?? '');
     return ListTile(
       dense: true,
       title: Text(

@@ -78,7 +78,8 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
   void _run() {
     // 放到下一帧，避免阻塞首屏
     Future.delayed(Duration.zero, () {
-      final report = SecurityAuditor.audit(widget.requests, customRules: _store?.rules ?? const []);
+      final report =
+          SecurityAuditor.audit(widget.requests, localizations, customRules: _store?.rules ?? const []);
       if (!mounted) return;
       setState(() {
         _report = report;
@@ -664,7 +665,7 @@ class _SecurityRulesDialogState extends State<_SecurityRulesDialog> {
                             ],
                           ),
                           subtitle: Text(
-                            '${rule.describe()}\n${rule.pattern}',
+                            '${rule.describe(localizations)}\n${rule.pattern}',
                             style: const TextStyle(fontSize: 11.5, height: 1.35),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -897,7 +898,7 @@ class _SecurityRuleEditorDialogState extends State<_SecurityRuleEditorDialog> {
                         for (final target in SecurityRuleTarget.values)
                           DropdownMenuItem(
                             value: target,
-                            child: Text(CustomSecurityRule.targetLabel(target),
+                            child: Text(CustomSecurityRule.targetLabel(target, localizations),
                                 style: const TextStyle(fontSize: 13)),
                           ),
                       ],
@@ -917,7 +918,7 @@ class _SecurityRuleEditorDialogState extends State<_SecurityRuleEditorDialog> {
                         for (final match in SecurityRuleMatchType.values)
                           DropdownMenuItem(
                             value: match,
-                            child: Text(CustomSecurityRule.matchLabel(match),
+                            child: Text(CustomSecurityRule.matchLabel(match, localizations),
                                 style: const TextStyle(fontSize: 13)),
                           ),
                       ],

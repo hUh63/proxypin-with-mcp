@@ -30,6 +30,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/calc_engine.dart';
 import 'package:proxypin/network/util/grpc_decoder.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
+import 'package:proxypin/l10n/app_localizations_en.dart';
 import 'package:proxypin/network/util/security_audit.dart';
 import 'package:proxypin/network/util/security_rule_store.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';
@@ -1895,8 +1896,9 @@ class McpServer {
       case 'diagnose_capture':
         // 抓包链路只读自检：与界面「抓包自检」同一份结论，便于 AI 先诊断再建议
         final diagnoseRequests = McpBridge().source.toList();
-        final diagnoseResult = await CaptureDiagnose.run(diagnoseRequests);
-        return diagnoseResult.toJson();
+        final diagnoseResult =
+            await CaptureDiagnose.run(diagnoseRequests, AppLocalizationsEn());
+        return diagnoseResult.toJson(AppLocalizationsEn());
 
       case 'get_quic_sessions':
         // QUIC 连接概览：会话元数据 + 10 分钟时间轴 + 密钥日志状态 + 已解密流预览
@@ -1986,6 +1988,7 @@ class McpServer {
         final auditStore = await SecurityRuleStore.instance;
         final auditReport = SecurityAuditor.audit(
           auditRequests,
+          AppLocalizationsEn(),
           customRules: auditStore.rules,
           onlyCategories: auditCategories,
         );

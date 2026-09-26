@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:http/http.dart' as http;
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
@@ -174,7 +175,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isEdit ? '编辑 Root' : '添加 Root'),
+        title: Text(isEdit
+            ? AppLocalizations.of(context)!.mcpAutoEditRoot
+            : AppLocalizations.of(context)!.mcpAutoAddRoot),
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
@@ -183,27 +186,29 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             children: [
               TextField(
                 controller: uriController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'URI *',
-                  border: OutlineInputBorder(),
-                  hintText: 'proxypin://workspace 或 file:///path/to/dir',
+                  border: const OutlineInputBorder(),
+                  hintText: AppLocalizations.of(context)!.mcpAutoRootUriHint,
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: '名称', border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.mcpAutoName, border: const OutlineInputBorder()),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context)!.mcpAutoCancel)),
           ElevatedButton(
             onPressed: () async {
               final uri = uriController.text.trim();
               if (uri.isEmpty) {
-                FlutterToastr.show('请输入 Root URI', context, duration: 2, backgroundColor: Colors.red);
+                FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoRootUriRequired, context,
+                    duration: 2, backgroundColor: Colors.red);
                 return;
               }
               final name = nameController.text.trim().isEmpty ? uri : nameController.text.trim();
@@ -219,10 +224,15 @@ class _McpAutomationPageState extends State<McpAutomationPage>
               });
               await _saveRoots();
               if (context.mounted) Navigator.pop(context);
-              FlutterToastr.show(isEdit ? 'Root 已更新' : 'Root 已添加', context, duration: 2,
+              FlutterToastr.show(
+                  isEdit
+                      ? AppLocalizations.of(context)!.mcpAutoRootUpdated
+                      : AppLocalizations.of(context)!.mcpAutoRootAdded,
+                  context,
+                  duration: 2,
                   backgroundColor: Colors.green);
             },
-            child: const Text('保存'),
+            child: Text(AppLocalizations.of(context)!.mcpAutoSave),
           ),
         ],
       ),
@@ -234,7 +244,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     setState(() => _roots.remove(root));
     await _saveRoots();
     if (mounted) {
-      FlutterToastr.show('Root 已删除', context, duration: 2, backgroundColor: Colors.green);
+      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoRootDeleted, context,
+          duration: 2, backgroundColor: Colors.green);
     }
   }
 
@@ -276,14 +287,23 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       }
       if (item == null) {
         logger.w('脚本不存在: $name');
-        if (mounted) FlutterToastr.show('脚本不存在: $name', context, backgroundColor: Colors.orange);
+        if (mounted) {
+          FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoScriptNotFound(name), context,
+              backgroundColor: Colors.orange);
+        }
         return;
       }
       await mgr.runStandalone(item);
-      if (mounted) FlutterToastr.show('脚本已执行: $name', context, backgroundColor: Colors.green);
+      if (mounted) {
+        FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoScriptExecuted(name), context,
+            backgroundColor: Colors.green);
+      }
     } catch (e, s) {
       logger.e('执行脚本失败: $name', error: e, stackTrace: s);
-      if (mounted) FlutterToastr.show('脚本执行失败: $e', context, backgroundColor: Colors.red);
+      if (mounted) {
+        FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoScriptRunFailed('$e'), context,
+            backgroundColor: Colors.red);
+      }
     }
   }
 
@@ -323,7 +343,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('MCP 自动化', style: TextStyle(fontSize: 16)),
+            Text(AppLocalizations.of(context)!.mcpAutoTitle, style: const TextStyle(fontSize: 16)),
             const SizedBox(width: 10),
             _buildStatusIndicator(),
           ],
@@ -332,16 +352,17 @@ class _McpAutomationPageState extends State<McpAutomationPage>
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
-            tooltip: '使用教程',
+            tooltip: AppLocalizations.of(context)!.mcpAutoTutorial,
             onPressed: () => showGuideArticle(context, 'mcp_automation'),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: '刷新',
+            tooltip: AppLocalizations.of(context)!.mcpAutoRefresh,
             onPressed: () {
               _refreshMcpData();
               setState(() {});
-              FlutterToastr.show('已刷新', context, duration: 1, backgroundColor: Colors.green);
+              FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoRefreshed, context,
+                  duration: 1, backgroundColor: Colors.green);
             },
           ),
         ],
@@ -351,13 +372,13 @@ class _McpAutomationPageState extends State<McpAutomationPage>
           // 靠左对齐：scrollable TabBar 默认 startOffset 会带起始缩进，
           // 显式指定 start 使 6 个 Tab 从最左侧开始显示
           tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(text: '定时任务', icon: Icon(Icons.schedule)),
-            Tab(text: '事件监听', icon: Icon(Icons.event)),
-            Tab(text: '规则引擎', icon: Icon(Icons.rule)),
-            Tab(text: 'Prompts', icon: Icon(Icons.chat)),
-            Tab(text: 'Roots', icon: Icon(Icons.folder_open)),
-            Tab(text: '工作流', icon: Icon(Icons.auto_awesome)),
+          tabs: [
+            Tab(text: AppLocalizations.of(context)!.mcpAutoTabTasks, icon: const Icon(Icons.schedule)),
+            Tab(text: AppLocalizations.of(context)!.mcpAutoTabEvents, icon: const Icon(Icons.event)),
+            Tab(text: AppLocalizations.of(context)!.mcpAutoTabRules, icon: const Icon(Icons.rule)),
+            Tab(text: 'Prompts', icon: const Icon(Icons.chat)),
+            Tab(text: 'Roots', icon: const Icon(Icons.folder_open)),
+            Tab(text: AppLocalizations.of(context)!.mcpAutoTabWorkflows, icon: const Icon(Icons.auto_awesome)),
           ],
         ),
       ),
@@ -386,13 +407,13 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     final String text;
     if (running == null) {
       color = Colors.orange;
-      text = '检测中…';
+      text = AppLocalizations.of(context)!.mcpAutoStatusChecking;
     } else if (running) {
       color = Colors.green;
-      text = '运行中';
+      text = AppLocalizations.of(context)!.mcpAutoStatusRunning;
     } else {
       color = Colors.grey;
-      text = '已停止';
+      text = AppLocalizations.of(context)!.mcpAutoStatusStopped;
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -414,7 +435,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
         ),
         // 运行开关：电源图标随状态变色，点击启停（替代过大的 Switch）
         Tooltip(
-          message: running == true ? '点击停止 MCP 自动化' : '点击启动 MCP 自动化',
+          message: running == true
+              ? AppLocalizations.of(context)!.mcpAutoTapToStop
+              : AppLocalizations.of(context)!.mcpAutoTapToStart,
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: running == null
@@ -427,14 +450,14 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     if (!mounted) return;
                     setState(() => _mcpRunning = ok);
                     if (!running && !ok) {
-                      FlutterToastr.show('MCP 服务启动失败，请检查设置中是否已启用 MCP 服务',
+                      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoServiceStartFailed,
                           context, duration: 2, backgroundColor: Colors.red);
                     } else if (running) {
-                      FlutterToastr.show('MCP 服务已停止', context, duration: 2,
-                          backgroundColor: Colors.green);
+                      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoServiceStopped, context,
+                          duration: 2, backgroundColor: Colors.green);
                     } else {
-                      FlutterToastr.show('MCP 服务已启动', context, duration: 2,
-                          backgroundColor: Colors.green);
+                      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoServiceStarted, context,
+                          duration: 2, backgroundColor: Colors.green);
                     }
                     if (ok != prev) _refreshMcpData();
                   },
@@ -489,7 +512,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
   Widget _buildScheduledTasksTab() {
     final tasks = _scheduler.tasks;
     if (tasks.isEmpty) {
-      return _emptyState(Icons.schedule, '暂无定时任务', '点击右下角 + 添加新任务\n可同时选择执行时间与执行内容');
+      return _emptyState(Icons.schedule, AppLocalizations.of(context)!.mcpAutoNoTasks,
+          AppLocalizations.of(context)!.mcpAutoNoTasksHint);
     }
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -523,15 +547,18 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             ),
             title: Text(task.name),
             subtitle: Text(
-              '${task.repeatLabel} • ${isInterval ? '下次：' : ''}${_formatTime(task.executeAt)}'
-              '${task.lastExecuted != null ? ' • 上次：${_formatTime(task.lastExecuted!)}' : ''}'
-              '${task.repeatCount != null ? ' • 已执行 ${task.executedCount}/${task.repeatCount} 次' : ''}',
+              '${task.repeatLabel} • '
+              '${isInterval ? AppLocalizations.of(context)!.mcpAutoNextPrefix : ''}${_formatTime(task.executeAt)}'
+              '${task.lastExecuted != null ? AppLocalizations.of(context)!.mcpAutoLastRun(_formatTime(task.lastExecuted!)) : ''}'
+              '${task.repeatCount != null ? AppLocalizations.of(context)!.mcpAutoRanTimes(task.executedCount, task.repeatCount!) : ''}',
               style: const TextStyle(fontSize: 12),
             ),
             trailing: IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () => showConfirmDialog(context,
-                  title: '删除', content: '取消并删除这个定时任务？', onConfirm: () => _cancelTask(task)),
+                  title: AppLocalizations.of(context)!.mcpAutoDelete,
+                  content: AppLocalizations.of(context)!.mcpAutoDeleteTaskConfirm,
+                  onConfirm: () => _cancelTask(task)),
             ),
           ),
         );
@@ -581,7 +608,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('添加定时任务'),
+          title: Text(AppLocalizations.of(context)!.mcpAutoAddTask),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -591,21 +618,24 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: '任务名称', border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.mcpAutoTaskName,
+                        border: const OutlineInputBorder()),
                   ),
                   const SizedBox(height: 16),
-                  const Text('定时方式:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.mcpAutoScheduleMode,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   // 5 种方式用 ChoiceChip 流式布局，避免 SegmentedButton 一行放不下溢出
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      for (final (value, label, icon) in const [
-                        ('none', '一次性', Icons.play_circle_outline),
-                        ('daily', '每天', Icons.repeat),
-                        ('weekly', '每周', Icons.date_range),
-                        ('interval', '间隔', Icons.timer_outlined),
+                      for (final (value, label, icon) in [
+                        ('none', AppLocalizations.of(context)!.mcpAutoModeOnce, Icons.play_circle_outline),
+                        ('daily', AppLocalizations.of(context)!.mcpAutoModeDaily, Icons.repeat),
+                        ('weekly', AppLocalizations.of(context)!.mcpAutoModeWeekly, Icons.date_range),
+                        ('interval', AppLocalizations.of(context)!.mcpAutoModeInterval, Icons.timer_outlined),
                         ('cron', 'Cron', Icons.code),
                       ])
                         ChoiceChip(
@@ -633,19 +663,22 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   if (repeatMode == 'cron') ...[
                     TextField(
                       controller: cronController,
-                      decoration: const InputDecoration(
-                        labelText: 'Cron 表达式',
-                        border: OutlineInputBorder(),
-                        hintText: '分 时 日 月 星期，如 0 9 * * 1-5',
-                        helperText: '支持 * , - / 通配符',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.mcpAutoCronLabel,
+                        border: const OutlineInputBorder(),
+                        hintText: AppLocalizations.of(context)!.mcpAutoCronHint,
+                        helperText: AppLocalizations.of(context)!.mcpAutoCronHelper,
                       ),
                       onChanged: (v) => setDialogState(() => cronPreview = CronExpression(v).next(DateTime.now())),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       cronPreview == null
-                          ? (cronController.text.isEmpty ? '请输入 Cron 表达式' : '表达式无效，请检查')
-                          : '下次执行: ${cronPreview!.year}-${cronPreview!.month.toString().padLeft(2, '0')}-${cronPreview!.day.toString().padLeft(2, '0')} ${cronPreview!.hour.toString().padLeft(2, '0')}:${cronPreview!.minute.toString().padLeft(2, '0')}',
+                          ? (cronController.text.isEmpty
+                              ? AppLocalizations.of(context)!.mcpAutoCronRequired
+                              : AppLocalizations.of(context)!.mcpAutoCronInvalidHint)
+                          : AppLocalizations.of(context)!.mcpAutoCronNextAt(
+                              '${cronPreview!.year}-${cronPreview!.month.toString().padLeft(2, '0')}-${cronPreview!.day.toString().padLeft(2, '0')} ${cronPreview!.hour.toString().padLeft(2, '0')}:${cronPreview!.minute.toString().padLeft(2, '0')}'),
                       style: TextStyle(
                           fontSize: 12,
                           color: cronPreview == null ? Colors.orange : Colors.green),
@@ -655,10 +688,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       spacing: 6,
                       runSpacing: 4,
                       children: [
-                        for (final (expr, desc) in const [
-                          ('0 9 * * 1-5', '工作日9点'),
-                          ('*/30 * * * *', '每30分钟'),
-                          ('0 0 * * *', '每天零点'),
+                        for (final (expr, desc) in [
+                          ('0 9 * * 1-5', AppLocalizations.of(context)!.mcpAutoCronPresetWorkday),
+                          ('*/30 * * * *', AppLocalizations.of(context)!.mcpAutoCronPresetEvery30),
+                          ('0 0 * * *', AppLocalizations.of(context)!.mcpAutoCronPresetMidnight),
                         ])
                           ActionChip(
                             label: Text(desc, style: const TextStyle(fontSize: 11)),
@@ -672,7 +705,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   ],
                   // 一次性 / 每天 / 每周：选择执行时刻
                   if (repeatMode != 'interval' && repeatMode != 'cron') ...[
-                    Text(repeatMode == 'none' ? '执行日期与时间:' : '执行时间:'),
+                    Text(repeatMode == 'none'
+                        ? AppLocalizations.of(context)!.mcpAutoExecDateTime
+                        : AppLocalizations.of(context)!.mcpAutoExecTime),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -687,7 +722,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                                 initialDate: selectedTime,
                                 firstDate: DateTime.now(),
                                 lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                                helpText: '选择执行日期',
+                                helpText: AppLocalizations.of(context)!.mcpAutoPickDate,
                               );
                               if (picked != null) {
                                 setDialogState(() {
@@ -733,15 +768,23 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   // 每周模式：星期多选
                   if (repeatMode == 'weekly') ...[
                     const SizedBox(height: 8),
-                    const Text('重复于:', style: TextStyle(fontSize: 13)),
+                    Text(AppLocalizations.of(context)!.mcpAutoRepeatOn, style: const TextStyle(fontSize: 13)),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
                       children: [
-                        for (final entry in const {1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日'}.entries)
+                        for (final entry in {
+                          1: AppLocalizations.of(context)!.mcpAutoWeekdayMon,
+                          2: AppLocalizations.of(context)!.mcpAutoWeekdayTue,
+                          3: AppLocalizations.of(context)!.mcpAutoWeekdayWed,
+                          4: AppLocalizations.of(context)!.mcpAutoWeekdayThu,
+                          5: AppLocalizations.of(context)!.mcpAutoWeekdayFri,
+                          6: AppLocalizations.of(context)!.mcpAutoWeekdaySat,
+                          7: AppLocalizations.of(context)!.mcpAutoWeekdaySun,
+                        }.entries)
                           FilterChip(
-                            label: Text('周${entry.value}', style: const TextStyle(fontSize: 12)),
+                            label: Text(entry.value, style: const TextStyle(fontSize: 12)),
                             selected: selectedWeekdays.contains(entry.key),
                             showCheckmark: false,
                             visualDensity: VisualDensity.compact,
@@ -759,9 +802,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       ],
                     ),
                     if (selectedWeekdays.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 4),
-                        child: Text('请至少选择一个星期', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(AppLocalizations.of(context)!.mcpAutoPickWeekday,
+                            style: const TextStyle(fontSize: 12, color: Colors.orange)),
                       ),
                   ],
                   // 固定间隔：间隔分钟数
@@ -769,10 +813,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     TextField(
                       controller: intervalController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: '间隔分钟数',
-                        border: OutlineInputBorder(),
-                        helperText: '如填 30，表示每 30 分钟自动执行一次',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.mcpAutoIntervalMinutes,
+                        border: const OutlineInputBorder(),
+                        helperText: AppLocalizations.of(context)!.mcpAutoIntervalMinutesHelp,
                         helperMaxLines: 2,
                       ),
                       onChanged: (v) => intervalMinutes = int.tryParse(v) ?? 30,
@@ -784,46 +828,69 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     TextField(
                       controller: repeatCountController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: '重复次数',
-                        border: OutlineInputBorder(),
-                        helperText: '如填 5，表示共执行 5 次后自动结束；留空 = 无限重复',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.mcpAutoRepeatCount,
+                        border: const OutlineInputBorder(),
+                        helperText: AppLocalizations.of(context)!.mcpAutoRepeatCountHelp,
                         helperMaxLines: 2,
                       ),
                       onChanged: (v) => repeatCount = int.tryParse(v),
                     ),
                   ],
                   const Divider(),
-                  const Text('执行任务:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.mcpAutoTaskAction,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
                     value: actionType,
                     isExpanded: true,
                     isDense: true,
                     decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
-                    items: const [
-                      DropdownMenuItem(value: 0, child: Text('执行脚本', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(value: 1, child: Text('调用 MCP 工具', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(value: 2, child: Text('执行工作流', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(value: 3, child: Text('发送 Webhook', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                    items: [
+                      DropdownMenuItem(
+                          value: 0,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoActionScript,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(
+                          value: 1,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoActionTool,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(
+                          value: 2,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoActionWorkflow,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(
+                          value: 3,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoActionWebhook,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
                     ],
                     selectedItemBuilder: _selectedItems<int>(const [0, 1, 2, 3],
-                        (v) => const ['执行脚本', '调用 MCP 工具', '执行工作流', '发送 Webhook'][v]),
+                        (v) => [
+                              AppLocalizations.of(context)!.mcpAutoActionScript,
+                              AppLocalizations.of(context)!.mcpAutoActionTool,
+                              AppLocalizations.of(context)!.mcpAutoActionWorkflow,
+                              AppLocalizations.of(context)!.mcpAutoActionWebhook
+                            ][v]),
                     onChanged: (v) => setDialogState(() => actionType = v ?? 1),
                   ),
                   const SizedBox(height: 8),
                   if (actionType == 0)
-                    _optionDropdown(scriptNames, selectedScript, '选择脚本',
+                    _optionDropdown(scriptNames, selectedScript,
+                        AppLocalizations.of(context)!.mcpAutoPickScript,
                         (v) => setDialogState(() => selectedScript = v),
-                        emptyHint: '暂无脚本，先在脚本页添加'),
+                        emptyHint: AppLocalizations.of(context)!.mcpAutoNoScriptAddFirst),
                   if (actionType == 1)
-                    _optionDropdown(toolNames, selectedTool, '选择 MCP 工具',
+                    _optionDropdown(toolNames, selectedTool,
+                        AppLocalizations.of(context)!.mcpAutoPickTool,
                         (v) => setDialogState(() => selectedTool = v),
-                        emptyHint: _mcpRunning == true ? '暂无工具' : 'MCP 未启动，无法获取工具'),
+                        emptyHint: _mcpRunning == true
+                            ? AppLocalizations.of(context)!.mcpAutoNoTools
+                            : AppLocalizations.of(context)!.mcpAutoToolsNeedStart),
                   if (actionType == 2)
-                    _optionDropdown(workflowNames, selectedWorkflow, '选择工作流',
+                    _optionDropdown(workflowNames, selectedWorkflow,
+                        AppLocalizations.of(context)!.mcpAutoPickWorkflow,
                         (v) => setDialogState(() => selectedWorkflow = v),
-                        emptyHint: '暂无工作流，先在工作流页添加'),
+                        emptyHint: AppLocalizations.of(context)!.mcpAutoNoWorkflowAddFirst),
                   if (actionType == 3)
                     TextField(
                       controller: webhookUrlController,
@@ -834,29 +901,34 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context)!.mcpAutoCancel)),
             ElevatedButton(
               onPressed: () async {
                 if (nameController.text.isEmpty) {
-                  FlutterToastr.show('请输入任务名称', context, duration: 2, backgroundColor: Colors.red);
+                  FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskNameRequired, context,
+                      duration: 2, backgroundColor: Colors.red);
                   return;
                 }
                 if (repeatMode == 'interval' && intervalMinutes <= 0) {
-                  FlutterToastr.show('请输入有效的间隔分钟数', context, duration: 2, backgroundColor: Colors.red);
+                  FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoIntervalInvalid, context,
+                      duration: 2, backgroundColor: Colors.red);
                   return;
                 }
                 if (repeatMode == 'weekly' && selectedWeekdays.isEmpty) {
-                  FlutterToastr.show('请至少选择一个星期', context, duration: 2, backgroundColor: Colors.red);
+                  FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoPickWeekday, context,
+                      duration: 2, backgroundColor: Colors.red);
                   return;
                 }
                 if (repeatMode == 'cron' && CronExpression(cronController.text.trim()).next(DateTime.now()) == null) {
-                  FlutterToastr.show('Cron 表达式无效', context, duration: 2, backgroundColor: Colors.red);
+                  FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoCronInvalid, context,
+                      duration: 2, backgroundColor: Colors.red);
                   return;
                 }
                 final descriptor = _buildTaskDescriptor(actionType, nameController.text,
                     script: selectedScript, tool: selectedTool, workflow: selectedWorkflow, webhookUrl: webhookUrlController.text);
                 if (descriptor == null) {
-                  FlutterToastr.show('请完善执行任务配置', context, duration: 2, backgroundColor: Colors.red);
+                  FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskActionIncomplete, context,
+                      duration: 2, backgroundColor: Colors.red);
                   return;
                 }
                 // 一次性任务从所选日期时间起算；间隔任务从当前时间起算；每周任务从所选时刻起算；Cron 由表达式计算
@@ -886,10 +958,11 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 );
                 await _scheduler.saveTasks();
                 Navigator.pop(context);
-                FlutterToastr.show('定时任务已添加', context, duration: 2, backgroundColor: Colors.green);
+                FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskAdded, context,
+                    duration: 2, backgroundColor: Colors.green);
                 setState(() {});
               },
-              child: const Text('确定'),
+              child: Text(AppLocalizations.of(context)!.mcpAutoConfirm),
             ),
           ],
         ),
@@ -963,7 +1036,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     _scheduler.cancelTask(task.name);
     unawaited(_scheduler.saveTasks());
     setState(() {});
-    FlutterToastr.show('任务已取消', context, duration: 2, backgroundColor: Colors.green);
+    FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskCancelled, context,
+        duration: 2, backgroundColor: Colors.green);
   }
 
   // ==================== Tab 2: 事件监听 ====================
@@ -973,7 +1047,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       padding: const EdgeInsets.all(12),
       children: [
         if (_registeredListeners.isEmpty)
-          _emptyStateInline(Icons.event, '暂无事件监听器', '点击 + 注册监听器\n触发时可执行日志/任务')
+          _emptyStateInline(Icons.event, AppLocalizations.of(context)!.mcpAutoNoListeners,
+              AppLocalizations.of(context)!.mcpAutoNoListenersHint)
         else
           ..._registeredListeners.map((l) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -994,8 +1069,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                         onPressed: () => showConfirmDialog(context,
-                            title: '删除',
-                            content: '移除这个事件监听器？',
+                            title: AppLocalizations.of(context)!.mcpAutoDelete,
+                            content: AppLocalizations.of(context)!.mcpAutoRemoveListenerConfirm,
                             onConfirm: () => _removeEventListener(l)),
                       ),
                     ],
@@ -1003,8 +1078,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 ),
               )),
         const SizedBox(height: 60),
-        _infoCard(Colors.blue, Icons.info_outline, '事件类型说明',
-            '• HTTP 请求事件：匹配 URL 正则触发\n• 网络状态事件：连接/断开/wifi/弱网\n• 代理状态事件：启动/停止/暂停/恢复\n• 抓包阈值事件：抓包数达到阈值'),
+        _infoCard(Colors.blue, Icons.info_outline, AppLocalizations.of(context)!.mcpAutoEventTypesInfo,
+            AppLocalizations.of(context)!.mcpAutoEventTypesBody),
       ],
     );
   }
@@ -1020,7 +1095,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('添加事件监听器'),
+          title: Text(AppLocalizations.of(context)!.mcpAutoAddListener),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -1033,22 +1108,41 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     isDense: true,
                     value: eventType,
                     decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
-                    items: const [
-                      DropdownMenuItem(value: 0, child: Text('HTTP 请求事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(value: 1, child: Text('网络状态事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(value: 2, child: Text('代理状态事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(value: 3, child: Text('抓包阈值事件', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                    items: [
+                      DropdownMenuItem(
+                          value: 0,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoEventHttp,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(
+                          value: 1,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoEventNetwork,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(
+                          value: 2,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoEventProxy,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                      DropdownMenuItem(
+                          value: 3,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoEventCapture,
+                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
                     ],
                     selectedItemBuilder: _selectedItems<int>(const [0, 1, 2, 3],
-                        (v) => const ['HTTP 请求事件', '网络状态事件', '代理状态事件', '抓包阈值事件'][v]),
+                        (v) => [
+                              AppLocalizations.of(context)!.mcpAutoEventHttp,
+                              AppLocalizations.of(context)!.mcpAutoEventNetwork,
+                              AppLocalizations.of(context)!.mcpAutoEventProxy,
+                              AppLocalizations.of(context)!.mcpAutoEventCapture
+                            ][v]),
                     onChanged: (v) => setDialogState(() => eventType = v ?? 0),
                   ),
                   const SizedBox(height: 12),
                   if (eventType == 0)
                     TextField(
                       controller: patternController,
-                      decoration: const InputDecoration(
-                          labelText: 'URL 正则', hintText: '.*', border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.mcpAutoUrlRegex,
+                          hintText: '.*',
+                          border: const OutlineInputBorder()),
                     ),
                   if (eventType == 1)
                     DropdownButtonFormField<NetworkStatus>(
@@ -1078,14 +1172,16 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     TextField(
                       controller: thresholdController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: '抓包数量阈值', border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.mcpAutoCaptureThreshold,
+                          border: const OutlineInputBorder()),
                     ),
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context)!.mcpAutoCancel)),
             ElevatedButton(
               onPressed: () {
                 String eventName = '';
@@ -1096,29 +1192,30 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 switch (eventType) {
                   case 0:
                     eventName = 'http_request:${patternController.text}';
-                    desc = 'HTTP 请求: ${patternController.text}';
+                    desc = AppLocalizations.of(context)!.mcpAutoDescHttp(patternController.text);
                     break;
                   case 1:
                     eventName = 'network_status:${networkStatus.name}';
-                    desc = '网络状态: ${networkStatus.name}';
+                    desc = AppLocalizations.of(context)!.mcpAutoDescNetwork(networkStatus.name);
                     break;
                   case 2:
                     eventName = 'proxy_status:${proxyStatus.name}';
-                    desc = '代理状态: ${proxyStatus.name}';
+                    desc = AppLocalizations.of(context)!.mcpAutoDescProxy(proxyStatus.name);
                     break;
                   default:
                     final n = int.tryParse(thresholdController.text) ?? 0;
                     eventName = 'capture_threshold:$n';
-                    desc = '抓包阈值: $n';
+                    desc = AppLocalizations.of(context)!.mcpAutoDescCapture(n);
                 }
                 _eventAutomation.addListener(eventName, callback);
                 _registeredListeners.add(_RegisteredEventListener(
                     eventName: eventName, description: desc, callback: callback, enabled: true));
                 Navigator.pop(context);
-                FlutterToastr.show('监听器已注册', context, duration: 2, backgroundColor: Colors.green);
+                FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoListenerAdded, context,
+                    duration: 2, backgroundColor: Colors.green);
                 setState(() {});
               },
-              child: const Text('确定'),
+              child: Text(AppLocalizations.of(context)!.mcpAutoConfirm),
             ),
           ],
         ),
@@ -1138,7 +1235,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
   void _removeEventListener(_RegisteredEventListener l) {
     _eventAutomation.removeListener(l.eventName, l.callback);
     setState(() => _registeredListeners.remove(l));
-    FlutterToastr.show('监听器已移除', context, duration: 2, backgroundColor: Colors.green);
+    FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoListenerRemoved, context,
+        duration: 2, backgroundColor: Colors.green);
   }
 
   Color _eventTypeColor(String eventName) {
@@ -1165,7 +1263,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       padding: const EdgeInsets.all(12),
       children: [
         if (rules.isEmpty)
-          _emptyStateInline(Icons.rule, '暂无自动化规则', '点击 + 添加规则\n规则可根据条件自动执行操作')
+          _emptyStateInline(Icons.rule, AppLocalizations.of(context)!.mcpAutoNoRules,
+              AppLocalizations.of(context)!.mcpAutoNoRulesHint)
         else
           ...rules.map((rule) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -1176,7 +1275,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   ),
                   title: Text(rule.name),
                   subtitle: Text(
-                    '${rule.conditions.length} 条件 • ${rule.actions.length} 操作 • ${rule.enabled ? '已启用' : '已禁用'}',
+                    AppLocalizations.of(context)!.mcpAutoRuleSummary(
+                        rule.conditions.length,
+                        rule.actions.length,
+                        rule.enabled
+                            ? AppLocalizations.of(context)!.mcpAutoEnabled
+                            : AppLocalizations.of(context)!.mcpAutoDisabled),
                     style: const TextStyle(fontSize: 12),
                   ),
                   trailing: Row(
@@ -1190,8 +1294,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                         onPressed: () => showConfirmDialog(context,
-                            title: '删除',
-                            content: '删除这条规则？',
+                            title: AppLocalizations.of(context)!.mcpAutoDelete,
+                            content: AppLocalizations.of(context)!.mcpAutoDeleteRuleConfirm,
                             onConfirm: () => _deleteRule(rule)),
                       ),
                     ],
@@ -1203,16 +1307,20 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('条件:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(AppLocalizations.of(context)!.mcpAutoConditionsInline,
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
                           ...rule.conditions.map((c) => Padding(
                                 padding: const EdgeInsets.only(top: 4),
-                                child: Text('• ${_formatCondition(c)}'),
+                                child: Text(
+                                    '• ${_formatCondition(AppLocalizations.of(context)!, c)}'),
                               )),
                           const SizedBox(height: 12),
-                          const Text('操作:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(AppLocalizations.of(context)!.mcpAutoActionsInline,
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
                           ...rule.actions.map((a) => Padding(
                                 padding: const EdgeInsets.only(top: 4),
-                                child: Text('• ${_formatAction(a)}'),
+                                child: Text(
+                                    '• ${_formatAction(AppLocalizations.of(context)!, a)}'),
                               )),
                         ],
                       ),
@@ -1221,8 +1329,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 ),
               )),
         const SizedBox(height: 60),
-        _infoCard(Colors.purple, Icons.lightbulb_outline, '规则引擎说明',
-            '支持 14 种条件运算符与 8 种操作类型\n规则持久化到 mcp_rules.json，跨重启保留'),
+        _infoCard(Colors.purple, Icons.lightbulb_outline,
+            AppLocalizations.of(context)!.mcpAutoRuleEngineInfo,
+            AppLocalizations.of(context)!.mcpAutoRuleEngineInfoBody),
       ],
     );
   }
@@ -1244,7 +1353,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? '编辑规则' : '添加规则'),
+          title: Text(isEdit
+              ? AppLocalizations.of(context)!.mcpAutoEditRule
+              : AppLocalizations.of(context)!.mcpAutoAddRule),
           // 限制弹窗最大宽度/高度：避免宽屏下弹窗撑满整个屏幕、
           // 内容超高时 actions 被顶出屏幕外（内部可滚动）
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -1262,17 +1373,26 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 children: [
                   TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: '规则名称', border: OutlineInputBorder(), isDense: true)),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.mcpAutoRuleName,
+                          border: const OutlineInputBorder(),
+                          isDense: true)),
                   const SizedBox(height: 8),
                   TextField(
                       controller: descController,
-                      decoration: const InputDecoration(labelText: '描述', border: OutlineInputBorder(), isDense: true)),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.mcpAutoDescription,
+                          border: const OutlineInputBorder(),
+                          isDense: true)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<RulePriority>(
                     value: priority,
                     isExpanded: true,
                     isDense: true,
-                    decoration: const InputDecoration(labelText: '优先级', border: OutlineInputBorder(), isDense: true),
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.mcpAutoPriority,
+                        border: const OutlineInputBorder(),
+                        isDense: true),
                     items: RulePriority.values.map((p) => DropdownMenuItem(value: p, child: _dropdownText(p.name))).toList(),
                     selectedItemBuilder: _selectedItems<RulePriority>(RulePriority.values, (p) => p.name),
                     onChanged: (v) => setDialogState(() => priority = v ?? RulePriority.normal),
@@ -1280,12 +1400,13 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Text('启用'),
+                      Text(AppLocalizations.of(context)!.mcpAutoEnable),
                       Switch(value: enabled, onChanged: (v) => setDialogState(() => enabled = v)),
                     ],
                   ),
                   const Divider(),
-                  _sectionHeader('条件', () => setDialogState(() => conditions.add(_ConditionRow()))),
+                  _sectionHeader(AppLocalizations.of(context)!.mcpAutoSectionConditions,
+                      () => setDialogState(() => conditions.add(_ConditionRow()))),
                   ...conditions.asMap().entries.map((e) {
                     final i = e.key;
                     final c = e.value;
@@ -1300,16 +1421,25 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                               : ConditionType.httpRequest,
                           isExpanded: true,
                           isDense: true,
-                          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: '条件类型', isDense: true),
+                          decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              labelText: AppLocalizations.of(context)!.mcpAutoConditionType,
+                              isDense: true),
                           items: [
                             for (final t in ConditionType.values)
                               if (t != ConditionType.custom)
-                                DropdownMenuItem(value: t, child: _dropdownText(_conditionTypeLabel(t))),
+                                DropdownMenuItem(
+                                    value: t,
+                                    child: _dropdownText(
+                                        _conditionTypeLabel(AppLocalizations.of(context)!, t))),
                           ],
                           selectedItemBuilder: (context) => [
                             for (final t in ConditionType.values)
                               if (t != ConditionType.custom)
-                                Align(alignment: Alignment.centerLeft, child: _dropdownText(_conditionTypeLabel(t))),
+                                Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: _dropdownText(
+                                        _conditionTypeLabel(AppLocalizations.of(context)!, t))),
                           ],
                           onChanged: (v) => setDialogState(() {
                             c.type = v ?? ConditionType.httpRequest;
@@ -1328,9 +1458,13 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                           isDense: true,
                           decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                           items: fields
-                              .map((f) => DropdownMenuItem(value: f, child: _dropdownText(_ConditionRow.fieldDisplayName(c.type, f))))
+                              .map((f) => DropdownMenuItem(
+                                  value: f,
+                                  child: _dropdownText(_ConditionRow.fieldDisplayName(
+                                      AppLocalizations.of(context)!, c.type, f))))
                               .toList(),
-                          selectedItemBuilder: _selectedItems<String>(fields, (f) => _ConditionRow.fieldDisplayName(c.type, f)),
+                          selectedItemBuilder: _selectedItems<String>(fields,
+                              (f) => _ConditionRow.fieldDisplayName(AppLocalizations.of(context)!, c.type, f)),
                           onChanged: (v) => setDialogState(() => c.field = v ?? fields.first),
                         ),
                         const SizedBox(height: 6),
@@ -1340,8 +1474,14 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                           isExpanded: true,
                           isDense: true,
                           decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
-                          items: Operator.values.map((o) => DropdownMenuItem(value: o, child: _dropdownText(_formatOperator(o)))).toList(),
-                          selectedItemBuilder: _selectedItems<Operator>(Operator.values, _formatOperator),
+                          items: Operator.values
+                              .map((o) => DropdownMenuItem(
+                                  value: o,
+                                  child: _dropdownText(_formatOperator(AppLocalizations.of(context)!, o))))
+                              .toList(),
+                          selectedItemBuilder: _selectedItems<Operator>(
+                              Operator.values,
+                              (o) => _formatOperator(AppLocalizations.of(context)!, o)),
                           onChanged: (v) => setDialogState(() => c.operator = v ?? Operator.equals),
                         ),
                       ]),
@@ -1350,7 +1490,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     );
                   }),
                   const SizedBox(height: 8),
-                  _sectionHeader('操作', () => setDialogState(() => actions.add(_ActionRow()))),
+                  _sectionHeader(AppLocalizations.of(context)!.mcpAutoSectionActions,
+                      () => setDialogState(() => actions.add(_ActionRow()))),
                   ...actions.asMap().entries.map((e) {
                     final i = e.key;
                     final a = e.value;
@@ -1361,16 +1502,22 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                         isDense: true,
                         decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                         items: ActionType.values
-                            .map((t) => DropdownMenuItem(value: t, child: _dropdownText(_formatActionType(t))))
+                            .map((t) => DropdownMenuItem(
+                                value: t,
+                                child: _dropdownText(
+                                    _formatActionType(AppLocalizations.of(context)!, t))))
                             .toList(),
-                        selectedItemBuilder: _selectedItems<ActionType>(ActionType.values, _formatActionType),
+                        selectedItemBuilder: _selectedItems<ActionType>(ActionType.values,
+                            (t) => _formatActionType(AppLocalizations.of(context)!, t)),
                         onChanged: (v) => setDialogState(() => a.type = v ?? ActionType.log),
                       ),
                       subtitle: TextField(
                         controller: a.targetController,
                         decoration: InputDecoration(
                          
-                          labelText: a.type == ActionType.sendWebhook ? 'Webhook URL' : '目标 / 参数(JSON)',
+                          labelText: a.type == ActionType.sendWebhook
+                              ? 'Webhook URL'
+                              : AppLocalizations.of(context)!.mcpAutoTargetParams,
                           border: const OutlineInputBorder(),
                         ),
                       ),
@@ -1383,11 +1530,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
           ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context)!.mcpAutoCancel)),
             ElevatedButton(
               onPressed: () async {
                 if (nameController.text.isEmpty) {
-                  FlutterToastr.show('请输入规则名称', context, duration: 2, backgroundColor: Colors.red);
+                  FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoRuleNameRequired, context,
+                      duration: 2, backgroundColor: Colors.red);
                   return;
                 }
                 final condList = conditions
@@ -1416,10 +1564,16 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 await _ruleEngine.saveRules();
                 _notifyRulesChanged();
                 if (context.mounted) Navigator.pop(context);
-                FlutterToastr.show(isEdit ? '规则已更新' : '规则已添加', context, duration: 2, backgroundColor: Colors.green);
+                FlutterToastr.show(
+                    isEdit
+                        ? AppLocalizations.of(context)!.mcpAutoRuleUpdated
+                        : AppLocalizations.of(context)!.mcpAutoRuleAdded,
+                    context,
+                    duration: 2,
+                    backgroundColor: Colors.green);
                 setState(() {});
               },
-              child: const Text('保存'),
+              child: Text(AppLocalizations.of(context)!.mcpAutoSave),
             ),
           ],
         ),
@@ -1436,7 +1590,13 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     _ruleEngine.saveRules();
     _notifyRulesChanged();
     setState(() {});
-    FlutterToastr.show(enable ? '规则已启用' : '规则已禁用', context, duration: 2, backgroundColor: Colors.green);
+    FlutterToastr.show(
+        enable
+            ? AppLocalizations.of(context)!.mcpAutoEnabled
+            : AppLocalizations.of(context)!.mcpAutoDisabled,
+        context,
+        duration: 2,
+        backgroundColor: Colors.green);
   }
 
   void _deleteRule(Rule rule) {
@@ -1444,7 +1604,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     _ruleEngine.saveRules();
     _notifyRulesChanged();
     setState(() {});
-    FlutterToastr.show('规则已删除', context, duration: 2, backgroundColor: Colors.green);
+    FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoRuleDeleted, context,
+        duration: 2, backgroundColor: Colors.green);
   }
 
   Color _rulePriorityColor(RulePriority priority) {
@@ -1459,25 +1620,30 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     }
   }
 
-  String _formatCondition(Condition c) {
+  String _formatCondition(AppLocalizations loc, Condition c) {
     final typeLabel = switch (c.type) {
       ConditionType.httpRequest => 'HTTP',
-      ConditionType.proxyStatus => '代理',
-      ConditionType.networkStatus => '网络',
-      ConditionType.systemStatus => '系统',
-      ConditionType.custom => '自定义',
+      ConditionType.proxyStatus => loc.mcpAutoShortProxy,
+      ConditionType.networkStatus => loc.mcpAutoShortNetwork,
+      ConditionType.systemStatus => loc.mcpAutoShortSystem,
+      ConditionType.custom => loc.mcpAutoCustom,
     };
-    final fieldName = _ConditionRow.fieldDisplayName(c.type, c.field);
-    return '[$typeLabel] $fieldName ${_formatOperator(c.operator)} ${c.value}';
+    final fieldName = _ConditionRow.fieldDisplayName(loc, c.type, c.field);
+    return '[$typeLabel] $fieldName ${_formatOperator(loc, c.operator)} ${c.value}';
   }
 
-  String _conditionTypeLabel(ConditionType type) {
+  String _conditionTypeLabel(AppLocalizations loc, ConditionType type) {
     switch (type) {
-      case ConditionType.httpRequest: return 'HTTP 请求';
-      case ConditionType.proxyStatus: return '代理状态';
-      case ConditionType.networkStatus: return '网络状态';
-      case ConditionType.systemStatus: return '系统状态';
-      case ConditionType.custom: return '自定义';
+      case ConditionType.httpRequest:
+        return loc.mcpAutoCondTypeHttp;
+      case ConditionType.proxyStatus:
+        return loc.mcpAutoCondTypeProxy;
+      case ConditionType.networkStatus:
+        return loc.mcpAutoCondTypeNetwork;
+      case ConditionType.systemStatus:
+        return loc.mcpAutoCondTypeSystem;
+      case ConditionType.custom:
+        return loc.mcpAutoCustom;
     }
   }
 
@@ -1524,21 +1690,25 @@ class _McpAutomationPageState extends State<McpAutomationPage>
         value: opts.contains(c.valueController.text) ? c.valueController.text : null,
         isExpanded: true,
         isDense: true,
-        decoration: const InputDecoration(labelText: '值', border: OutlineInputBorder(), isDense: true),
+        decoration: InputDecoration(labelText: AppLocalizations.of(context)!.mcpAutoValue, border: const OutlineInputBorder(), isDense: true),
         items: opts
-            .map((v) => DropdownMenuItem(value: v, child: _dropdownText(_ConditionRow.valueDisplayName(c.type, v))))
+            .map((v) => DropdownMenuItem(
+                value: v,
+                child: _dropdownText(
+                    _ConditionRow.valueDisplayName(AppLocalizations.of(context)!, c.type, v))))
             .toList(),
-        selectedItemBuilder: _selectedItems<String>(opts, (v) => _ConditionRow.valueDisplayName(c.type, v)),
+        selectedItemBuilder: _selectedItems<String>(opts,
+            (v) => _ConditionRow.valueDisplayName(AppLocalizations.of(context)!, c.type, v)),
         onChanged: (v) => setDialogState(() => c.valueController.text = v ?? ''),
       );
     }
     return TextField(
       controller: c.valueController,
-      decoration: const InputDecoration(labelText: '值', border: OutlineInputBorder(), isDense: true),
+      decoration: InputDecoration(labelText: AppLocalizations.of(context)!.mcpAutoValue, border: const OutlineInputBorder(), isDense: true),
     );
   }
 
-  String _formatOperator(Operator operator) {
+  String _formatOperator(AppLocalizations loc, Operator operator) {
     switch (operator) {
       case Operator.equals: return '=';
       case Operator.notEquals: return '≠';
@@ -1546,31 +1716,39 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       case Operator.lessThan: return '<';
       case Operator.greaterThanOrEqual: return '≥';
       case Operator.lessThanOrEqual: return '≤';
-      case Operator.contains: return '包含';
-      case Operator.startsWith: return '始于';
-      case Operator.endsWith: return '终于';
-      case Operator.matches: return '匹配';
-      case Operator.inList: return '在...中';
-      case Operator.notInList: return '不在...中';
-      case Operator.exists: return '存在';
-      case Operator.notExists: return '不存在';
+      case Operator.contains: return loc.mcpAutoOpContains;
+      case Operator.startsWith: return loc.mcpAutoOpStartsWith;
+      case Operator.endsWith: return loc.mcpAutoOpEndsWith;
+      case Operator.matches: return loc.mcpAutoOpMatches;
+      case Operator.inList: return loc.mcpAutoOpInList;
+      case Operator.notInList: return loc.mcpAutoOpNotInList;
+      case Operator.exists: return loc.mcpAutoOpExists;
+      case Operator.notExists: return loc.mcpAutoOpNotExists;
     }
   }
 
-  String _formatAction(Action a) {
-    return '${_formatActionType(a.type)}: ${a.target ?? a.parameters ?? ''}';
+  String _formatAction(AppLocalizations loc, Action a) {
+    return '${_formatActionType(loc, a.type)}: ${a.target ?? a.parameters ?? ''}';
   }
 
-  String _formatActionType(ActionType type) {
+  String _formatActionType(AppLocalizations loc, ActionType type) {
     switch (type) {
-      case ActionType.log: return '记录';
-      case ActionType.notify: return '通知';
-      case ActionType.stopCapture: return '停止抓包';
-      case ActionType.startCapture: return '开始抓包';
-      case ActionType.exportData: return '导出数据';
-      case ActionType.executeScript: return '执行脚本';
-      case ActionType.sendWebhook: return '发送 Webhook';
-      case ActionType.custom: return '自定义';
+      case ActionType.log:
+        return loc.mcpAutoActLog;
+      case ActionType.notify:
+        return loc.mcpAutoActNotify;
+      case ActionType.stopCapture:
+        return loc.mcpAutoActStopCapture;
+      case ActionType.startCapture:
+        return loc.mcpAutoActStartCapture;
+      case ActionType.exportData:
+        return loc.mcpAutoActExportData;
+      case ActionType.executeScript:
+        return loc.mcpAutoActionScript;
+      case ActionType.sendWebhook:
+        return loc.mcpAutoActionWebhook;
+      case ActionType.custom:
+        return loc.mcpAutoCustom;
     }
   }
 
@@ -1578,7 +1756,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
 
   Widget _buildPromptsTab() {
     if (_prompts.isEmpty) {
-      return _emptyState(Icons.chat, '暂无 Prompts', _mcpRunning == true ? '点击 + 调用 Prompt' : 'MCP 服务未启动，请先在连接页启动');
+      return _emptyState(
+          Icons.chat,
+          AppLocalizations.of(context)!.mcpAutoNoPrompts,
+          _mcpRunning == true
+              ? AppLocalizations.of(context)!.mcpAutoTapInvokePrompt
+              : AppLocalizations.of(context)!.mcpAutoServiceNotStarted);
     }
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -1597,7 +1780,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             subtitle: Text(
               args.isEmpty
                   ? desc
-                  : '$desc\n参数: ${args.map((a) => a is Map ? a['name'] : a).join(', ')}',
+                  : AppLocalizations.of(context)!.mcpAutoPromptDescWithArgs(
+                      desc, args.map((a) => a is Map ? a['name'] : a).join(', ')),
               style: const TextStyle(fontSize: 12),
             ),
             isThreeLine: args.isNotEmpty,
@@ -1611,7 +1795,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
   void _showPromptInvokeDialog(BuildContext context, Map<String, dynamic>? prompt) {
     final prompts = _prompts;
     if (prompts.isEmpty) {
-      FlutterToastr.show('暂无可用 Prompt', context, backgroundColor: Colors.orange);
+      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoNoPromptAvailable, context,
+          backgroundColor: Colors.orange);
       return;
     }
     Map<String, dynamic> selected = prompt ?? prompts.first;
@@ -1641,7 +1826,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('调用 Prompt'),
+          title: Text(AppLocalizations.of(context)!.mcpAutoInvokePrompt),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -1657,11 +1842,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     items: prompts
                         .map((p) => DropdownMenuItem(
                             value: p['name']?.toString() ?? '',
-                            child: _dropdownText(p['name']?.toString() ?? '未命名')))
+                            child: _dropdownText(
+                                p['name']?.toString() ?? AppLocalizations.of(context)!.mcpAutoUnnamed)))
                         .toList(),
                     selectedItemBuilder: _selectedItems<String>(
                         prompts.map((p) => p['name']?.toString() ?? '').toList(),
-                        (name) => name.isEmpty ? '未命名' : name),
+                        (name) => name.isEmpty ? AppLocalizations.of(context)!.mcpAutoUnnamed : name),
                     onChanged: (v) {
                       if (v == null) return;
                       final found = promptByName(v);
@@ -1676,7 +1862,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   Text(selected['description']?.toString() ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                   const SizedBox(height: 12),
                   if (argControllers.isEmpty)
-                    const Text('该 Prompt 无需参数', style: TextStyle(fontSize: 13))
+                    Text(AppLocalizations.of(context)!.mcpAutoPromptNoArgs,
+                        style: const TextStyle(fontSize: 13))
                   else
                     ...argControllers.entries.map((e) {
                       final argDefs = selected['arguments'] is List ? (selected['arguments'] as List) : const [];
@@ -1705,7 +1892,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context)!.mcpAutoCancel)),
             ElevatedButton(
               onPressed: () async {
                 final name = selected['name']?.toString() ?? '';
@@ -1719,11 +1906,13 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   if (ad is! Map) continue;
                   final adName = (ad['name'] ?? '').toString();
                   if (ad['required'] == true && (args[adName] ?? '').toString().isEmpty) {
-                    FlutterToastr.show('请填写必填参数: $adName', context, duration: 2, backgroundColor: Colors.red);
+                    FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoRequiredArg(adName), context,
+                        duration: 2, backgroundColor: Colors.red);
                     return;
                   }
                 }
-                FlutterToastr.show('正在调用 Prompt…', context, duration: 1, backgroundColor: Colors.blue);
+                FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoInvokingPrompt, context,
+                    duration: 1, backgroundColor: Colors.blue);
                 Map<String, dynamic>? result;
                 try {
                   // 优先走 MCP 协议（支持参数），失败回退到本地 getPrompt
@@ -1736,7 +1925,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 if (context.mounted) Navigator.pop(context);
                 _showPromptResult(context, name, result);
               },
-              child: const Text('调用'),
+              child: Text(AppLocalizations.of(context)!.mcpAutoInvoke),
             ),
           ],
         ),
@@ -1748,7 +1937,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     // 防御：messages 可能缺失或元素不是标准 Map（异常数据直接白屏）
     final messages = result?['messages'] is List ? (result?['messages'] as List) : const [];
     final text = messages.isEmpty
-        ? (result?.toString() ?? '无返回内容')
+        ? (result?.toString() ?? AppLocalizations.of(context)!.mcpAutoNoResult)
         : messages.map((m) {
             if (m is! Map) return m.toString();
             final role = m['role'] ?? '';
@@ -1768,7 +1957,11 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             child: SelectableText(text, style: const TextStyle(fontSize: 13, fontFamily: 'monospace')),
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context)!.mcpAutoClose))
+        ],
       ),
     );
   }
@@ -1777,7 +1970,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
 
   Widget _buildRootsTab() {
     if (_roots.isEmpty) {
-      return _emptyState(Icons.folder_open, '暂无 Roots', '点击右下角 + 添加 Root\n可添加 proxypin:// 或 file:// 资源根，自由编辑');
+      return _emptyState(
+          Icons.folder_open,
+          AppLocalizations.of(context)!.mcpAutoNoRoots,
+          AppLocalizations.of(context)!.mcpAutoNoRootsHint);
     }
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -1797,15 +1993,15 @@ class _McpAutomationPageState extends State<McpAutomationPage>
               children: [
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
-                  tooltip: '编辑',
+                  tooltip: AppLocalizations.of(context)!.mcpAutoEdit,
                   onPressed: () => _showRootDialog(context, r),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                  tooltip: '删除',
+                  tooltip: AppLocalizations.of(context)!.mcpAutoDelete,
                   onPressed: () => showConfirmDialog(context,
-                      title: '删除',
-                      content: '删除这个 Root 配置？',
+                      title: AppLocalizations.of(context)!.mcpAutoDelete,
+                      content: AppLocalizations.of(context)!.mcpAutoDeleteRootConfirm,
                       onConfirm: () => _deleteRoot(r)),
                 ),
               ],
@@ -1818,14 +2014,15 @@ class _McpAutomationPageState extends State<McpAutomationPage>
   }
 
   Future<void> _readRoot(BuildContext context, String uri, String name) async {
-    FlutterToastr.show('读取 $name…', context, duration: 1, backgroundColor: Colors.blue);
+    FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoReading(name), context,
+        duration: 1, backgroundColor: Colors.blue);
     String text;
     try {
       final res = await _mcpSendRequest('resources/read', {'uri': uri});
       final result = (res?['result'] as Map<String, dynamic>?) ?? res;
       final contents = (result?['contents'] as List?) ?? [];
       if (contents.isEmpty) {
-        text = '空';
+        text = AppLocalizations.of(context)!.mcpAutoEmpty;
       } else {
         text = contents.map((c) {
           final cMap = c is Map ? c : <String, dynamic>{};
@@ -1833,7 +2030,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
         }).join('\n\n');
       }
     } catch (e) {
-      text = '读取失败: $e';
+      text = AppLocalizations.of(context)!.mcpAutoReadFailed('$e');
       logger.e('读取 Root 失败: $uri', error: e);
     }
     if (!context.mounted) return;
@@ -1847,7 +2044,11 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             child: SelectableText(text, style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context)!.mcpAutoClose))
+        ],
       ),
     );
   }
@@ -1856,7 +2057,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
 
   Widget _buildWorkflowTab() {
     if (_workflows.isEmpty) {
-      return _emptyState(Icons.auto_awesome, '暂无工作流', '点击 + 创建工作流\n可编排多个脚本节点顺序执行');
+      return _emptyState(
+          Icons.auto_awesome,
+          AppLocalizations.of(context)!.mcpAutoNoWorkflows,
+          AppLocalizations.of(context)!.mcpAutoNoWorkflowsHint);
     }
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -1871,8 +2075,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
               backgroundColor: (wf['enabled'] ?? true) ? Colors.green : Colors.grey,
               child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
             ),
-            title: Text(wf['name']?.toString() ?? '未命名工作流'),
-            subtitle: Text('${nodes.length} 个节点', style: const TextStyle(fontSize: 12)),
+            title: Text(wf['name']?.toString() ?? AppLocalizations.of(context)!.mcpAutoUnnamedWorkflow),
+            subtitle: Text(AppLocalizations.of(context)!.mcpAutoNodesCount(nodes.length),
+                style: const TextStyle(fontSize: 12)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1894,12 +2099,13 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                   onPressed: () => showConfirmDialog(context,
-                      title: '删除',
-                      content: '删除这个工作流？',
+                      title: AppLocalizations.of(context)!.mcpAutoDelete,
+                      content: AppLocalizations.of(context)!.mcpAutoDeleteWorkflowConfirm,
                       onConfirm: () async {
                         setState(() => _workflows.removeAt(index));
                         await _saveWorkflows();
-                        FlutterToastr.show('工作流已删除', context, duration: 2, backgroundColor: Colors.green);
+                        FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoWorkflowDeleted, context,
+                            duration: 2, backgroundColor: Colors.green);
                       }),
                 ),
               ],
@@ -1907,7 +2113,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             children: [
               const Divider(),
               if (nodes.isEmpty)
-                const ListTile(dense: true, title: Text('无节点', style: TextStyle(fontSize: 12)))
+                ListTile(
+                    dense: true,
+                    title: Text(AppLocalizations.of(context)!.mcpAutoNoNodes,
+                        style: const TextStyle(fontSize: 12)))
               else
                 ...nodes.map<Widget>((n) {
                   final deps = (n['dependencies'] as List?)?.join(', ') ?? '';
@@ -1915,7 +2124,11 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     dense: true,
                     leading: Icon(_scriptTypeIcon(n['type']?.toString()), size: 18),
                     title: Text(n['name']?.toString() ?? '', style: const TextStyle(fontSize: 13)),
-                    subtitle: Text(deps.isNotEmpty ? '依赖: $deps' : '无依赖', style: const TextStyle(fontSize: 11)),
+                    subtitle: Text(
+                        deps.isNotEmpty
+                            ? AppLocalizations.of(context)!.mcpAutoDependsOn(deps)
+                            : AppLocalizations.of(context)!.mcpAutoNoDeps,
+                        style: const TextStyle(fontSize: 11)),
                   );
                 }),
             ],
@@ -1948,7 +2161,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? '编辑工作流' : '添加工作流'),
+          title: Text(isEdit
+              ? AppLocalizations.of(context)!.mcpAutoEditWorkflow
+              : AppLocalizations.of(context)!.mcpAutoAddWorkflow),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -1958,11 +2173,14 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 children: [
                   TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: '工作流名称', border: OutlineInputBorder())),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.mcpAutoWorkflowName,
+                          border: const OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  _sectionHeader('节点', () {
+                  _sectionHeader(AppLocalizations.of(context)!.mcpAutoNodes, () {
                     if (scriptNames.isEmpty) {
-                      FlutterToastr.show('暂无脚本，先在脚本页添加', context, backgroundColor: Colors.orange);
+                      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoNoScriptAddFirst, context,
+                          backgroundColor: Colors.orange);
                       return;
                     }
                     setDialogState(() {
@@ -1977,7 +2195,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     });
                   }),
                   if (nodes.isEmpty)
-                    const Padding(padding: EdgeInsets.all(8), child: Text('点击 + 添加节点', style: TextStyle(fontSize: 12)))
+                    Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Text(AppLocalizations.of(context)!.mcpAutoTapAddNode,
+                            style: const TextStyle(fontSize: 12)))
                   else
                     ...nodes.asMap().entries.map((e) {
                       final i = e.key;
@@ -2027,18 +2248,19 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       );
                     }),
                   const SizedBox(height: 8),
-                  const Text('节点按依赖关系拓扑执行；依赖显示为可点选的标签。',
-                      style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  Text(AppLocalizations.of(context)!.mcpAutoTopoHint,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context)!.mcpAutoCancel)),
             ElevatedButton(
               onPressed: () async {
                 if (nameController.text.isEmpty) {
-                  FlutterToastr.show('请输入工作流名称', context, duration: 2, backgroundColor: Colors.red);
+                  FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoWorkflowNameRequired, context,
+                      duration: 2, backgroundColor: Colors.red);
                   return;
                 }
                 final wf = <String, dynamic>{
@@ -2055,10 +2277,16 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 }
                 await _saveWorkflows();
                 if (context.mounted) Navigator.pop(context);
-                FlutterToastr.show(isEdit ? '工作流已更新' : '工作流已添加', context, duration: 2, backgroundColor: Colors.green);
+                FlutterToastr.show(
+                    isEdit
+                        ? AppLocalizations.of(context)!.mcpAutoWorkflowUpdated
+                        : AppLocalizations.of(context)!.mcpAutoWorkflowAdded,
+                    context,
+                    duration: 2,
+                    backgroundColor: Colors.green);
                 setState(() {});
               },
-              child: const Text('保存'),
+              child: Text(AppLocalizations.of(context)!.mcpAutoSave),
             ),
           ],
         ),
@@ -2069,12 +2297,20 @@ class _McpAutomationPageState extends State<McpAutomationPage>
   Future<void> _executeWorkflow(Map<String, dynamic> workflow) async {
     final nodes = (workflow['nodes'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     if (nodes.isEmpty) {
-      FlutterToastr.show('工作流没有节点', context, backgroundColor: Colors.orange);
+      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoWorkflowNoNodes, context,
+          backgroundColor: Colors.orange);
       return;
     }
-    if (mounted) FlutterToastr.show('开始执行工作流：${workflow['name']}', context, backgroundColor: Colors.blue);
+    if (mounted) {
+      FlutterToastr.show(
+          AppLocalizations.of(context)!.mcpAutoWorkflowStart('${workflow['name']}'), context,
+          backgroundColor: Colors.blue);
+    }
     await _executeWorkflowNodes(workflow);
-    if (mounted) FlutterToastr.show('工作流执行完成', context, backgroundColor: Colors.green);
+    if (mounted) {
+      FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoWorkflowDone, context,
+          backgroundColor: Colors.green);
+    }
   }
 
   /// 工作流节点拓扑执行（UI 无关，供 play 按钮与定时任务执行器复用）
@@ -2276,42 +2512,42 @@ class _ConditionRow {
   }
 
   /// 获取字段的显示名
-  static String fieldDisplayName(ConditionType t, String field) {
+  static String fieldDisplayName(AppLocalizations loc, ConditionType t, String field) {
     switch (t) {
       case ConditionType.httpRequest:
         switch (field) {
           case 'url': return 'URL';
-          case 'method': return '方法';
-          case 'statusCode': return '状态码';
-          case 'duration': return '耗时(ms)';
-          case 'host': return '域名';
-          case 'path': return '路径';
-          case 'contentType': return '请求 Content-Type';
-          case 'responseContentType': return '响应 Content-Type';
-          case 'requestSize': return '请求大小';
-          case 'responseSize': return '响应大小';
+          case 'method': return loc.mcpAutoFieldMethod;
+          case 'statusCode': return loc.mcpAutoFieldStatusCode;
+          case 'duration': return loc.mcpAutoFieldDuration;
+          case 'host': return loc.mcpAutoFieldHost;
+          case 'path': return loc.mcpAutoFieldPath;
+          case 'contentType': return loc.mcpAutoFieldReqContentType;
+          case 'responseContentType': return loc.mcpAutoFieldRespContentType;
+          case 'requestSize': return loc.mcpAutoFieldReqSize;
+          case 'responseSize': return loc.mcpAutoFieldRespSize;
           default: return field;
         }
       case ConditionType.proxyStatus:
         switch (field) {
-          case 'status': return '代理状态';
-          case 'type': return '类型';
-          case 'timestamp': return '时间戳';
+          case 'status': return loc.mcpAutoCondTypeProxy;
+          case 'type': return loc.mcpAutoFieldType;
+          case 'timestamp': return loc.mcpAutoFieldTimestamp;
           default: return field;
         }
       case ConditionType.networkStatus:
         switch (field) {
-          case 'status': return '网络状态';
-          case 'type': return '类型';
-          case 'timestamp': return '时间戳';
+          case 'status': return loc.mcpAutoCondTypeNetwork;
+          case 'type': return loc.mcpAutoFieldType;
+          case 'timestamp': return loc.mcpAutoFieldTimestamp;
           default: return field;
         }
       case ConditionType.systemStatus:
         switch (field) {
-          case 'memoryUsage': return '内存使用(MB)';
-          case 'captureCount': return '抓包数量';
-          case 'diskUsage': return '磁盘使用(MB)';
-          case 'cpuUsage': return 'CPU 使用率(%)';
+          case 'memoryUsage': return loc.mcpAutoFieldMemory;
+          case 'captureCount': return loc.mcpAutoFieldCaptureCount;
+          case 'diskUsage': return loc.mcpAutoFieldDisk;
+          case 'cpuUsage': return loc.mcpAutoFieldCpu;
           default: return field;
         }
       case ConditionType.custom:
@@ -2332,23 +2568,23 @@ class _ConditionRow {
   }
 
   /// 枚举候选值的中文显示名
-  static String valueDisplayName(ConditionType t, String value) {
+  static String valueDisplayName(AppLocalizations loc, ConditionType t, String value) {
     switch (t) {
       case ConditionType.proxyStatus:
         switch (value) {
-          case 'started': return '已启动';
-          case 'stopped': return '已停止';
-          case 'paused': return '已暂停';
-          case 'resumed': return '已恢复';
+          case 'started': return loc.mcpAutoStatusStarted;
+          case 'stopped': return loc.mcpAutoStatusStopped;
+          case 'paused': return loc.mcpAutoStatusPaused;
+          case 'resumed': return loc.mcpAutoStatusResumed;
           default: return value;
         }
       case ConditionType.networkStatus:
         switch (value) {
-          case 'connected': return '已连接';
-          case 'disconnected': return '已断开';
+          case 'connected': return loc.mcpAutoStatusConnected;
+          case 'disconnected': return loc.mcpAutoStatusDisconnected;
           case 'wifi': return 'WiFi';
-          case 'mobile': return '移动数据';
-          case 'weak': return '弱网';
+          case 'mobile': return loc.mcpAutoStatusMobile;
+          case 'weak': return loc.mcpAutoStatusWeak;
           default: return value;
         }
       default:

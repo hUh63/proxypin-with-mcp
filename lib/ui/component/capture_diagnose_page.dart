@@ -15,6 +15,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
 
@@ -44,7 +45,7 @@ class _CaptureDiagnosePageState extends State<CaptureDiagnosePage> {
 
   Future<void> _run() async {
     setState(() => _loading = true);
-    final result = await CaptureDiagnose.run(widget.requests);
+    final result = await CaptureDiagnose.run(widget.requests, AppLocalizations.of(context)!);
     if (!mounted) return;
     setState(() {
       _result = result;
@@ -174,7 +175,7 @@ class _CaptureDiagnosePageState extends State<CaptureDiagnosePage> {
         children: [
           const Text('先做这几步', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          for (final tip in result.suggestions)
+          for (final tip in result.suggestions(AppLocalizations.of(context)!))
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text('· $tip', style: const TextStyle(fontSize: 12, height: 1.45)),

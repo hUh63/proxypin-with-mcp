@@ -1,5 +1,40 @@
 # Changelog
 
+## v1.24.38 (2026-09-27)
+
+### 国际化（l10n）第五批：MCP 自动化 / MCP 连接 / 安全自检 / 抓包诊断
+
+本轮是 l10n 单批改动最大的一次，**452 个新 key、351 处替换**，覆盖 7 个文件：
+
+**`mcp_automation.dart`**（214 key，前缀 `mcpAuto*`）—— 定时任务 / 事件监听 / 规则引擎 /
+Prompts / Roots / 工作流 六个 Tab。这里有 7 个**没有 context 的方法**（`_formatCondition`、
+`_conditionTypeLabel`、`_formatOperator`、`_formatAction`、`_formatActionType`、
+`_ConditionRow.fieldDisplayName` / `valueDisplayName`），全部改签名为**接收
+`AppLocalizations loc` 参数**并在调用处传入，把原本 switch 里硬编码的中文标签取出来。
+
+**`mcp_connection.dart`（移动端）**（134 key，但**复用既有 `mcp*` key 15 个**）——
+最大文件，落地后代码内中文只剩 1 处 `logger.w`。`static const Map<String,String> _notes`
+（48 条工具中文备注）改成 `static Map _notes(AppLocalizations loc)`。
+
+**`security_audit.dart` + `capture_diagnose.dart`**（104 key，前缀 `audit*` / `diag*`）——
+这两个是**纯逻辑层、没有任何 context**。方案：把产出用户可见文案的入口方法
+（`SecurityAuditor.audit` / `_inspect` / `_inspectCustom` / `_detectSecrets` / `_detectPii`、
+`CustomSecurityRule.describe` / `targetLabel` / `matchLabel`、`CaptureDiagnose.run`、
+`CaptureDiagnoseResult.toJson` / `suggestions`）改成**接收 `AppLocalizations loc` 参数**，
+沿调用链一路传下去；数据模型（`SecurityIssue` / `DiagnoseItem`）不变。
+**所有调用点同步改**：`security_audit_page.dart`、`capture_diagnose_page.dart`，
+以及 `mcp_server.dart` 里两个无 context 的 MCP handler（`diagnose_capture` /
+`get_security_audit`）—— 后者传 `AppLocalizationsEn()`，即这些工具的输出固定回退英文
+（AI 客户端无 locale 概念）。
+
+`SecuritySeverity` 的枚举名、`_ruleCategories` 的分类键（`transport` / `credentials` …）
+**刻意不动**：它们是稳定标识，被 `onlyCategories` 过滤和 MCP JSON 输出依赖，
+改成语义文案会破坏兼容。
+
+全部 7 个文件落地后：`const` 上下文冲突 **0**、括号配平 **ok**、arb 无裸花括号，
+en / zh 各 **1601** 条。
+
+
 ## v1.24.37 (2026-09-27)
 
 ### 修复 l10n 引入的编译错误 + 国际化第四批（4 个页面）

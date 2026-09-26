@@ -16,6 +16,7 @@
 
 import 'dart:io';
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/native/native_method.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/network/bin/configuration.dart';
@@ -74,44 +75,37 @@ class CaptureDiagnoseResult {
   }
 
   /// 可直接交给 LLM 的结构化结论
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson(AppLocalizations loc) => {
         'healthy': healthy,
-        'summary': healthy ? '抓包链路基本就绪' : '检测到会影响抓包的问题，见 items 中的 error 项',
+        'summary': healthy ? loc.diagSummaryOk : loc.diagSummaryIssues,
         'requestCount': requestCount,
         'latestRequestAgoSeconds': latestRequestAgoSeconds,
         'items': items.map((item) => item.toJson()).toList(),
-        'suggestions': suggestions,
+        'suggestions': suggestions(loc),
       };
 
   /// 根据检测结果生成可执行建议
-  List<String> get suggestions {
+  List<String> suggestions(AppLocalizations loc) {
     final list = <String>[];
 
     if (_find('proxy_server')?.status == DiagnoseStatus.error) {
-      list.add('先启动抓包服务（调用 start_proxy 工具，或让用户在界面上点「开始抓包」）');
+      list.add(loc.diagSuggestStartProxy);
     }
     if (_find('certificate')?.status == DiagnoseStatus.error) {
-      list.add('安装并信任根证书：HTTPS 未信任时会成片出现握手失败（列表里的感叹号包）');
+      list.add(loc.diagSuggestInstallCert);
     }
     if (_find('system_proxy')?.status == DiagnoseStatus.warn) {
-      list.add('系统代理没有指向本应用：让用户在「偏好设置」打开系统代理，或确认是否被其它代理工具接管');
+      list.add(loc.diagSuggestSystemProxy);
     }
     if (_find('ssl_pinning')?.status == DiagnoseStatus.warn) {
-      list.add('存在疑似证书固定的域名：这类应用需要在设备上做运行时干预才能解密，'
-          '常见做法是靠 hook 框架（如 LSPosed 配合 TrustMeAlready 这类模块）。'
-          '请注意这属于对目标应用的干预，只应在你自己的设备、且在你拥有授权的范围内使用');
+      list.add(loc.diagSuggestPinning);
     }
     if ((_find('traffic')?.status ?? DiagnoseStatus.ok) == DiagnoseStatus.warn) {
-      list.add('当前没有新流量：先在被抓的应用/浏览器里发起一次请求，再让 AI 读取会话列表');
+      list.add(loc.diagSuggestNoTraffic);
     }
 
     // 常见"抓不到"的静态排查清单（对应平台限制与客户端特性）
-    list.add('若以上都正常仍抓不到，按这几类排查：'
-        '① 目标走 QUIC/HTTP3（手机开「拦截 QUIC」、浏览器关 QUIC）；'
-        '② Flutter 应用（Dart 自带根证书列表，不读系统 CA）；'
-        '③ 应用启用了证书固定（SSL Pinning）—— 若上方出现「SSL 证书固定（疑似）」项即命中；'
-        '④ Windows 上自带网络栈的进程（需「Windows 接管增强」或 TUN 类工具）；'
-        '⑤ Mac App Store 沙箱应用（需 Network Extension/TUN，本仓未签名构建无法接管）');
+    list.add(loc.diagSuggestChecklist);
 
     return list;
   }
@@ -119,7 +113,7 @@ class CaptureDiagnoseResult {
 
 class CaptureDiagnose {
   /// 执行检测；[requests] 传入当前会话已抓到的请求（可为空）
-  static Future<CaptureDiagnoseResult> run(List<HttpRequest> requests) async {
+  static Future<CaptureDiagnoseResult> run(List<HttpRequest> requests, AppLocalizations loc) async {
     final items = <DiagnoseItem>[];
 
     // 1. 代理服务
@@ -127,11 +121,9 @@ class CaptureDiagnose {
     final running = server?.isRunning ?? false;
     items.add(DiagnoseItem(
       key: 'proxy_server',
-      title: '代理服务',
+      title: loc.diagItemProxyService,
       status: running ? DiagnoseStatus.ok : DiagnoseStatus.error,
-      detail: running
-          ? '正在监听 127.0.0.1:${server!.port}'
-          : '未在运行，抓不到任何流量。先点「开始抓包」',
+      detail: running ? loc.diagProxyListening(server!.port) : loc.diagProxyNotRunning,
     ));
 
     // 2. 流量入口
@@ -144,28 +136,28 @@ class CaptureDiagnose {
         final matched = isLocal && proxy.port == expected;
         items.add(DiagnoseItem(
           key: 'system_proxy',
-          title: '系统代理',
+          title: loc.diagItemSystemProxy,
           status: matched ? DiagnoseStatus.ok : DiagnoseStatus.warn,
           detail: matched
-              ? '已指向本应用 ${proxy!.host}:${proxy.port}'
+              ? loc.diagSystemProxyMatched(proxy!.host, proxy.port)
               : (proxy == null
-                  ? '系统代理未开启，应用流量不会经过本工具'
-                  : '指向 ${proxy.host}:${proxy.port}，与本应用端口 $expected 不一致（可能被其它代理工具接管，或上次异常退出残留）'),
+                  ? loc.diagSystemProxyOff
+                  : loc.diagSystemProxyMismatch(proxy.host, proxy.port, expected)),
         ));
       } catch (e) {
         items.add(DiagnoseItem(
           key: 'system_proxy',
-          title: '系统代理',
+          title: loc.diagItemSystemProxy,
           status: DiagnoseStatus.warn,
-          detail: '读取失败：$e',
+          detail: loc.diagReadFailed('$e'),
         ));
       }
     } else {
       items.add(DiagnoseItem(
         key: 'system_proxy',
-        title: '流量入口',
+        title: loc.diagItemTrafficEntry,
         status: DiagnoseStatus.info,
-        detail: '移动端由 VPN 通道接管 IP 层流量（无需系统代理）',
+        detail: loc.diagMobileVpnEntry,
       ));
     }
 
@@ -180,45 +172,38 @@ class CaptureDiagnose {
         bool ok;
         if (scope == 'system') {
           ok = true;
-          detail = '已在系统信任库中';
+          detail = loc.diagCaInSystemStore;
         } else if (scope == 'user') {
           ok = false;
-          detail = '只在「用户证书库」：Android 7 起应用默认不信任用户证书，'
-              '所以会出现“证书装了但 HTTPS 抓不到或报错”。'
-              '要全应用生效需 root 装进系统证书目录'
-              '（Android 14+ 是 /apex/com.android.conscrypt/cacerts），'
-              '或给目标 App 配 network_security_config';
+          detail = loc.diagCaUserStore;
         } else {
           final installed = await NativeMethod.isCaInstalled(caPem);
           ok = installed;
           detail = installed
-              ? '已安装（未能区分系统库/用户库）'
-              : (Platforms.isAndroid()
-                  ? '未检测到根证书：去「HTTPS 证书 → 安装根证书」按引导安装；'
-                      '安装时请选「CA 证书」而不是「VPN 和应用证书」'
-                  : '未检测到根证书，HTTPS 会握手失败（列表里表现为成片的感叹号包）');
+              ? loc.diagCaInstalledUnknown
+              : (Platforms.isAndroid() ? loc.diagCaMissingAndroid : loc.diagCaMissingDesktop);
         }
         items.add(DiagnoseItem(
           key: 'certificate',
-          title: 'CA 根证书',
+          title: loc.diagItemCaRoot,
           status: ok ? DiagnoseStatus.ok : DiagnoseStatus.error,
           detail: detail,
         ));
       } else {
         items.add(DiagnoseItem(
           key: 'certificate',
-          title: 'CA 根证书',
+          title: loc.diagItemCaRoot,
           status: DiagnoseStatus.info,
-          detail: '桌面端请在「证书」页确认根证书已装入系统受信任根',
+          detail: loc.diagCaDesktopHint,
         ));
       }
     } catch (e) {
       logger.e('自检读取证书失败', error: e);
       items.add(DiagnoseItem(
         key: 'certificate',
-        title: 'CA 根证书',
+        title: loc.diagItemCaRoot,
         status: DiagnoseStatus.warn,
-        detail: '读取失败：$e',
+        detail: loc.diagReadFailed('$e'),
       ));
     }
 
@@ -239,12 +224,9 @@ class CaptureDiagnose {
       final sample = connectOnlyHosts.take(5).join('、');
       items.add(DiagnoseItem(
         key: 'ssl_pinning',
-        title: 'SSL 证书固定（疑似）',
+        title: loc.diagItemSslPinning,
         status: DiagnoseStatus.warn,
-        detail: 'CA 证书已就绪，但有 ${connectOnlyHosts.length} 个域名只建立了 TLS 隧道、'
-            '内容始终读不到：$sample。'
-            '这通常意味着对方启用了证书固定（SSL Pinning），或自带根证书列表不读系统 CA。'
-            '注意这类应用并不是"没网络"——它拒绝了本工具的证书，所以主动断开了连接。',
+        detail: loc.diagSslPinningDetail(connectOnlyHosts.length, sample),
       ));
     }
 
@@ -255,12 +237,9 @@ class CaptureDiagnose {
       final takeoverOn = Configuration.loaded?.winTakeoverEnabled ?? false;
       items.add(DiagnoseItem(
         key: 'win_takeover',
-        title: 'Windows 增强接管',
+        title: loc.diagItemWinTakeover,
         status: takeoverOn ? DiagnoseStatus.ok : DiagnoseStatus.info,
-        detail: takeoverOn
-            ? '已开启：WinHTTP 服务、CLI 工具（curl/git/node）等也会走代理'
-            : '未开启：自带网络栈的应用、WinHTTP 服务与 CLI 工具可能抓不到。'
-                '可在「偏好设置 → Windows 接管」打开（WinHTTP 部分需要管理员权限）',
+        detail: takeoverOn ? loc.diagWinTakeoverOn : loc.diagWinTakeoverOff,
       ));
     }
 
@@ -271,13 +250,13 @@ class CaptureDiagnose {
     }
     items.add(DiagnoseItem(
       key: 'traffic',
-      title: '最近流量',
+      title: loc.diagItemRecentTraffic,
       status: (agoSeconds != null && agoSeconds <= 60) ? DiagnoseStatus.ok : DiagnoseStatus.warn,
       detail: agoSeconds == null
-          ? '本次会话还没有抓到任何请求'
+          ? loc.diagNoRequests
           : (agoSeconds <= 60
-              ? '共 ${requests.length} 条，最新一条在 $agoSeconds 秒前'
-              : '共 ${requests.length} 条，最新一条在 $agoSeconds 秒前（当前没有新流量进来）'),
+              ? loc.diagTrafficFresh(requests.length, agoSeconds)
+              : loc.diagTrafficStale(requests.length, agoSeconds)),
     ));
 
     // 5. VPN 扩展内存水位（仅 iOS，上游 #903）
@@ -287,9 +266,9 @@ class CaptureDiagnose {
       if (memory == null) {
         items.add(DiagnoseItem(
           key: 'extension_memory',
-          title: '扩展内存',
+          title: loc.diagItemExtensionMemory,
           status: DiagnoseStatus.info,
-          detail: '未取到（VPN 未启动时读不到扩展进程）',
+          detail: loc.diagExtMemUnavailable,
         ));
       } else {
         final rssMb = _toMb(memory['rssBytes']);
@@ -300,10 +279,10 @@ class CaptureDiagnose {
         final nearLimit = _megaBytes(memory['peakBytes']) >= 45;
         items.add(DiagnoseItem(
           key: 'extension_memory',
-          title: '扩展内存',
+          title: loc.diagItemExtensionMemory,
           status: nearLimit ? DiagnoseStatus.warn : DiagnoseStatus.ok,
-          detail: '当前 $rssMb MB，峰值 $peakMb MB，连接 $connections 条，待发缓冲 $bufferedMb MB'
-              '${nearLimit ? '（已接近扩展内存上限，建议降低并发或缩小待发缓冲上限）' : ''}',
+          detail: loc.diagExtMemDetail(rssMb, peakMb, '$connections', bufferedMb) +
+              (nearLimit ? loc.diagExtMemNearLimit : ''),
         ));
       }
     }

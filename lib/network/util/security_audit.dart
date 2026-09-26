@@ -28,6 +28,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_headers.dart';
 
@@ -127,7 +128,8 @@ class SecurityAuditor {
   static List<String> get categories => _ruleCategories.values.toSet().toList(growable: false);
 
   static SecurityAuditReport audit(
-    List<HttpRequest> requests, {
+    List<HttpRequest> requests,
+    AppLocalizations loc, {
     List<CustomSecurityRule> customRules = const [],
     Set<String>? onlyCategories,
   }) {
@@ -144,9 +146,9 @@ class SecurityAuditor {
         }
       }
 
-      _inspect(request, emit);
+      _inspect(request, loc, emit);
       if (activeRules.isNotEmpty) {
-        _inspectCustom(request, activeRules, emit);
+        _inspectCustom(request, activeRules, loc, emit);
       }
     }
 
@@ -161,7 +163,7 @@ class SecurityAuditor {
     return SecurityAuditReport(issues: issues, scannedRequests: limited.length);
   }
 
-  static void _inspect(HttpRequest request, void Function(SecurityIssue) emit) {
+  static void _inspect(HttpRequest request, AppLocalizations loc, void Function(SecurityIssue) emit) {
     final url = request.requestUrl;
     final uri = request.requestUri;
     final method = request.method.name.toUpperCase();
@@ -178,18 +180,18 @@ class SecurityAuditor {
         emit(_issue(
           rule: 'plaintext-http-sensitive',
           severity: SecuritySeverity.high,
-          title: '明文 HTTP 传输敏感信息',
-          detail: '该请求通过 http:// 明文发送，且${sensitiveInUrl ? ' URL 查询串' : ' 请求体'}中包含密码 / 令牌等敏感字段，中间人可直接读取。',
-          suggestion: '改用 HTTPS；确需 HTTP 时避免在 URL 与请求体中直接承载凭据。',
+          title: loc.auditPlaintextHttpTitle,
+          detail: sensitiveInUrl ? loc.auditPlaintextHttpDetailUrl : loc.auditPlaintextHttpDetailBody,
+          suggestion: loc.auditPlaintextHttpSuggestion,
           method: method, url: url, requestId: request.requestId,
         ));
       } else if (method != 'GET' && _hasBody(request)) {
         emit(_issue(
           rule: 'plaintext-http-body',
           severity: SecuritySeverity.medium,
-          title: '明文 HTTP 传输请求体',
-          detail: '该请求使用 http:// 且带请求体，内容在链路上完全明文。',
-          suggestion: '对涉及登录、支付、隐私的接口强制 HTTPS。',
+          title: loc.auditPlaintextBodyTitle,
+          detail: loc.auditPlaintextBodyDetail,
+          suggestion: loc.auditPlaintextBodySuggestion,
           method: method, url: url, requestId: request.requestId,
         ));
       }
@@ -201,9 +203,9 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'sensitive-in-url',
         severity: SecuritySeverity.medium,
-        title: '敏感参数出现在 URL 中',
-        detail: '查询参数 ${names.map((n) => '「$n」').join('、')} 疑似承载凭据 / 密钥。URL 会被写入浏览器历史、代理与服务器日志。',
-        suggestion: '把敏感参数改放到请求体或请求头（如 Authorization）。',
+        title: loc.auditUrlSecretTitle,
+        detail: loc.auditUrlSecretDetail(names.map((n) => '「$n」').join('、')),
+        suggestion: loc.auditUrlSecretSuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
@@ -213,9 +215,9 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'plaintext-password-body',
         severity: uri != null && uri.scheme.toLowerCase() == 'http' ? SecuritySeverity.high : SecuritySeverity.medium,
-        title: '请求体明文提交密码',
-        detail: '请求体中存在 password / pwd 等字段且值为明文。',
-        suggestion: '确保链路全程 HTTPS，服务端避免把密码回显或写入日志。',
+        title: loc.auditPasswordBodyTitle,
+        detail: loc.auditPasswordBodyDetail,
+        suggestion: loc.auditPasswordBodySuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
@@ -236,9 +238,9 @@ class SecurityAuditor {
           severity: missing.contains('Secure') && missing.contains('HttpOnly')
               ? SecuritySeverity.medium
               : SecuritySeverity.low,
-          title: 'Cookie 缺少安全属性',
-          detail: 'Set-Cookie「$name」缺少 ${missing.join(' / ')}，存在被脚本读取或明文传输的风险。',
-          suggestion: '为会话 Cookie 补全 Secure、HttpOnly，并按需设置 SameSite=Lax/Strict。',
+          title: loc.auditCookieFlagTitle,
+          detail: loc.auditCookieFlagDetail(name, missing.join(' / ')),
+          suggestion: loc.auditCookieFlagSuggestion,
           method: method, url: url, requestId: request.requestId,
         ));
       }
@@ -254,9 +256,9 @@ class SecurityAuditor {
         emit(_issue(
           rule: 'missing-security-headers',
           severity: SecuritySeverity.low,
-          title: 'HTML 响应缺少安全头',
-          detail: '缺少 ${missingHeaders.join(' / ')}，浏览器侧的内容嗅探与脚本注入缺少额外约束。',
-          suggestion: '按需补齐 nosniff、CSP 等安全响应头。',
+          title: loc.auditMissingHeadersTitle,
+          detail: loc.auditMissingHeadersDetail(missingHeaders.join(' / ')),
+          suggestion: loc.auditMissingHeadersSuggestion,
           method: method, url: url, requestId: request.requestId,
         ));
       }
@@ -269,9 +271,9 @@ class SecurityAuditor {
         emit(_issue(
           rule: 'server-fingerprint',
           severity: SecuritySeverity.info,
-          title: '响应暴露服务器指纹',
-          detail: '$header: $value，便于攻击者针对性选择已知漏洞。',
-          suggestion: '在网关层隐藏或泛化版本信息。',
+          title: loc.auditFingerprintTitle,
+          detail: loc.auditFingerprintDetail(header, value),
+          suggestion: loc.auditFingerprintSuggestion,
           method: method, url: url, requestId: request.requestId,
         ));
       }
@@ -282,31 +284,31 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'private-key-leak',
         severity: SecuritySeverity.high,
-        title: '响应体疑似包含私钥',
-        detail: '响应内容中出现 PEM 私钥标记，若为真实密钥属严重泄露。',
-        suggestion: '立即轮换该密钥，确认服务端不会把私钥下发到客户端。',
+        title: loc.auditPrivateKeyTitle,
+        detail: loc.auditPrivateKeyDetail,
+        suggestion: loc.auditPrivateKeySuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
-    final secrets = _detectSecrets(respBody);
+    final secrets = _detectSecrets(respBody, loc);
     if (secrets.isNotEmpty) {
       emit(_issue(
         rule: 'secret-in-response',
         severity: SecuritySeverity.high,
-        title: '响应体明文返回敏感字段',
-        detail: '检测到 ${secrets.map((n) => '「$n」').join('、')} 等字段以明文返回。',
-        suggestion: '最小化返回字段；密钥类信息不应下发到客户端。',
+        title: loc.auditSecretTitle,
+        detail: loc.auditSecretDetail(secrets.map((n) => '「$n」').join('、')),
+        suggestion: loc.auditSecretSuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
-    final pii = _detectPii(respBody);
+    final pii = _detectPii(respBody, loc);
     if (pii.isNotEmpty) {
       emit(_issue(
         rule: 'pii-in-response',
         severity: SecuritySeverity.medium,
-        title: '响应体包含个人敏感信息',
-        detail: '检测到 ${pii.map((n) => '「$n」').join('、')} 字段携带疑似身份证 / 手机号等个人数据。',
-        suggestion: '对个人数据做脱敏或按最小必要原则返回，并遵守数据合规要求。',
+        title: loc.auditPiiTitle,
+        detail: loc.auditPiiDetail(pii.map((n) => '「$n」').join('、')),
+        suggestion: loc.auditPiiSuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
@@ -317,9 +319,9 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'error-disclosure',
         severity: SecuritySeverity.medium,
-        title: '错误响应泄露内部信息',
-        detail: '响应中出现调试 / 堆栈特征（$trace），可能暴露框架、路径或数据库结构。',
-        suggestion: '生产环境关闭详细报错，统一返回通用错误信息。',
+        title: loc.auditErrorTitle,
+        detail: loc.auditErrorDetail(trace),
+        suggestion: loc.auditErrorSuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
@@ -331,9 +333,9 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'cors-wildcard-credentials',
         severity: SecuritySeverity.medium,
-        title: 'CORS 允许任意源且携带凭据',
-        detail: 'Access-Control-Allow-Origin 为 *，同时 Allow-Credentials 为 true，跨站读取凭据的风险很高。',
-        suggestion: '把允许源收敛为固定白名单，避免 * 与 Allow-Credentials 同时出现。',
+        title: loc.auditCorsTitle,
+        detail: loc.auditCorsDetail,
+        suggestion: loc.auditCorsSuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
@@ -348,18 +350,18 @@ class SecurityAuditor {
         emit(_issue(
           rule: 'jwt-alg-none',
           severity: SecuritySeverity.high,
-          title: 'JWT 使用 alg=none（未签名）',
-          detail: '该令牌声明算法为 none，任何人可篡改载荷而无法被校验。',
-          suggestion: '服务端强制校验签名算法，拒绝 alg=none。',
+          title: loc.auditJwtNoneTitle,
+          detail: loc.auditJwtNoneDetail,
+          suggestion: loc.auditJwtNoneSuggestion,
           method: method, url: url, requestId: request.requestId,
         ));
       } else if (payload != null && payload['exp'] == null) {
         emit(_issue(
           rule: 'jwt-no-expiry',
           severity: SecuritySeverity.low,
-          title: 'JWT 未设置过期时间',
-          detail: '令牌载荷中缺少 exp 字段，签发后长期有效。',
-          suggestion: '为令牌设置合理的过期时间并支持刷新。',
+          title: loc.auditJwtExpiryTitle,
+          detail: loc.auditJwtExpiryDetail,
+          suggestion: loc.auditJwtExpirySuggestion,
           method: method, url: url, requestId: request.requestId,
         ));
       }
@@ -370,9 +372,9 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'http-1-0',
         severity: SecuritySeverity.info,
-        title: '使用过时的 HTTP/1.0',
-        detail: '该连接使用 HTTP/1.0，连接复用与缓存策略较落后。',
-        suggestion: '升级到 HTTP/1.1 或 HTTP/2。',
+        title: loc.auditHttp10Title,
+        detail: loc.auditHttp10Detail,
+        suggestion: loc.auditHttp10Suggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
@@ -383,11 +385,9 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'sql-error-signature',
         severity: SecuritySeverity.high,
-        title: '疑似 SQL 注入痕迹（数据库报错回显）',
-        detail: '响应中出现了 $sqlSignature 的数据库错误特征，说明该接口把 SQL 错误直接回显给了调用方；'
-            '若这条错误由客户端可控参数触发，则存在 SQL 注入风险。',
-        suggestion: '改用参数化查询 / 预编译语句，不要拼接 SQL；生产环境关闭数据库详细报错，统一返回通用错误信息。'
-            '（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）',
+        title: loc.auditSqlTitle,
+        detail: loc.auditSqlDetail(sqlSignature),
+        suggestion: loc.auditSqlSuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
@@ -398,19 +398,17 @@ class SecurityAuditor {
       emit(_issue(
         rule: 'xss-reflection',
         severity: SecuritySeverity.medium,
-        title: '疑似 XSS 反射痕迹（HTML 响应未编码回显参数）',
-        detail: '响应把请求参数值原样回显在 HTML 中，未做 HTML 实体编码，且回显内容含 $xssMeta 等特殊字符；'
-            '若该值可被攻击者控制，浏览器可能把它解析成标签或脚本。',
-        suggestion: '按输出上下文做编码（HTML 实体编码），页面配合 CSP；不要把请求参数直接拼进 HTML。'
-            '（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）',
+        title: loc.auditXssTitle,
+        detail: loc.auditXssDetail(xssMeta),
+        suggestion: loc.auditXssSuggestion,
         method: method, url: url, requestId: request.requestId,
       ));
     }
   }
 
   /// 应用用户自定义规则。同样只读本地已抓到的数据，不产生任何请求。
-  static void _inspectCustom(
-      HttpRequest request, List<CustomSecurityRule> rules, void Function(SecurityIssue) emit) {
+  static void _inspectCustom(HttpRequest request, List<CustomSecurityRule> rules, AppLocalizations loc,
+      void Function(SecurityIssue) emit) {
     final method = request.method.name.toUpperCase();
     final url = request.requestUrl;
 
@@ -448,8 +446,8 @@ class SecurityAuditor {
         rule: 'custom:${rule.id}',
         severity: rule.severity,
         title: rule.name,
-        detail: '命中自定义规则「${rule.name}」（${rule.describe()}）。',
-        suggestion: rule.suggestion.isEmpty ? '请结合业务安全要求确认该内容是否应当出现。' : rule.suggestion,
+        detail: loc.auditCustomHitDetail(rule.name, rule.describe(loc)),
+        suggestion: rule.suggestion.isEmpty ? loc.auditCustomHitSuggestion : rule.suggestion,
         method: method,
         url: url,
         requestId: request.requestId,
@@ -647,7 +645,7 @@ class SecurityAuditor {
 
   static bool _hasPrivateKey(String text) => text.isNotEmpty && _pemPrivateKey.hasMatch(text);
 
-  static List<String> _detectSecrets(String text) {
+  static List<String> _detectSecrets(String text, AppLocalizations loc) {
     if (text.isEmpty) return const [];
     final found = <String>{};
     for (final match in _jsonField.allMatches(text)) {
@@ -658,23 +656,23 @@ class SecurityAuditor {
       }
     }
     if (_awsKey.hasMatch(text)) found.add('AWS Access Key');
-    if (_pemPrivateKey.hasMatch(text)) found.add('私钥');
+    if (_pemPrivateKey.hasMatch(text)) found.add(loc.auditSecretPrivateKey);
     return found.toList();
   }
 
   static final RegExp _idCard = RegExp(r'\b\d{17}[\dXx]\b');
   static final RegExp _phone = RegExp(r'\b1[3-9]\d{9}\b');
 
-  static List<String> _detectPii(String text) {
+  static List<String> _detectPii(String text, AppLocalizations loc) {
     if (text.isEmpty) return const [];
     final found = <String>{};
     if (RegExp(r'"(idCard|id_card|idNumber|id_number)"\s*:\s*"', caseSensitive: false).hasMatch(text) &&
         _idCard.hasMatch(text)) {
-      found.add('身份证号');
+      found.add(loc.auditPiiIdCard);
     }
     if (RegExp(r'"(phone|mobile|telephone|cellphone)"\s*:\s*"', caseSensitive: false).hasMatch(text) &&
         _phone.hasMatch(text)) {
-      found.add('手机号');
+      found.add(loc.auditPiiPhone);
     }
     return found.toList();
   }
@@ -827,19 +825,19 @@ class CustomSecurityRule {
     }
   }
 
-  String describe() => '范围：${targetLabel(target)}；方式：${matchLabel(matchType)}';
+  String describe(AppLocalizations loc) => loc.auditRuleDescribe(targetLabel(target, loc), matchLabel(matchType, loc));
 
-  static String targetLabel(SecurityRuleTarget target) {
-    if (target == SecurityRuleTarget.url) return '请求 URL';
-    if (target == SecurityRuleTarget.requestHeader) return '请求头';
-    if (target == SecurityRuleTarget.requestBody) return '请求体';
-    if (target == SecurityRuleTarget.responseHeader) return '响应头';
-    if (target == SecurityRuleTarget.responseBody) return '响应体';
-    return '全部内容';
+  static String targetLabel(SecurityRuleTarget target, AppLocalizations loc) {
+    if (target == SecurityRuleTarget.url) return loc.auditTargetUrl;
+    if (target == SecurityRuleTarget.requestHeader) return loc.auditTargetRequestHeader;
+    if (target == SecurityRuleTarget.requestBody) return loc.auditTargetRequestBody;
+    if (target == SecurityRuleTarget.responseHeader) return loc.auditTargetResponseHeader;
+    if (target == SecurityRuleTarget.responseBody) return loc.auditTargetResponseBody;
+    return loc.auditTargetAny;
   }
 
-  static String matchLabel(SecurityRuleMatchType matchType) =>
-      matchType == SecurityRuleMatchType.keyword ? '关键词' : '正则';
+  static String matchLabel(SecurityRuleMatchType matchType, AppLocalizations loc) =>
+      matchType == SecurityRuleMatchType.keyword ? loc.auditMatchKeyword : loc.auditMatchRegex;
 
   static SecurityRuleTarget _targetFrom(String? value) {
     for (final target in SecurityRuleTarget.values) {

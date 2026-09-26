@@ -2329,6 +2329,1455 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get sslGuide => '指引';
 
+
+  @override
+  String get mcpAutoTitle => 'MCP 自动化';
+
+  @override
+  String get mcpAutoTutorial => '使用教程';
+
+  @override
+  String get mcpAutoRefresh => '刷新';
+
+  @override
+  String get mcpAutoRefreshed => '已刷新';
+
+  @override
+  String get mcpAutoCancel => '取消';
+
+  @override
+  String get mcpAutoSave => '保存';
+
+  @override
+  String get mcpAutoConfirm => '确定';
+
+  @override
+  String get mcpAutoClose => '关闭';
+
+  @override
+  String get mcpAutoDelete => '删除';
+
+  @override
+  String get mcpAutoEdit => '编辑';
+
+  @override
+  String get mcpAutoEnable => '启用';
+
+  @override
+  String get mcpAutoEnabled => '已启用';
+
+  @override
+  String get mcpAutoDisabled => '已禁用';
+
+  @override
+  String get mcpAutoName => '名称';
+
+  @override
+  String get mcpAutoDescription => '描述';
+
+  @override
+  String get mcpAutoValue => '值';
+
+  @override
+  String get mcpAutoEmpty => '空';
+
+  @override
+  String get mcpAutoUnnamed => '未命名';
+
+  @override
+  String get mcpAutoCustom => '自定义';
+
+  @override
+  String get mcpAutoPriority => '优先级';
+
+  @override
+  String get mcpAutoConditionType => '条件类型';
+
+  @override
+  String get mcpAutoTargetParams => '目标 / 参数(JSON)';
+
+  @override
+  String get mcpAutoTabTasks => '定时任务';
+
+  @override
+  String get mcpAutoTabEvents => '事件监听';
+
+  @override
+  String get mcpAutoTabRules => '规则引擎';
+
+  @override
+  String get mcpAutoTabWorkflows => '工作流';
+
+  @override
+  String get mcpAutoStatusChecking => '检测中…';
+
+  @override
+  String get mcpAutoStatusRunning => '运行中';
+
+  @override
+  String get mcpAutoStatusStopped => '已停止';
+
+  @override
+  String get mcpAutoTapToStop => '点击停止 MCP 自动化';
+
+  @override
+  String get mcpAutoTapToStart => '点击启动 MCP 自动化';
+
+  @override
+  String get mcpAutoServiceStartFailed => 'MCP 服务启动失败，请检查设置中是否已启用 MCP 服务';
+
+  @override
+  String get mcpAutoServiceStopped => 'MCP 服务已停止';
+
+  @override
+  String get mcpAutoServiceStarted => 'MCP 服务已启动';
+
+  @override
+  String get mcpAutoServiceNotStarted => 'MCP 服务未启动，请先在连接页启动';
+
+  @override
+  String get mcpAutoEditRoot => '编辑 Root';
+
+  @override
+  String get mcpAutoAddRoot => '添加 Root';
+
+  @override
+  String get mcpAutoRootUriHint => 'proxypin://workspace 或 file:///path/to/dir';
+
+  @override
+  String get mcpAutoRootUriRequired => '请输入 Root URI';
+
+  @override
+  String get mcpAutoRootUpdated => 'Root 已更新';
+
+  @override
+  String get mcpAutoRootAdded => 'Root 已添加';
+
+  @override
+  String get mcpAutoRootDeleted => 'Root 已删除';
+
+  @override
+  String get mcpAutoNoRoots => '暂无 Roots';
+
+  @override
+  String get mcpAutoNoRootsHint => '点击右下角 + 添加 Root\n可添加 proxypin:// 或 file:// 资源根，自由编辑';
+
+  @override
+  String get mcpAutoDeleteRootConfirm => '删除这个 Root 配置？';
+
+  @override
+  String mcpAutoReading(String name) {
+    return '读取 $name…';
+  }
+
+  @override
+  String mcpAutoReadFailed(String error) {
+    return '读取失败: $error';
+  }
+
+  @override
+  String mcpAutoScriptNotFound(String name) {
+    return '脚本不存在: $name';
+  }
+
+  @override
+  String mcpAutoScriptExecuted(String name) {
+    return '脚本已执行: $name';
+  }
+
+  @override
+  String mcpAutoScriptRunFailed(String error) {
+    return '脚本执行失败: $error';
+  }
+
+  @override
+  String get mcpAutoNoTasks => '暂无定时任务';
+
+  @override
+  String get mcpAutoNoTasksHint => '点击右下角 + 添加新任务\n可同时选择执行时间与执行内容';
+
+  @override
+  String get mcpAutoNextPrefix => '下次：';
+
+  @override
+  String mcpAutoLastRun(String time) {
+    return ' • 上次：$time';
+  }
+
+  @override
+  String mcpAutoRanTimes(int count, int total) {
+    return ' • 已执行 $count/$total 次';
+  }
+
+  @override
+  String get mcpAutoDeleteTaskConfirm => '取消并删除这个定时任务？';
+
+  @override
+  String get mcpAutoAddTask => '添加定时任务';
+
+  @override
+  String get mcpAutoTaskName => '任务名称';
+
+  @override
+  String get mcpAutoScheduleMode => '定时方式:';
+
+  @override
+  String get mcpAutoModeOnce => '一次性';
+
+  @override
+  String get mcpAutoModeDaily => '每天';
+
+  @override
+  String get mcpAutoModeWeekly => '每周';
+
+  @override
+  String get mcpAutoModeInterval => '间隔';
+
+  @override
+  String get mcpAutoCronLabel => 'Cron 表达式';
+
+  @override
+  String get mcpAutoCronHint => '分 时 日 月 星期，如 0 9 * * 1-5';
+
+  @override
+  String get mcpAutoCronHelper => '支持 * , - / 通配符';
+
+  @override
+  String get mcpAutoCronRequired => '请输入 Cron 表达式';
+
+  @override
+  String get mcpAutoCronInvalidHint => '表达式无效，请检查';
+
+  @override
+  String mcpAutoCronNextAt(String time) {
+    return '下次执行: $time';
+  }
+
+  @override
+  String get mcpAutoCronPresetWorkday => '工作日9点';
+
+  @override
+  String get mcpAutoCronPresetEvery30 => '每30分钟';
+
+  @override
+  String get mcpAutoCronPresetMidnight => '每天零点';
+
+  @override
+  String get mcpAutoExecDateTime => '执行日期与时间:';
+
+  @override
+  String get mcpAutoExecTime => '执行时间:';
+
+  @override
+  String get mcpAutoPickDate => '选择执行日期';
+
+  @override
+  String get mcpAutoRepeatOn => '重复于:';
+
+  @override
+  String get mcpAutoWeekdayMon => '周一';
+
+  @override
+  String get mcpAutoWeekdayTue => '周二';
+
+  @override
+  String get mcpAutoWeekdayWed => '周三';
+
+  @override
+  String get mcpAutoWeekdayThu => '周四';
+
+  @override
+  String get mcpAutoWeekdayFri => '周五';
+
+  @override
+  String get mcpAutoWeekdaySat => '周六';
+
+  @override
+  String get mcpAutoWeekdaySun => '周日';
+
+  @override
+  String get mcpAutoPickWeekday => '请至少选择一个星期';
+
+  @override
+  String get mcpAutoIntervalMinutes => '间隔分钟数';
+
+  @override
+  String get mcpAutoIntervalMinutesHelp => '如填 30，表示每 30 分钟自动执行一次';
+
+  @override
+  String get mcpAutoRepeatCount => '重复次数';
+
+  @override
+  String get mcpAutoRepeatCountHelp => '如填 5，表示共执行 5 次后自动结束；留空 = 无限重复';
+
+  @override
+  String get mcpAutoTaskAction => '执行任务:';
+
+  @override
+  String get mcpAutoActionScript => '执行脚本';
+
+  @override
+  String get mcpAutoActionTool => '调用 MCP 工具';
+
+  @override
+  String get mcpAutoActionWorkflow => '执行工作流';
+
+  @override
+  String get mcpAutoActionWebhook => '发送 Webhook';
+
+  @override
+  String get mcpAutoPickScript => '选择脚本';
+
+  @override
+  String get mcpAutoNoScriptAddFirst => '暂无脚本，先在脚本页添加';
+
+  @override
+  String get mcpAutoPickTool => '选择 MCP 工具';
+
+  @override
+  String get mcpAutoNoTools => '暂无工具';
+
+  @override
+  String get mcpAutoToolsNeedStart => 'MCP 未启动，无法获取工具';
+
+  @override
+  String get mcpAutoPickWorkflow => '选择工作流';
+
+  @override
+  String get mcpAutoNoWorkflowAddFirst => '暂无工作流，先在工作流页添加';
+
+  @override
+  String get mcpAutoTaskNameRequired => '请输入任务名称';
+
+  @override
+  String get mcpAutoIntervalInvalid => '请输入有效的间隔分钟数';
+
+  @override
+  String get mcpAutoCronInvalid => 'Cron 表达式无效';
+
+  @override
+  String get mcpAutoTaskActionIncomplete => '请完善执行任务配置';
+
+  @override
+  String get mcpAutoTaskAdded => '定时任务已添加';
+
+  @override
+  String get mcpAutoTaskCancelled => '任务已取消';
+
+  @override
+  String get mcpAutoNoListeners => '暂无事件监听器';
+
+  @override
+  String get mcpAutoNoListenersHint => '点击 + 注册监听器\n触发时可执行日志/任务';
+
+  @override
+  String get mcpAutoRemoveListenerConfirm => '移除这个事件监听器？';
+
+  @override
+  String get mcpAutoEventTypesInfo => '事件类型说明';
+
+  @override
+  String get mcpAutoEventTypesBody => '• HTTP 请求事件：匹配 URL 正则触发\n• 网络状态事件：连接/断开/wifi/弱网\n• 代理状态事件：启动/停止/暂停/恢复\n• 抓包阈值事件：抓包数达到阈值';
+
+  @override
+  String get mcpAutoAddListener => '添加事件监听器';
+
+  @override
+  String get mcpAutoEventHttp => 'HTTP 请求事件';
+
+  @override
+  String get mcpAutoEventNetwork => '网络状态事件';
+
+  @override
+  String get mcpAutoEventProxy => '代理状态事件';
+
+  @override
+  String get mcpAutoEventCapture => '抓包阈值事件';
+
+  @override
+  String get mcpAutoUrlRegex => 'URL 正则';
+
+  @override
+  String get mcpAutoCaptureThreshold => '抓包数量阈值';
+
+  @override
+  String mcpAutoDescHttp(String pattern) {
+    return 'HTTP 请求: $pattern';
+  }
+
+  @override
+  String mcpAutoDescNetwork(String status) {
+    return '网络状态: $status';
+  }
+
+  @override
+  String mcpAutoDescProxy(String status) {
+    return '代理状态: $status';
+  }
+
+  @override
+  String mcpAutoDescCapture(int count) {
+    return '抓包阈值: $count';
+  }
+
+  @override
+  String get mcpAutoListenerAdded => '监听器已注册';
+
+  @override
+  String get mcpAutoListenerRemoved => '监听器已移除';
+
+  @override
+  String get mcpAutoNoRules => '暂无自动化规则';
+
+  @override
+  String get mcpAutoNoRulesHint => '点击 + 添加规则\n规则可根据条件自动执行操作';
+
+  @override
+  String mcpAutoRuleSummary(int conditions, int actions, String enabled) {
+    return '$conditions 条件 • $actions 操作 • $enabled';
+  }
+
+  @override
+  String get mcpAutoDeleteRuleConfirm => '删除这条规则？';
+
+  @override
+  String get mcpAutoConditionsInline => '条件:';
+
+  @override
+  String get mcpAutoActionsInline => '操作:';
+
+  @override
+  String get mcpAutoRuleEngineInfo => '规则引擎说明';
+
+  @override
+  String get mcpAutoRuleEngineInfoBody => '支持 14 种条件运算符与 8 种操作类型\n规则持久化到 mcp_rules.json，跨重启保留';
+
+  @override
+  String get mcpAutoEditRule => '编辑规则';
+
+  @override
+  String get mcpAutoAddRule => '添加规则';
+
+  @override
+  String get mcpAutoRuleName => '规则名称';
+
+  @override
+  String get mcpAutoSectionConditions => '条件';
+
+  @override
+  String get mcpAutoSectionActions => '操作';
+
+  @override
+  String get mcpAutoRuleNameRequired => '请输入规则名称';
+
+  @override
+  String get mcpAutoRuleUpdated => '规则已更新';
+
+  @override
+  String get mcpAutoRuleAdded => '规则已添加';
+
+  @override
+  String get mcpAutoRuleDeleted => '规则已删除';
+
+  @override
+  String get mcpAutoShortProxy => '代理';
+
+  @override
+  String get mcpAutoShortNetwork => '网络';
+
+  @override
+  String get mcpAutoShortSystem => '系统';
+
+  @override
+  String get mcpAutoCondTypeHttp => 'HTTP 请求';
+
+  @override
+  String get mcpAutoCondTypeProxy => '代理状态';
+
+  @override
+  String get mcpAutoCondTypeNetwork => '网络状态';
+
+  @override
+  String get mcpAutoCondTypeSystem => '系统状态';
+
+  @override
+  String get mcpAutoOpContains => '包含';
+
+  @override
+  String get mcpAutoOpStartsWith => '始于';
+
+  @override
+  String get mcpAutoOpEndsWith => '终于';
+
+  @override
+  String get mcpAutoOpMatches => '匹配';
+
+  @override
+  String get mcpAutoOpInList => '在...中';
+
+  @override
+  String get mcpAutoOpNotInList => '不在...中';
+
+  @override
+  String get mcpAutoOpExists => '存在';
+
+  @override
+  String get mcpAutoOpNotExists => '不存在';
+
+  @override
+  String get mcpAutoActLog => '记录';
+
+  @override
+  String get mcpAutoActNotify => '通知';
+
+  @override
+  String get mcpAutoActStopCapture => '停止抓包';
+
+  @override
+  String get mcpAutoActStartCapture => '开始抓包';
+
+  @override
+  String get mcpAutoActExportData => '导出数据';
+
+  @override
+  String get mcpAutoFieldMethod => '方法';
+
+  @override
+  String get mcpAutoFieldStatusCode => '状态码';
+
+  @override
+  String get mcpAutoFieldDuration => '耗时(ms)';
+
+  @override
+  String get mcpAutoFieldHost => '域名';
+
+  @override
+  String get mcpAutoFieldPath => '路径';
+
+  @override
+  String get mcpAutoFieldReqContentType => '请求 Content-Type';
+
+  @override
+  String get mcpAutoFieldRespContentType => '响应 Content-Type';
+
+  @override
+  String get mcpAutoFieldReqSize => '请求大小';
+
+  @override
+  String get mcpAutoFieldRespSize => '响应大小';
+
+  @override
+  String get mcpAutoFieldType => '类型';
+
+  @override
+  String get mcpAutoFieldTimestamp => '时间戳';
+
+  @override
+  String get mcpAutoFieldMemory => '内存使用(MB)';
+
+  @override
+  String get mcpAutoFieldCaptureCount => '抓包数量';
+
+  @override
+  String get mcpAutoFieldDisk => '磁盘使用(MB)';
+
+  @override
+  String get mcpAutoFieldCpu => 'CPU 使用率(%)';
+
+  @override
+  String get mcpAutoStatusStarted => '已启动';
+
+  @override
+  String get mcpAutoStatusPaused => '已暂停';
+
+  @override
+  String get mcpAutoStatusResumed => '已恢复';
+
+  @override
+  String get mcpAutoStatusConnected => '已连接';
+
+  @override
+  String get mcpAutoStatusDisconnected => '已断开';
+
+  @override
+  String get mcpAutoStatusMobile => '移动数据';
+
+  @override
+  String get mcpAutoStatusWeak => '弱网';
+
+  @override
+  String get mcpAutoNoPrompts => '暂无 Prompts';
+
+  @override
+  String get mcpAutoTapInvokePrompt => '点击 + 调用 Prompt';
+
+  @override
+  String mcpAutoPromptDescWithArgs(String desc, String params) {
+    return '$desc\n参数: $params';
+  }
+
+  @override
+  String get mcpAutoNoPromptAvailable => '暂无可用 Prompt';
+
+  @override
+  String get mcpAutoInvokePrompt => '调用 Prompt';
+
+  @override
+  String get mcpAutoPromptNoArgs => '该 Prompt 无需参数';
+
+  @override
+  String mcpAutoRequiredArg(String name) {
+    return '请填写必填参数: $name';
+  }
+
+  @override
+  String get mcpAutoInvokingPrompt => '正在调用 Prompt…';
+
+  @override
+  String get mcpAutoInvoke => '调用';
+
+  @override
+  String get mcpAutoNoResult => '无返回内容';
+
+  @override
+  String get mcpAutoNoWorkflows => '暂无工作流';
+
+  @override
+  String get mcpAutoNoWorkflowsHint => '点击 + 创建工作流\n可编排多个脚本节点顺序执行';
+
+  @override
+  String get mcpAutoUnnamedWorkflow => '未命名工作流';
+
+  @override
+  String mcpAutoNodesCount(int count) {
+    return '$count 个节点';
+  }
+
+  @override
+  String get mcpAutoDeleteWorkflowConfirm => '删除这个工作流？';
+
+  @override
+  String get mcpAutoWorkflowDeleted => '工作流已删除';
+
+  @override
+  String get mcpAutoNoNodes => '无节点';
+
+  @override
+  String mcpAutoDependsOn(String deps) {
+    return '依赖: $deps';
+  }
+
+  @override
+  String get mcpAutoNoDeps => '无依赖';
+
+  @override
+  String get mcpAutoEditWorkflow => '编辑工作流';
+
+  @override
+  String get mcpAutoAddWorkflow => '添加工作流';
+
+  @override
+  String get mcpAutoWorkflowName => '工作流名称';
+
+  @override
+  String get mcpAutoNodes => '节点';
+
+  @override
+  String get mcpAutoTapAddNode => '点击 + 添加节点';
+
+  @override
+  String get mcpAutoTopoHint => '节点按依赖关系拓扑执行；依赖显示为可点选的标签。';
+
+  @override
+  String get mcpAutoWorkflowNameRequired => '请输入工作流名称';
+
+  @override
+  String get mcpAutoWorkflowUpdated => '工作流已更新';
+
+  @override
+  String get mcpAutoWorkflowAdded => '工作流已添加';
+
+  @override
+  String get mcpAutoWorkflowNoNodes => '工作流没有节点';
+
+  @override
+  String mcpAutoWorkflowStart(String name) {
+    return '开始执行工作流：$name';
+  }
+
+  @override
+  String get mcpAutoWorkflowDone => '工作流执行完成';
+
+
+  @override
+  String get mcpConnSettingsTitle => 'MCP 设置';
+
+  @override
+  String get mcpConnAutomationConfig => '自动化配置';
+
+  @override
+  String get mcpConnAllowLanHint => '开启后同一网络内的设备可连接本机 MCP 服务';
+
+  @override
+  String get mcpConnTokenAuth => '访问令牌鉴权';
+
+  @override
+  String get mcpConnTokenAuthRequired => '要求 Bearer token（推荐）';
+
+  @override
+  String get mcpConnTokenAuthDisabled => '已关闭：同一网络内任何设备都可读取抓包内容！';
+
+  @override
+  String get mcpConnKeepAlive => '后台保活';
+
+  @override
+  String get mcpConnKeepAliveDesc => '把本应用加入电池优化白名单并解除后台限制，降低抓包与 MCP 服务被系统杀掉的可能（需 Shizuku / root / Dhizuku 之一）';
+
+  @override
+  String get mcpConnStrictValidation => '参数强校验';
+
+  @override
+  String get mcpConnStrictValidationDesc => '按工具声明的 inputSchema 校验参数，尽早提示调用错误（立即生效）';
+
+  @override
+  String get mcpConnTokenNotGenerated => '未生成（开启局域网访问后自动生成）';
+
+  @override
+  String get mcpConnTokenCopied => '令牌已复制';
+
+  @override
+  String get mcpConnRegenerateTokenTooltip => '重新生成（旧令牌立即失效）';
+
+  @override
+  String mcpConnRegenerateTokenFailed(String error) {
+    return '重新生成令牌失败：$error';
+  }
+
+  @override
+  String get mcpConnClientCommands => 'AI 客户端接入命令';
+
+  @override
+  String get mcpConnClientCommandsSubtitle => 'Claude Code / Codex / curl / 一键脚本';
+
+  @override
+  String get mcpConnCurlSelfCheck => 'curl 自检';
+
+  @override
+  String get mcpConnOneClickConfigShell => '一键配置(shell)';
+
+  @override
+  String get mcpConnOneClickConfigPowershell => '一键配置(PowerShell)';
+
+  @override
+  String get mcpConnNeedLanAccessForToken => '（需先开启局域网访问以生成令牌）';
+
+  @override
+  String get mcpConnAutoStart => '自动启动';
+
+  @override
+  String get mcpConnServicePort => '服务端口';
+
+  @override
+  String get mcpConnConnectionInfo => '连接信息';
+
+  @override
+  String mcpConnProtocolVersion(String version) {
+    return 'MCP 协议版本：$version（无状态核心，兼容旧版握手）';
+  }
+
+  @override
+  String get mcpConnDeviceIp => '设备 IP';
+
+  @override
+  String get mcpConnDeviceIpCopied => '已复制设备 IP';
+
+  @override
+  String get mcpConnApiUrl => 'API URL（Streamable HTTP）';
+
+  @override
+  String get mcpConnApiUrlCopied => '已复制 API URL';
+
+  @override
+  String get mcpConnSseUrl => 'SSE URL（旧版传输）';
+
+  @override
+  String get mcpConnSseUrlCopied => '已复制 SSE URL';
+
+  @override
+  String get mcpConnHealthCheck => 'Health Check（健康检查）';
+
+  @override
+  String get mcpConnHealthCheckUrlCopied => '已复制 Health Check URL';
+
+  @override
+  String get mcpConnFloatingBall => '悬浮球';
+
+  @override
+  String get mcpConnFloatingBallDesc => '桌面悬浮球显示 MCP 运行状态，点击弹出快捷面板；前台服务可提升应用保活能力';
+
+  @override
+  String mcpConnFloatingBallColorDesc(String hex, int percent) {
+    return '颜色 #$hex · 透明度 $percent%';
+  }
+
+  @override
+  String get mcpConnCustomFloatingBall => '自定义悬浮球';
+
+  @override
+  String get mcpConnPresetColors => '预置颜色';
+
+  @override
+  String get mcpConnPresetM3Purple => 'M3 紫';
+
+  @override
+  String get mcpConnPresetDeepSeaBlue => '深海蓝';
+
+  @override
+  String get mcpConnPresetEmeraldGreen => '翡翠绿';
+
+  @override
+  String get mcpConnPresetCoralOrange => '珊瑚橙';
+
+  @override
+  String get mcpConnPresetRoseRed => '玫瑰红';
+
+  @override
+  String get mcpConnPresetGraphiteBlack => '石墨黑';
+
+  @override
+  String get mcpConnCustomColorRgb => '自定义颜色（RGB）';
+
+  @override
+  String mcpConnOpacityPercent(int percent) {
+    return '透明度 $percent%';
+  }
+
+  @override
+  String get mcpConnConfirm => '确定';
+
+  @override
+  String get mcpConnFloatingBallPermission => '悬浮球权限';
+
+  @override
+  String get mcpConnFloatingBallNeedOverlayPermission => '悬浮球需要"显示在其他应用上层"权限，已为你打开系统设置，授权后回来重新开启';
+
+  @override
+  String mcpConnFloatingBallStartFailed(String reason) {
+    return '悬浮球启动失败：$reason';
+  }
+
+  @override
+  String mcpConnFloatingBallStopFailed(String reason) {
+    return '悬浮球停止失败：$reason';
+  }
+
+  @override
+  String get mcpConnUnknownReason => '未知原因';
+
+  @override
+  String get mcpConnFloatingBallStartedHint => '悬浮球已开启；若屏幕上看不到，请检查系统「显示悬浮窗」与厂商「后台弹出界面」权限';
+
+  @override
+  String mcpConnFloatingBallCallFailed(String error) {
+    return '悬浮球调用失败：$error';
+  }
+
+  @override
+  String get mcpConnOverlayGranted => '已授权"显示在其他应用上层"';
+
+  @override
+  String get mcpConnOverlayNotGranted => '未授权——点击前往系统设置开启，否则悬浮球无法显示';
+
+  @override
+  String get mcpConnEnableFloatingBall => '启用悬浮球';
+
+  @override
+  String get mcpConnFloatingBallEnabledDesc => '悬浮窗展示 MCP 状态，提升保活能力';
+
+  @override
+  String get mcpConnFloatingBallPermissionRequired => '请先完成上方悬浮球权限授权';
+
+  @override
+  String get mcpConnAutoDock => '3 秒无操作自动贴边';
+
+  @override
+  String get mcpConnAutoDockDesc => '悬浮球自动吸附屏幕边缘，避免遮挡';
+
+  @override
+  String get mcpConnCustomFloatingBallStyle => '自定义悬浮球样式';
+
+  @override
+  String get mcpConnAiConfigGuide => 'AI 配置指南';
+
+  @override
+  String get mcpConnAiConfigGuideDesc => '将以下配置写入 AI 客户端的 MCP 配置文件中，即可让 Cursor / Windsurf / Claude Desktop / Cherry Studio 等支持 MCP 的 AI 工具读取抓包数据并控制 ProxyPin。请确保手机与电脑处于同一局域网，且 MCP 服务已开启。服务器同时支持最新无状态协议（2026-07-28）与旧版握手协议。';
+
+  @override
+  String get mcpConnAiConfigCopied => '已复制 AI 配置';
+
+  @override
+  String get mcpConnControlMode => '控制模式';
+
+  @override
+  String get mcpConnCurrentMode => '当前模式';
+
+  @override
+  String get mcpConnAccessibility => '无障碍';
+
+  @override
+  String get mcpConnAccessibilityService => '无障碍服务';
+
+  @override
+  String get mcpConnRootPermission => 'Root 权限';
+
+  @override
+  String get mcpConnAvailable => '可用';
+
+  @override
+  String get mcpConnUnavailable => '不可用';
+
+  @override
+  String get mcpConnNotGranted => '未授权';
+
+  @override
+  String get mcpConnNotEnabled => '未开启';
+
+  @override
+  String get mcpConnOpenAccessibilitySettings => '打开无障碍设置';
+
+  @override
+  String get mcpConnShizukuGranted => 'Shizuku 已授权';
+
+  @override
+  String get mcpConnRequestShizuku => '请求 Shizuku 授权';
+
+  @override
+  String get mcpConnShizukuAuthIncomplete => '未完成授权：请确认 Shizuku 正在运行，并到 Shizuku 应用中选择本应用授权；或在弹窗中选择“允许”';
+
+  @override
+  String get mcpConnRootGranted => 'Root 已授权';
+
+  @override
+  String get mcpConnRequestRoot => '请求 Root 授权';
+
+  @override
+  String get mcpConnRootAuthIncomplete => '授权未完成：请在 Magisk/KernelSU 弹窗中允许，或确认设备已 Root';
+
+  @override
+  String get mcpConnDhizukuGranted => 'Dhizuku 已授权';
+
+  @override
+  String get mcpConnRequestDhizuku => '请求 Dhizuku 授权';
+
+  @override
+  String get mcpConnDhizukuAuthIncomplete => '授权未完成：请确认已安装 Dhizuku 并完成 Owner 激活';
+
+  @override
+  String get mcpConnAvailableTools => '可用工具';
+
+  @override
+  String mcpConnToolCount(int count) {
+    return '共 $count 个';
+  }
+
+  @override
+  String get mcpConnDisabledToolsHint => '关闭的工具将从工具列表中隐藏，AI 无法调用。';
+
+  @override
+  String get mcpConnToolSetConfig => '修改 ProxyPin 配置（系统代理、SSL 抓包开关）';
+
+  @override
+  String get mcpConnToolExportHar => '将抓包记录导出为 HAR 文件';
+
+  @override
+  String get mcpConnToolImportHar => '导入 HAR 文件到抓包记录';
+
+  @override
+  String get mcpConnToolSearchRequests => '按 URL、方法、状态码、域名等条件搜索请求';
+
+  @override
+  String get mcpConnToolGenerateCode => '根据请求生成代码（curl、Python、Go、JavaScript、Node.js）';
+
+  @override
+  String get mcpConnToolGetCurl => '生成请求对应的 cURL 命令';
+
+  @override
+  String get mcpConnToolGetRecentRequests => '获取最近抓到的请求列表';
+
+  @override
+  String get mcpConnToolGetRequestDetails => '获取指定请求的完整详情（请求/响应头与体、Cookie）';
+
+  @override
+  String get mcpConnToolStartProxy => '启动代理服务';
+
+  @override
+  String get mcpConnToolStopProxy => '停止代理服务';
+
+  @override
+  String get mcpConnToolGetProxyStatus => '查询代理服务运行状态';
+
+  @override
+  String get mcpConnToolClearRequests => '清空抓包记录';
+
+  @override
+  String get mcpConnToolReplayRequest => '重放指定请求';
+
+  @override
+  String get mcpConnToolUpdateScript => '更新注入页面的 JS 脚本';
+
+  @override
+  String get mcpConnToolGetScripts => '获取已配置的 JS 脚本列表';
+
+  @override
+  String get mcpConnToolGetStatistics => '获取抓包统计信息';
+
+  @override
+  String get mcpConnToolCompareRequests => '对比两个请求的差异';
+
+  @override
+  String get mcpConnToolFindSimilarRequests => '查找与指定请求相似的请求';
+
+  @override
+  String get mcpConnToolExtractApiEndpoints => '从抓包记录中提取 API 端点聚合信息';
+
+  @override
+  String get mcpConnToolFindSensitiveData => '搜索请求中的敏感数据（密码、密钥、手机号、身份证等）';
+
+  @override
+  String get mcpConnToolGetCookieInfo => '分析域名的 Cookie（值、HttpOnly、Secure、过期时间）';
+
+  @override
+  String get mcpConnToolGetDomainSummary => '统计域名的流量摘要（方法、状态码、平均耗时、错误数）';
+
+  @override
+  String get mcpConnToolGetPendingIntercepts => '查看断点拦截队列中待处理的请求/响应';
+
+  @override
+  String get mcpConnToolApproveIntercept => '放行断点拦截（可修改请求后放行）';
+
+  @override
+  String get mcpConnToolRejectIntercept => '拒绝断点拦截（中止请求或丢弃响应）';
+
+  @override
+  String get mcpConnToolToggleBreakpoint => '启用或停用断点拦截';
+
+  @override
+  String get mcpConnToolAddWeakNetworkRule => '添加弱网模拟规则（限速、延迟等）';
+
+  @override
+  String get mcpConnToolAddCustomNetworkProfile => '添加自定义网络档位';
+
+  @override
+  String get mcpConnToolListWeakNetworkRules => '列出所有弱网规则';
+
+  @override
+  String get mcpConnToolRemoveWeakNetworkRule => '移除弱网规则';
+
+  @override
+  String get mcpConnToolToggleWeakNetwork => '启用或停用弱网模拟';
+
+  @override
+  String get mcpConnToolListEnvironments => '列出所有环境';
+
+  @override
+  String get mcpConnToolSetEnvironmentVariable => '设置环境变量值';
+
+  @override
+  String get mcpConnToolCreateEnvironment => '创建新环境';
+
+  @override
+  String get mcpConnToolSetActiveEnvironment => '切换当前活动环境';
+
+  @override
+  String get mcpConnToolRemoveEnvironment => '删除指定环境';
+
+  @override
+  String get mcpConnToolToggleEnvironmentVariables => '启用或停用环境变量';
+
+  @override
+  String get mcpConnToolGetDeviceInfo => '获取设备信息（型号、系统版本、Root 状态）';
+
+  @override
+  String get mcpConnToolGetCurrentActivity => '获取当前前台 Activity';
+
+  @override
+  String get mcpConnToolDumpUi => '导出当前界面的 UI 层级树';
+
+  @override
+  String get mcpConnToolTapScreen => '模拟点击屏幕坐标';
+
+  @override
+  String get mcpConnToolLongPress => '模拟长按屏幕坐标';
+
+  @override
+  String get mcpConnToolSwipeScreen => '模拟滑动屏幕';
+
+  @override
+  String get mcpConnToolKeyEvent => '发送按键事件（如返回键、音量键）';
+
+  @override
+  String get mcpConnToolInputText => '向当前输入框输入文本';
+
+  @override
+  String get mcpConnToolScreenshot => '截取当前屏幕';
+
+  @override
+  String get mcpConnToolOpenAccessibilitySettings => '打开系统无障碍设置页';
+
+  @override
+  String get mcpConnToolShell => '执行 Shell 命令（支持 Root/Shizuku/Dhizuku 模式）';
+
+
+  @override
+  String get auditPlaintextHttpTitle => '明文 HTTP 传输敏感信息';
+
+  @override
+  String get auditPlaintextHttpDetailUrl => '该请求通过 http:// 明文发送，且 URL 查询串中包含密码 / 令牌等敏感字段，中间人可直接读取。';
+
+  @override
+  String get auditPlaintextHttpDetailBody => '该请求通过 http:// 明文发送，且请求体中包含密码 / 令牌等敏感字段，中间人可直接读取。';
+
+  @override
+  String get auditPlaintextHttpSuggestion => '改用 HTTPS；确需 HTTP 时避免在 URL 与请求体中直接承载凭据。';
+
+  @override
+  String get auditPlaintextBodyTitle => '明文 HTTP 传输请求体';
+
+  @override
+  String get auditPlaintextBodyDetail => '该请求使用 http:// 且带请求体，内容在链路上完全明文。';
+
+  @override
+  String get auditPlaintextBodySuggestion => '对涉及登录、支付、隐私的接口强制 HTTPS。';
+
+  @override
+  String get auditUrlSecretTitle => '敏感参数出现在 URL 中';
+
+  @override
+  String auditUrlSecretDetail(String names) {
+    return '查询参数 $names 疑似承载凭据 / 密钥。URL 会被写入浏览器历史、代理与服务器日志。';
+  }
+
+  @override
+  String get auditUrlSecretSuggestion => '把敏感参数改放到请求体或请求头（如 Authorization）。';
+
+  @override
+  String get auditPasswordBodyTitle => '请求体明文提交密码';
+
+  @override
+  String get auditPasswordBodyDetail => '请求体中存在 password / pwd 等字段且值为明文。';
+
+  @override
+  String get auditPasswordBodySuggestion => '确保链路全程 HTTPS，服务端避免把密码回显或写入日志。';
+
+  @override
+  String get auditCookieFlagTitle => 'Cookie 缺少安全属性';
+
+  @override
+  String auditCookieFlagDetail(String name, String missing) {
+    return 'Set-Cookie「$name」缺少 $missing，存在被脚本读取或明文传输的风险。';
+  }
+
+  @override
+  String get auditCookieFlagSuggestion => '为会话 Cookie 补全 Secure、HttpOnly，并按需设置 SameSite=Lax/Strict。';
+
+  @override
+  String get auditMissingHeadersTitle => 'HTML 响应缺少安全头';
+
+  @override
+  String auditMissingHeadersDetail(String missing) {
+    return '缺少 $missing，浏览器侧的内容嗅探与脚本注入缺少额外约束。';
+  }
+
+  @override
+  String get auditMissingHeadersSuggestion => '按需补齐 nosniff、CSP 等安全响应头。';
+
+  @override
+  String get auditFingerprintTitle => '响应暴露服务器指纹';
+
+  @override
+  String auditFingerprintDetail(String header, String value) {
+    return '$header: $value，便于攻击者针对性选择已知漏洞。';
+  }
+
+  @override
+  String get auditFingerprintSuggestion => '在网关层隐藏或泛化版本信息。';
+
+  @override
+  String get auditPrivateKeyTitle => '响应体疑似包含私钥';
+
+  @override
+  String get auditPrivateKeyDetail => '响应内容中出现 PEM 私钥标记，若为真实密钥属严重泄露。';
+
+  @override
+  String get auditPrivateKeySuggestion => '立即轮换该密钥，确认服务端不会把私钥下发到客户端。';
+
+  @override
+  String get auditSecretTitle => '响应体明文返回敏感字段';
+
+  @override
+  String auditSecretDetail(String names) {
+    return '检测到 $names 等字段以明文返回。';
+  }
+
+  @override
+  String get auditSecretSuggestion => '最小化返回字段；密钥类信息不应下发到客户端。';
+
+  @override
+  String get auditPiiTitle => '响应体包含个人敏感信息';
+
+  @override
+  String auditPiiDetail(String names) {
+    return '检测到 $names 字段携带疑似身份证 / 手机号等个人数据。';
+  }
+
+  @override
+  String get auditPiiSuggestion => '对个人数据做脱敏或按最小必要原则返回，并遵守数据合规要求。';
+
+  @override
+  String get auditErrorTitle => '错误响应泄露内部信息';
+
+  @override
+  String auditErrorDetail(String trace) {
+    return '响应中出现调试 / 堆栈特征（$trace），可能暴露框架、路径或数据库结构。';
+  }
+
+  @override
+  String get auditErrorSuggestion => '生产环境关闭详细报错，统一返回通用错误信息。';
+
+  @override
+  String get auditCorsTitle => 'CORS 允许任意源且携带凭据';
+
+  @override
+  String get auditCorsDetail => 'Access-Control-Allow-Origin 为 *，同时 Allow-Credentials 为 true，跨站读取凭据的风险很高。';
+
+  @override
+  String get auditCorsSuggestion => '把允许源收敛为固定白名单，避免 * 与 Allow-Credentials 同时出现。';
+
+  @override
+  String get auditJwtNoneTitle => 'JWT 使用 alg=none（未签名）';
+
+  @override
+  String get auditJwtNoneDetail => '该令牌声明算法为 none，任何人可篡改载荷而无法被校验。';
+
+  @override
+  String get auditJwtNoneSuggestion => '服务端强制校验签名算法，拒绝 alg=none。';
+
+  @override
+  String get auditJwtExpiryTitle => 'JWT 未设置过期时间';
+
+  @override
+  String get auditJwtExpiryDetail => '令牌载荷中缺少 exp 字段，签发后长期有效。';
+
+  @override
+  String get auditJwtExpirySuggestion => '为令牌设置合理的过期时间并支持刷新。';
+
+  @override
+  String get auditHttp10Title => '使用过时的 HTTP/1.0';
+
+  @override
+  String get auditHttp10Detail => '该连接使用 HTTP/1.0，连接复用与缓存策略较落后。';
+
+  @override
+  String get auditHttp10Suggestion => '升级到 HTTP/1.1 或 HTTP/2。';
+
+  @override
+  String get auditSqlTitle => '疑似 SQL 注入痕迹（数据库报错回显）';
+
+  @override
+  String auditSqlDetail(String signature) {
+    return '响应中出现了 $signature 的数据库错误特征，说明该接口把 SQL 错误直接回显给了调用方；若这条错误由客户端可控参数触发，则存在 SQL 注入风险。';
+  }
+
+  @override
+  String get auditSqlSuggestion => '改用参数化查询 / 预编译语句，不要拼接 SQL；生产环境关闭数据库详细报错，统一返回通用错误信息。（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）';
+
+  @override
+  String get auditXssTitle => '疑似 XSS 反射痕迹（HTML 响应未编码回显参数）';
+
+  @override
+  String auditXssDetail(String meta) {
+    return '响应把请求参数值原样回显在 HTML 中，未做 HTML 实体编码，且回显内容含 $meta 等特殊字符；若该值可被攻击者控制，浏览器可能把它解析成标签或脚本。';
+  }
+
+  @override
+  String get auditXssSuggestion => '按输出上下文做编码（HTML 实体编码），页面配合 CSP；不要把请求参数直接拼进 HTML。（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）';
+
+  @override
+  String auditCustomHitDetail(String name, String describe) {
+    return '命中自定义规则「$name」（$describe）。';
+  }
+
+  @override
+  String get auditCustomHitSuggestion => '请结合业务安全要求确认该内容是否应当出现。';
+
+  @override
+  String get auditSecretPrivateKey => '私钥';
+
+  @override
+  String get auditPiiIdCard => '身份证号';
+
+  @override
+  String get auditPiiPhone => '手机号';
+
+  @override
+  String auditRuleDescribe(String target, String match) {
+    return '范围：$target；方式：$match';
+  }
+
+  @override
+  String get auditTargetUrl => '请求 URL';
+
+  @override
+  String get auditTargetRequestHeader => '请求头';
+
+  @override
+  String get auditTargetRequestBody => '请求体';
+
+  @override
+  String get auditTargetResponseHeader => '响应头';
+
+  @override
+  String get auditTargetResponseBody => '响应体';
+
+  @override
+  String get auditTargetAny => '全部内容';
+
+  @override
+  String get auditMatchKeyword => '关键词';
+
+  @override
+  String get auditMatchRegex => '正则';
+
+  @override
+  String get diagSummaryOk => '抓包链路基本就绪';
+
+  @override
+  String get diagSummaryIssues => '检测到会影响抓包的问题，见 items 中的 error 项';
+
+  @override
+  String get diagSuggestStartProxy => '先启动抓包服务（调用 start_proxy 工具，或让用户在界面上点「开始抓包」）';
+
+  @override
+  String get diagSuggestInstallCert => '安装并信任根证书：HTTPS 未信任时会成片出现握手失败（列表里的感叹号包）';
+
+  @override
+  String get diagSuggestSystemProxy => '系统代理没有指向本应用：让用户在「偏好设置」打开系统代理，或确认是否被其它代理工具接管';
+
+  @override
+  String get diagSuggestPinning => '存在疑似证书固定的域名：这类应用需要在设备上做运行时干预才能解密，常见做法是靠 hook 框架（如 LSPosed 配合 TrustMeAlready 这类模块）。请注意这属于对目标应用的干预，只应在你自己的设备、且在你拥有授权的范围内使用';
+
+  @override
+  String get diagSuggestNoTraffic => '当前没有新流量：先在被抓的应用/浏览器里发起一次请求，再让 AI 读取会话列表';
+
+  @override
+  String get diagSuggestChecklist => '若以上都正常仍抓不到，按这几类排查：① 目标走 QUIC/HTTP3（手机开「拦截 QUIC」、浏览器关 QUIC）；② Flutter 应用（Dart 自带根证书列表，不读系统 CA）；③ 应用启用了证书固定（SSL Pinning）—— 若上方出现「SSL 证书固定（疑似）」项即命中；④ Windows 上自带网络栈的进程（需「Windows 接管增强」或 TUN 类工具）；⑤ Mac App Store 沙箱应用（需 Network Extension/TUN，本仓未签名构建无法接管）';
+
+  @override
+  String get diagItemProxyService => '代理服务';
+
+  @override
+  String diagProxyListening(int port) {
+    return '正在监听 127.0.0.1:$port';
+  }
+
+  @override
+  String get diagProxyNotRunning => '未在运行，抓不到任何流量。先点「开始抓包」';
+
+  @override
+  String get diagItemSystemProxy => '系统代理';
+
+  @override
+  String diagSystemProxyMatched(String host, int port) {
+    return '已指向本应用 $host:$port';
+  }
+
+  @override
+  String get diagSystemProxyOff => '系统代理未开启，应用流量不会经过本工具';
+
+  @override
+  String diagSystemProxyMismatch(String host, int port, int expected) {
+    return '指向 $host:$port，与本应用端口 $expected 不一致（可能被其它代理工具接管，或上次异常退出残留）';
+  }
+
+  @override
+  String get diagItemTrafficEntry => '流量入口';
+
+  @override
+  String get diagMobileVpnEntry => '移动端由 VPN 通道接管 IP 层流量（无需系统代理）';
+
+  @override
+  String get diagCaInSystemStore => '已在系统信任库中';
+
+  @override
+  String get diagCaUserStore => '只在「用户证书库」：Android 7 起应用默认不信任用户证书，所以会出现“证书装了但 HTTPS 抓不到或报错”。要全应用生效需 root 装进系统证书目录（Android 14+ 是 /apex/com.android.conscrypt/cacerts），或给目标 App 配 network_security_config';
+
+  @override
+  String get diagCaInstalledUnknown => '已安装（未能区分系统库/用户库）';
+
+  @override
+  String get diagCaMissingAndroid => '未检测到根证书：去「HTTPS 证书 → 安装根证书」按引导安装；安装时请选「CA 证书」而不是「VPN 和应用证书」';
+
+  @override
+  String get diagCaMissingDesktop => '未检测到根证书，HTTPS 会握手失败（列表里表现为成片的感叹号包）';
+
+  @override
+  String get diagItemCaRoot => 'CA 根证书';
+
+  @override
+  String get diagCaDesktopHint => '桌面端请在「证书」页确认根证书已装入系统受信任根';
+
+  @override
+  String diagReadFailed(String error) {
+    return '读取失败：$error';
+  }
+
+  @override
+  String get diagItemSslPinning => 'SSL 证书固定（疑似）';
+
+  @override
+  String diagSslPinningDetail(int count, String sample) {
+    return 'CA 证书已就绪，但有 $count 个域名只建立了 TLS 隧道、内容始终读不到：$sample。这通常意味着对方启用了证书固定（SSL Pinning），或自带根证书列表不读系统 CA。注意这类应用并不是"没网络"——它拒绝了本工具的证书，所以主动断开了连接。';
+  }
+
+  @override
+  String get diagItemWinTakeover => 'Windows 增强接管';
+
+  @override
+  String get diagWinTakeoverOn => '已开启：WinHTTP 服务、CLI 工具（curl/git/node）等也会走代理';
+
+  @override
+  String get diagWinTakeoverOff => '未开启：自带网络栈的应用、WinHTTP 服务与 CLI 工具可能抓不到。可在「偏好设置 → Windows 接管」打开（WinHTTP 部分需要管理员权限）';
+
+  @override
+  String get diagItemRecentTraffic => '最近流量';
+
+  @override
+  String get diagNoRequests => '本次会话还没有抓到任何请求';
+
+  @override
+  String diagTrafficFresh(int count, int ago) {
+    return '共 $count 条，最新一条在 $ago 秒前';
+  }
+
+  @override
+  String diagTrafficStale(int count, int ago) {
+    return '共 $count 条，最新一条在 $ago 秒前（当前没有新流量进来）';
+  }
+
+  @override
+  String get diagItemExtensionMemory => '扩展内存';
+
+  @override
+  String get diagExtMemUnavailable => '未取到（VPN 未启动时读不到扩展进程）';
+
+  @override
+  String diagExtMemDetail(String rss, String peak, String connections, String buffered) {
+    return '当前 $rss MB，峰值 $peak MB，连接 $connections 条，待发缓冲 $buffered MB';
+  }
+
+  @override
+  String get diagExtMemNearLimit => '（已接近扩展内存上限，建议降低并发或缩小待发缓冲上限）';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

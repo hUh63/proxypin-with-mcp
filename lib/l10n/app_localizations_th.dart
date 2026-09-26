@@ -2351,4 +2351,1453 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get sslGuide => 'Guide';
+
+
+  @override
+  String get mcpAutoTitle => 'MCP Automation';
+
+  @override
+  String get mcpAutoTutorial => 'Tutorial';
+
+  @override
+  String get mcpAutoRefresh => 'Refresh';
+
+  @override
+  String get mcpAutoRefreshed => 'Refreshed';
+
+  @override
+  String get mcpAutoCancel => 'Cancel';
+
+  @override
+  String get mcpAutoSave => 'Save';
+
+  @override
+  String get mcpAutoConfirm => 'OK';
+
+  @override
+  String get mcpAutoClose => 'Close';
+
+  @override
+  String get mcpAutoDelete => 'Delete';
+
+  @override
+  String get mcpAutoEdit => 'Edit';
+
+  @override
+  String get mcpAutoEnable => 'Enable';
+
+  @override
+  String get mcpAutoEnabled => 'Enabled';
+
+  @override
+  String get mcpAutoDisabled => 'Disabled';
+
+  @override
+  String get mcpAutoName => 'Name';
+
+  @override
+  String get mcpAutoDescription => 'Description';
+
+  @override
+  String get mcpAutoValue => 'Value';
+
+  @override
+  String get mcpAutoEmpty => 'Empty';
+
+  @override
+  String get mcpAutoUnnamed => 'Unnamed';
+
+  @override
+  String get mcpAutoCustom => 'Custom';
+
+  @override
+  String get mcpAutoPriority => 'Priority';
+
+  @override
+  String get mcpAutoConditionType => 'Condition type';
+
+  @override
+  String get mcpAutoTargetParams => 'Target / parameters (JSON)';
+
+  @override
+  String get mcpAutoTabTasks => 'Scheduled tasks';
+
+  @override
+  String get mcpAutoTabEvents => 'Event listeners';
+
+  @override
+  String get mcpAutoTabRules => 'Rule engine';
+
+  @override
+  String get mcpAutoTabWorkflows => 'Workflows';
+
+  @override
+  String get mcpAutoStatusChecking => 'Checking…';
+
+  @override
+  String get mcpAutoStatusRunning => 'Running';
+
+  @override
+  String get mcpAutoStatusStopped => 'Stopped';
+
+  @override
+  String get mcpAutoTapToStop => 'Tap to stop MCP automation';
+
+  @override
+  String get mcpAutoTapToStart => 'Tap to start MCP automation';
+
+  @override
+  String get mcpAutoServiceStartFailed => 'Failed to start the MCP service. Check that the MCP service is enabled in settings.';
+
+  @override
+  String get mcpAutoServiceStopped => 'MCP service stopped';
+
+  @override
+  String get mcpAutoServiceStarted => 'MCP service started';
+
+  @override
+  String get mcpAutoServiceNotStarted => 'MCP service is not running. Start it on the Connection page first.';
+
+  @override
+  String get mcpAutoEditRoot => 'Edit Root';
+
+  @override
+  String get mcpAutoAddRoot => 'Add Root';
+
+  @override
+  String get mcpAutoRootUriHint => 'proxypin://workspace or file:///path/to/dir';
+
+  @override
+  String get mcpAutoRootUriRequired => 'Enter the Root URI';
+
+  @override
+  String get mcpAutoRootUpdated => 'Root updated';
+
+  @override
+  String get mcpAutoRootAdded => 'Root added';
+
+  @override
+  String get mcpAutoRootDeleted => 'Root deleted';
+
+  @override
+  String get mcpAutoNoRoots => 'No Roots';
+
+  @override
+  String get mcpAutoNoRootsHint => 'Tap + at bottom right to add a Root\nAdd a proxypin:// or file:// resource root and edit it freely';
+
+  @override
+  String get mcpAutoDeleteRootConfirm => 'Delete this Root configuration?';
+
+  @override
+  String mcpAutoReading(String name) {
+    return 'Reading $name…';
+  }
+
+  @override
+  String mcpAutoReadFailed(String error) {
+    return 'Read failed: $error';
+  }
+
+  @override
+  String mcpAutoScriptNotFound(String name) {
+    return 'Script not found: $name';
+  }
+
+  @override
+  String mcpAutoScriptExecuted(String name) {
+    return 'Script executed: $name';
+  }
+
+  @override
+  String mcpAutoScriptRunFailed(String error) {
+    return 'Script failed: $error';
+  }
+
+  @override
+  String get mcpAutoNoTasks => 'No scheduled tasks';
+
+  @override
+  String get mcpAutoNoTasksHint => 'Tap + at bottom right to add a task\nPick both the run time and what to run';
+
+  @override
+  String get mcpAutoNextPrefix => 'Next: ';
+
+  @override
+  String mcpAutoLastRun(String time) {
+    return ' • Last run: $time';
+  }
+
+  @override
+  String mcpAutoRanTimes(int count, int total) {
+    return ' • Ran $count/$total times';
+  }
+
+  @override
+  String get mcpAutoDeleteTaskConfirm => 'Cancel and delete this scheduled task?';
+
+  @override
+  String get mcpAutoAddTask => 'Add scheduled task';
+
+  @override
+  String get mcpAutoTaskName => 'Task name';
+
+  @override
+  String get mcpAutoScheduleMode => 'Schedule mode:';
+
+  @override
+  String get mcpAutoModeOnce => 'One-off';
+
+  @override
+  String get mcpAutoModeDaily => 'Daily';
+
+  @override
+  String get mcpAutoModeWeekly => 'Weekly';
+
+  @override
+  String get mcpAutoModeInterval => 'Interval';
+
+  @override
+  String get mcpAutoCronLabel => 'Cron expression';
+
+  @override
+  String get mcpAutoCronHint => 'min hour day month weekday, e.g. 0 9 * * 1-5';
+
+  @override
+  String get mcpAutoCronHelper => 'Supports * , - / wildcards';
+
+  @override
+  String get mcpAutoCronRequired => 'Enter a Cron expression';
+
+  @override
+  String get mcpAutoCronInvalidHint => 'Invalid expression, please check';
+
+  @override
+  String mcpAutoCronNextAt(String time) {
+    return 'Next run: $time';
+  }
+
+  @override
+  String get mcpAutoCronPresetWorkday => '9am on weekdays';
+
+  @override
+  String get mcpAutoCronPresetEvery30 => 'Every 30 minutes';
+
+  @override
+  String get mcpAutoCronPresetMidnight => 'Every day at midnight';
+
+  @override
+  String get mcpAutoExecDateTime => 'Run date & time:';
+
+  @override
+  String get mcpAutoExecTime => 'Run time:';
+
+  @override
+  String get mcpAutoPickDate => 'Select run date';
+
+  @override
+  String get mcpAutoRepeatOn => 'Repeat on:';
+
+  @override
+  String get mcpAutoWeekdayMon => 'Mon';
+
+  @override
+  String get mcpAutoWeekdayTue => 'Tue';
+
+  @override
+  String get mcpAutoWeekdayWed => 'Wed';
+
+  @override
+  String get mcpAutoWeekdayThu => 'Thu';
+
+  @override
+  String get mcpAutoWeekdayFri => 'Fri';
+
+  @override
+  String get mcpAutoWeekdaySat => 'Sat';
+
+  @override
+  String get mcpAutoWeekdaySun => 'Sun';
+
+  @override
+  String get mcpAutoPickWeekday => 'Select at least one weekday';
+
+  @override
+  String get mcpAutoIntervalMinutes => 'Interval (minutes)';
+
+  @override
+  String get mcpAutoIntervalMinutesHelp => 'e.g. 30 runs the task every 30 minutes';
+
+  @override
+  String get mcpAutoRepeatCount => 'Repeat count';
+
+  @override
+  String get mcpAutoRepeatCountHelp => 'e.g. 5 stops after 5 runs; leave empty for unlimited';
+
+  @override
+  String get mcpAutoTaskAction => 'Task action:';
+
+  @override
+  String get mcpAutoActionScript => 'Run script';
+
+  @override
+  String get mcpAutoActionTool => 'Call MCP tool';
+
+  @override
+  String get mcpAutoActionWorkflow => 'Run workflow';
+
+  @override
+  String get mcpAutoActionWebhook => 'Send Webhook';
+
+  @override
+  String get mcpAutoPickScript => 'Select script';
+
+  @override
+  String get mcpAutoNoScriptAddFirst => 'No scripts yet, add one on the Scripts page first';
+
+  @override
+  String get mcpAutoPickTool => 'Select MCP tool';
+
+  @override
+  String get mcpAutoNoTools => 'No tools';
+
+  @override
+  String get mcpAutoToolsNeedStart => 'MCP is not running, tools unavailable';
+
+  @override
+  String get mcpAutoPickWorkflow => 'Select workflow';
+
+  @override
+  String get mcpAutoNoWorkflowAddFirst => 'No workflows yet, add one on the Workflows page first';
+
+  @override
+  String get mcpAutoTaskNameRequired => 'Enter a task name';
+
+  @override
+  String get mcpAutoIntervalInvalid => 'Enter a valid interval in minutes';
+
+  @override
+  String get mcpAutoCronInvalid => 'Invalid Cron expression';
+
+  @override
+  String get mcpAutoTaskActionIncomplete => 'Complete the task action configuration';
+
+  @override
+  String get mcpAutoTaskAdded => 'Scheduled task added';
+
+  @override
+  String get mcpAutoTaskCancelled => 'Task cancelled';
+
+  @override
+  String get mcpAutoNoListeners => 'No event listeners';
+
+  @override
+  String get mcpAutoNoListenersHint => 'Tap + to register a listener\nLog or run tasks when triggered';
+
+  @override
+  String get mcpAutoRemoveListenerConfirm => 'Remove this event listener?';
+
+  @override
+  String get mcpAutoEventTypesInfo => 'Event types';
+
+  @override
+  String get mcpAutoEventTypesBody => '• HTTP request event: triggered when the URL regex matches\n• Network status event: connected / disconnected / wifi / weak\n• Proxy status event: started / stopped / paused / resumed\n• Capture threshold event: capture count reaches the threshold';
+
+  @override
+  String get mcpAutoAddListener => 'Add event listener';
+
+  @override
+  String get mcpAutoEventHttp => 'HTTP request event';
+
+  @override
+  String get mcpAutoEventNetwork => 'Network status event';
+
+  @override
+  String get mcpAutoEventProxy => 'Proxy status event';
+
+  @override
+  String get mcpAutoEventCapture => 'Capture threshold event';
+
+  @override
+  String get mcpAutoUrlRegex => 'URL regex';
+
+  @override
+  String get mcpAutoCaptureThreshold => 'Capture count threshold';
+
+  @override
+  String mcpAutoDescHttp(String pattern) {
+    return 'HTTP request: $pattern';
+  }
+
+  @override
+  String mcpAutoDescNetwork(String status) {
+    return 'Network status: $status';
+  }
+
+  @override
+  String mcpAutoDescProxy(String status) {
+    return 'Proxy status: $status';
+  }
+
+  @override
+  String mcpAutoDescCapture(int count) {
+    return 'Capture threshold: $count';
+  }
+
+  @override
+  String get mcpAutoListenerAdded => 'Listener registered';
+
+  @override
+  String get mcpAutoListenerRemoved => 'Listener removed';
+
+  @override
+  String get mcpAutoNoRules => 'No automation rules';
+
+  @override
+  String get mcpAutoNoRulesHint => 'Tap + to add a rule\nRules run actions automatically when conditions match';
+
+  @override
+  String mcpAutoRuleSummary(int conditions, int actions, String enabled) {
+    return '$conditions conditions • $actions actions • $enabled';
+  }
+
+  @override
+  String get mcpAutoDeleteRuleConfirm => 'Delete this rule?';
+
+  @override
+  String get mcpAutoConditionsInline => 'Conditions:';
+
+  @override
+  String get mcpAutoActionsInline => 'Actions:';
+
+  @override
+  String get mcpAutoRuleEngineInfo => 'Rule engine';
+
+  @override
+  String get mcpAutoRuleEngineInfoBody => '14 condition operators and 8 action types\nRules persist to mcp_rules.json across restarts';
+
+  @override
+  String get mcpAutoEditRule => 'Edit rule';
+
+  @override
+  String get mcpAutoAddRule => 'Add rule';
+
+  @override
+  String get mcpAutoRuleName => 'Rule name';
+
+  @override
+  String get mcpAutoSectionConditions => 'Conditions';
+
+  @override
+  String get mcpAutoSectionActions => 'Actions';
+
+  @override
+  String get mcpAutoRuleNameRequired => 'Enter a rule name';
+
+  @override
+  String get mcpAutoRuleUpdated => 'Rule updated';
+
+  @override
+  String get mcpAutoRuleAdded => 'Rule added';
+
+  @override
+  String get mcpAutoRuleDeleted => 'Rule deleted';
+
+  @override
+  String get mcpAutoShortProxy => 'Proxy';
+
+  @override
+  String get mcpAutoShortNetwork => 'Network';
+
+  @override
+  String get mcpAutoShortSystem => 'System';
+
+  @override
+  String get mcpAutoCondTypeHttp => 'HTTP request';
+
+  @override
+  String get mcpAutoCondTypeProxy => 'Proxy status';
+
+  @override
+  String get mcpAutoCondTypeNetwork => 'Network status';
+
+  @override
+  String get mcpAutoCondTypeSystem => 'System status';
+
+  @override
+  String get mcpAutoOpContains => 'contains';
+
+  @override
+  String get mcpAutoOpStartsWith => 'starts with';
+
+  @override
+  String get mcpAutoOpEndsWith => 'ends with';
+
+  @override
+  String get mcpAutoOpMatches => 'matches';
+
+  @override
+  String get mcpAutoOpInList => 'in list';
+
+  @override
+  String get mcpAutoOpNotInList => 'not in list';
+
+  @override
+  String get mcpAutoOpExists => 'exists';
+
+  @override
+  String get mcpAutoOpNotExists => 'does not exist';
+
+  @override
+  String get mcpAutoActLog => 'Log';
+
+  @override
+  String get mcpAutoActNotify => 'Notify';
+
+  @override
+  String get mcpAutoActStopCapture => 'Stop capture';
+
+  @override
+  String get mcpAutoActStartCapture => 'Start capture';
+
+  @override
+  String get mcpAutoActExportData => 'Export data';
+
+  @override
+  String get mcpAutoFieldMethod => 'Method';
+
+  @override
+  String get mcpAutoFieldStatusCode => 'Status code';
+
+  @override
+  String get mcpAutoFieldDuration => 'Duration (ms)';
+
+  @override
+  String get mcpAutoFieldHost => 'Host';
+
+  @override
+  String get mcpAutoFieldPath => 'Path';
+
+  @override
+  String get mcpAutoFieldReqContentType => 'Request Content-Type';
+
+  @override
+  String get mcpAutoFieldRespContentType => 'Response Content-Type';
+
+  @override
+  String get mcpAutoFieldReqSize => 'Request size';
+
+  @override
+  String get mcpAutoFieldRespSize => 'Response size';
+
+  @override
+  String get mcpAutoFieldType => 'Type';
+
+  @override
+  String get mcpAutoFieldTimestamp => 'Timestamp';
+
+  @override
+  String get mcpAutoFieldMemory => 'Memory usage (MB)';
+
+  @override
+  String get mcpAutoFieldCaptureCount => 'Capture count';
+
+  @override
+  String get mcpAutoFieldDisk => 'Disk usage (MB)';
+
+  @override
+  String get mcpAutoFieldCpu => 'CPU usage (%)';
+
+  @override
+  String get mcpAutoStatusStarted => 'Started';
+
+  @override
+  String get mcpAutoStatusPaused => 'Paused';
+
+  @override
+  String get mcpAutoStatusResumed => 'Resumed';
+
+  @override
+  String get mcpAutoStatusConnected => 'Connected';
+
+  @override
+  String get mcpAutoStatusDisconnected => 'Disconnected';
+
+  @override
+  String get mcpAutoStatusMobile => 'Mobile data';
+
+  @override
+  String get mcpAutoStatusWeak => 'Weak network';
+
+  @override
+  String get mcpAutoNoPrompts => 'No Prompts';
+
+  @override
+  String get mcpAutoTapInvokePrompt => 'Tap + to invoke a Prompt';
+
+  @override
+  String mcpAutoPromptDescWithArgs(String desc, String params) {
+    return '$desc\nParameters: $params';
+  }
+
+  @override
+  String get mcpAutoNoPromptAvailable => 'No Prompts available';
+
+  @override
+  String get mcpAutoInvokePrompt => 'Invoke Prompt';
+
+  @override
+  String get mcpAutoPromptNoArgs => 'This Prompt takes no arguments';
+
+  @override
+  String mcpAutoRequiredArg(String name) {
+    return 'Fill in the required argument: $name';
+  }
+
+  @override
+  String get mcpAutoInvokingPrompt => 'Invoking Prompt…';
+
+  @override
+  String get mcpAutoInvoke => 'Invoke';
+
+  @override
+  String get mcpAutoNoResult => 'No content returned';
+
+  @override
+  String get mcpAutoNoWorkflows => 'No workflows';
+
+  @override
+  String get mcpAutoNoWorkflowsHint => 'Tap + to create a workflow\nChain multiple script nodes in order';
+
+  @override
+  String get mcpAutoUnnamedWorkflow => 'Unnamed workflow';
+
+  @override
+  String mcpAutoNodesCount(int count) {
+    return '$count nodes';
+  }
+
+  @override
+  String get mcpAutoDeleteWorkflowConfirm => 'Delete this workflow?';
+
+  @override
+  String get mcpAutoWorkflowDeleted => 'Workflow deleted';
+
+  @override
+  String get mcpAutoNoNodes => 'No nodes';
+
+  @override
+  String mcpAutoDependsOn(String deps) {
+    return 'Depends on: $deps';
+  }
+
+  @override
+  String get mcpAutoNoDeps => 'No dependencies';
+
+  @override
+  String get mcpAutoEditWorkflow => 'Edit workflow';
+
+  @override
+  String get mcpAutoAddWorkflow => 'Add workflow';
+
+  @override
+  String get mcpAutoWorkflowName => 'Workflow name';
+
+  @override
+  String get mcpAutoNodes => 'Nodes';
+
+  @override
+  String get mcpAutoTapAddNode => 'Tap + to add a node';
+
+  @override
+  String get mcpAutoTopoHint => 'Nodes run in dependency order; dependencies appear as selectable chips.';
+
+  @override
+  String get mcpAutoWorkflowNameRequired => 'Enter a workflow name';
+
+  @override
+  String get mcpAutoWorkflowUpdated => 'Workflow updated';
+
+  @override
+  String get mcpAutoWorkflowAdded => 'Workflow added';
+
+  @override
+  String get mcpAutoWorkflowNoNodes => 'The workflow has no nodes';
+
+  @override
+  String mcpAutoWorkflowStart(String name) {
+    return 'Running workflow: $name';
+  }
+
+  @override
+  String get mcpAutoWorkflowDone => 'Workflow finished';
+
+
+  @override
+  String get mcpConnSettingsTitle => 'MCP Settings';
+
+  @override
+  String get mcpConnAutomationConfig => 'Automation settings';
+
+  @override
+  String get mcpConnAllowLanHint => 'Devices on the same network can connect to this device\'s MCP service';
+
+  @override
+  String get mcpConnTokenAuth => 'Access token authentication';
+
+  @override
+  String get mcpConnTokenAuthRequired => 'Bearer token required (recommended)';
+
+  @override
+  String get mcpConnTokenAuthDisabled => 'Disabled: any device on the same network can read captured traffic!';
+
+  @override
+  String get mcpConnKeepAlive => 'Background keep-alive';
+
+  @override
+  String get mcpConnKeepAliveDesc => 'Add this app to the battery-optimization whitelist and lift background restrictions, so capture and the MCP service are less likely to be killed by the system (requires Shizuku / root / Dhizuku)';
+
+  @override
+  String get mcpConnStrictValidation => 'Strict parameter validation';
+
+  @override
+  String get mcpConnStrictValidationDesc => 'Validate parameters against each tool\'s declared inputSchema and report call errors early (takes effect immediately)';
+
+  @override
+  String get mcpConnTokenNotGenerated => 'Not generated (created automatically once LAN access is enabled)';
+
+  @override
+  String get mcpConnTokenCopied => 'Token copied';
+
+  @override
+  String get mcpConnRegenerateTokenTooltip => 'Regenerate (the old token stops working immediately)';
+
+  @override
+  String mcpConnRegenerateTokenFailed(String error) {
+    return 'Failed to regenerate token: $error';
+  }
+
+  @override
+  String get mcpConnClientCommands => 'AI client connection commands';
+
+  @override
+  String get mcpConnClientCommandsSubtitle => 'Claude Code / Codex / curl / one-click scripts';
+
+  @override
+  String get mcpConnCurlSelfCheck => 'curl self-check';
+
+  @override
+  String get mcpConnOneClickConfigShell => 'One-click setup (shell)';
+
+  @override
+  String get mcpConnOneClickConfigPowershell => 'One-click setup (PowerShell)';
+
+  @override
+  String get mcpConnNeedLanAccessForToken => '(Enable LAN access first to generate a token)';
+
+  @override
+  String get mcpConnAutoStart => 'Auto-start';
+
+  @override
+  String get mcpConnServicePort => 'Service port';
+
+  @override
+  String get mcpConnConnectionInfo => 'Connection info';
+
+  @override
+  String mcpConnProtocolVersion(String version) {
+    return 'MCP protocol version: $version (stateless core, compatible with the legacy handshake)';
+  }
+
+  @override
+  String get mcpConnDeviceIp => 'Device IP';
+
+  @override
+  String get mcpConnDeviceIpCopied => 'Device IP copied';
+
+  @override
+  String get mcpConnApiUrl => 'API URL (Streamable HTTP)';
+
+  @override
+  String get mcpConnApiUrlCopied => 'API URL copied';
+
+  @override
+  String get mcpConnSseUrl => 'SSE URL (legacy transport)';
+
+  @override
+  String get mcpConnSseUrlCopied => 'SSE URL copied';
+
+  @override
+  String get mcpConnHealthCheck => 'Health Check';
+
+  @override
+  String get mcpConnHealthCheckUrlCopied => 'Health Check URL copied';
+
+  @override
+  String get mcpConnFloatingBall => 'Floating ball';
+
+  @override
+  String get mcpConnFloatingBallDesc => 'The desktop floating ball shows MCP status; tap it for a quick panel. The foreground service helps keep the app alive.';
+
+  @override
+  String mcpConnFloatingBallColorDesc(String hex, int percent) {
+    return 'Color #$hex · Opacity $percent%';
+  }
+
+  @override
+  String get mcpConnCustomFloatingBall => 'Custom floating ball';
+
+  @override
+  String get mcpConnPresetColors => 'Preset colors';
+
+  @override
+  String get mcpConnPresetM3Purple => 'M3 Purple';
+
+  @override
+  String get mcpConnPresetDeepSeaBlue => 'Deep Sea Blue';
+
+  @override
+  String get mcpConnPresetEmeraldGreen => 'Emerald Green';
+
+  @override
+  String get mcpConnPresetCoralOrange => 'Coral Orange';
+
+  @override
+  String get mcpConnPresetRoseRed => 'Rose Red';
+
+  @override
+  String get mcpConnPresetGraphiteBlack => 'Graphite Black';
+
+  @override
+  String get mcpConnCustomColorRgb => 'Custom color (RGB)';
+
+  @override
+  String mcpConnOpacityPercent(int percent) {
+    return 'Opacity $percent%';
+  }
+
+  @override
+  String get mcpConnConfirm => 'OK';
+
+  @override
+  String get mcpConnFloatingBallPermission => 'Floating ball permission';
+
+  @override
+  String get mcpConnFloatingBallNeedOverlayPermission => 'The floating ball needs "Display over other apps" permission. System settings has been opened for you; come back and turn it on again after granting it.';
+
+  @override
+  String mcpConnFloatingBallStartFailed(String reason) {
+    return 'Failed to start the floating ball: $reason';
+  }
+
+  @override
+  String mcpConnFloatingBallStopFailed(String reason) {
+    return 'Failed to stop the floating ball: $reason';
+  }
+
+  @override
+  String get mcpConnUnknownReason => 'Unknown reason';
+
+  @override
+  String get mcpConnFloatingBallStartedHint => 'The floating ball is on. If you cannot see it on screen, check the system "Show floating windows" and the vendor "Background pop-up" permissions.';
+
+  @override
+  String mcpConnFloatingBallCallFailed(String error) {
+    return 'Floating ball call failed: $error';
+  }
+
+  @override
+  String get mcpConnOverlayGranted => 'Granted "Display over other apps"';
+
+  @override
+  String get mcpConnOverlayNotGranted => 'Not granted — tap to open system settings and enable it, otherwise the floating ball cannot show';
+
+  @override
+  String get mcpConnEnableFloatingBall => 'Enable floating ball';
+
+  @override
+  String get mcpConnFloatingBallEnabledDesc => 'Show MCP status as a floating window to improve keep-alive';
+
+  @override
+  String get mcpConnFloatingBallPermissionRequired => 'Grant the floating ball permission above first';
+
+  @override
+  String get mcpConnAutoDock => 'Auto-dock after 3 seconds idle';
+
+  @override
+  String get mcpConnAutoDockDesc => 'The floating ball snaps to the screen edge so it does not block the view';
+
+  @override
+  String get mcpConnCustomFloatingBallStyle => 'Custom floating ball style';
+
+  @override
+  String get mcpConnAiConfigGuide => 'AI configuration guide';
+
+  @override
+  String get mcpConnAiConfigGuideDesc => 'Paste the configuration below into your AI client\'s MCP config file and Cursor / Windsurf / Claude Desktop / Cherry Studio and other MCP-capable AI tools can read captured traffic and control ProxyPin. Make sure the phone and the computer are on the same LAN and the MCP service is enabled. The server supports both the latest stateless protocol (2026-07-28) and the legacy handshake protocol.';
+
+  @override
+  String get mcpConnAiConfigCopied => 'AI configuration copied';
+
+  @override
+  String get mcpConnControlMode => 'Control mode';
+
+  @override
+  String get mcpConnCurrentMode => 'Current mode';
+
+  @override
+  String get mcpConnAccessibility => 'Accessibility';
+
+  @override
+  String get mcpConnAccessibilityService => 'Accessibility service';
+
+  @override
+  String get mcpConnRootPermission => 'Root permission';
+
+  @override
+  String get mcpConnAvailable => 'Available';
+
+  @override
+  String get mcpConnUnavailable => 'Unavailable';
+
+  @override
+  String get mcpConnNotGranted => 'Not authorized';
+
+  @override
+  String get mcpConnNotEnabled => 'Not enabled';
+
+  @override
+  String get mcpConnOpenAccessibilitySettings => 'Open accessibility settings';
+
+  @override
+  String get mcpConnShizukuGranted => 'Shizuku authorized';
+
+  @override
+  String get mcpConnRequestShizuku => 'Request Shizuku authorization';
+
+  @override
+  String get mcpConnShizukuAuthIncomplete => 'Authorization not completed: make sure Shizuku is running, then pick this app in the Shizuku app to authorize it; or choose “Allow” in the dialog';
+
+  @override
+  String get mcpConnRootGranted => 'Root authorized';
+
+  @override
+  String get mcpConnRequestRoot => 'Request root authorization';
+
+  @override
+  String get mcpConnRootAuthIncomplete => 'Authorization not completed: allow it in the Magisk/KernelSU dialog, or make sure the device is rooted';
+
+  @override
+  String get mcpConnDhizukuGranted => 'Dhizuku authorized';
+
+  @override
+  String get mcpConnRequestDhizuku => 'Request Dhizuku authorization';
+
+  @override
+  String get mcpConnDhizukuAuthIncomplete => 'Authorization not completed: make sure Dhizuku is installed and Owner activation is finished';
+
+  @override
+  String get mcpConnAvailableTools => 'Available tools';
+
+  @override
+  String mcpConnToolCount(int count) {
+    return '$count tools';
+  }
+
+  @override
+  String get mcpConnDisabledToolsHint => 'Disabled tools are hidden from the tool list and cannot be called by AI.';
+
+  @override
+  String get mcpConnToolSetConfig => 'Change ProxyPin settings (system proxy, SSL capture toggle)';
+
+  @override
+  String get mcpConnToolExportHar => 'Export capture records to a HAR file';
+
+  @override
+  String get mcpConnToolImportHar => 'Import a HAR file into capture records';
+
+  @override
+  String get mcpConnToolSearchRequests => 'Search requests by URL, method, status code, domain, etc.';
+
+  @override
+  String get mcpConnToolGenerateCode => 'Generate code from a request (curl, Python, Go, JavaScript, Node.js)';
+
+  @override
+  String get mcpConnToolGetCurl => 'Generate the cURL command for a request';
+
+  @override
+  String get mcpConnToolGetRecentRequests => 'Get the list of recently captured requests';
+
+  @override
+  String get mcpConnToolGetRequestDetails => 'Get full details of a request (request/response headers and bodies, cookies)';
+
+  @override
+  String get mcpConnToolStartProxy => 'Start the proxy service';
+
+  @override
+  String get mcpConnToolStopProxy => 'Stop the proxy service';
+
+  @override
+  String get mcpConnToolGetProxyStatus => 'Query the proxy service status';
+
+  @override
+  String get mcpConnToolClearRequests => 'Clear capture records';
+
+  @override
+  String get mcpConnToolReplayRequest => 'Replay a given request';
+
+  @override
+  String get mcpConnToolUpdateScript => 'Update the JS script injected into pages';
+
+  @override
+  String get mcpConnToolGetScripts => 'Get the list of configured JS scripts';
+
+  @override
+  String get mcpConnToolGetStatistics => 'Get capture statistics';
+
+  @override
+  String get mcpConnToolCompareRequests => 'Compare the differences between two requests';
+
+  @override
+  String get mcpConnToolFindSimilarRequests => 'Find requests similar to a given request';
+
+  @override
+  String get mcpConnToolExtractApiEndpoints => 'Extract aggregated API endpoint info from capture records';
+
+  @override
+  String get mcpConnToolFindSensitiveData => 'Search requests for sensitive data (passwords, keys, phone numbers, ID numbers, etc.)';
+
+  @override
+  String get mcpConnToolGetCookieInfo => 'Analyze a domain\'s cookies (value, HttpOnly, Secure, expiry)';
+
+  @override
+  String get mcpConnToolGetDomainSummary => 'Summarize a domain\'s traffic (methods, status codes, average duration, error count)';
+
+  @override
+  String get mcpConnToolGetPendingIntercepts => 'List pending requests/responses in the breakpoint queue';
+
+  @override
+  String get mcpConnToolApproveIntercept => 'Release a breakpoint intercept (you may edit the request first)';
+
+  @override
+  String get mcpConnToolRejectIntercept => 'Reject a breakpoint intercept (abort the request or drop the response)';
+
+  @override
+  String get mcpConnToolToggleBreakpoint => 'Enable or disable breakpoint interception';
+
+  @override
+  String get mcpConnToolAddWeakNetworkRule => 'Add a weak-network rule (rate limit, delay, etc.)';
+
+  @override
+  String get mcpConnToolAddCustomNetworkProfile => 'Add a custom network profile';
+
+  @override
+  String get mcpConnToolListWeakNetworkRules => 'List all weak-network rules';
+
+  @override
+  String get mcpConnToolRemoveWeakNetworkRule => 'Remove a weak-network rule';
+
+  @override
+  String get mcpConnToolToggleWeakNetwork => 'Enable or disable weak-network simulation';
+
+  @override
+  String get mcpConnToolListEnvironments => 'List all environments';
+
+  @override
+  String get mcpConnToolSetEnvironmentVariable => 'Set an environment variable value';
+
+  @override
+  String get mcpConnToolCreateEnvironment => 'Create a new environment';
+
+  @override
+  String get mcpConnToolSetActiveEnvironment => 'Switch the active environment';
+
+  @override
+  String get mcpConnToolRemoveEnvironment => 'Delete a given environment';
+
+  @override
+  String get mcpConnToolToggleEnvironmentVariables => 'Enable or disable environment variables';
+
+  @override
+  String get mcpConnToolGetDeviceInfo => 'Get device info (model, OS version, root status)';
+
+  @override
+  String get mcpConnToolGetCurrentActivity => 'Get the current foreground activity';
+
+  @override
+  String get mcpConnToolDumpUi => 'Export the UI hierarchy tree of the current screen';
+
+  @override
+  String get mcpConnToolTapScreen => 'Simulate a tap at screen coordinates';
+
+  @override
+  String get mcpConnToolLongPress => 'Simulate a long press at screen coordinates';
+
+  @override
+  String get mcpConnToolSwipeScreen => 'Simulate a screen swipe';
+
+  @override
+  String get mcpConnToolKeyEvent => 'Send a key event (e.g. back or volume key)';
+
+  @override
+  String get mcpConnToolInputText => 'Type text into the current input field';
+
+  @override
+  String get mcpConnToolScreenshot => 'Capture the current screen';
+
+  @override
+  String get mcpConnToolOpenAccessibilitySettings => 'Open the system accessibility settings page';
+
+  @override
+  String get mcpConnToolShell => 'Run a shell command (supports Root/Shizuku/Dhizuku modes)';
+
+
+  @override
+  String get auditPlaintextHttpTitle => 'Sensitive Data Sent Over Plaintext HTTP';
+
+  @override
+  String get auditPlaintextHttpDetailUrl => 'This request is sent over plaintext http:// and carries sensitive fields such as passwords / tokens in the URL query string, which a man-in-the-middle can read directly.';
+
+  @override
+  String get auditPlaintextHttpDetailBody => 'This request is sent over plaintext http:// and carries sensitive fields such as passwords / tokens in the request body, which a man-in-the-middle can read directly.';
+
+  @override
+  String get auditPlaintextHttpSuggestion => 'Use HTTPS; when HTTP is unavoidable, do not carry credentials directly in the URL or request body.';
+
+  @override
+  String get auditPlaintextBodyTitle => 'Request Body Sent Over Plaintext HTTP';
+
+  @override
+  String get auditPlaintextBodyDetail => 'This request uses http:// and has a request body, so the content is fully plaintext on the wire.';
+
+  @override
+  String get auditPlaintextBodySuggestion => 'Enforce HTTPS for endpoints that handle login, payment or privacy.';
+
+  @override
+  String get auditUrlSecretTitle => 'Sensitive Parameters in the URL';
+
+  @override
+  String auditUrlSecretDetail(String names) {
+    return 'Query parameters $names look like credentials / keys. URLs are written into browser history, proxy and server logs.';
+  }
+
+  @override
+  String get auditUrlSecretSuggestion => 'Move sensitive parameters into the request body or headers (for example Authorization).';
+
+  @override
+  String get auditPasswordBodyTitle => 'Password Submitted in a Plaintext Body';
+
+  @override
+  String get auditPasswordBodyDetail => 'The request body contains fields such as password / pwd with plaintext values.';
+
+  @override
+  String get auditPasswordBodySuggestion => 'Keep the whole path on HTTPS and make sure the server never echoes or logs passwords.';
+
+  @override
+  String get auditCookieFlagTitle => 'Cookie Missing Security Attributes';
+
+  @override
+  String auditCookieFlagDetail(String name, String missing) {
+    return 'Set-Cookie "$name" is missing $missing, so it can be read by scripts or transmitted in cleartext.';
+  }
+
+  @override
+  String get auditCookieFlagSuggestion => 'Add Secure and HttpOnly to session cookies, and set SameSite=Lax/Strict as needed.';
+
+  @override
+  String get auditMissingHeadersTitle => 'HTML Response Missing Security Headers';
+
+  @override
+  String auditMissingHeadersDetail(String missing) {
+    return 'Missing $missing; the browser has no extra constraint against content sniffing and script injection.';
+  }
+
+  @override
+  String get auditMissingHeadersSuggestion => 'Add security response headers such as nosniff and CSP as needed.';
+
+  @override
+  String get auditFingerprintTitle => 'Response Exposes Server Fingerprint';
+
+  @override
+  String auditFingerprintDetail(String header, String value) {
+    return '$header: $value, which helps an attacker pick known vulnerabilities.';
+  }
+
+  @override
+  String get auditFingerprintSuggestion => 'Hide or generalize version information at the gateway.';
+
+  @override
+  String get auditPrivateKeyTitle => 'Response Body May Contain a Private Key';
+
+  @override
+  String get auditPrivateKeyDetail => 'A PEM private key marker appears in the response; if it is a real key, this is a severe leak.';
+
+  @override
+  String get auditPrivateKeySuggestion => 'Rotate the key immediately and make sure the server never sends private keys to clients.';
+
+  @override
+  String get auditSecretTitle => 'Response Body Returns Secret Fields in Plaintext';
+
+  @override
+  String auditSecretDetail(String names) {
+    return 'Fields such as $names are returned in plaintext.';
+  }
+
+  @override
+  String get auditSecretSuggestion => 'Return the minimum set of fields; key material should never be sent to clients.';
+
+  @override
+  String get auditPiiTitle => 'Response Body Contains Personal Information';
+
+  @override
+  String auditPiiDetail(String names) {
+    return 'Fields such as $names carry personal data such as ID numbers / phone numbers.';
+  }
+
+  @override
+  String get auditPiiSuggestion => 'Mask personal data or return it on a minimal-necessary basis, and comply with data protection requirements.';
+
+  @override
+  String get auditErrorTitle => 'Error Response Leaks Internal Information';
+
+  @override
+  String auditErrorDetail(String trace) {
+    return 'Debug / stack trace signatures ($trace) appear in the response, which may expose the framework, paths or database structure.';
+  }
+
+  @override
+  String get auditErrorSuggestion => 'Disable detailed errors in production and return a generic error message.';
+
+  @override
+  String get auditCorsTitle => 'CORS Allows Any Origin with Credentials';
+
+  @override
+  String get auditCorsDetail => 'Access-Control-Allow-Origin is * while Allow-Credentials is true, so the risk of cross-site credential reads is high.';
+
+  @override
+  String get auditCorsSuggestion => 'Restrict allowed origins to a fixed allowlist and avoid * together with Allow-Credentials.';
+
+  @override
+  String get auditJwtNoneTitle => 'JWT Uses alg=none (Unsigned)';
+
+  @override
+  String get auditJwtNoneDetail => 'The token declares algorithm none, so anyone can tamper with the payload and it cannot be verified.';
+
+  @override
+  String get auditJwtNoneSuggestion => 'Enforce signature algorithm validation on the server and reject alg=none.';
+
+  @override
+  String get auditJwtExpiryTitle => 'JWT Has No Expiry';
+
+  @override
+  String get auditJwtExpiryDetail => 'The token payload has no exp field, so it stays valid forever after being issued.';
+
+  @override
+  String get auditJwtExpirySuggestion => 'Set a reasonable expiry for tokens and support refresh.';
+
+  @override
+  String get auditHttp10Title => 'Uses Outdated HTTP/1.0';
+
+  @override
+  String get auditHttp10Detail => 'This connection uses HTTP/1.0, whose connection reuse and caching strategy is outdated.';
+
+  @override
+  String get auditHttp10Suggestion => 'Upgrade to HTTP/1.1 or HTTP/2.';
+
+  @override
+  String get auditSqlTitle => 'Possible SQL Injection Trace (Database Error Echoed)';
+
+  @override
+  String auditSqlDetail(String signature) {
+    return 'The response contains a $signature database error signature, which means this endpoint echoes SQL errors back to the caller; if client-controlled parameters triggered it, there is a SQL injection risk.';
+  }
+
+  @override
+  String get auditSqlSuggestion => 'Use parameterized queries / prepared statements and never concatenate SQL; disable detailed database errors in production and return a generic message. (Passive detection: based only on the response characteristics of captured traffic; no probe request was sent.)';
+
+  @override
+  String get auditXssTitle => 'Possible XSS Reflection Trace (Unencoded Parameters Echoed in HTML)';
+
+  @override
+  String auditXssDetail(String meta) {
+    return 'The response echoes request parameter values verbatim into HTML without HTML entity encoding, and the echoed content contains special characters such as $meta; if an attacker can control that value, the browser may parse it as tags or script.';
+  }
+
+  @override
+  String get auditXssSuggestion => 'Encode according to the output context (HTML entity encoding) and pair the page with CSP; do not concatenate request parameters into HTML. (Passive detection: based only on the response characteristics of captured traffic; no probe request was sent.)';
+
+  @override
+  String auditCustomHitDetail(String name, String describe) {
+    return 'Matched custom rule "$name" ($describe).';
+  }
+
+  @override
+  String get auditCustomHitSuggestion => 'Confirm against your business security requirements whether this content should appear.';
+
+  @override
+  String get auditSecretPrivateKey => 'Private key';
+
+  @override
+  String get auditPiiIdCard => 'ID number';
+
+  @override
+  String get auditPiiPhone => 'Phone number';
+
+  @override
+  String auditRuleDescribe(String target, String match) {
+    return 'Scope: $target; Match: $match';
+  }
+
+  @override
+  String get auditTargetUrl => 'Request URL';
+
+  @override
+  String get auditTargetRequestHeader => 'Request headers';
+
+  @override
+  String get auditTargetRequestBody => 'Request body';
+
+  @override
+  String get auditTargetResponseHeader => 'Response headers';
+
+  @override
+  String get auditTargetResponseBody => 'Response body';
+
+  @override
+  String get auditTargetAny => 'Everything';
+
+  @override
+  String get auditMatchKeyword => 'Keyword';
+
+  @override
+  String get auditMatchRegex => 'Regex';
+
+  @override
+  String get diagSummaryOk => 'Capture path is basically ready';
+
+  @override
+  String get diagSummaryIssues => 'Problems that affect capture were detected; see the error items in items';
+
+  @override
+  String get diagSuggestStartProxy => 'Start the capture service first (call the start_proxy tool, or have the user tap Start Capture in the UI)';
+
+  @override
+  String get diagSuggestInstallCert => 'Install and trust the root certificate: without HTTPS trust you will see batches of handshake failures (the exclamation-mark packets in the list)';
+
+  @override
+  String get diagSuggestSystemProxy => 'The system proxy does not point to this app: have the user enable the system proxy in Preferences, or check whether another proxy tool has taken it over';
+
+  @override
+  String get diagSuggestPinning => 'Domains that look like they pin certificates: such apps need runtime intervention on the device to decrypt, and the common approach is a hook framework (for example LSPosed with a module like TrustMeAlready). Note that this interferes with the target app and should only be done on your own device and within the scope you are authorized for';
+
+  @override
+  String get diagSuggestNoTraffic => 'No new traffic right now: trigger a request in the app or browser being captured, then let the AI read the session list';
+
+  @override
+  String get diagSuggestChecklist => 'If everything above looks fine but you still capture nothing, check these categories: ① the target uses QUIC/HTTP3 (enable Block QUIC on the phone, disable QUIC in the browser); ② Flutter apps (Dart ships its own root CA list and does not read the system CA); ③ the app enables certificate pinning (SSL Pinning) - matched if an SSL Certificate Pinning (suspected) item appears above; ④ processes with their own network stack on Windows (need Enhanced Windows Takeover or a TUN tool); ⑤ Mac App Store sandboxed apps (need Network Extension/TUN; unsigned builds from this repository cannot take over)';
+
+  @override
+  String get diagItemProxyService => 'Proxy Service';
+
+  @override
+  String diagProxyListening(int port) {
+    return 'Listening on 127.0.0.1:$port';
+  }
+
+  @override
+  String get diagProxyNotRunning => 'Not running, so no traffic can be captured. Tap Start Capture first';
+
+  @override
+  String get diagItemSystemProxy => 'System Proxy';
+
+  @override
+  String diagSystemProxyMatched(String host, int port) {
+    return 'Points to this app at $host:$port';
+  }
+
+  @override
+  String get diagSystemProxyOff => 'The system proxy is off, so app traffic will not go through this tool';
+
+  @override
+  String diagSystemProxyMismatch(String host, int port, int expected) {
+    return 'Points to $host:$port, which does not match this app port $expected (maybe taken over by another proxy tool, or left over from an abnormal exit)';
+  }
+
+  @override
+  String get diagItemTrafficEntry => 'Traffic Entry';
+
+  @override
+  String get diagMobileVpnEntry => 'On mobile, the VPN tunnel handles IP-layer traffic (no system proxy needed)';
+
+  @override
+  String get diagCaInSystemStore => 'Already in the system trust store';
+
+  @override
+  String get diagCaUserStore => 'Only in the user certificate store: since Android 7 apps do not trust user certificates by default, you may see "certificate installed but HTTPS cannot be captured or reports an error". To take effect for all apps it must be installed into the system certificate directory with root (on Android 14+ that is /apex/com.android.conscrypt/cacerts), or configure network_security_config for the target app';
+
+  @override
+  String get diagCaInstalledUnknown => 'Installed (cannot distinguish the system store from the user store)';
+
+  @override
+  String get diagCaMissingAndroid => 'Root certificate not detected: go to HTTPS Certificate -> Install Root Certificate and follow the guide; choose CA certificate rather than VPN and app certificate during installation';
+
+  @override
+  String get diagCaMissingDesktop => 'Root certificate not detected; HTTPS will fail the handshake (seen as batches of exclamation-mark packets in the list)';
+
+  @override
+  String get diagItemCaRoot => 'CA Root Certificate';
+
+  @override
+  String get diagCaDesktopHint => 'On desktop, confirm in the Certificate page that the root certificate is installed into the system trusted roots';
+
+  @override
+  String diagReadFailed(String error) {
+    return 'Read failed: $error';
+  }
+
+  @override
+  String get diagItemSslPinning => 'SSL Certificate Pinning (suspected)';
+
+  @override
+  String diagSslPinningDetail(int count, String sample) {
+    return 'The CA certificate is ready, but $count domains only established a TLS tunnel and their content is never readable: $sample. This usually means the peer enabled certificate pinning (SSL Pinning), or ships its own root CA list and does not read the system CA. Note that these apps are not offline: they rejected the certificate of this tool and therefore closed the connection.';
+  }
+
+  @override
+  String get diagItemWinTakeover => 'Enhanced Windows Takeover';
+
+  @override
+  String get diagWinTakeoverOn => 'On: the WinHTTP service and CLI tools (curl/git/node) also go through the proxy';
+
+  @override
+  String get diagWinTakeoverOff => 'Off: apps with their own network stack, the WinHTTP service and CLI tools may not be captured. Enable it in Preferences -> Windows Takeover (the WinHTTP part requires administrator rights)';
+
+  @override
+  String get diagItemRecentTraffic => 'Recent Traffic';
+
+  @override
+  String get diagNoRequests => 'No requests captured in this session yet';
+
+  @override
+  String diagTrafficFresh(int count, int ago) {
+    return '$count requests, latest $ago seconds ago';
+  }
+
+  @override
+  String diagTrafficStale(int count, int ago) {
+    return '$count requests, latest $ago seconds ago (no new traffic coming in)';
+  }
+
+  @override
+  String get diagItemExtensionMemory => 'Extension Memory';
+
+  @override
+  String get diagExtMemUnavailable => 'Not available (the extension process cannot be read while the VPN is stopped)';
+
+  @override
+  String diagExtMemDetail(String rss, String peak, String connections, String buffered) {
+    return 'Current $rss MB, peak $peak MB, $connections connections, $buffered MB buffered';
+  }
+
+  @override
+  String get diagExtMemNearLimit => ' (approaching the extension memory limit; consider reducing concurrency or lowering the buffered-send cap)';
 }

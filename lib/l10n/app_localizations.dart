@@ -4463,6 +4463,2731 @@ Modern Android keeps /system and /apex read-only, so instead of copying files we
   /// **'Guide'**
   String get sslGuide;
 
+
+  /// No description provided for @mcpAutoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP Automation'**
+  String get mcpAutoTitle;
+
+  /// No description provided for @mcpAutoTutorial.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial'**
+  String get mcpAutoTutorial;
+
+  /// No description provided for @mcpAutoRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get mcpAutoRefresh;
+
+  /// No description provided for @mcpAutoRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshed'**
+  String get mcpAutoRefreshed;
+
+  /// No description provided for @mcpAutoCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get mcpAutoCancel;
+
+  /// No description provided for @mcpAutoSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get mcpAutoSave;
+
+  /// No description provided for @mcpAutoConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get mcpAutoConfirm;
+
+  /// No description provided for @mcpAutoClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get mcpAutoClose;
+
+  /// No description provided for @mcpAutoDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get mcpAutoDelete;
+
+  /// No description provided for @mcpAutoEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get mcpAutoEdit;
+
+  /// No description provided for @mcpAutoEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get mcpAutoEnable;
+
+  /// No description provided for @mcpAutoEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get mcpAutoEnabled;
+
+  /// No description provided for @mcpAutoDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get mcpAutoDisabled;
+
+  /// No description provided for @mcpAutoName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get mcpAutoName;
+
+  /// No description provided for @mcpAutoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get mcpAutoDescription;
+
+  /// No description provided for @mcpAutoValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get mcpAutoValue;
+
+  /// No description provided for @mcpAutoEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get mcpAutoEmpty;
+
+  /// No description provided for @mcpAutoUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed'**
+  String get mcpAutoUnnamed;
+
+  /// No description provided for @mcpAutoCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get mcpAutoCustom;
+
+  /// No description provided for @mcpAutoPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get mcpAutoPriority;
+
+  /// No description provided for @mcpAutoConditionType.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition type'**
+  String get mcpAutoConditionType;
+
+  /// No description provided for @mcpAutoTargetParams.
+  ///
+  /// In en, this message translates to:
+  /// **'Target / parameters (JSON)'**
+  String get mcpAutoTargetParams;
+
+  /// No description provided for @mcpAutoTabTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled tasks'**
+  String get mcpAutoTabTasks;
+
+  /// No description provided for @mcpAutoTabEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Event listeners'**
+  String get mcpAutoTabEvents;
+
+  /// No description provided for @mcpAutoTabRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule engine'**
+  String get mcpAutoTabRules;
+
+  /// No description provided for @mcpAutoTabWorkflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflows'**
+  String get mcpAutoTabWorkflows;
+
+  /// No description provided for @mcpAutoStatusChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get mcpAutoStatusChecking;
+
+  /// No description provided for @mcpAutoStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get mcpAutoStatusRunning;
+
+  /// No description provided for @mcpAutoStatusStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get mcpAutoStatusStopped;
+
+  /// No description provided for @mcpAutoTapToStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to stop MCP automation'**
+  String get mcpAutoTapToStop;
+
+  /// No description provided for @mcpAutoTapToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to start MCP automation'**
+  String get mcpAutoTapToStart;
+
+  /// No description provided for @mcpAutoServiceStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start the MCP service. Check that the MCP service is enabled in settings.'**
+  String get mcpAutoServiceStartFailed;
+
+  /// No description provided for @mcpAutoServiceStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP service stopped'**
+  String get mcpAutoServiceStopped;
+
+  /// No description provided for @mcpAutoServiceStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP service started'**
+  String get mcpAutoServiceStarted;
+
+  /// No description provided for @mcpAutoServiceNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP service is not running. Start it on the Connection page first.'**
+  String get mcpAutoServiceNotStarted;
+
+  /// No description provided for @mcpAutoEditRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Root'**
+  String get mcpAutoEditRoot;
+
+  /// No description provided for @mcpAutoAddRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Root'**
+  String get mcpAutoAddRoot;
+
+  /// No description provided for @mcpAutoRootUriHint.
+  ///
+  /// In en, this message translates to:
+  /// **'proxypin://workspace or file:///path/to/dir'**
+  String get mcpAutoRootUriHint;
+
+  /// No description provided for @mcpAutoRootUriRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the Root URI'**
+  String get mcpAutoRootUriRequired;
+
+  /// No description provided for @mcpAutoRootUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Root updated'**
+  String get mcpAutoRootUpdated;
+
+  /// No description provided for @mcpAutoRootAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Root added'**
+  String get mcpAutoRootAdded;
+
+  /// No description provided for @mcpAutoRootDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Root deleted'**
+  String get mcpAutoRootDeleted;
+
+  /// No description provided for @mcpAutoNoRoots.
+  ///
+  /// In en, this message translates to:
+  /// **'No Roots'**
+  String get mcpAutoNoRoots;
+
+  /// No description provided for @mcpAutoNoRootsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + at bottom right to add a Root
+Add a proxypin:// or file:// resource root and edit it freely'**
+  String get mcpAutoNoRootsHint;
+
+  /// No description provided for @mcpAutoDeleteRootConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this Root configuration?'**
+  String get mcpAutoDeleteRootConfirm;
+
+  /// No description provided for @mcpAutoReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading $name…'**
+  String mcpAutoReading(String name);
+
+  /// No description provided for @mcpAutoReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Read failed: $error'**
+  String mcpAutoReadFailed(String error);
+
+  /// No description provided for @mcpAutoScriptNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Script not found: $name'**
+  String mcpAutoScriptNotFound(String name);
+
+  /// No description provided for @mcpAutoScriptExecuted.
+  ///
+  /// In en, this message translates to:
+  /// **'Script executed: $name'**
+  String mcpAutoScriptExecuted(String name);
+
+  /// No description provided for @mcpAutoScriptRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Script failed: $error'**
+  String mcpAutoScriptRunFailed(String error);
+
+  /// No description provided for @mcpAutoNoTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled tasks'**
+  String get mcpAutoNoTasks;
+
+  /// No description provided for @mcpAutoNoTasksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + at bottom right to add a task
+Pick both the run time and what to run'**
+  String get mcpAutoNoTasksHint;
+
+  /// No description provided for @mcpAutoNextPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: '**
+  String get mcpAutoNextPrefix;
+
+  /// No description provided for @mcpAutoLastRun.
+  ///
+  /// In en, this message translates to:
+  /// **' • Last run: $time'**
+  String mcpAutoLastRun(String time);
+
+  /// No description provided for @mcpAutoRanTimes.
+  ///
+  /// In en, this message translates to:
+  /// **' • Ran $count/$total times'**
+  String mcpAutoRanTimes(int count, int total);
+
+  /// No description provided for @mcpAutoDeleteTaskConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel and delete this scheduled task?'**
+  String get mcpAutoDeleteTaskConfirm;
+
+  /// No description provided for @mcpAutoAddTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add scheduled task'**
+  String get mcpAutoAddTask;
+
+  /// No description provided for @mcpAutoTaskName.
+  ///
+  /// In en, this message translates to:
+  /// **'Task name'**
+  String get mcpAutoTaskName;
+
+  /// No description provided for @mcpAutoScheduleMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule mode:'**
+  String get mcpAutoScheduleMode;
+
+  /// No description provided for @mcpAutoModeOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'One-off'**
+  String get mcpAutoModeOnce;
+
+  /// No description provided for @mcpAutoModeDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get mcpAutoModeDaily;
+
+  /// No description provided for @mcpAutoModeWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get mcpAutoModeWeekly;
+
+  /// No description provided for @mcpAutoModeInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Interval'**
+  String get mcpAutoModeInterval;
+
+  /// No description provided for @mcpAutoCronLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cron expression'**
+  String get mcpAutoCronLabel;
+
+  /// No description provided for @mcpAutoCronHint.
+  ///
+  /// In en, this message translates to:
+  /// **'min hour day month weekday, e.g. 0 9 * * 1-5'**
+  String get mcpAutoCronHint;
+
+  /// No description provided for @mcpAutoCronHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports * , - / wildcards'**
+  String get mcpAutoCronHelper;
+
+  /// No description provided for @mcpAutoCronRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a Cron expression'**
+  String get mcpAutoCronRequired;
+
+  /// No description provided for @mcpAutoCronInvalidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid expression, please check'**
+  String get mcpAutoCronInvalidHint;
+
+  /// No description provided for @mcpAutoCronNextAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Next run: $time'**
+  String mcpAutoCronNextAt(String time);
+
+  /// No description provided for @mcpAutoCronPresetWorkday.
+  ///
+  /// In en, this message translates to:
+  /// **'9am on weekdays'**
+  String get mcpAutoCronPresetWorkday;
+
+  /// No description provided for @mcpAutoCronPresetEvery30.
+  ///
+  /// In en, this message translates to:
+  /// **'Every 30 minutes'**
+  String get mcpAutoCronPresetEvery30;
+
+  /// No description provided for @mcpAutoCronPresetMidnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day at midnight'**
+  String get mcpAutoCronPresetMidnight;
+
+  /// No description provided for @mcpAutoExecDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Run date & time:'**
+  String get mcpAutoExecDateTime;
+
+  /// No description provided for @mcpAutoExecTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Run time:'**
+  String get mcpAutoExecTime;
+
+  /// No description provided for @mcpAutoPickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select run date'**
+  String get mcpAutoPickDate;
+
+  /// No description provided for @mcpAutoRepeatOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat on:'**
+  String get mcpAutoRepeatOn;
+
+  /// No description provided for @mcpAutoWeekdayMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get mcpAutoWeekdayMon;
+
+  /// No description provided for @mcpAutoWeekdayTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get mcpAutoWeekdayTue;
+
+  /// No description provided for @mcpAutoWeekdayWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get mcpAutoWeekdayWed;
+
+  /// No description provided for @mcpAutoWeekdayThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get mcpAutoWeekdayThu;
+
+  /// No description provided for @mcpAutoWeekdayFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get mcpAutoWeekdayFri;
+
+  /// No description provided for @mcpAutoWeekdaySat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get mcpAutoWeekdaySat;
+
+  /// No description provided for @mcpAutoWeekdaySun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get mcpAutoWeekdaySun;
+
+  /// No description provided for @mcpAutoPickWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one weekday'**
+  String get mcpAutoPickWeekday;
+
+  /// No description provided for @mcpAutoIntervalMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Interval (minutes)'**
+  String get mcpAutoIntervalMinutes;
+
+  /// No description provided for @mcpAutoIntervalMinutesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 30 runs the task every 30 minutes'**
+  String get mcpAutoIntervalMinutesHelp;
+
+  /// No description provided for @mcpAutoRepeatCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat count'**
+  String get mcpAutoRepeatCount;
+
+  /// No description provided for @mcpAutoRepeatCountHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 5 stops after 5 runs; leave empty for unlimited'**
+  String get mcpAutoRepeatCountHelp;
+
+  /// No description provided for @mcpAutoTaskAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Task action:'**
+  String get mcpAutoTaskAction;
+
+  /// No description provided for @mcpAutoActionScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Run script'**
+  String get mcpAutoActionScript;
+
+  /// No description provided for @mcpAutoActionTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Call MCP tool'**
+  String get mcpAutoActionTool;
+
+  /// No description provided for @mcpAutoActionWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Run workflow'**
+  String get mcpAutoActionWorkflow;
+
+  /// No description provided for @mcpAutoActionWebhook.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Webhook'**
+  String get mcpAutoActionWebhook;
+
+  /// No description provided for @mcpAutoPickScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Select script'**
+  String get mcpAutoPickScript;
+
+  /// No description provided for @mcpAutoNoScriptAddFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'No scripts yet, add one on the Scripts page first'**
+  String get mcpAutoNoScriptAddFirst;
+
+  /// No description provided for @mcpAutoPickTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Select MCP tool'**
+  String get mcpAutoPickTool;
+
+  /// No description provided for @mcpAutoNoTools.
+  ///
+  /// In en, this message translates to:
+  /// **'No tools'**
+  String get mcpAutoNoTools;
+
+  /// No description provided for @mcpAutoToolsNeedStart.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP is not running, tools unavailable'**
+  String get mcpAutoToolsNeedStart;
+
+  /// No description provided for @mcpAutoPickWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Select workflow'**
+  String get mcpAutoPickWorkflow;
+
+  /// No description provided for @mcpAutoNoWorkflowAddFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'No workflows yet, add one on the Workflows page first'**
+  String get mcpAutoNoWorkflowAddFirst;
+
+  /// No description provided for @mcpAutoTaskNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a task name'**
+  String get mcpAutoTaskNameRequired;
+
+  /// No description provided for @mcpAutoIntervalInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid interval in minutes'**
+  String get mcpAutoIntervalInvalid;
+
+  /// No description provided for @mcpAutoCronInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid Cron expression'**
+  String get mcpAutoCronInvalid;
+
+  /// No description provided for @mcpAutoTaskActionIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the task action configuration'**
+  String get mcpAutoTaskActionIncomplete;
+
+  /// No description provided for @mcpAutoTaskAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled task added'**
+  String get mcpAutoTaskAdded;
+
+  /// No description provided for @mcpAutoTaskCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Task cancelled'**
+  String get mcpAutoTaskCancelled;
+
+  /// No description provided for @mcpAutoNoListeners.
+  ///
+  /// In en, this message translates to:
+  /// **'No event listeners'**
+  String get mcpAutoNoListeners;
+
+  /// No description provided for @mcpAutoNoListenersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to register a listener
+Log or run tasks when triggered'**
+  String get mcpAutoNoListenersHint;
+
+  /// No description provided for @mcpAutoRemoveListenerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this event listener?'**
+  String get mcpAutoRemoveListenerConfirm;
+
+  /// No description provided for @mcpAutoEventTypesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Event types'**
+  String get mcpAutoEventTypesInfo;
+
+  /// No description provided for @mcpAutoEventTypesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'• HTTP request event: triggered when the URL regex matches
+• Network status event: connected / disconnected / wifi / weak
+• Proxy status event: started / stopped / paused / resumed
+• Capture threshold event: capture count reaches the threshold'**
+  String get mcpAutoEventTypesBody;
+
+  /// No description provided for @mcpAutoAddListener.
+  ///
+  /// In en, this message translates to:
+  /// **'Add event listener'**
+  String get mcpAutoAddListener;
+
+  /// No description provided for @mcpAutoEventHttp.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP request event'**
+  String get mcpAutoEventHttp;
+
+  /// No description provided for @mcpAutoEventNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network status event'**
+  String get mcpAutoEventNetwork;
+
+  /// No description provided for @mcpAutoEventProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy status event'**
+  String get mcpAutoEventProxy;
+
+  /// No description provided for @mcpAutoEventCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture threshold event'**
+  String get mcpAutoEventCapture;
+
+  /// No description provided for @mcpAutoUrlRegex.
+  ///
+  /// In en, this message translates to:
+  /// **'URL regex'**
+  String get mcpAutoUrlRegex;
+
+  /// No description provided for @mcpAutoCaptureThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture count threshold'**
+  String get mcpAutoCaptureThreshold;
+
+  /// No description provided for @mcpAutoDescHttp.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP request: $pattern'**
+  String mcpAutoDescHttp(String pattern);
+
+  /// No description provided for @mcpAutoDescNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network status: $status'**
+  String mcpAutoDescNetwork(String status);
+
+  /// No description provided for @mcpAutoDescProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy status: $status'**
+  String mcpAutoDescProxy(String status);
+
+  /// No description provided for @mcpAutoDescCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture threshold: $count'**
+  String mcpAutoDescCapture(int count);
+
+  /// No description provided for @mcpAutoListenerAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Listener registered'**
+  String get mcpAutoListenerAdded;
+
+  /// No description provided for @mcpAutoListenerRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Listener removed'**
+  String get mcpAutoListenerRemoved;
+
+  /// No description provided for @mcpAutoNoRules.
+  ///
+  /// In en, this message translates to:
+  /// **'No automation rules'**
+  String get mcpAutoNoRules;
+
+  /// No description provided for @mcpAutoNoRulesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to add a rule
+Rules run actions automatically when conditions match'**
+  String get mcpAutoNoRulesHint;
+
+  /// No description provided for @mcpAutoRuleSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'$conditions conditions • $actions actions • $enabled'**
+  String mcpAutoRuleSummary(int conditions, int actions, String enabled);
+
+  /// No description provided for @mcpAutoDeleteRuleConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this rule?'**
+  String get mcpAutoDeleteRuleConfirm;
+
+  /// No description provided for @mcpAutoConditionsInline.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions:'**
+  String get mcpAutoConditionsInline;
+
+  /// No description provided for @mcpAutoActionsInline.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions:'**
+  String get mcpAutoActionsInline;
+
+  /// No description provided for @mcpAutoRuleEngineInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule engine'**
+  String get mcpAutoRuleEngineInfo;
+
+  /// No description provided for @mcpAutoRuleEngineInfoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'14 condition operators and 8 action types
+Rules persist to mcp_rules.json across restarts'**
+  String get mcpAutoRuleEngineInfoBody;
+
+  /// No description provided for @mcpAutoEditRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit rule'**
+  String get mcpAutoEditRule;
+
+  /// No description provided for @mcpAutoAddRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Add rule'**
+  String get mcpAutoAddRule;
+
+  /// No description provided for @mcpAutoRuleName.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule name'**
+  String get mcpAutoRuleName;
+
+  /// No description provided for @mcpAutoSectionConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions'**
+  String get mcpAutoSectionConditions;
+
+  /// No description provided for @mcpAutoSectionActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get mcpAutoSectionActions;
+
+  /// No description provided for @mcpAutoRuleNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a rule name'**
+  String get mcpAutoRuleNameRequired;
+
+  /// No description provided for @mcpAutoRuleUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule updated'**
+  String get mcpAutoRuleUpdated;
+
+  /// No description provided for @mcpAutoRuleAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule added'**
+  String get mcpAutoRuleAdded;
+
+  /// No description provided for @mcpAutoRuleDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule deleted'**
+  String get mcpAutoRuleDeleted;
+
+  /// No description provided for @mcpAutoShortProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy'**
+  String get mcpAutoShortProxy;
+
+  /// No description provided for @mcpAutoShortNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get mcpAutoShortNetwork;
+
+  /// No description provided for @mcpAutoShortSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get mcpAutoShortSystem;
+
+  /// No description provided for @mcpAutoCondTypeHttp.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP request'**
+  String get mcpAutoCondTypeHttp;
+
+  /// No description provided for @mcpAutoCondTypeProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy status'**
+  String get mcpAutoCondTypeProxy;
+
+  /// No description provided for @mcpAutoCondTypeNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network status'**
+  String get mcpAutoCondTypeNetwork;
+
+  /// No description provided for @mcpAutoCondTypeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System status'**
+  String get mcpAutoCondTypeSystem;
+
+  /// No description provided for @mcpAutoOpContains.
+  ///
+  /// In en, this message translates to:
+  /// **'contains'**
+  String get mcpAutoOpContains;
+
+  /// No description provided for @mcpAutoOpStartsWith.
+  ///
+  /// In en, this message translates to:
+  /// **'starts with'**
+  String get mcpAutoOpStartsWith;
+
+  /// No description provided for @mcpAutoOpEndsWith.
+  ///
+  /// In en, this message translates to:
+  /// **'ends with'**
+  String get mcpAutoOpEndsWith;
+
+  /// No description provided for @mcpAutoOpMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'matches'**
+  String get mcpAutoOpMatches;
+
+  /// No description provided for @mcpAutoOpInList.
+  ///
+  /// In en, this message translates to:
+  /// **'in list'**
+  String get mcpAutoOpInList;
+
+  /// No description provided for @mcpAutoOpNotInList.
+  ///
+  /// In en, this message translates to:
+  /// **'not in list'**
+  String get mcpAutoOpNotInList;
+
+  /// No description provided for @mcpAutoOpExists.
+  ///
+  /// In en, this message translates to:
+  /// **'exists'**
+  String get mcpAutoOpExists;
+
+  /// No description provided for @mcpAutoOpNotExists.
+  ///
+  /// In en, this message translates to:
+  /// **'does not exist'**
+  String get mcpAutoOpNotExists;
+
+  /// No description provided for @mcpAutoActLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Log'**
+  String get mcpAutoActLog;
+
+  /// No description provided for @mcpAutoActNotify.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify'**
+  String get mcpAutoActNotify;
+
+  /// No description provided for @mcpAutoActStopCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop capture'**
+  String get mcpAutoActStopCapture;
+
+  /// No description provided for @mcpAutoActStartCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Start capture'**
+  String get mcpAutoActStartCapture;
+
+  /// No description provided for @mcpAutoActExportData.
+  ///
+  /// In en, this message translates to:
+  /// **'Export data'**
+  String get mcpAutoActExportData;
+
+  /// No description provided for @mcpAutoFieldMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get mcpAutoFieldMethod;
+
+  /// No description provided for @mcpAutoFieldStatusCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Status code'**
+  String get mcpAutoFieldStatusCode;
+
+  /// No description provided for @mcpAutoFieldDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration (ms)'**
+  String get mcpAutoFieldDuration;
+
+  /// No description provided for @mcpAutoFieldHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get mcpAutoFieldHost;
+
+  /// No description provided for @mcpAutoFieldPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get mcpAutoFieldPath;
+
+  /// No description provided for @mcpAutoFieldReqContentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Content-Type'**
+  String get mcpAutoFieldReqContentType;
+
+  /// No description provided for @mcpAutoFieldRespContentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Response Content-Type'**
+  String get mcpAutoFieldRespContentType;
+
+  /// No description provided for @mcpAutoFieldReqSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Request size'**
+  String get mcpAutoFieldReqSize;
+
+  /// No description provided for @mcpAutoFieldRespSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Response size'**
+  String get mcpAutoFieldRespSize;
+
+  /// No description provided for @mcpAutoFieldType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get mcpAutoFieldType;
+
+  /// No description provided for @mcpAutoFieldTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamp'**
+  String get mcpAutoFieldTimestamp;
+
+  /// No description provided for @mcpAutoFieldMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory usage (MB)'**
+  String get mcpAutoFieldMemory;
+
+  /// No description provided for @mcpAutoFieldCaptureCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture count'**
+  String get mcpAutoFieldCaptureCount;
+
+  /// No description provided for @mcpAutoFieldDisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Disk usage (MB)'**
+  String get mcpAutoFieldDisk;
+
+  /// No description provided for @mcpAutoFieldCpu.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU usage (%)'**
+  String get mcpAutoFieldCpu;
+
+  /// No description provided for @mcpAutoStatusStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get mcpAutoStatusStarted;
+
+  /// No description provided for @mcpAutoStatusPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get mcpAutoStatusPaused;
+
+  /// No description provided for @mcpAutoStatusResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Resumed'**
+  String get mcpAutoStatusResumed;
+
+  /// No description provided for @mcpAutoStatusConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get mcpAutoStatusConnected;
+
+  /// No description provided for @mcpAutoStatusDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected'**
+  String get mcpAutoStatusDisconnected;
+
+  /// No description provided for @mcpAutoStatusMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile data'**
+  String get mcpAutoStatusMobile;
+
+  /// No description provided for @mcpAutoStatusWeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Weak network'**
+  String get mcpAutoStatusWeak;
+
+  /// No description provided for @mcpAutoNoPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'No Prompts'**
+  String get mcpAutoNoPrompts;
+
+  /// No description provided for @mcpAutoTapInvokePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to invoke a Prompt'**
+  String get mcpAutoTapInvokePrompt;
+
+  /// No description provided for @mcpAutoPromptDescWithArgs.
+  ///
+  /// In en, this message translates to:
+  /// **'$desc
+Parameters: $params'**
+  String mcpAutoPromptDescWithArgs(String desc, String params);
+
+  /// No description provided for @mcpAutoNoPromptAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Prompts available'**
+  String get mcpAutoNoPromptAvailable;
+
+  /// No description provided for @mcpAutoInvokePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoke Prompt'**
+  String get mcpAutoInvokePrompt;
+
+  /// No description provided for @mcpAutoPromptNoArgs.
+  ///
+  /// In en, this message translates to:
+  /// **'This Prompt takes no arguments'**
+  String get mcpAutoPromptNoArgs;
+
+  /// No description provided for @mcpAutoRequiredArg.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the required argument: $name'**
+  String mcpAutoRequiredArg(String name);
+
+  /// No description provided for @mcpAutoInvokingPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoking Prompt…'**
+  String get mcpAutoInvokingPrompt;
+
+  /// No description provided for @mcpAutoInvoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoke'**
+  String get mcpAutoInvoke;
+
+  /// No description provided for @mcpAutoNoResult.
+  ///
+  /// In en, this message translates to:
+  /// **'No content returned'**
+  String get mcpAutoNoResult;
+
+  /// No description provided for @mcpAutoNoWorkflows.
+  ///
+  /// In en, this message translates to:
+  /// **'No workflows'**
+  String get mcpAutoNoWorkflows;
+
+  /// No description provided for @mcpAutoNoWorkflowsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to create a workflow
+Chain multiple script nodes in order'**
+  String get mcpAutoNoWorkflowsHint;
+
+  /// No description provided for @mcpAutoUnnamedWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed workflow'**
+  String get mcpAutoUnnamedWorkflow;
+
+  /// No description provided for @mcpAutoNodesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'$count nodes'**
+  String mcpAutoNodesCount(int count);
+
+  /// No description provided for @mcpAutoDeleteWorkflowConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this workflow?'**
+  String get mcpAutoDeleteWorkflowConfirm;
+
+  /// No description provided for @mcpAutoWorkflowDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow deleted'**
+  String get mcpAutoWorkflowDeleted;
+
+  /// No description provided for @mcpAutoNoNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'No nodes'**
+  String get mcpAutoNoNodes;
+
+  /// No description provided for @mcpAutoDependsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Depends on: $deps'**
+  String mcpAutoDependsOn(String deps);
+
+  /// No description provided for @mcpAutoNoDeps.
+  ///
+  /// In en, this message translates to:
+  /// **'No dependencies'**
+  String get mcpAutoNoDeps;
+
+  /// No description provided for @mcpAutoEditWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit workflow'**
+  String get mcpAutoEditWorkflow;
+
+  /// No description provided for @mcpAutoAddWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add workflow'**
+  String get mcpAutoAddWorkflow;
+
+  /// No description provided for @mcpAutoWorkflowName.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow name'**
+  String get mcpAutoWorkflowName;
+
+  /// No description provided for @mcpAutoNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Nodes'**
+  String get mcpAutoNodes;
+
+  /// No description provided for @mcpAutoTapAddNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to add a node'**
+  String get mcpAutoTapAddNode;
+
+  /// No description provided for @mcpAutoTopoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nodes run in dependency order; dependencies appear as selectable chips.'**
+  String get mcpAutoTopoHint;
+
+  /// No description provided for @mcpAutoWorkflowNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a workflow name'**
+  String get mcpAutoWorkflowNameRequired;
+
+  /// No description provided for @mcpAutoWorkflowUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow updated'**
+  String get mcpAutoWorkflowUpdated;
+
+  /// No description provided for @mcpAutoWorkflowAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow added'**
+  String get mcpAutoWorkflowAdded;
+
+  /// No description provided for @mcpAutoWorkflowNoNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'The workflow has no nodes'**
+  String get mcpAutoWorkflowNoNodes;
+
+  /// No description provided for @mcpAutoWorkflowStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Running workflow: $name'**
+  String mcpAutoWorkflowStart(String name);
+
+  /// No description provided for @mcpAutoWorkflowDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow finished'**
+  String get mcpAutoWorkflowDone;
+
+
+  /// No description provided for @mcpConnSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP Settings'**
+  String get mcpConnSettingsTitle;
+
+  /// No description provided for @mcpConnAutomationConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Automation settings'**
+  String get mcpConnAutomationConfig;
+
+  /// No description provided for @mcpConnAllowLanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices on the same network can connect to this device\\'s MCP service'**
+  String get mcpConnAllowLanHint;
+
+  /// No description provided for @mcpConnTokenAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Access token authentication'**
+  String get mcpConnTokenAuth;
+
+  /// No description provided for @mcpConnTokenAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearer token required (recommended)'**
+  String get mcpConnTokenAuthRequired;
+
+  /// No description provided for @mcpConnTokenAuthDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled: any device on the same network can read captured traffic!'**
+  String get mcpConnTokenAuthDisabled;
+
+  /// No description provided for @mcpConnKeepAlive.
+  ///
+  /// In en, this message translates to:
+  /// **'Background keep-alive'**
+  String get mcpConnKeepAlive;
+
+  /// No description provided for @mcpConnKeepAliveDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this app to the battery-optimization whitelist and lift background restrictions, so capture and the MCP service are less likely to be killed by the system (requires Shizuku / root / Dhizuku)'**
+  String get mcpConnKeepAliveDesc;
+
+  /// No description provided for @mcpConnStrictValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Strict parameter validation'**
+  String get mcpConnStrictValidation;
+
+  /// No description provided for @mcpConnStrictValidationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Validate parameters against each tool\\'s declared inputSchema and report call errors early (takes effect immediately)'**
+  String get mcpConnStrictValidationDesc;
+
+  /// No description provided for @mcpConnTokenNotGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Not generated (created automatically once LAN access is enabled)'**
+  String get mcpConnTokenNotGenerated;
+
+  /// No description provided for @mcpConnTokenCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Token copied'**
+  String get mcpConnTokenCopied;
+
+  /// No description provided for @mcpConnRegenerateTokenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate (the old token stops working immediately)'**
+  String get mcpConnRegenerateTokenTooltip;
+
+  /// No description provided for @mcpConnRegenerateTokenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to regenerate token: $error'**
+  String mcpConnRegenerateTokenFailed(String error);
+
+  /// No description provided for @mcpConnClientCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'AI client connection commands'**
+  String get mcpConnClientCommands;
+
+  /// No description provided for @mcpConnClientCommandsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code / Codex / curl / one-click scripts'**
+  String get mcpConnClientCommandsSubtitle;
+
+  /// No description provided for @mcpConnCurlSelfCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'curl self-check'**
+  String get mcpConnCurlSelfCheck;
+
+  /// No description provided for @mcpConnOneClickConfigShell.
+  ///
+  /// In en, this message translates to:
+  /// **'One-click setup (shell)'**
+  String get mcpConnOneClickConfigShell;
+
+  /// No description provided for @mcpConnOneClickConfigPowershell.
+  ///
+  /// In en, this message translates to:
+  /// **'One-click setup (PowerShell)'**
+  String get mcpConnOneClickConfigPowershell;
+
+  /// No description provided for @mcpConnNeedLanAccessForToken.
+  ///
+  /// In en, this message translates to:
+  /// **'(Enable LAN access first to generate a token)'**
+  String get mcpConnNeedLanAccessForToken;
+
+  /// No description provided for @mcpConnAutoStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-start'**
+  String get mcpConnAutoStart;
+
+  /// No description provided for @mcpConnServicePort.
+  ///
+  /// In en, this message translates to:
+  /// **'Service port'**
+  String get mcpConnServicePort;
+
+  /// No description provided for @mcpConnConnectionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection info'**
+  String get mcpConnConnectionInfo;
+
+  /// No description provided for @mcpConnProtocolVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP protocol version: $version (stateless core, compatible with the legacy handshake)'**
+  String mcpConnProtocolVersion(String version);
+
+  /// No description provided for @mcpConnDeviceIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Device IP'**
+  String get mcpConnDeviceIp;
+
+  /// No description provided for @mcpConnDeviceIpCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Device IP copied'**
+  String get mcpConnDeviceIpCopied;
+
+  /// No description provided for @mcpConnApiUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'API URL (Streamable HTTP)'**
+  String get mcpConnApiUrl;
+
+  /// No description provided for @mcpConnApiUrlCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'API URL copied'**
+  String get mcpConnApiUrlCopied;
+
+  /// No description provided for @mcpConnSseUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'SSE URL (legacy transport)'**
+  String get mcpConnSseUrl;
+
+  /// No description provided for @mcpConnSseUrlCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'SSE URL copied'**
+  String get mcpConnSseUrlCopied;
+
+  /// No description provided for @mcpConnHealthCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Check'**
+  String get mcpConnHealthCheck;
+
+  /// No description provided for @mcpConnHealthCheckUrlCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Check URL copied'**
+  String get mcpConnHealthCheckUrlCopied;
+
+  /// No description provided for @mcpConnFloatingBall.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating ball'**
+  String get mcpConnFloatingBall;
+
+  /// No description provided for @mcpConnFloatingBallDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The desktop floating ball shows MCP status; tap it for a quick panel. The foreground service helps keep the app alive.'**
+  String get mcpConnFloatingBallDesc;
+
+  /// No description provided for @mcpConnFloatingBallColorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Color #$hex · Opacity $percent%'**
+  String mcpConnFloatingBallColorDesc(String hex, int percent);
+
+  /// No description provided for @mcpConnCustomFloatingBall.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom floating ball'**
+  String get mcpConnCustomFloatingBall;
+
+  /// No description provided for @mcpConnPresetColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset colors'**
+  String get mcpConnPresetColors;
+
+  /// No description provided for @mcpConnPresetM3Purple.
+  ///
+  /// In en, this message translates to:
+  /// **'M3 Purple'**
+  String get mcpConnPresetM3Purple;
+
+  /// No description provided for @mcpConnPresetDeepSeaBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Sea Blue'**
+  String get mcpConnPresetDeepSeaBlue;
+
+  /// No description provided for @mcpConnPresetEmeraldGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Emerald Green'**
+  String get mcpConnPresetEmeraldGreen;
+
+  /// No description provided for @mcpConnPresetCoralOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Coral Orange'**
+  String get mcpConnPresetCoralOrange;
+
+  /// No description provided for @mcpConnPresetRoseRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Rose Red'**
+  String get mcpConnPresetRoseRed;
+
+  /// No description provided for @mcpConnPresetGraphiteBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Graphite Black'**
+  String get mcpConnPresetGraphiteBlack;
+
+  /// No description provided for @mcpConnCustomColorRgb.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom color (RGB)'**
+  String get mcpConnCustomColorRgb;
+
+  /// No description provided for @mcpConnOpacityPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Opacity $percent%'**
+  String mcpConnOpacityPercent(int percent);
+
+  /// No description provided for @mcpConnConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get mcpConnConfirm;
+
+  /// No description provided for @mcpConnFloatingBallPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating ball permission'**
+  String get mcpConnFloatingBallPermission;
+
+  /// No description provided for @mcpConnFloatingBallNeedOverlayPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'The floating ball needs "Display over other apps" permission. System settings has been opened for you; come back and turn it on again after granting it.'**
+  String get mcpConnFloatingBallNeedOverlayPermission;
+
+  /// No description provided for @mcpConnFloatingBallStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start the floating ball: $reason'**
+  String mcpConnFloatingBallStartFailed(String reason);
+
+  /// No description provided for @mcpConnFloatingBallStopFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to stop the floating ball: $reason'**
+  String mcpConnFloatingBallStopFailed(String reason);
+
+  /// No description provided for @mcpConnUnknownReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown reason'**
+  String get mcpConnUnknownReason;
+
+  /// No description provided for @mcpConnFloatingBallStartedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The floating ball is on. If you cannot see it on screen, check the system "Show floating windows" and the vendor "Background pop-up" permissions.'**
+  String get mcpConnFloatingBallStartedHint;
+
+  /// No description provided for @mcpConnFloatingBallCallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating ball call failed: $error'**
+  String mcpConnFloatingBallCallFailed(String error);
+
+  /// No description provided for @mcpConnOverlayGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Granted "Display over other apps"'**
+  String get mcpConnOverlayGranted;
+
+  /// No description provided for @mcpConnOverlayNotGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not granted — tap to open system settings and enable it, otherwise the floating ball cannot show'**
+  String get mcpConnOverlayNotGranted;
+
+  /// No description provided for @mcpConnEnableFloatingBall.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable floating ball'**
+  String get mcpConnEnableFloatingBall;
+
+  /// No description provided for @mcpConnFloatingBallEnabledDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show MCP status as a floating window to improve keep-alive'**
+  String get mcpConnFloatingBallEnabledDesc;
+
+  /// No description provided for @mcpConnFloatingBallPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant the floating ball permission above first'**
+  String get mcpConnFloatingBallPermissionRequired;
+
+  /// No description provided for @mcpConnAutoDock.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-dock after 3 seconds idle'**
+  String get mcpConnAutoDock;
+
+  /// No description provided for @mcpConnAutoDockDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The floating ball snaps to the screen edge so it does not block the view'**
+  String get mcpConnAutoDockDesc;
+
+  /// No description provided for @mcpConnCustomFloatingBallStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom floating ball style'**
+  String get mcpConnCustomFloatingBallStyle;
+
+  /// No description provided for @mcpConnAiConfigGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'AI configuration guide'**
+  String get mcpConnAiConfigGuide;
+
+  /// No description provided for @mcpConnAiConfigGuideDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the configuration below into your AI client\\'s MCP config file and Cursor / Windsurf / Claude Desktop / Cherry Studio and other MCP-capable AI tools can read captured traffic and control ProxyPin. Make sure the phone and the computer are on the same LAN and the MCP service is enabled. The server supports both the latest stateless protocol (2026-07-28) and the legacy handshake protocol.'**
+  String get mcpConnAiConfigGuideDesc;
+
+  /// No description provided for @mcpConnAiConfigCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'AI configuration copied'**
+  String get mcpConnAiConfigCopied;
+
+  /// No description provided for @mcpConnControlMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Control mode'**
+  String get mcpConnControlMode;
+
+  /// No description provided for @mcpConnCurrentMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Current mode'**
+  String get mcpConnCurrentMode;
+
+  /// No description provided for @mcpConnAccessibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get mcpConnAccessibility;
+
+  /// No description provided for @mcpConnAccessibilityService.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility service'**
+  String get mcpConnAccessibilityService;
+
+  /// No description provided for @mcpConnRootPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Root permission'**
+  String get mcpConnRootPermission;
+
+  /// No description provided for @mcpConnAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get mcpConnAvailable;
+
+  /// No description provided for @mcpConnUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get mcpConnUnavailable;
+
+  /// No description provided for @mcpConnNotGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized'**
+  String get mcpConnNotGranted;
+
+  /// No description provided for @mcpConnNotEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enabled'**
+  String get mcpConnNotEnabled;
+
+  /// No description provided for @mcpConnOpenAccessibilitySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open accessibility settings'**
+  String get mcpConnOpenAccessibilitySettings;
+
+  /// No description provided for @mcpConnShizukuGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Shizuku authorized'**
+  String get mcpConnShizukuGranted;
+
+  /// No description provided for @mcpConnRequestShizuku.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Shizuku authorization'**
+  String get mcpConnRequestShizuku;
+
+  /// No description provided for @mcpConnShizukuAuthIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization not completed: make sure Shizuku is running, then pick this app in the Shizuku app to authorize it; or choose “Allow” in the dialog'**
+  String get mcpConnShizukuAuthIncomplete;
+
+  /// No description provided for @mcpConnRootGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Root authorized'**
+  String get mcpConnRootGranted;
+
+  /// No description provided for @mcpConnRequestRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Request root authorization'**
+  String get mcpConnRequestRoot;
+
+  /// No description provided for @mcpConnRootAuthIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization not completed: allow it in the Magisk/KernelSU dialog, or make sure the device is rooted'**
+  String get mcpConnRootAuthIncomplete;
+
+  /// No description provided for @mcpConnDhizukuGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Dhizuku authorized'**
+  String get mcpConnDhizukuGranted;
+
+  /// No description provided for @mcpConnRequestDhizuku.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Dhizuku authorization'**
+  String get mcpConnRequestDhizuku;
+
+  /// No description provided for @mcpConnDhizukuAuthIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization not completed: make sure Dhizuku is installed and Owner activation is finished'**
+  String get mcpConnDhizukuAuthIncomplete;
+
+  /// No description provided for @mcpConnAvailableTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Available tools'**
+  String get mcpConnAvailableTools;
+
+  /// No description provided for @mcpConnToolCount.
+  ///
+  /// In en, this message translates to:
+  /// **'$count tools'**
+  String mcpConnToolCount(int count);
+
+  /// No description provided for @mcpConnDisabledToolsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled tools are hidden from the tool list and cannot be called by AI.'**
+  String get mcpConnDisabledToolsHint;
+
+  /// No description provided for @mcpConnToolSetConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Change ProxyPin settings (system proxy, SSL capture toggle)'**
+  String get mcpConnToolSetConfig;
+
+  /// No description provided for @mcpConnToolExportHar.
+  ///
+  /// In en, this message translates to:
+  /// **'Export capture records to a HAR file'**
+  String get mcpConnToolExportHar;
+
+  /// No description provided for @mcpConnToolImportHar.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a HAR file into capture records'**
+  String get mcpConnToolImportHar;
+
+  /// No description provided for @mcpConnToolSearchRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Search requests by URL, method, status code, domain, etc.'**
+  String get mcpConnToolSearchRequests;
+
+  /// No description provided for @mcpConnToolGenerateCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate code from a request (curl, Python, Go, JavaScript, Node.js)'**
+  String get mcpConnToolGenerateCode;
+
+  /// No description provided for @mcpConnToolGetCurl.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate the cURL command for a request'**
+  String get mcpConnToolGetCurl;
+
+  /// No description provided for @mcpConnToolGetRecentRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the list of recently captured requests'**
+  String get mcpConnToolGetRecentRequests;
+
+  /// No description provided for @mcpConnToolGetRequestDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Get full details of a request (request/response headers and bodies, cookies)'**
+  String get mcpConnToolGetRequestDetails;
+
+  /// No description provided for @mcpConnToolStartProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the proxy service'**
+  String get mcpConnToolStartProxy;
+
+  /// No description provided for @mcpConnToolStopProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the proxy service'**
+  String get mcpConnToolStopProxy;
+
+  /// No description provided for @mcpConnToolGetProxyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Query the proxy service status'**
+  String get mcpConnToolGetProxyStatus;
+
+  /// No description provided for @mcpConnToolClearRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear capture records'**
+  String get mcpConnToolClearRequests;
+
+  /// No description provided for @mcpConnToolReplayRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay a given request'**
+  String get mcpConnToolReplayRequest;
+
+  /// No description provided for @mcpConnToolUpdateScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the JS script injected into pages'**
+  String get mcpConnToolUpdateScript;
+
+  /// No description provided for @mcpConnToolGetScripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the list of configured JS scripts'**
+  String get mcpConnToolGetScripts;
+
+  /// No description provided for @mcpConnToolGetStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Get capture statistics'**
+  String get mcpConnToolGetStatistics;
+
+  /// No description provided for @mcpConnToolCompareRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare the differences between two requests'**
+  String get mcpConnToolCompareRequests;
+
+  /// No description provided for @mcpConnToolFindSimilarRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Find requests similar to a given request'**
+  String get mcpConnToolFindSimilarRequests;
+
+  /// No description provided for @mcpConnToolExtractApiEndpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract aggregated API endpoint info from capture records'**
+  String get mcpConnToolExtractApiEndpoints;
+
+  /// No description provided for @mcpConnToolFindSensitiveData.
+  ///
+  /// In en, this message translates to:
+  /// **'Search requests for sensitive data (passwords, keys, phone numbers, ID numbers, etc.)'**
+  String get mcpConnToolFindSensitiveData;
+
+  /// No description provided for @mcpConnToolGetCookieInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze a domain\\'s cookies (value, HttpOnly, Secure, expiry)'**
+  String get mcpConnToolGetCookieInfo;
+
+  /// No description provided for @mcpConnToolGetDomainSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize a domain\\'s traffic (methods, status codes, average duration, error count)'**
+  String get mcpConnToolGetDomainSummary;
+
+  /// No description provided for @mcpConnToolGetPendingIntercepts.
+  ///
+  /// In en, this message translates to:
+  /// **'List pending requests/responses in the breakpoint queue'**
+  String get mcpConnToolGetPendingIntercepts;
+
+  /// No description provided for @mcpConnToolApproveIntercept.
+  ///
+  /// In en, this message translates to:
+  /// **'Release a breakpoint intercept (you may edit the request first)'**
+  String get mcpConnToolApproveIntercept;
+
+  /// No description provided for @mcpConnToolRejectIntercept.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject a breakpoint intercept (abort the request or drop the response)'**
+  String get mcpConnToolRejectIntercept;
+
+  /// No description provided for @mcpConnToolToggleBreakpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable or disable breakpoint interception'**
+  String get mcpConnToolToggleBreakpoint;
+
+  /// No description provided for @mcpConnToolAddWeakNetworkRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a weak-network rule (rate limit, delay, etc.)'**
+  String get mcpConnToolAddWeakNetworkRule;
+
+  /// No description provided for @mcpConnToolAddCustomNetworkProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a custom network profile'**
+  String get mcpConnToolAddCustomNetworkProfile;
+
+  /// No description provided for @mcpConnToolListWeakNetworkRules.
+  ///
+  /// In en, this message translates to:
+  /// **'List all weak-network rules'**
+  String get mcpConnToolListWeakNetworkRules;
+
+  /// No description provided for @mcpConnToolRemoveWeakNetworkRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove a weak-network rule'**
+  String get mcpConnToolRemoveWeakNetworkRule;
+
+  /// No description provided for @mcpConnToolToggleWeakNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable or disable weak-network simulation'**
+  String get mcpConnToolToggleWeakNetwork;
+
+  /// No description provided for @mcpConnToolListEnvironments.
+  ///
+  /// In en, this message translates to:
+  /// **'List all environments'**
+  String get mcpConnToolListEnvironments;
+
+  /// No description provided for @mcpConnToolSetEnvironmentVariable.
+  ///
+  /// In en, this message translates to:
+  /// **'Set an environment variable value'**
+  String get mcpConnToolSetEnvironmentVariable;
+
+  /// No description provided for @mcpConnToolCreateEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new environment'**
+  String get mcpConnToolCreateEnvironment;
+
+  /// No description provided for @mcpConnToolSetActiveEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch the active environment'**
+  String get mcpConnToolSetActiveEnvironment;
+
+  /// No description provided for @mcpConnToolRemoveEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete a given environment'**
+  String get mcpConnToolRemoveEnvironment;
+
+  /// No description provided for @mcpConnToolToggleEnvironmentVariables.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable or disable environment variables'**
+  String get mcpConnToolToggleEnvironmentVariables;
+
+  /// No description provided for @mcpConnToolGetDeviceInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Get device info (model, OS version, root status)'**
+  String get mcpConnToolGetDeviceInfo;
+
+  /// No description provided for @mcpConnToolGetCurrentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the current foreground activity'**
+  String get mcpConnToolGetCurrentActivity;
+
+  /// No description provided for @mcpConnToolDumpUi.
+  ///
+  /// In en, this message translates to:
+  /// **'Export the UI hierarchy tree of the current screen'**
+  String get mcpConnToolDumpUi;
+
+  /// No description provided for @mcpConnToolTapScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate a tap at screen coordinates'**
+  String get mcpConnToolTapScreen;
+
+  /// No description provided for @mcpConnToolLongPress.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate a long press at screen coordinates'**
+  String get mcpConnToolLongPress;
+
+  /// No description provided for @mcpConnToolSwipeScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate a screen swipe'**
+  String get mcpConnToolSwipeScreen;
+
+  /// No description provided for @mcpConnToolKeyEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a key event (e.g. back or volume key)'**
+  String get mcpConnToolKeyEvent;
+
+  /// No description provided for @mcpConnToolInputText.
+  ///
+  /// In en, this message translates to:
+  /// **'Type text into the current input field'**
+  String get mcpConnToolInputText;
+
+  /// No description provided for @mcpConnToolScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture the current screen'**
+  String get mcpConnToolScreenshot;
+
+  /// No description provided for @mcpConnToolOpenAccessibilitySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the system accessibility settings page'**
+  String get mcpConnToolOpenAccessibilitySettings;
+
+  /// No description provided for @mcpConnToolShell.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a shell command (supports Root/Shizuku/Dhizuku modes)'**
+  String get mcpConnToolShell;
+
+
+  /// No description provided for @auditPlaintextHttpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive Data Sent Over Plaintext HTTP'**
+  String get auditPlaintextHttpTitle;
+
+  /// No description provided for @auditPlaintextHttpDetailUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'This request is sent over plaintext http:// and carries sensitive fields such as passwords / tokens in the URL query string, which a man-in-the-middle can read directly.'**
+  String get auditPlaintextHttpDetailUrl;
+
+  /// No description provided for @auditPlaintextHttpDetailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This request is sent over plaintext http:// and carries sensitive fields such as passwords / tokens in the request body, which a man-in-the-middle can read directly.'**
+  String get auditPlaintextHttpDetailBody;
+
+  /// No description provided for @auditPlaintextHttpSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Use HTTPS; when HTTP is unavoidable, do not carry credentials directly in the URL or request body.'**
+  String get auditPlaintextHttpSuggestion;
+
+  /// No description provided for @auditPlaintextBodyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Body Sent Over Plaintext HTTP'**
+  String get auditPlaintextBodyTitle;
+
+  /// No description provided for @auditPlaintextBodyDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'This request uses http:// and has a request body, so the content is fully plaintext on the wire.'**
+  String get auditPlaintextBodyDetail;
+
+  /// No description provided for @auditPlaintextBodySuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Enforce HTTPS for endpoints that handle login, payment or privacy.'**
+  String get auditPlaintextBodySuggestion;
+
+  /// No description provided for @auditUrlSecretTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive Parameters in the URL'**
+  String get auditUrlSecretTitle;
+
+  /// No description provided for @auditUrlSecretDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Query parameters $names look like credentials / keys. URLs are written into browser history, proxy and server logs.'**
+  String auditUrlSecretDetail(String names);
+
+  /// No description provided for @auditUrlSecretSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Move sensitive parameters into the request body or headers (for example Authorization).'**
+  String get auditUrlSecretSuggestion;
+
+  /// No description provided for @auditPasswordBodyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Password Submitted in a Plaintext Body'**
+  String get auditPasswordBodyTitle;
+
+  /// No description provided for @auditPasswordBodyDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The request body contains fields such as password / pwd with plaintext values.'**
+  String get auditPasswordBodyDetail;
+
+  /// No description provided for @auditPasswordBodySuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the whole path on HTTPS and make sure the server never echoes or logs passwords.'**
+  String get auditPasswordBodySuggestion;
+
+  /// No description provided for @auditCookieFlagTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cookie Missing Security Attributes'**
+  String get auditCookieFlagTitle;
+
+  /// No description provided for @auditCookieFlagDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Set-Cookie "$name" is missing $missing, so it can be read by scripts or transmitted in cleartext.'**
+  String auditCookieFlagDetail(String name, String missing);
+
+  /// No description provided for @auditCookieFlagSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Secure and HttpOnly to session cookies, and set SameSite=Lax/Strict as needed.'**
+  String get auditCookieFlagSuggestion;
+
+  /// No description provided for @auditMissingHeadersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HTML Response Missing Security Headers'**
+  String get auditMissingHeadersTitle;
+
+  /// No description provided for @auditMissingHeadersDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing $missing; the browser has no extra constraint against content sniffing and script injection.'**
+  String auditMissingHeadersDetail(String missing);
+
+  /// No description provided for @auditMissingHeadersSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Add security response headers such as nosniff and CSP as needed.'**
+  String get auditMissingHeadersSuggestion;
+
+  /// No description provided for @auditFingerprintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response Exposes Server Fingerprint'**
+  String get auditFingerprintTitle;
+
+  /// No description provided for @auditFingerprintDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'$header: $value, which helps an attacker pick known vulnerabilities.'**
+  String auditFingerprintDetail(String header, String value);
+
+  /// No description provided for @auditFingerprintSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide or generalize version information at the gateway.'**
+  String get auditFingerprintSuggestion;
+
+  /// No description provided for @auditPrivateKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response Body May Contain a Private Key'**
+  String get auditPrivateKeyTitle;
+
+  /// No description provided for @auditPrivateKeyDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'A PEM private key marker appears in the response; if it is a real key, this is a severe leak.'**
+  String get auditPrivateKeyDetail;
+
+  /// No description provided for @auditPrivateKeySuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate the key immediately and make sure the server never sends private keys to clients.'**
+  String get auditPrivateKeySuggestion;
+
+  /// No description provided for @auditSecretTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response Body Returns Secret Fields in Plaintext'**
+  String get auditSecretTitle;
+
+  /// No description provided for @auditSecretDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields such as $names are returned in plaintext.'**
+  String auditSecretDetail(String names);
+
+  /// No description provided for @auditSecretSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Return the minimum set of fields; key material should never be sent to clients.'**
+  String get auditSecretSuggestion;
+
+  /// No description provided for @auditPiiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response Body Contains Personal Information'**
+  String get auditPiiTitle;
+
+  /// No description provided for @auditPiiDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields such as $names carry personal data such as ID numbers / phone numbers.'**
+  String auditPiiDetail(String names);
+
+  /// No description provided for @auditPiiSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask personal data or return it on a minimal-necessary basis, and comply with data protection requirements.'**
+  String get auditPiiSuggestion;
+
+  /// No description provided for @auditErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Response Leaks Internal Information'**
+  String get auditErrorTitle;
+
+  /// No description provided for @auditErrorDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug / stack trace signatures ($trace) appear in the response, which may expose the framework, paths or database structure.'**
+  String auditErrorDetail(String trace);
+
+  /// No description provided for @auditErrorSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable detailed errors in production and return a generic error message.'**
+  String get auditErrorSuggestion;
+
+  /// No description provided for @auditCorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'CORS Allows Any Origin with Credentials'**
+  String get auditCorsTitle;
+
+  /// No description provided for @auditCorsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Access-Control-Allow-Origin is * while Allow-Credentials is true, so the risk of cross-site credential reads is high.'**
+  String get auditCorsDetail;
+
+  /// No description provided for @auditCorsSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Restrict allowed origins to a fixed allowlist and avoid * together with Allow-Credentials.'**
+  String get auditCorsSuggestion;
+
+  /// No description provided for @auditJwtNoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'JWT Uses alg=none (Unsigned)'**
+  String get auditJwtNoneTitle;
+
+  /// No description provided for @auditJwtNoneDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The token declares algorithm none, so anyone can tamper with the payload and it cannot be verified.'**
+  String get auditJwtNoneDetail;
+
+  /// No description provided for @auditJwtNoneSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Enforce signature algorithm validation on the server and reject alg=none.'**
+  String get auditJwtNoneSuggestion;
+
+  /// No description provided for @auditJwtExpiryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'JWT Has No Expiry'**
+  String get auditJwtExpiryTitle;
+
+  /// No description provided for @auditJwtExpiryDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The token payload has no exp field, so it stays valid forever after being issued.'**
+  String get auditJwtExpiryDetail;
+
+  /// No description provided for @auditJwtExpirySuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a reasonable expiry for tokens and support refresh.'**
+  String get auditJwtExpirySuggestion;
+
+  /// No description provided for @auditHttp10Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses Outdated HTTP/1.0'**
+  String get auditHttp10Title;
+
+  /// No description provided for @auditHttp10Detail.
+  ///
+  /// In en, this message translates to:
+  /// **'This connection uses HTTP/1.0, whose connection reuse and caching strategy is outdated.'**
+  String get auditHttp10Detail;
+
+  /// No description provided for @auditHttp10Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to HTTP/1.1 or HTTP/2.'**
+  String get auditHttp10Suggestion;
+
+  /// No description provided for @auditSqlTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Possible SQL Injection Trace (Database Error Echoed)'**
+  String get auditSqlTitle;
+
+  /// No description provided for @auditSqlDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The response contains a $signature database error signature, which means this endpoint echoes SQL errors back to the caller; if client-controlled parameters triggered it, there is a SQL injection risk.'**
+  String auditSqlDetail(String signature);
+
+  /// No description provided for @auditSqlSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Use parameterized queries / prepared statements and never concatenate SQL; disable detailed database errors in production and return a generic message. (Passive detection: based only on the response characteristics of captured traffic; no probe request was sent.)'**
+  String get auditSqlSuggestion;
+
+  /// No description provided for @auditXssTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Possible XSS Reflection Trace (Unencoded Parameters Echoed in HTML)'**
+  String get auditXssTitle;
+
+  /// No description provided for @auditXssDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The response echoes request parameter values verbatim into HTML without HTML entity encoding, and the echoed content contains special characters such as $meta; if an attacker can control that value, the browser may parse it as tags or script.'**
+  String auditXssDetail(String meta);
+
+  /// No description provided for @auditXssSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Encode according to the output context (HTML entity encoding) and pair the page with CSP; do not concatenate request parameters into HTML. (Passive detection: based only on the response characteristics of captured traffic; no probe request was sent.)'**
+  String get auditXssSuggestion;
+
+  /// No description provided for @auditCustomHitDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched custom rule "$name" ($describe).'**
+  String auditCustomHitDetail(String name, String describe);
+
+  /// No description provided for @auditCustomHitSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm against your business security requirements whether this content should appear.'**
+  String get auditCustomHitSuggestion;
+
+  /// No description provided for @auditSecretPrivateKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Private key'**
+  String get auditSecretPrivateKey;
+
+  /// No description provided for @auditPiiIdCard.
+  ///
+  /// In en, this message translates to:
+  /// **'ID number'**
+  String get auditPiiIdCard;
+
+  /// No description provided for @auditPiiPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get auditPiiPhone;
+
+  /// No description provided for @auditRuleDescribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope: $target; Match: $match'**
+  String auditRuleDescribe(String target, String match);
+
+  /// No description provided for @auditTargetUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Request URL'**
+  String get auditTargetUrl;
+
+  /// No description provided for @auditTargetRequestHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Request headers'**
+  String get auditTargetRequestHeader;
+
+  /// No description provided for @auditTargetRequestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Request body'**
+  String get auditTargetRequestBody;
+
+  /// No description provided for @auditTargetResponseHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Response headers'**
+  String get auditTargetResponseHeader;
+
+  /// No description provided for @auditTargetResponseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Response body'**
+  String get auditTargetResponseBody;
+
+  /// No description provided for @auditTargetAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything'**
+  String get auditTargetAny;
+
+  /// No description provided for @auditMatchKeyword.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword'**
+  String get auditMatchKeyword;
+
+  /// No description provided for @auditMatchRegex.
+  ///
+  /// In en, this message translates to:
+  /// **'Regex'**
+  String get auditMatchRegex;
+
+  /// No description provided for @diagSummaryOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture path is basically ready'**
+  String get diagSummaryOk;
+
+  /// No description provided for @diagSummaryIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'Problems that affect capture were detected; see the error items in items'**
+  String get diagSummaryIssues;
+
+  /// No description provided for @diagSuggestStartProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the capture service first (call the start_proxy tool, or have the user tap Start Capture in the UI)'**
+  String get diagSuggestStartProxy;
+
+  /// No description provided for @diagSuggestInstallCert.
+  ///
+  /// In en, this message translates to:
+  /// **'Install and trust the root certificate: without HTTPS trust you will see batches of handshake failures (the exclamation-mark packets in the list)'**
+  String get diagSuggestInstallCert;
+
+  /// No description provided for @diagSuggestSystemProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'The system proxy does not point to this app: have the user enable the system proxy in Preferences, or check whether another proxy tool has taken it over'**
+  String get diagSuggestSystemProxy;
+
+  /// No description provided for @diagSuggestPinning.
+  ///
+  /// In en, this message translates to:
+  /// **'Domains that look like they pin certificates: such apps need runtime intervention on the device to decrypt, and the common approach is a hook framework (for example LSPosed with a module like TrustMeAlready). Note that this interferes with the target app and should only be done on your own device and within the scope you are authorized for'**
+  String get diagSuggestPinning;
+
+  /// No description provided for @diagSuggestNoTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'No new traffic right now: trigger a request in the app or browser being captured, then let the AI read the session list'**
+  String get diagSuggestNoTraffic;
+
+  /// No description provided for @diagSuggestChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'If everything above looks fine but you still capture nothing, check these categories: ① the target uses QUIC/HTTP3 (enable Block QUIC on the phone, disable QUIC in the browser); ② Flutter apps (Dart ships its own root CA list and does not read the system CA); ③ the app enables certificate pinning (SSL Pinning) - matched if an SSL Certificate Pinning (suspected) item appears above; ④ processes with their own network stack on Windows (need Enhanced Windows Takeover or a TUN tool); ⑤ Mac App Store sandboxed apps (need Network Extension/TUN; unsigned builds from this repository cannot take over)'**
+  String get diagSuggestChecklist;
+
+  /// No description provided for @diagItemProxyService.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy Service'**
+  String get diagItemProxyService;
+
+  /// No description provided for @diagProxyListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening on 127.0.0.1:$port'**
+  String diagProxyListening(int port);
+
+  /// No description provided for @diagProxyNotRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Not running, so no traffic can be captured. Tap Start Capture first'**
+  String get diagProxyNotRunning;
+
+  /// No description provided for @diagItemSystemProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'System Proxy'**
+  String get diagItemSystemProxy;
+
+  /// No description provided for @diagSystemProxyMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'Points to this app at $host:$port'**
+  String diagSystemProxyMatched(String host, int port);
+
+  /// No description provided for @diagSystemProxyOff.
+  ///
+  /// In en, this message translates to:
+  /// **'The system proxy is off, so app traffic will not go through this tool'**
+  String get diagSystemProxyOff;
+
+  /// No description provided for @diagSystemProxyMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Points to $host:$port, which does not match this app port $expected (maybe taken over by another proxy tool, or left over from an abnormal exit)'**
+  String diagSystemProxyMismatch(String host, int port, int expected);
+
+  /// No description provided for @diagItemTrafficEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic Entry'**
+  String get diagItemTrafficEntry;
+
+  /// No description provided for @diagMobileVpnEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'On mobile, the VPN tunnel handles IP-layer traffic (no system proxy needed)'**
+  String get diagMobileVpnEntry;
+
+  /// No description provided for @diagCaInSystemStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Already in the system trust store'**
+  String get diagCaInSystemStore;
+
+  /// No description provided for @diagCaUserStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Only in the user certificate store: since Android 7 apps do not trust user certificates by default, you may see "certificate installed but HTTPS cannot be captured or reports an error". To take effect for all apps it must be installed into the system certificate directory with root (on Android 14+ that is /apex/com.android.conscrypt/cacerts), or configure network_security_config for the target app'**
+  String get diagCaUserStore;
+
+  /// No description provided for @diagCaInstalledUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed (cannot distinguish the system store from the user store)'**
+  String get diagCaInstalledUnknown;
+
+  /// No description provided for @diagCaMissingAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Root certificate not detected: go to HTTPS Certificate -> Install Root Certificate and follow the guide; choose CA certificate rather than VPN and app certificate during installation'**
+  String get diagCaMissingAndroid;
+
+  /// No description provided for @diagCaMissingDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Root certificate not detected; HTTPS will fail the handshake (seen as batches of exclamation-mark packets in the list)'**
+  String get diagCaMissingDesktop;
+
+  /// No description provided for @diagItemCaRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'CA Root Certificate'**
+  String get diagItemCaRoot;
+
+  /// No description provided for @diagCaDesktopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'On desktop, confirm in the Certificate page that the root certificate is installed into the system trusted roots'**
+  String get diagCaDesktopHint;
+
+  /// No description provided for @diagReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Read failed: $error'**
+  String diagReadFailed(String error);
+
+  /// No description provided for @diagItemSslPinning.
+  ///
+  /// In en, this message translates to:
+  /// **'SSL Certificate Pinning (suspected)'**
+  String get diagItemSslPinning;
+
+  /// No description provided for @diagSslPinningDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The CA certificate is ready, but $count domains only established a TLS tunnel and their content is never readable: $sample. This usually means the peer enabled certificate pinning (SSL Pinning), or ships its own root CA list and does not read the system CA. Note that these apps are not offline: they rejected the certificate of this tool and therefore closed the connection.'**
+  String diagSslPinningDetail(int count, String sample);
+
+  /// No description provided for @diagItemWinTakeover.
+  ///
+  /// In en, this message translates to:
+  /// **'Enhanced Windows Takeover'**
+  String get diagItemWinTakeover;
+
+  /// No description provided for @diagWinTakeoverOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On: the WinHTTP service and CLI tools (curl/git/node) also go through the proxy'**
+  String get diagWinTakeoverOn;
+
+  /// No description provided for @diagWinTakeoverOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: apps with their own network stack, the WinHTTP service and CLI tools may not be captured. Enable it in Preferences -> Windows Takeover (the WinHTTP part requires administrator rights)'**
+  String get diagWinTakeoverOff;
+
+  /// No description provided for @diagItemRecentTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Traffic'**
+  String get diagItemRecentTraffic;
+
+  /// No description provided for @diagNoRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests captured in this session yet'**
+  String get diagNoRequests;
+
+  /// No description provided for @diagTrafficFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'$count requests, latest $ago seconds ago'**
+  String diagTrafficFresh(int count, int ago);
+
+  /// No description provided for @diagTrafficStale.
+  ///
+  /// In en, this message translates to:
+  /// **'$count requests, latest $ago seconds ago (no new traffic coming in)'**
+  String diagTrafficStale(int count, int ago);
+
+  /// No description provided for @diagItemExtensionMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension Memory'**
+  String get diagItemExtensionMemory;
+
+  /// No description provided for @diagExtMemUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available (the extension process cannot be read while the VPN is stopped)'**
+  String get diagExtMemUnavailable;
+
+  /// No description provided for @diagExtMemDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Current $rss MB, peak $peak MB, $connections connections, $buffered MB buffered'**
+  String diagExtMemDetail(String rss, String peak, String connections, String buffered);
+
+  /// No description provided for @diagExtMemNearLimit.
+  ///
+  /// In en, this message translates to:
+  /// **' (approaching the extension memory limit; consider reducing concurrency or lowering the buffered-send cap)'**
+  String get diagExtMemNearLimit;
+
 }
 
 class _AppLocalizationsDelegate
