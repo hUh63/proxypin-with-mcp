@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/ai_analyzer.dart';
 import 'package:proxypin/network/util/security_audit.dart';
@@ -42,18 +43,19 @@ class SecurityAiDialog extends StatefulWidget {
     'mcpAuthEnabled': 'mcpAuthEnabled —— MCP 要求鉴权（打开更安全）',
   };
 
-  static String labelOf(String key) {
+  static String labelOf(BuildContext context, String key) {
+    final loc = AppLocalizations.of(context)!;
     switch (key) {
       case 'enableSsl':
-        return '开启 SSL 抓包';
+        return loc.securityAiActionEnableSsl;
       case 'enableSystemProxy':
-        return '开启系统代理';
+        return loc.securityAiActionEnableSystemProxy;
       case 'antiCacheEnabled':
-        return '开启防缓存';
+        return loc.securityAiActionAntiCache;
       case 'mcpAllowLan':
-        return 'MCP 允许局域网访问';
+        return loc.securityAiActionMcpAllowLan;
       case 'mcpAuthEnabled':
-        return 'MCP 要求鉴权';
+        return loc.securityAiActionMcpAuth;
       default:
         return key;
     }
@@ -98,8 +100,7 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
 
   Future<void> _analyze() async {
     if (!AiAnalyzer.isConfigured) {
-      setState(() => _error =
-          '尚未配置 AI 服务：请到「设置 → MCP Connection → AI 分析」填写接口地址与 API Key');
+      setState(() => _error = AppLocalizations.of(context)!.securityAiNotConfigured);
       return;
     }
     setState(() {
@@ -157,7 +158,8 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('AI 分析自检结果', style: TextStyle(fontSize: 16)),
+      title: Text(AppLocalizations.of(context)!.securityAiTitle,
+          style: const TextStyle(fontSize: 16)),
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
@@ -175,8 +177,8 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
                           style: const TextStyle(fontSize: 12, color: Colors.red)),
                     if (_advice != null) ..._adviceWidgets(_advice!),
                     if (_advice == null && _raw.isNotEmpty) ...[
-                      const Text('AI 原始回复（没能解析成结构化建议，按原文展示）',
-                          style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text(AppLocalizations.of(context)!.securityAiRawFallback,
+                          style: const TextStyle(fontSize: 11, color: Colors.grey)),
                       const SizedBox(height: 6),
                       SelectableText(_raw, style: const TextStyle(fontSize: 12.5, height: 1.5)),
                     ],
@@ -189,15 +191,20 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: _raw));
-              FlutterToastr.show('已复制 AI 分析', context);
+              FlutterToastr.show(
+                  AppLocalizations.of(context)!.securityAiCopied, context);
             },
-            child: const Text('复制'),
+            child: Text(AppLocalizations.of(context)!.copy),
           ),
         TextButton(
           onPressed: _loading ? null : _analyze,
-          child: Text(_raw.isEmpty && !_loading ? '开始分析' : '重新分析'),
+          child: Text(_raw.isEmpty && !_loading
+              ? AppLocalizations.of(context)!.securityAiAnalyze
+              : AppLocalizations.of(context)!.securityAiReanalyze),
         ),
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.close)),
       ],
     );
   }
@@ -210,7 +217,8 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
       widgets.add(const SizedBox(height: 10));
     }
     if (advice.risks.isNotEmpty) {
-      widgets.add(const Text('最值得先处理的', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)));
+      widgets.add(Text(AppLocalizations.of(context)!.securityAiTopRisks,
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)));
       for (final r in advice.risks) {
         widgets.add(Padding(
           padding: const EdgeInsets.only(top: 4, left: 4),
@@ -220,7 +228,8 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
       widgets.add(const SizedBox(height: 10));
     }
     if (advice.advice.isNotEmpty) {
-      widgets.add(const Text('修复建议', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)));
+      widgets.add(Text(AppLocalizations.of(context)!.securityAiFixes,
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)));
       for (final a in advice.advice) {
         widgets.add(Padding(
           padding: const EdgeInsets.only(top: 4, left: 4),
@@ -239,8 +248,8 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('建议调整 ProxyPin 设置（应用前会再确认一次）',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.securityAiActionsHeader,
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             for (final action in advice.actions) _actionRow(action),
           ],
@@ -251,7 +260,7 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
   }
 
   Widget _actionRow(_AiAction action) {
-    final label = SecurityAiDialog.labelOf(action.key);
+    final label = SecurityAiDialog.labelOf(context, action.key);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(children: [
@@ -259,7 +268,8 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$label → ${action.value ? '开启' : '关闭'}',
+              Text(
+                  '$label → ${action.value ? AppLocalizations.of(context)!.securityAiStateOn : AppLocalizations.of(context)!.securityAiStateOff}',
                   style: const TextStyle(fontSize: 12.5)),
               if (action.reason.isNotEmpty)
                 Text(action.reason,
@@ -269,7 +279,8 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
         ),
         TextButton(
           onPressed: () => _confirmApply(action),
-          child: const Text('应用', style: TextStyle(fontSize: 12)),
+          child: Text(AppLocalizations.of(context)!.securityAiApply,
+              style: const TextStyle(fontSize: 12)),
         ),
       ]),
     );
@@ -278,12 +289,20 @@ class _SecurityAiDialogState extends State<SecurityAiDialog> {
   void _confirmApply(_AiAction action) {
     showConfirmDialog(
       context,
-      title: '应用配置',
-      content: '把「${SecurityAiDialog.labelOf(action.key)}」设为 '
-          '${action.value ? '开启' : '关闭'}？\n\nAI 给的理由：${action.reason}',
+      title: AppLocalizations.of(context)!.securityAiApplyTitle,
+      content: AppLocalizations.of(context)!.securityAiApplyConfirm(
+          SecurityAiDialog.labelOf(context, action.key),
+          action.value
+              ? AppLocalizations.of(context)!.securityAiStateOn
+              : AppLocalizations.of(context)!.securityAiStateOff,
+          action.reason),
       onConfirm: () {
         final ok = SecurityAiDialog.applyAction(action.key, action.value);
-        FlutterToastr.show(ok ? '已应用' : '这项配置暂不支持自动修改', context,
+        FlutterToastr.show(
+            ok
+                ? AppLocalizations.of(context)!.securityAiApplied
+                : AppLocalizations.of(context)!.securityAiApplyUnsupported,
+            context,
             backgroundColor: ok ? Colors.green : Colors.orange);
       },
     );

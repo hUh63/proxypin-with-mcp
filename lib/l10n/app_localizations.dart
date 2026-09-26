@@ -2808,6 +2808,135 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only listens on 127.0.0.1 (this machine). Data leaves the app only when an AI client explicitly requests it via a tool.'**
   String get mcpPrivacyHint;
+
+  /// No description provided for @securityAiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Analysis of Audit Results'**
+  String get securityAiTitle;
+
+  /// No description provided for @securityAiNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'AI service not configured. Go to Settings → MCP Connection → AI Analysis, and fill in the endpoint and API key.'**
+  String get securityAiNotConfigured;
+
+  /// No description provided for @securityAiRawFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw AI reply (couldn\\'t be parsed into structured advice; shown as-is)'**
+  String get securityAiRawFallback;
+
+  /// No description provided for @securityAiCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'AI analysis copied'**
+  String get securityAiCopied;
+
+  /// No description provided for @securityAiAnalyze.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Analysis'**
+  String get securityAiAnalyze;
+
+  /// No description provided for @securityAiReanalyze.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-analyze'**
+  String get securityAiReanalyze;
+
+  /// No description provided for @securityAiTopRisks.
+  ///
+  /// In en, this message translates to:
+  /// **'Top priorities'**
+  String get securityAiTopRisks;
+
+  /// No description provided for @securityAiFixes.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix suggestions'**
+  String get securityAiFixes;
+
+  /// No description provided for @securityAiActionsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested ProxyPin setting changes (each needs confirmation)'**
+  String get securityAiActionsHeader;
+
+  /// No description provided for @securityAiApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get securityAiApply;
+
+  /// No description provided for @securityAiApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Setting'**
+  String get securityAiApplyTitle;
+
+  /// No description provided for @securityAiApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied'**
+  String get securityAiApplied;
+
+  /// No description provided for @securityAiApplyUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This setting can\\'t be changed automatically'**
+  String get securityAiApplyUnsupported;
+
+  /// No description provided for @securityAiStateOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get securityAiStateOn;
+
+  /// No description provided for @securityAiStateOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get securityAiStateOff;
+
+  /// No description provided for @securityAiActionEnableSsl.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable SSL capture'**
+  String get securityAiActionEnableSsl;
+
+  /// No description provided for @securityAiActionEnableSystemProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable system proxy'**
+  String get securityAiActionEnableSystemProxy;
+
+  /// No description provided for @securityAiActionAntiCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable anti-cache'**
+  String get securityAiActionAntiCache;
+
+  /// No description provided for @securityAiActionMcpAllowLan.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow LAN access to MCP'**
+  String get securityAiActionMcpAllowLan;
+
+  /// No description provided for @securityAiActionMcpAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Require MCP authentication'**
+  String get securityAiActionMcpAuth;
+
+  /// No description provided for @securityAiApplyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Set "$key" to $value?
+
+AI\\'s reason: $reason'**
+  String securityAiApplyConfirm(String key, String value, String reason);
+
 }
 
 class _AppLocalizationsDelegate

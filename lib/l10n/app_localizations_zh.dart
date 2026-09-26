@@ -1387,6 +1387,72 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mcpPrivacyHint => '仅监听 127.0.0.1（本机），数据只有在 AI 客户端通过工具明确请求时才会离开本应用。';
+
+  @override
+  String get securityAiTitle => 'AI 分析自检结果';
+
+  @override
+  String get securityAiNotConfigured => '尚未配置 AI 服务：请到「设置 → MCP Connection → AI 分析」填写接口地址与 API Key';
+
+  @override
+  String get securityAiRawFallback => 'AI 原始回复（没能解析成结构化建议，按原文展示）';
+
+  @override
+  String get securityAiCopied => '已复制 AI 分析';
+
+  @override
+  String get securityAiAnalyze => '开始分析';
+
+  @override
+  String get securityAiReanalyze => '重新分析';
+
+  @override
+  String get securityAiTopRisks => '最值得先处理的';
+
+  @override
+  String get securityAiFixes => '修复建议';
+
+  @override
+  String get securityAiActionsHeader => '建议调整 ProxyPin 设置（应用前会再确认一次）';
+
+  @override
+  String get securityAiApply => '应用';
+
+  @override
+  String get securityAiApplyTitle => '应用配置';
+
+  @override
+  String get securityAiApplied => '已应用';
+
+  @override
+  String get securityAiApplyUnsupported => '这项配置暂不支持自动修改';
+
+  @override
+  String get securityAiStateOn => '开启';
+
+  @override
+  String get securityAiStateOff => '关闭';
+
+  @override
+  String get securityAiActionEnableSsl => '开启 SSL 抓包';
+
+  @override
+  String get securityAiActionEnableSystemProxy => '开启系统代理';
+
+  @override
+  String get securityAiActionAntiCache => '开启防缓存';
+
+  @override
+  String get securityAiActionMcpAllowLan => 'MCP 允许局域网访问';
+
+  @override
+  String get securityAiActionMcpAuth => 'MCP 要求鉴权';
+
+  @override
+  String securityAiApplyConfirm(String key, String value, String reason) {
+    return '把「$key」设为 $value？\n\nAI 给的理由：$reason';
+  }
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

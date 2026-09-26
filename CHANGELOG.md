@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.24.33 (2026-09-26)
+
+### 国际化（l10n）第一批：安全自检 AI 分析对话框
+
+把 fork 后绕过 l10n 的硬编码中文提取进 arb，这一版先拿
+`security_ai_dialog.dart` 做**机制打样** —— 它一次覆盖了 toast / Text / 按钮 /
+无 context 的静态方法 / 带参数插值 各种形态，验证通过后按 C→B→A 铺开。
+
+- **新增 21 个 key**（前缀 `securityAi*`）：对话框标题、未配置提示、原始回复回退、
+  5 个配置动作名、开关态、应用确认（带 `key` / `value` / `reason` 三个占位符）等；
+- `SecurityAiDialog.labelOf` 增加 `BuildContext` 参数 —— 原签名拿不到 l10n；
+- **AI prompt 保持中文、刻意不提取**：它是发给模型的指令，不是用户可见文案；
+- en / zh 双写；zh_Hant 自动继承简体；es / id / pt / th / vi 缺失 key 按 gen-l10n
+  惯例用英文兜底（后续单独补翻译）。
+
+
 ## v1.24.32 (2026-09-26)
 
 ### 文档：「功能技巧」补齐新能力，并修掉一处自相矛盾（纯文档，无代码改动）

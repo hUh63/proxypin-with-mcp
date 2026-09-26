@@ -1422,4 +1422,70 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get mcpPrivacyHint =>
       'Only listens on 127.0.0.1 (this machine). Data leaves the app only when an AI client explicitly requests it via a tool.';
+
+
+  @override
+  String get securityAiTitle => 'AI Analysis of Audit Results';
+
+  @override
+  String get securityAiNotConfigured => 'AI service not configured. Go to Settings → MCP Connection → AI Analysis, and fill in the endpoint and API key.';
+
+  @override
+  String get securityAiRawFallback => 'Raw AI reply (couldn\'t be parsed into structured advice; shown as-is)';
+
+  @override
+  String get securityAiCopied => 'AI analysis copied';
+
+  @override
+  String get securityAiAnalyze => 'Start Analysis';
+
+  @override
+  String get securityAiReanalyze => 'Re-analyze';
+
+  @override
+  String get securityAiTopRisks => 'Top priorities';
+
+  @override
+  String get securityAiFixes => 'Fix suggestions';
+
+  @override
+  String get securityAiActionsHeader => 'Suggested ProxyPin setting changes (each needs confirmation)';
+
+  @override
+  String get securityAiApply => 'Apply';
+
+  @override
+  String get securityAiApplyTitle => 'Apply Setting';
+
+  @override
+  String get securityAiApplied => 'Applied';
+
+  @override
+  String get securityAiApplyUnsupported => 'This setting can\'t be changed automatically';
+
+  @override
+  String get securityAiStateOn => 'On';
+
+  @override
+  String get securityAiStateOff => 'Off';
+
+  @override
+  String get securityAiActionEnableSsl => 'Enable SSL capture';
+
+  @override
+  String get securityAiActionEnableSystemProxy => 'Enable system proxy';
+
+  @override
+  String get securityAiActionAntiCache => 'Enable anti-cache';
+
+  @override
+  String get securityAiActionMcpAllowLan => 'Allow LAN access to MCP';
+
+  @override
+  String get securityAiActionMcpAuth => 'Require MCP authentication';
+
+  @override
+  String securityAiApplyConfirm(String key, String value, String reason) {
+    return 'Set "$key" to $value?\n\nAI\'s reason: $reason';
+  }
 }
