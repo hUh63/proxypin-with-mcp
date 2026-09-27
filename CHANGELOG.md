@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.24.42 (2026-09-27)
+
+### 修复 v1.24.40 / v1.24.41 的编译错误
+
+`backup_management.dart`（移动版）导出成功后把 `outputPath`（类型是 `Uri`）直接传给了
+l10n 占位符 `backupExportedTo(path: String)`，报
+`The argument type 'Uri' can't be assigned to the parameter type 'String'`。
+改成 `outputPath.path`（与桌面版 `config_management` 的写法一致，显示的是路径而非完整 URI）。
+
+同时全局扫了一遍「l10n 占位符参数直接接收 Uri」的同类写法，`lib/` 下已无其它命中。
+
+> 这批的把关经验：**占位符参数的类型必须和调用点实参类型对齐**。arb 里声明 `String`
+> 的地方，Dart 侧传的必须真是 `String`（`Uri` / `int?` / `Path` 都要显式转换）——
+> v1.24.38 踩过 `int?`，这一版踩的是 `Uri`。
+
+
 ## v1.24.41 (2026-09-27)
 
 ### 国际化（l10n）第八批：13 个文件、137 key

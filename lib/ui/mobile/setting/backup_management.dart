@@ -337,7 +337,7 @@ class _BackupManagementState extends State<BackupManagement> {
 
       if (outputPath != null && mounted) {
         FlutterToastr.show(
-          localizations.backupExportedTo(outputPath),
+          localizations.backupExportedTo(outputPath.path),
           context,
           duration: 2,
           backgroundColor: Colors.green,
