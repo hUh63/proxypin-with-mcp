@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/api_extractor.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -70,7 +71,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('API 端点 (${_endpoints.length})'),
+        title: Text(AppLocalizations.of(context)!.apiEpTitle(_endpoints.length)),
         actions: [
           IconButton(
             icon: const Icon(Icons.view_list),
@@ -89,7 +90,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               decoration: InputDecoration(
-                hintText: '搜索端点...',
+                hintText: AppLocalizations.of(context)!.apiEpSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -106,20 +107,22 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: _buildStatCard(
-                      Icons.link_rounded, '总端点', _endpoints.length.toString(),
+                  child: _buildStatCard(Icons.link_rounded,
+                      AppLocalizations.of(context)!.apiEpTotalEndpoints,
+                      _endpoints.length.toString(),
                       Theme.of(context).colorScheme.primary),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _buildStatCard(
-                      Icons.folder_copy_rounded, '资源组', _groups.length.toString(),
+                  child: _buildStatCard(Icons.folder_copy_rounded,
+                      AppLocalizations.of(context)!.apiEpResourceGroups,
+                      _groups.length.toString(),
                       Theme.of(context).colorScheme.tertiary),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _buildStatCard(
-                      Icons.alt_route_rounded, '总请求',
+                  child: _buildStatCard(Icons.alt_route_rounded,
+                      AppLocalizations.of(context)!.apiEpTotalRequests,
                       _endpoints.fold<int>(0, (s, e) => s + e.callCount).toString(),
                       Theme.of(context).colorScheme.secondary),
                 ),
@@ -200,7 +203,8 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
               child: Text('${group.endpoints.length}'),
             ),
             title: Text(group.name),
-            subtitle: Text('${group.basePath} · ${group.totalCalls} 次请求'),
+            subtitle: Text(AppLocalizations.of(context)!
+                .apiEpPathCalls(group.basePath, group.totalCalls)),
             trailing: Chip(
               label: Text('${group.avgResponseTime.toStringAsFixed(0)}ms'),
               padding: EdgeInsets.zero,
@@ -210,7 +214,9 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
               return ListTile(
                 leading: _getMethodIcon(endpoint.method),
                 title: Text(endpoint.path, style: const TextStyle(fontSize: 13)),
-                subtitle: Text('${endpoint.callCount} 次 · 成功率 ${endpoint.successRate.toStringAsPercent(0)}'),
+                subtitle: Text(AppLocalizations.of(context)!.apiEpCallsSuccess(
+                    endpoint.callCount,
+                    endpoint.successRate.toStringAsPercent(0))),
                 trailing: Text('${endpoint.avgResponseTime.toStringAsFixed(0)}ms'),
                 onTap: () => _showEndpointDetail(endpoint),
               );
@@ -226,8 +232,8 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
     final endpoints = _filteredEndpoints;
     
     if (endpoints.isEmpty) {
-      return const Center(
-        child: Text('没有找到匹配的端点'),
+      return Center(
+        child: Text(AppLocalizations.of(context)!.apiEpNoMatch),
       );
     }
 
@@ -241,7 +247,8 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
           child: ListTile(
             leading: _getMethodIcon(endpoint.method),
             title: Text(endpoint.path),
-            subtitle: Text('${endpoint.domain} · ${endpoint.callCount} 次请求'),
+            subtitle: Text(AppLocalizations.of(context)!
+                .apiEpPathCalls(endpoint.domain, endpoint.callCount)),
             trailing: Text('${endpoint.avgResponseTime.toStringAsFixed(0)}ms'),
             onTap: () => _showEndpointDetail(endpoint),
           ),
@@ -287,7 +294,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.view_list),
-              title: const Text('分组视图'),
+              title: Text(AppLocalizations.of(context)!.apiEpGroupView),
               onTap: () {
                 setState(() => _viewMode = 'group');
                 Navigator.pop(context);
@@ -295,7 +302,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             ),
             ListTile(
               leading: const Icon(Icons.list),
-              title: const Text('列表视图'),
+              title: Text(AppLocalizations.of(context)!.apiEpListView),
               onTap: () {
                 setState(() => _viewMode = 'list');
                 Navigator.pop(context);
@@ -303,7 +310,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             ),
             ListTile(
               leading: const Icon(Icons.dns),
-              title: const Text('按域名分组'),
+              title: Text(AppLocalizations.of(context)!.apiEpGroupByDomain),
               onTap: () {
                 setState(() => _viewMode = 'domain');
                 Navigator.pop(context);
@@ -324,8 +331,8 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.description),
-              title: const Text('导出为 OpenAPI'),
-              subtitle: const Text('Swagger 格式'),
+              title: Text(AppLocalizations.of(context)!.apiEpExportOpenApi),
+              subtitle: Text(AppLocalizations.of(context)!.apiEpSwaggerFormat),
               onTap: () {
                 _exportAsOpenApi();
                 Navigator.pop(context);
@@ -333,8 +340,8 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             ),
             ListTile(
               leading: const Icon(Icons.post_add),
-              title: const Text('导出为 Postman'),
-              subtitle: const Text('Collection 格式'),
+              title: Text(AppLocalizations.of(context)!.apiEpExportPostman),
+              subtitle: Text(AppLocalizations.of(context)!.apiEpCollectionFormat),
               onTap: () {
                 _exportAsPostman();
                 Navigator.pop(context);
@@ -342,7 +349,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             ),
             ListTile(
               leading: const Icon(Icons.code),
-              title: const Text('导出为 JSON'),
+              title: Text(AppLocalizations.of(context)!.apiEpExportJson),
               onTap: () {
                 _exportAsJson();
                 Navigator.pop(context);
@@ -384,12 +391,15 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
         return;
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label 已导出')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.of(context)!.apiEpExported(label))));
       }
     } catch (e) {
       logger.e('导出 $label 失败', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label 导出失败: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.apiEpExportFailed(label, '$e'))));
       }
     }
   }
@@ -404,21 +414,29 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('完整 URL', endpoint.fullUrl),
-              _buildDetailRow('调用次数', '${endpoint.callCount}'),
-              _buildDetailRow('成功率', '${endpoint.successRate.toStringAsPercent(1)}'),
-              _buildDetailRow('平均响应时间', '${endpoint.avgResponseTime.toStringAsFixed(0)}ms'),
-              _buildDetailRow('首次发现', endpoint.firstSeen.toString()),
-              _buildDetailRow('最后访问', endpoint.lastSeen.toString()),
+              _buildDetailRow(
+                  AppLocalizations.of(context)!.apiEpFullUrl, endpoint.fullUrl),
+              _buildDetailRow(AppLocalizations.of(context)!.apiEpCallCount,
+                  '${endpoint.callCount}'),
+              _buildDetailRow(AppLocalizations.of(context)!.successRate,
+                  '${endpoint.successRate.toStringAsPercent(1)}'),
+              _buildDetailRow(
+                  AppLocalizations.of(context)!.apiEpAvgResponseTime,
+                  '${endpoint.avgResponseTime.toStringAsFixed(0)}ms'),
+              _buildDetailRow(AppLocalizations.of(context)!.apiEpFirstSeen,
+                  endpoint.firstSeen.toString()),
+              _buildDetailRow(AppLocalizations.of(context)!.apiEpLastSeen,
+                  endpoint.lastSeen.toString()),
               if (endpoint.tags.isNotEmpty)
-                _buildDetailRow('标签', endpoint.tags.join(', ')),
+                _buildDetailRow(AppLocalizations.of(context)!.apiEpTags,
+                    endpoint.tags.join(', ')),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
+            child: Text(AppLocalizations.of(context)!.close),
           ),
         ],
       ),

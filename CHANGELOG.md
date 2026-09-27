@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.24.41 (2026-09-27)
+
+### 国际化（l10n）第八批：13 个文件、137 key
+
+- `config_management.dart`（桌面版）+ `root_proxy.dart`（20 key）—— 桌面版**复用移动版刚建的
+  24 个 `cfg*` key**，只新建 2 个桌面独有的；
+- `fuzz_dictionary_dialog.dart` + `api_endpoint_page.dart`（41 key，前缀 `fuzzDict*` / `apiEp*`）
+  —— 字典管理弹窗复用了 `capturePlanBuiltin` / `custom` / `newBuilt` 等既有通用 key；
+- `performance_dashboard.dart` + `repeat_queue_page.dart` + `builtin_variables_dialog.dart`
+  （45 key，前缀 `perf*` / `rq*` / `bv*`）—— 内置变量弹窗里的 `{{host}}` 这类**字面花括号**
+  按参数传入（`bvIntro(mark)`），避免 ICU 解析；
+- 框架/入口层 6 个文件（33 key）：`toolbox.dart` / `desktop.dart` / `setting.dart` / `mobile.dart`
+  / `app_filter.dart` / `body.dart` —— 这一批**复用率最高**（菜单项大多已有 key：
+  `calcTitle` / `toolboxPerformance` / `toolboxQuic` / `desktopMcpAutomation` / `cfgManagement` …）。
+
+**附带清理**：`desktop.dart` / `mobile.dart` 里因改造而失去引用的 `bool isCN` 一并删除
+（`app_filter.dart` 里同样失去引用但保留，只是 warning 不影响构建）。
+
+en / zh 各 **2034** 条，key 集合一致，`const` 冲突全库 0。
+
+
 ## v1.24.40 (2026-09-27)
 
 ### 国际化（l10n）第七批：工具箱 / 工作区 / 日志 / 请求对比 / 备份管理

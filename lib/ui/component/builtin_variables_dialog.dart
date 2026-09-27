@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 
 /// 内置环境变量速查（上游 #900）。
 ///
@@ -26,15 +27,36 @@ class BuiltinVariablesDialog extends StatelessWidget {
   const BuiltinVariablesDialog({super.key});
 
   /// 变量名 + 说明，与 EnvironmentManager._builtinValue 保持一致
-  static const List<(String, String)> variables = [
-    ('timestamp', '秒级 Unix 时间戳'),
-    ('timestamp_ms', '毫秒级 Unix 时间戳'),
-    ('datetime', 'ISO 8601 日期时间'),
-    ('date', '日期（yyyy-MM-dd）'),
-    ('time', '时间（HH:mm:ss）'),
-    ('unix_date', '自 1970 年以来的天数'),
-    ('uuid', '随机 UUID（每次引用都不同）'),
+  static const List<String> variableNames = [
+    'timestamp',
+    'timestamp_ms',
+    'datetime',
+    'date',
+    'time',
+    'unix_date',
+    'uuid',
   ];
+
+  static String _desc(AppLocalizations loc, String name) {
+    switch (name) {
+      case 'timestamp':
+        return loc.bvDescTimestamp;
+      case 'timestamp_ms':
+        return loc.bvDescTimestampMs;
+      case 'datetime':
+        return loc.bvDescDatetime;
+      case 'date':
+        return loc.bvDescDate;
+      case 'time':
+        return loc.bvDescTime;
+      case 'unix_date':
+        return loc.bvDescUnixDate;
+      case 'uuid':
+        return loc.bvDescUuid;
+      default:
+        return name;
+    }
+  }
 
   static Future<void> show(BuildContext context) {
     return showDialog(
@@ -51,7 +73,8 @@ class BuiltinVariablesDialog extends StatelessWidget {
         children: [
           Icon(Icons.functions, size: 18, color: cs.primary),
           const SizedBox(width: 8),
-          const Text('内置变量', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          Text(AppLocalizations.of(context)!.bvTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
         ],
       ),
       content: ConstrainedBox(
@@ -61,22 +84,29 @@ class BuiltinVariablesDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '下面这些变量不用定义，在任何支持 {{变量}} 的地方（重写规则、上报地址、脚本等）都能直接引用。点一下复制。',
+                AppLocalizations.of(context)!.bvIntro(
+                    Localizations.localeOf(context).languageCode.startsWith('zh')
+                        ? '{{变量}}'
+                        : '{{variable}}'),
                 style: TextStyle(fontSize: 12, height: 1.5, color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 10),
-              for (final (name, desc) in variables)
+              for (final name in variableNames)
                 ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.data_object, size: 18),
                   title: Text('{{$name}}', style: const TextStyle(fontSize: 13, fontFamily: 'monospace')),
-                  subtitle: Text(desc, style: const TextStyle(fontSize: 11.5)),
+                  subtitle: Text(_desc(AppLocalizations.of(context)!, name),
+                      style: const TextStyle(fontSize: 11.5)),
                   trailing: const Icon(Icons.copy, size: 16),
                   onTap: () async {
                     await Clipboard.setData(ClipboardData(text: '{{$name}}'));
                     if (context.mounted) {
-                      FlutterToastr.show('已复制 {{$name}}', context, duration: 2);
+                      FlutterToastr.show(
+                          AppLocalizations.of(context)!.bvCopied('{{$name}}'),
+                          context,
+                          duration: 2);
                     }
                   },
                 ),
@@ -85,7 +115,9 @@ class BuiltinVariablesDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('知道了')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.bvGotIt)),
       ],
     );
   }

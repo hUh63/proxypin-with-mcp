@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/connection_pool.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/platform.dart';
 
 /// 性能监控仪表盘 - 显示连接池与请求性能统计
@@ -59,7 +60,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = '加载数据失败：${e.toString()}';
+        _errorMessage = AppLocalizations.of(context)!.perfLoadFailed(e.toString());
         _lastUpdateTime = DateTime.now();
       });
     }
@@ -79,7 +80,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
       onRefresh: _refresh,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('性能监控'),
+          title: Text(AppLocalizations.of(context)!.perfTitle),
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
@@ -99,19 +100,19 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
                     ElevatedButton.icon(
                       onPressed: _refresh,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('重试'),
+                      label: Text(AppLocalizations.of(context)!.perfRetry),
                     ),
                   ],
                 ),
               )
             : _stats == null
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('正在加载数据...'),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(AppLocalizations.of(context)!.perfLoading),
                       ],
                     ),
                   )
@@ -139,10 +140,11 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
   }
 
   Widget _buildLastUpdateTime() {
+    final time = '${_lastUpdateTime.hour.toString().padLeft(2, '0')}:'
+        '${_lastUpdateTime.minute.toString().padLeft(2, '0')}:'
+        '${_lastUpdateTime.second.toString().padLeft(2, '0')}';
     return Text(
-      '最后更新：${_lastUpdateTime.hour.toString().padLeft(2, '0')}:'
-          '${_lastUpdateTime.minute.toString().padLeft(2, '0')}:'
-          '${_lastUpdateTime.second.toString().padLeft(2, '0')}',
+      AppLocalizations.of(context)!.perfLastUpdate(time),
       style: TextStyle(color: Colors.grey[600], fontSize: 12),
     );
   }
@@ -160,14 +162,14 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
             Row(children: [
               Icon(Icons.router, color: running ? Colors.green[700] : Colors.grey),
               const SizedBox(width: 8),
-              Text('代理状态', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: running ? Colors.green[700] : Colors.grey)),
+              Text(AppLocalizations.of(context)!.perfProxyStatus, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: running ? Colors.green[700] : Colors.grey)),
               const Spacer(),
               Icon(Icons.circle, size: 10, color: running ? Colors.green : Colors.grey),
               const SizedBox(width: 4),
-              Text(running ? '运行中' : '已停止', style: TextStyle(color: running ? Colors.green : Colors.grey)),
+              Text(running ? AppLocalizations.of(context)!.perfRunning : AppLocalizations.of(context)!.perfStopped, style: TextStyle(color: running ? Colors.green : Colors.grey)),
             ]),
             const SizedBox(height: 12),
-            _buildMetricRow('监听端口', '$port'),
+            _buildMetricRow(AppLocalizations.of(context)!.diagListeningPort, '$port'),
           ],
         ),
       ),
@@ -186,16 +188,16 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
             Row(children: [
               Icon(Icons.speed, color: Colors.blue[700]),
               const SizedBox(width: 8),
-              Text('性能概览', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue[700])),
+              Text(AppLocalizations.of(context)!.perfOverview, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue[700])),
             ]),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('总请求', '${stats['totalRequests'] ?? 0}', Colors.blue),
-                _buildStatItem('成功', '${stats['successfulRequests'] ?? 0}', Colors.green),
-                _buildStatItem('失败', '${stats['failedRequests'] ?? 0}', Colors.red),
-                _buildStatItem('成功率', '${((stats['successRate'] ?? 0.0) as num).toStringAsFixed(1)}%', Colors.orange),
+                _buildStatItem(AppLocalizations.of(context)!.perfTotalRequests, '${stats['totalRequests'] ?? 0}', Colors.blue),
+                _buildStatItem(AppLocalizations.of(context)!.success, '${stats['successfulRequests'] ?? 0}', Colors.green),
+                _buildStatItem(AppLocalizations.of(context)!.fail, '${stats['failedRequests'] ?? 0}', Colors.red),
+                _buildStatItem(AppLocalizations.of(context)!.successRate, '${((stats['successRate'] ?? 0.0) as num).toStringAsFixed(1)}%', Colors.orange),
               ],
             ),
           ],
@@ -216,14 +218,14 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
             Row(children: [
               Icon(Icons.swap_horiz, color: Colors.teal[700]),
               const SizedBox(width: 8),
-              Text('连接池状态', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal[700])),
+              Text(AppLocalizations.of(context)!.perfConnectionPool, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal[700])),
             ]),
             const SizedBox(height: 16),
-            _buildMetricRow('活跃连接', '${stats['activeConnections'] ?? 0}'),
+            _buildMetricRow(AppLocalizations.of(context)!.perfActiveConnections, '${stats['activeConnections'] ?? 0}'),
             const Divider(height: 24),
-            _buildMetricRow('空闲连接', '${stats['idleConnections'] ?? 0}'),
+            _buildMetricRow(AppLocalizations.of(context)!.perfIdleConnections, '${stats['idleConnections'] ?? 0}'),
             const Divider(height: 24),
-            _buildMetricRow('重试次数', '${stats['retryCount'] ?? 0}'),
+            _buildMetricRow(AppLocalizations.of(context)!.retryCountLabel, '${stats['retryCount'] ?? 0}'),
           ],
         ),
       ),
@@ -244,12 +246,12 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
             Row(children: [
               Icon(Icons.analytics, color: Colors.purple[700]),
               const SizedBox(width: 8),
-              Text('性能指标', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple[700])),
+              Text(AppLocalizations.of(context)!.perfMetrics, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple[700])),
             ]),
             const SizedBox(height: 16),
-            _buildMetricRow('平均响应时间', '${avgMs.toStringAsFixed(0)}ms'),
+            _buildMetricRow(AppLocalizations.of(context)!.perfAvgResponseTime, '${avgMs.toStringAsFixed(0)}ms'),
             const Divider(height: 24),
-            _buildMetricRow('QPS（每秒请求）', qps.toStringAsFixed(1)),
+            _buildMetricRow(AppLocalizations.of(context)!.perfQps, qps.toStringAsFixed(1)),
           ],
         ),
       ),
@@ -269,7 +271,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
             Row(children: [
               Icon(Icons.list_alt, color: Colors.indigo[700]),
               const SizedBox(width: 8),
-              Text('请求统计', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo[700])),
+              Text(AppLocalizations.of(context)!.perfRequestStats, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo[700])),
             ]),
             const SizedBox(height: 16),
             if (breakdown.isNotEmpty) ...[
@@ -284,7 +286,9 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
                     ),
                   )),
             ] else ...[
-              Center(child: Text('暂无分类数据', style: TextStyle(color: Colors.grey[400]))),
+              Center(
+                  child: Text(AppLocalizations.of(context)!.perfNoBreakdown,
+                      style: TextStyle(color: Colors.grey[400]))),
             ],
           ],
         ),

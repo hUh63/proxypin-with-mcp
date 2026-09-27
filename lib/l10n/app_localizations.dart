@@ -8979,6 +8979,855 @@ The current configuration will be overwritten.'**
   /// **'Just now'**
   String get backupJustNow;
 
+
+  /// No description provided for @cfgDeskGeneratingConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating config file...'**
+  String get cfgDeskGeneratingConfig;
+
+  /// No description provided for @cfgDeskCannotReadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to read the file'**
+  String get cfgDeskCannotReadFile;
+
+  /// No description provided for @rootProxyNoAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Root permission not granted: the device may not be rooted, or you did not tap Allow in the authorization dialog'**
+  String get rootProxyNoAccess;
+
+  /// No description provided for @rootProxyClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Turned off; the iptables rules have been cleaned up'**
+  String get rootProxyClosed;
+
+  /// No description provided for @rootProxyStopError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error while turning it off: rules may still be present; retry or reboot the device'**
+  String get rootProxyStopError;
+
+  /// No description provided for @rootProxyNeedCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Start capture first: enabling redirection while the proxy port is not listening will cut the device off the network'**
+  String get rootProxyNeedCapture;
+
+  /// No description provided for @rootProxyNeedStopVpn.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop VPN capture first: the two capture methods cannot be used at the same time'**
+  String get rootProxyNeedStopVpn;
+
+  /// No description provided for @rootProxyStartDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to enable; make sure root permission has been granted'**
+  String get rootProxyStartDenied;
+
+  /// No description provided for @rootProxyStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to enable: $reason'**
+  String rootProxyStartFailed(String reason);
+
+  /// No description provided for @rootProxyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirection is active'**
+  String get rootProxyActive;
+
+  /// No description provided for @rootProxyInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Not active'**
+  String get rootProxyInactive;
+
+  /// No description provided for @rootProxyTargetPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Target port: $port　Protection: leftover rules are cleaned up automatically on the next launch'**
+  String rootProxyTargetPort(int port);
+
+  /// No description provided for @rootProxyCheckRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Check root permission'**
+  String get rootProxyCheckRoot;
+
+  /// No description provided for @rootProxyFirstCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'The first check will bring up the su authorization dialog'**
+  String get rootProxyFirstCheck;
+
+  /// No description provided for @rootProxyGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Root permission granted'**
+  String get rootProxyGranted;
+
+  /// No description provided for @rootProxyNotGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Root permission not granted'**
+  String get rootProxyNotGranted;
+
+  /// No description provided for @rootProxyNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get rootProxyNotesTitle;
+
+  /// No description provided for @rootProxyNotesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'· The device must be rooted and su permission granted;
+· The idea is to add a chain for ProxyPin only to the nat table, redirecting outbound TCP connections to the proxy port, without making any other changes;
+· Only IPv4 is handled; IPv6 traffic stays direct;
+· Mutually exclusive with VPN capture, so turn the VPN off first;
+· If the phone shows “connected to WiFi but no internet”, turn this off first; the app also cleans up leftover rules on every launch.'**
+  String get rootProxyNotesBody;
+
+
+  /// No description provided for @fuzzDictDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported dictionary'**
+  String get fuzzDictDefaultName;
+
+  /// No description provided for @fuzzDictImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported "$name"'**
+  String fuzzDictImported(String name);
+
+  /// No description provided for @fuzzDictDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete dictionary'**
+  String get fuzzDictDeleteTitle;
+
+  /// No description provided for @fuzzDictDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete "$name"?'**
+  String fuzzDictDeleteConfirm(String name);
+
+  /// No description provided for @fuzzDictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuzz Dictionary'**
+  String get fuzzDictTitle;
+
+  /// No description provided for @fuzzDictTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a dictionary to fill it into the current injection. No built-in attack payload library — the built-ins are just boundary/type-anomaly strings; fill, import or script the rest yourself.'**
+  String get fuzzDictTips;
+
+  /// No description provided for @fuzzDictNoCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'No custom dictionaries yet'**
+  String get fuzzDictNoCustom;
+
+  /// No description provided for @fuzzDictImportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from file'**
+  String get fuzzDictImportFile;
+
+  /// No description provided for @fuzzDictNEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'$count values'**
+  String fuzzDictNEntries(int count);
+
+  /// No description provided for @fuzzDictExpanded.
+  ///
+  /// In en, this message translates to:
+  /// **'Expanded to $count values: $preview'**
+  String fuzzDictExpanded(int count, String preview);
+
+  /// No description provided for @fuzzDictScriptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Script failed: $error'**
+  String fuzzDictScriptFailed(String error);
+
+  /// No description provided for @fuzzDictNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the dictionary a name'**
+  String get fuzzDictNameRequired;
+
+  /// No description provided for @fuzzDictCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'New dictionary'**
+  String get fuzzDictCreate;
+
+  /// No description provided for @fuzzDictEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit dictionary'**
+  String get fuzzDictEditTitle;
+
+  /// No description provided for @fuzzDictScriptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Script (optional, JS; assign the array to result)'**
+  String get fuzzDictScriptLabel;
+
+  /// No description provided for @fuzzDictTestRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Try it'**
+  String get fuzzDictTestRun;
+
+  /// No description provided for @fuzzDictScriptNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The script output is merged with the values above and de-duplicated'**
+  String get fuzzDictScriptNote;
+
+  /// No description provided for @apiEpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API Endpoints ($count)'**
+  String apiEpTitle(int count);
+
+  /// No description provided for @apiEpSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search endpoints...'**
+  String get apiEpSearchHint;
+
+  /// No description provided for @apiEpTotalEndpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Total endpoints'**
+  String get apiEpTotalEndpoints;
+
+  /// No description provided for @apiEpResourceGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource groups'**
+  String get apiEpResourceGroups;
+
+  /// No description provided for @apiEpTotalRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Total requests'**
+  String get apiEpTotalRequests;
+
+  /// No description provided for @apiEpPathCalls.
+  ///
+  /// In en, this message translates to:
+  /// **'$path · $count requests'**
+  String apiEpPathCalls(String path, int count);
+
+  /// No description provided for @apiEpCallsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'$count calls · Success rate $rate'**
+  String apiEpCallsSuccess(int count, String rate);
+
+  /// No description provided for @apiEpNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching endpoints found'**
+  String get apiEpNoMatch;
+
+  /// No description provided for @apiEpGroupView.
+  ///
+  /// In en, this message translates to:
+  /// **'Group view'**
+  String get apiEpGroupView;
+
+  /// No description provided for @apiEpListView.
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get apiEpListView;
+
+  /// No description provided for @apiEpGroupByDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by host'**
+  String get apiEpGroupByDomain;
+
+  /// No description provided for @apiEpExportOpenApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as OpenAPI'**
+  String get apiEpExportOpenApi;
+
+  /// No description provided for @apiEpSwaggerFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Swagger format'**
+  String get apiEpSwaggerFormat;
+
+  /// No description provided for @apiEpExportPostman.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as Postman'**
+  String get apiEpExportPostman;
+
+  /// No description provided for @apiEpCollectionFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection format'**
+  String get apiEpCollectionFormat;
+
+  /// No description provided for @apiEpExportJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as JSON'**
+  String get apiEpExportJson;
+
+  /// No description provided for @apiEpExported.
+  ///
+  /// In en, this message translates to:
+  /// **'$label exported'**
+  String apiEpExported(String label);
+
+  /// No description provided for @apiEpExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'$label export failed: $error'**
+  String apiEpExportFailed(String label, String error);
+
+  /// No description provided for @apiEpFullUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Full URL'**
+  String get apiEpFullUrl;
+
+  /// No description provided for @apiEpCallCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Call count'**
+  String get apiEpCallCount;
+
+  /// No description provided for @apiEpAvgResponseTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg response time'**
+  String get apiEpAvgResponseTime;
+
+  /// No description provided for @apiEpFirstSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'First seen'**
+  String get apiEpFirstSeen;
+
+  /// No description provided for @apiEpLastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen'**
+  String get apiEpLastSeen;
+
+  /// No description provided for @apiEpTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get apiEpTags;
+
+
+  /// No description provided for @perfLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load data: $error'**
+  String perfLoadFailed(String error);
+
+  /// No description provided for @perfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance Monitoring'**
+  String get perfTitle;
+
+  /// No description provided for @perfRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get perfRetry;
+
+  /// No description provided for @perfLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading data...'**
+  String get perfLoading;
+
+  /// No description provided for @perfLastUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: $time'**
+  String perfLastUpdate(String time);
+
+  /// No description provided for @perfProxyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy Status'**
+  String get perfProxyStatus;
+
+  /// No description provided for @perfRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get perfRunning;
+
+  /// No description provided for @perfStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get perfStopped;
+
+  /// No description provided for @perfOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance Overview'**
+  String get perfOverview;
+
+  /// No description provided for @perfTotalRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Requests'**
+  String get perfTotalRequests;
+
+  /// No description provided for @perfConnectionPool.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Pool Status'**
+  String get perfConnectionPool;
+
+  /// No description provided for @perfActiveConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Connections'**
+  String get perfActiveConnections;
+
+  /// No description provided for @perfIdleConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle Connections'**
+  String get perfIdleConnections;
+
+  /// No description provided for @perfMetrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance Metrics'**
+  String get perfMetrics;
+
+  /// No description provided for @perfAvgResponseTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Average Response Time'**
+  String get perfAvgResponseTime;
+
+  /// No description provided for @perfQps.
+  ///
+  /// In en, this message translates to:
+  /// **'QPS (requests per second)'**
+  String get perfQps;
+
+  /// No description provided for @perfRequestStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Statistics'**
+  String get perfRequestStats;
+
+  /// No description provided for @perfNoBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'No breakdown data'**
+  String get perfNoBreakdown;
+
+  /// No description provided for @rqTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Queue'**
+  String get rqTitle;
+
+  /// No description provided for @rqClearFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear finished tasks'**
+  String get rqClearFinished;
+
+  /// No description provided for @rqIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'All replay tasks started during this run (repeated, batch, or scheduled) are gathered here: check progress, success and failure counts, and the queue of pending requests. Tasks are in-memory and cleared on restart.'**
+  String get rqIntro;
+
+  /// No description provided for @rqCancelTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel task (stop further sending)'**
+  String get rqCancelTask;
+
+  /// No description provided for @rqRemoveRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove record'**
+  String get rqRemoveRecord;
+
+  /// No description provided for @rqStatRetried.
+  ///
+  /// In en, this message translates to:
+  /// **'Retried'**
+  String get rqStatRetried;
+
+  /// No description provided for @rqStatPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get rqStatPlanned;
+
+  /// No description provided for @rqLastError.
+  ///
+  /// In en, this message translates to:
+  /// **'Last error: $error'**
+  String rqLastError(String error);
+
+  /// No description provided for @rqPendingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending requests ($count)'**
+  String rqPendingRequests(int count);
+
+  /// No description provided for @rqMoreRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'... and $count more'**
+  String rqMoreRemaining(int count);
+
+  /// No description provided for @rqStatusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to send'**
+  String get rqStatusScheduled;
+
+  /// No description provided for @rqStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get rqStatusRunning;
+
+  /// No description provided for @rqStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get rqStatusCompleted;
+
+  /// No description provided for @rqStatusCanceled.
+  ///
+  /// In en, this message translates to:
+  /// **'Canceled'**
+  String get rqStatusCanceled;
+
+  /// No description provided for @rqEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No replay tasks yet'**
+  String get rqEmptyTitle;
+
+  /// No description provided for @rqEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks show up here after you start a replay (batch or scheduled)'**
+  String get rqEmptyHint;
+
+  /// No description provided for @bvDescTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Unix timestamp (seconds)'**
+  String get bvDescTimestamp;
+
+  /// No description provided for @bvDescTimestampMs.
+  ///
+  /// In en, this message translates to:
+  /// **'Unix timestamp (milliseconds)'**
+  String get bvDescTimestampMs;
+
+  /// No description provided for @bvDescDatetime.
+  ///
+  /// In en, this message translates to:
+  /// **'ISO 8601 date-time'**
+  String get bvDescDatetime;
+
+  /// No description provided for @bvDescDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date (yyyy-MM-dd)'**
+  String get bvDescDate;
+
+  /// No description provided for @bvDescTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time (HH:mm:ss)'**
+  String get bvDescTime;
+
+  /// No description provided for @bvDescUnixDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Days since 1970'**
+  String get bvDescUnixDate;
+
+  /// No description provided for @bvDescUuid.
+  ///
+  /// In en, this message translates to:
+  /// **'Random UUID (different on every reference)'**
+  String get bvDescUuid;
+
+  /// No description provided for @bvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in variables'**
+  String get bvTitle;
+
+  /// No description provided for @bvIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'These variables need no definition — reference them directly anywhere $mark is supported (rewrite rules, report URLs, scripts, etc.). Tap to copy.'**
+  String bvIntro(String mark);
+
+  /// No description provided for @bvCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied $text'**
+  String bvCopied(String text);
+
+  /// No description provided for @bvGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get bvGotIt;
+
+
+  /// No description provided for @toolboxNavCalcTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Base conversion / two\\'s complement · bitwise ops · endianness · IEEE754 · CRC/hash'**
+  String get toolboxNavCalcTip;
+
+  /// No description provided for @toolboxNavMcpTip.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP Server settings'**
+  String get toolboxNavMcpTip;
+
+  /// No description provided for @toolboxNavLogView.
+  ///
+  /// In en, this message translates to:
+  /// **'Log viewer'**
+  String get toolboxNavLogView;
+
+  /// No description provided for @toolboxNavWaf.
+  ///
+  /// In en, this message translates to:
+  /// **'WAF mutation'**
+  String get toolboxNavWaf;
+
+  /// No description provided for @toolboxNavWafTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload-equivalent mutation + WAF signature comparison + active probing (probing sends real requests and requires authorization)'**
+  String get toolboxNavWafTip;
+
+  /// No description provided for @toolboxNavPinningTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate-pinning bypass helper: detect the frida environment · generate/deploy hook scripts · one-tap injection'**
+  String get toolboxNavPinningTip;
+
+  /// No description provided for @toolboxNavWorkspaceTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage captures separately per project/environment (standard HAR storage) · can hook up a custom server for sharing/backup'**
+  String get toolboxNavWorkspaceTip;
+
+  /// No description provided for @toolboxNavCloudTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Account · cloud-hosted workspaces · real-time multi-user collaboration (self-hosted server)'**
+  String get toolboxNavCloudTip;
+
+  /// No description provided for @toolboxNavAiTip.
+  ///
+  /// In en, this message translates to:
+  /// **'AI chat analysis of captured data (Agent mode supported)'**
+  String get toolboxNavAiTip;
+
+  /// No description provided for @deskNavUpgradeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\\'s new in V$version'**
+  String deskNavUpgradeTitle(String version);
+
+  /// No description provided for @deskNavUpgradeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: HTTPS capture is disabled by default — please install the certificate before enabling HTTPS capture.
+Click the HTTPS capture (lock) icon, choose "Install Root Certificate", and follow the prompts to complete installation.
+
+1. Added a built-in MCP server so AI assistants (e.g. Claude) can inspect and debug captured traffic;
+2. Added built-in dynamic variables for environments;
+3. Request rewrite rules can now be reordered with move up/down actions;
+4. Fixed a crash triggered by the Windows context menu;
+5. Fixed multi-value headers (e.g. multiple Set-Cookie) being incorrectly merged when handled by scripts or rewrite rules;
+6. Fixed h2c (plaintext HTTP/2) capture, non-ASCII domain normalization, and certificate validation failures for IP hosts;
+7. Fixed an iOS 13 crash, dropped bodies for close-delimited responses, Android VPN destination-port recording, and other issues.
+'**
+  String get deskNavUpgradeBody;
+
+  /// No description provided for @setNavThemeTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme settings are in the top toolbar — click the sun/moon icon to switch'**
+  String get setNavThemeTip;
+
+  /// No description provided for @setNavProxyDomainsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use \\';\\' to separate multiple entries'**
+  String get setNavProxyDomainsHint;
+
+  /// No description provided for @setNavClearProxyResidue.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear leftover system proxy'**
+  String get setNavClearProxyResidue;
+
+  /// No description provided for @setNavClearProxyResidueDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Click here to recover when the network is broken after an abnormal exit'**
+  String get setNavClearProxyResidueDesc;
+
+  /// No description provided for @setNavProxyResidueCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'System proxy settings cleared — the network should be back to normal'**
+  String get setNavProxyResidueCleared;
+
+  /// No description provided for @setNavRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair'**
+  String get setNavRepair;
+
+  /// No description provided for @mobNavUpgradeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\\'s new in V$version'**
+  String mobNavUpgradeTitle(String version);
+
+  /// No description provided for @mobNavUpgradeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: HTTPS capture is disabled by default — please install the certificate before enabling HTTPS capture.
+
+1. Added a built-in MCP server so AI assistants (e.g. Claude) can inspect and debug captured traffic;
+2. Added built-in dynamic variables for environments;
+3. Request rewrite rules can now be reordered with move up/down actions;
+4. Fixed a crash triggered by the Windows context menu;
+5. Fixed multi-value headers (e.g. multiple Set-Cookie) being incorrectly merged when handled by scripts or rewrite rules;
+6. Fixed h2c (plaintext HTTP/2) capture, non-ASCII domain normalization, and certificate validation failures for IP hosts;
+7. Fixed an iOS 13 crash, dropped bodies for close-delimited responses, Android VPN destination-port recording, and other issues.
+'**
+  String get mobNavUpgradeBody;
+
+  /// No description provided for @appFilterUnknownApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown app'**
+  String get appFilterUnknownApp;
+
+  /// No description provided for @appFilterClearInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'clear invalid apps'**
+  String get appFilterClearInvalid;
+
+  /// No description provided for @appFilterWhitelistHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When no whitelist application is set, all applications will be captured'**
+  String get appFilterWhitelistHint;
+
+  /// No description provided for @appFilterRemoveWhitelistConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this app from the whitelist?'**
+  String get appFilterRemoveWhitelistConfirm;
+
+  /// No description provided for @appFilterRemoveBlacklistConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this app from the blacklist?'**
+  String get appFilterRemoveBlacklistConfirm;
+
+  /// No description provided for @appFilterSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the application or package name'**
+  String get appFilterSearchHint;
+
+  /// No description provided for @appFilterShowSystemApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Show system apps'**
+  String get appFilterShowSystemApps;
+
+  /// No description provided for @contentBodyOriginalMb.
+  ///
+  /// In en, this message translates to:
+  /// **'($size MB original)'**
+  String contentBodyOriginalMb(String size);
+
+  /// No description provided for @contentBodyOriginalKb.
+  ///
+  /// In en, this message translates to:
+  /// **'($size KB original)'**
+  String contentBodyOriginalKb(String size);
+
+  /// No description provided for @contentBodyTruncatedTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Trimmed to the capture size limit — the full content was not kept'**
+  String get contentBodyTruncatedTip;
+
+  /// No description provided for @contentBodyTruncatedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Trimmed $size'**
+  String contentBodyTruncatedBadge(String size);
+
+  /// No description provided for @contentBodySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed: $error'**
+  String contentBodySaveFailed(String error);
+
+  /// No description provided for @contentBodyDecodeTruncatedTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Response body is large — the preview only decodes up to the limit (adjustable in Settings → Capture size limit). Preview only; forwarding and saved content are unaffected.'**
+  String get contentBodyDecodeTruncatedTip;
+
+  /// No description provided for @contentBodyPreviewTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview truncated'**
+  String get contentBodyPreviewTruncated;
+
 }
 
 class _AppLocalizationsDelegate

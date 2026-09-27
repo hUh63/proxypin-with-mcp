@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/fuzz_dictionary.dart';
 import 'package:proxypin/network/util/request_fuzzer.dart';
 import 'package:proxypin/ui/component/utils.dart';
@@ -71,7 +72,7 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
 
     final isScript = file.name.toLowerCase().endsWith('.js');
     final dictionary = FuzzDictionary(
-      name: name.isEmpty ? '导入的字典' : name,
+      name: name.isEmpty ? AppLocalizations.of(context)!.fuzzDictDefaultName : name,
       entries: isScript ? const [] : RequestFuzzer.parsePayloads(text),
       script: isScript ? text : null,
     );
@@ -79,7 +80,10 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
     setState(() => _custom.add(dictionary));
     await _persist();
     if (!mounted) return;
-    FlutterToastr.show('已导入「${dictionary.name}」', context, duration: 2);
+    FlutterToastr.show(
+        AppLocalizations.of(context)!.fuzzDictImported(dictionary.name),
+        context,
+        duration: 2);
   }
 
   Future<void> _edit({FuzzDictionary? dictionary}) async {
@@ -101,9 +105,10 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
 
   Future<void> _delete(FuzzDictionary dictionary) async {
     // showConfirmDialog 是回调式（无返回值），走 onConfirm
+    final loc = AppLocalizations.of(context)!;
     showConfirmDialog(context,
-        title: '删除字典',
-        content: '删除「${dictionary.name}」？',
+        title: loc.fuzzDictDeleteTitle,
+        content: loc.fuzzDictDeleteConfirm(dictionary.name),
         onConfirm: () async {
           setState(() => _custom.removeWhere((e) => e.name == dictionary.name));
           await _persist();
@@ -114,7 +119,8 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
   Widget build(BuildContext context) {
     final builtins = FuzzDictionaryStore.builtins();
     return AlertDialog(
-      title: const Text('Fuzz 字典', style: TextStyle(fontSize: 16)),
+      title: Text(AppLocalizations.of(context)!.fuzzDictTitle,
+          style: const TextStyle(fontSize: 16)),
       content: SizedBox(
         width: 420,
         child: !_loaded
@@ -123,37 +129,46 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
             : ListView(
                 shrinkWrap: true,
                 children: [
-                  const Text(
-                    '点一个字典即可把它填进当前注入项。工具不预置攻击载荷库 —— '
-                    '内置的只是边界值 / 类型异常串，其余的你自己填、导入或用脚本算。',
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  Text(
+                    AppLocalizations.of(context)!.fuzzDictTips,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                   const SizedBox(height: 8),
-                  const Text('内置', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text(AppLocalizations.of(context)!.capturePlanBuiltin,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   for (final d in builtins) _tile(d, builtin: true),
                   const SizedBox(height: 8),
-                  const Text('自定义', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text(AppLocalizations.of(context)!.custom,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   if (_custom.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 6),
-                      child: Text('还没有自定义字典', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(AppLocalizations.of(context)!.fuzzDictNoCustom,
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ),
                   for (final d in _custom) _tile(d),
                 ],
               ),
       ),
       actions: [
-        TextButton(onPressed: _import, child: const Text('从文件导入')),
-        TextButton(onPressed: () => _edit(), child: const Text('新建')),
         TextButton(
-            onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+            onPressed: _import,
+            child: Text(AppLocalizations.of(context)!.fuzzDictImportFile)),
+        TextButton(
+            onPressed: () => _edit(),
+            child: Text(AppLocalizations.of(context)!.newBuilt)),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.close)),
       ],
     );
   }
 
   Widget _tile(FuzzDictionary d, {bool builtin = false}) {
-    final parts = <String>['${d.entries.length} 条'];
-    if (d.hasScript) parts.add('脚本');
+    final parts = <String>[
+      AppLocalizations.of(context)!.fuzzDictNEntries(d.entries.length)
+    ];
+    if (d.hasScript) parts.add(AppLocalizations.of(context)!.script);
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
@@ -167,11 +182,11 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
               children: [
                 IconButton(
                     icon: const Icon(Icons.edit, size: 16),
-                    tooltip: '编辑',
+                    tooltip: AppLocalizations.of(context)!.edit,
                     onPressed: () => _edit(dictionary: d)),
                 IconButton(
                     icon: const Icon(Icons.delete, size: 16),
-                    tooltip: '删除',
+                    tooltip: AppLocalizations.of(context)!.delete,
                     onPressed: () => _delete(d)),
               ],
             ),
@@ -220,11 +235,19 @@ class _DictionaryEditorDialogState extends State<_DictionaryEditorDialog> {
         script: _script.text,
       ));
       if (!mounted) return;
-      FlutterToastr.show('展开后共 ${values.length} 条：${values.take(3).join(' / ')}${values.length > 3 ? ' …' : ''}',
-          context, duration: 3);
+      final preview =
+          '${values.take(3).join(' / ')}${values.length > 3 ? ' …' : ''}';
+      FlutterToastr.show(
+          AppLocalizations.of(context)!.fuzzDictExpanded(values.length, preview),
+          context,
+          duration: 3);
     } catch (e) {
       if (!mounted) return;
-      FlutterToastr.show('脚本执行失败：$e', context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(
+          AppLocalizations.of(context)!.fuzzDictScriptFailed('$e'),
+          context,
+          duration: 3,
+          backgroundColor: Colors.red);
     } finally {
       if (mounted) setState(() => _testing = false);
     }
@@ -233,7 +256,8 @@ class _DictionaryEditorDialogState extends State<_DictionaryEditorDialog> {
   void _submit() {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      FlutterToastr.show('给字典起个名字', context);
+      FlutterToastr.show(
+          AppLocalizations.of(context)!.fuzzDictNameRequired, context);
       return;
     }
     Navigator.pop(
@@ -249,7 +273,10 @@ class _DictionaryEditorDialogState extends State<_DictionaryEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.dictionary == null ? '新建字典' : '编辑字典',
+      title: Text(
+          widget.dictionary == null
+              ? AppLocalizations.of(context)!.fuzzDictCreate
+              : AppLocalizations.of(context)!.fuzzDictEditTitle,
           style: const TextStyle(fontSize: 16)),
       content: SizedBox(
         width: 460,
@@ -260,18 +287,21 @@ class _DictionaryEditorDialogState extends State<_DictionaryEditorDialog> {
             children: [
               TextField(
                 controller: _name,
-                decoration: const InputDecoration(
-                    labelText: '名称', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.name,
+                    isDense: true,
+                    border: const OutlineInputBorder()),
                 style: const TextStyle(fontSize: 13),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: _entries,
                 maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: '取值（一行一个，# 开头为注释）',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.fuzzerPayloads,
+                  hintText: AppLocalizations.of(context)!.fuzzerPayloadsHint,
                   isDense: true,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
@@ -279,11 +309,11 @@ class _DictionaryEditorDialogState extends State<_DictionaryEditorDialog> {
               TextField(
                 controller: _script,
                 maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: '脚本（可选，JS；把数组赋给 result）',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.fuzzDictScriptLabel,
                   hintText: "result = Array.from({length: 8}, (_, i) => 'x'.repeat(i + 1));",
                   isDense: true,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
@@ -292,12 +322,13 @@ class _DictionaryEditorDialogState extends State<_DictionaryEditorDialog> {
                 TextButton.icon(
                   onPressed: _testing ? null : _test,
                   icon: const Icon(Icons.play_arrow, size: 16),
-                  label: const Text('试跑', style: TextStyle(fontSize: 12)),
+                  label: Text(AppLocalizations.of(context)!.fuzzDictTestRun,
+                      style: const TextStyle(fontSize: 12)),
                 ),
                 const SizedBox(width: 6),
-                const Expanded(
-                  child: Text('脚本的产物会和上面的取值合并去重',
-                      style: TextStyle(fontSize: 11, color: Colors.grey)),
+                Expanded(
+                  child: Text(AppLocalizations.of(context)!.fuzzDictScriptNote,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ),
               ]),
             ],
@@ -305,8 +336,11 @@ class _DictionaryEditorDialogState extends State<_DictionaryEditorDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-        FilledButton(onPressed: _submit, child: const Text('保存')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel)),
+        FilledButton(
+            onPressed: _submit, child: Text(AppLocalizations.of(context)!.save)),
       ],
     );
   }

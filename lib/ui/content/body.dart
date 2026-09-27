@@ -419,15 +419,15 @@ class HttpBodyState extends State<HttpBodyWidget> {
     final sizeText = original == null
         ? ''
         : original >= 1024 * 1024
-            ? '（原始 ${(original / 1024 / 1024).toStringAsFixed(1)} MB）'
-            : '（原始 ${(original / 1024).toStringAsFixed(0)} KB）';
+            ? localizations.contentBodyOriginalMb((original / 1024 / 1024).toStringAsFixed(1))
+            : localizations.contentBodyOriginalKb((original / 1024).toStringAsFixed(0));
     final color = Theme.of(context).colorScheme.error;
     return Tooltip(
-      message: '已按「抓包内容上限」裁剪，完整内容未保留',
+      message: localizations.contentBodyTruncatedTip,
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.compress, size: 13, color: color),
         const SizedBox(width: 3),
-        Text('已裁剪$sizeText', style: TextStyle(fontSize: 11, color: color)),
+        Text(localizations.contentBodyTruncatedBadge(sizeText), style: TextStyle(fontSize: 11, color: color)),
       ]),
     );
   }
@@ -466,7 +466,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
             } catch (e) {
               logger.e('保存图片失败', error: e);
               if (mounted) {
-                FlutterToastr.show('保存失败 / Save failed: $e', context, duration: 2, rootNavigator: true);
+                FlutterToastr.show(localizations.contentBodySaveFailed(e.toString()), context, duration: 2, rootNavigator: true);
               }
             }
             return;
@@ -485,7 +485,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
           } catch (e) {
             logger.e('保存图片失败', error: e);
             if (mounted) {
-              FlutterToastr.show('保存失败 / Save failed: $e', context, duration: 2, rootNavigator: true);
+              FlutterToastr.show(localizations.contentBodySaveFailed(e.toString()), context, duration: 2, rootNavigator: true);
             }
           }
         });
@@ -843,8 +843,7 @@ class _BodyState extends State<_Body> {
   Widget _decodeTruncatedChip() {
     final cs = Theme.of(context).colorScheme;
     return Tooltip(
-      message: '响应体较大，预览只解码到上限（可在「设置 → 抓包内容上限」调整）。'
-          '仅影响预览，不影响转发与已保存内容。',
+      message: localizations.contentBodyDecodeTruncatedTip,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
@@ -852,7 +851,7 @@ class _BodyState extends State<_Body> {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.speed, size: 13, color: cs.onTertiaryContainer),
           const SizedBox(width: 4),
-          Text('预览已截断', style: TextStyle(fontSize: 11, color: cs.onTertiaryContainer)),
+          Text(localizations.contentBodyPreviewTruncated, style: TextStyle(fontSize: 11, color: cs.onTertiaryContainer)),
         ]),
       ),
     );

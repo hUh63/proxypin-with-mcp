@@ -4770,6 +4770,471 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get backupJustNow => '刚刚';
 
+
+  @override
+  String get cfgDeskGeneratingConfig => '正在生成配置文件...';
+
+  @override
+  String get cfgDeskCannotReadFile => '无法读取文件';
+
+  @override
+  String get rootProxyNoAccess => '没有拿到 root 权限：设备可能未 root，或你没有在授权框里点允许';
+
+  @override
+  String get rootProxyClosed => '已关闭，iptables 规则已清理';
+
+  @override
+  String get rootProxyStopError => '关闭时出错：规则可能仍在，建议重试或重启设备';
+
+  @override
+  String get rootProxyNeedCapture => '请先启动抓包：代理端口没在监听时开重定向会让设备上不了网';
+
+  @override
+  String get rootProxyNeedStopVpn => '请先停止 VPN 抓包：两种抓包方式不能同时开启';
+
+  @override
+  String get rootProxyStartDenied => '开启失败，请确认已授予 root 权限';
+
+  @override
+  String rootProxyStartFailed(String reason) {
+    return '开启失败：$reason';
+  }
+
+  @override
+  String get rootProxyActive => '重定向已生效';
+
+  @override
+  String get rootProxyInactive => '未生效';
+
+  @override
+  String rootProxyTargetPort(int port) {
+    return '目标端口：$port　防护：异常退出后会在下次启动时自动清理规则';
+  }
+
+  @override
+  String get rootProxyCheckRoot => '检测 root 权限';
+
+  @override
+  String get rootProxyFirstCheck => '首次检测会弹出 su 授权框';
+
+  @override
+  String get rootProxyGranted => '已获得 root 权限';
+
+  @override
+  String get rootProxyNotGranted => '未获得 root 权限';
+
+  @override
+  String get rootProxyNotesTitle => '说明';
+
+  @override
+  String get rootProxyNotesBody => '· 需要设备已 root 并授予 su 权限；\n· 原理是往 nat 表加一条只属于 ProxyPin 的链，把出站 TCP 连接转到代理端口，不做任何其它改动；\n· 只处理 IPv4，IPv6 流量保持直连；\n· 与 VPN 抓包互斥，开启前请先关掉 VPN；\n· 若手机出现「连着 WiFi 但上不了网」，先关掉这里；App 每次启动也会自动清理残留规则。';
+
+
+  @override
+  String get fuzzDictDefaultName => '导入的字典';
+
+  @override
+  String fuzzDictImported(String name) {
+    return '已导入「$name」';
+  }
+
+  @override
+  String get fuzzDictDeleteTitle => '删除字典';
+
+  @override
+  String fuzzDictDeleteConfirm(String name) {
+    return '删除「$name」？';
+  }
+
+  @override
+  String get fuzzDictTitle => 'Fuzz 字典';
+
+  @override
+  String get fuzzDictTips => '点一个字典即可把它填进当前注入项。工具不预置攻击载荷库 —— 内置的只是边界值 / 类型异常串，其余的你自己填、导入或用脚本算。';
+
+  @override
+  String get fuzzDictNoCustom => '还没有自定义字典';
+
+  @override
+  String get fuzzDictImportFile => '从文件导入';
+
+  @override
+  String fuzzDictNEntries(int count) {
+    return '$count 条';
+  }
+
+  @override
+  String fuzzDictExpanded(int count, String preview) {
+    return '展开后共 $count 条：$preview';
+  }
+
+  @override
+  String fuzzDictScriptFailed(String error) {
+    return '脚本执行失败：$error';
+  }
+
+  @override
+  String get fuzzDictNameRequired => '给字典起个名字';
+
+  @override
+  String get fuzzDictCreate => '新建字典';
+
+  @override
+  String get fuzzDictEditTitle => '编辑字典';
+
+  @override
+  String get fuzzDictScriptLabel => '脚本（可选，JS；把数组赋给 result）';
+
+  @override
+  String get fuzzDictTestRun => '试跑';
+
+  @override
+  String get fuzzDictScriptNote => '脚本的产物会和上面的取值合并去重';
+
+  @override
+  String apiEpTitle(int count) {
+    return 'API 端点 ($count)';
+  }
+
+  @override
+  String get apiEpSearchHint => '搜索端点...';
+
+  @override
+  String get apiEpTotalEndpoints => '总端点';
+
+  @override
+  String get apiEpResourceGroups => '资源组';
+
+  @override
+  String get apiEpTotalRequests => '总请求';
+
+  @override
+  String apiEpPathCalls(String path, int count) {
+    return '$path · $count 次请求';
+  }
+
+  @override
+  String apiEpCallsSuccess(int count, String rate) {
+    return '$count 次 · 成功率 $rate';
+  }
+
+  @override
+  String get apiEpNoMatch => '没有找到匹配的端点';
+
+  @override
+  String get apiEpGroupView => '分组视图';
+
+  @override
+  String get apiEpListView => '列表视图';
+
+  @override
+  String get apiEpGroupByDomain => '按域名分组';
+
+  @override
+  String get apiEpExportOpenApi => '导出为 OpenAPI';
+
+  @override
+  String get apiEpSwaggerFormat => 'Swagger 格式';
+
+  @override
+  String get apiEpExportPostman => '导出为 Postman';
+
+  @override
+  String get apiEpCollectionFormat => 'Collection 格式';
+
+  @override
+  String get apiEpExportJson => '导出为 JSON';
+
+  @override
+  String apiEpExported(String label) {
+    return '$label 已导出';
+  }
+
+  @override
+  String apiEpExportFailed(String label, String error) {
+    return '$label 导出失败: $error';
+  }
+
+  @override
+  String get apiEpFullUrl => '完整 URL';
+
+  @override
+  String get apiEpCallCount => '调用次数';
+
+  @override
+  String get apiEpAvgResponseTime => '平均响应时间';
+
+  @override
+  String get apiEpFirstSeen => '首次发现';
+
+  @override
+  String get apiEpLastSeen => '最后访问';
+
+  @override
+  String get apiEpTags => '标签';
+
+
+  @override
+  String perfLoadFailed(String error) {
+    return '加载数据失败：$error';
+  }
+
+  @override
+  String get perfTitle => '性能监控';
+
+  @override
+  String get perfRetry => '重试';
+
+  @override
+  String get perfLoading => '正在加载数据...';
+
+  @override
+  String perfLastUpdate(String time) {
+    return '最后更新：$time';
+  }
+
+  @override
+  String get perfProxyStatus => '代理状态';
+
+  @override
+  String get perfRunning => '运行中';
+
+  @override
+  String get perfStopped => '已停止';
+
+  @override
+  String get perfOverview => '性能概览';
+
+  @override
+  String get perfTotalRequests => '总请求';
+
+  @override
+  String get perfConnectionPool => '连接池状态';
+
+  @override
+  String get perfActiveConnections => '活跃连接';
+
+  @override
+  String get perfIdleConnections => '空闲连接';
+
+  @override
+  String get perfMetrics => '性能指标';
+
+  @override
+  String get perfAvgResponseTime => '平均响应时间';
+
+  @override
+  String get perfQps => 'QPS（每秒请求）';
+
+  @override
+  String get perfRequestStats => '请求统计';
+
+  @override
+  String get perfNoBreakdown => '暂无分类数据';
+
+  @override
+  String get rqTitle => '发送队列';
+
+  @override
+  String get rqClearFinished => '清除已结束的任务';
+
+  @override
+  String get rqIntro => '这里汇总本次运行期间发起的所有重放任务（单次多次 / 批量 / 定时）：可查看进行中的进度、成功与失败统计，以及等待发送的请求清单。任务为内存态，应用重启后清空。';
+
+  @override
+  String get rqCancelTask => '取消任务（停止后续发送）';
+
+  @override
+  String get rqRemoveRecord => '移除记录';
+
+  @override
+  String get rqStatRetried => '重试';
+
+  @override
+  String get rqStatPlanned => '计划';
+
+  @override
+  String rqLastError(String error) {
+    return '最近错误：$error';
+  }
+
+  @override
+  String rqPendingRequests(int count) {
+    return '待发送请求（$count）';
+  }
+
+  @override
+  String rqMoreRemaining(int count) {
+    return '… 其余 $count 条';
+  }
+
+  @override
+  String get rqStatusScheduled => '等待发送';
+
+  @override
+  String get rqStatusRunning => '发送中';
+
+  @override
+  String get rqStatusCompleted => '已完成';
+
+  @override
+  String get rqStatusCanceled => '已取消';
+
+  @override
+  String get rqEmptyTitle => '暂无重放任务';
+
+  @override
+  String get rqEmptyHint => '发起重放（含批量与定时）后，任务会出现在这里';
+
+  @override
+  String get bvDescTimestamp => '秒级 Unix 时间戳';
+
+  @override
+  String get bvDescTimestampMs => '毫秒级 Unix 时间戳';
+
+  @override
+  String get bvDescDatetime => 'ISO 8601 日期时间';
+
+  @override
+  String get bvDescDate => '日期（yyyy-MM-dd）';
+
+  @override
+  String get bvDescTime => '时间（HH:mm:ss）';
+
+  @override
+  String get bvDescUnixDate => '自 1970 年以来的天数';
+
+  @override
+  String get bvDescUuid => '随机 UUID（每次引用都不同）';
+
+  @override
+  String get bvTitle => '内置变量';
+
+  @override
+  String bvIntro(String mark) {
+    return '下面这些变量不用定义，在任何支持 $mark 的地方（重写规则、上报地址、脚本等）都能直接引用。点一下复制。';
+  }
+
+  @override
+  String bvCopied(String text) {
+    return '已复制 $text';
+  }
+
+  @override
+  String get bvGotIt => '知道了';
+
+
+  @override
+  String get toolboxNavCalcTip => '进制/补码 · 位运算 · 字节序 · IEEE754 · CRC/哈希';
+
+  @override
+  String get toolboxNavMcpTip => 'MCP Server 设置';
+
+  @override
+  String get toolboxNavLogView => '日志查看';
+
+  @override
+  String get toolboxNavWaf => 'WAF 变异';
+
+  @override
+  String get toolboxNavWafTip => '载荷等价写法变异 + WAF 特征比对 + 主动探测（探测会真发请求，需授权）';
+
+  @override
+  String get toolboxNavPinningTip => '证书固定绕过辅助：检测 frida 环境 · 生成/部署 hook 脚本 · 一键注入';
+
+  @override
+  String get toolboxNavWorkspaceTip => '按项目/环境分开管理抓包（标准 HAR 存储）· 可接自定义服务端做共享/备份';
+
+  @override
+  String get toolboxNavCloudTip => '账号 · 工作区云端托管 · 多人实时协同（自部署服务端）';
+
+  @override
+  String get toolboxNavAiTip => 'AI 对话分析抓包数据（支持 Agent 模式）';
+
+  @override
+  String deskNavUpgradeTitle(String version) {
+    return '更新内容V$version';
+  }
+
+  @override
+  String get deskNavUpgradeBody => '提示：默认不会开启HTTPS抓包，请安装证书后再开启HTTPS抓包。\n点击HTTPS抓包(加锁图标)，选择安装根证书，按照提示操作即可。\n\n1. 新增内置 MCP 服务，AI 助手（如 Claude）可接入查看与调试抓包流量；\n2. 环境变量支持内置动态变量；\n3. 请求重写规则支持上移、下移排序；\n4. 修复 Windows 端右键菜单导致崩溃的问题；\n5. 修复脚本或重写处理多值请求头（如多个 Set-Cookie）时被错误合并的问题；\n6. 修复明文 HTTP/2（h2c）抓包、非 ASCII 域名归一化、以 IP 访问时证书校验失败等问题；\n7. 修复 iOS 13 崩溃、无 Content-Length 响应 Body 丢失、Android VPN 目的端口记录等若干问题。\n';
+
+  @override
+  String get setNavThemeTip => '主题设置在顶部工具栏，点击太阳/月亮图标即可切换';
+
+  @override
+  String get setNavProxyDomainsHint => '多个使用;分割';
+
+  @override
+  String get setNavClearProxyResidue => '清除系统代理残留';
+
+  @override
+  String get setNavClearProxyResidueDesc => '异常退出后网络打不开时点这里恢复';
+
+  @override
+  String get setNavProxyResidueCleared => '已清除系统代理设置，网络应恢复正常';
+
+  @override
+  String get setNavRepair => '修复';
+
+  @override
+  String mobNavUpgradeTitle(String version) {
+    return '更新内容V$version';
+  }
+
+  @override
+  String get mobNavUpgradeBody => '提示：默认不会开启HTTPS抓包，请安装证书后再开启HTTPS抓包。\n\n1. 新增内置 MCP 服务，AI 助手（如 Claude）可接入查看与调试抓包流量；\n2. 环境变量支持内置动态变量；\n3. 请求重写规则支持上移、下移排序；\n4. 修复 Windows 端右键菜单导致崩溃的问题；\n5. 修复脚本或重写处理多值请求头（如多个 Set-Cookie）时被错误合并的问题；\n6. 修复明文 HTTP/2（h2c）抓包、非 ASCII 域名归一化、以 IP 访问时证书校验失败等问题；\n7. 修复 iOS 13 崩溃、无 Content-Length 响应 Body 丢失、Android VPN 目的端口记录等若干问题。\n';
+
+  @override
+  String get appFilterUnknownApp => '未知应用';
+
+  @override
+  String get appFilterClearInvalid => '清除失效应用';
+
+  @override
+  String get appFilterWhitelistHint => '未设置白名单应用时会对所有应用抓包';
+
+  @override
+  String get appFilterRemoveWhitelistConfirm => '从白名单里移除这个应用？';
+
+  @override
+  String get appFilterRemoveBlacklistConfirm => '从黑名单里移除这个应用？';
+
+  @override
+  String get appFilterSearchHint => '请输入应用名或包名';
+
+  @override
+  String get appFilterShowSystemApps => '显示系统应用';
+
+  @override
+  String contentBodyOriginalMb(String size) {
+    return '（原始 $size MB）';
+  }
+
+  @override
+  String contentBodyOriginalKb(String size) {
+    return '（原始 $size KB）';
+  }
+
+  @override
+  String get contentBodyTruncatedTip => '已按「抓包内容上限」裁剪，完整内容未保留';
+
+  @override
+  String contentBodyTruncatedBadge(String size) {
+    return '已裁剪$size';
+  }
+
+  @override
+  String contentBodySaveFailed(String error) {
+    return '保存失败：$error';
+  }
+
+  @override
+  String get contentBodyDecodeTruncatedTip => '响应体较大，预览只解码到上限（可在「设置 → 抓包内容上限」调整）。仅影响预览，不影响转发与已保存内容。';
+
+  @override
+  String get contentBodyPreviewTruncated => '预览已截断';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

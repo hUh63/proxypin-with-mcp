@@ -4792,4 +4792,469 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get backupJustNow => 'Just now';
+
+
+  @override
+  String get cfgDeskGeneratingConfig => 'Generating config file...';
+
+  @override
+  String get cfgDeskCannotReadFile => 'Unable to read the file';
+
+  @override
+  String get rootProxyNoAccess => 'Root permission not granted: the device may not be rooted, or you did not tap Allow in the authorization dialog';
+
+  @override
+  String get rootProxyClosed => 'Turned off; the iptables rules have been cleaned up';
+
+  @override
+  String get rootProxyStopError => 'Error while turning it off: rules may still be present; retry or reboot the device';
+
+  @override
+  String get rootProxyNeedCapture => 'Start capture first: enabling redirection while the proxy port is not listening will cut the device off the network';
+
+  @override
+  String get rootProxyNeedStopVpn => 'Stop VPN capture first: the two capture methods cannot be used at the same time';
+
+  @override
+  String get rootProxyStartDenied => 'Failed to enable; make sure root permission has been granted';
+
+  @override
+  String rootProxyStartFailed(String reason) {
+    return 'Failed to enable: $reason';
+  }
+
+  @override
+  String get rootProxyActive => 'Redirection is active';
+
+  @override
+  String get rootProxyInactive => 'Not active';
+
+  @override
+  String rootProxyTargetPort(int port) {
+    return 'Target port: $port　Protection: leftover rules are cleaned up automatically on the next launch';
+  }
+
+  @override
+  String get rootProxyCheckRoot => 'Check root permission';
+
+  @override
+  String get rootProxyFirstCheck => 'The first check will bring up the su authorization dialog';
+
+  @override
+  String get rootProxyGranted => 'Root permission granted';
+
+  @override
+  String get rootProxyNotGranted => 'Root permission not granted';
+
+  @override
+  String get rootProxyNotesTitle => 'Notes';
+
+  @override
+  String get rootProxyNotesBody => '· The device must be rooted and su permission granted;\n· The idea is to add a chain for ProxyPin only to the nat table, redirecting outbound TCP connections to the proxy port, without making any other changes;\n· Only IPv4 is handled; IPv6 traffic stays direct;\n· Mutually exclusive with VPN capture, so turn the VPN off first;\n· If the phone shows “connected to WiFi but no internet”, turn this off first; the app also cleans up leftover rules on every launch.';
+
+
+  @override
+  String get fuzzDictDefaultName => 'Imported dictionary';
+
+  @override
+  String fuzzDictImported(String name) {
+    return 'Imported "$name"';
+  }
+
+  @override
+  String get fuzzDictDeleteTitle => 'Delete dictionary';
+
+  @override
+  String fuzzDictDeleteConfirm(String name) {
+    return 'Delete "$name"?';
+  }
+
+  @override
+  String get fuzzDictTitle => 'Fuzz Dictionary';
+
+  @override
+  String get fuzzDictTips => 'Tap a dictionary to fill it into the current injection. No built-in attack payload library — the built-ins are just boundary/type-anomaly strings; fill, import or script the rest yourself.';
+
+  @override
+  String get fuzzDictNoCustom => 'No custom dictionaries yet';
+
+  @override
+  String get fuzzDictImportFile => 'Import from file';
+
+  @override
+  String fuzzDictNEntries(int count) {
+    return '$count values';
+  }
+
+  @override
+  String fuzzDictExpanded(int count, String preview) {
+    return 'Expanded to $count values: $preview';
+  }
+
+  @override
+  String fuzzDictScriptFailed(String error) {
+    return 'Script failed: $error';
+  }
+
+  @override
+  String get fuzzDictNameRequired => 'Give the dictionary a name';
+
+  @override
+  String get fuzzDictCreate => 'New dictionary';
+
+  @override
+  String get fuzzDictEditTitle => 'Edit dictionary';
+
+  @override
+  String get fuzzDictScriptLabel => 'Script (optional, JS; assign the array to result)';
+
+  @override
+  String get fuzzDictTestRun => 'Try it';
+
+  @override
+  String get fuzzDictScriptNote => 'The script output is merged with the values above and de-duplicated';
+
+  @override
+  String apiEpTitle(int count) {
+    return 'API Endpoints ($count)';
+  }
+
+  @override
+  String get apiEpSearchHint => 'Search endpoints...';
+
+  @override
+  String get apiEpTotalEndpoints => 'Total endpoints';
+
+  @override
+  String get apiEpResourceGroups => 'Resource groups';
+
+  @override
+  String get apiEpTotalRequests => 'Total requests';
+
+  @override
+  String apiEpPathCalls(String path, int count) {
+    return '$path · $count requests';
+  }
+
+  @override
+  String apiEpCallsSuccess(int count, String rate) {
+    return '$count calls · Success rate $rate';
+  }
+
+  @override
+  String get apiEpNoMatch => 'No matching endpoints found';
+
+  @override
+  String get apiEpGroupView => 'Group view';
+
+  @override
+  String get apiEpListView => 'List view';
+
+  @override
+  String get apiEpGroupByDomain => 'Group by host';
+
+  @override
+  String get apiEpExportOpenApi => 'Export as OpenAPI';
+
+  @override
+  String get apiEpSwaggerFormat => 'Swagger format';
+
+  @override
+  String get apiEpExportPostman => 'Export as Postman';
+
+  @override
+  String get apiEpCollectionFormat => 'Collection format';
+
+  @override
+  String get apiEpExportJson => 'Export as JSON';
+
+  @override
+  String apiEpExported(String label) {
+    return '$label exported';
+  }
+
+  @override
+  String apiEpExportFailed(String label, String error) {
+    return '$label export failed: $error';
+  }
+
+  @override
+  String get apiEpFullUrl => 'Full URL';
+
+  @override
+  String get apiEpCallCount => 'Call count';
+
+  @override
+  String get apiEpAvgResponseTime => 'Avg response time';
+
+  @override
+  String get apiEpFirstSeen => 'First seen';
+
+  @override
+  String get apiEpLastSeen => 'Last seen';
+
+  @override
+  String get apiEpTags => 'Tags';
+
+
+  @override
+  String perfLoadFailed(String error) {
+    return 'Failed to load data: $error';
+  }
+
+  @override
+  String get perfTitle => 'Performance Monitoring';
+
+  @override
+  String get perfRetry => 'Retry';
+
+  @override
+  String get perfLoading => 'Loading data...';
+
+  @override
+  String perfLastUpdate(String time) {
+    return 'Last updated: $time';
+  }
+
+  @override
+  String get perfProxyStatus => 'Proxy Status';
+
+  @override
+  String get perfRunning => 'Running';
+
+  @override
+  String get perfStopped => 'Stopped';
+
+  @override
+  String get perfOverview => 'Performance Overview';
+
+  @override
+  String get perfTotalRequests => 'Total Requests';
+
+  @override
+  String get perfConnectionPool => 'Connection Pool Status';
+
+  @override
+  String get perfActiveConnections => 'Active Connections';
+
+  @override
+  String get perfIdleConnections => 'Idle Connections';
+
+  @override
+  String get perfMetrics => 'Performance Metrics';
+
+  @override
+  String get perfAvgResponseTime => 'Average Response Time';
+
+  @override
+  String get perfQps => 'QPS (requests per second)';
+
+  @override
+  String get perfRequestStats => 'Request Statistics';
+
+  @override
+  String get perfNoBreakdown => 'No breakdown data';
+
+  @override
+  String get rqTitle => 'Send Queue';
+
+  @override
+  String get rqClearFinished => 'Clear finished tasks';
+
+  @override
+  String get rqIntro => 'All replay tasks started during this run (repeated, batch, or scheduled) are gathered here: check progress, success and failure counts, and the queue of pending requests. Tasks are in-memory and cleared on restart.';
+
+  @override
+  String get rqCancelTask => 'Cancel task (stop further sending)';
+
+  @override
+  String get rqRemoveRecord => 'Remove record';
+
+  @override
+  String get rqStatRetried => 'Retried';
+
+  @override
+  String get rqStatPlanned => 'Planned';
+
+  @override
+  String rqLastError(String error) {
+    return 'Last error: $error';
+  }
+
+  @override
+  String rqPendingRequests(int count) {
+    return 'Pending requests ($count)';
+  }
+
+  @override
+  String rqMoreRemaining(int count) {
+    return '... and $count more';
+  }
+
+  @override
+  String get rqStatusScheduled => 'Waiting to send';
+
+  @override
+  String get rqStatusRunning => 'Sending';
+
+  @override
+  String get rqStatusCompleted => 'Completed';
+
+  @override
+  String get rqStatusCanceled => 'Canceled';
+
+  @override
+  String get rqEmptyTitle => 'No replay tasks yet';
+
+  @override
+  String get rqEmptyHint => 'Tasks show up here after you start a replay (batch or scheduled)';
+
+  @override
+  String get bvDescTimestamp => 'Unix timestamp (seconds)';
+
+  @override
+  String get bvDescTimestampMs => 'Unix timestamp (milliseconds)';
+
+  @override
+  String get bvDescDatetime => 'ISO 8601 date-time';
+
+  @override
+  String get bvDescDate => 'Date (yyyy-MM-dd)';
+
+  @override
+  String get bvDescTime => 'Time (HH:mm:ss)';
+
+  @override
+  String get bvDescUnixDate => 'Days since 1970';
+
+  @override
+  String get bvDescUuid => 'Random UUID (different on every reference)';
+
+  @override
+  String get bvTitle => 'Built-in variables';
+
+  @override
+  String bvIntro(String mark) {
+    return 'These variables need no definition — reference them directly anywhere $mark is supported (rewrite rules, report URLs, scripts, etc.). Tap to copy.';
+  }
+
+  @override
+  String bvCopied(String text) {
+    return 'Copied $text';
+  }
+
+  @override
+  String get bvGotIt => 'Got it';
+
+
+  @override
+  String get toolboxNavCalcTip => 'Base conversion / two\'s complement · bitwise ops · endianness · IEEE754 · CRC/hash';
+
+  @override
+  String get toolboxNavMcpTip => 'MCP Server settings';
+
+  @override
+  String get toolboxNavLogView => 'Log viewer';
+
+  @override
+  String get toolboxNavWaf => 'WAF mutation';
+
+  @override
+  String get toolboxNavWafTip => 'Payload-equivalent mutation + WAF signature comparison + active probing (probing sends real requests and requires authorization)';
+
+  @override
+  String get toolboxNavPinningTip => 'Certificate-pinning bypass helper: detect the frida environment · generate/deploy hook scripts · one-tap injection';
+
+  @override
+  String get toolboxNavWorkspaceTip => 'Manage captures separately per project/environment (standard HAR storage) · can hook up a custom server for sharing/backup';
+
+  @override
+  String get toolboxNavCloudTip => 'Account · cloud-hosted workspaces · real-time multi-user collaboration (self-hosted server)';
+
+  @override
+  String get toolboxNavAiTip => 'AI chat analysis of captured data (Agent mode supported)';
+
+  @override
+  String deskNavUpgradeTitle(String version) {
+    return 'What\'s new in V$version';
+  }
+
+  @override
+  String get deskNavUpgradeBody => 'Note: HTTPS capture is disabled by default — please install the certificate before enabling HTTPS capture.\nClick the HTTPS capture (lock) icon, choose "Install Root Certificate", and follow the prompts to complete installation.\n\n1. Added a built-in MCP server so AI assistants (e.g. Claude) can inspect and debug captured traffic;\n2. Added built-in dynamic variables for environments;\n3. Request rewrite rules can now be reordered with move up/down actions;\n4. Fixed a crash triggered by the Windows context menu;\n5. Fixed multi-value headers (e.g. multiple Set-Cookie) being incorrectly merged when handled by scripts or rewrite rules;\n6. Fixed h2c (plaintext HTTP/2) capture, non-ASCII domain normalization, and certificate validation failures for IP hosts;\n7. Fixed an iOS 13 crash, dropped bodies for close-delimited responses, Android VPN destination-port recording, and other issues.\n';
+
+  @override
+  String get setNavThemeTip => 'Theme settings are in the top toolbar — click the sun/moon icon to switch';
+
+  @override
+  String get setNavProxyDomainsHint => 'Use \';\' to separate multiple entries';
+
+  @override
+  String get setNavClearProxyResidue => 'Clear leftover system proxy';
+
+  @override
+  String get setNavClearProxyResidueDesc => 'Click here to recover when the network is broken after an abnormal exit';
+
+  @override
+  String get setNavProxyResidueCleared => 'System proxy settings cleared — the network should be back to normal';
+
+  @override
+  String get setNavRepair => 'Repair';
+
+  @override
+  String mobNavUpgradeTitle(String version) {
+    return 'What\'s new in V$version';
+  }
+
+  @override
+  String get mobNavUpgradeBody => 'Note: HTTPS capture is disabled by default — please install the certificate before enabling HTTPS capture.\n\n1. Added a built-in MCP server so AI assistants (e.g. Claude) can inspect and debug captured traffic;\n2. Added built-in dynamic variables for environments;\n3. Request rewrite rules can now be reordered with move up/down actions;\n4. Fixed a crash triggered by the Windows context menu;\n5. Fixed multi-value headers (e.g. multiple Set-Cookie) being incorrectly merged when handled by scripts or rewrite rules;\n6. Fixed h2c (plaintext HTTP/2) capture, non-ASCII domain normalization, and certificate validation failures for IP hosts;\n7. Fixed an iOS 13 crash, dropped bodies for close-delimited responses, Android VPN destination-port recording, and other issues.\n';
+
+  @override
+  String get appFilterUnknownApp => 'Unknown app';
+
+  @override
+  String get appFilterClearInvalid => 'clear invalid apps';
+
+  @override
+  String get appFilterWhitelistHint => 'When no whitelist application is set, all applications will be captured';
+
+  @override
+  String get appFilterRemoveWhitelistConfirm => 'Remove this app from the whitelist?';
+
+  @override
+  String get appFilterRemoveBlacklistConfirm => 'Remove this app from the blacklist?';
+
+  @override
+  String get appFilterSearchHint => 'Please enter the application or package name';
+
+  @override
+  String get appFilterShowSystemApps => 'Show system apps';
+
+  @override
+  String contentBodyOriginalMb(String size) {
+    return '($size MB original)';
+  }
+
+  @override
+  String contentBodyOriginalKb(String size) {
+    return '($size KB original)';
+  }
+
+  @override
+  String get contentBodyTruncatedTip => 'Trimmed to the capture size limit — the full content was not kept';
+
+  @override
+  String contentBodyTruncatedBadge(String size) {
+    return 'Trimmed $size';
+  }
+
+  @override
+  String contentBodySaveFailed(String error) {
+    return 'Save failed: $error';
+  }
+
+  @override
+  String get contentBodyDecodeTruncatedTip => 'Response body is large — the preview only decodes up to the limit (adjustable in Settings → Capture size limit). Preview only; forwarding and saved content are unaffected.';
+
+  @override
+  String get contentBodyPreviewTruncated => 'Preview truncated';
 }

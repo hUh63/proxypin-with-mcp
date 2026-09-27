@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/util/root_proxy.dart';
@@ -43,6 +44,7 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
 
   /// 探测 root 权限。首次会弹出 su 授权框。
   Future<void> _checkRoot() async {
+    final localizations = AppLocalizations.of(context)!;
     setState(() {
       _checkingRoot = true;
       _message = null;
@@ -53,12 +55,13 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
       _checkingRoot = false;
       _rootAvailable = available;
       if (!available) {
-        _message = '没有拿到 root 权限：设备可能未 root，或你没有在授权框里点允许';
+        _message = localizations.rootProxyNoAccess;
       }
     });
   }
 
   Future<void> _toggle(bool enable) async {
+    final localizations = AppLocalizations.of(context)!;
     setState(() {
       _busy = true;
       _message = null;
@@ -70,7 +73,7 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
       setState(() {
         _busy = false;
         _running = false;
-        _message = ok ? '已关闭，iptables 规则已清理' : '关闭时出错：规则可能仍在，建议重试或重启设备';
+        _message = ok ? localizations.rootProxyClosed : localizations.rootProxyStopError;
       });
       return;
     }
@@ -80,7 +83,7 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _message = '请先启动抓包：代理端口没在监听时开重定向会让设备上不了网';
+        _message = localizations.rootProxyNeedCapture;
       });
       return;
     }
@@ -90,7 +93,7 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _message = '请先停止 VPN 抓包：两种抓包方式不能同时开启';
+        _message = localizations.rootProxyNeedStopVpn;
       });
       return;
     }
@@ -101,7 +104,7 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
       _busy = false;
       _running = ok;
       if (!ok) {
-        _message = reason.isEmpty ? '开启失败，请确认已授予 root 权限' : '开启失败：$reason';
+        _message = reason.isEmpty ? localizations.rootProxyStartDenied : localizations.rootProxyStartFailed(reason);
       }
     });
   }
@@ -109,9 +112,10 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
   @override
   Widget build(BuildContext context) {
     final dividerColor = Theme.of(context).dividerColor;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Root 模式抓包')),
+      appBar: AppBar(title: Text(localizations.prefRootMode)),
       body: ListView(
         children: [
           ListTile(
@@ -119,9 +123,9 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
               _running ? Icons.check_circle : Icons.pause_circle_outline,
               color: _running ? Colors.green : Colors.grey,
             ),
-            title: Text(_running ? '重定向已生效' : '未生效'),
+            title: Text(_running ? localizations.rootProxyActive : localizations.rootProxyInactive),
             subtitle: Text(
-              '目标端口：${widget.proxyServer.port}　防护：异常退出后会在下次启动时自动清理规则',
+              localizations.rootProxyTargetPort(widget.proxyServer.port),
               style: const TextStyle(fontSize: 12),
             ),
             trailing: _busy
@@ -138,11 +142,11 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
           Divider(height: 0, thickness: 0.3, color: dividerColor),
           ListTile(
             leading: const Icon(Icons.security, color: Colors.deepOrange),
-            title: const Text('检测 root 权限'),
+            title: Text(localizations.rootProxyCheckRoot),
             subtitle: Text(
               _rootAvailable == null
-                  ? '首次检测会弹出 su 授权框'
-                  : (_rootAvailable! ? '已获得 root 权限' : '未获得 root 权限'),
+                  ? localizations.rootProxyFirstCheck
+                  : (_rootAvailable! ? localizations.rootProxyGranted : localizations.rootProxyNotGranted),
               style: const TextStyle(fontSize: 12),
             ),
             trailing: _checkingRoot
@@ -155,20 +159,15 @@ class _RootProxySettingPageState extends State<RootProxySettingPage> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Text(_message!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
             ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: Text('说明', style: TextStyle(fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+            child: Text(localizations.rootProxyNotesTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              '· 需要设备已 root 并授予 su 权限；\n'
-              '· 原理是往 nat 表加一条只属于 ProxyPin 的链，把出站 TCP 连接转到代理端口，'
-              '不做任何其它改动；\n'
-              '· 只处理 IPv4，IPv6 流量保持直连；\n'
-              '· 与 VPN 抓包互斥，开启前请先关掉 VPN；\n'
-              '· 若手机出现「连着 WiFi 但上不了网」，先关掉这里；App 每次启动也会自动清理残留规则。',
-              style: TextStyle(fontSize: 12, height: 1.6),
+              localizations.rootProxyNotesBody,
+              style: const TextStyle(fontSize: 12, height: 1.6),
             ),
           ),
           const SizedBox(height: 24),

@@ -57,7 +57,7 @@ class _AppWhitelistState extends State<AppWhitelist> {
       var futures = <Future<AppInfo>>[];
       for (var element in configuration.appWhitelist) {
         futures.add(InstalledApps.getAppInfo(element).catchError((e) {
-          return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: element, inValid: true);
+          return AppInfo(name: localizations.appFilterUnknownApp, packageName: element, inValid: true);
         }));
       }
       var list = await Future.wait(futures);
@@ -104,7 +104,7 @@ class _AppWhitelistState extends State<AppWhitelist> {
                   changed = true;
                   bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
                   var newApp = await InstalledApps.getAppInfo(packageName).catchError((e) {
-                    return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: packageName, inValid: true);
+                    return AppInfo(name: localizations.appFilterUnknownApp, packageName: packageName, inValid: true);
                   });
                   if (mounted) {
                     setState(() => appInfoList.add(newApp));
@@ -113,7 +113,7 @@ class _AppWhitelistState extends State<AppWhitelist> {
               },
             ),
             IconButton(
-              tooltip: isCN ? '清除失效应用' : 'clear invalid apps',
+              tooltip: localizations.appFilterClearInvalid,
               onPressed: () {
                 if (configuration.appWhitelist.isEmpty) return;
                 setState(() {
@@ -151,9 +151,7 @@ class _AppWhitelistState extends State<AppWhitelist> {
                           child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 15),
                               child: Text(
-                                  isCN
-                                      ? "未设置白名单应用时会对所有应用抓包"
-                                      : "When no whitelist application is set, all applications will be captured",
+                                  localizations.appFilterWhitelistHint,
                                   style: const TextStyle(color: Colors.grey))),
                         )
                       : ListView.builder(
@@ -170,8 +168,8 @@ class _AppWhitelistState extends State<AppWhitelist> {
                                 icon: const Icon(Icons.delete),
                                 onPressed: () {
                                   showConfirmDialog(context,
-                                      title: '删除',
-                                      content: '从白名单里移除这个应用？',
+                                      title: localizations.delete,
+                                      content: localizations.appFilterRemoveWhitelistConfirm,
                                       onConfirm: () {
                                         setState(() {
                                           configuration.appWhitelist.remove(appInfo.packageName);
@@ -218,7 +216,7 @@ class _AppBlacklistState extends State<AppBlacklist> {
       var futures = <Future<AppInfo>>[];
       for (var element in configuration.appBlacklist ?? []) {
         futures.add(InstalledApps.getAppInfo(element).catchError((e) {
-          return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: element, inValid: true);
+          return AppInfo(name: localizations.appFilterUnknownApp, packageName: element, inValid: true);
         }));
       }
       var list = await Future.wait(futures);
@@ -266,7 +264,7 @@ class _AppBlacklistState extends State<AppBlacklist> {
                 changed = true;
                 bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
                 var newApp = await InstalledApps.getAppInfo(packageName).catchError((e) {
-                  return AppInfo(name: isCN ? "未知应用" : "Unknown app", packageName: packageName, inValid: true);
+                  return AppInfo(name: localizations.appFilterUnknownApp, packageName: packageName, inValid: true);
                 });
                 if (mounted) {
                   setState(() => appInfoList.add(newApp));
@@ -275,7 +273,7 @@ class _AppBlacklistState extends State<AppBlacklist> {
             },
           ),
           IconButton(
-            tooltip: isCN ? '清除失效应用' : 'clear invalid apps',
+            tooltip: localizations.appFilterClearInvalid,
             onPressed: () {
               if (configuration.appBlacklist?.isEmpty == true) return;
               setState(() {
@@ -314,8 +312,8 @@ class _AppBlacklistState extends State<AppBlacklist> {
                         icon: const Icon(Icons.delete),
                         onPressed: () {
                           showConfirmDialog(context,
-                              title: '删除',
-                              content: '从黑名单里移除这个应用？',
+                              title: localizations.delete,
+                              content: localizations.appFilterRemoveBlacklistConfirm,
                               onConfirm: () {
                                 setState(() {
                                   configuration.appBlacklist?.remove(appInfo.packageName);
@@ -393,13 +391,13 @@ class _InstalledAppsWidgetState extends State<InstalledAppsWidget> {
       appBar: AppBar(
         title: TextField(
           decoration: InputDecoration(
-            hintText: isCN ? "请输入应用名或包名" : "Please enter the application or package name",
+            hintText: AppLocalizations.of(context)!.appFilterSearchHint,
             border: InputBorder.none,
             hintStyle: TextStyle(color: Colors.grey.shade500),
             suffixIcon: IconButton(
               color: includeSystemApps ? Theme.of(context).colorScheme.primary : null,
               icon: const Icon(Icons.visibility_outlined),
-              tooltip: isCN ? "显示系统应用" : "Show system apps",
+              tooltip: AppLocalizations.of(context)!.appFilterShowSystemApps,
               onPressed: () {
                 setState(() {
                   includeSystemApps = !includeSystemApps;

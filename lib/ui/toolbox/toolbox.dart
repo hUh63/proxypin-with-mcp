@@ -92,8 +92,8 @@ class _ToolboxState extends State<Toolbox> {
                       tooltip: 'WebSocket'),
                   IconText(
                     icon: Icons.calculate_outlined,
-                    text: '计算器',
-                    tooltip: '进制/补码 · 位运算 · 字节序 · IEEE754 · CRC/哈希',
+                    text: localizations.calcTitle,
+                    tooltip: localizations.toolboxNavCalcTip,
                     onTap: () {
                       Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => const CalculatorPage()));
@@ -293,14 +293,14 @@ class _ToolboxState extends State<Toolbox> {
                       },
                       icon: Icons.cast_connected,
                       text: 'MCP',
-                      tooltip: 'MCP Server 设置'),
+                      tooltip: localizations.toolboxNavMcpTip),
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
                           Navigator.of(context).push(MaterialPageRoute(builder: (context) => const PerformanceDashboard()));
                           return;
                         }
-                        MultiWindow.openWindow('性能监控', 'PerformanceDashboard', size: const Size(900, 700));
+                        MultiWindow.openWindow(localizations.toolboxPerformance, 'PerformanceDashboard', size: const Size(900, 700));
                       },
                       icon: Icons.speed,
                       text: localizations.toolboxPerformance,
@@ -311,7 +311,7 @@ class _ToolboxState extends State<Toolbox> {
                           Navigator.of(context).push(MaterialPageRoute(builder: (context) => const LogViewerPage()));
                           return;
                         }
-                        MultiWindow.openWindow('日志查看', 'LogViewerPage', size: const Size(900, 700));
+                        MultiWindow.openWindow(localizations.toolboxNavLogView, 'LogViewerPage', size: const Size(900, 700));
                       },
                       icon: Icons.article_outlined,
                       text: localizations.toolboxLog,
@@ -374,7 +374,7 @@ class _ToolboxState extends State<Toolbox> {
                               builder: (context) => const QuicSessionsPage()));
                           return;
                         }
-                        MultiWindow.openWindow('QUIC 连接', 'QuicSessionsPage',
+                        MultiWindow.openWindow(localizations.toolboxQuic, 'QuicSessionsPage',
                             size: const Size(760, 640));
                       },
                       icon: Icons.hub_outlined,
@@ -387,7 +387,7 @@ class _ToolboxState extends State<Toolbox> {
                               builder: (context) => const RepeatQueuePage()));
                           return;
                         }
-                        MultiWindow.openWindow('发送队列', 'RepeatQueuePage',
+                        MultiWindow.openWindow(localizations.toolboxSendQueue, 'RepeatQueuePage',
                             size: const Size(760, 640));
                       },
                       icon: Icons.outbox_outlined,
@@ -407,8 +407,8 @@ class _ToolboxState extends State<Toolbox> {
                       onTap: () => Navigator.of(context)
                           .push(MaterialPageRoute(builder: (context) => const WafPage())),
                       icon: Icons.security_outlined,
-                      text: 'WAF 变异',
-                      tooltip: '载荷等价写法变异 + WAF 特征比对 + 主动探测（探测会真发请求，需授权）'),
+                      text: localizations.toolboxNavWaf,
+                      tooltip: localizations.toolboxNavWafTip),
                   IconText(
                       onTap: () {
                         // 抓包自检：只读检测代理/证书/流量状态，并列出常见抓不到的原因
@@ -424,20 +424,20 @@ class _ToolboxState extends State<Toolbox> {
                           .push(MaterialPageRoute(builder: (context) => const PinningPage())),
                       icon: Icons.lock_open_outlined,
                       text: 'SSL Pinning',
-                      tooltip: '证书固定绕过辅助：检测 frida 环境 · 生成/部署 hook 脚本 · 一键注入'),
+                      tooltip: localizations.toolboxNavPinningTip),
                   IconText(
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) =>
                               WorkspacePage(requestContainer: widget.requestContainer))),
                       icon: Icons.workspaces,
-                      text: '工作区',
-                      tooltip: '按项目/环境分开管理抓包（标准 HAR 存储）· 可接自定义服务端做共享/备份'),
+                      text: localizations.wsPageTitle,
+                      tooltip: localizations.toolboxNavWorkspaceTip),
                   IconText(
                       onTap: () => Navigator.of(context)
                           .push(MaterialPageRoute(builder: (context) => const CloudPage())),
                       icon: Icons.cloud_outlined,
-                      text: '云端协同',
-                      tooltip: '账号 · 工作区云端托管 · 多人实时协同（自部署服务端）'),
+                      text: localizations.cloudTitle,
+                      tooltip: localizations.toolboxNavCloudTip),
                 ],
               ),
               const Divider(thickness: 0.3),
@@ -464,8 +464,8 @@ class _ToolboxState extends State<Toolbox> {
                             MaterialPageRoute(builder: (context) => const AiChatPage()));
                       },
                       icon: Icons.psychology_outlined,
-                      text: 'AI 分析',
-                      tooltip: 'AI 对话分析抓包数据（支持 Agent 模式）'),
+                      text: localizations.aiTitle,
+                      tooltip: localizations.toolboxNavAiTip),
                 ],
               ),
             ],

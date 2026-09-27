@@ -255,7 +255,6 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
 
   //更新引导
   void showUpgradeNotice() {
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     showDialog(
         context: context,
@@ -272,30 +271,12 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
                     },
                     child: Text(localizations.close))
               ],
-              title: Text(isCN ? '更新内容V${AppConfiguration.version}' : "What's new in V${AppConfiguration.version}",
+              title: Text(localizations.deskNavUpgradeTitle(AppConfiguration.version),
                   style: const TextStyle(fontSize: 18)),
               content: Container(
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: SelectableText(
-                      isCN
-                          ? '提示：默认不会开启HTTPS抓包，请安装证书后再开启HTTPS抓包。\n'
-                              '点击HTTPS抓包(加锁图标)，选择安装根证书，按照提示操作即可。\n\n'
-                              '1. 新增内置 MCP 服务，AI 助手（如 Claude）可接入查看与调试抓包流量；\n'
-                              '2. 环境变量支持内置动态变量；\n'
-                              '3. 请求重写规则支持上移、下移排序；\n'
-                              '4. 修复 Windows 端右键菜单导致崩溃的问题；\n'
-                              '5. 修复脚本或重写处理多值请求头（如多个 Set-Cookie）时被错误合并的问题；\n'
-                              '6. 修复明文 HTTP/2（h2c）抓包、非 ASCII 域名归一化、以 IP 访问时证书校验失败等问题；\n'
-                              '7. 修复 iOS 13 崩溃、无 Content-Length 响应 Body 丢失、Android VPN 目的端口记录等若干问题。\n'
-                          : 'Note: HTTPS capture is disabled by default — please install the certificate before enabling HTTPS capture.\n'
-                              'Click the HTTPS capture (lock) icon, choose "Install Root Certificate", and follow the prompts to complete installation.\n\n'
-                              '1. Added a built-in MCP server so AI assistants (e.g. Claude) can inspect and debug captured traffic;\n'
-                              '2. Added built-in dynamic variables for environments;\n'
-                              '3. Request rewrite rules can now be reordered with move up/down actions;\n'
-                              '4. Fixed a crash triggered by the Windows context menu;\n'
-                              '5. Fixed multi-value headers (e.g. multiple Set-Cookie) being incorrectly merged when handled by scripts or rewrite rules;\n'
-                              '6. Fixed h2c (plaintext HTTP/2) capture, non-ASCII domain normalization, and certificate validation failures for IP hosts;\n'
-                              '7. Fixed an iOS 13 crash, dropped bodies for close-delimited responses, Android VPN destination-port recording, and other issues.\n',
+                      localizations.deskNavUpgradeBody,
                       style: const TextStyle(fontSize: 14))));
         });
   }

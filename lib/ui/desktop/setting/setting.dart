@@ -90,15 +90,15 @@ class _SettingState extends State<Setting> {
         item(localizations.breakpoint, onPressed: requestBreakpoint),
         item(localizations.weakNetwork, onPressed: showWeakNetwork),
         item(localizations.externalProxy, onPressed: setExternalProxy),
-        item('抓包内容上限',
+        item(localizations.prefCaptureBodyLimit,
             onPressed: () => showCaptureBodyLimitDialog(context, widget.proxyServer.configuration),
             leadingIcon: Icons.data_usage),
         const Divider(),
         item(localizations.mcpService, onPressed: showMcpConnection, leadingIcon: Icons.cloud),
-        item('MCP 自动化', onPressed: showMcpAutomation, leadingIcon: Icons.auto_awesome),
-        item('配置管理', onPressed: showConfigManagement, leadingIcon: Icons.settings_suggest),
-        item('备份管理', onPressed: showBackupManagement, leadingIcon: Icons.backup),
-        item('主题设置', onPressed: showThemeSetting, leadingIcon: Icons.palette),
+        item(localizations.desktopMcpAutomation, onPressed: showMcpAutomation, leadingIcon: Icons.auto_awesome),
+        item(localizations.cfgManagement, onPressed: showConfigManagement, leadingIcon: Icons.settings_suggest),
+        item(localizations.desktopBackupManagement, onPressed: showBackupManagement, leadingIcon: Icons.backup),
+        item(localizations.desktopThemeSetting, onPressed: showThemeSetting, leadingIcon: Icons.palette),
         const Divider(),
         item(localizations.about, onPressed: showAbout, leadingIcon: Icons.info),
       ],
@@ -137,7 +137,7 @@ class _SettingState extends State<Setting> {
 
   /// 显示 MCP 自动化设置
   void showMcpAutomation() {
-    MultiWindow.openWindow('MCP 自动化', 'McpAutomationWidget', size: const Size(900, 700));
+    MultiWindow.openWindow(localizations.desktopMcpAutomation, 'McpAutomationWidget', size: const Size(900, 700));
   }
 
   /// 显示备份管理
@@ -175,7 +175,7 @@ class _SettingState extends State<Setting> {
   /// 显示主题设置（在顶部工具栏已有独立入口）
   void showThemeSetting() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('主题设置在顶部工具栏，点击太阳/月亮图标即可切换')),
+      SnackBar(content: Text(localizations.setNavThemeTip)),
     );
   }
 
@@ -330,7 +330,7 @@ class _ProxyMenuState extends State<_ProxyMenu> {
                 children: [
                   Text(localizations.proxyIgnoreDomain, style: const TextStyle(fontSize: 14)),
                   const SizedBox(height: 3),
-                  Text(isEn ? "Use ';' to separate multiple entries": "多个使用;分割", style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  Text(localizations.setNavProxyDomainsHint, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                 ],
               ),
               Padding(
@@ -396,19 +396,19 @@ class _ProxyMenuState extends State<_ProxyMenu> {
           child: Padding(
               padding: const EdgeInsets.only(left: 15, right: 12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('清除系统代理残留', style: const TextStyle(fontSize: 14)),
-                Text('异常退出后网络打不开时点这里恢复',
+                Text(localizations.setNavClearProxyResidue, style: const TextStyle(fontSize: 14)),
+                Text(localizations.setNavClearProxyResidueDesc,
                     style: TextStyle(fontSize: 11, color: Theme.of(context).hintColor)),
               ]))),
       OutlinedButton.icon(
         onPressed: () async {
           await SystemProxy.resetSystemProxy();
           if (mounted) {
-            FlutterToastr.show('已清除系统代理设置，网络应恢复正常', context, duration: 3);
+            FlutterToastr.show(localizations.setNavProxyResidueCleared, context, duration: 3);
           }
         },
         icon: const Icon(Icons.build_outlined, size: 16),
-        label: const Text('修复'),
+        label: Text(localizations.setNavRepair),
       ),
       const SizedBox(width: 10),
     ]);
