@@ -5655,4 +5655,119 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get cmpChars => 'chars';
+
+
+  @override
+  String get wsPayloadEmpty => 'Empty frame';
+
+  @override
+  String wsPayloadImage(String format, String size) {
+    return '$format image · $size';
+  }
+
+  @override
+  String wsPayloadDecompressed(String compression, String kind, String size) {
+    return '$compression decompressed → $kind · $size';
+  }
+
+  @override
+  String get wsPayloadTextKind => 'Text';
+
+  @override
+  String get wsPayloadBinaryKind => 'Binary';
+
+  @override
+  String wsPayloadText(String size) {
+    return 'Text · $size';
+  }
+
+  @override
+  String wsPayloadBinary(String size) {
+    return 'Binary · $size';
+  }
+
+  @override
+  String get securityVerifHsts => 'HSTS — makes browsers use HTTPS from now on';
+
+  @override
+  String get securityVerifCsp => 'CSP — restricts which resources a page may load and run';
+
+  @override
+  String get securityVerifNoSniff => 'Stops browsers from guessing Content-Type on their own';
+
+  @override
+  String get securityVerifFrame => 'Prevents a page from being framed by other sites (clickjacking)';
+
+  @override
+  String get securityVerifReferrer => 'Controls how much a Referer carries out';
+
+  @override
+  String get mcpSchedMon => 'Mon';
+
+  @override
+  String get mcpSchedTue => 'Tue';
+
+  @override
+  String get mcpSchedWed => 'Wed';
+
+  @override
+  String get mcpSchedThu => 'Thu';
+
+  @override
+  String get mcpSchedFri => 'Fri';
+
+  @override
+  String get mcpSchedSat => 'Sat';
+
+  @override
+  String get mcpSchedSun => 'Sun';
+
+  @override
+  String get mcpSchedWeekdaySep => ', ';
+
+  @override
+  String get mcpSchedDaily => 'Every day';
+
+  @override
+  String mcpSchedDailyCount(int count) {
+    return 'Every day · $count times';
+  }
+
+  @override
+  String mcpSchedWeekly(String days) {
+    return 'Every week on $days';
+  }
+
+  @override
+  String mcpSchedWeeklyCount(String days, int count) {
+    return 'Every week on $days · $count times';
+  }
+
+  @override
+  String mcpSchedInterval(int min) {
+    return 'Every $min min';
+  }
+
+  @override
+  String mcpSchedIntervalCount(int min, int count) {
+    return 'Every $min min · $count times';
+  }
+
+  @override
+  String get mcpSchedOnce => 'Once';
+
+  @override
+  String get apiExtractFullCrud => 'Full CRUD';
+
+  @override
+  String get apiExtractReadWrite => 'Read-write';
+
+  @override
+  String get apiExtractReadOnly => 'Read-only';
+
+  @override
+  String get apiExtractCustom => 'Custom';
+
+  @override
+  String get apiExtractDocDesc => 'API document generated automatically from ProxyPin capture data';
 }

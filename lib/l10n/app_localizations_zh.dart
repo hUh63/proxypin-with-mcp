@@ -5633,6 +5633,121 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get cmpChars => '字符';
 
+
+  @override
+  String get wsPayloadEmpty => '空帧';
+
+  @override
+  String wsPayloadImage(String format, String size) {
+    return '$format 图片 · $size';
+  }
+
+  @override
+  String wsPayloadDecompressed(String compression, String kind, String size) {
+    return '$compression 解压 → $kind · $size';
+  }
+
+  @override
+  String get wsPayloadTextKind => '文本';
+
+  @override
+  String get wsPayloadBinaryKind => '二进制';
+
+  @override
+  String wsPayloadText(String size) {
+    return '文本 · $size';
+  }
+
+  @override
+  String wsPayloadBinary(String size) {
+    return '二进制 · $size';
+  }
+
+  @override
+  String get securityVerifHsts => 'HSTS —— 让浏览器以后只用 HTTPS 访问';
+
+  @override
+  String get securityVerifCsp => 'CSP —— 限制页面能加载执行哪些资源';
+
+  @override
+  String get securityVerifNoSniff => '禁止浏览器自行猜测 Content-Type';
+
+  @override
+  String get securityVerifFrame => '防止页面被别的站点嵌套（点击劫持）';
+
+  @override
+  String get securityVerifReferrer => '控制 Referer 带出去多少信息';
+
+  @override
+  String get mcpSchedMon => '一';
+
+  @override
+  String get mcpSchedTue => '二';
+
+  @override
+  String get mcpSchedWed => '三';
+
+  @override
+  String get mcpSchedThu => '四';
+
+  @override
+  String get mcpSchedFri => '五';
+
+  @override
+  String get mcpSchedSat => '六';
+
+  @override
+  String get mcpSchedSun => '日';
+
+  @override
+  String get mcpSchedWeekdaySep => '、';
+
+  @override
+  String get mcpSchedDaily => '每天';
+
+  @override
+  String mcpSchedDailyCount(int count) {
+    return '每天 · 共$count次';
+  }
+
+  @override
+  String mcpSchedWeekly(String days) {
+    return '每周$days';
+  }
+
+  @override
+  String mcpSchedWeeklyCount(String days, int count) {
+    return '每周$days · 共$count次';
+  }
+
+  @override
+  String mcpSchedInterval(int min) {
+    return '每$min分钟';
+  }
+
+  @override
+  String mcpSchedIntervalCount(int min, int count) {
+    return '每$min分钟 · 共$count次';
+  }
+
+  @override
+  String get mcpSchedOnce => '一次性';
+
+  @override
+  String get apiExtractFullCrud => '完整 CRUD';
+
+  @override
+  String get apiExtractReadWrite => '读写模式';
+
+  @override
+  String get apiExtractReadOnly => '只读模式';
+
+  @override
+  String get apiExtractCustom => '自定义模式';
+
+  @override
+  String get apiExtractDocDesc => '从 ProxyPin 抓包数据自动生成的 API 文档';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

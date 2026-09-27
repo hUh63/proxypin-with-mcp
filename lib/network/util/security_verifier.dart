@@ -15,6 +15,7 @@
  */
 import 'dart:io';
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
 
@@ -43,7 +44,7 @@ class VerifyResult {
       };
 
   /// 缺失的安全响应头（只列我们核对的这几个）
-  List<String> get missingHeaders => SecurityVerifier.headerChecks.keys
+  List<String> get missingHeaders => SecurityVerifier.headerCheckNames
       .where((name) => !headers.containsKey(name))
       .toList();
 }
@@ -66,13 +67,22 @@ class SecurityVerifier {
   static const int defaultDelayMs = 500;
 
   /// 要核对的安全响应头基线
-  static const Map<String, String> headerChecks = {
-    'strict-transport-security': 'HSTS —— 让浏览器以后只用 HTTPS 访问',
-    'content-security-policy': 'CSP —— 限制页面能加载执行哪些资源',
-    'x-content-type-options': '禁止浏览器自行猜测 Content-Type',
-    'x-frame-options': '防止页面被别的站点嵌套（点击劫持）',
-    'referrer-policy': '控制 Referer 带出去多少信息',
-  };
+  static const List<String> headerCheckNames = [
+    'strict-transport-security',
+    'content-security-policy',
+    'x-content-type-options',
+    'x-frame-options',
+    'referrer-policy',
+  ];
+
+  /// 响应头 -> 说明文案
+  static Map<String, String> headerChecks(AppLocalizations loc) => {
+        'strict-transport-security': loc.securityVerifHsts,
+        'content-security-policy': loc.securityVerifCsp,
+        'x-content-type-options': loc.securityVerifNoSniff,
+        'x-frame-options': loc.securityVerifFrame,
+        'referrer-policy': loc.securityVerifReferrer,
+      };
 
   /// 从已抓到的请求里取出 host 列表（去重、保持出现顺序）
   static List<String> hostsFrom(List<HttpRequest> requests,

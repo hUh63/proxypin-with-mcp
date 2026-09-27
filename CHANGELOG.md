@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.24.47 (2026-09-28)
+
+### i18n 批 A-2：WebSocket 载荷标签、安全头说明、调度周期、REST 模式
+
+- `ws_payload_decoder.dart`：`decode` 接收 `AppLocalizations`，载荷标签
+  （空帧 / 图片 / 解压 → … / 文本 / 二进制）走 l10n；
+  其三个调用点（`web_socket.dart`）分别传入。
+- `security_verifier.dart`：响应头说明表 `headerChecks` 由 `const Map` 改为
+  接收 loc 的方法，另立 `headerCheckNames` 常量供 `missingHeaders` 使用；
+  `security_audit_page.dart` 调用点传入。
+- `mcp_scheduler.dart`：`repeatLabel` 接收 loc，每天 / 每周 / 每 N 分钟 / 一次性
+  与星期名走 l10n；`mcp_automation.dart` 调用点传入。
+- `api_extractor.dart`：`identifyRestPatterns` / `exportToOpenApi` 接收 loc，
+  REST 模式名与 OpenAPI 文档描述走 l10n；`api_endpoint_page.dart` 两处调用点传入。
+
+共 32 个新 key。
+
 ## v1.24.46 (2026-09-28)
 
 ### i18n 批 A-1：请求对比报告 + 导入/导出对话框

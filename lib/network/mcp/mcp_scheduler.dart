@@ -16,6 +16,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/cron_expression.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
@@ -350,20 +351,29 @@ class ScheduledTask {
   }
 
   /// 重复方式描述（供 UI 展示）
-  String get repeatLabel {
-    const weekdayNames = {1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日'};
+  String repeatLabel(AppLocalizations loc) {
+    final weekdayNames = {
+      1: loc.mcpSchedMon,
+      2: loc.mcpSchedTue,
+      3: loc.mcpSchedWed,
+      4: loc.mcpSchedThu,
+      5: loc.mcpSchedFri,
+      6: loc.mcpSchedSat,
+      7: loc.mcpSchedSun,
+    };
     switch (repeatMode) {
       case 'daily':
-        return '每天${repeatCount == null ? '' : ' · 共${repeatCount}次'}';
+        return repeatCount == null ? loc.mcpSchedDaily : loc.mcpSchedDailyCount(repeatCount);
       case 'weekly':
-        final days = weekdays.map((w) => weekdayNames[w] ?? w).join('、');
-        return '每周$days${repeatCount == null ? '' : ' · 共${repeatCount}次'}';
+        final days = weekdays.map((w) => weekdayNames[w] ?? '$w').join(loc.mcpSchedWeekdaySep);
+        return repeatCount == null ? loc.mcpSchedWeekly(days) : loc.mcpSchedWeeklyCount(days, repeatCount);
       case 'interval':
-        return '每${intervalMinutes ?? 0}分钟${repeatCount == null ? '' : ' · 共${repeatCount}次'}';
+        final m = intervalMinutes ?? 0;
+        return repeatCount == null ? loc.mcpSchedInterval(m) : loc.mcpSchedIntervalCount(m, repeatCount);
       case 'cron':
         return 'Cron: ${cronExpression ?? ''}';
       default:
-        return '一次性';
+        return loc.mcpSchedOnce;
     }
   }
 

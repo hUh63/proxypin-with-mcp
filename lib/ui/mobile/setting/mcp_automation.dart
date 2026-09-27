@@ -547,7 +547,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             ),
             title: Text(task.name),
             subtitle: Text(
-              '${task.repeatLabel} • '
+              '${task.repeatLabel(AppLocalizations.of(context)!)} • '
               '${isInterval ? AppLocalizations.of(context)!.mcpAutoNextPrefix : ''}${_formatTime(task.executeAt)}'
               '${task.lastExecuted != null ? AppLocalizations.of(context)!.mcpAutoLastRun(_formatTime(task.lastExecuted!)) : ''}'
               '${task.repeatCount != null ? AppLocalizations.of(context)!.mcpAutoRanTimes(task.executedCount, task.repeatCount!) : ''}',

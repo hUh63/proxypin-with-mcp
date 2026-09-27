@@ -10515,6 +10515,199 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'chars'**
   String get cmpChars;
 
+
+  /// No description provided for @wsPayloadEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty frame'**
+  String get wsPayloadEmpty;
+
+  /// No description provided for @wsPayloadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'$format image · $size'**
+  String wsPayloadImage(String format, String size);
+
+  /// No description provided for @wsPayloadDecompressed.
+  ///
+  /// In en, this message translates to:
+  /// **'$compression decompressed → $kind · $size'**
+  String wsPayloadDecompressed(String compression, String kind, String size);
+
+  /// No description provided for @wsPayloadTextKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get wsPayloadTextKind;
+
+  /// No description provided for @wsPayloadBinaryKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Binary'**
+  String get wsPayloadBinaryKind;
+
+  /// No description provided for @wsPayloadText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text · $size'**
+  String wsPayloadText(String size);
+
+  /// No description provided for @wsPayloadBinary.
+  ///
+  /// In en, this message translates to:
+  /// **'Binary · $size'**
+  String wsPayloadBinary(String size);
+
+  /// No description provided for @securityVerifHsts.
+  ///
+  /// In en, this message translates to:
+  /// **'HSTS — makes browsers use HTTPS from now on'**
+  String get securityVerifHsts;
+
+  /// No description provided for @securityVerifCsp.
+  ///
+  /// In en, this message translates to:
+  /// **'CSP — restricts which resources a page may load and run'**
+  String get securityVerifCsp;
+
+  /// No description provided for @securityVerifNoSniff.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops browsers from guessing Content-Type on their own'**
+  String get securityVerifNoSniff;
+
+  /// No description provided for @securityVerifFrame.
+  ///
+  /// In en, this message translates to:
+  /// **'Prevents a page from being framed by other sites (clickjacking)'**
+  String get securityVerifFrame;
+
+  /// No description provided for @securityVerifReferrer.
+  ///
+  /// In en, this message translates to:
+  /// **'Controls how much a Referer carries out'**
+  String get securityVerifReferrer;
+
+  /// No description provided for @mcpSchedMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get mcpSchedMon;
+
+  /// No description provided for @mcpSchedTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get mcpSchedTue;
+
+  /// No description provided for @mcpSchedWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get mcpSchedWed;
+
+  /// No description provided for @mcpSchedThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get mcpSchedThu;
+
+  /// No description provided for @mcpSchedFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get mcpSchedFri;
+
+  /// No description provided for @mcpSchedSat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get mcpSchedSat;
+
+  /// No description provided for @mcpSchedSun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get mcpSchedSun;
+
+  /// No description provided for @mcpSchedWeekdaySep.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get mcpSchedWeekdaySep;
+
+  /// No description provided for @mcpSchedDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get mcpSchedDaily;
+
+  /// No description provided for @mcpSchedDailyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day · $count times'**
+  String mcpSchedDailyCount(int count);
+
+  /// No description provided for @mcpSchedWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every week on $days'**
+  String mcpSchedWeekly(String days);
+
+  /// No description provided for @mcpSchedWeeklyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Every week on $days · $count times'**
+  String mcpSchedWeeklyCount(String days, int count);
+
+  /// No description provided for @mcpSchedInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Every $min min'**
+  String mcpSchedInterval(int min);
+
+  /// No description provided for @mcpSchedIntervalCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Every $min min · $count times'**
+  String mcpSchedIntervalCount(int min, int count);
+
+  /// No description provided for @mcpSchedOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Once'**
+  String get mcpSchedOnce;
+
+  /// No description provided for @apiExtractFullCrud.
+  ///
+  /// In en, this message translates to:
+  /// **'Full CRUD'**
+  String get apiExtractFullCrud;
+
+  /// No description provided for @apiExtractReadWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-write'**
+  String get apiExtractReadWrite;
+
+  /// No description provided for @apiExtractReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get apiExtractReadOnly;
+
+  /// No description provided for @apiExtractCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get apiExtractCustom;
+
+  /// No description provided for @apiExtractDocDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'API document generated automatically from ProxyPin capture data'**
+  String get apiExtractDocDesc;
+
 }
 
 class _AppLocalizationsDelegate

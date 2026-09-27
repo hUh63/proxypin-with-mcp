@@ -47,7 +47,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
     Future.delayed(Duration.zero, () {
       final endpoints = _extractor.extract(widget.requests, responses: widget.responses);
       final groups = _extractor.groupByResource(endpoints);
-      final patterns = _extractor.identifyRestPatterns(endpoints);
+      final patterns = _extractor.identifyRestPatterns(endpoints, AppLocalizations.of(context)!);
       
       setState(() {
         _endpoints = endpoints;
@@ -362,7 +362,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
   }
 
   void _exportAsOpenApi() {
-    final openApi = _extractor.exportToOpenApi(_endpoints);
+    final openApi = _extractor.exportToOpenApi(_endpoints, AppLocalizations.of(context)!);
     _saveJsonFile('openapi.json', openApi, 'OpenAPI');
   }
 

@@ -4,6 +4,7 @@
  */
 
 import 'dart:convert';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 
 /// API 端点信息
@@ -182,7 +183,7 @@ class ApiExtractor {
   }
 
   /// 识别 RESTful 模式
-  List<Map<String, dynamic>> identifyRestPatterns(List<ApiEndpoint> endpoints) {
+  List<Map<String, dynamic>> identifyRestPatterns(List<ApiEndpoint> endpoints, AppLocalizations loc) {
     final patterns = <Map<String, dynamic>>[];
     final resourceGroups = groupByResource(endpoints);
 
@@ -195,13 +196,13 @@ class ApiExtractor {
 
       String patternType;
       if (hasGet && hasPost && hasPut && hasDelete) {
-        patternType = '完整 CRUD';
+        patternType = loc.apiExtractFullCrud;
       } else if (hasGet && hasPost) {
-        patternType = '读写模式';
+        patternType = loc.apiExtractReadWrite;
       } else if (hasGet) {
-        patternType = '只读模式';
+        patternType = loc.apiExtractReadOnly;
       } else {
-        patternType = '自定义模式';
+        patternType = loc.apiExtractCustom;
       }
 
       patterns.add({
@@ -248,7 +249,8 @@ class ApiExtractor {
   }
 
   /// 导出为 OpenAPI/Swagger 格式
-  Map<String, dynamic> exportToOpenApi(List<ApiEndpoint> endpoints, {String title = 'ProxyPin API', String version = '1.0.0'}) {
+  Map<String, dynamic> exportToOpenApi(List<ApiEndpoint> endpoints, AppLocalizations loc,
+      {String title = 'ProxyPin API', String version = '1.0.0'}) {
     final paths = <String, Map<String, dynamic>>{};
 
     for (var endpoint in endpoints) {
@@ -270,7 +272,7 @@ class ApiExtractor {
       'info': {
         'title': title,
         'version': version,
-        'description': '从 ProxyPin 抓包数据自动生成的 API 文档',
+        'description': loc.apiExtractDocDesc,
       },
       'servers': [
         {'url': 'https://api.example.com'},

@@ -85,7 +85,7 @@ class Websocket extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: SelectableText(
-                                  _bubbleText(message),
+                                  _bubbleText(message, AppLocalizations.of(context)!),
                                   maxLines: 3,
                                   minLines: 1,
                                   contextMenuBuilder: (context, editableTextState) =>
@@ -110,11 +110,11 @@ class Websocket extends StatelessWidget {
   }
 
   /// 列表气泡展示文本：二进制帧先自动解码，尽量给出可读内容（上游 #623）
-  static String _bubbleText(WebSocketFrame message) {
+  static String _bubbleText(WebSocketFrame message, AppLocalizations loc) {
     if (!message.isBinary) {
       return message.payloadDataAsString;
     }
-    final decoded = WsPayloadDecoder.decode(message.payloadData);
+    final decoded = WsPayloadDecoder.decode(message.payloadData, loc);
     if (decoded.kind == WsPayloadKind.text || decoded.kind == WsPayloadKind.json) {
       return decoded.text ?? decoded.label;
     }
@@ -136,7 +136,8 @@ class _PreviewDialogState extends State<_PreviewDialog> {
   int tabIndex = 0; // 当前选中的 tab（含动态 tab 时用于保持位置）
 
   /// 每次打开对话框解码一次（字节不变）
-  late final WsDecodedPayload _decoded = WsPayloadDecoder.decode(Uint8List.fromList(widget.bytes));
+  late final WsDecodedPayload _decoded =
+      WsPayloadDecoder.decode(Uint8List.fromList(widget.bytes), AppLocalizations.of(context)!);
   late final bool _isJson = _decoded.text != null && WsPayloadDecoder.looksJson(_decoded.text!);
 
   @override
@@ -257,7 +258,7 @@ class _PreviewDialogState extends State<_PreviewDialog> {
 /// 在桌面端不保证写出 bytes（上游 #902 同款问题）。文件扩展名按识别结果给出，
 /// 图片存成对应图片格式，文本/JSON 存成 .txt，其余存 .bin。
 Future<void> _savePayload(BuildContext context, List<int> bytes) async {
-  final decoded = WsPayloadDecoder.decode(Uint8List.fromList(bytes));
+  final decoded = WsPayloadDecoder.decode(Uint8List.fromList(bytes), AppLocalizations.of(context)!);
   final ext = decoded.imageFormat ??
       ((decoded.kind == WsPayloadKind.text || decoded.kind == WsPayloadKind.json) ? 'txt' : 'bin');
   final String? path = await Platforms.saveFileAdaptive(fileName: 'websocket.$ext');

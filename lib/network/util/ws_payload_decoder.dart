@@ -31,6 +31,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:proxypin/l10n/app_localizations.dart';
+
 /// 载荷识别结果类别
 enum WsPayloadKind {
   /// 空帧
@@ -93,9 +95,9 @@ class WsPayloadDecoder {
   static const int previewLimit = 256 * 1024;
 
   /// 识别并解码一段二进制载荷
-  static WsDecodedPayload decode(Uint8List data) {
+  static WsDecodedPayload decode(Uint8List data, AppLocalizations loc) {
     if (data.isEmpty) {
-      return const WsDecodedPayload(kind: WsPayloadKind.empty, label: '空帧');
+      return WsDecodedPayload(kind: WsPayloadKind.empty, label: loc.wsPayloadEmpty);
     }
 
     // 1) 图片
@@ -103,7 +105,7 @@ class WsPayloadDecoder {
     if (imageFormat != null) {
       return WsDecodedPayload(
         kind: WsPayloadKind.image,
-        label: '${imageFormat.toUpperCase()} 图片 · ${_humanSize(data.length)}',
+        label: loc.wsPayloadImage(imageFormat.toUpperCase(), _humanSize(data.length)),
         imageBytes: data,
         imageFormat: imageFormat,
       );
@@ -121,7 +123,7 @@ class WsPayloadDecoder {
           final isJson = _looksJson(shown);
           return WsDecodedPayload(
             kind: WsPayloadKind.compressed,
-            label: '$compression 解压 → ${isJson ? 'JSON' : '文本'} · ${_humanSize(raw.length)}',
+            label: loc.wsPayloadDecompressed(compression, isJson ? 'JSON' : loc.wsPayloadTextKind, _humanSize(raw.length)),
             text: shown,
             compression: compression,
             truncated: truncated,
@@ -130,7 +132,7 @@ class WsPayloadDecoder {
         // 解压出的是二进制
         return WsDecodedPayload(
           kind: WsPayloadKind.compressed,
-          label: '$compression 解压 → 二进制 · ${_humanSize(raw.length)}',
+          label: loc.wsPayloadDecompressed(compression, loc.wsPayloadBinaryKind, _humanSize(raw.length)),
           compression: compression,
         );
       }
@@ -148,7 +150,7 @@ class WsPayloadDecoder {
       }
       return WsDecodedPayload(
         kind: WsPayloadKind.text,
-        label: '文本 · ${_humanSize(data.length)}',
+        label: loc.wsPayloadText(_humanSize(data.length)),
         text: text,
       );
     }
@@ -156,7 +158,7 @@ class WsPayloadDecoder {
     // 4) 二进制
     return WsDecodedPayload(
       kind: WsPayloadKind.binary,
-      label: '二进制 · ${_humanSize(data.length)}',
+      label: loc.wsPayloadBinary(_humanSize(data.length)),
     );
   }
 

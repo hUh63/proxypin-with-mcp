@@ -557,7 +557,7 @@ class _VerifyResultDialog extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 2, left: 4),
                 child: Text(
                     AppLocalizations.of(context)!.auditPageVerifyHeaderMissing(
-                        name, SecurityVerifier.headerChecks[name] ?? ''),
+                        name, SecurityVerifier.headerChecks(AppLocalizations.of(context)!)[name] ?? ''),
                     style: const TextStyle(fontSize: 11.5, height: 1.35)),
               ),
         ],
