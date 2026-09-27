@@ -332,7 +332,7 @@ class RequestSequenceState extends State<RequestSequence> with AutomaticKeepAliv
 
     // 上游 #715/#401：批量重放同样登记到「发送队列」，可查看进度与待发送清单
     final task = RepeatTaskManager.instance.create(
-      title: '批量重放 ${requests.length} 个请求',
+      title: localizations.repeatBatchCount(requests.length),
       total: requests.length,
       pending: requests.map((r) => '${r.method.name} ${r.domainPath}').toList(),
     );

@@ -189,7 +189,7 @@ class RequestRewriteState extends State<RequestRewriteWidget> {
 
       final decoded = jsonDecode(text);
       if (decoded is! List) {
-        throw const FormatException('内容不是有效的重写规则列表');
+        throw FormatException(localizations.invalidRewriteRuleList);
       }
       for (var item in decoded) {
         var rule = RequestRewriteRule.formJson(item);

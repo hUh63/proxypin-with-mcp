@@ -308,8 +308,8 @@ class SettingPage extends StatelessWidget {
                         children: [
                           Text(localizations.proxyIgnoreDomain, style: const TextStyle(fontSize: 14)),
                           const SizedBox(height: 3),
-                          Text(isCN ? "多个使用;分割" : "Use ';' to separate multiple entries",
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          Text(localizations.navBarMultiSeparatorHint,
+                              style: const TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                         ],
                       ),
                       Padding(
@@ -352,11 +352,11 @@ class SettingPage extends StatelessWidget {
               Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
               ListTile(
                   leading: const Icon(Icons.auto_awesome, color: Colors.deepPurple),
-                  title: const Text('AI 分析'),
+                  title: Text(localizations.aiTitle),
                   subtitle: Text(
                     Configuration.loaded?.aiEnabled == true && (Configuration.loaded?.aiApiKey.isNotEmpty ?? false)
-                        ? '已启用 · ${Configuration.loaded?.aiModel}'
-                        : '未配置 · 接入 OpenAI 兼容接口分析抓包请求',
+                        ? localizations.navBarAiEnabled('${Configuration.loaded?.aiModel}')
+                        : localizations.navBarAiNotConfigured,
                     style: const TextStyle(fontSize: 12),
                   ),
                   trailing: const Icon(Icons.keyboard_arrow_right),
@@ -380,15 +380,15 @@ class SettingPage extends StatelessWidget {
           section([
             ListTile(
                 leading: const Icon(Icons.article_outlined, size: 20),
-                title: const Text('日志管理'),
-                subtitle: const Text('应用运行日志查看与导出', style: TextStyle(fontSize: 12)),
+                title: Text(localizations.logViewTitle),
+                subtitle: Text(localizations.navBarLogSubtitle, style: const TextStyle(fontSize: 12)),
                 trailing: const Icon(Icons.keyboard_arrow_right),
                 onTap: () => navigator(context, const LogViewerPage())),
             Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
             ListTile(
                 leading: const Icon(Icons.menu_book_outlined, size: 20),
-                title: const Text('使用文档'),
-                subtitle: const Text('功能教程 · 规范文档 · 开发文档（离线内置）', style: TextStyle(fontSize: 12)),
+                title: Text(localizations.useGuide),
+                subtitle: Text(localizations.navBarDocSubtitle, style: const TextStyle(fontSize: 12)),
                 trailing: const Icon(Icons.keyboard_arrow_right),
                 onTap: () => showGuideCenter(context)),
           ]),

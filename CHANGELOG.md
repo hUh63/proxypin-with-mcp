@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.24.44 (2026-09-27)
+
+### 补推 l10n 第八/九批的全部落地文件（含 arb 与生成文件）
+
+**这是一次流程补救**：v1.24.41 推送时只带了改动过的 Dart 代码，**漏掉了
+`lib/l10n/app_en.arb` / `app_zh.arb` 和 8 个 `app_localizations*.dart`**。
+CI 在 `pub get` 阶段会用 arb 重新生成 l10n 类，arb 里没有那些新 key，
+代码里的 `loc.xxx` 自然找不到 —— 这是 v1.24.41/42 构建失败的**主因之一**
+（另一个是 body.dart 的 getter 作用域，已由 v1.24.43 修复）。
+
+本版把本地已落地但未推送的 **82 个文件**一次性补齐，包含：
+
+- `app_en.arb` / `app_zh.arb`：**2130** 条（en/zh key 集合一致）；
+- 8 个 `app_localizations*.dart` 生成文件；
+- 第九批 l10n 涉及的 36 个页面/服务文件：
+  - `guide_center.dart`（**27 个 GuideDoc 文档标题刻意跳过**，只做其余 3 处）、
+    `websocket_rule_manager_page.dart`
+  - `pc_cert.dart` / `fuzzer_page.dart` / `capture_body_limit.dart` / `bottom_navigation.dart`
+  - `app_update/` 4 个文件（下载/校验/安装全链路，服务类改签名注入 `loc`）
+  - 其余 26 个零散文件（`repeat.dart` / `request_crypto.dart` / `search.dart` /
+    `request_editor.dart` / `remote_device.dart` / `json_viewer.dart` …）
+- 以及此前各批已改的 Dart 文件（内容与线上一致，等同重放，无害）。
+
+> 教训：**推送一批 l10n 改动时，arb 和生成文件必须和代码同批推**，
+> 否则 CI 重新生成后代码引用不到新 key。后续版本已按此执行。
+
+
 ## v1.24.43 (2026-09-27)
 
 ### 修复 v1.24.40/41/42 的编译错误（`localizations` getter 作用域）

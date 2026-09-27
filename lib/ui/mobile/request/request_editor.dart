@@ -699,8 +699,7 @@ class _HttpState extends State<_HttpWidget> with SingleTickerProviderStateMixin,
         formatted = XML.pretty(text);
         break;
       default:
-        FlutterToastr.show(
-            localizations.localeName == 'zh' ? '当前数据类型不支持美化' : 'Beautify is not supported for this type', context);
+        FlutterToastr.show(localizations.beautifyNotSupported, context);
         return;
     }
     if (formatted != text) {

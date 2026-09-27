@@ -118,10 +118,9 @@ class _MobileRequestCryptoPageState extends State<MobileRequestCryptoPage> {
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Icon(Icons.enhanced_encryption_outlined, size: 44, color: Colors.grey.shade400),
                 const SizedBox(height: 10),
-                const Text('暂无解密规则', style: TextStyle(fontSize: 14)),
+                Text(l10n.cryptoRuleEmpty, style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 4),
-                Text('点击右上角 + 添加需要解密的请求',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                Text(l10n.cryptoRuleEmptyHint, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
               ]))
             : Scrollbar(
                 child: ListView(children: [
@@ -481,7 +480,6 @@ class _MobileCryptoRuleEditPageState extends State<MobileCryptoRuleEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isCN = Localizations.localeOf(context).languageCode == 'zh';
 
     return Scaffold(
       appBar: AppBar(
@@ -527,7 +525,7 @@ class _MobileCryptoRuleEditPageState extends State<MobileCryptoRuleEditPage> {
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: fieldController,
-                      decoration: _decorate(l10n.cryptoRuleField, hint: isCN ? '为空=整个 body' : 'empty = whole body'),
+                      decoration: _decorate(l10n.cryptoRuleField, hint: l10n.cryptoRuleFieldHintEmpty),
                     ),
                     const SizedBox(height: 6),
                     SwitchListTile(

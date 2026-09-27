@@ -5272,4 +5272,340 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contentBodyPreviewTruncated => 'Preview truncated';
+
+
+  @override
+  String guideLoadFailed(String error) {
+    return 'Failed to load document: $error';
+  }
+
+  @override
+  String get guideSearchHint => 'Search documents';
+
+  @override
+  String get guideMarkResetTooltip => 'Reset the markup legend';
+
+  @override
+  String get wsRuleMgrFrameActionTitle => 'Frame-level actions';
+
+  @override
+  String get wsRuleMgrActionLabel => 'Action';
+
+  @override
+  String get wsRuleMgrActionObserve => 'Match only, do not intervene';
+
+  @override
+  String get wsRuleMgrActionRewrite => 'Rewrite the frame content';
+
+  @override
+  String get wsRuleMgrActionDrop => 'Drop the frame';
+
+  @override
+  String get wsRuleMgrActionDelay => 'Delay the forwarding';
+
+  @override
+  String get wsRuleMgrActionDuplicate => 'Send the frame again';
+
+  @override
+  String get wsRuleMgrPayloadMatchLabel => 'Frame content match (empty = all frames in this direction)';
+
+  @override
+  String get wsRuleMgrPayloadMatchHint => 'Applies the match mode above to the frame content, e.g. login';
+
+  @override
+  String get wsRuleMgrReplaceWith => 'Replace with';
+
+  @override
+  String get wsRuleMgrRewriteNote => 'Fragmented, compressed and control frames are not rewritten and are forwarded as-is';
+
+  @override
+  String get wsRuleMgrDelayMs => 'Delay (ms)';
+
+
+  @override
+  String pcCertInstallToSystem(String detail) {
+    return ' Install certificate to this system，$detail';
+  }
+
+  @override
+  String get pcCertMacTrustHint => 'After installation, double-click to select “Always Trust”。\n If installation and opening fail，Please export the certificate and drag it to the system certificate';
+
+  @override
+  String get pcCertWinTrustHint => 'choice“Trusted Root Certificate Authority”';
+
+  @override
+  String get pcCertLinuxGuide => 'Install the certificate to this system), take Ubuntu as an example to download the certificate:\nFirst copy the certificate to /usr/local/share/ca-certificates/, and then execute update-ca-certificates.\nFor other systems, please search online for installing root certificates.';
+
+  @override
+  String get pcCertFirefoxHint => 'Note: FireFox has its own trusted certificate library, so you need to manually import the required certificates in the settings.';
+
+  @override
+  String get pcCertTrustTitle => 'Install and Trust ProxyPin CA Certificate';
+
+  @override
+  String get pcCertTrustDesc => 'ProxyPin can decrypt encrypted traffic on the fly and enable to see raw HTTPS requests and responses.';
+
+  @override
+  String get pcCertInstalledTitle => 'Certificate Installed';
+
+  @override
+  String get pcCertInstallSuccess => 'Certificate installed successfully';
+
+  @override
+  String get pcCertInstallFailed => 'Certificate installation failed, please try manual installation';
+
+  @override
+  String fuzzerDictFilled(String name, String count) {
+    return 'Filled $count values from “$name”';
+  }
+
+  @override
+  String fuzzerDictFailed(String error) {
+    return 'Failed to expand dictionary: $error';
+  }
+
+  @override
+  String get fuzzerFillFromDict => 'Fill from dictionary';
+
+  @override
+  String fuzzerPayloadCount(String count) {
+    return '$count entries';
+  }
+
+  @override
+  String get fuzzerRulesTitle => 'Anomaly rules (compare with baseline)';
+
+  @override
+  String get fuzzerNoRuleEnabled => 'No rule enabled';
+
+  @override
+  String fuzzerRulesEnabled(String names) {
+    return 'Enabled: $names';
+  }
+
+  @override
+  String get fuzzerRulesNote => 'Rules only flag what differs from the baseline; they do not prove a vulnerability — the conclusion is yours.';
+
+  @override
+  String get capLimitUnlimitedOption => 'Unlimited (keep full content, default)';
+
+  @override
+  String get capLimitOption128 => '128 KB (head and a little content only)';
+
+  @override
+  String get capLimitUnlimitedDesc => 'Unlimited: keep the full request/response body';
+
+  @override
+  String capLimitSizeMb(String mb) {
+    return 'Limit $mb MB: only the first $mb MB is kept for display';
+  }
+
+  @override
+  String capLimitSizeKb(String kb) {
+    return 'Limit $kb KB: only the first $kb KB is kept for display';
+  }
+
+  @override
+  String get capLimitDesc => 'Bodies over the limit keep only the first N bytes (compressed bodies are released entirely), to reduce memory usage during long captures.\nTrimming happens after forwarding completes and does not affect the actual forwarding.';
+
+  @override
+  String get navBarMultiSeparatorHint => 'Use \';\' to separate multiple entries';
+
+  @override
+  String navBarAiEnabled(String model) {
+    return 'Enabled · $model';
+  }
+
+  @override
+  String get navBarAiNotConfigured => 'Not configured · connect an OpenAI-compatible API to analyze captured requests';
+
+  @override
+  String get navBarLogSubtitle => 'View and export app runtime logs';
+
+  @override
+  String get navBarDocSubtitle => 'Tutorials · specs · dev docs (built-in offline)';
+
+
+  @override
+  String get updRestartHint => 'The app will quit and restart to complete the update.';
+
+  @override
+  String get updPreparing => 'Preparing update...';
+
+  @override
+  String get updDownloading => 'Downloading update...';
+
+  @override
+  String get updReadyToInstall => 'Update downloaded and ready to install';
+
+  @override
+  String get updLaunchingInstaller => 'Launching installer...';
+
+  @override
+  String get updFailed => 'Update failed';
+
+  @override
+  String get updCancelled => 'Update cancelled';
+
+  @override
+  String updDownloadFailed(String error) {
+    return 'Download failed: $error';
+  }
+
+  @override
+  String get updInvalidUrl => 'Invalid download URL';
+
+  @override
+  String updDownloadHttpError(int code) {
+    return 'Download failed (HTTP $code)';
+  }
+
+  @override
+  String get updVerifyFailed => 'Downloaded file verification failed';
+
+  @override
+  String get updInstallerMissing => 'Installer file missing';
+
+  @override
+  String get updInPlaceFailed => 'In-place update failed, please install manually';
+
+  @override
+  String updLaunchFailed(String error) {
+    return 'Failed to launch installer: $error';
+  }
+
+  @override
+  String get updPlatformUnsupported => 'Auto-install is not supported on this platform';
+
+  @override
+  String updMacExtractFailed(String error) {
+    return 'Failed to extract the update package: $error';
+  }
+
+  @override
+  String get updMacAppNotFound => 'App not found in the update package';
+
+  @override
+  String get updMacMultipleApps => 'Multiple apps found in the update package; cannot determine the install target';
+
+  @override
+  String get updMacInvalidApp => 'Invalid app structure in the update package';
+
+  @override
+  String get updMacAuthFailed => 'Authorization was cancelled or the privileged install failed';
+
+  @override
+  String updWinUacLaunchFailed(int code) {
+    return 'Failed to launch the update script with UAC elevation (ShellExecuteW result $code)';
+  }
+
+  @override
+  String get updWinUacTimeout => 'Timed out waiting for the elevated update script to start; make sure you clicked "Yes" in the permission prompt';
+
+  @override
+  String get updWinExeNotFound => 'Executable not found in the update package';
+
+  @override
+  String get updWinMultipleExe => 'Multiple executables found in the update package; cannot determine which one to launch';
+
+
+  @override
+  String get domainAddHelper => 'Host or URL prefix; * is wildcard';
+
+  @override
+  String splashSubtitle(String version) {
+    return 'v$version · Open-source free traffic capture tool';
+  }
+
+  @override
+  String get bvVariableWord => 'variable';
+
+  @override
+  String bvSampleVariable(String lb, String word, String rb) {
+    return '$lb$lb$word$rb$rb';
+  }
+
+  @override
+  String imageRenderFailed(String error) {
+    return 'Unable to render image: $error';
+  }
+
+  @override
+  String get copyValue => 'Copy Value';
+
+  @override
+  String repeatBatchCount(int count) {
+    return 'Repeat $count requests in batch';
+  }
+
+  @override
+  String get aiSettings => 'AI Settings';
+
+  @override
+  String get millisecond => 'Millisecond';
+
+  @override
+  String get minute => 'Minute';
+
+  @override
+  String get searchHistory => 'Search history';
+
+  @override
+  String get clearSearchHistory => 'Clear search history?';
+
+  @override
+  String get languageChineseSimplified => '简体中文';
+
+  @override
+  String get languageChineseTraditional => '繁體中文';
+
+  @override
+  String get invalidRewriteRuleList => 'The content is not a valid rewrite rule list';
+
+  @override
+  String get scriptConsoleTitle => 'Script Console';
+
+  @override
+  String get remoteDeviceDisconnected => 'Remote device disconnected';
+
+  @override
+  String get cryptoRuleEmpty => 'No decryption rules yet';
+
+  @override
+  String get cryptoRuleEmptyHint => 'Tap + in the top right to add a request to decrypt';
+
+  @override
+  String get cryptoRuleFieldHintEmpty => 'empty = whole body';
+
+  @override
+  String get jsonViewerEmptyHint => 'Paste or open a JSON file';
+
+  @override
+  String get aboutSlogan => 'Full platform open source free capture HTTP(S) traffic software';
+
+  @override
+  String get downloadAddress => 'Download';
+
+  @override
+  String get beautifyNotSupported => 'Beautify is not supported for this type';
+
+  @override
+  String repeatResultSuccess(int count) {
+    return 'Success: $count';
+  }
+
+  @override
+  String repeatResultFail(int count) {
+    return 'Fail: $count';
+  }
+
+  @override
+  String repeatResultRetry(int count) {
+    return 'Retries: $count';
+  }
+
+  @override
+  String repeatResultError(String error) {
+    return 'Error: $error';
+  }
 }

@@ -416,20 +416,20 @@ class _FuzzerPageState extends State<FuzzerPage> {
                         if (!mounted) return;
                         setState(() => injection.values.text = values.join('\n'));
                         FlutterToastr.show(
-                            '已填入「${dict.name}」共 ${values.length} 条', context,
+                            localizations.fuzzerDictFilled(dict.name, '${values.length}'), context,
                             duration: 2);
                       } catch (e) {
                         if (!mounted) return;
-                        FlutterToastr.show('字典展开失败：$e', context,
+                        FlutterToastr.show(localizations.fuzzerDictFailed('$e'), context,
                             duration: 3, backgroundColor: Colors.red);
                       }
                     },
               icon: const Icon(Icons.menu_book_outlined, size: 16),
-              label: const Text('从字典填充', style: TextStyle(fontSize: 12)),
+              label: Text(localizations.fuzzerFillFromDict, style: const TextStyle(fontSize: 12)),
             ),
             const Spacer(),
             Text(
-                '${RequestFuzzer.parsePayloads(injection.values.text).length} 条',
+                localizations.fuzzerPayloadCount('${RequestFuzzer.parsePayloads(injection.values.text).length}'),
                 style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           ]),
           const SizedBox(height: 4),
@@ -532,17 +532,17 @@ class _FuzzerPageState extends State<FuzzerPage> {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 12),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-        title: const Text('判定规则（与基线比对）',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        title: Text(localizations.fuzzerRulesTitle,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         subtitle: Text(
-          enabledNames.isEmpty ? '未启用任何规则' : '已启用：$enabledNames',
+          enabledNames.isEmpty ? localizations.fuzzerNoRuleEnabled : localizations.fuzzerRulesEnabled(enabledNames),
           style: const TextStyle(fontSize: 11, color: Colors.grey),
         ),
         children: [
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
-            child: Text('规则只负责标出「和基线不一样」，不代表这里就有漏洞 —— 结论由你下。',
-                style: TextStyle(fontSize: 10.5, color: Colors.grey)),
+            child: Text(localizations.fuzzerRulesNote,
+                style: const TextStyle(fontSize: 10.5, color: Colors.grey)),
           ),
           for (final rule in _rules) _ruleRow(rule, cs),
         ],
@@ -590,7 +590,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
               decoration: InputDecoration(
                 isDense: true,
                 border: const OutlineInputBorder(),
-                hintText: rule.id == FuzzAnomaly.keyword ? '关键字' : null,
+                hintText: rule.id == FuzzAnomaly.keyword ? localizations.keyword : null,
                 suffixText: rule.id == FuzzAnomaly.slower
                     ? 'ms'
                     : (rule.id == FuzzAnomaly.keyword ? null : '%'),

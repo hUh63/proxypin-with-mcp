@@ -174,7 +174,7 @@ class _MobileEnvironmentPageState extends State<MobileEnvironmentPage> {
           centerTitle: true,
           actions: [
             IconButton(
-              tooltip: '内置变量',
+              tooltip: localizations.bvTitle,
               onPressed: () => BuiltinVariablesDialog.show(context),
               icon: const Icon(Icons.functions, size: 20),
             ),

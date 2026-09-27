@@ -145,7 +145,7 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
         setState(() {
           widget.remoteDevice.value = RemoteModel(connect: false);
         });
-        CustomToast.error('远程设备连接已断开').show(context);
+        CustomToast.error(localizations.remoteDeviceDisconnected).show(context);
       }
     });
   }

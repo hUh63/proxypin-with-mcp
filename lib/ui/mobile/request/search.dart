@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import 'package:flutter/material.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search_condition.dart';
 import 'package:proxypin/ui/component/search_history.dart';
 import 'package:proxypin/ui/component/utils.dart';
@@ -117,12 +118,12 @@ class MobileSearchState extends State<MobileSearch> {
                           Row(children: [
                             const Icon(Icons.history, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
-                            const Text('搜索历史', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text(AppLocalizations.of(context)!.searchHistory, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                             const Spacer(),
                             GestureDetector(
                               onTap: () => showConfirmDialog(context,
-                                  title: '删除',
-                                  content: '清空搜索历史？',
+                                  title: AppLocalizations.of(context)!.delete,
+                                  content: AppLocalizations.of(context)!.clearSearchHistory,
                                   onConfirm: () async {
                                     await SearchHistory.clear();
                                     if (mounted) setState(() => _history = []);

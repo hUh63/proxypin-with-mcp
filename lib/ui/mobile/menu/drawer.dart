@@ -64,7 +64,6 @@ class DrawerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     return Drawer(
         backgroundColor: Theme.of(context).cardColor,
@@ -90,7 +89,7 @@ class DrawerWidget extends StatelessWidget {
                         children: [
                           Text('ProxyPin', style: Theme.of(context).textTheme.titleLarge),
                           const SizedBox(height: 4),
-                          Text(isCN ? "全平台开源免费抓包软件" : "Full platform open source free capture HTTP(S) traffic software",
+                          Text(localizations.aboutSlogan,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.bodySmall)
@@ -303,7 +302,7 @@ class _SettingPage extends StatelessWidget {
                         children: [
                           Text(localizations.proxyIgnoreDomain, style: const TextStyle(fontSize: 14)),
                           const SizedBox(height: 3),
-                          Text(isCN ? "多个使用;分割" : "Use ';' to separate multiple entries",
+                          Text(localizations.setNavProxyDomainsHint,
                               style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                         ],
                       )),

@@ -9828,6 +9828,590 @@ Click the HTTPS capture (lock) icon, choose "Install Root Certificate", and foll
   /// **'Preview truncated'**
   String get contentBodyPreviewTruncated;
 
+
+  /// No description provided for @guideLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load document: $error'**
+  String guideLoadFailed(String error);
+
+  /// No description provided for @guideSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search documents'**
+  String get guideSearchHint;
+
+  /// No description provided for @guideMarkResetTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the markup legend'**
+  String get guideMarkResetTooltip;
+
+  /// No description provided for @wsRuleMgrFrameActionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frame-level actions'**
+  String get wsRuleMgrFrameActionTitle;
+
+  /// No description provided for @wsRuleMgrActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get wsRuleMgrActionLabel;
+
+  /// No description provided for @wsRuleMgrActionObserve.
+  ///
+  /// In en, this message translates to:
+  /// **'Match only, do not intervene'**
+  String get wsRuleMgrActionObserve;
+
+  /// No description provided for @wsRuleMgrActionRewrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewrite the frame content'**
+  String get wsRuleMgrActionRewrite;
+
+  /// No description provided for @wsRuleMgrActionDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop the frame'**
+  String get wsRuleMgrActionDrop;
+
+  /// No description provided for @wsRuleMgrActionDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay the forwarding'**
+  String get wsRuleMgrActionDelay;
+
+  /// No description provided for @wsRuleMgrActionDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the frame again'**
+  String get wsRuleMgrActionDuplicate;
+
+  /// No description provided for @wsRuleMgrPayloadMatchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Frame content match (empty = all frames in this direction)'**
+  String get wsRuleMgrPayloadMatchLabel;
+
+  /// No description provided for @wsRuleMgrPayloadMatchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies the match mode above to the frame content, e.g. login'**
+  String get wsRuleMgrPayloadMatchHint;
+
+  /// No description provided for @wsRuleMgrReplaceWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace with'**
+  String get wsRuleMgrReplaceWith;
+
+  /// No description provided for @wsRuleMgrRewriteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Fragmented, compressed and control frames are not rewritten and are forwarded as-is'**
+  String get wsRuleMgrRewriteNote;
+
+  /// No description provided for @wsRuleMgrDelayMs.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay (ms)'**
+  String get wsRuleMgrDelayMs;
+
+
+  /// No description provided for @pcCertInstallToSystem.
+  ///
+  /// In en, this message translates to:
+  /// **' Install certificate to this system，$detail'**
+  String pcCertInstallToSystem(String detail);
+
+  /// No description provided for @pcCertMacTrustHint.
+  ///
+  /// In en, this message translates to:
+  /// **'After installation, double-click to select “Always Trust”。
+ If installation and opening fail，Please export the certificate and drag it to the system certificate'**
+  String get pcCertMacTrustHint;
+
+  /// No description provided for @pcCertWinTrustHint.
+  ///
+  /// In en, this message translates to:
+  /// **'choice“Trusted Root Certificate Authority”'**
+  String get pcCertWinTrustHint;
+
+  /// No description provided for @pcCertLinuxGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Install the certificate to this system), take Ubuntu as an example to download the certificate:
+First copy the certificate to /usr/local/share/ca-certificates/, and then execute update-ca-certificates.
+For other systems, please search online for installing root certificates.'**
+  String get pcCertLinuxGuide;
+
+  /// No description provided for @pcCertFirefoxHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: FireFox has its own trusted certificate library, so you need to manually import the required certificates in the settings.'**
+  String get pcCertFirefoxHint;
+
+  /// No description provided for @pcCertTrustTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install and Trust ProxyPin CA Certificate'**
+  String get pcCertTrustTitle;
+
+  /// No description provided for @pcCertTrustDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'ProxyPin can decrypt encrypted traffic on the fly and enable to see raw HTTPS requests and responses.'**
+  String get pcCertTrustDesc;
+
+  /// No description provided for @pcCertInstalledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate Installed'**
+  String get pcCertInstalledTitle;
+
+  /// No description provided for @pcCertInstallSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate installed successfully'**
+  String get pcCertInstallSuccess;
+
+  /// No description provided for @pcCertInstallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate installation failed, please try manual installation'**
+  String get pcCertInstallFailed;
+
+  /// No description provided for @fuzzerDictFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Filled $count values from “$name”'**
+  String fuzzerDictFilled(String name, String count);
+
+  /// No description provided for @fuzzerDictFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to expand dictionary: $error'**
+  String fuzzerDictFailed(String error);
+
+  /// No description provided for @fuzzerFillFromDict.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill from dictionary'**
+  String get fuzzerFillFromDict;
+
+  /// No description provided for @fuzzerPayloadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'$count entries'**
+  String fuzzerPayloadCount(String count);
+
+  /// No description provided for @fuzzerRulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Anomaly rules (compare with baseline)'**
+  String get fuzzerRulesTitle;
+
+  /// No description provided for @fuzzerNoRuleEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'No rule enabled'**
+  String get fuzzerNoRuleEnabled;
+
+  /// No description provided for @fuzzerRulesEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled: $names'**
+  String fuzzerRulesEnabled(String names);
+
+  /// No description provided for @fuzzerRulesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules only flag what differs from the baseline; they do not prove a vulnerability — the conclusion is yours.'**
+  String get fuzzerRulesNote;
+
+  /// No description provided for @capLimitUnlimitedOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited (keep full content, default)'**
+  String get capLimitUnlimitedOption;
+
+  /// No description provided for @capLimitOption128.
+  ///
+  /// In en, this message translates to:
+  /// **'128 KB (head and a little content only)'**
+  String get capLimitOption128;
+
+  /// No description provided for @capLimitUnlimitedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited: keep the full request/response body'**
+  String get capLimitUnlimitedDesc;
+
+  /// No description provided for @capLimitSizeMb.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit $mb MB: only the first $mb MB is kept for display'**
+  String capLimitSizeMb(String mb);
+
+  /// No description provided for @capLimitSizeKb.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit $kb KB: only the first $kb KB is kept for display'**
+  String capLimitSizeKb(String kb);
+
+  /// No description provided for @capLimitDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Bodies over the limit keep only the first N bytes (compressed bodies are released entirely), to reduce memory usage during long captures.
+Trimming happens after forwarding completes and does not affect the actual forwarding.'**
+  String get capLimitDesc;
+
+  /// No description provided for @navBarMultiSeparatorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use \\';\\' to separate multiple entries'**
+  String get navBarMultiSeparatorHint;
+
+  /// No description provided for @navBarAiEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled · $model'**
+  String navBarAiEnabled(String model);
+
+  /// No description provided for @navBarAiNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured · connect an OpenAI-compatible API to analyze captured requests'**
+  String get navBarAiNotConfigured;
+
+  /// No description provided for @navBarLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View and export app runtime logs'**
+  String get navBarLogSubtitle;
+
+  /// No description provided for @navBarDocSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorials · specs · dev docs (built-in offline)'**
+  String get navBarDocSubtitle;
+
+
+  /// No description provided for @updRestartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The app will quit and restart to complete the update.'**
+  String get updRestartHint;
+
+  /// No description provided for @updPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing update...'**
+  String get updPreparing;
+
+  /// No description provided for @updDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading update...'**
+  String get updDownloading;
+
+  /// No description provided for @updReadyToInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Update downloaded and ready to install'**
+  String get updReadyToInstall;
+
+  /// No description provided for @updLaunchingInstaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Launching installer...'**
+  String get updLaunchingInstaller;
+
+  /// No description provided for @updFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Update failed'**
+  String get updFailed;
+
+  /// No description provided for @updCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Update cancelled'**
+  String get updCancelled;
+
+  /// No description provided for @updDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed: $error'**
+  String updDownloadFailed(String error);
+
+  /// No description provided for @updInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid download URL'**
+  String get updInvalidUrl;
+
+  /// No description provided for @updDownloadHttpError.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed (HTTP $code)'**
+  String updDownloadHttpError(int code);
+
+  /// No description provided for @updVerifyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded file verification failed'**
+  String get updVerifyFailed;
+
+  /// No description provided for @updInstallerMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Installer file missing'**
+  String get updInstallerMissing;
+
+  /// No description provided for @updInPlaceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'In-place update failed, please install manually'**
+  String get updInPlaceFailed;
+
+  /// No description provided for @updLaunchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to launch installer: $error'**
+  String updLaunchFailed(String error);
+
+  /// No description provided for @updPlatformUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-install is not supported on this platform'**
+  String get updPlatformUnsupported;
+
+  /// No description provided for @updMacExtractFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to extract the update package: $error'**
+  String updMacExtractFailed(String error);
+
+  /// No description provided for @updMacAppNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'App not found in the update package'**
+  String get updMacAppNotFound;
+
+  /// No description provided for @updMacMultipleApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple apps found in the update package; cannot determine the install target'**
+  String get updMacMultipleApps;
+
+  /// No description provided for @updMacInvalidApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid app structure in the update package'**
+  String get updMacInvalidApp;
+
+  /// No description provided for @updMacAuthFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization was cancelled or the privileged install failed'**
+  String get updMacAuthFailed;
+
+  /// No description provided for @updWinUacLaunchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to launch the update script with UAC elevation (ShellExecuteW result $code)'**
+  String updWinUacLaunchFailed(int code);
+
+  /// No description provided for @updWinUacTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out waiting for the elevated update script to start; make sure you clicked "Yes" in the permission prompt'**
+  String get updWinUacTimeout;
+
+  /// No description provided for @updWinExeNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Executable not found in the update package'**
+  String get updWinExeNotFound;
+
+  /// No description provided for @updWinMultipleExe.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple executables found in the update package; cannot determine which one to launch'**
+  String get updWinMultipleExe;
+
+
+  /// No description provided for @domainAddHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Host or URL prefix; * is wildcard'**
+  String get domainAddHelper;
+
+  /// No description provided for @splashSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'v$version · Open-source free traffic capture tool'**
+  String splashSubtitle(String version);
+
+  /// No description provided for @bvVariableWord.
+  ///
+  /// In en, this message translates to:
+  /// **'variable'**
+  String get bvVariableWord;
+
+  /// No description provided for @bvSampleVariable.
+  ///
+  /// In en, this message translates to:
+  /// **'$lb$lb$word$rb$rb'**
+  String bvSampleVariable(String lb, String word, String rb);
+
+  /// No description provided for @imageRenderFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to render image: $error'**
+  String imageRenderFailed(String error);
+
+  /// No description provided for @copyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Value'**
+  String get copyValue;
+
+  /// No description provided for @repeatBatchCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat $count requests in batch'**
+  String repeatBatchCount(int count);
+
+  /// No description provided for @aiSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Settings'**
+  String get aiSettings;
+
+  /// No description provided for @millisecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Millisecond'**
+  String get millisecond;
+
+  /// No description provided for @minute.
+  ///
+  /// In en, this message translates to:
+  /// **'Minute'**
+  String get minute;
+
+  /// No description provided for @searchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history'**
+  String get searchHistory;
+
+  /// No description provided for @clearSearchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search history?'**
+  String get clearSearchHistory;
+
+  /// No description provided for @languageChineseSimplified.
+  ///
+  /// In en, this message translates to:
+  /// **'简体中文'**
+  String get languageChineseSimplified;
+
+  /// No description provided for @languageChineseTraditional.
+  ///
+  /// In en, this message translates to:
+  /// **'繁體中文'**
+  String get languageChineseTraditional;
+
+  /// No description provided for @invalidRewriteRuleList.
+  ///
+  /// In en, this message translates to:
+  /// **'The content is not a valid rewrite rule list'**
+  String get invalidRewriteRuleList;
+
+  /// No description provided for @scriptConsoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Script Console'**
+  String get scriptConsoleTitle;
+
+  /// No description provided for @remoteDeviceDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote device disconnected'**
+  String get remoteDeviceDisconnected;
+
+  /// No description provided for @cryptoRuleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No decryption rules yet'**
+  String get cryptoRuleEmpty;
+
+  /// No description provided for @cryptoRuleEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + in the top right to add a request to decrypt'**
+  String get cryptoRuleEmptyHint;
+
+  /// No description provided for @cryptoRuleFieldHintEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'empty = whole body'**
+  String get cryptoRuleFieldHintEmpty;
+
+  /// No description provided for @jsonViewerEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste or open a JSON file'**
+  String get jsonViewerEmptyHint;
+
+  /// No description provided for @aboutSlogan.
+  ///
+  /// In en, this message translates to:
+  /// **'Full platform open source free capture HTTP(S) traffic software'**
+  String get aboutSlogan;
+
+  /// No description provided for @downloadAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadAddress;
+
+  /// No description provided for @beautifyNotSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Beautify is not supported for this type'**
+  String get beautifyNotSupported;
+
+  /// No description provided for @repeatResultSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Success: $count'**
+  String repeatResultSuccess(int count);
+
+  /// No description provided for @repeatResultFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Fail: $count'**
+  String repeatResultFail(int count);
+
+  /// No description provided for @repeatResultRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retries: $count'**
+  String repeatResultRetry(int count);
+
+  /// No description provided for @repeatResultError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: $error'**
+  String repeatResultError(String error);
+
 }
 
 class _AppLocalizationsDelegate

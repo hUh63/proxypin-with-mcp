@@ -103,7 +103,7 @@ class _SslState extends State<SslWidget> {
                         try {
                           var bytes = await file.xFile.readAsBytes();
                           if (bytes.isEmpty) {
-                            throw Exception('读取到的文件为空，请重新选择 .p12 文件');
+                            throw Exception(localizations.sslP12FileEmpty);
                           }
                           await CertificateManager.importPkcs12(bytes, password?.isNotEmpty == true ? password : null);
                           if (context.mounted) {

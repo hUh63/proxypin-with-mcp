@@ -335,7 +335,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               tint: _wrap ? color : null,
             ),
             _iconBtn(Icons.copy, localizations.copy, _copy),
-            _iconBtn(Icons.save_outlined, '保存', _download),
+            _iconBtn(Icons.save_outlined, localizations.save, _download),
           ],
         ),
       ]),

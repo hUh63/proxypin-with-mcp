@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/utils/desktop_tray.dart';
 import 'package:window_manager/window_manager.dart';
@@ -10,7 +11,7 @@ import 'package:window_manager/window_manager.dart';
 class MacosZipUpdater {
   static bool _updating = false;
 
-  static Future<bool> install(String version, File zipFile) async {
+  static Future<bool> install(String version, File zipFile, AppLocalizations loc) async {
     if (!Platform.isMacOS || _updating) {
       return false;
     }
@@ -43,10 +44,10 @@ class MacosZipUpdater {
 
       stagingDir = await _createStagingDir(version);
       final extractDir = Directory('${stagingDir.path}${Platform.pathSeparator}extracted');
-      await _extractZip(zipFile, extractDir);
+      await _extractZip(zipFile, extractDir, loc);
 
-      final stagedApp = await _findStagedApp(extractDir);
-      await _validateStagedApp(stagedApp);
+      final stagedApp = await _findStagedApp(extractDir, loc);
+      await _validateStagedApp(stagedApp, loc);
       await _deleteFile(zipFile);
 
       final helper = await _writeHelperScript(stagingDir: stagingDir);
@@ -61,7 +62,7 @@ class MacosZipUpdater {
       ];
 
       if (needsAuthorization) {
-        await _startHelperWithAuthorization(helperArgs);
+        await _startHelperWithAuthorization(helperArgs, loc);
       } else {
         await Process.start(
           '/bin/sh',
@@ -135,7 +136,7 @@ class MacosZipUpdater {
     return dir;
   }
 
-  static Future<void> _extractZip(File zipFile, Directory extractDir) async {
+  static Future<void> _extractZip(File zipFile, Directory extractDir, AppLocalizations loc) async {
     if (await extractDir.exists()) {
       await extractDir.delete(recursive: true);
     }
@@ -149,11 +150,11 @@ class MacosZipUpdater {
     ]);
 
     if (result.exitCode != 0) {
-      throw MacosZipUpdateException('解压更新包失败: ${result.stderr ?? result.stdout}');
+      throw MacosZipUpdateException(loc.updMacExtractFailed('${result.stderr ?? result.stdout}'));
     }
   }
 
-  static Future<Directory> _findStagedApp(Directory extractDir) async {
+  static Future<Directory> _findStagedApp(Directory extractDir, AppLocalizations loc) async {
     final apps = <Directory>[];
 
     await for (final entity in extractDir.list(recursive: true, followLinks: false)) {
@@ -163,7 +164,7 @@ class MacosZipUpdater {
     }
 
     if (apps.isEmpty) {
-      throw MacosZipUpdateException('更新包中未找到 App');
+      throw MacosZipUpdateException(loc.updMacAppNotFound);
     }
 
     final named = apps.where((app) => app.path.endsWith('${Platform.pathSeparator}ProxyPin.app')).toList();
@@ -175,26 +176,26 @@ class MacosZipUpdater {
       return apps.first;
     }
 
-    throw MacosZipUpdateException('更新包中包含多个 App，无法确认安装目标');
+    throw MacosZipUpdateException(loc.updMacMultipleApps);
   }
 
-  static Future<void> _validateStagedApp(Directory app) async {
+  static Future<void> _validateStagedApp(Directory app, AppLocalizations loc) async {
     final infoPlist = File('${app.path}${Platform.pathSeparator}Contents${Platform.pathSeparator}Info.plist');
     final executable = File(
         '${app.path}${Platform.pathSeparator}Contents${Platform.pathSeparator}MacOS${Platform.pathSeparator}ProxyPin');
 
     if (!await infoPlist.exists() || !await executable.exists()) {
-      throw MacosZipUpdateException('更新包 App 结构无效');
+      throw MacosZipUpdateException(loc.updMacInvalidApp);
     }
   }
 
-  static Future<void> _startHelperWithAuthorization(List<String> helperArgs) async {
+  static Future<void> _startHelperWithAuthorization(List<String> helperArgs, AppLocalizations loc) async {
     final command = '/usr/bin/nohup /bin/sh ${helperArgs.map(_shellQuote).join(' ')} >/dev/null 2>&1 &';
     final script = 'do shell script ${_appleScriptString(command)} with administrator privileges';
     final result = await Process.run('/usr/bin/osascript', ['-e', script]);
 
     if (result.exitCode != 0) {
-      throw MacosZipUpdateException('用户取消授权或授权安装失败');
+      throw MacosZipUpdateException(loc.updMacAuthFailed);
     }
   }
 

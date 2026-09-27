@@ -347,7 +347,7 @@ class RequestRowState extends State<RequestRow> {
                             Navigator.of(context).push(MaterialPageRoute(
                                 builder: (context) => AiChatPage(initialRequest: request)));
                           },
-                          label: 'AI 分析',
+                          label: localizations.aiTitle,
                           icon: Icons.auto_awesome,
                           iconSize: 20),
                       right: itemButton(
@@ -355,7 +355,7 @@ class RequestRowState extends State<RequestRow> {
                             await Navigator.maybePop(getContext());
                             if (context.mounted) showAiSettingsDialog(context);
                           },
-                          label: 'AI 设置',
+                          label: localizations.aiSettings,
                           icon: Icons.tune),
                     ),
                     //favorite and edit

@@ -84,10 +84,8 @@ class BuiltinVariablesDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.bvIntro(
-                    Localizations.localeOf(context).languageCode.startsWith('zh')
-                        ? '{{变量}}'
-                        : '{{variable}}'),
+                AppLocalizations.of(context)!.bvIntro(AppLocalizations.of(context)!.bvSampleVariable('{',
+                    AppLocalizations.of(context)!.bvVariableWord, '}')),
                 style: TextStyle(fontSize: 12, height: 1.5, color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 10),

@@ -74,11 +74,11 @@ class GuideCenter {
   }
 
   /// 加载文档内容
-  static Future<String> load(GuideDoc doc) async {
+  static Future<String> load(GuideDoc doc, AppLocalizations loc) async {
     try {
       return await rootBundle.loadString(doc.assetPath);
     } catch (e) {
-      return '文档加载失败：$e';
+      return loc.guideLoadFailed('$e');
     }
   }
 
@@ -122,11 +122,11 @@ class _GuideCenterPageState extends State<GuideCenterPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
             child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search, size: 20),
-                hintText: '搜索文档',
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search, size: 20),
+                hintText: AppLocalizations.of(context)!.guideSearchHint,
                 isDense: true,
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               onChanged: (v) => setState(() => _keyword = v.trim()),
             ),
@@ -189,11 +189,14 @@ class _GuideArticlePageState extends State<GuideArticlePage> {
   String? _content;
 
   @override
-  void initState() {
-    super.initState();
-    GuideCenter.load(widget.doc).then((content) {
-      if (mounted) setState(() => _content = content);
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 加载失败提示依赖 l10n，需在依赖变更阶段取 loc
+    if (_content == null) {
+      GuideCenter.load(widget.doc, AppLocalizations.of(context)!).then((content) {
+        if (mounted) setState(() => _content = content);
+      });
+    }
   }
 
   @override
@@ -206,7 +209,7 @@ class _GuideArticlePageState extends State<GuideArticlePage> {
           // 重置按钮：恢复文档默认的重点标记说明
           IconButton(
             icon: const Icon(Icons.restart_alt, size: 20),
-            tooltip: '重置重点标记说明',
+            tooltip: AppLocalizations.of(context)!.guideMarkResetTooltip,
             onPressed: () {
               showDialog(
                   context: context,
@@ -232,7 +235,7 @@ class _GuideArticlePageState extends State<GuideArticlePage> {
                                 // 清除本地阅读缓存，下次进入按默认重新渲染
                                 GuideCenter.clearCache(widget.doc);
                                 setState(() => _content = null);
-                                GuideCenter.load(widget.doc).then((content) {
+                                GuideCenter.load(widget.doc, AppLocalizations.of(context)!).then((content) {
                                   if (mounted) setState(() => _content = content);
                                 });
                                 Navigator.pop(context);

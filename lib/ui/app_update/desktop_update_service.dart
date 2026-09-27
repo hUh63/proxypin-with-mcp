@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/app_update/constants.dart';
 import 'package:proxypin/ui/app_update/macos_zip_updater.dart';
@@ -81,13 +82,11 @@ class DesktopUpdateService {
   HttpClient? _httpClient;
 
   /// 桌面专属功能, 文案内联中英文(参考 desktop_tray.dart)。
-  static String _t(String zh, String en) => Platform.localeName.startsWith('zh') ? zh : en;
-
   static bool _isInPlaceZip(ReleaseAsset asset) {
     return asset.installerType == 'zip' && (Platform.isMacOS || Platform.isWindows);
   }
 
-  Future<void> start(RemoteVersionEntity version, ReleaseAsset asset) async {
+  Future<void> start(RemoteVersionEntity version, ReleaseAsset asset, AppLocalizations loc) async {
     if (_updating) {
       return;
     }
@@ -136,7 +135,7 @@ class DesktopUpdateService {
           if (await tempFile.exists()) await tempFile.delete();
         }
         try {
-          await _downloadFromUrl(urls[i], tempFile, asset.size);
+          await _downloadFromUrl(urls[i], tempFile, asset.size, loc);
           // 下载成功
           if (await targetFile.exists()) await targetFile.delete();
           await tempFile.rename(targetFile.path);
@@ -171,7 +170,7 @@ class DesktopUpdateService {
       }
       logger.e('DesktopUpdateService download failed', error: e, stackTrace: stackTrace);
       await _deleteFile(tempFile?.path);
-      state.value = state.value.copyWith(phase: DesktopUpdatePhase.failed, errorMessage: _t('下载失败: $e', 'Download failed: $e'));
+      state.value = state.value.copyWith(phase: DesktopUpdatePhase.failed, errorMessage: loc.updDownloadFailed('$e'));
     } finally {
       try {
         _httpClient?.close(force: true);
@@ -181,10 +180,10 @@ class DesktopUpdateService {
     }
   }
 
-  Future<void> _downloadFromUrl(String url, File tempFile, int? expectedSize) async {
+  Future<void> _downloadFromUrl(String url, File tempFile, int? expectedSize, AppLocalizations loc) async {
     final uri = Uri.tryParse(url);
     if (uri == null) {
-      throw DesktopUpdateException(_t('下载地址无效', 'Invalid download URL'));
+      throw DesktopUpdateException(loc.updInvalidUrl);
     }
 
     final client = HttpClient();
@@ -194,7 +193,7 @@ class DesktopUpdateService {
     final request = await client.getUrl(uri);
     final response = await request.close();
     if (response.statusCode != 200) {
-      throw DesktopUpdateException(_t('下载失败 (HTTP ${response.statusCode})', 'Download failed (HTTP ${response.statusCode})'));
+      throw DesktopUpdateException(loc.updDownloadHttpError(response.statusCode));
     }
 
     final totalBytes = response.contentLength > 0 ? response.contentLength : expectedSize;
@@ -226,7 +225,7 @@ class DesktopUpdateService {
     }
 
     if (!await _verifyFile(tempFile, expectedSize)) {
-      throw DesktopUpdateException(_t('下载文件校验失败', 'Downloaded file verification failed'));
+      throw DesktopUpdateException(loc.updVerifyFailed);
     }
   }
 
@@ -239,13 +238,13 @@ class DesktopUpdateService {
   }
 
   /// 执行安装并退出/重启应用。
-  Future<void> installAndQuit() async {
+  Future<void> installAndQuit(AppLocalizations loc) async {
     final current = state.value;
     final version = current.version;
     final asset = current.asset;
     final filePath = current.filePath;
     if (version == null || asset == null || filePath == null || filePath.isEmpty) {
-      state.value = current.copyWith(phase: DesktopUpdatePhase.failed, errorMessage: _t('安装文件缺失', 'Installer file missing'));
+      state.value = current.copyWith(phase: DesktopUpdatePhase.failed, errorMessage: loc.updInstallerMissing);
       return;
     }
 
@@ -254,33 +253,33 @@ class DesktopUpdateService {
     try {
       if (_isInPlaceZip(asset)) {
         final started = Platform.isMacOS
-            ? await MacosZipUpdater.install(version.version, File(filePath))
-            : await WindowsZipUpdater.install(version.version, File(filePath));
+            ? await MacosZipUpdater.install(version.version, File(filePath), loc)
+            : await WindowsZipUpdater.install(version.version, File(filePath), loc);
         if (!started) {
           state.value = state.value.copyWith(
             phase: DesktopUpdatePhase.failed,
-            errorMessage: _t('原地更新失败, 请手动安装', 'In-place update failed, please install manually'),
+            errorMessage: loc.updInPlaceFailed,
           );
         }
         return;
       }
 
       // 非 zip(如 macOS dmg / Windows exe): 打开安装包后退出。
-      await _openInstaller(filePath);
+      await _openInstaller(filePath, loc);
       await _quitApp();
     } catch (e, stackTrace) {
       logger.e('DesktopUpdateService install failed', error: e, stackTrace: stackTrace);
-      state.value = state.value.copyWith(phase: DesktopUpdatePhase.failed, errorMessage: _t('安装启动失败: $e', 'Failed to launch installer: $e'));
+      state.value = state.value.copyWith(phase: DesktopUpdatePhase.failed, errorMessage: loc.updLaunchFailed('$e'));
     }
   }
 
-  Future<void> _openInstaller(String filePath) async {
+  Future<void> _openInstaller(String filePath, AppLocalizations loc) async {
     if (Platform.isMacOS) {
       await Process.start('open', [filePath]);
     } else if (Platform.isWindows) {
       await Process.start(filePath, [], mode: ProcessStartMode.detached);
     } else {
-      throw DesktopUpdateException(_t('当前平台不支持自动安装', 'Auto-install not supported on this platform'));
+      throw DesktopUpdateException(loc.updPlatformUnsupported);
     }
   }
 

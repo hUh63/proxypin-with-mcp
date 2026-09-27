@@ -276,7 +276,7 @@ class _RequestWidgetState extends State<RequestWidget> {
       _menuAction(localizations.requestRewrite, _RequestMenuAction.requestRewrite),
       _menuAction(localizations.requestMap, _RequestMenuAction.requestMap),
       _menuAction(localizations.script, _RequestMenuAction.script),
-      _menuAction('AI 分析', _RequestMenuAction.aiAnalysis),
+      _menuAction(localizations.aiTitle, _RequestMenuAction.aiAnalysis),
       ContextMenuItem.separator(),
       _menuAction(localizations.favorite, _RequestMenuAction.favorite),
       ContextMenuItem.submenu(label: localizations.highlight, submenu: highlightMenu()),

@@ -84,14 +84,12 @@ class _PCCertState extends State<PCCert> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-
     return SimpleDialog(
       titlePadding: const EdgeInsets.symmetric(),
       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
       title: Row(children: [
         const Expanded(child: SizedBox()),
-        Text(isCN ? "安装证书" : "Install Certificate", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+        Text(localizations.installRootCa, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
         const Expanded(child: SizedBox()),
         Align(alignment: Alignment.topRight, child: CloseButton())
       ]),
@@ -139,13 +137,10 @@ class _PCCertState extends State<PCCert> with TickerProviderStateMixin {
 
   List<Widget> _buildWindowsAndMacContent(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     return [
-      isCN
-          ? Text(" 安装证书到本系统，${Platform.isMacOS ? "安装完双击选择“始终信任此证书”。 如安装打开失败，请导出证书拖拽到系统证书里" : "选择“受信任的根证书颁发机构”"}")
-          : Text(
-              " Install certificate to this system，${Platform.isMacOS ? "After installation, double-click to select “Always Trust”。\n If installation and opening fail，Please export the certificate and drag it to the system certificate" : "choice“Trusted Root Certificate Authority”"}"),
+      Text(localizations.pcCertInstallToSystem(
+          Platform.isMacOS ? localizations.pcCertMacTrustHint : localizations.pcCertWinTrustHint)),
       const SizedBox(height: 10),
       SizedBox(
           width: double.maxFinite,
@@ -168,22 +163,12 @@ class _PCCertState extends State<PCCert> with TickerProviderStateMixin {
   }
 
   List<Widget> _buildLinuxContent(BuildContext context) {
-    final isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
+    final localizations = AppLocalizations.of(context)!;
 
     return [
-      Text(isCN
-          ? "安装证书到本系统，以Ubuntu为例 下载证书：\n"
-              "先把证书复制到 /usr/local/share/ca-certificates/，然后执行 update-ca-certificates 即可。\n"
-              "其他系统请网上搜索安装根证书"
-          : "Install the certificate to this system), take Ubuntu as an example to download the certificate:\n"
-              "First copy the certificate to /usr/local/share/ca-certificates/, and then execute update-ca-certificates.\n"
-              "For other systems, please search online for installing root certificates."),
+      Text(localizations.pcCertLinuxGuide),
       const SizedBox(height: 5),
-      Text(
-          isCN
-              ? "提示：FireFox有自己的信任证书库，所以要手动在设置中导入需要导入的证书。"
-              : "Note: FireFox has its own trusted certificate library, so you need to manually import the required certificates in the settings.",
-          style: TextStyle(fontSize: 12)),
+      Text(localizations.pcCertFirefoxHint, style: const TextStyle(fontSize: 12)),
       const SizedBox(height: 10),
       const SelectableText.rich(
           textAlign: TextAlign.justify,
@@ -241,22 +226,14 @@ class _AutomaticInstallState extends State<_AutomaticInstall> {
 
   List<Widget> buildAutomaticChildren() {
     final localizations = AppLocalizations.of(context)!;
-    final isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-
     final subtitleStyle = Theme.of(context).textTheme.bodyMedium;
     final infoLabelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]);
     final infoValueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500);
     List<Widget> children = [
       const SizedBox(height: 8),
-      Text(isCN ? "通过安装并信任 ProxyPin CA" : "Install and Trust ProxyPin CA Certificate",
-          style: subtitleStyle, textAlign: TextAlign.center),
+      Text(localizations.pcCertTrustTitle, style: subtitleStyle, textAlign: TextAlign.center),
       const SizedBox(height: 3),
-      Text(
-          isCN
-              ? "ProxyPin 可以动态解密 HTTPS 流量以展示原始请求/响应。"
-              : "ProxyPin can decrypt encrypted traffic on the fly and enable to see raw HTTPS requests and responses.",
-          style: subtitleStyle,
-          textAlign: TextAlign.center),
+      Text(localizations.pcCertTrustDesc, style: subtitleStyle, textAlign: TextAlign.center),
       const SizedBox(height: 45),
     ];
 
@@ -285,7 +262,7 @@ class _AutomaticInstallState extends State<_AutomaticInstall> {
           child: Column(children: [
             Icon(Icons.verified_rounded, color: Colors.green, size: 56),
             const SizedBox(height: 12),
-            Text(isCN ? "证书已安装" : "Certificate Installed", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(localizations.pcCertInstalledTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             if (certDetails != null) ...[
               const Divider(),
@@ -322,7 +299,7 @@ class _AutomaticInstallState extends State<_AutomaticInstall> {
   }
 
   void _installCert(BuildContext context) async {
-    final isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
+    final localizations = AppLocalizations.of(context)!;
     var caFile = await CertificateManager.certificateFile();
     bool success = await CertInstaller.installCertificate(caFile);
     CertificateManager.cleanCache();
@@ -333,12 +310,10 @@ class _AutomaticInstallState extends State<_AutomaticInstall> {
 
     if (success) {
       isCertInstalled.value = true;
-      CustomToast.success(isCN ? "证书安装成功" : "Certificate installed successfully").show(context);
+      CustomToast.success(localizations.pcCertInstallSuccess).show(context);
     } else {
       isCertInstalled.value = false;
-      final isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
-      CustomToast.error(isCN ? "证书安装失败，请尝试手动安装" : "Certificate installation failed, please try manual installation")
-          .show(context);
+      CustomToast.error(localizations.pcCertInstallFailed).show(context);
     }
   }
 }

@@ -343,7 +343,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
     if (_parsed == null) {
       return Center(
         child: Text(
-          localizations.localeName == 'zh' ? '请输入或打开 JSON' : 'Paste or open a JSON file',
+          localizations.jsonViewerEmptyHint,
           style: TextStyle(color: Theme.of(context).hintColor),
         ),
       );

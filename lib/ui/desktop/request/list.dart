@@ -209,7 +209,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
             _menuItem(_RequestListMenuAction.report,
                 icon: const Icon(Icons.cloud_upload_outlined, size: 16), text: localizations.reportServers),
             _menuItem(_RequestListMenuAction.apiEndpoints,
-                icon: const Icon(Icons.api, size: 16), text: 'API 端点'),
+                icon: const Icon(Icons.api, size: 16), text: localizations.toolboxApiEndpoints),
           ];
         });
   }
@@ -425,7 +425,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
     // 上游 #715/#401：批量重放登记到「发送队列」
     final task = RepeatTaskManager.instance.create(
-      title: '批量重放 ${requests.length} 个请求',
+      title: localizations!.repeatBatchCount(requests.length),
       total: requests.length,
       pending: requests.map((r) => '${r.method.name} ${r.domainPath}').toList(),
     );

@@ -167,7 +167,7 @@ class _ScriptWidgetState extends State<ScriptWidget> {
   }
 
   void consoleLog() {
-    openScriptConsoleWindow();
+    openScriptConsoleWindow(localizations);
   }
 
   //导入js
@@ -1003,10 +1003,10 @@ class _ScriptListState extends State<ScriptList> {
 }
 
 /// 打开脚本控制台窗口
-void openScriptConsoleWindow() async {
+void openScriptConsoleWindow(AppLocalizations localizations) async {
   await DesktopMultiWindow.createWindow(jsonEncode({
     'name': 'ScriptConsoleWidget',
-    'title': '脚本控制台',
+    'title': localizations.scriptConsoleTitle,
     'width': 800,
     'height': 600,
   }));

@@ -110,7 +110,7 @@ class _MobileRequestRewriteState extends State<MobileRequestRewrite> {
       List json = jsonDecode(utf8.decode(await file.xFile.readAsBytes()));
 
       if (json is! List) {
-        throw const FormatException('内容不是有效的重写规则列表');
+        throw FormatException(localizations.invalidRewriteRuleList);
       }
 
       for (var item in json) {

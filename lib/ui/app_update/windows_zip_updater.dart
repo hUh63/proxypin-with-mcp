@@ -4,6 +4,7 @@ import 'dart:ffi';
 import 'package:archive/archive_io.dart';
 import 'package:ffi/ffi.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/utils/desktop_tray.dart';
 
@@ -29,7 +30,7 @@ class WindowsZipUpdater {
     logger.i('WindowsZipUpdater: $msg');
   }
 
-  static Future<bool> install(String version, File zipFile) async {
+  static Future<bool> install(String version, File zipFile, AppLocalizations loc) async {
     if (!Platform.isWindows || _updating) {
       return false;
     }
@@ -61,7 +62,7 @@ class WindowsZipUpdater {
       await _extractZip(zipFile, extractDir);
       await _log(logFile, 'extracted to ${extractDir.path}');
 
-      final stagedExe = await _findStagedExe(extractDir);
+      final stagedExe = await _findStagedExe(extractDir, loc);
       final stagedRoot = _stagedRoot(extractDir, stagedExe);
       await _log(logFile, 'stagedExe=${stagedExe.path} stagedRoot=${stagedRoot.path}');
 
@@ -81,7 +82,7 @@ class WindowsZipUpdater {
         stagingDir.path,
       ];
 
-      await _launchHelper(logFile: logFile, helper: helper, args: args, needsAuth: needsAuth);
+      await _launchHelper(logFile: logFile, helper: helper, args: args, needsAuth: needsAuth, loc: loc);
       await _log(logFile, 'helper launched, exiting app');
 
       exit(0);
@@ -108,6 +109,7 @@ class WindowsZipUpdater {
     required File helper,
     required List<String> args,
     required bool needsAuth,
+    required AppLocalizations loc,
   }) async {
     if (needsAuth) {
       String cmdQuote(String s) => '"${s.replaceAll('"', '\\"')}"';
@@ -134,15 +136,11 @@ class WindowsZipUpdater {
         workingDirectory: helper.parent.path,
       );
       if (shellExecuteResult <= 32) {
-        throw WindowsZipUpdateException(
-          'UAC 提权启动更新脚本失败，ShellExecuteW result=$shellExecuteResult',
-        );
+        throw WindowsZipUpdateException(loc.updWinUacLaunchFailed(shellExecuteResult));
       }
       final started = await _waitForFile(launchMarker, const Duration(seconds: 15));
       if (!started) {
-        throw WindowsZipUpdateException(
-          '等待 UAC 提权启动更新脚本超时，请确认已在权限提示中点击“是”',
-        );
+        throw WindowsZipUpdateException(loc.updWinUacTimeout);
       }
       await _log(logFile, 'powershell launch request accepted, helper start acknowledged');
       return;
@@ -236,7 +234,7 @@ class WindowsZipUpdater {
     return '${root.path}${Platform.pathSeparator}$normalized';
   }
 
-  static Future<File> _findStagedExe(Directory extractDir) async {
+  static Future<File> _findStagedExe(Directory extractDir, AppLocalizations loc) async {
     final exes = <File>[];
 
     await for (final entity in extractDir.list(recursive: true, followLinks: false)) {
@@ -246,7 +244,7 @@ class WindowsZipUpdater {
     }
 
     if (exes.isEmpty) {
-      throw WindowsZipUpdateException('更新包中未找到 exe');
+      throw WindowsZipUpdateException(loc.updWinExeNotFound);
     }
 
     final named = exes.where((exe) {
@@ -261,7 +259,7 @@ class WindowsZipUpdater {
       return exes.first;
     }
 
-    throw WindowsZipUpdateException('更新包中包含多个 exe，无法确认启动目标');
+    throw WindowsZipUpdateException(loc.updWinMultipleExe);
   }
 
   static Directory _stagedRoot(Directory extractDir, File stagedExe) {

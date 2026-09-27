@@ -5235,6 +5235,342 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get contentBodyPreviewTruncated => '预览已截断';
 
+
+  @override
+  String guideLoadFailed(String error) {
+    return '文档加载失败：$error';
+  }
+
+  @override
+  String get guideSearchHint => '搜索文档';
+
+  @override
+  String get guideMarkResetTooltip => '重置重点标记说明';
+
+  @override
+  String get wsRuleMgrFrameActionTitle => '帧级动作';
+
+  @override
+  String get wsRuleMgrActionLabel => '动作';
+
+  @override
+  String get wsRuleMgrActionObserve => '仅匹配，不干预';
+
+  @override
+  String get wsRuleMgrActionRewrite => '改写帧内容';
+
+  @override
+  String get wsRuleMgrActionDrop => '丢弃该帧';
+
+  @override
+  String get wsRuleMgrActionDelay => '延迟转发';
+
+  @override
+  String get wsRuleMgrActionDuplicate => '重复发送一帧';
+
+  @override
+  String get wsRuleMgrPayloadMatchLabel => '帧内容匹配（留空＝该方向全部帧）';
+
+  @override
+  String get wsRuleMgrPayloadMatchHint => '按上面的匹配模式作用于帧内容，如 login';
+
+  @override
+  String get wsRuleMgrReplaceWith => '替换为';
+
+  @override
+  String get wsRuleMgrRewriteNote => '分片帧、压缩帧与控制帧不会被改写，仍原样转发';
+
+  @override
+  String get wsRuleMgrDelayMs => '延迟毫秒';
+
+
+  @override
+  String pcCertInstallToSystem(String detail) {
+    return ' 安装证书到本系统，$detail';
+  }
+
+  @override
+  String get pcCertMacTrustHint => '安装完双击选择“始终信任此证书”。 如安装打开失败，请导出证书拖拽到系统证书里';
+
+  @override
+  String get pcCertWinTrustHint => '选择“受信任的根证书颁发机构”';
+
+  @override
+  String get pcCertLinuxGuide => '安装证书到本系统，以Ubuntu为例 下载证书：\n先把证书复制到 /usr/local/share/ca-certificates/，然后执行 update-ca-certificates 即可。\n其他系统请网上搜索安装根证书';
+
+  @override
+  String get pcCertFirefoxHint => '提示：FireFox有自己的信任证书库，所以要手动在设置中导入需要导入的证书。';
+
+  @override
+  String get pcCertTrustTitle => '通过安装并信任 ProxyPin CA';
+
+  @override
+  String get pcCertTrustDesc => 'ProxyPin 可以动态解密 HTTPS 流量以展示原始请求/响应。';
+
+  @override
+  String get pcCertInstalledTitle => '证书已安装';
+
+  @override
+  String get pcCertInstallSuccess => '证书安装成功';
+
+  @override
+  String get pcCertInstallFailed => '证书安装失败，请尝试手动安装';
+
+  @override
+  String fuzzerDictFilled(String name, String count) {
+    return '已填入「$name」共 $count 条';
+  }
+
+  @override
+  String fuzzerDictFailed(String error) {
+    return '字典展开失败：$error';
+  }
+
+  @override
+  String get fuzzerFillFromDict => '从字典填充';
+
+  @override
+  String fuzzerPayloadCount(String count) {
+    return '$count 条';
+  }
+
+  @override
+  String get fuzzerRulesTitle => '判定规则（与基线比对）';
+
+  @override
+  String get fuzzerNoRuleEnabled => '未启用任何规则';
+
+  @override
+  String fuzzerRulesEnabled(String names) {
+    return '已启用：$names';
+  }
+
+  @override
+  String get fuzzerRulesNote => '规则只负责标出「和基线不一样」，不代表这里就有漏洞 —— 结论由你下。';
+
+  @override
+  String get capLimitUnlimitedOption => '不限（保留完整内容，默认）';
+
+  @override
+  String get capLimitOption128 => '128 KB（只看头部与少量内容）';
+
+  @override
+  String get capLimitUnlimitedDesc => '不限：保留完整请求/响应内容';
+
+  @override
+  String capLimitSizeMb(String mb) {
+    return '上限 $mb MB：超出部分只保留前 $mb MB 用于展示';
+  }
+
+  @override
+  String capLimitSizeKb(String kb) {
+    return '上限 $kb KB：超出部分只保留前 $kb KB 用于展示';
+  }
+
+  @override
+  String get capLimitDesc => '超过上限的响应/请求体只保留前 N 字节（压缩体整体释放），用于降低长时间抓包的内存占用。裁剪在转发完成后进行，不影响实际转发。';
+
+  @override
+  String get navBarMultiSeparatorHint => '多个使用;分割';
+
+  @override
+  String navBarAiEnabled(String model) {
+    return '已启用 · $model';
+  }
+
+  @override
+  String get navBarAiNotConfigured => '未配置 · 接入 OpenAI 兼容接口分析抓包请求';
+
+  @override
+  String get navBarLogSubtitle => '应用运行日志查看与导出';
+
+  @override
+  String get navBarDocSubtitle => '功能教程 · 规范文档 · 开发文档（离线内置）';
+
+
+  @override
+  String get updRestartHint => '应用将退出并重启以完成更新。';
+
+  @override
+  String get updPreparing => '正在准备更新...';
+
+  @override
+  String get updDownloading => '正在下载更新...';
+
+  @override
+  String get updReadyToInstall => '更新已下载完成，可立即安装';
+
+  @override
+  String get updLaunchingInstaller => '正在启动安装...';
+
+  @override
+  String get updFailed => '更新失败';
+
+  @override
+  String get updCancelled => '更新已取消';
+
+  @override
+  String updDownloadFailed(String error) {
+    return '下载失败: $error';
+  }
+
+  @override
+  String get updInvalidUrl => '下载地址无效';
+
+  @override
+  String updDownloadHttpError(int code) {
+    return '下载失败 (HTTP $code)';
+  }
+
+  @override
+  String get updVerifyFailed => '下载文件校验失败';
+
+  @override
+  String get updInstallerMissing => '安装文件缺失';
+
+  @override
+  String get updInPlaceFailed => '原地更新失败, 请手动安装';
+
+  @override
+  String updLaunchFailed(String error) {
+    return '安装启动失败: $error';
+  }
+
+  @override
+  String get updPlatformUnsupported => '当前平台不支持自动安装';
+
+  @override
+  String updMacExtractFailed(String error) {
+    return '解压更新包失败: $error';
+  }
+
+  @override
+  String get updMacAppNotFound => '更新包中未找到 App';
+
+  @override
+  String get updMacMultipleApps => '更新包中包含多个 App，无法确认安装目标';
+
+  @override
+  String get updMacInvalidApp => '更新包 App 结构无效';
+
+  @override
+  String get updMacAuthFailed => '用户取消授权或授权安装失败';
+
+  @override
+  String updWinUacLaunchFailed(int code) {
+    return 'UAC 提权启动更新脚本失败，ShellExecuteW result=$code';
+  }
+
+  @override
+  String get updWinUacTimeout => '等待 UAC 提权启动更新脚本超时，请确认已在权限提示中点击“是”';
+
+  @override
+  String get updWinExeNotFound => '更新包中未找到 exe';
+
+  @override
+  String get updWinMultipleExe => '更新包中包含多个 exe，无法确认启动目标';
+
+
+  @override
+  String get domainAddHelper => '域名或 URL 前缀均可，* 为通配符';
+
+  @override
+  String splashSubtitle(String version) {
+    return 'v$version · 开源免费抓包工具';
+  }
+
+  @override
+  String get bvVariableWord => '变量';
+
+  @override
+  String bvSampleVariable(String lb, String word, String rb) {
+    return '$lb$lb$word$rb$rb';
+  }
+
+  @override
+  String imageRenderFailed(String error) {
+    return '无法渲染图片：$error';
+  }
+
+  @override
+  String get copyValue => '复制值';
+
+  @override
+  String repeatBatchCount(int count) {
+    return '批量重放 $count 个请求';
+  }
+
+  @override
+  String get aiSettings => 'AI 设置';
+
+  @override
+  String get millisecond => '毫秒';
+
+  @override
+  String get minute => '分钟';
+
+  @override
+  String get searchHistory => '搜索历史';
+
+  @override
+  String get clearSearchHistory => '清空搜索历史？';
+
+  @override
+  String get languageChineseSimplified => '简体中文';
+
+  @override
+  String get languageChineseTraditional => '繁體中文';
+
+  @override
+  String get invalidRewriteRuleList => '内容不是有效的重写规则列表';
+
+  @override
+  String get scriptConsoleTitle => '脚本控制台';
+
+  @override
+  String get remoteDeviceDisconnected => '远程设备连接已断开';
+
+  @override
+  String get cryptoRuleEmpty => '暂无解密规则';
+
+  @override
+  String get cryptoRuleEmptyHint => '点击右上角 + 添加需要解密的请求';
+
+  @override
+  String get cryptoRuleFieldHintEmpty => '为空=整个 body';
+
+  @override
+  String get jsonViewerEmptyHint => '请输入或打开 JSON';
+
+  @override
+  String get aboutSlogan => '全平台开源免费抓包软件';
+
+  @override
+  String get downloadAddress => '下载地址';
+
+  @override
+  String get beautifyNotSupported => '当前数据类型不支持美化';
+
+  @override
+  String repeatResultSuccess(int count) {
+    return '成功：$count';
+  }
+
+  @override
+  String repeatResultFail(int count) {
+    return '失败：$count';
+  }
+
+  @override
+  String repeatResultRetry(int count) {
+    return '重试：$count';
+  }
+
+  @override
+  String repeatResultError(String error) {
+    return '错误：$error';
+  }
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

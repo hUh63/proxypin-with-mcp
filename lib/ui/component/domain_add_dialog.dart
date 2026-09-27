@@ -32,10 +32,10 @@ class DomainAddDialog extends StatelessWidget {
                       // `*` 通配，匹配目标是 `host + path?query`，例如
                       //   *.example.com            整个域名
                       //   api.example.com/v1/*     只抓某个接口
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: 'Host / URL',
                           hintText: '*.example.com  ·  api.example.com/v1/*',
-                          helperText: '域名或 URL 前缀均可，* 为通配符 / host or URL prefix; * is wildcard'),
+                          helperText: localizations.domainAddHelper),
                       validator: (val) => val == null || val.trim().isEmpty ? localizations.cannotBeEmpty : null,
                       onChanged: (val) => host = val)
                 ]))),

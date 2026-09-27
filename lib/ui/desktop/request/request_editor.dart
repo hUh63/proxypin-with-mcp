@@ -560,7 +560,6 @@ class _HttpState extends State<_HttpWidget> {
           child: SingleChildScrollView(child: HttpBodyWidget(httpMessage: message, hideRequestRewrite: true)));
     }
 
-    final isCN = localizations.localeName == 'zh';
     final isNone = _bodyLanguage == _BodyLanguage.none;
     final ct = _bodyLanguageToContentType[_bodyLanguage];
     final language = ct == null ? null : HighlightLanguages.getLanguage(ct);
@@ -582,7 +581,7 @@ class _HttpState extends State<_HttpWidget> {
           child: isNone
               ? Center(
                   child: Text(
-                    isCN ? '此请求无消息体' : 'This request has no body',
+                    localizations.noMessageBody,
                     style: TextStyle(color: Theme.of(context).hintColor),
                   ),
                 )
@@ -611,13 +610,12 @@ class _HttpState extends State<_HttpWidget> {
 
   Widget _bodyToolbar() {
     final localizations = AppLocalizations.of(context)!;
-    final isCN = localizations.localeName == 'zh';
     final color = Theme.of(context).colorScheme.primary;
 
     return SizedBox(
         height: 34,
         child: Row(children: [
-          Text(isCN ? '数据类型' : 'Type', style: const TextStyle(fontSize: 12)),
+          Text(localizations.dataType, style: const TextStyle(fontSize: 12)),
           const SizedBox(width: 8),
           DropdownButtonHideUnderline(
             child: DropdownButton<_BodyLanguage>(
@@ -707,11 +705,7 @@ class _HttpState extends State<_HttpWidget> {
         formatted = XML.pretty(text);
         break;
       default:
-        FlutterToastr.show(
-            AppLocalizations.of(context)!.localeName == 'zh'
-                ? '当前数据类型不支持美化'
-                : 'Beautify is not supported for this type',
-            context);
+        FlutterToastr.show(AppLocalizations.of(context)!.beautifyNotSupported, context);
         return;
     }
     if (formatted != text) {

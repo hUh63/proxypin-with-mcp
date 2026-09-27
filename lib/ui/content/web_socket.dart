@@ -191,7 +191,7 @@ class _PreviewDialogState extends State<_PreviewDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => _savePayload(context, widget.bytes), child: const Text('保存')),
+        TextButton(onPressed: () => _savePayload(context, widget.bytes), child: Text(AppLocalizations.of(context)!.save)),
         TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(MaterialLocalizations.of(context).closeButtonLabel))
@@ -214,7 +214,7 @@ class _PreviewDialogState extends State<_PreviewDialog> {
         Image.memory(
           bytes,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stack) => Text('无法渲染图片：$error'),
+          errorBuilder: (context, error, stack) => Text(AppLocalizations.of(context)!.imageRenderFailed('$error')),
         ),
       ],
     );

@@ -286,11 +286,13 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
   // 显示重放结果统计 (#892) - 增强：显示最后错误信息
   void _showRepeatResult() {
     if (successCount > 0 || failCount > 0) {
-      String message = '成功：$successCount\n失败：$failCount\n重试：$retryCount';
+      String message = '${localizations.repeatResultSuccess(successCount)}\n'
+          '${localizations.repeatResultFail(failCount)}\n'
+          '${localizations.repeatResultRetry(retryCount)}';
       if (lastError != null && failCount > 0) {
         // 增强：截断错误信息避免过长 (#892)
         String errorPreview = lastError!.length > 50 ? '${lastError!.substring(0, 50)}...' : lastError!;
-        message += '\n错误：$errorPreview';
+        message += '\n${localizations.repeatResultError(errorPreview)}';
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -323,10 +325,10 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
                   isDense: true,
                   isExpanded: true,
                   underline: const SizedBox(),
-                  items: const [
-                    DropdownMenuItem(value: 0, child: Text('毫秒', style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: 1, child: Text('秒', style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: 2, child: Text('分钟', style: TextStyle(fontSize: 12))),
+                  items: [
+                    DropdownMenuItem(value: 0, child: Text(localizations.millisecond, style: const TextStyle(fontSize: 12))),
+                    DropdownMenuItem(value: 1, child: Text(localizations.second, style: const TextStyle(fontSize: 12))),
+                    DropdownMenuItem(value: 2, child: Text(localizations.minute, style: const TextStyle(fontSize: 12))),
                   ],
                   onChanged: (val) {
                     if (val != null) {

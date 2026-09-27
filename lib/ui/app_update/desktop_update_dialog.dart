@@ -18,10 +18,6 @@ class DesktopUpdateDialog extends StatelessWidget {
 
   const DesktopUpdateDialog({super.key, required this.version, required this.asset});
 
-  static String _t(BuildContext context, String zh, String en) {
-    return Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
-  }
-
   /// 移除残留的后台下载监听器(如有)。
   static void _clearBackgroundListener() {
     if (_backgroundListener != null) {
@@ -116,7 +112,7 @@ class DesktopUpdateDialog extends StatelessWidget {
                   if (state.phase == DesktopUpdatePhase.readyToInstall) ...[
                     const SizedBox(height: 10),
                     Text(
-                      _t(context, '应用将退出并重启以完成更新。', 'The app will quit and restart to complete the update.'),
+                      localizations.updRestartHint,
                       style: const TextStyle(fontSize: 12, color: Color(0xFF667085)),
                     ),
                   ],
@@ -137,7 +133,7 @@ class DesktopUpdateDialog extends StatelessWidget {
                   child: Text(localizations.appUpdateLaterBtnTxt),
                 ),
                 FilledButton(
-                  onPressed: service.installAndQuit,
+                  onPressed: () => service.installAndQuit(localizations),
                   child: Text(localizations.appUpdateInstallNow),
                 ),
               ]);
@@ -154,7 +150,7 @@ class DesktopUpdateDialog extends StatelessWidget {
                   child: Text(localizations.appUpdateOpenDownloadPage),
                 ),
                 FilledButton(
-                  onPressed: () => service.start(version, asset),
+                  onPressed: () => service.start(version, asset, localizations),
                   child: Text(localizations.appUpdateRetry),
                 ),
               ]);
@@ -192,19 +188,20 @@ class DesktopUpdateDialog extends StatelessWidget {
   }
 
   String _message(BuildContext context, DesktopUpdateState state) {
+    final localizations = AppLocalizations.of(context)!;
     switch (state.phase) {
       case DesktopUpdatePhase.idle:
-        return _t(context, '正在准备更新...', 'Preparing update...');
+        return localizations.updPreparing;
       case DesktopUpdatePhase.downloading:
-        return _t(context, '正在下载更新...', 'Downloading update...');
+        return localizations.updDownloading;
       case DesktopUpdatePhase.readyToInstall:
-        return _t(context, '更新已下载完成，可立即安装', 'Update downloaded and ready to install');
+        return localizations.updReadyToInstall;
       case DesktopUpdatePhase.launchingInstaller:
-        return _t(context, '正在启动安装...', 'Launching installer...');
+        return localizations.updLaunchingInstaller;
       case DesktopUpdatePhase.failed:
-        return _t(context, '更新失败', 'Update failed');
+        return localizations.updFailed;
       case DesktopUpdatePhase.cancelled:
-        return _t(context, '更新已取消', 'Update cancelled');
+        return localizations.updCancelled;
     }
   }
 
@@ -233,8 +230,8 @@ class DesktopUpdateDialog extends StatelessWidget {
 
 /// 入口：启动下载并展示进度对话框。
 Future<void> showDesktopUpdateDialog(BuildContext context, RemoteVersionEntity version, ReleaseAsset asset) async {
-  final service = DesktopUpdateService.instance;
-  unawaited(service.start(version, asset));
   if (!context.mounted) return;
+  final service = DesktopUpdateService.instance;
+  unawaited(service.start(version, asset, AppLocalizations.of(context)!));
   await DesktopUpdateDialog.show(context, version, asset);
 }

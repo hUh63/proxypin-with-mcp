@@ -533,18 +533,18 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text('帧级动作', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(appLocalizations.wsRuleMgrFrameActionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               DropdownButtonFormField<WsFrameAction>(
                 isExpanded: true,
                 value: _action,
-                decoration: const InputDecoration(labelText: '动作'),
-                items: const [
-                  DropdownMenuItem(value: WsFrameAction.observe, child: Text('仅匹配，不干预')),
-                  DropdownMenuItem(value: WsFrameAction.rewrite, child: Text('改写帧内容')),
-                  DropdownMenuItem(value: WsFrameAction.drop, child: Text('丢弃该帧')),
-                  DropdownMenuItem(value: WsFrameAction.delay, child: Text('延迟转发')),
-                  DropdownMenuItem(value: WsFrameAction.duplicate, child: Text('重复发送一帧')),
+                decoration: InputDecoration(labelText: appLocalizations.wsRuleMgrActionLabel),
+                items: [
+                  DropdownMenuItem(value: WsFrameAction.observe, child: Text(appLocalizations.wsRuleMgrActionObserve)),
+                  DropdownMenuItem(value: WsFrameAction.rewrite, child: Text(appLocalizations.wsRuleMgrActionRewrite)),
+                  DropdownMenuItem(value: WsFrameAction.drop, child: Text(appLocalizations.wsRuleMgrActionDrop)),
+                  DropdownMenuItem(value: WsFrameAction.delay, child: Text(appLocalizations.wsRuleMgrActionDelay)),
+                  DropdownMenuItem(value: WsFrameAction.duplicate, child: Text(appLocalizations.wsRuleMgrActionDuplicate)),
                 ],
                 onChanged: (value) {
                   if (value != null) setState(() => _action = value);
@@ -553,9 +553,9 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _payloadController,
-                decoration: const InputDecoration(
-                  labelText: '帧内容匹配（留空＝该方向全部帧）',
-                  hintText: '按上面的匹配模式作用于帧内容，如 login',
+                decoration: InputDecoration(
+                  labelText: appLocalizations.wsRuleMgrPayloadMatchLabel,
+                  hintText: appLocalizations.wsRuleMgrPayloadMatchHint,
                 ),
               ),
               if (_action == WsFrameAction.rewrite) ...[
@@ -563,12 +563,12 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
                 TextFormField(
                   controller: _replacementController,
                   maxLines: 3,
-                  decoration: const InputDecoration(labelText: '替换为'),
+                  decoration: InputDecoration(labelText: appLocalizations.wsRuleMgrReplaceWith),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  '分片帧、压缩帧与控制帧不会被改写，仍原样转发',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                Text(
+                  appLocalizations.wsRuleMgrRewriteNote,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
               if (_action == WsFrameAction.delay) ...[
@@ -576,7 +576,7 @@ class _RuleEditDialogState extends State<RuleEditDialog> {
                 TextFormField(
                   controller: _delayController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: '延迟毫秒'),
+                  decoration: InputDecoration(labelText: appLocalizations.wsRuleMgrDelayMs),
                 ),
               ],
             ],

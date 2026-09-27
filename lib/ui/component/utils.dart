@@ -179,7 +179,7 @@ Widget contextMenu(BuildContext context, EditableTextState editableTextState, {C
       type: ContextMenuButtonType.copy,
     ),
     ContextMenuButtonItem(
-      label: Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh') ? '复制值' : 'Copy Value',
+      label: AppLocalizations.of(context)!.copyValue,
       onPressed: () {
         unSelect(editableTextState);
         Clipboard.setData(ClipboardData(text: editableTextState.textEditingValue.text)).then((value) {

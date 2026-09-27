@@ -512,7 +512,7 @@ class _PreferenceState extends State<Preference> {
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(
               title: Text(localizations.prefCaptureBodyLimit),
-              subtitle: Text(captureBodyLimitLabel(configuration.captureBodyLimitKB),
+              subtitle: Text(captureBodyLimitLabel(localizations, configuration.captureBodyLimitKB),
                   style: const TextStyle(fontSize: 12)),
               trailing: const Icon(Icons.data_usage, size: 20),
               onTap: () => showCaptureBodyLimitDialog(context, configuration, onChanged: () => setState(() {})),
@@ -902,7 +902,7 @@ class _PreferenceState extends State<Preference> {
                   );
                   Navigator.of(context).pop();
                 },
-                child: const Text("简体中文"),
+                child: Text(localizations.languageChineseSimplified),
               ),
               const Divider(thickness: 0.5, height: 0),
               TextButton(
@@ -913,7 +913,7 @@ class _PreferenceState extends State<Preference> {
                   );
                   Navigator.of(context).pop();
                 },
-                child: const Text("繁體中文"),
+                child: Text(localizations.languageChineseTraditional),
               ),
               const Divider(thickness: 0.5, height: 0),
               TextButton(

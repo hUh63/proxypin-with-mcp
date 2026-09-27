@@ -17,6 +17,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/configuration.dart';
 
 class SplashBanner extends StatefulWidget {
@@ -194,7 +195,7 @@ class _SplashBannerState extends State<SplashBanner>
                       Text(
                         widget.subtitle?.isNotEmpty == true
                             ? widget.subtitle!
-                            : 'v${AppConfiguration.version} · 开源免费抓包工具',
+                            : AppLocalizations.of(context)!.splashSubtitle(AppConfiguration.version),
                         style: TextStyle(
                           fontSize: 13,
                           color: foreground.withValues(alpha: 0.72),
