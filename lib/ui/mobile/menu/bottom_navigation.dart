@@ -309,7 +309,7 @@ class SettingPage extends StatelessWidget {
                           Text(localizations.proxyIgnoreDomain, style: const TextStyle(fontSize: 14)),
                           const SizedBox(height: 3),
                           Text(localizations.navBarMultiSeparatorHint,
-                              style: const TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                         ],
                       ),
                       Padding(

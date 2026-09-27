@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.24.45 (2026-09-27)
+
+### 修复 v1.24.44 的编译错误（const 里用了 `Colors.grey.shade600`）
+
+`bottom_navigation.dart` 报 `Not a constant expression` / `Constant evaluation error`：
+
+```dart
+Text(localizations.navBarMultiSeparatorHint,
+    style: const TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+//                 ^^^^^  shade600 是运行时属性，不是常量
+```
+
+改造时把 `const` 下移到 `TextStyle` 上，但这个 `TextStyle` 里有 `Colors.grey.shade600`
+—— **`shadeXXX` 不是常量表达式**，加 `const` 就编译不过。去掉即可。
+
+同时把 `_constcheck.py` 从「只查 l10n 调用」扩展成「查 const 构造里的各类非常量」：
+`.shadeNNN` / `.withValues()` / `.withOpacity()` / `Theme.of(context)` / `MediaQuery.of(context)`
+/ `localizations.` —— 全库当前 **0 命中**。
+
+
 ## v1.24.44 (2026-09-27)
 
 ### 补推 l10n 第八/九批的全部落地文件（含 arb 与生成文件）
