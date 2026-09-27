@@ -646,6 +646,8 @@ String _formatTextBodyIsolate(Map<String, String> args) {
 }
 
 class _BodyState extends State<_Body> {
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
+
   static const int _virtualizedThreshold = 100000;
 
   late ViewType viewType;

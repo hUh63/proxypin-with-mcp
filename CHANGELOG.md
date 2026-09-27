@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.24.43 (2026-09-27)
+
+### 修复 v1.24.40/41/42 的编译错误（`localizations` getter 作用域）
+
+`lib/ui/content/body.dart` 里 `AppLocalizations get localizations` 定义在
+`HttpBodyState` 类中，但 v1.24.41 新改的 `_decodeTruncatedChip()` 位于**另一个类**
+`_BodyState`，报 `The getter 'localizations' isn't defined for the type '_BodyState'`。
+在 `_BodyState` 内补上同样的 getter。
+
+> 这一类错误（便捷 getter 跨类使用）已经踩了三次（v1.24.38 `loc` 在 try 外、
+> v1.24.40 `Uri`/`String`、本次）。为此加了 `_scopecheck.py`：解析每个类的边界，
+> 报告「类里用了 `localizations.xxx` 但同类内没有对应 getter」的位置 ——
+> 全库报出 182 处提示，但其中绝大多数是**局部变量/参数同名**的误报
+> （以 CI 实际报错为准，本次真实问题只有 body.dart 这一处）。
+
+
 ## v1.24.42 (2026-09-27)
 
 ### 修复 v1.24.40 / v1.24.41 的编译错误
