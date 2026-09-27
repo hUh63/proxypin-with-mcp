@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.24.48 (2026-09-28)
+
+### 修复 v1.24.47 的编译错误（`int?` 传给非空参数）
+
+`mcp_scheduler.dart` 报 `The argument type 'int?' can't be assigned to the
+parameter type 'int'`：`repeatCount` 是 `int?` 实例字段，而 **Dart 的流分析
+不会提升实例字段**（它可能在 `?:` 的另一分支被改写），所以
+`repeatCount == null ? … : f(repeatCount)` 的 else 分支里它仍是 `int?`。
+改用局部变量 `final rc = repeatCount;` 后即可完成非空提升。
+
 ## v1.24.47 (2026-09-28)
 
 ### i18n 批 A-2：WebSocket 载荷标签、安全头说明、调度周期、REST 模式

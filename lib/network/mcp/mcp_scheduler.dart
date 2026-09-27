@@ -363,13 +363,16 @@ class ScheduledTask {
     };
     switch (repeatMode) {
       case 'daily':
-        return repeatCount == null ? loc.mcpSchedDaily : loc.mcpSchedDailyCount(repeatCount);
+        final rc = repeatCount;
+        return rc == null ? loc.mcpSchedDaily : loc.mcpSchedDailyCount(rc);
       case 'weekly':
         final days = weekdays.map((w) => weekdayNames[w] ?? '$w').join(loc.mcpSchedWeekdaySep);
-        return repeatCount == null ? loc.mcpSchedWeekly(days) : loc.mcpSchedWeeklyCount(days, repeatCount);
+        final rc = repeatCount;
+        return rc == null ? loc.mcpSchedWeekly(days) : loc.mcpSchedWeeklyCount(days, rc);
       case 'interval':
         final m = intervalMinutes ?? 0;
-        return repeatCount == null ? loc.mcpSchedInterval(m) : loc.mcpSchedIntervalCount(m, repeatCount);
+        final rc = repeatCount;
+        return rc == null ? loc.mcpSchedInterval(m) : loc.mcpSchedIntervalCount(m, rc);
       case 'cron':
         return 'Cron: ${cronExpression ?? ''}';
       default:
