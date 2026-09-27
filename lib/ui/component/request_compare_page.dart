@@ -159,7 +159,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
                   Text(localizations.cmpDetailedReport, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   SelectableText(
-                    _result.detailedReport,
+                    _result.detailedReport(localizations),
                     style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                   ),
                 ],

@@ -325,8 +325,8 @@ Future<void> exportRequestsAsFiles(
       logger.w('export wrote no file, ${requests.length} requests, last error: $lastError');
       if (context.mounted) {
         FlutterToastr.show(
-          '导出失败：${requests.length} 条请求都没写出文件'
-          '${lastError == null ? '' : '（$lastError）'}，可改用「导出 HAR」',
+          AppLocalizations.of(context)!.exportReqNoFileWritten(
+              requests.length, lastError == null ? '' : '（$lastError）'),
           context,
         );
       }
@@ -391,7 +391,7 @@ void showExportDialog(
     context: ctx,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: const Text('导入 / 导出'),
+        title: Text(localizations.exportImportDialogTitle),
         content: SingleChildScrollView(
           child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -399,21 +399,21 @@ void showExportDialog(
             if (onImport != null)
               ListTile(
                 leading: const Icon(Icons.content_paste),
-                title: const Text('从剪贴板导入口令'),
-                subtitle: const Text('粘贴此前导出的口令，还原请求到列表', style: TextStyle(fontSize: 12)),
+                title: Text(localizations.exportImportClipboardTitle),
+                subtitle: Text(localizations.exportImportClipboardDesc, style: const TextStyle(fontSize: 12)),
                 onTap: () async {
                   final data = await Clipboard.getData(Clipboard.kTextPlain);
                   try {
                     final imported = decodeRequestPasscode(data?.text ?? '');
-                    if (imported.isEmpty) throw const FormatException('口令中没有任何请求');
+                    if (imported.isEmpty) throw FormatException(localizations.exportImportEmpty);
                     Navigator.pop(context);
                     onImport!(imported);
                     if (ctx.mounted) {
-                      FlutterToastr.show('已导入 ${imported.length} 条请求', ctx);
+                      FlutterToastr.show(localizations.exportImportedCount(imported.length), ctx);
                     }
                   } catch (e) {
                     if (ctx.mounted) {
-                      FlutterToastr.show('口令无效：$e', ctx, backgroundColor: Colors.red);
+                      FlutterToastr.show(localizations.exportInvalidPasscodeWithError('$e'), ctx, backgroundColor: Colors.red);
                     }
                   }
                 },
@@ -493,8 +493,8 @@ void showExportDialog(
             ListTile(
               leading: const Icon(Icons.table_chart_outlined),
               title: Text(localizations.exportCsv),
-              subtitle: const Text('一行一条请求，敏感查询参数（token / 密码 / 签名等）自动打码',
-                  style: TextStyle(fontSize: 12)),
+              subtitle: Text(localizations.exportCsvDesc,
+                  style: const TextStyle(fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
                 exportRequestsCsv(
@@ -508,8 +508,8 @@ void showExportDialog(
             ListTile(
               leading: const Icon(Icons.data_object),
               title: Text(localizations.exportJson),
-              subtitle: const Text('结构化 JSON，敏感查询参数自动打码，便于喂给 AI 或脚本分析',
-                  style: TextStyle(fontSize: 12)),
+              subtitle: Text(localizations.exportJsonDesc,
+                  style: const TextStyle(fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
                 exportRequestsJson(
@@ -522,13 +522,13 @@ void showExportDialog(
             ),
             ListTile(
               leading: const Icon(Icons.copy_all_outlined),
-              title: const Text('复制口令'),
-              subtitle: const Text('将所选请求压缩为口令文本，粘贴给他人即可导入', style: TextStyle(fontSize: 12)),
+              title: Text(localizations.exportCopyPasscode),
+              subtitle: Text(localizations.exportCopyPasscodeDesc, style: const TextStyle(fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
                 Clipboard.setData(ClipboardData(text: encodeRequestPasscode(requests)));
                 if (ctx.mounted) {
-                  FlutterToastr.show('口令已复制（${requests.length} 条请求）', ctx);
+                  FlutterToastr.show(localizations.exportPasscodeCopied(requests.length), ctx);
                 }
               },
             ),

@@ -10412,6 +10412,109 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'Error: $error'**
   String repeatResultError(String error);
 
+
+  /// No description provided for @exportReqNoFileWritten.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: none of the $count requests were written$detail. Try "Export HAR" instead.'**
+  String exportReqNoFileWritten(int count, String detail);
+
+  /// No description provided for @exportImportDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import / Export'**
+  String get exportImportDialogTitle;
+
+  /// No description provided for @exportImportClipboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import passcode from clipboard'**
+  String get exportImportClipboardTitle;
+
+  /// No description provided for @exportImportClipboardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a previously exported passcode to restore requests into the list'**
+  String get exportImportClipboardDesc;
+
+  /// No description provided for @exportImportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests in the passcode'**
+  String get exportImportEmpty;
+
+  /// No description provided for @exportImportedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported $count requests'**
+  String exportImportedCount(int count);
+
+  /// No description provided for @exportInvalidPasscodeWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid passcode: $error'**
+  String exportInvalidPasscodeWithError(String error);
+
+  /// No description provided for @exportCsvDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'One request per line; sensitive query params (token / password / signature, etc.) are masked automatically'**
+  String get exportCsvDesc;
+
+  /// No description provided for @exportJsonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Structured JSON with sensitive query params masked automatically, handy for feeding to AI or scripts'**
+  String get exportJsonDesc;
+
+  /// No description provided for @exportCopyPasscode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy passcode'**
+  String get exportCopyPasscode;
+
+  /// No description provided for @exportCopyPasscodeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Compress the selected requests into passcode text; paste it to others to import'**
+  String get exportCopyPasscodeDesc;
+
+  /// No description provided for @exportPasscodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Passcode copied ($count requests)'**
+  String exportPasscodeCopied(int count);
+
+  /// No description provided for @cmpReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'=== Request comparison report ==='**
+  String get cmpReportTitle;
+
+  /// No description provided for @cmpUrlChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'URL changes:'**
+  String get cmpUrlChanges;
+
+  /// No description provided for @cmpMethodChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Method changes:'**
+  String get cmpMethodChanges;
+
+  /// No description provided for @cmpResultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result: $value'**
+  String cmpResultLabel(String value);
+
+  /// No description provided for @cmpChars.
+  ///
+  /// In en, this message translates to:
+  /// **'chars'**
+  String get cmpChars;
+
 }
 
 class _AppLocalizationsDelegate

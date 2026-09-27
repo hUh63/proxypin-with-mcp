@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.24.46 (2026-09-28)
+
+### i18n 批 A-1：请求对比报告 + 导入/导出对话框
+
+- `request_comparator.dart`：`detailedReport` 由 getter 改为接收 `AppLocalizations`
+  的方法，报告内的标签（URL 变化 / 方法变化 / 请求头变化 /
+  查询参数变化 / 状态码变化 / 总计变化 / 对比结果 …）全部走 l10n；
+  复用既有 `cmp*` key，新增 5 个（`cmpReportTitle` / `cmpUrlChanges` /
+  `cmpMethodChanges` / `cmpResultLabel` / `cmpChars`）。
+  同时删掉全库无人读取的 `summary` 字段（其值为硬编码中文）。
+- `export_request.dart`：导入/导出对话框的标题，CSV / JSON / 口令三条入口的
+  标题与副标题，以及口令导入 / 复制的 Toast，全部走 l10n，新增 12 个 key。
+  外层 `const Text(...)` 的 `const` 相应下移到仍成立的 `TextStyle` 上。
+- `request_compare_page.dart`：`detailedReport` 调用点传入 `localizations`。
+
+本轮起清理非 `ui/` 层的硬编码文案（logger 日志、注释、AI prompt、
+内嵌脚本体、纯技术标识仍按既有约定保留）。
+
 ## v1.24.45 (2026-09-27)
 
 ### 修复 v1.24.44 的编译错误（const 里用了 `Colors.grey.shade600`）

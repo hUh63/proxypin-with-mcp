@@ -6,6 +6,7 @@
  * 现改为正确的 HttpRequest / HttpResponse。
  */
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 
 /// 对比结果类型
@@ -89,23 +90,23 @@ class ComparisonResult {
   bool get hasChanges => totalChanges > 0;
 
   /// 获取变化详情文本
-  String get detailedReport {
+  String detailedReport(AppLocalizations loc) {
     final buffer = StringBuffer();
-    buffer.writeln('=== 请求对比报告 ===\n');
+    buffer.writeln('${loc.cmpReportTitle}\n');
 
     if (urlChanged) {
-      buffer.writeln('URL 变化:');
-      buffer.writeln('  - 旧：${requestA?.requestUrl}');
-      buffer.writeln('  + 新：${requestB?.requestUrl}\n');
+      buffer.writeln(loc.cmpUrlChanges);
+      buffer.writeln('  - ${loc.cmpOldValue(requestA?.requestUrl ?? '')}');
+      buffer.writeln('  + ${loc.cmpNewValue(requestB?.requestUrl ?? '')}\n');
     }
 
     if (methodChanged) {
-      buffer.writeln('方法变化:');
+      buffer.writeln(loc.cmpMethodChanges);
       buffer.writeln('  - ${requestA?.method.name} → + ${requestB?.method.name}\n');
     }
 
     if (headerDiffs.isNotEmpty) {
-      buffer.writeln('请求头变化 (${headerDiffs.length}):');
+      buffer.writeln('${loc.cmpHeaderChanges} (${headerDiffs.length}):');
       for (var diff in headerDiffs) {
         if (diff.type == CompareType.added) {
           buffer.writeln('  + ${diff.fieldName}: ${diff.newValue}');
@@ -113,24 +114,24 @@ class ComparisonResult {
           buffer.writeln('  - ${diff.fieldName}: ${diff.oldValue}');
         } else if (diff.type == CompareType.modified) {
           buffer.writeln('  ~ ${diff.fieldName}:');
-          buffer.writeln('      旧：${diff.oldValue}');
-          buffer.writeln('      新：${diff.newValue}');
+          buffer.writeln('      ${loc.cmpOldValue(diff.oldValue ?? '')}');
+          buffer.writeln('      ${loc.cmpNewValue(diff.newValue ?? '')}');
         }
       }
       buffer.writeln();
     }
 
     if (bodyDiff != null && bodyDiff!.hasChanged) {
-      buffer.writeln('请求体变化:');
+      buffer.writeln('${loc.cmpBodyChanges}:');
       if (bodyDiff!.type == CompareType.modified) {
-        buffer.writeln('  旧：${_truncate(bodyDiff!.oldValue, 200)}');
-        buffer.writeln('  新：${_truncate(bodyDiff!.newValue, 200)}');
+        buffer.writeln('  ${loc.cmpOldValue(_truncate(bodyDiff!.oldValue, 200, loc))}');
+        buffer.writeln('  ${loc.cmpNewValue(_truncate(bodyDiff!.newValue, 200, loc))}');
       }
       buffer.writeln();
     }
 
     if (queryDiffs.isNotEmpty) {
-      buffer.writeln('查询参数变化 (${queryDiffs.length}):');
+      buffer.writeln('${loc.cmpQueryChanges} (${queryDiffs.length}):');
       for (var diff in queryDiffs) {
         if (diff.type == CompareType.added) {
           buffer.writeln('  + ${diff.fieldName}=${diff.newValue}');
@@ -144,21 +145,21 @@ class ComparisonResult {
     }
 
     if (statusCodeChanged) {
-      buffer.writeln('状态码变化:');
+      buffer.writeln('${loc.cmpStatusChanges}:');
       buffer.writeln('  - ${responseA?.status.code} → + ${responseB?.status.code}\n');
     }
 
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('总计变化：$totalChanges 处');
-    buffer.writeln('对比结果：${hasChanges ? "存在差异" : "完全相同"}');
+    buffer.writeln(loc.cmpTotalChanges(totalChanges));
+    buffer.writeln(loc.cmpResultLabel(hasChanges ? loc.cmpHasDiff : loc.cmpIdentical));
 
     return buffer.toString();
   }
 
-  String _truncate(String? str, int maxLen) {
+  String _truncate(String? str, int maxLen, AppLocalizations loc) {
     if (str == null) return 'null';
     if (str.length <= maxLen) return str;
-    return '${str.substring(0, maxLen)}... (${str.length} 字符)';
+    return '${str.substring(0, maxLen)}... (${str.length} ${loc.cmpChars})';
   }
 }
 
@@ -300,7 +301,6 @@ class RequestComparator {
       responseHeaderDiffs: responseHeaderDiffs,
       responseBodyDiff: responseBodyDiff,
       totalChanges: changes,
-      summary: '共 $changes 处变化',
     );
   }
 }

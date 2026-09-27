@@ -5571,6 +5571,68 @@ class AppLocalizationsZh extends AppLocalizations {
     return '错误：$error';
   }
 
+
+  @override
+  String exportReqNoFileWritten(int count, String detail) {
+    return '导出失败：$count 条请求都没写出文件$detail，可改用「导出 HAR」';
+  }
+
+  @override
+  String get exportImportDialogTitle => '导入 / 导出';
+
+  @override
+  String get exportImportClipboardTitle => '从剪贴板导入口令';
+
+  @override
+  String get exportImportClipboardDesc => '粘贴此前导出的口令，还原请求到列表';
+
+  @override
+  String get exportImportEmpty => '口令中没有任何请求';
+
+  @override
+  String exportImportedCount(int count) {
+    return '已导入 $count 条请求';
+  }
+
+  @override
+  String exportInvalidPasscodeWithError(String error) {
+    return '口令无效：$error';
+  }
+
+  @override
+  String get exportCsvDesc => '一行一条请求，敏感查询参数（token / 密码 / 签名等）自动打码';
+
+  @override
+  String get exportJsonDesc => '结构化 JSON，敏感查询参数自动打码，便于喂给 AI 或脚本分析';
+
+  @override
+  String get exportCopyPasscode => '复制口令';
+
+  @override
+  String get exportCopyPasscodeDesc => '将所选请求压缩为口令文本，粘贴给他人即可导入';
+
+  @override
+  String exportPasscodeCopied(int count) {
+    return '口令已复制（$count 条请求）';
+  }
+
+  @override
+  String get cmpReportTitle => '=== 请求对比报告 ===';
+
+  @override
+  String get cmpUrlChanges => 'URL 变化:';
+
+  @override
+  String get cmpMethodChanges => '方法变化:';
+
+  @override
+  String cmpResultLabel(String value) {
+    return '对比结果：$value';
+  }
+
+  @override
+  String get cmpChars => '字符';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

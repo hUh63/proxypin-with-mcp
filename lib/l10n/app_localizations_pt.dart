@@ -5608,6 +5608,68 @@ class AppLocalizationsPt extends AppLocalizations {
     return 'Error: $error';
   }
 
+
+  @override
+  String exportReqNoFileWritten(int count, String detail) {
+    return 'Export failed: none of the $count requests were written$detail. Try "Export HAR" instead.';
+  }
+
+  @override
+  String get exportImportDialogTitle => 'Import / Export';
+
+  @override
+  String get exportImportClipboardTitle => 'Import passcode from clipboard';
+
+  @override
+  String get exportImportClipboardDesc => 'Paste a previously exported passcode to restore requests into the list';
+
+  @override
+  String get exportImportEmpty => 'No requests in the passcode';
+
+  @override
+  String exportImportedCount(int count) {
+    return 'Imported $count requests';
+  }
+
+  @override
+  String exportInvalidPasscodeWithError(String error) {
+    return 'Invalid passcode: $error';
+  }
+
+  @override
+  String get exportCsvDesc => 'One request per line; sensitive query params (token / password / signature, etc.) are masked automatically';
+
+  @override
+  String get exportJsonDesc => 'Structured JSON with sensitive query params masked automatically, handy for feeding to AI or scripts';
+
+  @override
+  String get exportCopyPasscode => 'Copy passcode';
+
+  @override
+  String get exportCopyPasscodeDesc => 'Compress the selected requests into passcode text; paste it to others to import';
+
+  @override
+  String exportPasscodeCopied(int count) {
+    return 'Passcode copied ($count requests)';
+  }
+
+  @override
+  String get cmpReportTitle => '=== Request comparison report ===';
+
+  @override
+  String get cmpUrlChanges => 'URL changes:';
+
+  @override
+  String get cmpMethodChanges => 'Method changes:';
+
+  @override
+  String cmpResultLabel(String value) {
+    return 'Result: $value';
+  }
+
+  @override
+  String get cmpChars => 'chars';
+
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
