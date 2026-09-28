@@ -15,6 +15,8 @@
  */
 import 'dart:convert';
 
+import 'package:proxypin/l10n/app_localizations.dart';
+
 /// 一种变异技术。
 class WafTechnique {
   final String id;
@@ -58,23 +60,23 @@ class WafBypass {
   WafBypass._();
 
   /// 全部技术
-  static const List<WafTechnique> techniques = [
-    WafTechnique('url_encode', 'URL 编码', '空格等特殊字符转 %XX，绕过按原文匹配的规则'),
-    WafTechnique('double_url', '双重 URL 编码', '把 % 也编码成 %25，针对只解码一次的 WAF'),
-    WafTechnique('unicode', 'Unicode 编码', '转成 \\uXXXX，针对不处理 Unicode 的解析链'),
-    WafTechnique('case_mix', '大小写混用', 'SeLeCt —— 针对区分大小写的正则'),
-    WafTechnique('comment_split', '注释分割', '用 /**/ 替掉空白，SQL 里等价于空格'),
-    WafTechnique('comment_wrap', '内联注释包裹', '/*!50000select*/ —— MySQL 会执行注释里的内容'),
-    WafTechnique('whitespace_alt', '空白替换', '空格换 %09/%0a/%0c/+/() 等等价物'),
-    WafTechnique('double_write', '关键字双写', 'oorr → or —— 针对只替换一次的过滤器'),
-    WafTechnique('keyword_replace', '等价关键字', 'and→&&、or→||、=→like 等语义等价替换'),
-    WafTechnique('quote_escape', '引号变形', '单引号/双引号/反引号互换与转义'),
-    WafTechnique('concat_string', '字符串拼接', "'a'||'b' / CONCAT —— 绕过对整串字面量的匹配"),
-    WafTechnique('newline_inject', '换行/分块注入', '在关键字中间插入换行或 %0d%0a'),
-    WafTechnique('chunked', '分块编码', 'HTTP chunked 形式切开载荷'),
-    WafTechnique('hpp', '参数污染 (HPP)', '同名参数重复，利用前后端取值不一致'),
-    WafTechnique('base64_wrap', 'Base64 包装', '把载荷整体 base64，针对 WAF 之后才解码的场景'),
-    WafTechnique('hex_wrap', '十六进制包装', '0x... 形式（数据库层面等价）'),
+  static List<WafTechnique> techniques(AppLocalizations loc) => [
+    WafTechnique('url_encode', loc.wafTechUrlEncode, loc.wafTechUrlEncodeDesc),
+    WafTechnique('double_url', loc.wafTechDoubleUrl, loc.wafTechDoubleUrlDesc),
+    WafTechnique('unicode', loc.wafTechUnicode, loc.wafTechUnicodeDesc),
+    WafTechnique('case_mix', loc.wafTechCaseMix, loc.wafTechCaseMixDesc),
+    WafTechnique('comment_split', loc.wafTechCommentSplit, loc.wafTechCommentSplitDesc),
+    WafTechnique('comment_wrap', loc.wafTechCommentWrap, loc.wafTechCommentWrapDesc),
+    WafTechnique('whitespace_alt', loc.wafTechWhitespaceAlt, loc.wafTechWhitespaceAltDesc),
+    WafTechnique('double_write', loc.wafTechDoubleWrite, loc.wafTechDoubleWriteDesc),
+    WafTechnique('keyword_replace', loc.wafTechKeywordReplace, loc.wafTechKeywordReplaceDesc),
+    WafTechnique('quote_escape', loc.wafTechQuoteEscape, loc.wafTechQuoteEscapeDesc),
+    WafTechnique('concat_string', loc.wafTechConcatString, loc.wafTechConcatStringDesc),
+    WafTechnique('newline_inject', loc.wafTechNewlineInject, loc.wafTechNewlineInjectDesc),
+    WafTechnique('chunked', loc.wafTechChunked, loc.wafTechChunkedDesc),
+    WafTechnique('hpp', loc.wafTechHpp, loc.wafTechHppDesc),
+    WafTechnique('base64_wrap', loc.wafTechBase64Wrap, loc.wafTechBase64WrapDesc),
+    WafTechnique('hex_wrap', loc.wafTechHexWrap, loc.wafTechHexWrapDesc),
   ];
 
   static final Map<String, String Function(String)> _handlers = {
@@ -164,11 +166,11 @@ class WafBypass {
   }
 
   /// 对一条载荷应用若干技术（按给定顺序叠加）。
-  static List<WafVariant> mutate(String payload, List<String> techniqueIds) {
+  static List<WafVariant> mutate(String payload, List<String> techniqueIds, AppLocalizations loc) {
     final out = <WafVariant>[];
     var current = payload;
     for (final id in techniqueIds) {
-      final tech = techniques.where((t) => t.id == id).toList();
+      final tech = techniques(loc).where((t) => t.id == id).toList();
       if (tech.isEmpty) {
         continue;
       }
@@ -177,13 +179,13 @@ class WafBypass {
     if (techniqueIds.isNotEmpty) {
       out.add(WafVariant(
         technique: techniqueIds.join(' + '),
-        name: '组合结果（按选择顺序叠加）',
+        name: loc.wafCombinedResult,
         output: current,
       ));
     }
     // 单项结果也一并给出，方便挑一个够用的
     for (final id in techniqueIds) {
-      final tech = techniques.where((t) => t.id == id).toList();
+      final tech = techniques(loc).where((t) => t.id == id).toList();
       if (tech.isEmpty) {
         continue;
       }
@@ -198,8 +200,8 @@ class WafBypass {
   }
 
   /// 一次生成全部技术的对比结果。
-  static List<WafVariant> mutateAll(String payload) {
-    return techniques
+  static List<WafVariant> mutateAll(String payload, AppLocalizations loc) {
+    return techniques(loc)
         .map((t) => WafVariant(
               technique: t.id,
               name: t.name,

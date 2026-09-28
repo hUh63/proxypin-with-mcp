@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.24.49 (2026-09-28)
+
+### i18n 批 A-3：WAF 变异技术 + 探测判定
+
+- `waf_bypass.dart`：`techniques` 由 `const List` 改为接收 `AppLocalizations`
+  的方法，16 项变异技术的名称与说明走 l10n（32 个 key）；
+  `mutate` / `mutateAll` 接收 loc。
+- `waf_probe.dart`：`buildVariants` / `probe` / `verdictLabel` 接收 loc，
+  判定标签（基线 / 被拦截 / 疑似绕过 / 响应有变化 / 请求失败）与
+  “基线（原始载荷）”走 l10n；`WafProbeSession` 持有 loc 供 `nextBatch` 使用。
+- `waf_page.dart`：5 处调用点传入 loc。
+
+共 39 个新 key。WAF 品牌名（阿里云 WAF / 腾讯云 WAF / 安全狗 / D盾）
+与响应体拦截特征关键词（用于匹配，翻了会改变判定行为）按约定保留。
+
 ## v1.24.48 (2026-09-28)
 
 ### 修复 v1.24.47 的编译错误（`int?` 传给非空参数）

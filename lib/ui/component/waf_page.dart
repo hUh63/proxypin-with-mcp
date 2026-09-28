@@ -105,9 +105,9 @@ class _WafPageState extends State<WafPage> {
     }
     final selected = _selected.toList();
     if (selected.isEmpty) {
-      setState(() => _variants = WafBypass.mutateAll(payload));
+      setState(() => _variants = WafBypass.mutateAll(payload, AppLocalizations.of(context)!));
     } else {
-      setState(() => _variants = WafBypass.mutate(payload, selected));
+      setState(() => _variants = WafBypass.mutate(payload, selected, AppLocalizations.of(context)!));
     }
   }
 
@@ -166,12 +166,13 @@ class _WafPageState extends State<WafPage> {
     }
     // 建会话：队列化，后面一批一批发
     final session = WafProbeSession(
+      loc: AppLocalizations.of(context)!,
       url: url,
       payload: payload,
       method: _method,
       headers: _parseHeaders(headerText),
       body: bodyText.isEmpty ? null : bodyText,
-      variants: WafProbe.buildVariants(payload, _selected.toList()),
+      variants: WafProbe.buildVariants(payload, _selected.toList(), AppLocalizations.of(context)!),
       batchSize: _maxProbes,
       delayMs: _delayMs,
       timeoutSeconds: _timeoutSec,
@@ -364,7 +365,7 @@ class _WafPageState extends State<WafPage> {
             Wrap(
               spacing: 6,
               runSpacing: 6,
-              children: WafBypass.techniques
+              children: WafBypass.techniques(AppLocalizations.of(context)!)
                   .map((t) => FilterChip(
                         label: Text(t.name, style: const TextStyle(fontSize: 11)),
                         tooltip: t.description,
@@ -586,7 +587,7 @@ class _WafPageState extends State<WafPage> {
   String _selectedNames() {
     if (_selected.isEmpty) return AppLocalizations.of(context)!.wafAll;
     final names = <String>[];
-    for (final t in WafBypass.techniques) {
+    for (final t in WafBypass.techniques(AppLocalizations.of(context)!)) {
       if (_selected.contains(t.id)) names.add(t.name);
     }
     return names.join('、');
@@ -628,7 +629,7 @@ class _WafPageState extends State<WafPage> {
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(WafProbe.verdictLabel(r.verdict),
+            child: Text(WafProbe.verdictLabel(r.verdict, AppLocalizations.of(context)!),
                 style: TextStyle(fontSize: 10, color: color)),
           ),
         ]),

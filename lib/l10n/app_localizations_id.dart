@@ -5780,4 +5780,122 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get apiExtractDocDesc => 'API document generated automatically from ProxyPin capture data';
+
+
+  @override
+  String get wafTechUrlEncode => 'URL encoding';
+
+  @override
+  String get wafTechUrlEncodeDesc => 'Turn spaces and other special chars into %XX to bypass rules that match the raw text';
+
+  @override
+  String get wafTechDoubleUrl => 'Double URL encoding';
+
+  @override
+  String get wafTechDoubleUrlDesc => 'Encode % as %25 too, aimed at WAFs that decode only once';
+
+  @override
+  String get wafTechUnicode => 'Unicode encoding';
+
+  @override
+  String get wafTechUnicodeDesc => 'Convert to \\uXXXX, aimed at parser chains that do not handle Unicode';
+
+  @override
+  String get wafTechCaseMix => 'Mixed case';
+
+  @override
+  String get wafTechCaseMixDesc => 'SeLeCt -- aimed at case-sensitive regexes';
+
+  @override
+  String get wafTechCommentSplit => 'Comment splitting';
+
+  @override
+  String get wafTechCommentSplitDesc => 'Replace whitespace with /**/; equivalent to a space in SQL';
+
+  @override
+  String get wafTechCommentWrap => 'Inline comment wrapping';
+
+  @override
+  String get wafTechCommentWrapDesc => '/*!50000select*/ -- MySQL executes what is inside the comment';
+
+  @override
+  String get wafTechWhitespaceAlt => 'Whitespace substitution';
+
+  @override
+  String get wafTechWhitespaceAltDesc => 'Replace spaces with equivalents such as %09/%0a/%0c/+/()';
+
+  @override
+  String get wafTechDoubleWrite => 'Keyword doubling';
+
+  @override
+  String get wafTechDoubleWriteDesc => 'oorr -> or -- aimed at filters that replace only once';
+
+  @override
+  String get wafTechKeywordReplace => 'Equivalent keywords';
+
+  @override
+  String get wafTechKeywordReplaceDesc => 'Semantically equivalent swaps such as and->&&, or->||, =->like';
+
+  @override
+  String get wafTechQuoteEscape => 'Quote mutation';
+
+  @override
+  String get wafTechQuoteEscapeDesc => 'Swap and escape single quotes, double quotes and backticks';
+
+  @override
+  String get wafTechConcatString => 'String concatenation';
+
+  @override
+  String get wafTechConcatStringDesc => '\'a\'||\'b\' / CONCAT -- bypass matching on the whole literal';
+
+  @override
+  String get wafTechNewlineInject => 'Newline / chunk injection';
+
+  @override
+  String get wafTechNewlineInjectDesc => 'Insert a newline or %0d%0a in the middle of a keyword';
+
+  @override
+  String get wafTechChunked => 'Chunked encoding';
+
+  @override
+  String get wafTechChunkedDesc => 'Split the payload using HTTP chunked form';
+
+  @override
+  String get wafTechHpp => 'Parameter pollution (HPP)';
+
+  @override
+  String get wafTechHppDesc => 'Repeat a same-named parameter to exploit front/back-end inconsistency';
+
+  @override
+  String get wafTechBase64Wrap => 'Base64 wrapping';
+
+  @override
+  String get wafTechBase64WrapDesc => 'Base64 the whole payload, for cases that decode only after the WAF';
+
+  @override
+  String get wafTechHexWrap => 'Hex wrapping';
+
+  @override
+  String get wafTechHexWrapDesc => '0x... form (equivalent at the database layer)';
+
+  @override
+  String get wafCombinedResult => 'Combined result (stacked in selection order)';
+
+  @override
+  String get wafVerdictBaseline => 'Baseline';
+
+  @override
+  String get wafVerdictBlocked => 'Blocked';
+
+  @override
+  String get wafVerdictPassed => 'Likely bypass';
+
+  @override
+  String get wafVerdictChanged => 'Response changed';
+
+  @override
+  String get wafVerdictFailed => 'Request failed';
+
+  @override
+  String get wafBaselineOriginal => 'Baseline (original payload)';
 }

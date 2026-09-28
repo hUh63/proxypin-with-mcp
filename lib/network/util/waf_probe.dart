@@ -15,6 +15,7 @@
  */
 import 'dart:convert';
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/request_fuzzer.dart';
@@ -193,8 +194,8 @@ class WafProbe {
   /// 按技术筛出「真的会改变载荷」的变体（原样返回的没有探测价值）。
   ///
   /// [techniques] 为空表示全部技术。
-  static List<WafVariant> buildVariants(String payload, List<String> techniques) {
-    final all = WafBypass.mutateAll(payload);
+  static List<WafVariant> buildVariants(String payload, List<String> techniques, AppLocalizations loc) {
+    final all = WafBypass.mutateAll(payload, loc);
     final picked = techniques.isEmpty
         ? all
         : all.where((v) => techniques.contains(v.technique)).toList();
@@ -207,6 +208,7 @@ class WafProbe {
   /// [url] / [headers] / [body] 里用 `{{PAYLOAD}}` 标记注入位置。
   /// 返回的列表第 0 条是基线。
   static Future<List<WafProbeResult>> probe({
+    required AppLocalizations loc,
     required String url,
     String method = 'GET',
     Map<String, String> headers = const {},
@@ -225,7 +227,7 @@ class WafProbe {
       method: method,
       headers: headers,
       body: body,
-      variants: buildVariants(payload, techniques),
+      variants: buildVariants(payload, techniques, loc),
       batchSize: maxProbes.clamp(1, hardMaxProbes),
       delayMs: delayMs,
       timeoutSeconds: timeoutSeconds,
@@ -298,18 +300,18 @@ class WafProbe {
   }
 
   /// 判定结论的展示文案
-  static String verdictLabel(WafVerdict verdict) {
+  static String verdictLabel(WafVerdict verdict, AppLocalizations loc) {
     switch (verdict) {
       case WafVerdict.baseline:
-        return '基线';
+        return loc.wafVerdictBaseline;
       case WafVerdict.blocked:
-        return '被拦截';
+        return loc.wafVerdictBlocked;
       case WafVerdict.passed:
-        return '疑似绕过';
+        return loc.wafVerdictPassed;
       case WafVerdict.changed:
-        return '响应有变化';
+        return loc.wafVerdictChanged;
       case WafVerdict.failed:
-        return '请求失败';
+        return loc.wafVerdictFailed;
     }
   }
 }
@@ -320,6 +322,7 @@ class WafProbe {
 /// 既是一段长时间的持续请求，也失去了中途停下的机会。分批让人始终握着
 /// 「要不要继续」这个决定权，界面也不会被一个长任务卡住。
 class WafProbeSession {
+  final AppLocalizations loc;
   final String url;
   final String method;
   final Map<String, String> headers;
@@ -339,6 +342,7 @@ class WafProbeSession {
   bool _baseDone = false;
 
   WafProbeSession({
+    required this.loc,
     required this.url,
     required this.payload,
     this.method = 'GET',
@@ -377,7 +381,7 @@ class WafProbeSession {
         body: body,
         payload: payload,
         technique: 'baseline',
-        name: '基线（原始载荷）',
+        name: loc.wafBaselineOriginal,
         timeoutSeconds: timeoutSeconds,
       );
       _baseDone = true;

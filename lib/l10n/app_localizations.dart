@@ -10708,6 +10708,241 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'API document generated automatically from ProxyPin capture data'**
   String get apiExtractDocDesc;
 
+
+  /// No description provided for @wafTechUrlEncode.
+  ///
+  /// In en, this message translates to:
+  /// **'URL encoding'**
+  String get wafTechUrlEncode;
+
+  /// No description provided for @wafTechUrlEncodeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn spaces and other special chars into %XX to bypass rules that match the raw text'**
+  String get wafTechUrlEncodeDesc;
+
+  /// No description provided for @wafTechDoubleUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Double URL encoding'**
+  String get wafTechDoubleUrl;
+
+  /// No description provided for @wafTechDoubleUrlDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Encode % as %25 too, aimed at WAFs that decode only once'**
+  String get wafTechDoubleUrlDesc;
+
+  /// No description provided for @wafTechUnicode.
+  ///
+  /// In en, this message translates to:
+  /// **'Unicode encoding'**
+  String get wafTechUnicode;
+
+  /// No description provided for @wafTechUnicodeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to \\uXXXX, aimed at parser chains that do not handle Unicode'**
+  String get wafTechUnicodeDesc;
+
+  /// No description provided for @wafTechCaseMix.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed case'**
+  String get wafTechCaseMix;
+
+  /// No description provided for @wafTechCaseMixDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'SeLeCt -- aimed at case-sensitive regexes'**
+  String get wafTechCaseMixDesc;
+
+  /// No description provided for @wafTechCommentSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment splitting'**
+  String get wafTechCommentSplit;
+
+  /// No description provided for @wafTechCommentSplitDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace whitespace with /**/; equivalent to a space in SQL'**
+  String get wafTechCommentSplitDesc;
+
+  /// No description provided for @wafTechCommentWrap.
+  ///
+  /// In en, this message translates to:
+  /// **'Inline comment wrapping'**
+  String get wafTechCommentWrap;
+
+  /// No description provided for @wafTechCommentWrapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'/*!50000select*/ -- MySQL executes what is inside the comment'**
+  String get wafTechCommentWrapDesc;
+
+  /// No description provided for @wafTechWhitespaceAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'Whitespace substitution'**
+  String get wafTechWhitespaceAlt;
+
+  /// No description provided for @wafTechWhitespaceAltDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace spaces with equivalents such as %09/%0a/%0c/+/()'**
+  String get wafTechWhitespaceAltDesc;
+
+  /// No description provided for @wafTechDoubleWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword doubling'**
+  String get wafTechDoubleWrite;
+
+  /// No description provided for @wafTechDoubleWriteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'oorr -> or -- aimed at filters that replace only once'**
+  String get wafTechDoubleWriteDesc;
+
+  /// No description provided for @wafTechKeywordReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Equivalent keywords'**
+  String get wafTechKeywordReplace;
+
+  /// No description provided for @wafTechKeywordReplaceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Semantically equivalent swaps such as and->&&, or->||, =->like'**
+  String get wafTechKeywordReplaceDesc;
+
+  /// No description provided for @wafTechQuoteEscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote mutation'**
+  String get wafTechQuoteEscape;
+
+  /// No description provided for @wafTechQuoteEscapeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap and escape single quotes, double quotes and backticks'**
+  String get wafTechQuoteEscapeDesc;
+
+  /// No description provided for @wafTechConcatString.
+  ///
+  /// In en, this message translates to:
+  /// **'String concatenation'**
+  String get wafTechConcatString;
+
+  /// No description provided for @wafTechConcatStringDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'\\'a\\'||\\'b\\' / CONCAT -- bypass matching on the whole literal'**
+  String get wafTechConcatStringDesc;
+
+  /// No description provided for @wafTechNewlineInject.
+  ///
+  /// In en, this message translates to:
+  /// **'Newline / chunk injection'**
+  String get wafTechNewlineInject;
+
+  /// No description provided for @wafTechNewlineInjectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert a newline or %0d%0a in the middle of a keyword'**
+  String get wafTechNewlineInjectDesc;
+
+  /// No description provided for @wafTechChunked.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunked encoding'**
+  String get wafTechChunked;
+
+  /// No description provided for @wafTechChunkedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Split the payload using HTTP chunked form'**
+  String get wafTechChunkedDesc;
+
+  /// No description provided for @wafTechHpp.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameter pollution (HPP)'**
+  String get wafTechHpp;
+
+  /// No description provided for @wafTechHppDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat a same-named parameter to exploit front/back-end inconsistency'**
+  String get wafTechHppDesc;
+
+  /// No description provided for @wafTechBase64Wrap.
+  ///
+  /// In en, this message translates to:
+  /// **'Base64 wrapping'**
+  String get wafTechBase64Wrap;
+
+  /// No description provided for @wafTechBase64WrapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Base64 the whole payload, for cases that decode only after the WAF'**
+  String get wafTechBase64WrapDesc;
+
+  /// No description provided for @wafTechHexWrap.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex wrapping'**
+  String get wafTechHexWrap;
+
+  /// No description provided for @wafTechHexWrapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'0x... form (equivalent at the database layer)'**
+  String get wafTechHexWrapDesc;
+
+  /// No description provided for @wafCombinedResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Combined result (stacked in selection order)'**
+  String get wafCombinedResult;
+
+  /// No description provided for @wafVerdictBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline'**
+  String get wafVerdictBaseline;
+
+  /// No description provided for @wafVerdictBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get wafVerdictBlocked;
+
+  /// No description provided for @wafVerdictPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Likely bypass'**
+  String get wafVerdictPassed;
+
+  /// No description provided for @wafVerdictChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Response changed'**
+  String get wafVerdictChanged;
+
+  /// No description provided for @wafVerdictFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Request failed'**
+  String get wafVerdictFailed;
+
+  /// No description provided for @wafBaselineOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline (original payload)'**
+  String get wafBaselineOriginal;
+
 }
 
 class _AppLocalizationsDelegate

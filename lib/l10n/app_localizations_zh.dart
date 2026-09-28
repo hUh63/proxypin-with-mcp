@@ -5748,6 +5748,124 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get apiExtractDocDesc => '从 ProxyPin 抓包数据自动生成的 API 文档';
 
+
+  @override
+  String get wafTechUrlEncode => 'URL 编码';
+
+  @override
+  String get wafTechUrlEncodeDesc => '空格等特殊字符转 %XX，绕过按原文匹配的规则';
+
+  @override
+  String get wafTechDoubleUrl => '双重 URL 编码';
+
+  @override
+  String get wafTechDoubleUrlDesc => '把 % 也编码成 %25，针对只解码一次的 WAF';
+
+  @override
+  String get wafTechUnicode => 'Unicode 编码';
+
+  @override
+  String get wafTechUnicodeDesc => '转成 \\uXXXX，针对不处理 Unicode 的解析链';
+
+  @override
+  String get wafTechCaseMix => '大小写混用';
+
+  @override
+  String get wafTechCaseMixDesc => 'SeLeCt —— 针对区分大小写的正则';
+
+  @override
+  String get wafTechCommentSplit => '注释分割';
+
+  @override
+  String get wafTechCommentSplitDesc => '用 /**/ 替掉空白，SQL 里等价于空格';
+
+  @override
+  String get wafTechCommentWrap => '内联注释包裹';
+
+  @override
+  String get wafTechCommentWrapDesc => '/*!50000select*/ —— MySQL 会执行注释里的内容';
+
+  @override
+  String get wafTechWhitespaceAlt => '空白替换';
+
+  @override
+  String get wafTechWhitespaceAltDesc => '空格换 %09/%0a/%0c/+/() 等等价物';
+
+  @override
+  String get wafTechDoubleWrite => '关键字双写';
+
+  @override
+  String get wafTechDoubleWriteDesc => 'oorr → or —— 针对只替换一次的过滤器';
+
+  @override
+  String get wafTechKeywordReplace => '等价关键字';
+
+  @override
+  String get wafTechKeywordReplaceDesc => 'and→&&、or→||、=→like 等语义等价替换';
+
+  @override
+  String get wafTechQuoteEscape => '引号变形';
+
+  @override
+  String get wafTechQuoteEscapeDesc => '单引号/双引号/反引号互换与转义';
+
+  @override
+  String get wafTechConcatString => '字符串拼接';
+
+  @override
+  String get wafTechConcatStringDesc => '\'a\'||\'b\' / CONCAT —— 绕过对整串字面量的匹配';
+
+  @override
+  String get wafTechNewlineInject => '换行/分块注入';
+
+  @override
+  String get wafTechNewlineInjectDesc => '在关键字中间插入换行或 %0d%0a';
+
+  @override
+  String get wafTechChunked => '分块编码';
+
+  @override
+  String get wafTechChunkedDesc => 'HTTP chunked 形式切开载荷';
+
+  @override
+  String get wafTechHpp => '参数污染 (HPP)';
+
+  @override
+  String get wafTechHppDesc => '同名参数重复，利用前后端取值不一致';
+
+  @override
+  String get wafTechBase64Wrap => 'Base64 包装';
+
+  @override
+  String get wafTechBase64WrapDesc => '把载荷整体 base64，针对 WAF 之后才解码的场景';
+
+  @override
+  String get wafTechHexWrap => '十六进制包装';
+
+  @override
+  String get wafTechHexWrapDesc => '0x... 形式（数据库层面等价）';
+
+  @override
+  String get wafCombinedResult => '组合结果（按选择顺序叠加）';
+
+  @override
+  String get wafVerdictBaseline => '基线';
+
+  @override
+  String get wafVerdictBlocked => '被拦截';
+
+  @override
+  String get wafVerdictPassed => '疑似绕过';
+
+  @override
+  String get wafVerdictChanged => '响应有变化';
+
+  @override
+  String get wafVerdictFailed => '请求失败';
+
+  @override
+  String get wafBaselineOriginal => '基线（原始载荷）';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
