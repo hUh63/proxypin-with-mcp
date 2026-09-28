@@ -287,9 +287,10 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
             children: [
               _buildDetailRow(AppLocalizations.of(context)!.descriptionLabel,
                   task.description.isEmpty ? AppLocalizations.of(context)!.none : task.description),
-              _buildDetailRow(AppLocalizations.of(context)!.mcpTrigger, task.triggerType.label),
+              _buildDetailRow(AppLocalizations.of(context)!.mcpTrigger,
+                  task.triggerType.label(AppLocalizations.of(context)!)),
               _buildDetailRow(AppLocalizations.of(context)!.mcpAction,
-                  task.actions.map((a) => a.label).join(', ')),
+                  task.actions.map((a) => a.label(AppLocalizations.of(context)!)).join(', ')),
               _buildDetailRow(
                   AppLocalizations.of(context)!.mcpStatus,
                   task.enabled

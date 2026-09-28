@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.24.55 (2026-09-28)
+
+### 修复 v1.24.54 的编译错误（MCP 任务详情页两处 `.label`）
+
+`mcp_task_manager_page.dart` 的任务详情弹窗里还有两处 `.label`
+（触发器名、动作列表）没跟上新签名，报
+`The argument type 'String Function(AppLocalizations)' can't be assigned to String`。
+补上 `(AppLocalizations.of(context)!)` 即可。
+
 ## v1.24.54 (2026-09-28)
 
 ### i18n 批 A-6：MCP 自动化触发器 / 动作枚举
