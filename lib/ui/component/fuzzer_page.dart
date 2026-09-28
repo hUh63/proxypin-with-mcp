@@ -88,7 +88,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
 
   /// 每条结果命中的比对规则（key = FuzzOutcome.index）
   final Map<int, List<String>> _anomalyHits = {};
-  List<FuzzAnomalyRule> _rules = FuzzAnomaly.defaults();
+  late List<FuzzAnomalyRule> _rules = FuzzAnomaly.defaults(localizations);
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -174,8 +174,11 @@ class _FuzzerPageState extends State<FuzzerPage> {
       for (var i = 0; i < cases.length; i++) {
         if (!_running || !mounted) break;
         final variant = RequestFuzzer.buildVariant(template, injections, cases[i].values);
-        final outcome = await RequestFuzzer.send(variant, index: i, payload: cases[i].label);
-        final withDiff = _baseline == null ? outcome : outcome.withDiff(RequestFuzzer.diffOf(_baseline!, outcome));
+        final outcome =
+            await RequestFuzzer.send(variant, loc: localizations, index: i, payload: cases[i].label);
+        final withDiff = _baseline == null
+            ? outcome
+            : outcome.withDiff(RequestFuzzer.diffOf(_baseline!, outcome, localizations));
         if (!mounted) break;
         setState(() {
           _results.add(withDiff);

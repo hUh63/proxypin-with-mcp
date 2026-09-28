@@ -5962,4 +5962,61 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get capturePlanTplApiStepCatalogDesc => 'Open the API Endpoints tool to extract endpoints from the capture data; it can export OpenAPI / Postman / JSON.';
+
+
+  @override
+  String fuzzerBodyTruncated(int kb) {
+    return '[Response too large, keeping the first $kb KB]';
+  }
+
+  @override
+  String fuzzerDiffStatus(String from, String to) {
+    return 'Status $from → $to';
+  }
+
+  @override
+  String fuzzerDiffLength(String delta) {
+    return 'Length $delta';
+  }
+
+  @override
+  String fuzzerDiffDuration(String pct) {
+    return 'Duration $pct%';
+  }
+
+  @override
+  String get fuzzerDiffError => 'Request error';
+
+  @override
+  String get fuzzerDiffSep => ', ';
+
+  @override
+  String get fuzzerRuleFailedName => 'Request failed';
+
+  @override
+  String get fuzzerRuleFailedDesc => 'Cannot connect / timeout / aborted';
+
+  @override
+  String get fuzzerRuleStatusName => 'Status code changed';
+
+  @override
+  String get fuzzerRuleStatusDesc => 'Status code differs from baseline';
+
+  @override
+  String get fuzzerRuleLengthName => 'Length changed noticeably';
+
+  @override
+  String get fuzzerRuleLengthDesc => 'Body length difference exceeds the threshold';
+
+  @override
+  String get fuzzerRuleSlowerName => 'Response notably slower';
+
+  @override
+  String get fuzzerRuleSlowerDesc => 'Slower than baseline beyond the threshold';
+
+  @override
+  String get fuzzerRuleKeywordName => 'Keyword matched';
+
+  @override
+  String get fuzzerRuleKeywordDesc => 'The keyword you specified appears in the response body';
 }

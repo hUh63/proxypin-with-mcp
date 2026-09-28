@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.24.52 (2026-09-28)
+
+### i18n 批 A-5：Fuzz 异常规则与差异描述
+
+- `request_fuzzer.dart`：`defaults` 由 `const` 列表改为接收 loc 的方法，
+  5 条内置异常规则（请求失败 / 状态码变化 / 长度明显变化 / 响应明显变慢 /
+  命中关键字）的名称与说明走 l10n；`diffOf` 的差异描述、`_safeBody` 的
+  截断提示、`send` 均接收 loc。
+- `fuzzer_page.dart`：`_rules` 改为 `late` 惰性初始化以取到 loc，
+  `send` / `diffOf` 调用点传入。
+
+共 16 个新 key。
+
 ## v1.24.51 (2026-09-28)
 
 ### i18n 批 A-4：内置采集方案模板

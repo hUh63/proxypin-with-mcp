@@ -16,6 +16,7 @@
 
 import 'dart:convert';
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -265,6 +266,7 @@ class RequestFuzzer {
   /// 发送一条（变体）请求并记录事实。
   static Future<FuzzOutcome> send(
     HttpRequest request, {
+    required AppLocalizations loc,
     required int index,
     required String payload,
     int timeoutSeconds = 15,
@@ -285,7 +287,7 @@ class RequestFuzzer {
         reasonPhrase: response.status.reasonPhrase,
         durationMs: stopwatch.elapsedMilliseconds,
         bodyLength: response.body?.length ?? 0,
-        body: _safeBody(response),
+        body: _safeBody(response, loc),
         baseline: baseline,
       );
     } catch (e) {
@@ -302,10 +304,10 @@ class RequestFuzzer {
     }
   }
 
-  static String _safeBody(HttpResponse response) {
+  static String _safeBody(HttpResponse response, AppLocalizations loc) {
     try {
       if ((response.body?.length ?? 0) > maxBodyKept) {
-        return '[响应过大，仅保留前 ${maxBodyKept ~/ 1024} KB]\n'
+        return '${loc.fuzzerBodyTruncated(maxBodyKept ~/ 1024)}\n'
             '${response.bodyAsString.substring(0, maxBodyKept)}';
       }
       return response.bodyAsString;
@@ -315,23 +317,23 @@ class RequestFuzzer {
   }
 
   /// 计算与基线的差异描述（只陈述事实，不做判断）。
-  static String diffOf(FuzzOutcome baseline, FuzzOutcome current) {
+  static String diffOf(FuzzOutcome baseline, FuzzOutcome current, AppLocalizations loc) {
     final parts = <String>[];
     if (baseline.statusCode != current.statusCode) {
-      parts.add('状态 ${baseline.statusCode ?? '-'} → ${current.statusCode ?? '-'}');
+      parts.add(loc.fuzzerDiffStatus('${baseline.statusCode ?? '-'}', '${current.statusCode ?? '-'}'));
     }
     if (baseline.bodyLength != current.bodyLength) {
       final delta = current.bodyLength - baseline.bodyLength;
-      parts.add('长度 ${delta >= 0 ? '+' : ''}$delta');
+      parts.add(loc.fuzzerDiffLength('${delta >= 0 ? '+' : ''}$delta'));
     }
     final ratio = baseline.durationMs == 0 ? 0.0 : (current.durationMs - baseline.durationMs) / baseline.durationMs;
     if (ratio.abs() > 0.5) {
-      parts.add('耗时 ${(ratio * 100).toStringAsFixed(0)}%');
+      parts.add(loc.fuzzerDiffDuration((ratio * 100).toStringAsFixed(0)));
     }
     if (current.error != null) {
-      parts.add('请求异常');
+      parts.add(loc.fuzzerDiffError);
     }
-    return parts.join('，');
+    return parts.join(loc.fuzzerDiffSep);
   }
 
   /// 解析取值文本框：一行一个，忽略空行与 `#` 开头的注释行。
@@ -431,20 +433,31 @@ class FuzzAnomaly {
   static const String slower = 'slower';
   static const String keyword = 'keyword';
 
-  static List<FuzzAnomalyRule> defaults() => const [
+  static List<FuzzAnomalyRule> defaults(AppLocalizations loc) => [
         FuzzAnomalyRule(
-            id: failed, name: '请求失败', description: '连不上 / 超时 / 被中断', enabled: true),
+            id: failed,
+            name: loc.fuzzerRuleFailedName,
+            description: loc.fuzzerRuleFailedDesc,
+            enabled: true),
         FuzzAnomalyRule(
-            id: statusChanged, name: '状态码变化', description: '与基线的状态码不同'),
+            id: statusChanged,
+            name: loc.fuzzerRuleStatusName,
+            description: loc.fuzzerRuleStatusDesc),
         FuzzAnomalyRule(
             id: lengthChanged,
-            name: '长度明显变化',
-            description: '响应体长度差超过阈值',
+            name: loc.fuzzerRuleLengthName,
+            description: loc.fuzzerRuleLengthDesc,
             param: '20'),
         FuzzAnomalyRule(
-            id: slower, name: '响应明显变慢', description: '比基线慢超过阈值', param: '500'),
+            id: slower,
+            name: loc.fuzzerRuleSlowerName,
+            description: loc.fuzzerRuleSlowerDesc,
+            param: '500'),
         FuzzAnomalyRule(
-            id: keyword, name: '命中关键字', description: '响应体出现你指定的关键字', param: ''),
+            id: keyword,
+            name: loc.fuzzerRuleKeywordName,
+            description: loc.fuzzerRuleKeywordDesc,
+            param: ''),
       ];
 
   /// 按启用规则判定这一条命中了什么；返回命中的规则名（含参数）

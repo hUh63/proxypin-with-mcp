@@ -5927,6 +5927,63 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get capturePlanTplApiStepCatalogDesc => '打开「API 端点」工具，从抓包数据提取端点，可导出 OpenAPI / Postman / JSON。';
 
+
+  @override
+  String fuzzerBodyTruncated(int kb) {
+    return '[响应过大，仅保留前 $kb KB]';
+  }
+
+  @override
+  String fuzzerDiffStatus(String from, String to) {
+    return '状态 $from → $to';
+  }
+
+  @override
+  String fuzzerDiffLength(String delta) {
+    return '长度 $delta';
+  }
+
+  @override
+  String fuzzerDiffDuration(String pct) {
+    return '耗时 $pct%';
+  }
+
+  @override
+  String get fuzzerDiffError => '请求异常';
+
+  @override
+  String get fuzzerDiffSep => '，';
+
+  @override
+  String get fuzzerRuleFailedName => '请求失败';
+
+  @override
+  String get fuzzerRuleFailedDesc => '连不上 / 超时 / 被中断';
+
+  @override
+  String get fuzzerRuleStatusName => '状态码变化';
+
+  @override
+  String get fuzzerRuleStatusDesc => '与基线的状态码不同';
+
+  @override
+  String get fuzzerRuleLengthName => '长度明显变化';
+
+  @override
+  String get fuzzerRuleLengthDesc => '响应体长度差超过阈值';
+
+  @override
+  String get fuzzerRuleSlowerName => '响应明显变慢';
+
+  @override
+  String get fuzzerRuleSlowerDesc => '比基线慢超过阈值';
+
+  @override
+  String get fuzzerRuleKeywordName => '命中关键字';
+
+  @override
+  String get fuzzerRuleKeywordDesc => '响应体出现你指定的关键字';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

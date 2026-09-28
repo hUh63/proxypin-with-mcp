@@ -11064,6 +11064,103 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'Open the API Endpoints tool to extract endpoints from the capture data; it can export OpenAPI / Postman / JSON.'**
   String get capturePlanTplApiStepCatalogDesc;
 
+
+  /// No description provided for @fuzzerBodyTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'[Response too large, keeping the first $kb KB]'**
+  String fuzzerBodyTruncated(int kb);
+
+  /// No description provided for @fuzzerDiffStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status $from → $to'**
+  String fuzzerDiffStatus(String from, String to);
+
+  /// No description provided for @fuzzerDiffLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Length $delta'**
+  String fuzzerDiffLength(String delta);
+
+  /// No description provided for @fuzzerDiffDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration $pct%'**
+  String fuzzerDiffDuration(String pct);
+
+  /// No description provided for @fuzzerDiffError.
+  ///
+  /// In en, this message translates to:
+  /// **'Request error'**
+  String get fuzzerDiffError;
+
+  /// No description provided for @fuzzerDiffSep.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get fuzzerDiffSep;
+
+  /// No description provided for @fuzzerRuleFailedName.
+  ///
+  /// In en, this message translates to:
+  /// **'Request failed'**
+  String get fuzzerRuleFailedName;
+
+  /// No description provided for @fuzzerRuleFailedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot connect / timeout / aborted'**
+  String get fuzzerRuleFailedDesc;
+
+  /// No description provided for @fuzzerRuleStatusName.
+  ///
+  /// In en, this message translates to:
+  /// **'Status code changed'**
+  String get fuzzerRuleStatusName;
+
+  /// No description provided for @fuzzerRuleStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Status code differs from baseline'**
+  String get fuzzerRuleStatusDesc;
+
+  /// No description provided for @fuzzerRuleLengthName.
+  ///
+  /// In en, this message translates to:
+  /// **'Length changed noticeably'**
+  String get fuzzerRuleLengthName;
+
+  /// No description provided for @fuzzerRuleLengthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Body length difference exceeds the threshold'**
+  String get fuzzerRuleLengthDesc;
+
+  /// No description provided for @fuzzerRuleSlowerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Response notably slower'**
+  String get fuzzerRuleSlowerName;
+
+  /// No description provided for @fuzzerRuleSlowerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Slower than baseline beyond the threshold'**
+  String get fuzzerRuleSlowerDesc;
+
+  /// No description provided for @fuzzerRuleKeywordName.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword matched'**
+  String get fuzzerRuleKeywordName;
+
+  /// No description provided for @fuzzerRuleKeywordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The keyword you specified appears in the response body'**
+  String get fuzzerRuleKeywordDesc;
+
 }
 
 class _AppLocalizationsDelegate
