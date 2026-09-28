@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.24.57 (2026-09-28)
+
+### 修复 v1.24.56 的编译错误（漏改的 label / getDescribe 调用点）
+
+- `map_local.dart`（桌面 + 移动）：`ReplaceBodyType.label` 还有两处调用，
+  报 `Object can't be assigned to String`，改为 `e.label(AppLocalizations.of(context)!)`；
+- `mobile/.../rewrite_update.dart`：该类用的是 `i18n` 而非 `localizations`，
+  `e.getDescribe(...)` 相应改为 `e.getDescribe(i18n)`。
+
 ## v1.24.56 (2026-09-28)
 
 ### i18n 批 A-7：请求重写规则枚举

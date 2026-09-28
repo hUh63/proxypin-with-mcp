@@ -223,7 +223,7 @@ class _RewriteUpdateAddState extends State<RewriteUpdateEdit> {
                           items: typeList
                               .map((e) => DropdownMenuItem(
                                   value: e,
-                                  child: Text(e.getDescribe(localizations),
+                                  child: Text(e.getDescribe(i18n),
                                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))))
                               .toList(),
                           onChanged: (val) {

@@ -141,7 +141,7 @@ class MobileMapLocaleState extends State<MobileMapLocal> {
                     items: ReplaceBodyType.values
                         .map((e) => DropdownMenuItem(
                             value: e.name,
-                            child: Text(!isCN ? e.name.toUpperCase() : e.label,
+                            child: Text(!isCN ? e.name.toUpperCase() : e.label(AppLocalizations.of(context)!),
                                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))))
                         .toList(),
                     onChanged: (val) => bodyType.value = val ?? ReplaceBodyType.text.name)),
