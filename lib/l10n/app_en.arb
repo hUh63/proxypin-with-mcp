@@ -2623,5 +2623,16 @@
   "fuzzerRuleSlowerName": "Response notably slower",
   "fuzzerRuleSlowerDesc": "Slower than baseline beyond the threshold",
   "fuzzerRuleKeywordName": "Keyword matched",
-  "fuzzerRuleKeywordDesc": "The keyword you specified appears in the response body"
+  "fuzzerRuleKeywordDesc": "The keyword you specified appears in the response body",
+  "mcpAutoTriggerRequestMatch": "Request match",
+  "mcpAutoTriggerResponseMatch": "Response match",
+  "mcpAutoTriggerInterval": "Interval",
+  "mcpAutoTriggerProxyStart": "Proxy start",
+  "mcpAutoTriggerProxyStop": "Proxy stop",
+  "mcpAutoTriggerManual": "Manual",
+  "mcpAutoActionModifyRequest": "Modify request",
+  "mcpAutoActionModifyResponse": "Modify response",
+  "mcpAutoActionBlockRequest": "Block request",
+  "mcpAutoActionReplayRequest": "Replay request",
+  "mcpAutoActionSendNotification": "Send notification"
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.24.54 (2026-09-28)
+
+### i18n 批 A-6：MCP 自动化触发器 / 动作枚举
+
+- `mcp_automation_manager.dart`：`AutomationTriggerType` 与 `AutomationActionType`
+  去掉硬编码中文 label 构造参数，改为 `String label(AppLocalizations loc)`
+  的 switch 方法；复用既有 `mcpAutoActionScript` / `mcpAutoActExportData` /
+  `mcpAutoActionWebhook`，新增 11 个 key。
+- `mcp_task_manager_page.dart`：三处 `.label` 调用点传入 loc。
+
+注：该文件内两条通知文案（Dart 脚本不支持自动执行 / 任务执行完成）
+位于无 BuildContext 的脚本执行路径，暂保留。
+
 ## v1.24.53 (2026-09-28)
 
 ### 修复 v1.24.52 的编译错误（漏传 loc 的调用点）

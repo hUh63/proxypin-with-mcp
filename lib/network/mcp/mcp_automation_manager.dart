@@ -27,34 +27,49 @@ import '../http/http_client.dart';
 import '../util/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import '../components/manager/script_manager.dart';
 
 /// MCP 自动化任务触发器类型
 enum AutomationTriggerType {
-  onRequest('请求匹配'),      // 当请求匹配条件时触发
-  onResponse('响应匹配'),    // 当响应匹配条件时触发
-  onInterval('定时触发'),    // 按固定间隔触发
-  onProxyStart('代理启动'),  // 代理启动时触发
-  onProxyStop('代理停止'),   // 代理停止时触发
-  manual('手动触发');        // 手动触发
+  onRequest,      // 当请求匹配条件时触发
+  onResponse,    // 当响应匹配条件时触发
+  onInterval,    // 按固定间隔触发
+  onProxyStart,  // 代理启动时触发
+  onProxyStop,   // 代理停止时触发
+  manual;        // 手动触发
 
-  final String label;
-  const AutomationTriggerType(this.label);
+  String label(AppLocalizations loc) => switch (this) {
+        AutomationTriggerType.onRequest => loc.mcpAutoTriggerRequestMatch,
+        AutomationTriggerType.onResponse => loc.mcpAutoTriggerResponseMatch,
+        AutomationTriggerType.onInterval => loc.mcpAutoTriggerInterval,
+        AutomationTriggerType.onProxyStart => loc.mcpAutoTriggerProxyStart,
+        AutomationTriggerType.onProxyStop => loc.mcpAutoTriggerProxyStop,
+        AutomationTriggerType.manual => loc.mcpAutoTriggerManual,
+      };
 }
 
 /// MCP 自动化任务动作类型
 enum AutomationActionType {
-  modifyRequest('修改请求'),      // 修改请求头/体
-  modifyResponse('修改响应'),    // 修改响应头/体
-  blockRequest('拦截请求'),      // 拦截/阻止请求
-  replayRequest('重放请求'),     // 重新发送请求
-  exportData('导出数据'),        // 导出 HAR/JSON
-  runScript('执行脚本'),         // 执行 JavaScript/Dart 脚本
-  sendNotification('发送通知'),  // 发送系统通知
-  callWebhook('调用 Webhook');   // 调用外部 Webhook
+  modifyRequest,      // 修改请求头/体
+  modifyResponse,    // 修改响应头/体
+  blockRequest,      // 拦截/阻止请求
+  replayRequest,     // 重新发送请求
+  exportData,        // 导出 HAR/JSON
+  runScript,         // 执行 JavaScript/Dart 脚本
+  sendNotification,  // 发送系统通知
+  callWebhook;   // 调用外部 Webhook
 
-  final String label;
-  const AutomationActionType(this.label);
+  String label(AppLocalizations loc) => switch (this) {
+        AutomationActionType.modifyRequest => loc.mcpAutoActionModifyRequest,
+        AutomationActionType.modifyResponse => loc.mcpAutoActionModifyResponse,
+        AutomationActionType.blockRequest => loc.mcpAutoActionBlockRequest,
+        AutomationActionType.replayRequest => loc.mcpAutoActionReplayRequest,
+        AutomationActionType.exportData => loc.mcpAutoActExportData,
+        AutomationActionType.runScript => loc.mcpAutoActionScript,
+        AutomationActionType.sendNotification => loc.mcpAutoActionSendNotification,
+        AutomationActionType.callWebhook => loc.mcpAutoActionWebhook,
+      };
 }
 
 /// MCP 自动化任务模型

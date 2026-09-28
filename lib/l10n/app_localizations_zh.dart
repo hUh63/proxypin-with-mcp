@@ -5984,6 +5984,40 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get fuzzerRuleKeywordDesc => '响应体出现你指定的关键字';
 
+
+  @override
+  String get mcpAutoTriggerRequestMatch => '请求匹配';
+
+  @override
+  String get mcpAutoTriggerResponseMatch => '响应匹配';
+
+  @override
+  String get mcpAutoTriggerInterval => '定时触发';
+
+  @override
+  String get mcpAutoTriggerProxyStart => '代理启动';
+
+  @override
+  String get mcpAutoTriggerProxyStop => '代理停止';
+
+  @override
+  String get mcpAutoTriggerManual => '手动触发';
+
+  @override
+  String get mcpAutoActionModifyRequest => '修改请求';
+
+  @override
+  String get mcpAutoActionModifyResponse => '修改响应';
+
+  @override
+  String get mcpAutoActionBlockRequest => '拦截请求';
+
+  @override
+  String get mcpAutoActionReplayRequest => '重放请求';
+
+  @override
+  String get mcpAutoActionSendNotification => '发送通知';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

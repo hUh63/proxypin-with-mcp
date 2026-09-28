@@ -11161,6 +11161,73 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'The keyword you specified appears in the response body'**
   String get fuzzerRuleKeywordDesc;
 
+
+  /// No description provided for @mcpAutoTriggerRequestMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Request match'**
+  String get mcpAutoTriggerRequestMatch;
+
+  /// No description provided for @mcpAutoTriggerResponseMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Response match'**
+  String get mcpAutoTriggerResponseMatch;
+
+  /// No description provided for @mcpAutoTriggerInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Interval'**
+  String get mcpAutoTriggerInterval;
+
+  /// No description provided for @mcpAutoTriggerProxyStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy start'**
+  String get mcpAutoTriggerProxyStart;
+
+  /// No description provided for @mcpAutoTriggerProxyStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy stop'**
+  String get mcpAutoTriggerProxyStop;
+
+  /// No description provided for @mcpAutoTriggerManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get mcpAutoTriggerManual;
+
+  /// No description provided for @mcpAutoActionModifyRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify request'**
+  String get mcpAutoActionModifyRequest;
+
+  /// No description provided for @mcpAutoActionModifyResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify response'**
+  String get mcpAutoActionModifyResponse;
+
+  /// No description provided for @mcpAutoActionBlockRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Block request'**
+  String get mcpAutoActionBlockRequest;
+
+  /// No description provided for @mcpAutoActionReplayRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay request'**
+  String get mcpAutoActionReplayRequest;
+
+  /// No description provided for @mcpAutoActionSendNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Send notification'**
+  String get mcpAutoActionSendNotification;
+
 }
 
 class _AppLocalizationsDelegate

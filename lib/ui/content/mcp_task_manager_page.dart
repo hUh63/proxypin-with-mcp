@@ -156,7 +156,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
   }
 
   String _getTriggerLabel(AutomationTriggerType type) {
-    return type.label;
+    return type.label(AppLocalizations.of(context)!);
   }
 
   Future<void> _showTaskDialog([MCPAutomationTask? task]) async {
@@ -200,7 +200,10 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
                   isExpanded: true,
                   value: selectedTrigger,
                   decoration: const InputDecoration(border: OutlineInputBorder()),
-                  items: AutomationTriggerType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.label))).toList(),
+                  items: AutomationTriggerType.values
+                      .map((t) => DropdownMenuItem(
+                          value: t, child: Text(t.label(AppLocalizations.of(context)!))))
+                      .toList(),
                   onChanged: (v) => setDialogState(() => selectedTrigger = v!),
                 ),
                 if (selectedTrigger == AutomationTriggerType.onRequest || selectedTrigger == AutomationTriggerType.onResponse) ...[
@@ -218,7 +221,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 ...AutomationActionType.values.map((action) => CheckboxListTile(
-                  title: Text(action.label),
+                  title: Text(action.label(AppLocalizations.of(context)!)),
                   value: selectedActions.contains(action),
                   onChanged: (checked) => setDialogState(() {
                     if (checked == true) {

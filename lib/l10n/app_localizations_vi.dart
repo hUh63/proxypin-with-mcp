@@ -6012,4 +6012,38 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get fuzzerRuleKeywordDesc => 'The keyword you specified appears in the response body';
+
+
+  @override
+  String get mcpAutoTriggerRequestMatch => 'Request match';
+
+  @override
+  String get mcpAutoTriggerResponseMatch => 'Response match';
+
+  @override
+  String get mcpAutoTriggerInterval => 'Interval';
+
+  @override
+  String get mcpAutoTriggerProxyStart => 'Proxy start';
+
+  @override
+  String get mcpAutoTriggerProxyStop => 'Proxy stop';
+
+  @override
+  String get mcpAutoTriggerManual => 'Manual';
+
+  @override
+  String get mcpAutoActionModifyRequest => 'Modify request';
+
+  @override
+  String get mcpAutoActionModifyResponse => 'Modify response';
+
+  @override
+  String get mcpAutoActionBlockRequest => 'Block request';
+
+  @override
+  String get mcpAutoActionReplayRequest => 'Replay request';
+
+  @override
+  String get mcpAutoActionSendNotification => 'Send notification';
 }

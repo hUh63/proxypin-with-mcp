@@ -2477,5 +2477,16 @@
   "fuzzerRuleSlowerName": "响应明显变慢",
   "fuzzerRuleSlowerDesc": "比基线慢超过阈值",
   "fuzzerRuleKeywordName": "命中关键字",
-  "fuzzerRuleKeywordDesc": "响应体出现你指定的关键字"
+  "fuzzerRuleKeywordDesc": "响应体出现你指定的关键字",
+  "mcpAutoTriggerRequestMatch": "请求匹配",
+  "mcpAutoTriggerResponseMatch": "响应匹配",
+  "mcpAutoTriggerInterval": "定时触发",
+  "mcpAutoTriggerProxyStart": "代理启动",
+  "mcpAutoTriggerProxyStop": "代理停止",
+  "mcpAutoTriggerManual": "手动触发",
+  "mcpAutoActionModifyRequest": "修改请求",
+  "mcpAutoActionModifyResponse": "修改响应",
+  "mcpAutoActionBlockRequest": "拦截请求",
+  "mcpAutoActionReplayRequest": "重放请求",
+  "mcpAutoActionSendNotification": "发送通知"
 }
