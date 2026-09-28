@@ -295,7 +295,7 @@ class _RequestRuleListState extends State<RequestRuleList> {
                     const SizedBox(width: 3),
                     SizedBox(
                         width: 60,
-                        child: Text(!isCN ? list[index].type.name.camelCaseToSpaced() : list[index].type.label,
+                        child: Text(!isCN ? list[index].type.name.camelCaseToSpaced() : list[index].type.label(localizations),
                             textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
                   ],
                 ))));
@@ -653,7 +653,7 @@ class _RewriteRuleState extends State<RewriteRule> {
                                   errorStyle: TextStyle(height: 0, fontSize: 0),
                                   contentPadding: EdgeInsets.only(left: 5)),
                               items: RuleType.values
-                                  .map((e) => DropdownMenuItem(value: e, child: Text(isCN ? e.label : e.name)))
+                                  .map((e) => DropdownMenuItem(value: e, child: Text(isCN ? e.label(localizations) : e.name)))
                                   .toList(),
                               onChanged: onChangeType,
                             )),

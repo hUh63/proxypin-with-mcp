@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.24.56 (2026-09-28)
+
+### i18n 批 A-7：请求重写规则枚举
+
+- `rewrite_rule.dart`：`RuleType` / `ReplaceBodyType` / `RewriteType` 三个枚举
+  去掉硬编码中文 label 构造参数，改为 `String label(AppLocalizations loc)`
+  的 switch 方法；`RewriteType.getDescribe(bool)` 改为 `getDescribe(loc)`；
+  `RuleType.fromName` 不再比较 label。复用既有 `redirect` / `requestLine` /
+  `requestHeader` / `requestBody` / `statusCode` / `responseHeader` /
+  `responseBody`，新增 14 个 key。
+- 6 个重写设置页的 `.label` / `.getDescribe(...)` 调用点传入 loc。
+
 ## v1.24.55 (2026-09-28)
 
 ### 修复 v1.24.54 的编译错误（MCP 任务详情页两处 `.label`）

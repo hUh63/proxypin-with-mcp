@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
 import 'package:proxypin/utils/lang.dart';
@@ -23,19 +24,22 @@ import 'package:proxypin/utils/lang.dart';
 enum RuleType {
   // body("重写消息体"), //OLD VERSION
 
-  requestReplace("替换请求"),
-  responseReplace("替换响应"),
-  requestUpdate("修改请求"),
-  responseUpdate("修改响应"),
-  redirect("重定向");
+  requestReplace,
+  responseReplace,
+  requestUpdate,
+  responseUpdate,
+  redirect;
 
-  //名称
-  final String label;
-
-  const RuleType(this.label);
+  String label(AppLocalizations loc) => switch (this) {
+        RuleType.requestReplace => loc.rewriteRuleTypeRequestReplace,
+        RuleType.responseReplace => loc.rewriteRuleTypeResponseReplace,
+        RuleType.requestUpdate => loc.rewriteRuleTypeRequestUpdate,
+        RuleType.responseUpdate => loc.rewriteRuleTypeResponseUpdate,
+        RuleType.redirect => loc.rewriteRuleTypeRedirect,
+      };
 
   static RuleType fromName(String name) {
-    return values.firstWhere((element) => element.name == name || element.label == name);
+    return values.firstWhere((element) => element.name == name);
   }
 }
 
@@ -122,12 +126,13 @@ class RequestRewriteRule {
 }
 
 enum ReplaceBodyType {
-  text("文本"),
-  file("文件");
+  text,
+  file;
 
-  final String label;
-
-  const ReplaceBodyType(this.label);
+  String label(AppLocalizations loc) => switch (this) {
+        ReplaceBodyType.text => loc.rewriteBodyTypeText,
+        ReplaceBodyType.file => loc.rewriteBodyTypeFile,
+      };
 }
 
 class RewriteItem {
@@ -238,24 +243,24 @@ class RewriteItem {
 
 enum RewriteType {
   //重定向
-  redirect("重定向"),
+  redirect,
 
   //替换请求
-  replaceRequestLine("请求行"),
-  replaceRequestHeader("请求头"),
-  replaceRequestBody("请求体"),
-  replaceResponseStatus("状态码"),
-  replaceResponseHeader("响应头"),
-  replaceResponseBody("响应体"),
+  replaceRequestLine,
+  replaceRequestHeader,
+  replaceRequestBody,
+  replaceResponseStatus,
+  replaceResponseHeader,
+  replaceResponseBody,
 
   //修改请求
-  updateBody("修改Body"),
-  addQueryParam("添加参数"),
-  removeQueryParam("删除参数"),
-  updateQueryParam("修改参数"),
-  addHeader("添加头部"),
-  removeHeader("删除头部"),
-  updateHeader("修改头部"),
+  updateBody,
+  addQueryParam,
+  removeQueryParam,
+  updateQueryParam,
+  addHeader,
+  removeHeader,
+  updateHeader,
   ;
 
   static List<RewriteType> updateRequest = [
@@ -270,19 +275,26 @@ enum RewriteType {
 
   static List<RewriteType> updateResponse = [updateBody, addHeader, updateHeader, removeHeader];
 
-  final String label;
-
-  const RewriteType(this.label);
+  String label(AppLocalizations loc) => switch (this) {
+        RewriteType.redirect => loc.redirect,
+        RewriteType.replaceRequestLine => loc.requestLine,
+        RewriteType.replaceRequestHeader => loc.requestHeader,
+        RewriteType.replaceRequestBody => loc.requestBody,
+        RewriteType.replaceResponseStatus => loc.statusCode,
+        RewriteType.replaceResponseHeader => loc.responseHeader,
+        RewriteType.replaceResponseBody => loc.responseBody,
+        RewriteType.updateBody => loc.rewriteTypeUpdateBody,
+        RewriteType.addQueryParam => loc.rewriteTypeAddQueryParam,
+        RewriteType.removeQueryParam => loc.rewriteTypeRemoveQueryParam,
+        RewriteType.updateQueryParam => loc.rewriteTypeUpdateQueryParam,
+        RewriteType.addHeader => loc.rewriteTypeAddHeader,
+        RewriteType.removeHeader => loc.rewriteTypeRemoveHeader,
+        RewriteType.updateHeader => loc.rewriteTypeUpdateHeader,
+      };
 
   static RewriteType fromName(String name) {
     return values.firstWhere((element) => element.name == name);
   }
 
-  String getDescribe(bool isCN) {
-    if (isCN) {
-      return label;
-    }
-
-    return name.replaceFirst("replace", "").replaceFirst("Query", "");
-  }
+  String getDescribe(AppLocalizations loc) => label(loc);
 }

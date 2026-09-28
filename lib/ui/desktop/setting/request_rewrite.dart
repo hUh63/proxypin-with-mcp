@@ -368,7 +368,7 @@ class _RequestRuleListState extends State<RequestRuleList> {
                             overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
                     SizedBox(
                         width: 100,
-                        child: Text(isCN ? list[index].type.label : list[index].type.name.camelCaseToSpaced(),
+                        child: Text(isCN ? list[index].type.label(localizations) : list[index].type.name.camelCaseToSpaced(),
                             textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
                   ],
                 ))));
@@ -686,7 +686,7 @@ class _RewriteRuleEditState extends State<RewriteRuleEdit> {
                               items: RuleType.values
                                   .map((e) => DropdownMenuItem(
                                       value: e,
-                                      child: Text(isCN ? e.label : e.name, style: const TextStyle(fontSize: 14))))
+                                      child: Text(isCN ? e.label(localizations) : e.name, style: const TextStyle(fontSize: 14))))
                                   .toList(),
                               onChanged: onChangeType,
                             )),

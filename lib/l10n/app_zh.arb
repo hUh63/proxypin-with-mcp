@@ -2488,5 +2488,19 @@
   "mcpAutoActionModifyResponse": "修改响应",
   "mcpAutoActionBlockRequest": "拦截请求",
   "mcpAutoActionReplayRequest": "重放请求",
-  "mcpAutoActionSendNotification": "发送通知"
+  "mcpAutoActionSendNotification": "发送通知",
+  "rewriteRuleTypeRequestReplace": "替换请求",
+  "rewriteRuleTypeResponseReplace": "替换响应",
+  "rewriteRuleTypeRequestUpdate": "修改请求",
+  "rewriteRuleTypeResponseUpdate": "修改响应",
+  "rewriteRuleTypeRedirect": "重定向",
+  "rewriteBodyTypeText": "文本",
+  "rewriteBodyTypeFile": "文件",
+  "rewriteTypeUpdateBody": "修改Body",
+  "rewriteTypeAddQueryParam": "添加参数",
+  "rewriteTypeRemoveQueryParam": "删除参数",
+  "rewriteTypeUpdateQueryParam": "修改参数",
+  "rewriteTypeAddHeader": "添加头部",
+  "rewriteTypeRemoveHeader": "删除头部",
+  "rewriteTypeUpdateHeader": "修改头部"
 }

@@ -11228,6 +11228,91 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'Send notification'**
   String get mcpAutoActionSendNotification;
 
+
+  /// No description provided for @rewriteRuleTypeRequestReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace request'**
+  String get rewriteRuleTypeRequestReplace;
+
+  /// No description provided for @rewriteRuleTypeResponseReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace response'**
+  String get rewriteRuleTypeResponseReplace;
+
+  /// No description provided for @rewriteRuleTypeRequestUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify request'**
+  String get rewriteRuleTypeRequestUpdate;
+
+  /// No description provided for @rewriteRuleTypeResponseUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify response'**
+  String get rewriteRuleTypeResponseUpdate;
+
+  /// No description provided for @rewriteRuleTypeRedirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirect'**
+  String get rewriteRuleTypeRedirect;
+
+  /// No description provided for @rewriteBodyTypeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get rewriteBodyTypeText;
+
+  /// No description provided for @rewriteBodyTypeFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get rewriteBodyTypeFile;
+
+  /// No description provided for @rewriteTypeUpdateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify body'**
+  String get rewriteTypeUpdateBody;
+
+  /// No description provided for @rewriteTypeAddQueryParam.
+  ///
+  /// In en, this message translates to:
+  /// **'Add parameter'**
+  String get rewriteTypeAddQueryParam;
+
+  /// No description provided for @rewriteTypeRemoveQueryParam.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove parameter'**
+  String get rewriteTypeRemoveQueryParam;
+
+  /// No description provided for @rewriteTypeUpdateQueryParam.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify parameter'**
+  String get rewriteTypeUpdateQueryParam;
+
+  /// No description provided for @rewriteTypeAddHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Add header'**
+  String get rewriteTypeAddHeader;
+
+  /// No description provided for @rewriteTypeRemoveHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove header'**
+  String get rewriteTypeRemoveHeader;
+
+  /// No description provided for @rewriteTypeUpdateHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify header'**
+  String get rewriteTypeUpdateHeader;
+
 }
 
 class _AppLocalizationsDelegate

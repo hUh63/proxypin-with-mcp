@@ -2634,5 +2634,19 @@
   "mcpAutoActionModifyResponse": "Modify response",
   "mcpAutoActionBlockRequest": "Block request",
   "mcpAutoActionReplayRequest": "Replay request",
-  "mcpAutoActionSendNotification": "Send notification"
+  "mcpAutoActionSendNotification": "Send notification",
+  "rewriteRuleTypeRequestReplace": "Replace request",
+  "rewriteRuleTypeResponseReplace": "Replace response",
+  "rewriteRuleTypeRequestUpdate": "Modify request",
+  "rewriteRuleTypeResponseUpdate": "Modify response",
+  "rewriteRuleTypeRedirect": "Redirect",
+  "rewriteBodyTypeText": "Text",
+  "rewriteBodyTypeFile": "File",
+  "rewriteTypeUpdateBody": "Modify body",
+  "rewriteTypeAddQueryParam": "Add parameter",
+  "rewriteTypeRemoveQueryParam": "Remove parameter",
+  "rewriteTypeUpdateQueryParam": "Modify parameter",
+  "rewriteTypeAddHeader": "Add header",
+  "rewriteTypeRemoveHeader": "Remove header",
+  "rewriteTypeUpdateHeader": "Modify header"
 }

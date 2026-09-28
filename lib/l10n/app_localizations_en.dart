@@ -6055,4 +6055,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpAutoActionSendNotification => 'Send notification';
+
+
+  @override
+  String get rewriteRuleTypeRequestReplace => 'Replace request';
+
+  @override
+  String get rewriteRuleTypeResponseReplace => 'Replace response';
+
+  @override
+  String get rewriteRuleTypeRequestUpdate => 'Modify request';
+
+  @override
+  String get rewriteRuleTypeResponseUpdate => 'Modify response';
+
+  @override
+  String get rewriteRuleTypeRedirect => 'Redirect';
+
+  @override
+  String get rewriteBodyTypeText => 'Text';
+
+  @override
+  String get rewriteBodyTypeFile => 'File';
+
+  @override
+  String get rewriteTypeUpdateBody => 'Modify body';
+
+  @override
+  String get rewriteTypeAddQueryParam => 'Add parameter';
+
+  @override
+  String get rewriteTypeRemoveQueryParam => 'Remove parameter';
+
+  @override
+  String get rewriteTypeUpdateQueryParam => 'Modify parameter';
+
+  @override
+  String get rewriteTypeAddHeader => 'Add header';
+
+  @override
+  String get rewriteTypeRemoveHeader => 'Remove header';
+
+  @override
+  String get rewriteTypeUpdateHeader => 'Modify header';
 }

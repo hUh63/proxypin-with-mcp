@@ -193,7 +193,7 @@ class RewriteReplaceState extends State<DesktopRewriteReplace> {
                 items: ReplaceBodyType.values
                     .map((e) => DropdownMenuItem(
                         value: e.name,
-                        child: Text(isCN ? e.label : e.name.toUpperCase(),
+                        child: Text(isCN ? e.label(localizations) : e.name.toUpperCase(),
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))))
                     .toList(),
                 onChanged: (val) => setState(() {

@@ -223,7 +223,7 @@ class _RewriteUpdateAddState extends State<RewriteUpdateAddDialog> {
                               items: typeList
                                   .map((e) => DropdownMenuItem(
                                       value: e,
-                                      child: Text(e.getDescribe(localizations.localeName == 'zh'),
+                                      child: Text(e.getDescribe(localizations),
                                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))))
                                   .toList(),
                               onChanged: (val) {
@@ -491,7 +491,7 @@ class _UpdateListState extends State<UpdateList> {
                 children: [
                   SizedBox(
                       width: 130,
-                      child: Text(list[index].type.getDescribe(isCN), style: const TextStyle(fontSize: 13))),
+                      child: Text(list[index].type.getDescribe(localizations), style: const TextStyle(fontSize: 13))),
                   SizedBox(
                       width: 40,
                       child: SwitchWidget(

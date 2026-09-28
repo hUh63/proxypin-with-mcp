@@ -6018,6 +6018,49 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get mcpAutoActionSendNotification => '发送通知';
 
+
+  @override
+  String get rewriteRuleTypeRequestReplace => '替换请求';
+
+  @override
+  String get rewriteRuleTypeResponseReplace => '替换响应';
+
+  @override
+  String get rewriteRuleTypeRequestUpdate => '修改请求';
+
+  @override
+  String get rewriteRuleTypeResponseUpdate => '修改响应';
+
+  @override
+  String get rewriteRuleTypeRedirect => '重定向';
+
+  @override
+  String get rewriteBodyTypeText => '文本';
+
+  @override
+  String get rewriteBodyTypeFile => '文件';
+
+  @override
+  String get rewriteTypeUpdateBody => '修改Body';
+
+  @override
+  String get rewriteTypeAddQueryParam => '添加参数';
+
+  @override
+  String get rewriteTypeRemoveQueryParam => '删除参数';
+
+  @override
+  String get rewriteTypeUpdateQueryParam => '修改参数';
+
+  @override
+  String get rewriteTypeAddHeader => '添加头部';
+
+  @override
+  String get rewriteTypeRemoveHeader => '删除头部';
+
+  @override
+  String get rewriteTypeUpdateHeader => '修改头部';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
