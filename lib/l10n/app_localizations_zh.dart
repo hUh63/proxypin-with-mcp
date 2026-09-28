@@ -5866,6 +5866,67 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get wafBaselineOriginal => '基线（原始载荷）';
 
+
+  @override
+  String get capturePlanTplMobileName => '移动端 App 抓包排查';
+
+  @override
+  String get capturePlanTplMobileApp => '任意移动 App';
+
+  @override
+  String get capturePlanTplMobileDesc => '从零确认代理连通性，再定位目标 App 的请求，适合首次对某个 App 抓包或排查加载异常。';
+
+  @override
+  String get capturePlanTplMobileStepConnectTitle => '确认手机已连上代理';
+
+  @override
+  String get capturePlanTplMobileStepConnectDesc => '把手机 Wi-Fi 代理指向本机局域网地址与抓包端口，确认能看到其他 App 的请求。';
+
+  @override
+  String get capturePlanTplMobileStepCaTitle => '信任根证书';
+
+  @override
+  String get capturePlanTplMobileStepCaDesc => '在手机上安装并完全信任 ProxyPin 根证书，否则 HTTPS 正文只能看到密文。';
+
+  @override
+  String get capturePlanTplMobileStepTargetTitle => '只留目标 App';
+
+  @override
+  String get capturePlanTplMobileStepTargetDesc => '关闭其他应用的后台活动，或用「应用筛选」只保留目标 App，减少无关请求干扰。';
+
+  @override
+  String get capturePlanTplMobileStepReproduceTitle => '复现并核对';
+
+  @override
+  String get capturePlanTplMobileStepReproduceDesc => '在目标 App 里复现操作，回到请求列表核对接口、状态码与响应内容。';
+
+  @override
+  String get capturePlanTplApiName => '接口清单梳理';
+
+  @override
+  String get capturePlanTplApiApp => '任意客户端';
+
+  @override
+  String get capturePlanTplApiDesc => '把一个功能的全部请求抓齐，整理成接口清单，适合做接口梳理与联调核对。';
+
+  @override
+  String get capturePlanTplApiStepScopeTitle => '圈定域名范围';
+
+  @override
+  String get capturePlanTplApiStepScopeDesc => '在方案里填入目标业务域名，一键应用到域名过滤器，只保留相关请求。';
+
+  @override
+  String get capturePlanTplApiStepCollectTitle => '走完整个功能流程';
+
+  @override
+  String get capturePlanTplApiStepCollectDesc => '在客户端里把目标功能的每个步骤都操作一遍，确保接口尽量抓全。';
+
+  @override
+  String get capturePlanTplApiStepCatalogTitle => '导出接口清单';
+
+  @override
+  String get capturePlanTplApiStepCatalogDesc => '打开「API 端点」工具，从抓包数据提取端点，可导出 OpenAPI / Postman / JSON。';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

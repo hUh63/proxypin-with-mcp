@@ -10943,6 +10943,127 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'Baseline (original payload)'**
   String get wafBaselineOriginal;
 
+
+  /// No description provided for @capturePlanTplMobileName.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile app capture troubleshooting'**
+  String get capturePlanTplMobileName;
+
+  /// No description provided for @capturePlanTplMobileApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Any mobile app'**
+  String get capturePlanTplMobileApp;
+
+  /// No description provided for @capturePlanTplMobileDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm proxy connectivity from scratch, then locate the target app\\'s requests. Good for capturing an app for the first time or debugging a load issue.'**
+  String get capturePlanTplMobileDesc;
+
+  /// No description provided for @capturePlanTplMobileStepConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the phone is on the proxy'**
+  String get capturePlanTplMobileStepConnectTitle;
+
+  /// No description provided for @capturePlanTplMobileStepConnectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the phone\\'s Wi-Fi proxy at your LAN address and capture port, and confirm you can see other apps\\' requests.'**
+  String get capturePlanTplMobileStepConnectDesc;
+
+  /// No description provided for @capturePlanTplMobileStepCaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust the root certificate'**
+  String get capturePlanTplMobileStepCaTitle;
+
+  /// No description provided for @capturePlanTplMobileStepCaDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Install and fully trust the ProxyPin root certificate on the phone; otherwise HTTPS bodies show as ciphertext only.'**
+  String get capturePlanTplMobileStepCaDesc;
+
+  /// No description provided for @capturePlanTplMobileStepTargetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep only the target app'**
+  String get capturePlanTplMobileStepTargetTitle;
+
+  /// No description provided for @capturePlanTplMobileStepTargetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop other apps\\' background activity, or use App Filter to keep only the target app, reducing noise.'**
+  String get capturePlanTplMobileStepTargetDesc;
+
+  /// No description provided for @capturePlanTplMobileStepReproduceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reproduce and verify'**
+  String get capturePlanTplMobileStepReproduceTitle;
+
+  /// No description provided for @capturePlanTplMobileStepReproduceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reproduce the flow in the target app, then check the endpoint, status code and response back in the request list.'**
+  String get capturePlanTplMobileStepReproduceDesc;
+
+  /// No description provided for @capturePlanTplApiName.
+  ///
+  /// In en, this message translates to:
+  /// **'API inventory'**
+  String get capturePlanTplApiName;
+
+  /// No description provided for @capturePlanTplApiApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Any client'**
+  String get capturePlanTplApiApp;
+
+  /// No description provided for @capturePlanTplApiDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture all requests of one feature and turn them into an API inventory. Good for API review and integration checks.'**
+  String get capturePlanTplApiDesc;
+
+  /// No description provided for @capturePlanTplApiStepScopeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope the domains'**
+  String get capturePlanTplApiStepScopeTitle;
+
+  /// No description provided for @capturePlanTplApiStepScopeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the target business domains in the plan and apply them to the domain filter in one click, keeping only relevant requests.'**
+  String get capturePlanTplApiStepScopeDesc;
+
+  /// No description provided for @capturePlanTplApiStepCollectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk through the whole flow'**
+  String get capturePlanTplApiStepCollectTitle;
+
+  /// No description provided for @capturePlanTplApiStepCollectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Go through every step of the target feature in the client so the requests are captured as completely as possible.'**
+  String get capturePlanTplApiStepCollectDesc;
+
+  /// No description provided for @capturePlanTplApiStepCatalogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export the API inventory'**
+  String get capturePlanTplApiStepCatalogTitle;
+
+  /// No description provided for @capturePlanTplApiStepCatalogDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the API Endpoints tool to extract endpoints from the capture data; it can export OpenAPI / Postman / JSON.'**
+  String get capturePlanTplApiStepCatalogDesc;
+
 }
 
 class _AppLocalizationsDelegate

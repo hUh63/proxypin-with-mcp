@@ -17,6 +17,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/host_filter.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -192,62 +193,62 @@ class CaptureDomainMatcher {
 class BuiltInCapturePlans {
   const BuiltInCapturePlans._();
 
-  static const mobileTroubleshoot = CapturePlan(
+  static CapturePlan mobileTroubleshoot(AppLocalizations loc) => CapturePlan(
     id: 'builtin.mobile-app-troubleshoot',
-    name: '移动端 App 抓包排查',
-    appName: '任意移动 App',
-    description: '从零确认代理连通性，再定位目标 App 的请求，适合首次对某个 App 抓包或排查加载异常。',
+    name: loc.capturePlanTplMobileName,
+    appName: loc.capturePlanTplMobileApp,
+    description: loc.capturePlanTplMobileDesc,
     builtIn: true,
     steps: [
       CapturePlanStep(
         id: 'connect',
-        title: '确认手机已连上代理',
-        description: '把手机 Wi-Fi 代理指向本机局域网地址与抓包端口，确认能看到其他 App 的请求。',
+        title: loc.capturePlanTplMobileStepConnectTitle,
+        description: loc.capturePlanTplMobileStepConnectDesc,
       ),
       CapturePlanStep(
         id: 'ca',
-        title: '信任根证书',
-        description: '在手机上安装并完全信任 ProxyPin 根证书，否则 HTTPS 正文只能看到密文。',
+        title: loc.capturePlanTplMobileStepCaTitle,
+        description: loc.capturePlanTplMobileStepCaDesc,
       ),
       CapturePlanStep(
         id: 'target',
-        title: '只留目标 App',
-        description: '关闭其他应用的后台活动，或用「应用筛选」只保留目标 App，减少无关请求干扰。',
+        title: loc.capturePlanTplMobileStepTargetTitle,
+        description: loc.capturePlanTplMobileStepTargetDesc,
       ),
       CapturePlanStep(
         id: 'reproduce',
-        title: '复现并核对',
-        description: '在目标 App 里复现操作，回到请求列表核对接口、状态码与响应内容。',
+        title: loc.capturePlanTplMobileStepReproduceTitle,
+        description: loc.capturePlanTplMobileStepReproduceDesc,
       ),
     ],
   );
 
-  static const apiReview = CapturePlan(
+  static CapturePlan apiReview(AppLocalizations loc) => CapturePlan(
     id: 'builtin.api-review',
-    name: '接口清单梳理',
-    appName: '任意客户端',
-    description: '把一个功能的全部请求抓齐，整理成接口清单，适合做接口梳理与联调核对。',
+    name: loc.capturePlanTplApiName,
+    appName: loc.capturePlanTplApiApp,
+    description: loc.capturePlanTplApiDesc,
     builtIn: true,
     steps: [
       CapturePlanStep(
         id: 'scope',
-        title: '圈定域名范围',
-        description: '在方案里填入目标业务域名，一键应用到域名过滤器，只保留相关请求。',
+        title: loc.capturePlanTplApiStepScopeTitle,
+        description: loc.capturePlanTplApiStepScopeDesc,
       ),
       CapturePlanStep(
         id: 'collect',
-        title: '走完整个功能流程',
-        description: '在客户端里把目标功能的每个步骤都操作一遍，确保接口尽量抓全。',
+        title: loc.capturePlanTplApiStepCollectTitle,
+        description: loc.capturePlanTplApiStepCollectDesc,
       ),
       CapturePlanStep(
         id: 'catalog',
-        title: '导出接口清单',
-        description: '打开「API 端点」工具，从抓包数据提取端点，可导出 OpenAPI / Postman / JSON。',
+        title: loc.capturePlanTplApiStepCatalogTitle,
+        description: loc.capturePlanTplApiStepCatalogDesc,
       ),
     ],
   );
 
-  static const values = [mobileTroubleshoot, apiReview];
+  static List<CapturePlan> values(AppLocalizations loc) => [mobileTroubleshoot(loc), apiReview(loc)];
 }
 
 /// 采集方案管理器（本地 JSON 持久化）。
@@ -257,10 +258,10 @@ class CapturePlanManager extends ChangeNotifier {
 
   final List<CapturePlan> _plans = [];
 
-  static Future<CapturePlanManager> get instance async {
+  static Future<CapturePlanManager> instanceOf(AppLocalizations loc) async {
     if (_instance == null) {
       final manager = CapturePlanManager._internal();
-      await manager._load();
+      await manager._load(loc);
       _instance = manager;
     }
     return _instance!;
@@ -270,7 +271,7 @@ class CapturePlanManager extends ChangeNotifier {
 
   List<CapturePlan> get plans => List.unmodifiable(_plans);
 
-  Future<void> _load() async {
+  Future<void> _load(AppLocalizations loc) async {
     _plans.clear();
     try {
       final file = await Paths.getPath(_fileName);
@@ -294,7 +295,7 @@ class CapturePlanManager extends ChangeNotifier {
 
     // 内置方案：文件里已有同 id 的条目时以文件为准（保留用户的启用开关与域名补充），
     // 仅当缺失时才补入。
-    for (final builtin in BuiltInCapturePlans.values) {
+    for (final builtin in BuiltInCapturePlans.values(loc)) {
       if (!_plans.any((plan) => plan.id == builtin.id)) {
         _plans.insert(0, builtin);
       }

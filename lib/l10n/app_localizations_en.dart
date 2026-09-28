@@ -5903,4 +5903,65 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wafBaselineOriginal => 'Baseline (original payload)';
+
+
+  @override
+  String get capturePlanTplMobileName => 'Mobile app capture troubleshooting';
+
+  @override
+  String get capturePlanTplMobileApp => 'Any mobile app';
+
+  @override
+  String get capturePlanTplMobileDesc => 'Confirm proxy connectivity from scratch, then locate the target app\'s requests. Good for capturing an app for the first time or debugging a load issue.';
+
+  @override
+  String get capturePlanTplMobileStepConnectTitle => 'Confirm the phone is on the proxy';
+
+  @override
+  String get capturePlanTplMobileStepConnectDesc => 'Point the phone\'s Wi-Fi proxy at your LAN address and capture port, and confirm you can see other apps\' requests.';
+
+  @override
+  String get capturePlanTplMobileStepCaTitle => 'Trust the root certificate';
+
+  @override
+  String get capturePlanTplMobileStepCaDesc => 'Install and fully trust the ProxyPin root certificate on the phone; otherwise HTTPS bodies show as ciphertext only.';
+
+  @override
+  String get capturePlanTplMobileStepTargetTitle => 'Keep only the target app';
+
+  @override
+  String get capturePlanTplMobileStepTargetDesc => 'Stop other apps\' background activity, or use App Filter to keep only the target app, reducing noise.';
+
+  @override
+  String get capturePlanTplMobileStepReproduceTitle => 'Reproduce and verify';
+
+  @override
+  String get capturePlanTplMobileStepReproduceDesc => 'Reproduce the flow in the target app, then check the endpoint, status code and response back in the request list.';
+
+  @override
+  String get capturePlanTplApiName => 'API inventory';
+
+  @override
+  String get capturePlanTplApiApp => 'Any client';
+
+  @override
+  String get capturePlanTplApiDesc => 'Capture all requests of one feature and turn them into an API inventory. Good for API review and integration checks.';
+
+  @override
+  String get capturePlanTplApiStepScopeTitle => 'Scope the domains';
+
+  @override
+  String get capturePlanTplApiStepScopeDesc => 'Fill in the target business domains in the plan and apply them to the domain filter in one click, keeping only relevant requests.';
+
+  @override
+  String get capturePlanTplApiStepCollectTitle => 'Walk through the whole flow';
+
+  @override
+  String get capturePlanTplApiStepCollectDesc => 'Go through every step of the target feature in the client so the requests are captured as completely as possible.';
+
+  @override
+  String get capturePlanTplApiStepCatalogTitle => 'Export the API inventory';
+
+  @override
+  String get capturePlanTplApiStepCatalogDesc => 'Open the API Endpoints tool to extract endpoints from the capture data; it can export OpenAPI / Postman / JSON.';
 }

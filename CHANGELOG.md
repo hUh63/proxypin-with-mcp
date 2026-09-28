@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.24.51 (2026-09-28)
+
+### i18n 批 A-4：内置采集方案模板
+
+- `capture_plan_manager.dart`：两个内置方案（移动端 App 抓包排查 / 接口清单梳理）
+  的标题、适用对象、说明与全部步骤文案改由 `AppLocalizations` 提供；
+  `BuiltInCapturePlans.values` 由 `const` 列表改为接收 loc 的方法，
+  单例入口 `CapturePlanManager.instance` 改为 `instanceOf(loc)`。
+- `capture_plan_page.dart`：入口调用点传入 loc。
+
+共 20 个新 key。
+
 ## v1.24.50 (2026-09-28)
 
 ### 修复 v1.24.49 的编译错误（`probe` 内构造会话漏传 loc）

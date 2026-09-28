@@ -57,7 +57,7 @@ class _CapturePlanPageState extends State<CapturePlanPage> {
   }
 
   Future<void> _load() async {
-    final manager = await CapturePlanManager.instance;
+    final manager = await CapturePlanManager.instanceOf(AppLocalizations.of(context)!);
     manager.addListener(_onChanged);
     if (!mounted) return;
     setState(() {
