@@ -238,6 +238,7 @@ class WafProbe {
   }
 
   static Future<WafProbeResult> _sendOne({
+    required AppLocalizations loc,
     required String url,
     required String method,
     required Map<String, String> headers,
@@ -271,6 +272,7 @@ class WafProbe {
 
     final outcome = await RequestFuzzer.send(
       request,
+      loc: loc,
       index: 1,
       payload: payload,
       timeoutSeconds: timeoutSeconds,
@@ -376,6 +378,7 @@ class WafProbeSession {
     if (!_baseDone) {
       if (isCancelled?.call() == true) return batch;
       final base = await WafProbe._sendOne(
+        loc: loc,
         url: url,
         method: method,
         headers: headers,
@@ -401,6 +404,7 @@ class WafProbeSession {
       await Future.delayed(Duration(milliseconds: gap));
       final v = _queue.removeAt(0);
       final raw = await WafProbe._sendOne(
+        loc: loc,
         url: url,
         method: method,
         headers: headers,

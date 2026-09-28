@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.24.53 (2026-09-28)
+
+### 修复 v1.24.52 的编译错误（漏传 loc 的调用点）
+
+`send` / `diffOf` / `FuzzAnomaly.decode` / `WafProbe._sendOne` 加参数后，
+还有几处调用点没同步，CI 报 `Required named parameter 'loc' must be provided`
+与 `Too few positional arguments`：
+
+- `waf_probe.dart`：`_sendOne` 加 loc，`nextBatch` 两处调用与内部
+  `RequestFuzzer.send` 一并传入；
+- `request_fuzzer.dart`：`FuzzAnomaly.decode` 加 loc；
+- `fuzzer_page.dart`：基线那条 `send` 与 `decode` 调用传入。
+
+教训：改函数签名后要把**全库**调用点（含其它 util 之间的互调）一次搜全。
+
 ## v1.24.52 (2026-09-28)
 
 ### i18n 批 A-5：Fuzz 异常规则与差异描述

@@ -99,7 +99,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
     _injections.add(_InjectionEditor());
     SharedPreferences.getInstance().then((p) {
       if (!mounted) return;
-      setState(() => _rules = FuzzAnomaly.decode(p.getString(_kAnomalyRules)));
+      setState(() => _rules = FuzzAnomaly.decode(p.getString(_kAnomalyRules), localizations));
     });
   }
 
@@ -163,6 +163,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
       if (_sendBaseline) {
         final base = await RequestFuzzer.send(
           template,
+          loc: localizations,
           index: -1,
           payload: localizations.fuzzerBaseline,
           baseline: true,

@@ -515,8 +515,8 @@ class FuzzAnomaly {
   static String encode(List<FuzzAnomalyRule> rules) =>
       const JsonEncoder().convert(rules.map((e) => e.toJson()).toList());
 
-  static List<FuzzAnomalyRule> decode(String? raw) {
-    final defaults = FuzzAnomaly.defaults();
+  static List<FuzzAnomalyRule> decode(String? raw, AppLocalizations loc) {
+    final defaults = FuzzAnomaly.defaults(loc);
     if (raw == null || raw.isEmpty) return defaults;
     try {
       final decoded = jsonDecode(raw);
