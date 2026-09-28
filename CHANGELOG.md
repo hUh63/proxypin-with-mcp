@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.24.50 (2026-09-28)
+
+### 修复 v1.24.49 的编译错误（`probe` 内构造会话漏传 loc）
+
+`waf_probe.dart` 报 `Required named parameter 'loc' must be provided`：
+`WafProbeSession` 加了 `required this.loc` 后，`WafProbe.probe` 内部那条
+`WafProbeSession(...)` 构造忘了补 `loc: loc`。补上即可。
+
 ## v1.24.49 (2026-09-28)
 
 ### i18n 批 A-3：WAF 变异技术 + 探测判定

@@ -222,6 +222,7 @@ class WafProbe {
     bool Function()? isCancelled,
   }) async {
     final session = WafProbeSession(
+      loc: loc,
       url: url,
       payload: payload,
       method: method,
