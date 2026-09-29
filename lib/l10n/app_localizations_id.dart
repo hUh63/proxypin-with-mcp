@@ -6093,4 +6093,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get rewriteTypeUpdateHeader => 'Modify header';
+
+
+  @override
+  String get sendToDecoder => 'Kirim ke Decoder';
+
+  @override
+  String get sendToAesDecrypt => 'Kirim ke Dekripsi AES';
 }

@@ -150,6 +150,71 @@ List<Map<String, dynamic>> _nativeToolsJson() {
         },
       },
       {
+        'name': 'list_histories',
+        'description':
+            'List saved capture-history sessions (the desktop History tab / mobile history records), newest first. Call this when the user asks to analyze traffic from a previous capture session; take an entry id and pass it as history_id to get_history_requests. Each entry has id, name, requestCount, fileSize and createTime.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {},
+        },
+      },
+      {
+        'name': 'get_history_requests',
+        'description':
+            'List HTTP requests saved in a history session (see list_histories). Newest first, with host/method/status/keyword filters, paging and a compact mode. Call this after list_histories when the user wants to analyze the traffic of a previous capture session instead of the live buffer; then use get_request_details with the returned id.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'history_id': {
+              'type': 'integer',
+              'description': 'History session id from list_histories (required)',
+            },
+            'keyword': {
+              'type': 'string',
+              'description': 'Substring search across request/response bodies',
+            },
+            'side': {
+              'type': 'string',
+              'description': 'Search side for keyword: request, response or both (default both)',
+              'enum': ['request', 'response', 'both'],
+            },
+            'host': {
+              'type': 'string',
+              'description': 'Filter by host keyword',
+            },
+            'method': {
+              'type': 'string',
+              'description': 'Filter by HTTP method (GET, POST...)',
+            },
+            'status_from': {
+              'type': 'integer',
+              'description': 'Minimum status code',
+            },
+            'status_to': {
+              'type': 'integer',
+              'description': 'Maximum status code',
+            },
+            'since_ms': {
+              'type': 'integer',
+              'description': 'Only requests at/after this epoch time in milliseconds',
+            },
+            'limit': {
+              'type': 'integer',
+              'description': 'Max results (default 20)',
+            },
+            'offset': {
+              'type': 'integer',
+              'description': 'Offset for paging (default 0)',
+            },
+            'compact': {
+              'type': 'boolean',
+              'description': 'If true, return core fields only to cut tokens',
+            },
+          },
+          'required': ['history_id'],
+        },
+      },
+      {
         'name': 'get_recent_requests',
         'description':
             'List recent HTTP requests, with domain and time filters, paging and a ' 

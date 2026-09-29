@@ -1509,5 +1509,7 @@
   "auditUrlSecretSuggestion": "Mueve los parámetros sensibles al cuerpo o a los encabezados de la solicitud (por ejemplo Authorization).",
   "auditPasswordBodyTitle": "Contraseña enviada en un cuerpo en texto plano",
   "auditPasswordBodyDetail": "El cuerpo de la solicitud contiene campos como password / pwd con valores en texto plano.",
-  "auditPasswordBodySuggestion": "Mantén todo el recorrido en HTTPS y asegúrate de que el servidor nunca devuelva ni registre las contraseñas."
+  "auditPasswordBodySuggestion": "Mantén todo el recorrido en HTTPS y asegúrate de que el servidor nunca devuelva ni registre las contraseñas.",
+  "sendToDecoder": "Enviar al decodificador",
+  "sendToAesDecrypt": "Enviar a descifrado AES"
 }

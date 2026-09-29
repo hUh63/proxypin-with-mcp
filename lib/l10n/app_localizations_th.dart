@@ -6083,4 +6083,11 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get rewriteTypeUpdateHeader => 'Modify header';
+
+
+  @override
+  String get sendToDecoder => 'ส่งไปยังตัวถอดรหัส';
+
+  @override
+  String get sendToAesDecrypt => 'ส่งไปยังถอดรหัส AES';
 }

@@ -11313,6 +11313,19 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'Modify header'**
   String get rewriteTypeUpdateHeader;
 
+
+  /// No description provided for @sendToDecoder.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to Decoder'**
+  String get sendToDecoder;
+
+  /// No description provided for @sendToAesDecrypt.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to AES Decrypt'**
+  String get sendToAesDecrypt;
+
 }
 
 class _AppLocalizationsDelegate

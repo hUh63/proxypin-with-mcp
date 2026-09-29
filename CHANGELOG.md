@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.24.74 (2026-09-30)
+
+### 同步上游 main（v1.3.2 → V1.3.3，13 commits / 46 文件）
+
+- 新增 MQTT 抓包（MQTT over TLS 识别 + 归属应用显示）
+- 新增表单式请求体编辑（form-data / form-urlencoded，支持选择本地文件）
+- 增强 cURL 导入解析（-G/--json/-u/-b/-A、-XPOST 等写法）+ 单元测试
+- 修复代理开启后部分响应正文丢失（#955）、iOS 抓包无 Response（#953）、
+  app 过滤列表加载时机（#952）
+- 新增选中 header/body 文本「发送到解码器 / AES 解密」（含 7 语言 l10n）
+- MCP 新增历史会话分析：list_histories / get_history_requests，
+  replay_flow / add_favorite / generate_code 支持 history_id
+- 方式：三方合并（base=v1.3.2 / ours=fork / theirs=main）；本地自研 MCP 结构保留，
+  history 能力参照移植
+
 ## v1.24.73 (2026-09-29)
 
 ### i18n：小语种补齐（第 17–18 批，136 条 × 5 语言）

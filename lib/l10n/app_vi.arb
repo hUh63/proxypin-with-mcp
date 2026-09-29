@@ -1509,5 +1509,7 @@
   "auditUrlSecretSuggestion": "Chuyển tham số nhạy cảm vào body hoặc tiêu đề yêu cầu (ví dụ Authorization).",
   "auditPasswordBodyTitle": "Mật khẩu gửi trong body văn bản thuần",
   "auditPasswordBodyDetail": "Body yêu cầu chứa các trường như password / pwd với giá trị văn bản thuần.",
-  "auditPasswordBodySuggestion": "Giữ toàn bộ đường truyền trên HTTPS và đảm bảo máy chủ không bao giờ phản hồi lại hoặc ghi mật khẩu vào nhật ký."
+  "auditPasswordBodySuggestion": "Giữ toàn bộ đường truyền trên HTTPS và đảm bảo máy chủ không bao giờ phản hồi lại hoặc ghi mật khẩu vào nhật ký.",
+  "sendToDecoder": "Gửi đến bộ giải mã",
+  "sendToAesDecrypt": "Gửi đến giải mã AES"
 }

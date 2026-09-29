@@ -2502,5 +2502,7 @@
   "rewriteTypeUpdateQueryParam": "修改参数",
   "rewriteTypeAddHeader": "添加头部",
   "rewriteTypeRemoveHeader": "删除头部",
-  "rewriteTypeUpdateHeader": "修改头部"
+  "rewriteTypeUpdateHeader": "修改头部",
+  "sendToDecoder": "发送到解码器",
+  "sendToAesDecrypt": "发送到 AES 解密"
 }

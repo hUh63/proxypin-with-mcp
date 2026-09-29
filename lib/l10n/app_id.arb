@@ -1509,5 +1509,7 @@
   "auditUrlSecretSuggestion": "Pindahkan parameter sensitif ke body atau header permintaan (misalnya Authorization).",
   "auditPasswordBodyTitle": "Kata sandi dikirim dalam body teks polos",
   "auditPasswordBodyDetail": "Body permintaan berisi field seperti password / pwd dengan nilai teks polos.",
-  "auditPasswordBodySuggestion": "Jaga seluruh jalur tetap HTTPS dan pastikan server tidak pernah mengembalikan atau mencatat kata sandi ke log."
+  "auditPasswordBodySuggestion": "Jaga seluruh jalur tetap HTTPS dan pastikan server tidak pernah mengembalikan atau mencatat kata sandi ke log.",
+  "sendToDecoder": "Kirim ke Decoder",
+  "sendToAesDecrypt": "Kirim ke Dekripsi AES"
 }

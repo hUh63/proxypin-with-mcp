@@ -6061,6 +6061,13 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get rewriteTypeUpdateHeader => '修改头部';
 
+
+  @override
+  String get sendToDecoder => '发送到解码器';
+
+  @override
+  String get sendToAesDecrypt => '发送到 AES 解密';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

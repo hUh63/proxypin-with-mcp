@@ -6096,4 +6096,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rewriteTypeUpdateHeader => 'Modify header';
+
+
+  @override
+  String get sendToDecoder => 'Enviar al decodificador';
+
+  @override
+  String get sendToAesDecrypt => 'Enviar a descifrado AES';
 }

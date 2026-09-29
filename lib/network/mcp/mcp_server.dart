@@ -20,6 +20,7 @@ import 'package:proxypin/network/components/request_breakpoint.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/mcp/capture/flow_store.dart';
+import 'package:proxypin/mcp/capture/history_provider.dart';
 import 'package:proxypin/mcp/protocol/mcp_actions.dart';
 import 'package:proxypin/mcp/protocol/mcp_tool.dart';
 import 'package:proxypin/mcp/transport/mcp_stdio_bridge.dart';
@@ -40,6 +41,7 @@ import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_headers.dart';
+import 'package:proxypin/storage/histories.dart';
 import 'package:proxypin/native/mcp_screen.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:flutter/material.dart';
@@ -1300,6 +1302,12 @@ class McpServer {
     }
   }
 
+  FlowStore? _historyStore;
+
+  /// 带历史数据源的 FlowStore（官方工具与历史分析工具共用）。
+  FlowStore _getHistoryStore() =>
+      _historyStore ??= FlowStore(historyProvider: _McpHistoryBridge());
+
   McpActions? _officialActions;
   FlowStore? _officialFlowStore;
   List<McpTool>? _officialToolCache;
@@ -1308,7 +1316,7 @@ class McpServer {
   List<McpTool> _officialTools() {
     if (_officialToolCache != null) return _officialToolCache!;
     if (_officialActions == null) {
-      final store = FlowStore();
+      final store = _getHistoryStore();
       _officialFlowStore = store;
       try {
         ProxyServer.current?.addListener(store);
@@ -2165,6 +2173,46 @@ class McpServer {
         } catch (e) {
           return {'error': 'Failed to get scripts: $e'};
         }
+
+      case 'list_histories':
+        final histories = await _getHistoryStore().listHistories();
+        return {
+          'count': histories.length,
+          'histories': histories.map((h) => h.toJson()).toList(),
+        };
+
+      case 'get_history_requests':
+        final historyId = (args['history_id'] as num?)?.toInt();
+        if (historyId == null) {
+          return {'error': 'history_id is required (call list_histories for valid ids)'};
+        }
+        final hLimit = (args['limit'] as num?)?.toInt() ?? 20;
+        final hOffset = (args['offset'] as num?)?.toInt() ?? 0;
+        final hKeyword = args['keyword'] as String?;
+        final hStore = _getHistoryStore();
+        List<HttpRequest> hFlows;
+        try {
+          hFlows = (hKeyword != null && hKeyword.isNotEmpty)
+              ? await hStore.historySearch(historyId, hKeyword,
+                  side: args['side'] as String? ?? 'both', limit: hLimit)
+              : await hStore.historyQuery(historyId,
+                  limit: hLimit,
+                  offset: hOffset,
+                  host: args['host'] as String?,
+                  method: args['method'] as String?,
+                  statusFrom: (args['status_from'] as num?)?.toInt(),
+                  statusTo: (args['status_to'] as num?)?.toInt(),
+                  sinceMs: (args['since_ms'] as num?)?.toInt());
+        } on ArgumentError catch (_) {
+          return {'error': 'history not found: $historyId (call list_histories for valid ids)'};
+        }
+        final hCompact = args['compact'] == true;
+        return {
+          'count': hFlows.length,
+          'requests': hCompact
+              ? hFlows.map(_compactRequestJson).toList()
+              : hFlows.map((r) => McpBridge.requestToJson(r)).toList(),
+        };
 
       case 'get_recent_requests':
         final limit = (args['limit'] as num?)?.toInt() ?? 20;
@@ -3844,4 +3892,40 @@ class _StreamableSession {
 
   /// 会话过期定时器（保存引用，停止服务时统一取消，避免 Timer 泄漏）
   Timer? expiry;
+}
+
+
+/// 桥接 [HistoryStorage] 为 [HistoryProvider]，供 MCP 历史会话分析。
+///
+/// 会话以 [HistoryItem.stableId] 为稳定 id；请求列表按需读取、由 FlowStore 做有界缓存，
+/// 不写入 [HistoryItem.requests] 永久字段，避免大历史会话长期常驻内存。
+class _McpHistoryBridge implements HistoryProvider {
+  @override
+  Future<List<HistoryMeta>> list() async {
+    var storage = await HistoryStorage.instance;
+    return [
+      for (var history in storage.histories)
+        HistoryMeta(
+          id: history.stableId,
+          name: history.name,
+          requestCount: history.requestLength,
+          fileSize: history.fileSize,
+          createTimeMs: history.createTime.millisecondsSinceEpoch,
+        )
+    ];
+  }
+
+  @override
+  Future<List<HttpRequest>> requests(int id) async {
+    var storage = await HistoryStorage.instance;
+    HistoryItem? history;
+    for (var item in storage.histories) {
+      if (item.stableId == id) {
+        history = item;
+        break;
+      }
+    }
+    if (history == null) throw ArgumentError('history not found: $id');
+    return await storage.readRequests(history);
+  }
 }

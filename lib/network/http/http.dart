@@ -267,6 +267,10 @@ class HttpRequest extends HttpMessage {
   }
 
   String? remoteDomain() {
+    if (protocolVersion == 'MQTT') {
+      final target = Uri.tryParse(uri);
+      return target == null ? null : 'mqtts://${target.host}:${target.port}';
+    }
     if (hostAndPort == null && HostAndPort.startsWithScheme(uri)) {
       try {
         var uri = Uri.parse(this.uri);
@@ -281,6 +285,7 @@ class HttpRequest extends HttpMessage {
 
   @override
   String get requestUrl {
+    if (protocolVersion == 'MQTT') return uri;
     if (HostAndPort.startsWithScheme(uri)) {
       return uri;
     }
@@ -516,6 +521,7 @@ class HttpResponse extends HttpMessage {
 
 ///HTTP请求方法。
 enum HttpMethod {
+  mqtt("MQTT"),
   get("GET"),
   post("POST"),
   put("PUT"),
@@ -543,7 +549,9 @@ enum HttpMethod {
   }
 
   static List<HttpMethod> methods() {
-    return values.where((method) => method != HttpMethod.propfind && method != HttpMethod.report).toList();
+    return values
+        .where((method) => method != HttpMethod.propfind && method != HttpMethod.report && method != HttpMethod.mqtt)
+        .toList();
   }
 }
 

@@ -6098,4 +6098,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rewriteTypeUpdateHeader => 'Modify header';
+
+
+  @override
+  String get sendToDecoder => 'Send to Decoder';
+
+  @override
+  String get sendToAesDecrypt => 'Send to AES Decrypt';
 }

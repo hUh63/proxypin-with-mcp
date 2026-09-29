@@ -1510,5 +1510,7 @@
   "auditUrlSecretSuggestion": "Mova os parâmetros sensíveis para o corpo ou os cabeçalhos da requisição (por exemplo Authorization).",
   "auditPasswordBodyTitle": "Senha enviada em um corpo em texto simples",
   "auditPasswordBodyDetail": "O corpo da requisição contém campos como password / pwd com valores em texto simples.",
-  "auditPasswordBodySuggestion": "Mantenha todo o caminho em HTTPS e certifique-se de que o servidor nunca ecoe nem registre as senhas."
+  "auditPasswordBodySuggestion": "Mantenha todo o caminho em HTTPS e certifique-se de que o servidor nunca ecoe nem registre as senhas.",
+  "sendToDecoder": "Enviar para o decodificador",
+  "sendToAesDecrypt": "Enviar para descriptografia AES"
 }

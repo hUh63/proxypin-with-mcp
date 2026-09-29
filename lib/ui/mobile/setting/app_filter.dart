@@ -40,6 +40,7 @@ class _AppWhitelistState extends State<AppWhitelist> {
 
   bool changed = false;
   bool isLoading = true;
+  bool appsLoaded = false;
   List<AppInfo> appInfoList = [];
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
@@ -48,7 +49,15 @@ class _AppWhitelistState extends State<AppWhitelist> {
   void initState() {
     super.initState();
     configuration = widget.proxyServer.configuration;
-    _loadApps();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!appsLoaded) {
+      appsLoaded = true;
+      _loadApps();
+    }
   }
 
   void _loadApps() async {
@@ -99,6 +108,7 @@ class _AppWhitelistState extends State<AppWhitelist> {
                 final packageName = await Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) => InstalledAppsWidget(addedList: appInfoList),
                 ));
+                if (!context.mounted) return;
                 if (packageName != null && !configuration.appWhitelist.contains(packageName)) {
                   configuration.appWhitelist.add(packageName);
                   changed = true;
@@ -199,6 +209,7 @@ class _AppBlacklistState extends State<AppBlacklist> {
 
   bool changed = false;
   bool isLoading = true;
+  bool appsLoaded = false;
   List<AppInfo> appInfoList = [];
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
@@ -207,7 +218,15 @@ class _AppBlacklistState extends State<AppBlacklist> {
   void initState() {
     super.initState();
     configuration = widget.proxyServer.configuration;
-    _loadApps();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!appsLoaded) {
+      appsLoaded = true;
+      _loadApps();
+    }
   }
 
   void _loadApps() async {
@@ -258,6 +277,7 @@ class _AppBlacklistState extends State<AppBlacklist> {
               final packageName = await Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => InstalledAppsWidget(addedList: appInfoList),
               ));
+              if (!context.mounted) return;
               if (packageName != null && configuration.appBlacklist?.contains(packageName) != true) {
                 configuration.appBlacklist ??= [];
                 configuration.appBlacklist?.add(packageName);

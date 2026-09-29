@@ -1509,5 +1509,7 @@
   "auditUrlSecretSuggestion": "ย้ายพารามิเตอร์อ่อนไหวไปไว้ในบอดี้หรือเฮดเดอร์ของคำขอ (เช่น Authorization)",
   "auditPasswordBodyTitle": "ส่งรหัสผ่านในบอดี้แบบข้อความธรรมดา",
   "auditPasswordBodyDetail": "บอดี้คำขอมีฟิลด์เช่น password / pwd ที่มีค่าเป็นข้อความธรรมดา",
-  "auditPasswordBodySuggestion": "ให้เส้นทางทั้งหมดเป็น HTTPS และให้แน่ใจว่าเซิร์ฟเวอร์ไม่สะท้อนหรือบันทึกรหัสผ่านลงล็อก"
+  "auditPasswordBodySuggestion": "ให้เส้นทางทั้งหมดเป็น HTTPS และให้แน่ใจว่าเซิร์ฟเวอร์ไม่สะท้อนหรือบันทึกรหัสผ่านลงล็อก",
+  "sendToDecoder": "ส่งไปยังตัวถอดรหัส",
+  "sendToAesDecrypt": "ส่งไปยังถอดรหัส AES"
 }

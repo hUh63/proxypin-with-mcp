@@ -6089,4 +6089,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get rewriteTypeUpdateHeader => 'Modify header';
+
+
+  @override
+  String get sendToDecoder => 'Gửi đến bộ giải mã';
+
+  @override
+  String get sendToAesDecrypt => 'Gửi đến giải mã AES';
 }

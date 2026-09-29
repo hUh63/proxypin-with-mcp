@@ -6098,6 +6098,13 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get rewriteTypeUpdateHeader => 'Modify header';
 
+
+  @override
+  String get sendToDecoder => 'Enviar para o decodificador';
+
+  @override
+  String get sendToAesDecrypt => 'Enviar para descriptografia AES';
+
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
