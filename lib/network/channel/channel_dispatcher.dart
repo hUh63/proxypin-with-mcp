@@ -17,6 +17,7 @@ import 'package:proxypin/network/util/byte_buf.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/process_info.dart';
 import 'package:proxypin/network/handle/sse_handle.dart';
+import 'package:proxypin/network/handle/http_proxy_handle.dart';
 
 import '../util/task_queue.dart';
 
@@ -123,7 +124,7 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
 
       //If the body does not support parsing, forward directly
       if (decodeResult.supportedParse == false) {
-        notSupportedForward(channelContext, channel, decodeResult);
+        await notSupportedForward(channelContext, channel, decodeResult);
         return;
       }
 
@@ -309,7 +310,10 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     }
   }
 
-  void notSupportedForward(ChannelContext channelContext, Channel channel, DecoderResult decodeResult) {
+  Future<void> notSupportedForward(ChannelContext channelContext, Channel channel, DecoderResult decodeResult) async {
+    // relay() 会把本 dispatcher 的 handler 换成 RelayHandler，故先捕获当前 handler，
+    // 供后续给“不支持解析”的响应补跑响应拦截器（上游 #956）使用。
+    final currentHandler = handler;
     Channel? remoteChannel = channelContext.getAttribute(channel.id);
 
     // If this is an SSE response, switch to SSE streaming mode instead of generic relay
@@ -341,6 +345,16 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       logger.w("[$channel] not supported parse ${response.headers.contentType}");
       response.request ??= channelContext.currentRequest;
       channelContext.currentRequest?.response = response;
+      // 上游 #956：close-delimited 等“不支持解析”的响应原样转发时不经 handler，
+      // 会导致脚本/重写等的 onResponse 静默失效；此处对响应补跑一次拦截器链。
+      final request = response.request;
+      if (currentHandler is HttpResponseProxyHandler && request != null) {
+        try {
+          await currentHandler.interceptUnsupportedResponse(request, response);
+        } catch (e, s) {
+          logger.e("[$channel] intercept unsupported response failed", error: e, stackTrace: s);
+        }
+      }
       channelContext.listener?.onResponse(channelContext, response);
     }
   }
@@ -354,9 +368,14 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
   channelInactive(ChannelContext channelContext, Channel channel) async {
     if (identical(channel, channelContext.clientChannel)) channelContext.http2Requests.close();
     await taskQueue.waitForAll();
-    //等待正在处理中的读事件完成(例如 HTTP/1.1 响应写回客户端), 避免服务端关闭时提前关闭对端连接导致 socket hang up
-    while (_pendingReads.isNotEmpty) {
+    //等待正在处理中的读事件完成(例如 HTTP/1.1 响应写回客户端), 避免服务端关闭时提前关闭对端连接导致 socket hang up。
+    // 加超时上限：任一读事件因对端不释放而长期挂起时不再无限等待，避免连接/socket 永久悬挂。
+    final deadline = DateTime.now().add(const Duration(seconds: 5));
+    while (_pendingReads.isNotEmpty && DateTime.now().isBefore(deadline)) {
       await Future.wait(_pendingReads.map((c) => c.future).toList());
+    }
+    if (_pendingReads.isNotEmpty) {
+      logger.w("[$channel] channelInactive pending reads wait timeout, close anyway");
     }
     channel.isOpen = false;
     handler.channelInactive(channelContext, channel);

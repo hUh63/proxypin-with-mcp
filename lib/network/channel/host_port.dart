@@ -23,7 +23,11 @@ HostAndPort getHostAndPort(HttpRequest request, {bool? ssl}) {
   String requestUri = request.uri;
   //有些请求直接是路径 /xxx, 从header取host
   if (request.uri.startsWith("/")) {
-    requestUri = request.headers.get(HttpHeaders.HOST)!;
+    final host = request.headers.get(HttpHeaders.HOST);
+    if (host == null || host.isEmpty) {
+      throw const FormatException('Missing Host header for origin-form request URI');
+    }
+    requestUri = host;
   }
   return HostAndPort.of(requestUri, ssl: ssl);
 }

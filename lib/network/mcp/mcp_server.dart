@@ -1877,7 +1877,7 @@ class McpServer {
         final req = McpBridge().getRequestById(id);
         if (req == null) return {'error': 'Request not found'};
 
-        return McpBridge.requestToJson(req, includeBody: true);
+        return McpBridge.requestToJson(req, includeBody: true, redact: _redactEnabled);
 
       case 'start_proxy':
         int port = (args['port'] as num?)?.toInt() ?? 9099;
@@ -2211,7 +2211,7 @@ class McpServer {
           'count': hFlows.length,
           'requests': hCompact
               ? hFlows.map(_compactRequestJson).toList()
-              : hFlows.map((r) => McpBridge.requestToJson(r)).toList(),
+              : hFlows.map((r) => McpBridge.requestToJson(r, redact: _redactEnabled)).toList(),
         };
 
       case 'get_recent_requests':
@@ -2247,7 +2247,7 @@ class McpServer {
         if (compact) {
           return pageItems.map(_compactRequestJson).toList();
         }
-        return pageItems.map((r) => McpBridge.requestToJson(r)).toList();
+        return pageItems.map((r) => McpBridge.requestToJson(r, redact: _redactEnabled)).toList();
 
       case 'get_statistics':
         return McpBridge().getStatistics();
@@ -2279,8 +2279,8 @@ class McpServer {
         );
 
         return {
-          'request_1': McpBridge.requestToJson(req1, includeBody: true),
-          'request_2': McpBridge.requestToJson(req2, includeBody: true),
+          'request_1': McpBridge.requestToJson(req1, includeBody: true, redact: _redactEnabled),
+          'request_2': McpBridge.requestToJson(req2, includeBody: true, redact: _redactEnabled),
           'comparison': {
             'same_url': req1.requestUrl == req2.requestUrl,
             'same_method': req1.method == req2.method,
@@ -2331,9 +2331,9 @@ class McpServer {
               .toList();
 
           return {
-            'reference': McpBridge.requestToJson(refReq),
+            'reference': McpBridge.requestToJson(refReq, redact: _redactEnabled),
             'similar_requests': similar
-                .map((r) => McpBridge.requestToJson(r))
+                .map((r) => McpBridge.requestToJson(r, redact: _redactEnabled))
                 .toList(),
             'count': similar.length,
           };
@@ -3678,7 +3678,7 @@ class McpServer {
     if (uri == 'proxypin://requests/latest') {
       return McpBridge()
           .getRecentRequests(limit: 50)
-          .map((r) => McpBridge.requestToJson(r))
+          .map((r) => McpBridge.requestToJson(r, redact: _redactEnabled))
           .toList();
     } else if (uri == 'proxypin://config/current') {
       var config = await Configuration.instance;

@@ -239,9 +239,10 @@ class Http2ClientHandler {
     channel.dispatcher.encoder = Http2RequestDecoder();
     channel.dispatcher.decoder = decoder;
 
-    channel.socket.listen((data) => onData(channelContext, channel, data),
+    final subscription = channel.socket.listen((data) => onData(channelContext, channel, data),
         onError: (error, trace) => handler.exceptionCaught(channelContext, channel, error, trace: trace),
         onDone: () => handler.channelInactive(channelContext, channel));
+    channel.attachSocketSubscription(subscription);
 
     await channel.writeBytes(Http2Codec.connectionPrefacePRI);
 

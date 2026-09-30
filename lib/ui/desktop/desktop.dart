@@ -83,7 +83,7 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
 
   @override
   void onRequest(Channel channel, HttpRequest request) {
-    requestListStateKey.currentState!.add(channel, request);
+    requestListStateKey.currentState?.add(channel, request);
 
     if (request.attributes['quickShare'] == true) {
       _selectIndex.value = 0;
@@ -98,7 +98,7 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
 
   @override
   void onResponse(ChannelContext channelContext, HttpResponse response) {
-    requestListStateKey.currentState!.addResponse(channelContext, response);
+    requestListStateKey.currentState?.addResponse(channelContext, response);
     // 上游 #922：响应在详情页打开期间才到达时立即刷新，避免详情页停留在"未响应"
     final request = response.request;
     if (request != null && panel.request.get()?.requestId == request.requestId) {

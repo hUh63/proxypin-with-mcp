@@ -40,7 +40,7 @@ class SseChannelHandler extends ChannelHandler<Uint8List> {
       final frames = decoder.feed(payload);
       for (final WebSocketFrame frame in frames) {
         frame.isFromClient = message is HttpRequest;
-        message.messages.add(frame);
+        message.addMessage(frame);
         channelContext.listener?.onMessage(channel, message, frame);
         logger.d(
             "[${channelContext.clientChannel?.id}] sse channelRead ${frame.payloadLength} ${frame.payloadDataAsString}");

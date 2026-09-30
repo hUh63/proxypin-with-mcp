@@ -7,6 +7,10 @@ class SequentialTaskQueue {
   bool _isCancelled = false;
   Completer<void>? _completer;
 
+  /// 已完成任务 id 的保留上限；超出后丢弃最早的 id（LinkedHashSet 保序），
+  /// 避免 HTTP/2 长连接上集合无界增长。
+  static const int maxCompletedTasks = 100000;
+
   final Set<int> completedTasks = {};
 
   final Map<int, List<_Task>> dependencyTasks = {};
@@ -50,7 +54,7 @@ class SequentialTaskQueue {
       } catch (error, stackTrace) {
         task.onError?.call(error, stackTrace);
       } finally {
-        completedTasks.add(task.id);
+        _markCompleted(task.id);
       }
 
       if (dependencyTasks[task.id] != null) {
@@ -59,6 +63,13 @@ class SequentialTaskQueue {
         }
         dependencyTasks.remove(task.id);
       }
+    }
+  }
+
+  void _markCompleted(int id) {
+    completedTasks.add(id);
+    while (completedTasks.length > maxCompletedTasks) {
+      completedTasks.remove(completedTasks.first);
     }
   }
 

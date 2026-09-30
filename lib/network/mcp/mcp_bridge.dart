@@ -11,6 +11,8 @@ import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/utils/listenable_list.dart';
 import 'package:proxypin/network/util/cache.dart';
 import 'package:proxypin/network/rules/websocket_rule_manager.dart';
+import 'package:proxypin/network/http/http_headers.dart';
+import 'package:proxypin/mcp/capture/sensitive_data.dart';
 
 /// MCP 数据桥接，负责从 ProxyPin 收集流量并提供给 MCP Server
 class McpBridge implements EventListener {
@@ -428,8 +430,12 @@ class McpBridge implements EventListener {
   /// WebSocket 消息回调（用于通知 MCP Server）
   Function(PausedWebSocketFrame)? onWebSocketMessage;
 
-  /// 辅助方法：将 HttpRequest 转换为 JSON（用于 MCP 响应）
-  static Map<String, dynamic> requestToJson(HttpRequest request, {bool includeBody = false}) {
+  /// 辅助方法：将 HttpRequest 转换为 JSON（用于 MCP 响应）。
+  ///
+  /// [redact] 为 true 时对敏感头（Authorization/Cookie/Set-Cookie 等）打码，
+  /// 避免经 MCP 交给 AI 时泄露凭据；调用方按用户“脱敏开关”传入。
+  static Map<String, dynamic> requestToJson(HttpRequest request,
+      {bool includeBody = false, bool redact = true}) {
     return {
       'id': request.requestId,
       'url': request.requestUrl,
@@ -439,14 +445,14 @@ class McpBridge implements EventListener {
       'duration': request.response?.responseTime.difference(request.requestTime).inMilliseconds,
       if (includeBody) ...{
         'request': {
-          'headers': request.headers.toMap(),
+          'headers': _headersToJson(request.headers, redact),
           ..._encodeBodyWithMetadata(request.body,
               truncated: request.bodyTruncated, originalLength: request.originalBodyLength),
         },
         'response': {
           'statusCode': request.response?.status.code,
           'statusText': request.response?.status.reasonPhrase,
-          'headers': request.response?.headers.toMap(),
+          'headers': request.response == null ? null : _headersToJson(request.response!.headers, redact),
           ..._encodeBodyWithMetadata(request.response?.body,
               truncated: request.response?.bodyTruncated ?? false,
               originalLength: request.response?.originalBodyLength),
@@ -455,6 +461,16 @@ class McpBridge implements EventListener {
     };
   }
   
+  /// 对 headers 打码后转 JSON，形状与 [HttpHeaders.toMap] 一致（单值字符串 / 多值数组）。
+  static Map<String, dynamic> _headersToJson(HttpHeaders headers, bool redact) {
+    final json = <String, dynamic>{};
+    headers.forEach((name, values) {
+      final v = values.length == 1 ? values.first : List<String>.from(values);
+      json[name] = (redact && SensitiveData.isRedactedHeader(name)) ? SensitiveData.placeholder : v;
+    });
+    return json;
+  }
+
   /// 编码 body 并返回元数据（包含编码类型、大小、内容）
   static Map<String, dynamic> _encodeBodyWithMetadata(List<int>? body,
       {bool truncated = false, int? originalLength}) {

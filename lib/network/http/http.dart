@@ -236,6 +236,18 @@ abstract class HttpMessage {
   List<String> get cookies => headers.cookies;
 
   List<WebSocketFrame> messages = [];
+
+  /// 单条连接保留的消息帧上限；超出后丢弃最旧的帧，避免长连接
+  /// (WebSocket / SSE / MQTT) 长时间抓包导致内存无限增长。
+  static const int maxMessages = 20000;
+
+  /// 追加一帧并维持 [messages] 不超过 [maxMessages]。
+  void addMessage(WebSocketFrame frame) {
+    messages.add(frame);
+    if (messages.length > maxMessages) {
+      messages.removeRange(0, messages.length - maxMessages);
+    }
+  }
 }
 
 ///HTTP请求。

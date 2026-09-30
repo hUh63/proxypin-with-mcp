@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.24.75 (2026-10-01)
+
+### 修复与加固（代码审查落地）
+
+- 修复上游 #956：close-delimited / 超大 body 等“不支持解析”的响应原样转发时不经
+  拦截器，导致脚本/重写的 onResponse 静默失效；现补跑响应拦截器链，并新增回归测试
+  `test/unsupported_response_interceptor_test.dart`
+- 修复无 Host 头请求触发空指针崩溃（`host_port`）
+- 修复 HTTP/2 上游连接读订阅未登记导致的订阅泄漏（`http_client`）
+- 采集热路径 `currentState!` 强解包改为空安全（`desktop`）
+- “清空抓包”确认开关默认值改为开启（`configuration`），降低误清空风险
+- MCP 出口脱敏：`requestToJson` 对敏感头（Authorization/Cookie 等）打码，
+  调用点按用户“脱敏开关”传入
+- 健壮性加固：WS/SSE/MQTT 消息帧上限 20000；HTTP/2 完成集上限；
+  `channelInactive` 等待在处理读事件增加 5s 上限，避免连接永久悬挂
+- 新增 `docs/network_robustness.md`：读事件串行化、写背压、O(n²) 拷贝热点的
+  专项设计与验证方案（需压测后实施）
+
+### i18n：小语种补齐收尾（第 19–29 批，共 769 条 × 5 语言）
+
+5 个 arb 从 1512 → 2282，与 en 对齐（缺口 0）。
+
 ## v1.24.74 (2026-09-30)
 
 ### 同步上游 main（v1.3.2 → V1.3.3，13 commits / 46 文件）

@@ -329,6 +329,19 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
   }
 }
 
+/// 顺序执行响应拦截器链：任一回调返回 null 即中断（表示停止处理），空列表为空操作。
+///
+/// 供 [HttpResponseProxyHandler] 的正常路径与 close-delimited 直通路径共用（上游 #956）。
+Future<void> runResponseInterceptors(
+    List<Interceptor> interceptors, HttpRequest request, HttpResponse response) async {
+  if (interceptors.isEmpty) return;
+  HttpResponse? r = response;
+  for (var interceptor in interceptors) {
+    r = await interceptor.onResponse(request, r!);
+    if (r == null) break;
+  }
+}
+
 /// http响应代理
 class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
   //客户端的连接
@@ -338,6 +351,11 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
   final List<Interceptor> interceptors;
 
   HttpResponseProxyHandler(this.clientChannel, this.interceptors, {this.listener});
+
+  /// 对“不支持解析”的响应（如 close-delimited、超大 body）补跑一次响应拦截器链，
+  /// 使脚本/重写等的 onResponse 仍被触发（修复上游 #956）。空拦截器为空操作。
+  Future<void> interceptUnsupportedResponse(HttpRequest request, HttpResponse response) =>
+      runResponseInterceptors(interceptors, request, response);
 
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, HttpResponse msg) async {

@@ -96,7 +96,7 @@ class AppConfiguration {
   bool autoReadEnabled = true;
 
   /// 清空抓包前确认
-  bool clearConfirm = false;
+  bool clearConfirm = true;
 
   /// 启动页开关（移动端启动页）
   bool splashEnabled = true;
@@ -289,7 +289,7 @@ class AppConfiguration {
       memoryCleanupThreshold = config['memoryCleanupThreshold'];
       maxRequestCount = config['maxRequestCount'] ?? 10000;
       autoReadEnabled = config['autoReadEnabled'] ?? true;
-      clearConfirm = config['clearConfirm'] ?? false;
+      clearConfirm = config['clearConfirm'] ?? true;
       splashEnabled = config['splashEnabled'] ?? true;
       splashDurationMs = config['splashDurationMs'] ?? 500;
       splashBackground = config['splashBackground'] ?? "off";

@@ -42,7 +42,7 @@ class WebSocketChannelHandler extends ChannelHandler<Uint8List> {
       }
       frame.isFromClient = message is HttpRequest;
 
-      message.messages.add(frame);
+      message.addMessage(frame);
       channelContext.listener?.onMessage(channel, message, frame);
 
       // 上游 #722：让脚本能捕获 WebSocket 帧（只读派发，异步执行，不影响转发字节）
