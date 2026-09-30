@@ -663,6 +663,7 @@ class _HttpState extends State<_HttpWidget> with SingleTickerProviderStateMixin,
   }
 
   Widget _bodyToolbar() {
+    final isCN = localizations.localeName == 'zh';
     final color = Theme.of(context).colorScheme.primary;
     // 窄屏（小屏手机）按钮只显示图标，避免工具栏溢出
     final narrow = MediaQuery.of(context).size.width < 380;

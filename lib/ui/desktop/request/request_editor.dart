@@ -667,6 +667,7 @@ class _HttpState extends State<_HttpWidget> {
 
   Widget _bodyToolbar() {
     final localizations = AppLocalizations.of(context)!;
+    final isCN = localizations.localeName == 'zh';
     final color = Theme.of(context).colorScheme.primary;
     // NONE 无 body；FORM-DATA/FORM-URL 由表单构建器管理，纯文本工具均不适用
     final textToolsDisabled = _bodyLanguage == _BodyLanguage.none ||
