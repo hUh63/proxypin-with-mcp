@@ -256,7 +256,7 @@ class CipherTools {
 
     if (padding == 'PKCS7') {
       final padded = PaddedBlockCipherImpl(PKCS7Padding(), cipher);
-      final CipherParameters params = mode == 'CBC'
+      final params = mode == 'CBC'
           ? PaddedBlockCipherParameters<ParametersWithIV<KeyParameter>, Null>(
               ParametersWithIV<KeyParameter>(KeyParameter(keyBytes), ivBytes), null)
           : PaddedBlockCipherParameters<KeyParameter, Null>(KeyParameter(keyBytes), null);
