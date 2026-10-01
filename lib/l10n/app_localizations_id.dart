@@ -647,14 +647,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get generateCA => 'Buat sertifikat root baru';
 
   @override
-  String get generateCADescribe => 'Yakin ingin membuat sertifikat root baru?';
+  String get generateCADescribe => 'Yakin ingin membuat sertifikat root baru? Jika dikonfirmasi,\nAnda perlu memasang ulang dan memercayai sertifikat baru';
 
   @override
   String get resetDefaultCA => 'Reset sertifikat root default';
 
   @override
   String get resetDefaultCADescribe =>
-      'Yakin ingin mereset sertifikat root default?';
+      'Yakin ingin mereset ke sertifikat root default?\nSertifikat root default ProxyPin sama untuk semua pengguna.';
 
   @override
   String get exportCaP12 => 'Ekspor sertifikat root (.p12)';
@@ -678,7 +678,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get install => 'Instal';
 
   @override
-  String get installCaDescribe => 'Pasang sertifikat';
+  String get installCaDescribe => 'Pasang sertifikat Pengaturan > Profil terunduh > Pasang';
 
   @override
   String get trustCaDescribe => 'Percayai sertifikat di pengaturan sistem';
@@ -688,7 +688,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get androidRootMagisk =>
-      'Magisk module: \nAndroid ROOT devices can be used Magisk ProxyPinCA System Certificate Module, After installing and restarting the phone Check the system certificate to see if there is a ProxyPinCA certificate. If there is, it indicates that the certificate has been successfully installed。';
+      'Modul Magisk: \nPerangkat Android yang sudah ROOT dapat memakai modul sertifikat sistem Magisk ProxyPinCA. Setelah memasang dan memulai ulang ponsel, periksa di sertifikat sistem apakah ada sertifikat ProxyPinCA; jika ada, berarti sertifikat berhasil dipasang.';
 
   @override
   String androidRootRename(Object name) {
@@ -830,7 +830,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get invalidQRCode => 'Kode QR tidak valid';
 
   @override
-  String get remoteConnectFail => 'Koneksi gagal';
+  String get remoteConnectFail => 'Koneksi gagal. Periksa apakah berada di LAN yang sama dan diizinkan oleh firewall; di iOS perlu mengaktifkan izin jaringan lokal';
 
   @override
   String get remoteConnectSuccessTips =>
@@ -939,7 +939,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get logger => 'Logger';
 
   @override
-  String get material3 => 'Material 3';
+  String get material3 => 'Material 3 adalah versi terbaru dari sistem desain open-source Google';
 
   @override
   String get iosVpnBackgroundAudio =>
@@ -1083,6 +1083,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get cipher => 'Sandi';
 
   @override
+  String get toolboxHash => 'Hash';
+
+  @override
   String get view => 'Lihat';
 
   @override
@@ -1152,7 +1155,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get sponsorThanks =>
-      'Terima kasih telah mendukung proyek open-source ini.';
+      'Terima kasih telah mendukung proyek open-source ini; pilih salah satu cara berikut untuk membantu pengembangannya dalam jangka panjang.';
 
   @override
   String get sponsorAfdian => 'AFDIAN';

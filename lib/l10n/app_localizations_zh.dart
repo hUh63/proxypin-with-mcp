@@ -1060,6 +1060,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cipher => '加解密';
 
   @override
+  String get toolboxHash => '哈希';
+
+  @override
   String get view => '查看';
 
   @override
@@ -7071,6 +7074,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get cipher => '密文';
+
+  @override
+  String get toolboxHash => '哈希';
 
   @override
   String get view => '查看';

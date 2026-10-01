@@ -2167,6 +2167,8 @@ abstract class AppLocalizations {
   /// **'Cipher'**
   String get cipher;
 
+  String get toolboxHash;
+
   /// No description provided for @view.
   ///
   /// In en, this message translates to:

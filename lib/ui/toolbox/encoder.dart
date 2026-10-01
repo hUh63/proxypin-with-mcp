@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show gzip, zlib;
 
 import 'package:crypto/crypto.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
@@ -14,8 +15,13 @@ import '../component/buttons.dart';
 enum EncoderType {
   url,
   base64,
-  unicode,
+  base32,
   hex,
+  unicode,
+  html,
+  gzip,
+  deflate,
+  urlParams,
   md5;
 
   static EncoderType nameOf(String name) {
@@ -43,8 +49,13 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
   var tabs = const [
     Tab(text: 'URL'),
     Tab(text: 'Base64'),
-    Tab(text: 'Unicode'),
+    Tab(text: 'Base32'),
     Tab(text: 'Hex'),
+    Tab(text: 'Unicode'),
+    Tab(text: 'HTML'),
+    Tab(text: 'GZip'),
+    Tab(text: 'Deflate'),
+    Tab(text: 'Params'),
     Tab(text: 'MD5'),
   ];
 
@@ -94,6 +105,7 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
           centerTitle: true,
           bottom: TabBar(
             controller: tabController,
+            isScrollable: true,
             tabs: tabs,
             onTap: (index) {
               setState(() {
@@ -164,6 +176,16 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
           result = utf8.encode(inputText).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
         case EncoderType.unicode:
           result = encodeToUnicode(inputText);
+        case EncoderType.base32:
+          result = encodeBase32(utf8.encode(inputText));
+        case EncoderType.html:
+          result = htmlEscape.convert(inputText);
+        case EncoderType.gzip:
+          result = gzipEncode(inputText);
+        case EncoderType.deflate:
+          result = zlibEncode(inputText);
+        case EncoderType.urlParams:
+          result = encodeQuery(inputText);
       }
     } catch (e) {
       FlutterToastr.show(localizations.encodeFail, context);
@@ -205,6 +227,16 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
         case EncoderType.md5:
         case EncoderType.unicode:
           result = decodeFromUnicode(inputText);
+        case EncoderType.base32:
+          result = utf8.decode(decodeBase32(inputText), allowMalformed: true);
+        case EncoderType.html:
+          result = unescapeHtml(inputText);
+        case EncoderType.gzip:
+          result = gzipDecode(inputText);
+        case EncoderType.deflate:
+          result = zlibDecode(inputText);
+        case EncoderType.urlParams:
+          result = decodeQuery(inputText);
       }
     } catch (e, t) {
       logger.e("$e", error: e, stackTrace: t);
@@ -221,5 +253,110 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
     return input.replaceAllMapped(RegExp(r'\\u([0-9a-fA-F]{4})'), (match) {
       return String.fromCharCode(int.parse(match.group(1)!, radix: 16));
     });
+  }
+
+  static const String _base32Alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+  String encodeBase32(List<int> bytes) {
+    final out = StringBuffer();
+    var buffer = 0;
+    var bits = 0;
+    for (final b in bytes) {
+      buffer = (buffer << 8) | (b & 0xff);
+      bits += 8;
+      while (bits >= 5) {
+        out.write(_base32Alphabet[(buffer >> (bits - 5)) & 31]);
+        bits -= 5;
+      }
+    }
+    if (bits > 0) {
+      out.write(_base32Alphabet[(buffer << (5 - bits)) & 31]);
+    }
+    while (out.length % 8 != 0) {
+      out.write('=');
+    }
+    return out.toString();
+  }
+
+  List<int> decodeBase32(String input) {
+    final clean = input.toUpperCase().replaceAll(RegExp(r'[^A-Z2-7]'), '');
+    final out = <int>[];
+    var buffer = 0;
+    var bits = 0;
+    for (var i = 0; i < clean.length; i++) {
+      final v = _base32Alphabet.indexOf(clean[i]);
+      if (v < 0) continue;
+      buffer = (buffer << 5) | v;
+      bits += 5;
+      if (bits >= 8) {
+        out.add((buffer >> (bits - 8)) & 0xff);
+        bits -= 8;
+      }
+    }
+    return out;
+  }
+
+  String unescapeHtml(String input) {
+    var result = input
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&apos;', "'")
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&');
+    result = result.replaceAllMapped(
+        RegExp(r'&#x([0-9a-fA-F]+);'), (m) => String.fromCharCode(int.parse(m.group(1)!, radix: 16)));
+    result = result.replaceAllMapped(
+        RegExp(r'&#(\d+);'), (m) => String.fromCharCode(int.parse(m.group(1)!)));
+    return result;
+  }
+
+  String gzipEncode(String input) {
+    return base64.encode(gzip.encode(utf8.encode(input)));
+  }
+
+  String gzipDecode(String input) {
+    return utf8.decode(gzip.decode(base64.decode(input.trim())), allowMalformed: true);
+  }
+
+  String zlibEncode(String input) {
+    return base64.encode(zlib.encode(utf8.encode(input)));
+  }
+
+  String zlibDecode(String input) {
+    return utf8.decode(zlib.decode(base64.decode(input.trim())), allowMalformed: true);
+  }
+
+  String encodeQuery(String input) {
+    final params = <String, String>{};
+    for (final line in input.split('\n')) {
+      final t = line.trim();
+      if (t.isEmpty) continue;
+      final idx = t.indexOf('=');
+      if (idx < 0) {
+        params[t] = '';
+      } else {
+        params[t.substring(0, idx).trim()] = t.substring(idx + 1).trim();
+      }
+    }
+    return params.entries
+        .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+  }
+
+  String decodeQuery(String input) {
+    final out = <String>[];
+    for (final pair in input.split('&')) {
+      if (pair.trim().isEmpty) continue;
+      final idx = pair.indexOf('=');
+      if (idx < 0) {
+        out.add(Uri.decodeQueryComponent(pair.trim()));
+      } else {
+        out.add('${Uri.decodeQueryComponent(pair.substring(0, idx).trim())} = '
+            '${Uri.decodeQueryComponent(pair.substring(idx + 1).trim())}');
+      }
+    }
+    return out.join('\n');
   }
 }

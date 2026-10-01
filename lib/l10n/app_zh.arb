@@ -904,19 +904,52 @@
   "securityAiActionMcpAllowLan": "MCP 允许局域网访问",
   "securityAiActionMcpAuth": "MCP 要求鉴权",
   "securityAiApplyConfirm": "把「{key}」设为 {value}？\n\nAI 给的理由：{reason}",
-  "@securityAiApplyConfirm": {"placeholders": {"key": {"type": "String"}, "value": {"type": "String"}, "reason": {"type": "String"}}},
+  "@securityAiApplyConfirm": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "wafTitle": "WAF 载荷变异",
   "wafLoadFirst": "先填一条载荷",
   "wafPasteResponse": "把响应的头或拦截页片段贴进来",
   "wafAppliedCombo": "已套用针对 {waf} 的组合",
-  "@wafAppliedCombo": {"placeholders": {"waf": {"type": "String"}}},
+  "@wafAppliedCombo": {
+    "placeholders": {
+      "waf": {
+        "type": "String"
+      }
+    }
+  },
   "wafNeedAuth": "请先勾选「已获得测试授权」",
   "wafNeedUrl": "填一个目标 URL",
   "wafNeedPlaceholder": "至少要在一处放 {mark} 标记注入位置",
-  "@wafNeedPlaceholder": {"placeholders": {"mark": {"type": "String"}}},
+  "@wafNeedPlaceholder": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "wafNoVariant": "当前选择下没有会产生变化的载荷，换个载荷或技术试试",
   "wafDoneAll": "全部发完：共 {total} 条，疑似绕过 {bypass} 条",
-  "@wafDoneAll": {"placeholders": {"total": {"type": "int"}, "bypass": {"type": "int"}}},
+  "@wafDoneAll": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "bypass": {
+        "type": "int"
+      }
+    }
+  },
   "wafDisclaimer": "①② 只做本地字符串变换，不发任何请求；③ 的「主动探测」会真的把请求发出去，所以必须先显式勾选授权。\n请仅用于你拥有或已获书面授权的目标——未经授权尝试绕过他人系统的防护措施可能触犯法律。探测为串行发送、分批推进（默认每批 200 条），不做爆破与并发。",
   "wafStep1Title": "① 认一下是什么 WAF（可选）",
   "wafStep1Hint": "把你已经抓到的响应头或拦截页片段贴进来，按特征比对——不主动探测。",
@@ -924,20 +957,59 @@
   "wafStep2Title": "② 输入载荷并选择变异方式",
   "wafStep3Title": "③ 主动探测（会真的发请求）",
   "wafStep3Hint": "在你想注入的位置写 {mark}（URL / 头 / 体都行）。先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。",
-  "@wafStep3Hint": {"placeholders": {"mark": {"type": "String"}}},
+  "@wafStep3Hint": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "wafWillProbe": "本次将探测（由 ①② 决定）：{names}",
-  "@wafWillProbe": {"placeholders": {"names": {"type": "String"}}},
+  "@wafWillProbe": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "wafBatchHint": "每批最多 {max} 条；一批发完由你决定要不要继续下一批，不会一口气全发出去。",
-  "@wafBatchHint": {"placeholders": {"max": {"type": "int"}}},
+  "@wafBatchHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "wafExtraHeaders": "额外请求头（可选，一行一个）",
   "wafAuthCheckbox": "我已获得对该目标的测试授权",
   "wafNextBatch": "继续下一批（剩 {remaining}）",
-  "@wafNextBatch": {"placeholders": {"remaining": {"type": "int"}}},
+  "@wafNextBatch": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
   "wafLimitsHard": "间隔下限 {min}ms、总量硬顶 {max} 条，这两条不可突破 —— 再往下就不是「探测」而是对目标的流量冲击了。",
-  "@wafLimitsHard": {"placeholders": {"min": {"type": "int"}, "max": {"type": "int"}}},
+  "@wafLimitsHard": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "wafPayloadCopied": "已复制载荷",
   "wafCopied": "已复制：{name}",
-  "@wafCopied": {"placeholders": {"name": {"type": "String"}}},
+  "@wafCopied": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "guideTitle": "使用文档",
   "guideMarkLegendTitle": "重点标记说明",
   "guideMarkLegend": "文档中的重点使用多种标记方式呈现：\n\n• ==黄色高亮==：关键操作步骤\n• 粗体（主题色）：重要概念与入口\n• __实线下划线__：需要特别注意的设置\n• ~橙色波浪线~：易错点提醒\n• ~~删除线~~：已废弃或不推荐的做法\n• 等宽底色：命令、路径、代码\n\n代码块右下角提供「示例」（演示说明）与「复制」按钮。",
@@ -946,20 +1018,59 @@
   "guideCopySyntax": "复制语法",
   "guideMarkReset": "已恢复默认标记",
   "guideRenderError": "渲染异常（已降级为纯文本）：{error}",
-  "@guideRenderError": {"placeholders": {"error": {"type": "String"}}},
+  "@guideRenderError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "guideDemoTitle": "示例 · {heading}",
-  "@guideDemoTitle": {"placeholders": {"heading": {"type": "String"}}},
+  "@guideDemoTitle": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "guideDemoDefault": "这段代码/配置演示了「{heading}」章节的用法。将其填入对应功能页即可复现效果。",
-  "@guideDemoDefault": {"placeholders": {"heading": {"type": "String"}}},
+  "@guideDemoDefault": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "guideGotIt": "知道了",
   "guideDemo": "示例",
   "guideCodeCopied": "代码已复制",
   "guideLoadMore": "加载更多（已显示 {visible} / {total} 段）",
-  "@guideLoadMore": {"placeholders": {"visible": {"type": "int"}, "total": {"type": "int"}}},
+  "@guideLoadMore": {
+    "placeholders": {
+      "visible": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "wafBatchDone": "本批完成，还剩 {remaining} 条未发",
-  "@wafBatchDone": {"placeholders": {"remaining": {"type": "int"}}},
+  "@wafBatchDone": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
   "wafProbeError": "探测出错：{error}",
-  "@wafProbeError": {"placeholders": {"error": {"type": "String"}}},
+  "@wafProbeError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wafCompare": "比对",
   "wafNotIdentified": "未识别",
   "wafGenerate": "生成",
@@ -970,15 +1081,45 @@
   "wafClearResults": "清空结果",
   "wafAdvanced": "高级设置",
   "wafAdvancedSummary": "间隔 {delay}ms · 超时 {timeout}s · 单次上限 {max} 条",
-  "@wafAdvancedSummary": {"placeholders": {"delay": {"type": "int"}, "timeout": {"type": "int"}, "max": {"type": "int"}}},
+  "@wafAdvancedSummary": {
+    "placeholders": {
+      "delay": {
+        "type": "int"
+      },
+      "timeout": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "wafInterval": "请求间隔",
   "wafTimeout": "单条超时",
   "wafMaxProbes": "单次上限",
   "wafNRecords": "{count} 条",
-  "@wafNRecords": {"placeholders": {"count": {"type": "int"}}},
+  "@wafNRecords": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "wafAll": "全部",
   "wafResultMeta": "HTTP {status} · {bytes} 字节 · {ms}ms",
-  "@wafResultMeta": {"placeholders": {"status": {"type": "String"}, "bytes": {"type": "int"}, "ms": {"type": "int"}}},
+  "@wafResultMeta": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "bytes": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
   "wafCopyPayload": "复制载荷",
   "aiNewChat": "新对话",
   "aiClearChatTitle": "清除当前对话",
@@ -987,7 +1128,13 @@
   "aiClearCurrent": "清除当前",
   "aiNewConversation": "新建对话",
   "aiNMessages": "{count} 条消息",
-  "@aiNMessages": {"placeholders": {"count": {"type": "int"}}},
+  "@aiNMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiCloseAndClear": "关闭并清除该对话",
   "aiDeleteChatTitle": "删除对话",
   "aiDeleteChatConfirm": "删除后该对话的消息无法恢复。",
@@ -1001,11 +1148,23 @@
   "aiNoRequests": "暂无抓包请求",
   "aiPickRequests": "选择抓包请求（可多选）",
   "aiStatus": "状态码 {code}",
-  "@aiStatus": {"placeholders": {"code": {"type": "int"}}},
+  "@aiStatus": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "aiNoResponse": "未响应",
   "aiAttachTextHint": "粘贴任意内容作为 AI 的上下文",
   "aiAnalyzeFailed": "分析失败：{error}",
-  "@aiAnalyzeFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@aiAnalyzeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "aiTitle": "AI 分析",
   "aiAgentOn": "Agent 模式已开启，AI 可自动调用 ProxyPin 功能",
   "aiAgentOff": "Agent 模式已关闭，仅接收手动消息",
@@ -1019,7 +1178,13 @@
   "aiEmptyHint1": "点击右上角 📎 附加多条请求 / 端点清单 / 文本",
   "aiEmptyHint2": "开启 🤖 Agent 模式可让 AI 自动调用 ProxyPin 功能",
   "aiToolCalled": "已调用工具 {name}",
-  "@aiToolCalled": {"placeholders": {"name": {"type": "String"}}},
+  "@aiToolCalled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aiCopied": "已复制",
   "aiConfigTitle": "AI 分析配置",
   "aiEnable": "启用 AI 分析",
@@ -1032,84 +1197,270 @@
   "aiAgentSection": "Agent 模式",
   "aiAgentHint2": "开启 🤖 后 AI 可自动调用 ProxyPin 工具查数据",
   "aiMaxRounds": "最大工具轮数：{count}",
-  "@aiMaxRounds": {"placeholders": {"count": {"type": "int"}}},
+  "@aiMaxRounds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiAgentExtra": "Agent 附加指令",
   "aiAgentExtraHint": "如：优先检查安全风险；只看 POST 请求…",
   "aiImportOk": "配置已导入",
   "aiImportFailed": "导入失败：{error}",
-  "@aiImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@aiImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "aiImportFromFile": "从文件导入配置 (JSON)",
   "aiJsonFormatHint": "JSON 格式：{example}",
-  "@aiJsonFormatHint": {"placeholders": {"example": {"type": "String"}}},
+  "@aiJsonFormatHint": {
+    "placeholders": {
+      "example": {
+        "type": "String"
+      }
+    }
+  },
   "aiConfigSaved": "AI 配置已保存",
   "quicTitle": "QUIC 连接",
   "quicKeylogTooltip": "导入密钥日志（SSLKEYLOGFILE）后即可解密 1-RTT 流数据",
   "quicCopySessionsTooltip": "复制会话列表（制表符分隔，可直接贴进表格）",
   "quicNoSni": "(无SNI)",
   "quicPacketsBytes": "{packets}包 / {bytes}",
-  "@quicPacketsBytes": {"placeholders": {"packets": {"type": "int"}, "bytes": {"type": "String"}}},
+  "@quicPacketsBytes": {
+    "placeholders": {
+      "packets": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
   "quicLastActivity": "最后活动 {time}",
-  "@quicLastActivity": {"placeholders": {"time": {"type": "String"}}},
+  "@quicLastActivity": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "quicCopiedSessions": "已复制 {count} 条会话记录",
-  "@quicCopiedSessions": {"placeholders": {"count": {"type": "int"}}},
+  "@quicCopiedSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "quicRefreshTooltip": "刷新（等待新的 QUIC 包到达）",
   "quicClearRecords": "清空记录",
   "quicClearConfirm": "清空全部 QUIC 连接记录？已记录的会话与密钥日志不会恢复。",
   "quicBannerNoKeylog": "仅展示 QUIC 连接级元数据（哪些域名在走 QUIC、连接统计）。HTTP/3 内容受 TLS 1.3 加密，默认无法解为明文；点右上角「钥匙」导入密钥日志（SSLKEYLOGFILE）后，命中的连接会自动解密 1-RTT 流数据；或开启「拦截 QUIC」强制定向 TCP 抓取完整请求。",
   "quicBannerKeylogLoaded": "已导入 {keys} 条密钥（覆盖 {connections} 个连接）。命中连接自动解密 1-RTT（仅客户端方向；HEADERS 按 QPACK 解码，含动态表）。未命中的连接请开启「拦截 QUIC」回落 TCP 抓取。",
-  "@quicBannerKeylogLoaded": {"placeholders": {"keys": {"type": "int"}, "connections": {"type": "int"}}},
+  "@quicBannerKeylogLoaded": {
+    "placeholders": {
+      "keys": {
+        "type": "int"
+      },
+      "connections": {
+        "type": "int"
+      }
+    }
+  },
   "quicNoSniUnresolved": "（未解出 SNI）",
   "quicSessionSummary": "QUIC {version} · {remote} · 首见 {firstSeen} · 最后活动 {ago}",
-  "@quicSessionSummary": {"placeholders": {"version": {"type": "String"}, "remote": {"type": "String"}, "firstSeen": {"type": "String"}, "ago": {"type": "String"}}},
+  "@quicSessionSummary": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "remote": {
+        "type": "String"
+      },
+      "firstSeen": {
+        "type": "String"
+      },
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
   "quicSessionIds": "连接 {dcid}… · {packets} 包 / {frames} 帧 · {bytes}{decrypted}",
-  "@quicSessionIds": {"placeholders": {"dcid": {"type": "String"}, "packets": {"type": "int"}, "frames": {"type": "int"}, "bytes": {"type": "String"}, "decrypted": {"type": "String"}}},
+  "@quicSessionIds": {
+    "placeholders": {
+      "dcid": {
+        "type": "String"
+      },
+      "packets": {
+        "type": "int"
+      },
+      "frames": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "decrypted": {
+        "type": "String"
+      }
+    }
+  },
   "quicDecryptedSegments": " · 已解密 {count} 段",
-  "@quicDecryptedSegments": {"placeholders": {"count": {"type": "int"}}},
+  "@quicDecryptedSegments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "quicTimelineTitle": "最近 10 分钟 QUIC 包量",
   "quicTimelineNoData": "暂无数据",
   "quicTimelineSummary": "共 {packets} 包 · {bytes} · {buckets} 段有流量",
-  "@quicTimelineSummary": {"placeholders": {"packets": {"type": "int"}, "bytes": {"type": "String"}, "buckets": {"type": "int"}}},
+  "@quicTimelineSummary": {
+    "placeholders": {
+      "packets": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "buckets": {
+        "type": "int"
+      }
+    }
+  },
   "quicTenMinutesAgo": "10 分钟前",
   "quicPerCellTenSeconds": "每格 10 秒",
   "quicNow": "现在",
   "quicImportedNKeys": "已导入 {keys} 条密钥，覆盖 {connections} 个连接",
-  "@quicImportedNKeys": {"placeholders": {"keys": {"type": "int"}, "connections": {"type": "int"}}},
+  "@quicImportedNKeys": {
+    "placeholders": {
+      "keys": {
+        "type": "int"
+      },
+      "connections": {
+        "type": "int"
+      }
+    }
+  },
   "quicNoNewKeyEntries": "没有解析到新的密钥条目（请确认文件是 NSS key log 格式）",
   "quicImportFailed": "导入失败：{error}",
-  "@quicImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@quicImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "quicDecryptedTitle": "{host} · 解密内容",
-  "@quicDecryptedTitle": {"placeholders": {"host": {"type": "String"}}},
+  "@quicDecryptedTitle": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "quicDecryptedAbout": "共 {segments} 段（客户端发送方向，1-RTT）。HEADERS 为 QPACK 压缩：静态表与动态表引用均已解码，动态表由本连接的「QPACK 编码器流」按序还原{table}。",
-  "@quicDecryptedAbout": {"placeholders": {"segments": {"type": "int"}, "table": {"type": "String"}}},
+  "@quicDecryptedAbout": {
+    "placeholders": {
+      "segments": {
+        "type": "int"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
   "quicQpackTableUsed": "（已插入 {inserted} 条，当前存活 {live} 条）",
-  "@quicQpackTableUsed": {"placeholders": {"inserted": {"type": "int"}, "live": {"type": "int"}}},
+  "@quicQpackTableUsed": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      },
+      "live": {
+        "type": "int"
+      }
+    }
+  },
   "quicQpackTableUnused": "（本连接未使用动态表）",
   "quicHttp3Headers": "HTTP/3 头部 · QPACK 已解码 {count} 项",
-  "@quicHttp3Headers": {"placeholders": {"count": {"type": "int"}}},
+  "@quicHttp3Headers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "quicStatConnections": "连接",
   "quicStatHosts": "域名",
   "quicStatPackets": "包",
   "quicStatTraffic": "流量",
   "quicStatActive": "活跃",
   "quicSecondsAgo": "{seconds} 秒前",
-  "@quicSecondsAgo": {"placeholders": {"seconds": {"type": "int"}}},
+  "@quicSecondsAgo": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "quicMinutesAgo": "{minutes} 分钟前",
-  "@quicMinutesAgo": {"placeholders": {"minutes": {"type": "int"}}},
+  "@quicMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "quicHoursAgo": "{hours} 小时前",
-  "@quicHoursAgo": {"placeholders": {"hours": {"type": "int"}}},
+  "@quicHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "quicEmptyTitle": "尚未捕获到 QUIC 连接",
   "quicEmptyDesc": "开启 VPN 抓包后，目标应用使用 QUIC/HTTP3 时（如视频、部分社交与游戏应用），会自动记录其连接：域名(SNI)、QUIC 版本、连接 ID 与包/帧统计。",
   "quicEmptyHint": "提示：多数应用默认走 TCP/HTTP2，若需看到 QUIC 记录，可在偏好设置临时关闭「拦截 QUIC」后重开抓包；业务明文仍需开启「拦截 QUIC」回落 TCP 后抓取。",
   "pinningDeployDone": "脚本已部署到 {path}",
-  "@pinningDeployDone": {"placeholders": {"path": {"type": "String"}}},
+  "@pinningDeployDone": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "pinningDeployFailed": "部署失败：{reason}",
-  "@pinningDeployFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@pinningDeployFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "pinningNeedPackage": "请填写目标应用包名",
   "pinningAttaching": "正在注入…",
   "pinningAttached": "已注入：{result}",
-  "@pinningAttached": {"placeholders": {"result": {"type": "String"}}},
+  "@pinningAttached": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
   "pinningAttachFailed": "注入失败：{result}",
-  "@pinningAttachFailed": {"placeholders": {"result": {"type": "String"}}},
+  "@pinningAttachFailed": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
   "pinningStopDone": "已停止注入",
   "pinningStopFailed": "停止失败",
   "pinningTitle": "SSL Pinning 绕过辅助",
@@ -1135,19 +1486,43 @@
   "cloudServerSaved": "服务端地址已保存",
   "cloudNeedCredentials": "请填写用户名和密码",
   "cloudAuthFailed": "失败：{error}",
-  "@cloudAuthFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudAuthFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudSignedIn": "已登录",
   "cloudSignedOut": "已退出登录",
   "cloudNoLocalWorkspace": "本地还没有工作区",
   "cloudPickWorkspace": "选择要推送的工作区",
   "cloudPushFailed": "推送失败：{error}",
-  "@cloudPushFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudPushFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudPushed": "已推送到云端",
   "cloudRemoteEmpty": "云端这份是空的",
   "cloudPulled": "已拉到本地（{count} 条）",
-  "@cloudPulled": {"placeholders": {"count": {"type": "int"}}},
+  "@cloudPulled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cloudPullFailed": "拉取失败：{error}",
-  "@cloudPullFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudPullFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudDeleteConfirm": "删除云端的这份工作区副本？删除后无法恢复。",
   "cloudDeleted": "已删除云端副本",
   "cloudRealtimeFailed": "实时连接失败，检查服务端与登录状态",
@@ -1170,9 +1545,21 @@
   "cloudTapRefresh": "（点右上角刷新查看）",
   "cloudInviteUser": "邀请用户名",
   "cloudInvited": "已邀请 {name}",
-  "@cloudInvited": {"placeholders": {"name": {"type": "String"}}},
+  "@cloudInvited": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "cloudInviteFailed": "邀请失败：{error}",
-  "@cloudInviteFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudInviteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudInvite": "邀请",
   "sslP12FileEmpty": "读取到的文件为空，请重新选择 .p12 文件",
   "sslAutoInstallHint": "自动安装（需 Root；以 Magisk 模块方式写入，重启生效）\n现代 Android 的 /system 与 /apex 都是只读的，所以不再直接拷贝，而是落成模块由开机时挂载",
@@ -1191,24 +1578,60 @@
   "sslAndroidCaInstallNote": "注意: 安装时要选【CA 证书】，选成【VPN 和应用证书】不会被应用信任；Android 14+ 的 CA 目录在 APEX 里，只把文件拷进去不一定生效，一般需要模块做 bind mount",
   "sslNoModuleDirMsg": "未检测到 Magisk / KernelSU / APatch（无 /data/adb/modules）：请先下载证书，再用模块方式手动安装",
   "sslInstallFailedRoot": "安装失败（{output}），请确认已授予 root 权限",
-  "@sslInstallFailedRoot": {"placeholders": {"output": {"type": "String"}}},
+  "@sslInstallFailedRoot": {
+    "placeholders": {
+      "output": {
+        "type": "String"
+      }
+    }
+  },
   "sslModuleInstalled": "已以模块形式安装，重启手机后生效（Android 14+ 会自动并入 APEX 的 CA 目录）",
   "sslAutoInstallFailedRoot": "自动安装失败：{error}，请确认已授予 root 权限",
-  "@sslAutoInstallFailedRoot": {"placeholders": {"error": {"type": "String"}}},
+  "@sslAutoInstallFailedRoot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "sslRemovedReboot": "已移除，重启手机后生效",
   "sslRemoveFailedRoot": "移除失败，请确认 root 授权",
   "sslRemoveFailedError": "移除失败：{error}",
-  "@sslRemoveFailedError": {"placeholders": {"error": {"type": "String"}}},
+  "@sslRemoveFailedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "sslMountingGrantRoot": "正在挂载，请在弹出的授权框里允许 root",
   "sslMountedTrustStore": "已挂进系统信任库（重启后失效）。重启目标应用即可生效，或点下方「重启 zygote」",
   "sslMountFailed": "挂载失败：{message}",
-  "@sslMountFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@sslMountFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "sslUnmountedRestored": "已卸载直挂，系统信任库恢复原状",
   "sslUnmountFailed": "卸载失败：{message}",
-  "@sslUnmountFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@sslUnmountFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "sslZygoteRestarted": "已通知 zygote 重启，所有应用会短暂重启",
   "sslZygoteRestartFailed": "重启失败：{message}",
-  "@sslZygoteRestartFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@sslZygoteRestartFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "sslCertNotInstalled": "证书未安装",
   "sslTapInstallRootCA": "点击“安装根证书”进行安装",
   "sslCertNotTrusted": "证书未信任",
@@ -1260,22 +1683,67 @@
   "mcpAutoNoRootsHint": "点击右下角 + 添加 Root\n可添加 proxypin:// 或 file:// 资源根，自由编辑",
   "mcpAutoDeleteRootConfirm": "删除这个 Root 配置？",
   "mcpAutoReading": "读取 {name}…",
-  "@mcpAutoReading": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoReading": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoReadFailed": "读取失败: {error}",
-  "@mcpAutoReadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpAutoReadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoScriptNotFound": "脚本不存在: {name}",
-  "@mcpAutoScriptNotFound": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoScriptNotFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoScriptExecuted": "脚本已执行: {name}",
-  "@mcpAutoScriptExecuted": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoScriptExecuted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoScriptRunFailed": "脚本执行失败: {error}",
-  "@mcpAutoScriptRunFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpAutoScriptRunFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoNoTasks": "暂无定时任务",
   "mcpAutoNoTasksHint": "点击右下角 + 添加新任务\n可同时选择执行时间与执行内容",
   "mcpAutoNextPrefix": "下次：",
   "mcpAutoLastRun": " • 上次：{time}",
-  "@mcpAutoLastRun": {"placeholders": {"time": {"type": "String"}}},
+  "@mcpAutoLastRun": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoRanTimes": " • 已执行 {count}/{total} 次",
-  "@mcpAutoRanTimes": {"placeholders": {"count": {"type": "int"}, "total": {"type": "int"}}},
+  "@mcpAutoRanTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "mcpAutoDeleteTaskConfirm": "取消并删除这个定时任务？",
   "mcpAutoAddTask": "添加定时任务",
   "mcpAutoTaskName": "任务名称",
@@ -1290,7 +1758,13 @@
   "mcpAutoCronRequired": "请输入 Cron 表达式",
   "mcpAutoCronInvalidHint": "表达式无效，请检查",
   "mcpAutoCronNextAt": "下次执行: {time}",
-  "@mcpAutoCronNextAt": {"placeholders": {"time": {"type": "String"}}},
+  "@mcpAutoCronNextAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoCronPresetWorkday": "工作日9点",
   "mcpAutoCronPresetEvery30": "每30分钟",
   "mcpAutoCronPresetMidnight": "每天零点",
@@ -1341,19 +1815,55 @@
   "mcpAutoUrlRegex": "URL 正则",
   "mcpAutoCaptureThreshold": "抓包数量阈值",
   "mcpAutoDescHttp": "HTTP 请求: {pattern}",
-  "@mcpAutoDescHttp": {"placeholders": {"pattern": {"type": "String"}}},
+  "@mcpAutoDescHttp": {
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDescNetwork": "网络状态: {status}",
-  "@mcpAutoDescNetwork": {"placeholders": {"status": {"type": "String"}}},
+  "@mcpAutoDescNetwork": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDescProxy": "代理状态: {status}",
-  "@mcpAutoDescProxy": {"placeholders": {"status": {"type": "String"}}},
+  "@mcpAutoDescProxy": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDescCapture": "抓包阈值: {count}",
-  "@mcpAutoDescCapture": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpAutoDescCapture": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpAutoListenerAdded": "监听器已注册",
   "mcpAutoListenerRemoved": "监听器已移除",
   "mcpAutoNoRules": "暂无自动化规则",
   "mcpAutoNoRulesHint": "点击 + 添加规则\n规则可根据条件自动执行操作",
   "mcpAutoRuleSummary": "{conditions} 条件 • {actions} 操作 • {enabled}",
-  "@mcpAutoRuleSummary": {"placeholders": {"conditions": {"type": "int"}, "actions": {"type": "int"}, "enabled": {"type": "String"}}},
+  "@mcpAutoRuleSummary": {
+    "placeholders": {
+      "conditions": {
+        "type": "int"
+      },
+      "actions": {
+        "type": "int"
+      },
+      "enabled": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDeleteRuleConfirm": "删除这条规则？",
   "mcpAutoConditionsInline": "条件:",
   "mcpAutoActionsInline": "操作:",
@@ -1413,12 +1923,27 @@
   "mcpAutoNoPrompts": "暂无 Prompts",
   "mcpAutoTapInvokePrompt": "点击 + 调用 Prompt",
   "mcpAutoPromptDescWithArgs": "{desc}\n参数: {params}",
-  "@mcpAutoPromptDescWithArgs": {"placeholders": {"desc": {"type": "String"}, "params": {"type": "String"}}},
+  "@mcpAutoPromptDescWithArgs": {
+    "placeholders": {
+      "desc": {
+        "type": "String"
+      },
+      "params": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoNoPromptAvailable": "暂无可用 Prompt",
   "mcpAutoInvokePrompt": "调用 Prompt",
   "mcpAutoPromptNoArgs": "该 Prompt 无需参数",
   "mcpAutoRequiredArg": "请填写必填参数: {name}",
-  "@mcpAutoRequiredArg": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoRequiredArg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoInvokingPrompt": "正在调用 Prompt…",
   "mcpAutoInvoke": "调用",
   "mcpAutoNoResult": "无返回内容",
@@ -1426,12 +1951,24 @@
   "mcpAutoNoWorkflowsHint": "点击 + 创建工作流\n可编排多个脚本节点顺序执行",
   "mcpAutoUnnamedWorkflow": "未命名工作流",
   "mcpAutoNodesCount": "{count} 个节点",
-  "@mcpAutoNodesCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpAutoNodesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpAutoDeleteWorkflowConfirm": "删除这个工作流？",
   "mcpAutoWorkflowDeleted": "工作流已删除",
   "mcpAutoNoNodes": "无节点",
   "mcpAutoDependsOn": "依赖: {deps}",
-  "@mcpAutoDependsOn": {"placeholders": {"deps": {"type": "String"}}},
+  "@mcpAutoDependsOn": {
+    "placeholders": {
+      "deps": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoNoDeps": "无依赖",
   "mcpAutoEditWorkflow": "编辑工作流",
   "mcpAutoAddWorkflow": "添加工作流",
@@ -1444,7 +1981,13 @@
   "mcpAutoWorkflowAdded": "工作流已添加",
   "mcpAutoWorkflowNoNodes": "工作流没有节点",
   "mcpAutoWorkflowStart": "开始执行工作流：{name}",
-  "@mcpAutoWorkflowStart": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoWorkflowStart": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoWorkflowDone": "工作流执行完成",
   "mcpConnSettingsTitle": "MCP 设置",
   "mcpConnAutomationConfig": "自动化配置",
@@ -1460,7 +2003,13 @@
   "mcpConnTokenCopied": "令牌已复制",
   "mcpConnRegenerateTokenTooltip": "重新生成（旧令牌立即失效）",
   "mcpConnRegenerateTokenFailed": "重新生成令牌失败：{error}",
-  "@mcpConnRegenerateTokenFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpConnRegenerateTokenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnClientCommands": "AI 客户端接入命令",
   "mcpConnClientCommandsSubtitle": "Claude Code / Codex / curl / 一键脚本",
   "mcpConnCurlSelfCheck": "curl 自检",
@@ -1471,7 +2020,13 @@
   "mcpConnServicePort": "服务端口",
   "mcpConnConnectionInfo": "连接信息",
   "mcpConnProtocolVersion": "MCP 协议版本：{version}（无状态核心，兼容旧版握手）",
-  "@mcpConnProtocolVersion": {"placeholders": {"version": {"type": "String"}}},
+  "@mcpConnProtocolVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnDeviceIp": "设备 IP",
   "mcpConnDeviceIpCopied": "已复制设备 IP",
   "mcpConnApiUrl": "API URL（Streamable HTTP）",
@@ -1483,7 +2038,16 @@
   "mcpConnFloatingBall": "悬浮球",
   "mcpConnFloatingBallDesc": "桌面悬浮球显示 MCP 运行状态，点击弹出快捷面板；前台服务可提升应用保活能力",
   "mcpConnFloatingBallColorDesc": "颜色 #{hex} · 透明度 {percent}%",
-  "@mcpConnFloatingBallColorDesc": {"placeholders": {"hex": {"type": "String"}, "percent": {"type": "int"}}},
+  "@mcpConnFloatingBallColorDesc": {
+    "placeholders": {
+      "hex": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "mcpConnCustomFloatingBall": "自定义悬浮球",
   "mcpConnPresetColors": "预置颜色",
   "mcpConnPresetM3Purple": "M3 紫",
@@ -1494,18 +2058,42 @@
   "mcpConnPresetGraphiteBlack": "石墨黑",
   "mcpConnCustomColorRgb": "自定义颜色（RGB）",
   "mcpConnOpacityPercent": "透明度 {percent}%",
-  "@mcpConnOpacityPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "@mcpConnOpacityPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "mcpConnConfirm": "确定",
   "mcpConnFloatingBallPermission": "悬浮球权限",
   "mcpConnFloatingBallNeedOverlayPermission": "悬浮球需要\"显示在其他应用上层\"权限，已为你打开系统设置，授权后回来重新开启",
   "mcpConnFloatingBallStartFailed": "悬浮球启动失败：{reason}",
-  "@mcpConnFloatingBallStartFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@mcpConnFloatingBallStartFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnFloatingBallStopFailed": "悬浮球停止失败：{reason}",
-  "@mcpConnFloatingBallStopFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@mcpConnFloatingBallStopFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnUnknownReason": "未知原因",
   "mcpConnFloatingBallStartedHint": "悬浮球已开启；若屏幕上看不到，请检查系统「显示悬浮窗」与厂商「后台弹出界面」权限",
   "mcpConnFloatingBallCallFailed": "悬浮球调用失败：{error}",
-  "@mcpConnFloatingBallCallFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpConnFloatingBallCallFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnOverlayGranted": "已授权\"显示在其他应用上层\"",
   "mcpConnOverlayNotGranted": "未授权——点击前往系统设置开启，否则悬浮球无法显示",
   "mcpConnEnableFloatingBall": "启用悬浮球",
@@ -1538,7 +2126,13 @@
   "mcpConnDhizukuAuthIncomplete": "授权未完成：请确认已安装 Dhizuku 并完成 Owner 激活",
   "mcpConnAvailableTools": "可用工具",
   "mcpConnToolCount": "共 {count} 个",
-  "@mcpConnToolCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpConnToolCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpConnDisabledToolsHint": "关闭的工具将从工具列表中隐藏，AI 无法调用。",
   "mcpConnToolSetConfig": "修改 ProxyPin 配置（系统代理、SSL 抓包开关）",
   "mcpConnToolExportHar": "将抓包记录导出为 HAR 文件",
@@ -1597,37 +2191,85 @@
   "auditPlaintextBodySuggestion": "对涉及登录、支付、隐私的接口强制 HTTPS。",
   "auditUrlSecretTitle": "敏感参数出现在 URL 中",
   "auditUrlSecretDetail": "查询参数 {names} 疑似承载凭据 / 密钥。URL 会被写入浏览器历史、代理与服务器日志。",
-  "@auditUrlSecretDetail": {"placeholders": {"names": {"type": "String"}}},
+  "@auditUrlSecretDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "auditUrlSecretSuggestion": "把敏感参数改放到请求体或请求头（如 Authorization）。",
   "auditPasswordBodyTitle": "请求体明文提交密码",
   "auditPasswordBodyDetail": "请求体中存在 password / pwd 等字段且值为明文。",
   "auditPasswordBodySuggestion": "确保链路全程 HTTPS，服务端避免把密码回显或写入日志。",
   "auditCookieFlagTitle": "Cookie 缺少安全属性",
   "auditCookieFlagDetail": "Set-Cookie「{name}」缺少 {missing}，存在被脚本读取或明文传输的风险。",
-  "@auditCookieFlagDetail": {"placeholders": {"name": {"type": "String"}, "missing": {"type": "String"}}},
+  "@auditCookieFlagDetail": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
   "auditCookieFlagSuggestion": "为会话 Cookie 补全 Secure、HttpOnly，并按需设置 SameSite=Lax/Strict。",
   "auditMissingHeadersTitle": "HTML 响应缺少安全头",
   "auditMissingHeadersDetail": "缺少 {missing}，浏览器侧的内容嗅探与脚本注入缺少额外约束。",
-  "@auditMissingHeadersDetail": {"placeholders": {"missing": {"type": "String"}}},
+  "@auditMissingHeadersDetail": {
+    "placeholders": {
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
   "auditMissingHeadersSuggestion": "按需补齐 nosniff、CSP 等安全响应头。",
   "auditFingerprintTitle": "响应暴露服务器指纹",
   "auditFingerprintDetail": "{header}: {value}，便于攻击者针对性选择已知漏洞。",
-  "@auditFingerprintDetail": {"placeholders": {"header": {"type": "String"}, "value": {"type": "String"}}},
+  "@auditFingerprintDetail": {
+    "placeholders": {
+      "header": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "auditFingerprintSuggestion": "在网关层隐藏或泛化版本信息。",
   "auditPrivateKeyTitle": "响应体疑似包含私钥",
   "auditPrivateKeyDetail": "响应内容中出现 PEM 私钥标记，若为真实密钥属严重泄露。",
   "auditPrivateKeySuggestion": "立即轮换该密钥，确认服务端不会把私钥下发到客户端。",
   "auditSecretTitle": "响应体明文返回敏感字段",
   "auditSecretDetail": "检测到 {names} 等字段以明文返回。",
-  "@auditSecretDetail": {"placeholders": {"names": {"type": "String"}}},
+  "@auditSecretDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "auditSecretSuggestion": "最小化返回字段；密钥类信息不应下发到客户端。",
   "auditPiiTitle": "响应体包含个人敏感信息",
   "auditPiiDetail": "检测到 {names} 字段携带疑似身份证 / 手机号等个人数据。",
-  "@auditPiiDetail": {"placeholders": {"names": {"type": "String"}}},
+  "@auditPiiDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "auditPiiSuggestion": "对个人数据做脱敏或按最小必要原则返回，并遵守数据合规要求。",
   "auditErrorTitle": "错误响应泄露内部信息",
   "auditErrorDetail": "响应中出现调试 / 堆栈特征（{trace}），可能暴露框架、路径或数据库结构。",
-  "@auditErrorDetail": {"placeholders": {"trace": {"type": "String"}}},
+  "@auditErrorDetail": {
+    "placeholders": {
+      "trace": {
+        "type": "String"
+      }
+    }
+  },
   "auditErrorSuggestion": "生产环境关闭详细报错，统一返回通用错误信息。",
   "auditCorsTitle": "CORS 允许任意源且携带凭据",
   "auditCorsDetail": "Access-Control-Allow-Origin 为 *，同时 Allow-Credentials 为 true，跨站读取凭据的风险很高。",
@@ -1643,20 +2285,50 @@
   "auditHttp10Suggestion": "升级到 HTTP/1.1 或 HTTP/2。",
   "auditSqlTitle": "疑似 SQL 注入痕迹（数据库报错回显）",
   "auditSqlDetail": "响应中出现了 {signature} 的数据库错误特征，说明该接口把 SQL 错误直接回显给了调用方；若这条错误由客户端可控参数触发，则存在 SQL 注入风险。",
-  "@auditSqlDetail": {"placeholders": {"signature": {"type": "String"}}},
+  "@auditSqlDetail": {
+    "placeholders": {
+      "signature": {
+        "type": "String"
+      }
+    }
+  },
   "auditSqlSuggestion": "改用参数化查询 / 预编译语句，不要拼接 SQL；生产环境关闭数据库详细报错，统一返回通用错误信息。（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）",
   "auditXssTitle": "疑似 XSS 反射痕迹（HTML 响应未编码回显参数）",
   "auditXssDetail": "响应把请求参数值原样回显在 HTML 中，未做 HTML 实体编码，且回显内容含 {meta} 等特殊字符；若该值可被攻击者控制，浏览器可能把它解析成标签或脚本。",
-  "@auditXssDetail": {"placeholders": {"meta": {"type": "String"}}},
+  "@auditXssDetail": {
+    "placeholders": {
+      "meta": {
+        "type": "String"
+      }
+    }
+  },
   "auditXssSuggestion": "按输出上下文做编码（HTML 实体编码），页面配合 CSP；不要把请求参数直接拼进 HTML。（本项为被动检测，仅依据已抓流量的响应特征，未发送任何探测请求。）",
   "auditCustomHitDetail": "命中自定义规则「{name}」（{describe}）。",
-  "@auditCustomHitDetail": {"placeholders": {"name": {"type": "String"}, "describe": {"type": "String"}}},
+  "@auditCustomHitDetail": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "describe": {
+        "type": "String"
+      }
+    }
+  },
   "auditCustomHitSuggestion": "请结合业务安全要求确认该内容是否应当出现。",
   "auditSecretPrivateKey": "私钥",
   "auditPiiIdCard": "身份证号",
   "auditPiiPhone": "手机号",
   "auditRuleDescribe": "范围：{target}；方式：{match}",
-  "@auditRuleDescribe": {"placeholders": {"target": {"type": "String"}, "match": {"type": "String"}}},
+  "@auditRuleDescribe": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "match": {
+        "type": "String"
+      }
+    }
+  },
   "auditTargetUrl": "请求 URL",
   "auditTargetRequestHeader": "请求头",
   "auditTargetRequestBody": "请求体",
@@ -1675,14 +2347,41 @@
   "diagSuggestChecklist": "若以上都正常仍抓不到，按这几类排查：① 目标走 QUIC/HTTP3（手机开「拦截 QUIC」、浏览器关 QUIC）；② Flutter 应用（Dart 自带根证书列表，不读系统 CA）；③ 应用启用了证书固定（SSL Pinning）—— 若上方出现「SSL 证书固定（疑似）」项即命中；④ Windows 上自带网络栈的进程（需「Windows 接管增强」或 TUN 类工具）；⑤ Mac App Store 沙箱应用（需 Network Extension/TUN，本仓未签名构建无法接管）",
   "diagItemProxyService": "代理服务",
   "diagProxyListening": "正在监听 127.0.0.1:{port}",
-  "@diagProxyListening": {"placeholders": {"port": {"type": "int"}}},
+  "@diagProxyListening": {
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
   "diagProxyNotRunning": "未在运行，抓不到任何流量。先点「开始抓包」",
   "diagItemSystemProxy": "系统代理",
   "diagSystemProxyMatched": "已指向本应用 {host}:{port}",
-  "@diagSystemProxyMatched": {"placeholders": {"host": {"type": "String"}, "port": {"type": "int"}}},
+  "@diagSystemProxyMatched": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
   "diagSystemProxyOff": "系统代理未开启，应用流量不会经过本工具",
   "diagSystemProxyMismatch": "指向 {host}:{port}，与本应用端口 {expected} 不一致（可能被其它代理工具接管，或上次异常退出残留）",
-  "@diagSystemProxyMismatch": {"placeholders": {"host": {"type": "String"}, "port": {"type": "int"}, "expected": {"type": "int"}}},
+  "@diagSystemProxyMismatch": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      },
+      "expected": {
+        "type": "int"
+      }
+    }
+  },
   "diagItemTrafficEntry": "流量入口",
   "diagMobileVpnEntry": "移动端由 VPN 通道接管 IP 层流量（无需系统代理）",
   "diagCaInSystemStore": "已在系统信任库中",
@@ -1693,41 +2392,125 @@
   "diagItemCaRoot": "CA 根证书",
   "diagCaDesktopHint": "桌面端请在「证书」页确认根证书已装入系统受信任根",
   "diagReadFailed": "读取失败：{error}",
-  "@diagReadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@diagReadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "diagItemSslPinning": "SSL 证书固定（疑似）",
   "diagSslPinningDetail": "CA 证书已就绪，但有 {count} 个域名只建立了 TLS 隧道、内容始终读不到：{sample}。这通常意味着对方启用了证书固定（SSL Pinning），或自带根证书列表不读系统 CA。注意这类应用并不是\"没网络\"——它拒绝了本工具的证书，所以主动断开了连接。",
-  "@diagSslPinningDetail": {"placeholders": {"count": {"type": "int"}, "sample": {"type": "String"}}},
+  "@diagSslPinningDetail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sample": {
+        "type": "String"
+      }
+    }
+  },
   "diagItemWinTakeover": "Windows 增强接管",
   "diagWinTakeoverOn": "已开启：WinHTTP 服务、CLI 工具（curl/git/node）等也会走代理",
   "diagWinTakeoverOff": "未开启：自带网络栈的应用、WinHTTP 服务与 CLI 工具可能抓不到。可在「偏好设置 → Windows 接管」打开（WinHTTP 部分需要管理员权限）",
   "diagItemRecentTraffic": "最近流量",
   "diagNoRequests": "本次会话还没有抓到任何请求",
   "diagTrafficFresh": "共 {count} 条，最新一条在 {ago} 秒前",
-  "@diagTrafficFresh": {"placeholders": {"count": {"type": "int"}, "ago": {"type": "int"}}},
+  "@diagTrafficFresh": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ago": {
+        "type": "int"
+      }
+    }
+  },
   "diagTrafficStale": "共 {count} 条，最新一条在 {ago} 秒前（当前没有新流量进来）",
-  "@diagTrafficStale": {"placeholders": {"count": {"type": "int"}, "ago": {"type": "int"}}},
+  "@diagTrafficStale": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ago": {
+        "type": "int"
+      }
+    }
+  },
   "diagItemExtensionMemory": "扩展内存",
   "diagExtMemUnavailable": "未取到（VPN 未启动时读不到扩展进程）",
   "diagExtMemDetail": "当前 {rss} MB，峰值 {peak} MB，连接 {connections} 条，待发缓冲 {buffered} MB",
-  "@diagExtMemDetail": {"placeholders": {"rss": {"type": "String"}, "peak": {"type": "String"}, "connections": {"type": "String"}, "buffered": {"type": "String"}}},
+  "@diagExtMemDetail": {
+    "placeholders": {
+      "rss": {
+        "type": "String"
+      },
+      "peak": {
+        "type": "String"
+      },
+      "connections": {
+        "type": "String"
+      },
+      "buffered": {
+        "type": "String"
+      }
+    }
+  },
   "diagExtMemNearLimit": "（已接近扩展内存上限，建议降低并发或缩小待发缓冲上限）",
   "auditPageVerifyTooltip": "主动核验（对已抓到的域名各发一次，核对安全响应头）",
   "auditPageNoVerifiableHosts": "抓包里还没有可核验的域名",
   "auditPageVerifyTitle": "主动核验",
   "auditPageVerifyIntro": "会对下面这些**已经在抓包里出现过**的域名，各发一次 GET，只看安全响应头：",
   "auditPageVerifyScope": "共 {hosts} 个域名，串行发送、每个之间隔 {delay}ms，上限 {max} 个。不扫端口、不投载荷。",
-  "@auditPageVerifyScope": {"placeholders": {"hosts": {"type": "int"}, "delay": {"type": "int"}, "max": {"type": "int"}}},
+  "@auditPageVerifyScope": {
+    "placeholders": {
+      "hosts": {
+        "type": "int"
+      },
+      "delay": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "auditPageVerifyAuthz": "只对你拥有或已获授权的目标做这件事。",
   "auditPageVerifyStart": "开始核验",
   "auditPageVerifyFailed": "核验失败：{error}",
-  "@auditPageVerifyFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@auditPageVerifyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "auditPageVerifyResultTitle": "主动核验结果",
   "auditPageVerifyResultIntro": "只核对了下面这几个安全响应头在不在。缺了不代表就有漏洞，但值得去核对一下服务端配置。",
   "auditPageVerifyHostFailed": "{host} —— 核验失败：{error}",
-  "@auditPageVerifyHostFailed": {"placeholders": {"host": {"type": "String"}, "error": {"type": "String"}}},
+  "@auditPageVerifyHostFailed": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "auditPageVerifyHeadersAllPresent": "这几个响应头都在",
   "auditPageVerifyHeaderMissing": "缺 {name} —— {desc}",
-  "@auditPageVerifyHeaderMissing": {"placeholders": {"name": {"type": "String"}, "desc": {"type": "String"}}},
+  "@auditPageVerifyHeaderMissing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "desc": {
+        "type": "String"
+      }
+    }
+  },
   "diagPageRerun": "重新检测",
   "diagPageTip": "检查本机抓包链路是否通畅；只做只读检测，不会改你的系统设置。同样的结论也能通过 MCP 工具 diagnose_capture 交给 AI。",
   "diagPageNextSteps": "先做这几步",
@@ -1764,7 +2547,13 @@
   "prefSplashBgTransparent": "跟随主题（推荐）",
   "prefSplashDuration": "展示时长",
   "prefSplashDurationSeconds": "{seconds} 秒",
-  "@prefSplashDurationSeconds": {"placeholders": {"seconds": {"type": "String"}}},
+  "@prefSplashDurationSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
   "prefSplashDurationFixed": "原启动页为系统画面，不支持自定义时长",
   "prefSplashNotSelected": "未选择",
   "prefSplashSelectedTapChange": "已设置，点击更换",
@@ -1786,7 +2575,13 @@
   "prefSysFallbackOn": "系统级回落已启用：UDP:443 将被丢弃（重启系统后失效）",
   "prefSysFallbackOff": "系统级回落已停用",
   "prefExecFailed": "执行失败：{error}",
-  "@prefExecFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@prefExecFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "prefIptablesUnavailable": "iptables 不可用",
   "prefMonet": "莫奈取色",
   "prefMonetDesc": "Android 12+ 跟随壁纸配色（主题与启动页自动取色）",
@@ -1795,7 +2590,13 @@
   "prefCaptureBodyLimit": "抓包内容上限",
   "prefBlockQuic": "拦截 QUIC (UDP:443)",
   "prefQuicBlocked": "已拦截 {count} 个 QUIC 包，强制回落 TCP 使流量可抓包",
-  "@prefQuicBlocked": {"placeholders": {"count": {"type": "int"}}},
+  "@prefQuicBlocked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "prefQuicBlockDesc": "丢弃 UDP 443 强制应用回落 TCP，使 HTTPS 流量可抓包",
   "prefQuicBlockOff": "已关闭，重新启动抓包后生效",
   "prefSysFallbackDesc": "系统级回落（需 Root + iptables）：丢弃全部 UDP:443 强制回落 TCP，重启系统后失效",
@@ -1823,17 +2624,41 @@
   "cfgPreparing": "准备中...",
   "cfgSelectSaveLocation": "选择保存位置",
   "cfgExportedTo": "配置已导出到：{path}",
-  "@cfgExportedTo": {"placeholders": {"path": {"type": "String"}}},
+  "@cfgExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "cfgExportFailed": "导出失败：{error}",
-  "@cfgExportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cfgExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cfgConfirmImport": "确认导入",
   "cfgImportConfirmBody": "导入配置会完全覆盖当前配置，确定要继续吗？\n\n建议先导出当前配置进行备份。",
   "cfgImportSuccessRestart": "配置导入成功，部分设置可能需要重启应用后生效",
   "cfgImportFailed": "导入失败：{error}",
-  "@cfgImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cfgImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cfgCopied": "配置已复制到剪贴板，在其它设备粘贴导入即可",
   "cfgCopyFailed": "复制失败：{error}",
-  "@cfgCopyFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cfgCopyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cfgImportConfirmBodyShort": "导入会覆盖当前配置，确定继续？",
   "cfgClipboardEmpty": "剪贴板里没有文本",
   "cfgClipboardNotConfig": "剪贴板内容不是配置 JSON，请先复制配置文本",
@@ -1861,11 +2686,32 @@
   "devToolCronFieldWeekRange": "0-6（0 为周日）",
   "devToolJwtInvalid": "JWT 应由两段以上 Base64Url 组成（header.payload.signature）",
   "devToolJwtDecodeFailed": "解码失败：{error}",
-  "@devToolJwtDecodeFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@devToolJwtDecodeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "devToolJwtExpiry": "{time}（{status}）",
-  "@devToolJwtExpiry": {"placeholders": {"time": {"type": "String"}, "status": {"type": "String"}}},
+  "@devToolJwtExpiry": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "devToolJwtExpLabel": "过期时间：{time}",
-  "@devToolJwtExpLabel": {"placeholders": {"time": {"type": "String"}}},
+  "@devToolJwtExpLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "devToolJwtExpired": "已过期",
   "devToolJwtValid": "有效",
   "devToolJwtLabel": "粘贴 JWT Token",
@@ -1885,13 +2731,25 @@
   "calcTabCrcHash": "CRC/哈希",
   "calcEmptyHint": "输入后点「计算」查看结果",
   "calcCopiedKey": "已复制 {name}",
-  "@calcCopiedKey": {"placeholders": {"name": {"type": "String"}}},
+  "@calcCopiedKey": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "calcCompute": "计算",
   "calcLabelValue": "数值",
   "calcIntValueHint": "支持 0x / 0b / 0o / 十进制，可带负号",
   "calcLabelWidth": "位宽",
   "calcNBits": "{bits} 位",
-  "@calcNBits": {"placeholders": {"bits": {"type": "int"}}},
+  "@calcNBits": {
+    "placeholders": {
+      "bits": {
+        "type": "int"
+      }
+    }
+  },
   "calcLabelOperation": "运算",
   "calcLabelOperandA": "操作数 A",
   "calcLabelShiftAmount": "位移量（十进制）",
@@ -1903,7 +2761,13 @@
   "calcLabelByteWidth": "字节宽度",
   "calcByteWidthAuto": "按输入长度",
   "calcNBytes": "{bytes} 字节",
-  "@calcNBytes": {"placeholders": {"bytes": {"type": "int"}}},
+  "@calcNBytes": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
   "calcLabelMachineOrValue": "机器码或数值",
   "calcIeeeHint": "十六进制机器码（如 0x3f800000）或十进制小数（如 1.5）",
   "calcLabelPrecision": "精度",
@@ -1916,17 +2780,50 @@
   "wsPageRenameTitle": "重命名工作区",
   "wsPageDeleteTitle": "删除工作区",
   "wsPageDeleteConfirm": "「{name}」及其本地数据会被删除，无法恢复。",
-  "@wsPageDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@wsPageDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageNoCaptureData": "当前没有抓包数据可保存",
   "wsPageSavedTo": "已保存 {count} 条到「{name}」",
-  "@wsPageSavedTo": {"placeholders": {"count": {"type": "int"}, "name": {"type": "String"}}},
+  "@wsPageSavedTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageSaveFailed": "保存失败：{error}",
-  "@wsPageSaveFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPageSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageEmptyWorkspace": "工作区里没有数据",
   "wsPageImportedToHistory": "已导入 {count} 条到历史",
-  "@wsPageImportedToHistory": {"placeholders": {"count": {"type": "int"}}},
+  "@wsPageImportedToHistory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "wsPageImportFailed": "导入失败：{error}",
-  "@wsPageImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPageImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageServerTitle": "工作区服务端",
   "wsPageServerUrlHint": "服务端地址（如 http://10.0.0.5:8787）",
   "wsPageTokenTitle": "访问令牌（可留空）",
@@ -1934,14 +2831,38 @@
   "wsPageServerCleared": "已清空服务端配置",
   "wsPageServerNeeded": "请先配置工作区服务端",
   "wsPagePushed": "已推送到服务端（{bytes} 字节）",
-  "@wsPagePushed": {"placeholders": {"bytes": {"type": "int"}}},
+  "@wsPagePushed": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
   "wsPagePushFailed": "推送失败：{error}",
-  "@wsPagePushFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPagePushFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageServerNoWorkspaces": "服务端没有工作区",
   "wsPagePulled": "已拉取 {count} 个工作区",
-  "@wsPagePulled": {"placeholders": {"count": {"type": "int"}}},
+  "@wsPagePulled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "wsPagePullFailed": "拉取失败：{error}",
-  "@wsPagePullFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPagePullFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageServerTooltip": "服务端配置",
   "wsPagePullFromServer": "从服务端拉取",
   "wsPageEmptyHint": "还没有工作区。建一个，把当前抓包存进去，就能按项目分开管理。",
@@ -1951,12 +2872,27 @@
   "wsPageImportToHistory": "导入到历史",
   "wsPagePushToServer": "推送到服务端",
   "wsPageItemMeta": "{count} 条 · {time}",
-  "@wsPageItemMeta": {"placeholders": {"count": {"type": "int"}, "time": {"type": "String"}}},
+  "@wsPageItemMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "logViewReadyHint": "日志记录已就绪：应用运行日志将实时显示在此（最多保留 500 条）",
   "logViewExportSuccess": "日志导出成功",
   "logViewExportFailed": "日志导出失败",
   "logViewExportError": "导出失败：{error}",
-  "@logViewExportError": {"placeholders": {"error": {"type": "String"}}},
+  "@logViewExportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "logViewClearLogs": "清除日志",
   "logViewClearConfirm": "确定要清除所有日志吗？此操作不可恢复。",
   "logViewCleared": "日志已清除",
@@ -1983,7 +2919,13 @@
   "cmpHasDiff": "存在差异",
   "cmpIdentical": "完全相同",
   "cmpTotalChanges": "共 {count} 处变化",
-  "@cmpTotalChanges": {"placeholders": {"count": {"type": "int"}}},
+  "@cmpTotalChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cmpFieldMethod": "方法",
   "cmpChangeStats": "变化统计",
   "cmpHeaderChanges": "请求头变化",
@@ -1993,67 +2935,199 @@
   "cmpDetailedReport": "详细报告",
   "cmpNoHeaderChanges": "请求头无变化",
   "cmpOldValue": "旧：{value}",
-  "@cmpOldValue": {"placeholders": {"value": {"type": "String"}}},
+  "@cmpOldValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "cmpNewValue": "新：{value}",
-  "@cmpNewValue": {"placeholders": {"value": {"type": "String"}}},
+  "@cmpNewValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "cmpNoBodyChanges": "请求体无变化",
   "cmpBodyA": "请求体 A",
   "cmpBodyB": "请求体 B",
   "cmpNoResponseData": "无响应数据",
   "cmpResponseHeaderChanges": "响应头变化 ({count})",
-  "@cmpResponseHeaderChanges": {"placeholders": {"count": {"type": "int"}}},
+  "@cmpResponseHeaderChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cmpNoChanges": "无变化",
   "cmpResponseBodyA": "响应体 A",
   "cmpResponseBodyB": "响应体 B",
   "cmpModified": "已修改",
   "cmpRequestLabel": "请求 {label}",
-  "@cmpRequestLabel": {"placeholders": {"label": {"type": "String"}}},
+  "@cmpRequestLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "cmpEmpty": "(空)",
   "backupCreated": "已创建备份：{name}（{count} 项）",
-  "@backupCreated": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "@backupCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backupFailed": "备份失败：{error}",
-  "@backupFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupNow": "立即备份（配置+证书+脚本+工作区）",
   "backupAutoToAppDataDir": "配置会自动备份到应用数据目录",
   "backupOk": "确定",
   "backupConfirmRestore": "确认恢复",
   "backupRestoreConfirm": "恢复备份 \"{name}\" 会覆盖当前配置，确定要继续吗？",
-  "@backupRestoreConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@backupRestoreConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupConfirmDelete": "确认删除",
   "backupRestoredApplied": "已恢复 {restored} 个文件，配置已生效",
-  "@backupRestoredApplied": {"placeholders": {"restored": {"type": "int"}}},
+  "@backupRestoredApplied": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      }
+    }
+  },
   "backupRestoredNotApplied": "已恢复 {restored} 个文件（配置未生效{failedSuffix}）",
-  "@backupRestoredNotApplied": {"placeholders": {"restored": {"type": "int"}, "failedSuffix": {"type": "String"}}},
+  "@backupRestoredNotApplied": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      },
+      "failedSuffix": {
+        "type": "String"
+      }
+    }
+  },
   "backupFailedSuffix": "，{failed} 项失败",
-  "@backupFailedSuffix": {"placeholders": {"failed": {"type": "int"}}},
+  "@backupFailedSuffix": {
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "backupAppliedSuffix": "，配置已生效",
   "backupConfigRestored": "配置已恢复",
   "backupRestoreFailed": "恢复失败：{error}",
-  "@backupRestoreFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupRestoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupRestoredSummary": "已恢复 {restored} 个文件{applied}{failed}",
-  "@backupRestoredSummary": {"placeholders": {"restored": {"type": "int"}, "applied": {"type": "String"}, "failed": {"type": "String"}}},
+  "@backupRestoredSummary": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      },
+      "applied": {
+        "type": "String"
+      },
+      "failed": {
+        "type": "String"
+      }
+    }
+  },
   "backupRestored": "备份已恢复",
   "backupChooseSaveLocation": "选择保存位置",
   "backupExportedTo": "已导出到：{path}",
-  "@backupExportedTo": {"placeholders": {"path": {"type": "String"}}},
+  "@backupExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "backupExportDialogTitle": "导出备份文件",
   "backupExportSuccess": "导出成功",
   "backupExportFailed": "导出失败：{error}",
-  "@backupExportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupDeleteConfirm": "确定要删除备份 \"{name}\" 吗？",
-  "@backupDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@backupDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupDeleteConfirmDesktop": "确定要删除备份文件 \"{name}\" 吗？\n\n此操作不可撤销。",
-  "@backupDeleteConfirmDesktop": {"placeholders": {"name": {"type": "String"}}},
+  "@backupDeleteConfirmDesktop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupDeleted": "备份已删除",
   "backupDeleteFailed": "删除失败：{error}",
-  "@backupDeleteFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupDirNotFound": "备份目录不存在",
   "backupRestoreConfirmDesktop": "确定要恢复备份文件 \"{name}\" 吗？\n\n当前配置将被覆盖。",
-  "@backupRestoreConfirmDesktop": {"placeholders": {"name": {"type": "String"}}},
+  "@backupRestoreConfirmDesktop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupViewTitle": "查看备份：{name}",
-  "@backupViewTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@backupViewTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupViewFailed": "查看失败：{error}",
-  "@backupViewFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupViewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupCopied": "已复制到剪贴板",
   "backupJustNow": "刚刚",
   "cfgDeskGeneratingConfig": "正在生成配置文件...",
@@ -2065,11 +3139,23 @@
   "rootProxyNeedStopVpn": "请先停止 VPN 抓包：两种抓包方式不能同时开启",
   "rootProxyStartDenied": "开启失败，请确认已授予 root 权限",
   "rootProxyStartFailed": "开启失败：{reason}",
-  "@rootProxyStartFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@rootProxyStartFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "rootProxyActive": "重定向已生效",
   "rootProxyInactive": "未生效",
   "rootProxyTargetPort": "目标端口：{port}　防护：异常退出后会在下次启动时自动清理规则",
-  "@rootProxyTargetPort": {"placeholders": {"port": {"type": "int"}}},
+  "@rootProxyTargetPort": {
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
   "rootProxyCheckRoot": "检测 root 权限",
   "rootProxyFirstCheck": "首次检测会弹出 su 授权框",
   "rootProxyGranted": "已获得 root 权限",
@@ -2078,20 +3164,53 @@
   "rootProxyNotesBody": "· 需要设备已 root 并授予 su 权限；\n· 原理是往 nat 表加一条只属于 ProxyPin 的链，把出站 TCP 连接转到代理端口，不做任何其它改动；\n· 只处理 IPv4，IPv6 流量保持直连；\n· 与 VPN 抓包互斥，开启前请先关掉 VPN；\n· 若手机出现「连着 WiFi 但上不了网」，先关掉这里；App 每次启动也会自动清理残留规则。",
   "fuzzDictDefaultName": "导入的字典",
   "fuzzDictImported": "已导入「{name}」",
-  "@fuzzDictImported": {"placeholders": {"name": {"type": "String"}}},
+  "@fuzzDictImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictDeleteTitle": "删除字典",
   "fuzzDictDeleteConfirm": "删除「{name}」？",
-  "@fuzzDictDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@fuzzDictDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictTitle": "Fuzz 字典",
   "fuzzDictTips": "点一个字典即可把它填进当前注入项。工具不预置攻击载荷库 —— 内置的只是边界值 / 类型异常串，其余的你自己填、导入或用脚本算。",
   "fuzzDictNoCustom": "还没有自定义字典",
   "fuzzDictImportFile": "从文件导入",
   "fuzzDictNEntries": "{count} 条",
-  "@fuzzDictNEntries": {"placeholders": {"count": {"type": "int"}}},
+  "@fuzzDictNEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "fuzzDictExpanded": "展开后共 {count} 条：{preview}",
-  "@fuzzDictExpanded": {"placeholders": {"count": {"type": "int"}, "preview": {"type": "String"}}},
+  "@fuzzDictExpanded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictScriptFailed": "脚本执行失败：{error}",
-  "@fuzzDictScriptFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@fuzzDictScriptFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictNameRequired": "给字典起个名字",
   "fuzzDictCreate": "新建字典",
   "fuzzDictEditTitle": "编辑字典",
@@ -2099,15 +3218,39 @@
   "fuzzDictTestRun": "试跑",
   "fuzzDictScriptNote": "脚本的产物会和上面的取值合并去重",
   "apiEpTitle": "API 端点 ({count})",
-  "@apiEpTitle": {"placeholders": {"count": {"type": "int"}}},
+  "@apiEpTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "apiEpSearchHint": "搜索端点...",
   "apiEpTotalEndpoints": "总端点",
   "apiEpResourceGroups": "资源组",
   "apiEpTotalRequests": "总请求",
   "apiEpPathCalls": "{path} · {count} 次请求",
-  "@apiEpPathCalls": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
+  "@apiEpPathCalls": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "apiEpCallsSuccess": "{count} 次 · 成功率 {rate}",
-  "@apiEpCallsSuccess": {"placeholders": {"count": {"type": "int"}, "rate": {"type": "String"}}},
+  "@apiEpCallsSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
   "apiEpNoMatch": "没有找到匹配的端点",
   "apiEpGroupView": "分组视图",
   "apiEpListView": "列表视图",
@@ -2118,9 +3261,24 @@
   "apiEpCollectionFormat": "Collection 格式",
   "apiEpExportJson": "导出为 JSON",
   "apiEpExported": "{label} 已导出",
-  "@apiEpExported": {"placeholders": {"label": {"type": "String"}}},
+  "@apiEpExported": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "apiEpExportFailed": "{label} 导出失败: {error}",
-  "@apiEpExportFailed": {"placeholders": {"label": {"type": "String"}, "error": {"type": "String"}}},
+  "@apiEpExportFailed": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "apiEpFullUrl": "完整 URL",
   "apiEpCallCount": "调用次数",
   "apiEpAvgResponseTime": "平均响应时间",
@@ -2128,12 +3286,24 @@
   "apiEpLastSeen": "最后访问",
   "apiEpTags": "标签",
   "perfLoadFailed": "加载数据失败：{error}",
-  "@perfLoadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@perfLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "perfTitle": "性能监控",
   "perfRetry": "重试",
   "perfLoading": "正在加载数据...",
   "perfLastUpdate": "最后更新：{time}",
-  "@perfLastUpdate": {"placeholders": {"time": {"type": "String"}}},
+  "@perfLastUpdate": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "perfProxyStatus": "代理状态",
   "perfRunning": "运行中",
   "perfStopped": "已停止",
@@ -2155,11 +3325,29 @@
   "rqStatRetried": "重试",
   "rqStatPlanned": "计划",
   "rqLastError": "最近错误：{error}",
-  "@rqLastError": {"placeholders": {"error": {"type": "String"}}},
+  "@rqLastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rqPendingRequests": "待发送请求（{count}）",
-  "@rqPendingRequests": {"placeholders": {"count": {"type": "int"}}},
+  "@rqPendingRequests": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rqMoreRemaining": "… 其余 {count} 条",
-  "@rqMoreRemaining": {"placeholders": {"count": {"type": "int"}}},
+  "@rqMoreRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rqStatusScheduled": "等待发送",
   "rqStatusRunning": "发送中",
   "rqStatusCompleted": "已完成",
@@ -2175,9 +3363,21 @@
   "bvDescUuid": "随机 UUID（每次引用都不同）",
   "bvTitle": "内置变量",
   "bvIntro": "下面这些变量不用定义，在任何支持 {mark} 的地方（重写规则、上报地址、脚本等）都能直接引用。点一下复制。",
-  "@bvIntro": {"placeholders": {"mark": {"type": "String"}}},
+  "@bvIntro": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "bvCopied": "已复制 {text}",
-  "@bvCopied": {"placeholders": {"text": {"type": "String"}}},
+  "@bvCopied": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "bvGotIt": "知道了",
   "toolboxNavCalcTip": "进制/补码 · 位运算 · 字节序 · IEEE754 · CRC/哈希",
   "toolboxNavMcpTip": "MCP Server 设置",
@@ -2189,7 +3389,13 @@
   "toolboxNavCloudTip": "账号 · 工作区云端托管 · 多人实时协同（自部署服务端）",
   "toolboxNavAiTip": "AI 对话分析抓包数据（支持 Agent 模式）",
   "deskNavUpgradeTitle": "更新内容V{version}",
-  "@deskNavUpgradeTitle": {"placeholders": {"version": {"type": "String"}}},
+  "@deskNavUpgradeTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "deskNavUpgradeBody": "提示：默认不会开启HTTPS抓包，请安装证书后再开启HTTPS抓包。\n点击HTTPS抓包(加锁图标)，选择安装根证书，按照提示操作即可。\n\n1. 新增内置 MCP 服务，AI 助手（如 Claude）可接入查看与调试抓包流量；\n2. 环境变量支持内置动态变量；\n3. 请求重写规则支持上移、下移排序；\n4. 修复 Windows 端右键菜单导致崩溃的问题；\n5. 修复脚本或重写处理多值请求头（如多个 Set-Cookie）时被错误合并的问题；\n6. 修复明文 HTTP/2（h2c）抓包、非 ASCII 域名归一化、以 IP 访问时证书校验失败等问题；\n7. 修复 iOS 13 崩溃、无 Content-Length 响应 Body 丢失、Android VPN 目的端口记录等若干问题。\n",
   "setNavThemeTip": "主题设置在顶部工具栏，点击太阳/月亮图标即可切换",
   "setNavProxyDomainsHint": "多个使用;分割",
@@ -2198,7 +3404,13 @@
   "setNavProxyResidueCleared": "已清除系统代理设置，网络应恢复正常",
   "setNavRepair": "修复",
   "mobNavUpgradeTitle": "更新内容V{version}",
-  "@mobNavUpgradeTitle": {"placeholders": {"version": {"type": "String"}}},
+  "@mobNavUpgradeTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "mobNavUpgradeBody": "提示：默认不会开启HTTPS抓包，请安装证书后再开启HTTPS抓包。\n\n1. 新增内置 MCP 服务，AI 助手（如 Claude）可接入查看与调试抓包流量；\n2. 环境变量支持内置动态变量；\n3. 请求重写规则支持上移、下移排序；\n4. 修复 Windows 端右键菜单导致崩溃的问题；\n5. 修复脚本或重写处理多值请求头（如多个 Set-Cookie）时被错误合并的问题；\n6. 修复明文 HTTP/2（h2c）抓包、非 ASCII 域名归一化、以 IP 访问时证书校验失败等问题；\n7. 修复 iOS 13 崩溃、无 Content-Length 响应 Body 丢失、Android VPN 目的端口记录等若干问题。\n",
   "appFilterUnknownApp": "未知应用",
   "appFilterClearInvalid": "清除失效应用",
@@ -2208,18 +3420,48 @@
   "appFilterSearchHint": "请输入应用名或包名",
   "appFilterShowSystemApps": "显示系统应用",
   "contentBodyOriginalMb": "（原始 {size} MB）",
-  "@contentBodyOriginalMb": {"placeholders": {"size": {"type": "String"}}},
+  "@contentBodyOriginalMb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodyOriginalKb": "（原始 {size} KB）",
-  "@contentBodyOriginalKb": {"placeholders": {"size": {"type": "String"}}},
+  "@contentBodyOriginalKb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodyTruncatedTip": "已按「抓包内容上限」裁剪，完整内容未保留",
   "contentBodyTruncatedBadge": "已裁剪{size}",
-  "@contentBodyTruncatedBadge": {"placeholders": {"size": {"type": "String"}}},
+  "@contentBodyTruncatedBadge": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodySaveFailed": "保存失败：{error}",
-  "@contentBodySaveFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@contentBodySaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodyDecodeTruncatedTip": "响应体较大，预览只解码到上限（可在「设置 → 抓包内容上限」调整）。仅影响预览，不影响转发与已保存内容。",
   "contentBodyPreviewTruncated": "预览已截断",
   "guideLoadFailed": "文档加载失败：{error}",
-  "@guideLoadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@guideLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "guideSearchHint": "搜索文档",
   "guideMarkResetTooltip": "重置重点标记说明",
   "wsRuleMgrFrameActionTitle": "帧级动作",
@@ -2235,7 +3477,13 @@
   "wsRuleMgrRewriteNote": "分片帧、压缩帧与控制帧不会被改写，仍原样转发",
   "wsRuleMgrDelayMs": "延迟毫秒",
   "pcCertInstallToSystem": " 安装证书到本系统，{detail}",
-  "@pcCertInstallToSystem": {"placeholders": {"detail": {"type": "String"}}},
+  "@pcCertInstallToSystem": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "pcCertMacTrustHint": "安装完双击选择“始终信任此证书”。 如安装打开失败，请导出证书拖拽到系统证书里",
   "pcCertWinTrustHint": "选择“受信任的根证书颁发机构”",
   "pcCertLinuxGuide": "安装证书到本系统，以Ubuntu为例 下载证书：\n先把证书复制到 /usr/local/share/ca-certificates/，然后执行 update-ca-certificates 即可。\n其他系统请网上搜索安装根证书",
@@ -2246,28 +3494,73 @@
   "pcCertInstallSuccess": "证书安装成功",
   "pcCertInstallFailed": "证书安装失败，请尝试手动安装",
   "fuzzerDictFilled": "已填入「{name}」共 {count} 条",
-  "@fuzzerDictFilled": {"placeholders": {"name": {"type": "String"}, "count": {"type": "String"}}},
+  "@fuzzerDictFilled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDictFailed": "字典展开失败：{error}",
-  "@fuzzerDictFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@fuzzerDictFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerFillFromDict": "从字典填充",
   "fuzzerPayloadCount": "{count} 条",
-  "@fuzzerPayloadCount": {"placeholders": {"count": {"type": "String"}}},
+  "@fuzzerPayloadCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerRulesTitle": "判定规则（与基线比对）",
   "fuzzerNoRuleEnabled": "未启用任何规则",
   "fuzzerRulesEnabled": "已启用：{names}",
-  "@fuzzerRulesEnabled": {"placeholders": {"names": {"type": "String"}}},
+  "@fuzzerRulesEnabled": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerRulesNote": "规则只负责标出「和基线不一样」，不代表这里就有漏洞 —— 结论由你下。",
   "capLimitUnlimitedOption": "不限（保留完整内容，默认）",
   "capLimitOption128": "128 KB（只看头部与少量内容）",
   "capLimitUnlimitedDesc": "不限：保留完整请求/响应内容",
   "capLimitSizeMb": "上限 {mb} MB：超出部分只保留前 {mb} MB 用于展示",
-  "@capLimitSizeMb": {"placeholders": {"mb": {"type": "String"}}},
+  "@capLimitSizeMb": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
   "capLimitSizeKb": "上限 {kb} KB：超出部分只保留前 {kb} KB 用于展示",
-  "@capLimitSizeKb": {"placeholders": {"kb": {"type": "String"}}},
+  "@capLimitSizeKb": {
+    "placeholders": {
+      "kb": {
+        "type": "String"
+      }
+    }
+  },
   "capLimitDesc": "超过上限的响应/请求体只保留前 N 字节（压缩体整体释放），用于降低长时间抓包的内存占用。裁剪在转发完成后进行，不影响实际转发。",
   "navBarMultiSeparatorHint": "多个使用;分割",
   "navBarAiEnabled": "已启用 · {model}",
-  "@navBarAiEnabled": {"placeholders": {"model": {"type": "String"}}},
+  "@navBarAiEnabled": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "navBarAiNotConfigured": "未配置 · 接入 OpenAI 兼容接口分析抓包请求",
   "navBarLogSubtitle": "应用运行日志查看与导出",
   "navBarDocSubtitle": "功能教程 · 规范文档 · 开发文档（离线内置）",
@@ -2279,38 +3572,98 @@
   "updFailed": "更新失败",
   "updCancelled": "更新已取消",
   "updDownloadFailed": "下载失败: {error}",
-  "@updDownloadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@updDownloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "updInvalidUrl": "下载地址无效",
   "updDownloadHttpError": "下载失败 (HTTP {code})",
-  "@updDownloadHttpError": {"placeholders": {"code": {"type": "int"}}},
+  "@updDownloadHttpError": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "updVerifyFailed": "下载文件校验失败",
   "updInstallerMissing": "安装文件缺失",
   "updInPlaceFailed": "原地更新失败, 请手动安装",
   "updLaunchFailed": "安装启动失败: {error}",
-  "@updLaunchFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@updLaunchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "updPlatformUnsupported": "当前平台不支持自动安装",
   "updMacExtractFailed": "解压更新包失败: {error}",
-  "@updMacExtractFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@updMacExtractFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "updMacAppNotFound": "更新包中未找到 App",
   "updMacMultipleApps": "更新包中包含多个 App，无法确认安装目标",
   "updMacInvalidApp": "更新包 App 结构无效",
   "updMacAuthFailed": "用户取消授权或授权安装失败",
   "updWinUacLaunchFailed": "UAC 提权启动更新脚本失败，ShellExecuteW result={code}",
-  "@updWinUacLaunchFailed": {"placeholders": {"code": {"type": "int"}}},
+  "@updWinUacLaunchFailed": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "updWinUacTimeout": "等待 UAC 提权启动更新脚本超时，请确认已在权限提示中点击“是”",
   "updWinExeNotFound": "更新包中未找到 exe",
   "updWinMultipleExe": "更新包中包含多个 exe，无法确认启动目标",
   "domainAddHelper": "域名或 URL 前缀均可，* 为通配符",
   "splashSubtitle": "v{version} · 开源免费抓包工具",
-  "@splashSubtitle": {"placeholders": {"version": {"type": "String"}}},
+  "@splashSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "bvVariableWord": "变量",
   "bvSampleVariable": "{lb}{lb}{word}{rb}{rb}",
-  "@bvSampleVariable": {"placeholders": {"lb": {"type": "String"}, "word": {"type": "String"}, "rb": {"type": "String"}}},
+  "@bvSampleVariable": {
+    "placeholders": {
+      "lb": {
+        "type": "String"
+      },
+      "word": {
+        "type": "String"
+      },
+      "rb": {
+        "type": "String"
+      }
+    }
+  },
   "imageRenderFailed": "无法渲染图片：{error}",
-  "@imageRenderFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@imageRenderFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "copyValue": "复制值",
   "repeatBatchCount": "批量重放 {count} 个请求",
-  "@repeatBatchCount": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatBatchCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiSettings": "AI 设置",
   "millisecond": "毫秒",
   "minute": "分钟",
@@ -2329,46 +3682,136 @@
   "downloadAddress": "下载地址",
   "beautifyNotSupported": "当前数据类型不支持美化",
   "repeatResultSuccess": "成功：{count}",
-  "@repeatResultSuccess": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatResultSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "repeatResultFail": "失败：{count}",
-  "@repeatResultFail": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatResultFail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "repeatResultRetry": "重试：{count}",
-  "@repeatResultRetry": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatResultRetry": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "repeatResultError": "错误：{error}",
-  "@repeatResultError": {"placeholders": {"error": {"type": "String"}}},
+  "@repeatResultError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "exportReqNoFileWritten": "导出失败：{count} 条请求都没写出文件{detail}，可改用「导出 HAR」",
-  "@exportReqNoFileWritten": {"placeholders": {"count": {"type": "int"}, "detail": {"type": "String"}}},
+  "@exportReqNoFileWritten": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "exportImportDialogTitle": "导入 / 导出",
   "exportImportClipboardTitle": "从剪贴板导入口令",
   "exportImportClipboardDesc": "粘贴此前导出的口令，还原请求到列表",
   "exportImportEmpty": "口令中没有任何请求",
   "exportImportedCount": "已导入 {count} 条请求",
-  "@exportImportedCount": {"placeholders": {"count": {"type": "int"}}},
+  "@exportImportedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "exportInvalidPasscodeWithError": "口令无效：{error}",
-  "@exportInvalidPasscodeWithError": {"placeholders": {"error": {"type": "String"}}},
+  "@exportInvalidPasscodeWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "exportCsvDesc": "一行一条请求，敏感查询参数（token / 密码 / 签名等）自动打码",
   "exportJsonDesc": "结构化 JSON，敏感查询参数自动打码，便于喂给 AI 或脚本分析",
   "exportCopyPasscode": "复制口令",
   "exportCopyPasscodeDesc": "将所选请求压缩为口令文本，粘贴给他人即可导入",
   "exportPasscodeCopied": "口令已复制（{count} 条请求）",
-  "@exportPasscodeCopied": {"placeholders": {"count": {"type": "int"}}},
+  "@exportPasscodeCopied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cmpReportTitle": "=== 请求对比报告 ===",
   "cmpUrlChanges": "URL 变化:",
   "cmpMethodChanges": "方法变化:",
   "cmpResultLabel": "对比结果：{value}",
-  "@cmpResultLabel": {"placeholders": {"value": {"type": "String"}}},
+  "@cmpResultLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "cmpChars": "字符",
   "wsPayloadEmpty": "空帧",
   "wsPayloadImage": "{format} 图片 · {size}",
-  "@wsPayloadImage": {"placeholders": {"format": {"type": "String"}, "size": {"type": "String"}}},
+  "@wsPayloadImage": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "wsPayloadDecompressed": "{compression} 解压 → {kind} · {size}",
-  "@wsPayloadDecompressed": {"placeholders": {"compression": {"type": "String"}, "kind": {"type": "String"}, "size": {"type": "String"}}},
+  "@wsPayloadDecompressed": {
+    "placeholders": {
+      "compression": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "wsPayloadTextKind": "文本",
   "wsPayloadBinaryKind": "二进制",
   "wsPayloadText": "文本 · {size}",
-  "@wsPayloadText": {"placeholders": {"size": {"type": "String"}}},
+  "@wsPayloadText": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "wsPayloadBinary": "二进制 · {size}",
-  "@wsPayloadBinary": {"placeholders": {"size": {"type": "String"}}},
+  "@wsPayloadBinary": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "securityVerifHsts": "HSTS —— 让浏览器以后只用 HTTPS 访问",
   "securityVerifCsp": "CSP —— 限制页面能加载执行哪些资源",
   "securityVerifNoSniff": "禁止浏览器自行猜测 Content-Type",
@@ -2384,15 +3827,51 @@
   "mcpSchedWeekdaySep": "、",
   "mcpSchedDaily": "每天",
   "mcpSchedDailyCount": "每天 · 共{count}次",
-  "@mcpSchedDailyCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpSchedDailyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedWeekly": "每周{days}",
-  "@mcpSchedWeekly": {"placeholders": {"days": {"type": "String"}}},
+  "@mcpSchedWeekly": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
   "mcpSchedWeeklyCount": "每周{days} · 共{count}次",
-  "@mcpSchedWeeklyCount": {"placeholders": {"days": {"type": "String"}, "count": {"type": "int"}}},
+  "@mcpSchedWeeklyCount": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedInterval": "每{min}分钟",
-  "@mcpSchedInterval": {"placeholders": {"min": {"type": "int"}}},
+  "@mcpSchedInterval": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedIntervalCount": "每{min}分钟 · 共{count}次",
-  "@mcpSchedIntervalCount": {"placeholders": {"min": {"type": "int"}, "count": {"type": "int"}}},
+  "@mcpSchedIntervalCount": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedOnce": "一次性",
   "apiExtractFullCrud": "完整 CRUD",
   "apiExtractReadWrite": "读写模式",
@@ -2459,13 +3938,40 @@
   "capturePlanTplApiStepCatalogTitle": "导出接口清单",
   "capturePlanTplApiStepCatalogDesc": "打开「API 端点」工具，从抓包数据提取端点，可导出 OpenAPI / Postman / JSON。",
   "fuzzerBodyTruncated": "[响应过大，仅保留前 {kb} KB]",
-  "@fuzzerBodyTruncated": {"placeholders": {"kb": {"type": "int"}}},
+  "@fuzzerBodyTruncated": {
+    "placeholders": {
+      "kb": {
+        "type": "int"
+      }
+    }
+  },
   "fuzzerDiffStatus": "状态 {from} → {to}",
-  "@fuzzerDiffStatus": {"placeholders": {"from": {"type": "String"}, "to": {"type": "String"}}},
+  "@fuzzerDiffStatus": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDiffLength": "长度 {delta}",
-  "@fuzzerDiffLength": {"placeholders": {"delta": {"type": "String"}}},
+  "@fuzzerDiffLength": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDiffDuration": "耗时 {pct}%",
-  "@fuzzerDiffDuration": {"placeholders": {"pct": {"type": "String"}}},
+  "@fuzzerDiffDuration": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDiffError": "请求异常",
   "fuzzerDiffSep": "，",
   "fuzzerRuleFailedName": "请求失败",
@@ -2504,5 +4010,6 @@
   "rewriteTypeRemoveHeader": "删除头部",
   "rewriteTypeUpdateHeader": "修改头部",
   "sendToDecoder": "发送到解码器",
-  "sendToAesDecrypt": "发送到 AES 解密"
+  "sendToAesDecrypt": "发送到 AES 解密",
+  "toolboxHash": "哈希"
 }

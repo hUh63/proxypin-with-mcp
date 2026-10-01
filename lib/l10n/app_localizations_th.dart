@@ -647,14 +647,14 @@ class AppLocalizationsTh extends AppLocalizations {
   String get generateCA => 'สร้างใบรับรองรากใหม่';
 
   @override
-  String get generateCADescribe => 'ต้องการสร้างใบรับรองรากใหม่หรือไม่?';
+  String get generateCADescribe => 'ต้องการสร้างใบรับรองรากใหม่หรือไม่? หากยืนยัน\nคุณต้องติดตั้งใหม่และเชื่อถือใบรับรองใหม่';
 
   @override
   String get resetDefaultCA => 'รีเซ็ตใบรับรองรากเริ่มต้น';
 
   @override
   String get resetDefaultCADescribe =>
-      'ต้องการรีเซ็ตใบรับรองรากเริ่มต้นหรือไม่?';
+      'ต้องการรีเซ็ตเป็นใบรับรองรากเริ่มต้นหรือไม่?\nใบรับรองรากเริ่มต้นของ ProxyPin เหมือนกันสำหรับผู้ใช้ทุกคน';
 
   @override
   String get exportCaP12 => 'ส่งออกใบรับรองราก (.p12)';
@@ -678,7 +678,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get install => 'ติดตั้ง';
 
   @override
-  String get installCaDescribe => 'ติดตั้งใบรับรอง';
+  String get installCaDescribe => 'ติดตั้งใบรับรอง การตั้งค่า > โปรไฟล์ที่ดาวน์โหลด > ติดตั้ง';
 
   @override
   String get trustCaDescribe => 'เชื่อถือใบรับรองในตั้งค่าระบบ';
@@ -688,7 +688,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get androidRootMagisk =>
-      'Magisk module: \nAndroid ROOT devices can be used Magisk ProxyPinCA System Certificate Module, After installing and restarting the phone Check the system certificate to see if there is a ProxyPinCA certificate. If there is, it indicates that the certificate has been successfully installed。';
+      'โมดูล Magisk: \nอุปกรณ์ Android ที่ ROOT สามารถใช้โมดูลใบรับรองระบบ Magisk ProxyPinCA ได้ หลังติดตั้งและรีสตาร์ทมือถือแล้ว ให้ตรวจสอบในใบรับรองของระบบว่ามีใบรับรอง ProxyPinCA หรือไม่ หากมี แสดงว่าติดตั้งใบรับรองสำเร็จ';
 
   @override
   String androidRootRename(Object name) {
@@ -828,7 +828,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get invalidQRCode => 'QR code ไม่ถูกต้อง';
 
   @override
-  String get remoteConnectFail => 'เชื่อมต่อไม่สำเร็จ';
+  String get remoteConnectFail => 'เชื่อมต่อไม่สำเร็จ โปรดตรวจสอบว่าอยู่ใน LAN เดียวกันและไฟร์วอลล์อนุญาตหรือไม่ บน iOS ต้องเปิดสิทธิ์เครือข่ายภายใน';
 
   @override
   String get remoteConnectSuccessTips => 'ต้องเปิดการจับแพ็กเก็ตบนมือถือก่อน';
@@ -931,7 +931,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get logger => 'บันทึก';
 
   @override
-  String get material3 => 'Material 3';
+  String get material3 => 'Material 3 เป็นเวอร์ชันล่าสุดของระบบดีไซน์โอเพนซอร์สของ Google';
 
   @override
   String get iosVpnBackgroundAudio =>
@@ -1075,6 +1075,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get cipher => 'รหัสลับ';
 
   @override
+  String get toolboxHash => 'แฮช';
+
+  @override
   String get view => 'ดู';
 
   @override
@@ -1143,7 +1146,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get sponsorSupport => 'สนับสนุนการพัฒนา';
 
   @override
-  String get sponsorThanks => 'ขอบคุณที่สนับสนุนโครงการโอเพนซอร์สนี้';
+  String get sponsorThanks => 'ขอบคุณที่สนับสนุนโครงการโอเพนซอร์สนี้ เลือกวิธีใดวิธีหนึ่งต่อไปนี้เพื่อช่วยให้โครงการพัฒนาต่อไปในระยะยาว';
 
   @override
   String get sponsorAfdian => 'AFDIAN';

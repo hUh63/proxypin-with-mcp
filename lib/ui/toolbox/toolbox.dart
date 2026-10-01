@@ -29,9 +29,11 @@ import 'package:proxypin/ui/component/performance_dashboard.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart';
 import 'package:proxypin/utils/platform.dart';
 
-import 'aes_page.dart';
 import 'cert_hash.dart';
+import 'cipher_page.dart';
 import 'encoder.dart';
+import 'hash_page.dart';
+import 'rsa_page.dart';
 import 'js_run.dart';
 import 'json_viewer.dart';
 import 'network_diagnostics.dart';
@@ -200,6 +202,42 @@ class _ToolboxState extends State<Toolbox> {
                     tooltip: 'Unicode Encode/Decode',
                   ),
                   IconText(
+                    onTap: () => encodeWindow(EncoderType.base32, context),
+                    icon: Icons.text_fields,
+                    text: 'Base32',
+                    tooltip: 'Base32 Encode/Decode',
+                  ),
+                  IconText(
+                    onTap: () => encodeWindow(EncoderType.hex, context),
+                    icon: Icons.numbers,
+                    text: 'Hex',
+                    tooltip: 'Hex Encode/Decode',
+                  ),
+                  IconText(
+                    onTap: () => encodeWindow(EncoderType.html, context),
+                    icon: Icons.html,
+                    text: 'HTML',
+                    tooltip: 'HTML Entity Encode/Decode',
+                  ),
+                  IconText(
+                    onTap: () => encodeWindow(EncoderType.gzip, context),
+                    icon: Icons.archive_outlined,
+                    text: 'GZip',
+                    tooltip: 'GZip Compress/Decompress',
+                  ),
+                  IconText(
+                    onTap: () => encodeWindow(EncoderType.deflate, context),
+                    icon: Icons.compress,
+                    text: 'Deflate',
+                    tooltip: 'Deflate/ZLib Compress/Decompress',
+                  ),
+                  IconText(
+                    onTap: () => encodeWindow(EncoderType.urlParams, context),
+                    icon: Icons.manage_search,
+                    text: 'URL Params',
+                    tooltip: 'URL Query Params Parse/Build',
+                  ),
+                  IconText(
                     onTap: () => encodeWindow(EncoderType.md5, context),
                     icon: Icons.tag_outlined,
                     text: 'MD5',
@@ -212,17 +250,46 @@ class _ToolboxState extends State<Toolbox> {
               Wrap(
                 spacing: 6,
                 children: [
+                  _cipherButton('AES', 'AES', Icons.enhanced_encryption_outlined),
+                  _cipherButton('DES', 'DES', Icons.lock_outline),
+                  _cipherButton('3DES', '3DES', Icons.lock_reset),
+                  _cipherButton('SM4', 'SM4', Icons.verified_user_outlined),
+                  _cipherButton('ChaCha20', 'ChaCha20', Icons.vpn_key_outlined),
+                  _cipherButton('XOR', 'XOR', Icons.exposure_outlined),
                   IconText(
-                    onTap: () {
-                      if (Platforms.isMobile()) {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AesPage()));
-                        return;
-                      }
-                      MultiWindow.openWindow("AES", "AesPage", size: const Size(700, 672));
-                    },
-                    icon: Icons.enhanced_encryption_outlined,
-                    text: 'AES',
-                    tooltip: 'AES Encrypt/Decrypt',
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) => const RsaPage())),
+                    icon: Icons.security_outlined,
+                    text: 'RSA',
+                    tooltip: 'RSA Encrypt/Decrypt/Sign',
+                  ),
+                ],
+              ),
+              const Divider(thickness: 0.3),
+              Text(localizations.toolboxHash, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Wrap(
+                spacing: 6,
+                children: [
+                  IconText(
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) => const HashPage(initialIndex: 0))),
+                    icon: Icons.fingerprint,
+                    text: 'Hash',
+                    tooltip: 'Hash digest (MD5/SHA/SM3)',
+                  ),
+                  IconText(
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) => const HashPage(initialIndex: 1))),
+                    icon: Icons.key_outlined,
+                    text: 'HMAC',
+                    tooltip: 'HMAC',
+                  ),
+                  IconText(
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) => const HashPage(initialIndex: 2))),
+                    icon: Icons.password,
+                    text: 'Bcrypt',
+                    tooltip: 'Bcrypt hash',
                   ),
                 ],
               ),
@@ -483,6 +550,16 @@ class _ToolboxState extends State<Toolbox> {
     var size = MediaQuery.of(context).size;
 
     MultiWindow.openWindow(localizations.httpRequest, "RequestEditor", size: Size(960, size.height));
+  }
+
+  Widget _cipherButton(String label, String algorithm, IconData icon) {
+    return IconText(
+      onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => CipherPage(initialAlgorithm: algorithm))),
+      icon: icon,
+      text: label,
+      tooltip: '$label Encrypt/Decrypt',
+    );
   }
 }
 

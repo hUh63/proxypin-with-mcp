@@ -1050,19 +1050,52 @@
   "securityAiActionMcpAllowLan": "Allow LAN access to MCP",
   "securityAiActionMcpAuth": "Require MCP authentication",
   "securityAiApplyConfirm": "Set \"{key}\" to {value}?\n\nAI's reason: {reason}",
-  "@securityAiApplyConfirm": {"placeholders": {"key": {"type": "String"}, "value": {"type": "String"}, "reason": {"type": "String"}}},
+  "@securityAiApplyConfirm": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "wafTitle": "WAF Payload Mutation",
   "wafLoadFirst": "Enter a payload first",
   "wafPasteResponse": "Paste the response headers or block page snippet",
   "wafAppliedCombo": "Applied the combo for {waf}",
-  "@wafAppliedCombo": {"placeholders": {"waf": {"type": "String"}}},
+  "@wafAppliedCombo": {
+    "placeholders": {
+      "waf": {
+        "type": "String"
+      }
+    }
+  },
   "wafNeedAuth": "Check \"I have authorization to test this target\" first",
   "wafNeedUrl": "Enter a target URL",
   "wafNeedPlaceholder": "Put a {mark} marker somewhere to inject",
-  "@wafNeedPlaceholder": {"placeholders": {"mark": {"type": "String"}}},
+  "@wafNeedPlaceholder": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "wafNoVariant": "Nothing under the current selection changes the request. Try another payload or technique.",
   "wafDoneAll": "All sent: {total} total, {bypass} suspected bypass",
-  "@wafDoneAll": {"placeholders": {"total": {"type": "int"}, "bypass": {"type": "int"}}},
+  "@wafDoneAll": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "bypass": {
+        "type": "int"
+      }
+    }
+  },
   "wafDisclaimer": "① and ② only transform strings locally and send nothing; ③ \"active probing\" really sends requests, so you must check the authorization box first.\nUse only on targets you own or are authorized to test — attempting to bypass someone else's protections without authorization may be illegal. Probing is serial, batched (default 200 per batch), with no brute force and no concurrency.",
   "wafStep1Title": "① Identify the WAF (optional)",
   "wafStep1Hint": "Paste response headers or a block page you already captured; it matches by signature — no active probing.",
@@ -1070,20 +1103,59 @@
   "wafStep2Title": "② Enter a payload and choose mutations",
   "wafStep3Title": "③ Active probing (really sends requests)",
   "wafStep3Hint": "Put {mark} where you want to inject (URL / header / body). A baseline with the original payload goes first, then each checked technique, comparing responses to see which one wasn't blocked.",
-  "@wafStep3Hint": {"placeholders": {"mark": {"type": "String"}}},
+  "@wafStep3Hint": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "wafWillProbe": "This run will probe (decided by ①②): {names}",
-  "@wafWillProbe": {"placeholders": {"names": {"type": "String"}}},
+  "@wafWillProbe": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "wafBatchHint": "Up to {max} per batch; after each batch it stops and you decide whether to continue — nothing is fired off all at once.",
-  "@wafBatchHint": {"placeholders": {"max": {"type": "int"}}},
+  "@wafBatchHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "wafExtraHeaders": "Extra request headers (optional, one per line)",
   "wafAuthCheckbox": "I have authorization to test this target",
   "wafNextBatch": "Continue next batch ({remaining} left)",
-  "@wafNextBatch": {"placeholders": {"remaining": {"type": "int"}}},
+  "@wafNextBatch": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
   "wafLimitsHard": "Delay floor {min} ms, hard cap {max} records — these two can't be crossed. Beyond that it stops being \"probing\" and becomes a traffic flood against the target.",
-  "@wafLimitsHard": {"placeholders": {"min": {"type": "int"}, "max": {"type": "int"}}},
+  "@wafLimitsHard": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "wafPayloadCopied": "Payload copied",
   "wafCopied": "Copied: {name}",
-  "@wafCopied": {"placeholders": {"name": {"type": "String"}}},
+  "@wafCopied": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "guideTitle": "User Guide",
   "guideMarkLegendTitle": "Markup Legend",
   "guideMarkLegend": "Highlights in docs are shown with several markup styles:\n\n• ==yellow highlight==: key steps\n• bold (theme color): important concepts and entry points\n• __underline__: settings that need extra attention\n• ~orange wavy~: common mistakes\n• ~~strikethrough~~: deprecated or discouraged\n• monospace background: commands, paths, code\n\nCode blocks have \"Demo\" and \"Copy\" buttons at the bottom right.",
@@ -1092,20 +1164,59 @@
   "guideCopySyntax": "Copy syntax",
   "guideMarkReset": "Default markup restored",
   "guideRenderError": "Render error (fell back to plain text): {error}",
-  "@guideRenderError": {"placeholders": {"error": {"type": "String"}}},
+  "@guideRenderError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "guideDemoTitle": "Demo · {heading}",
-  "@guideDemoTitle": {"placeholders": {"heading": {"type": "String"}}},
+  "@guideDemoTitle": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "guideDemoDefault": "This code/config demonstrates usage in the \"{heading}\" section. Drop it into the matching feature page to reproduce.",
-  "@guideDemoDefault": {"placeholders": {"heading": {"type": "String"}}},
+  "@guideDemoDefault": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "guideGotIt": "Got it",
   "guideDemo": "Demo",
   "guideCodeCopied": "Code copied",
   "guideLoadMore": "Load more ({visible} / {total} shown)",
-  "@guideLoadMore": {"placeholders": {"visible": {"type": "int"}, "total": {"type": "int"}}},
+  "@guideLoadMore": {
+    "placeholders": {
+      "visible": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "wafBatchDone": "Batch done, {remaining} left to send",
-  "@wafBatchDone": {"placeholders": {"remaining": {"type": "int"}}},
+  "@wafBatchDone": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
   "wafProbeError": "Probe error: {error}",
-  "@wafProbeError": {"placeholders": {"error": {"type": "String"}}},
+  "@wafProbeError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wafCompare": "Match",
   "wafNotIdentified": "Not identified",
   "wafGenerate": "Generate",
@@ -1116,15 +1227,45 @@
   "wafClearResults": "Clear results",
   "wafAdvanced": "Advanced",
   "wafAdvancedSummary": "Delay {delay}ms · Timeout {timeout}s · Max {max} per batch",
-  "@wafAdvancedSummary": {"placeholders": {"delay": {"type": "int"}, "timeout": {"type": "int"}, "max": {"type": "int"}}},
+  "@wafAdvancedSummary": {
+    "placeholders": {
+      "delay": {
+        "type": "int"
+      },
+      "timeout": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "wafInterval": "Request delay",
   "wafTimeout": "Per-request timeout",
   "wafMaxProbes": "Max per batch",
   "wafNRecords": "{count}",
-  "@wafNRecords": {"placeholders": {"count": {"type": "int"}}},
+  "@wafNRecords": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "wafAll": "All",
   "wafResultMeta": "HTTP {status} · {bytes} bytes · {ms}ms",
-  "@wafResultMeta": {"placeholders": {"status": {"type": "String"}, "bytes": {"type": "int"}, "ms": {"type": "int"}}},
+  "@wafResultMeta": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "bytes": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
   "wafCopyPayload": "Copy payload",
   "aiNewChat": "New chat",
   "aiClearChatTitle": "Clear current chat",
@@ -1133,7 +1274,13 @@
   "aiClearCurrent": "Clear current",
   "aiNewConversation": "New chat",
   "aiNMessages": "{count} messages",
-  "@aiNMessages": {"placeholders": {"count": {"type": "int"}}},
+  "@aiNMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiCloseAndClear": "Close and clear this chat",
   "aiDeleteChatTitle": "Delete chat",
   "aiDeleteChatConfirm": "Messages in this chat can't be recovered after deletion.",
@@ -1147,11 +1294,23 @@
   "aiNoRequests": "No captured requests",
   "aiPickRequests": "Choose captured requests (multi-select)",
   "aiStatus": "Status {code}",
-  "@aiStatus": {"placeholders": {"code": {"type": "int"}}},
+  "@aiStatus": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "aiNoResponse": "No response",
   "aiAttachTextHint": "Paste anything as context for the AI",
   "aiAnalyzeFailed": "Analysis failed: {error}",
-  "@aiAnalyzeFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@aiAnalyzeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "aiTitle": "AI Analysis",
   "aiAgentOn": "Agent mode on: AI can call ProxyPin features automatically",
   "aiAgentOff": "Agent mode off: only manual messages",
@@ -1165,7 +1324,13 @@
   "aiEmptyHint1": "Tap 📎 at top right to attach requests / endpoint list / text",
   "aiEmptyHint2": "Turn on 🤖 Agent mode to let AI call ProxyPin features",
   "aiToolCalled": "Called tool {name}",
-  "@aiToolCalled": {"placeholders": {"name": {"type": "String"}}},
+  "@aiToolCalled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aiCopied": "Copied",
   "aiConfigTitle": "AI Analysis Settings",
   "aiEnable": "Enable AI Analysis",
@@ -1178,84 +1343,270 @@
   "aiAgentSection": "Agent mode",
   "aiAgentHint2": "Once on, AI can call ProxyPin tools to fetch data",
   "aiMaxRounds": "Max tool rounds: {count}",
-  "@aiMaxRounds": {"placeholders": {"count": {"type": "int"}}},
+  "@aiMaxRounds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiAgentExtra": "Agent extra instructions",
   "aiAgentExtraHint": "e.g. check security risks first; POST only…",
   "aiImportOk": "Config imported",
   "aiImportFailed": "Import failed: {error}",
-  "@aiImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@aiImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "aiImportFromFile": "Import config from file (JSON)",
   "aiJsonFormatHint": "JSON format: {example}",
-  "@aiJsonFormatHint": {"placeholders": {"example": {"type": "String"}}},
+  "@aiJsonFormatHint": {
+    "placeholders": {
+      "example": {
+        "type": "String"
+      }
+    }
+  },
   "aiConfigSaved": "AI settings saved",
   "quicTitle": "QUIC Connections",
   "quicKeylogTooltip": "Import a key log (SSLKEYLOGFILE) to enable 1-RTT stream decryption",
   "quicCopySessionsTooltip": "Copy the session list (tab-separated, paste straight into a spreadsheet)",
   "quicNoSni": "(no SNI)",
   "quicPacketsBytes": "{packets} packets / {bytes}",
-  "@quicPacketsBytes": {"placeholders": {"packets": {"type": "int"}, "bytes": {"type": "String"}}},
+  "@quicPacketsBytes": {
+    "placeholders": {
+      "packets": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
   "quicLastActivity": "Last activity {time}",
-  "@quicLastActivity": {"placeholders": {"time": {"type": "String"}}},
+  "@quicLastActivity": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "quicCopiedSessions": "Copied {count} sessions",
-  "@quicCopiedSessions": {"placeholders": {"count": {"type": "int"}}},
+  "@quicCopiedSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "quicRefreshTooltip": "Refresh (waiting for new QUIC packets)",
   "quicClearRecords": "Clear records",
   "quicClearConfirm": "Clear all QUIC connection records? Recorded sessions and key logs cannot be restored.",
   "quicBannerNoKeylog": "Only QUIC connection-level metadata is shown (which domains use QUIC and connection stats). HTTP/3 content is encrypted with TLS 1.3 and cannot be decrypted by default; import a key log (SSLKEYLOGFILE) from the key icon at top right and matching connections will automatically decrypt 1-RTT stream data; or turn on Intercept QUIC to force a TCP fallback and capture full requests.",
   "quicBannerKeylogLoaded": "Imported {keys} keys (covering {connections} connections). Matching connections decrypt 1-RTT automatically (client direction only; HEADERS is QPACK-decoded including the dynamic table). For connections that did not match, turn on Intercept QUIC to fall back to TCP.",
-  "@quicBannerKeylogLoaded": {"placeholders": {"keys": {"type": "int"}, "connections": {"type": "int"}}},
+  "@quicBannerKeylogLoaded": {
+    "placeholders": {
+      "keys": {
+        "type": "int"
+      },
+      "connections": {
+        "type": "int"
+      }
+    }
+  },
   "quicNoSniUnresolved": "(SNI not resolved)",
   "quicSessionSummary": "QUIC {version} · {remote} · first seen {firstSeen} · last activity {ago}",
-  "@quicSessionSummary": {"placeholders": {"version": {"type": "String"}, "remote": {"type": "String"}, "firstSeen": {"type": "String"}, "ago": {"type": "String"}}},
+  "@quicSessionSummary": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "remote": {
+        "type": "String"
+      },
+      "firstSeen": {
+        "type": "String"
+      },
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
   "quicSessionIds": "connection {dcid}… · {packets} packets / {frames} frames · {bytes}{decrypted}",
-  "@quicSessionIds": {"placeholders": {"dcid": {"type": "String"}, "packets": {"type": "int"}, "frames": {"type": "int"}, "bytes": {"type": "String"}, "decrypted": {"type": "String"}}},
+  "@quicSessionIds": {
+    "placeholders": {
+      "dcid": {
+        "type": "String"
+      },
+      "packets": {
+        "type": "int"
+      },
+      "frames": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "decrypted": {
+        "type": "String"
+      }
+    }
+  },
   "quicDecryptedSegments": " · {count} segments decrypted",
-  "@quicDecryptedSegments": {"placeholders": {"count": {"type": "int"}}},
+  "@quicDecryptedSegments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "quicTimelineTitle": "QUIC packet volume in the last 10 minutes",
   "quicTimelineNoData": "No data",
   "quicTimelineSummary": "{packets} packets · {bytes} · traffic in {buckets} buckets",
-  "@quicTimelineSummary": {"placeholders": {"packets": {"type": "int"}, "bytes": {"type": "String"}, "buckets": {"type": "int"}}},
+  "@quicTimelineSummary": {
+    "placeholders": {
+      "packets": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "buckets": {
+        "type": "int"
+      }
+    }
+  },
   "quicTenMinutesAgo": "10 minutes ago",
   "quicPerCellTenSeconds": "10s per cell",
   "quicNow": "Now",
   "quicImportedNKeys": "Imported {keys} keys, covering {connections} connections",
-  "@quicImportedNKeys": {"placeholders": {"keys": {"type": "int"}, "connections": {"type": "int"}}},
+  "@quicImportedNKeys": {
+    "placeholders": {
+      "keys": {
+        "type": "int"
+      },
+      "connections": {
+        "type": "int"
+      }
+    }
+  },
   "quicNoNewKeyEntries": "No new key entries were parsed (make sure the file is in NSS key log format)",
   "quicImportFailed": "Import failed: {error}",
-  "@quicImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@quicImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "quicDecryptedTitle": "{host} · Decrypted content",
-  "@quicDecryptedTitle": {"placeholders": {"host": {"type": "String"}}},
+  "@quicDecryptedTitle": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "quicDecryptedAbout": "{segments} segments in total (client direction, 1-RTT). HEADERS is QPACK-compressed: static and dynamic table references are both decoded, and the dynamic table is restored in order from this connection's QPACK encoder stream{table}.",
-  "@quicDecryptedAbout": {"placeholders": {"segments": {"type": "int"}, "table": {"type": "String"}}},
+  "@quicDecryptedAbout": {
+    "placeholders": {
+      "segments": {
+        "type": "int"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
   "quicQpackTableUsed": " ({inserted} inserted, {live} live)",
-  "@quicQpackTableUsed": {"placeholders": {"inserted": {"type": "int"}, "live": {"type": "int"}}},
+  "@quicQpackTableUsed": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      },
+      "live": {
+        "type": "int"
+      }
+    }
+  },
   "quicQpackTableUnused": " (this connection does not use the dynamic table)",
   "quicHttp3Headers": "HTTP/3 headers · {count} QPACK-decoded entries",
-  "@quicHttp3Headers": {"placeholders": {"count": {"type": "int"}}},
+  "@quicHttp3Headers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "quicStatConnections": "Connections",
   "quicStatHosts": "Hosts",
   "quicStatPackets": "Packets",
   "quicStatTraffic": "Traffic",
   "quicStatActive": "Active",
   "quicSecondsAgo": "{seconds} seconds ago",
-  "@quicSecondsAgo": {"placeholders": {"seconds": {"type": "int"}}},
+  "@quicSecondsAgo": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "quicMinutesAgo": "{minutes} minutes ago",
-  "@quicMinutesAgo": {"placeholders": {"minutes": {"type": "int"}}},
+  "@quicMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "quicHoursAgo": "{hours} hours ago",
-  "@quicHoursAgo": {"placeholders": {"hours": {"type": "int"}}},
+  "@quicHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "quicEmptyTitle": "No QUIC connections captured yet",
   "quicEmptyDesc": "After VPN capture is on, when a target app uses QUIC/HTTP3 (video, some social and game apps), its connections are recorded automatically: SNI host, QUIC version, connection ID and packet/frame stats.",
   "quicEmptyHint": "Tip: most apps use TCP/HTTP2 by default. To see QUIC records, temporarily turn Intercept QUIC off in preferences and restart capture; decrypting payloads still requires turning Intercept QUIC on to fall back to TCP.",
   "pinningDeployDone": "Script deployed to {path}",
-  "@pinningDeployDone": {"placeholders": {"path": {"type": "String"}}},
+  "@pinningDeployDone": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "pinningDeployFailed": "Deploy failed: {reason}",
-  "@pinningDeployFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@pinningDeployFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "pinningNeedPackage": "Enter the target package name",
   "pinningAttaching": "Attaching…",
   "pinningAttached": "Attached: {result}",
-  "@pinningAttached": {"placeholders": {"result": {"type": "String"}}},
+  "@pinningAttached": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
   "pinningAttachFailed": "Attach failed: {result}",
-  "@pinningAttachFailed": {"placeholders": {"result": {"type": "String"}}},
+  "@pinningAttachFailed": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
   "pinningStopDone": "Injection stopped",
   "pinningStopFailed": "Stop failed",
   "pinningTitle": "SSL Pinning Bypass Helper",
@@ -1281,19 +1632,43 @@
   "cloudServerSaved": "Server URL saved",
   "cloudNeedCredentials": "Enter username and password",
   "cloudAuthFailed": "Failed: {error}",
-  "@cloudAuthFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudAuthFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudSignedIn": "Signed in",
   "cloudSignedOut": "Signed out",
   "cloudNoLocalWorkspace": "No local workspace yet",
   "cloudPickWorkspace": "Pick a workspace",
   "cloudPushFailed": "Push failed: {error}",
-  "@cloudPushFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudPushFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudPushed": "Pushed to cloud",
   "cloudRemoteEmpty": "Remote workspace is empty",
   "cloudPulled": "Pulled {count} requests",
-  "@cloudPulled": {"placeholders": {"count": {"type": "int"}}},
+  "@cloudPulled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cloudPullFailed": "Pull failed: {error}",
-  "@cloudPullFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudPullFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudDeleteConfirm": "Remove this workspace copy from the cloud? This cannot be undone.",
   "cloudDeleted": "Removed from cloud",
   "cloudRealtimeFailed": "Realtime connect failed",
@@ -1316,9 +1691,21 @@
   "cloudTapRefresh": "(tap refresh)",
   "cloudInviteUser": "Invite user",
   "cloudInvited": "Invited {name}",
-  "@cloudInvited": {"placeholders": {"name": {"type": "String"}}},
+  "@cloudInvited": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "cloudInviteFailed": "Invite failed: {error}",
-  "@cloudInviteFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cloudInviteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cloudInvite": "Invite",
   "sslP12FileEmpty": "The selected file is empty, please choose the .p12 file again",
   "sslAutoInstallHint": "Auto install (needs Root; written as a module, reboot required)\nModern Android keeps /system and /apex read-only, so instead of copying files we install a module",
@@ -1337,24 +1724,60 @@
   "sslAndroidCaInstallNote": "Note: Pick CA certificate (not VPN and app certificate) during install; on Android 14+ the CA directory lives in APEX, so copying the file alone may not take effect — a bind-mount module is usually required",
   "sslNoModuleDirMsg": "No /data/adb/modules found: this device has no Magisk/KernelSU/APatch. Download the CA and install it as a module manually.",
   "sslInstallFailedRoot": "Install failed ({output}). Make sure root is granted.",
-  "@sslInstallFailedRoot": {"placeholders": {"output": {"type": "String"}}},
+  "@sslInstallFailedRoot": {
+    "placeholders": {
+      "output": {
+        "type": "String"
+      }
+    }
+  },
   "sslModuleInstalled": "Installed as a Magisk module. Reboot to take effect.",
   "sslAutoInstallFailedRoot": "Auto install failed: {error}. Make sure root is granted.",
-  "@sslAutoInstallFailedRoot": {"placeholders": {"error": {"type": "String"}}},
+  "@sslAutoInstallFailedRoot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "sslRemovedReboot": "Removed. Reboot to take effect.",
   "sslRemoveFailedRoot": "Remove failed. Make sure root is granted.",
   "sslRemoveFailedError": "Remove failed: {error}",
-  "@sslRemoveFailedError": {"placeholders": {"error": {"type": "String"}}},
+  "@sslRemoveFailedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "sslMountingGrantRoot": "Mounting, please grant root when prompted",
   "sslMountedTrustStore": "Mounted into the system trust store (reverts on reboot). Restart the target app, or tap \"Restart zygote\".",
   "sslMountFailed": "Mount failed: {message}",
-  "@sslMountFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@sslMountFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "sslUnmountedRestored": "Unmounted. The system trust store is back to its original state.",
   "sslUnmountFailed": "Unmount failed: {message}",
-  "@sslUnmountFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@sslUnmountFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "sslZygoteRestarted": "zygote restart signalled; all apps will restart briefly",
   "sslZygoteRestartFailed": "Restart failed: {message}",
-  "@sslZygoteRestartFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@sslZygoteRestartFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "sslCertNotInstalled": "Certificate Not Installed",
   "sslTapInstallRootCA": "Tap \"Install Root CA\" to proceed",
   "sslCertNotTrusted": "Certificate Not Trusted",
@@ -1406,22 +1829,67 @@
   "mcpAutoNoRootsHint": "Tap + at bottom right to add a Root\nAdd a proxypin:// or file:// resource root and edit it freely",
   "mcpAutoDeleteRootConfirm": "Delete this Root configuration?",
   "mcpAutoReading": "Reading {name}…",
-  "@mcpAutoReading": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoReading": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoReadFailed": "Read failed: {error}",
-  "@mcpAutoReadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpAutoReadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoScriptNotFound": "Script not found: {name}",
-  "@mcpAutoScriptNotFound": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoScriptNotFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoScriptExecuted": "Script executed: {name}",
-  "@mcpAutoScriptExecuted": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoScriptExecuted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoScriptRunFailed": "Script failed: {error}",
-  "@mcpAutoScriptRunFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpAutoScriptRunFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoNoTasks": "No scheduled tasks",
   "mcpAutoNoTasksHint": "Tap + at bottom right to add a task\nPick both the run time and what to run",
   "mcpAutoNextPrefix": "Next: ",
   "mcpAutoLastRun": " • Last run: {time}",
-  "@mcpAutoLastRun": {"placeholders": {"time": {"type": "String"}}},
+  "@mcpAutoLastRun": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoRanTimes": " • Ran {count}/{total} times",
-  "@mcpAutoRanTimes": {"placeholders": {"count": {"type": "int"}, "total": {"type": "int"}}},
+  "@mcpAutoRanTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "mcpAutoDeleteTaskConfirm": "Cancel and delete this scheduled task?",
   "mcpAutoAddTask": "Add scheduled task",
   "mcpAutoTaskName": "Task name",
@@ -1436,7 +1904,13 @@
   "mcpAutoCronRequired": "Enter a Cron expression",
   "mcpAutoCronInvalidHint": "Invalid expression, please check",
   "mcpAutoCronNextAt": "Next run: {time}",
-  "@mcpAutoCronNextAt": {"placeholders": {"time": {"type": "String"}}},
+  "@mcpAutoCronNextAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoCronPresetWorkday": "9am on weekdays",
   "mcpAutoCronPresetEvery30": "Every 30 minutes",
   "mcpAutoCronPresetMidnight": "Every day at midnight",
@@ -1487,19 +1961,55 @@
   "mcpAutoUrlRegex": "URL regex",
   "mcpAutoCaptureThreshold": "Capture count threshold",
   "mcpAutoDescHttp": "HTTP request: {pattern}",
-  "@mcpAutoDescHttp": {"placeholders": {"pattern": {"type": "String"}}},
+  "@mcpAutoDescHttp": {
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDescNetwork": "Network status: {status}",
-  "@mcpAutoDescNetwork": {"placeholders": {"status": {"type": "String"}}},
+  "@mcpAutoDescNetwork": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDescProxy": "Proxy status: {status}",
-  "@mcpAutoDescProxy": {"placeholders": {"status": {"type": "String"}}},
+  "@mcpAutoDescProxy": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDescCapture": "Capture threshold: {count}",
-  "@mcpAutoDescCapture": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpAutoDescCapture": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpAutoListenerAdded": "Listener registered",
   "mcpAutoListenerRemoved": "Listener removed",
   "mcpAutoNoRules": "No automation rules",
   "mcpAutoNoRulesHint": "Tap + to add a rule\nRules run actions automatically when conditions match",
   "mcpAutoRuleSummary": "{conditions} conditions • {actions} actions • {enabled}",
-  "@mcpAutoRuleSummary": {"placeholders": {"conditions": {"type": "int"}, "actions": {"type": "int"}, "enabled": {"type": "String"}}},
+  "@mcpAutoRuleSummary": {
+    "placeholders": {
+      "conditions": {
+        "type": "int"
+      },
+      "actions": {
+        "type": "int"
+      },
+      "enabled": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoDeleteRuleConfirm": "Delete this rule?",
   "mcpAutoConditionsInline": "Conditions:",
   "mcpAutoActionsInline": "Actions:",
@@ -1559,12 +2069,27 @@
   "mcpAutoNoPrompts": "No Prompts",
   "mcpAutoTapInvokePrompt": "Tap + to invoke a Prompt",
   "mcpAutoPromptDescWithArgs": "{desc}\nParameters: {params}",
-  "@mcpAutoPromptDescWithArgs": {"placeholders": {"desc": {"type": "String"}, "params": {"type": "String"}}},
+  "@mcpAutoPromptDescWithArgs": {
+    "placeholders": {
+      "desc": {
+        "type": "String"
+      },
+      "params": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoNoPromptAvailable": "No Prompts available",
   "mcpAutoInvokePrompt": "Invoke Prompt",
   "mcpAutoPromptNoArgs": "This Prompt takes no arguments",
   "mcpAutoRequiredArg": "Fill in the required argument: {name}",
-  "@mcpAutoRequiredArg": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoRequiredArg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoInvokingPrompt": "Invoking Prompt…",
   "mcpAutoInvoke": "Invoke",
   "mcpAutoNoResult": "No content returned",
@@ -1572,12 +2097,24 @@
   "mcpAutoNoWorkflowsHint": "Tap + to create a workflow\nChain multiple script nodes in order",
   "mcpAutoUnnamedWorkflow": "Unnamed workflow",
   "mcpAutoNodesCount": "{count} nodes",
-  "@mcpAutoNodesCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpAutoNodesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpAutoDeleteWorkflowConfirm": "Delete this workflow?",
   "mcpAutoWorkflowDeleted": "Workflow deleted",
   "mcpAutoNoNodes": "No nodes",
   "mcpAutoDependsOn": "Depends on: {deps}",
-  "@mcpAutoDependsOn": {"placeholders": {"deps": {"type": "String"}}},
+  "@mcpAutoDependsOn": {
+    "placeholders": {
+      "deps": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoNoDeps": "No dependencies",
   "mcpAutoEditWorkflow": "Edit workflow",
   "mcpAutoAddWorkflow": "Add workflow",
@@ -1590,7 +2127,13 @@
   "mcpAutoWorkflowAdded": "Workflow added",
   "mcpAutoWorkflowNoNodes": "The workflow has no nodes",
   "mcpAutoWorkflowStart": "Running workflow: {name}",
-  "@mcpAutoWorkflowStart": {"placeholders": {"name": {"type": "String"}}},
+  "@mcpAutoWorkflowStart": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mcpAutoWorkflowDone": "Workflow finished",
   "mcpConnSettingsTitle": "MCP Settings",
   "mcpConnAutomationConfig": "Automation settings",
@@ -1606,7 +2149,13 @@
   "mcpConnTokenCopied": "Token copied",
   "mcpConnRegenerateTokenTooltip": "Regenerate (the old token stops working immediately)",
   "mcpConnRegenerateTokenFailed": "Failed to regenerate token: {error}",
-  "@mcpConnRegenerateTokenFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpConnRegenerateTokenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnClientCommands": "AI client connection commands",
   "mcpConnClientCommandsSubtitle": "Claude Code / Codex / curl / one-click scripts",
   "mcpConnCurlSelfCheck": "curl self-check",
@@ -1617,7 +2166,13 @@
   "mcpConnServicePort": "Service port",
   "mcpConnConnectionInfo": "Connection info",
   "mcpConnProtocolVersion": "MCP protocol version: {version} (stateless core, compatible with the legacy handshake)",
-  "@mcpConnProtocolVersion": {"placeholders": {"version": {"type": "String"}}},
+  "@mcpConnProtocolVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnDeviceIp": "Device IP",
   "mcpConnDeviceIpCopied": "Device IP copied",
   "mcpConnApiUrl": "API URL (Streamable HTTP)",
@@ -1629,7 +2184,16 @@
   "mcpConnFloatingBall": "Floating ball",
   "mcpConnFloatingBallDesc": "The desktop floating ball shows MCP status; tap it for a quick panel. The foreground service helps keep the app alive.",
   "mcpConnFloatingBallColorDesc": "Color #{hex} · Opacity {percent}%",
-  "@mcpConnFloatingBallColorDesc": {"placeholders": {"hex": {"type": "String"}, "percent": {"type": "int"}}},
+  "@mcpConnFloatingBallColorDesc": {
+    "placeholders": {
+      "hex": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "mcpConnCustomFloatingBall": "Custom floating ball",
   "mcpConnPresetColors": "Preset colors",
   "mcpConnPresetM3Purple": "M3 Purple",
@@ -1640,18 +2204,42 @@
   "mcpConnPresetGraphiteBlack": "Graphite Black",
   "mcpConnCustomColorRgb": "Custom color (RGB)",
   "mcpConnOpacityPercent": "Opacity {percent}%",
-  "@mcpConnOpacityPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "@mcpConnOpacityPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "mcpConnConfirm": "OK",
   "mcpConnFloatingBallPermission": "Floating ball permission",
   "mcpConnFloatingBallNeedOverlayPermission": "The floating ball needs \"Display over other apps\" permission. System settings has been opened for you; come back and turn it on again after granting it.",
   "mcpConnFloatingBallStartFailed": "Failed to start the floating ball: {reason}",
-  "@mcpConnFloatingBallStartFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@mcpConnFloatingBallStartFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnFloatingBallStopFailed": "Failed to stop the floating ball: {reason}",
-  "@mcpConnFloatingBallStopFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@mcpConnFloatingBallStopFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnUnknownReason": "Unknown reason",
   "mcpConnFloatingBallStartedHint": "The floating ball is on. If you cannot see it on screen, check the system \"Show floating windows\" and the vendor \"Background pop-up\" permissions.",
   "mcpConnFloatingBallCallFailed": "Floating ball call failed: {error}",
-  "@mcpConnFloatingBallCallFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@mcpConnFloatingBallCallFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mcpConnOverlayGranted": "Granted \"Display over other apps\"",
   "mcpConnOverlayNotGranted": "Not granted — tap to open system settings and enable it, otherwise the floating ball cannot show",
   "mcpConnEnableFloatingBall": "Enable floating ball",
@@ -1684,7 +2272,13 @@
   "mcpConnDhizukuAuthIncomplete": "Authorization not completed: make sure Dhizuku is installed and Owner activation is finished",
   "mcpConnAvailableTools": "Available tools",
   "mcpConnToolCount": "{count} tools",
-  "@mcpConnToolCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpConnToolCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpConnDisabledToolsHint": "Disabled tools are hidden from the tool list and cannot be called by AI.",
   "mcpConnToolSetConfig": "Change ProxyPin settings (system proxy, SSL capture toggle)",
   "mcpConnToolExportHar": "Export capture records to a HAR file",
@@ -1743,37 +2337,85 @@
   "auditPlaintextBodySuggestion": "Enforce HTTPS for endpoints that handle login, payment or privacy.",
   "auditUrlSecretTitle": "Sensitive Parameters in the URL",
   "auditUrlSecretDetail": "Query parameters {names} look like credentials / keys. URLs are written into browser history, proxy and server logs.",
-  "@auditUrlSecretDetail": {"placeholders": {"names": {"type": "String"}}},
+  "@auditUrlSecretDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "auditUrlSecretSuggestion": "Move sensitive parameters into the request body or headers (for example Authorization).",
   "auditPasswordBodyTitle": "Password Submitted in a Plaintext Body",
   "auditPasswordBodyDetail": "The request body contains fields such as password / pwd with plaintext values.",
   "auditPasswordBodySuggestion": "Keep the whole path on HTTPS and make sure the server never echoes or logs passwords.",
   "auditCookieFlagTitle": "Cookie Missing Security Attributes",
   "auditCookieFlagDetail": "Set-Cookie \"{name}\" is missing {missing}, so it can be read by scripts or transmitted in cleartext.",
-  "@auditCookieFlagDetail": {"placeholders": {"name": {"type": "String"}, "missing": {"type": "String"}}},
+  "@auditCookieFlagDetail": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
   "auditCookieFlagSuggestion": "Add Secure and HttpOnly to session cookies, and set SameSite=Lax/Strict as needed.",
   "auditMissingHeadersTitle": "HTML Response Missing Security Headers",
   "auditMissingHeadersDetail": "Missing {missing}; the browser has no extra constraint against content sniffing and script injection.",
-  "@auditMissingHeadersDetail": {"placeholders": {"missing": {"type": "String"}}},
+  "@auditMissingHeadersDetail": {
+    "placeholders": {
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
   "auditMissingHeadersSuggestion": "Add security response headers such as nosniff and CSP as needed.",
   "auditFingerprintTitle": "Response Exposes Server Fingerprint",
   "auditFingerprintDetail": "{header}: {value}, which helps an attacker pick known vulnerabilities.",
-  "@auditFingerprintDetail": {"placeholders": {"header": {"type": "String"}, "value": {"type": "String"}}},
+  "@auditFingerprintDetail": {
+    "placeholders": {
+      "header": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "auditFingerprintSuggestion": "Hide or generalize version information at the gateway.",
   "auditPrivateKeyTitle": "Response Body May Contain a Private Key",
   "auditPrivateKeyDetail": "A PEM private key marker appears in the response; if it is a real key, this is a severe leak.",
   "auditPrivateKeySuggestion": "Rotate the key immediately and make sure the server never sends private keys to clients.",
   "auditSecretTitle": "Response Body Returns Secret Fields in Plaintext",
   "auditSecretDetail": "Fields such as {names} are returned in plaintext.",
-  "@auditSecretDetail": {"placeholders": {"names": {"type": "String"}}},
+  "@auditSecretDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "auditSecretSuggestion": "Return the minimum set of fields; key material should never be sent to clients.",
   "auditPiiTitle": "Response Body Contains Personal Information",
   "auditPiiDetail": "Fields such as {names} carry personal data such as ID numbers / phone numbers.",
-  "@auditPiiDetail": {"placeholders": {"names": {"type": "String"}}},
+  "@auditPiiDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "auditPiiSuggestion": "Mask personal data or return it on a minimal-necessary basis, and comply with data protection requirements.",
   "auditErrorTitle": "Error Response Leaks Internal Information",
   "auditErrorDetail": "Debug / stack trace signatures ({trace}) appear in the response, which may expose the framework, paths or database structure.",
-  "@auditErrorDetail": {"placeholders": {"trace": {"type": "String"}}},
+  "@auditErrorDetail": {
+    "placeholders": {
+      "trace": {
+        "type": "String"
+      }
+    }
+  },
   "auditErrorSuggestion": "Disable detailed errors in production and return a generic error message.",
   "auditCorsTitle": "CORS Allows Any Origin with Credentials",
   "auditCorsDetail": "Access-Control-Allow-Origin is * while Allow-Credentials is true, so the risk of cross-site credential reads is high.",
@@ -1789,20 +2431,50 @@
   "auditHttp10Suggestion": "Upgrade to HTTP/1.1 or HTTP/2.",
   "auditSqlTitle": "Possible SQL Injection Trace (Database Error Echoed)",
   "auditSqlDetail": "The response contains a {signature} database error signature, which means this endpoint echoes SQL errors back to the caller; if client-controlled parameters triggered it, there is a SQL injection risk.",
-  "@auditSqlDetail": {"placeholders": {"signature": {"type": "String"}}},
+  "@auditSqlDetail": {
+    "placeholders": {
+      "signature": {
+        "type": "String"
+      }
+    }
+  },
   "auditSqlSuggestion": "Use parameterized queries / prepared statements and never concatenate SQL; disable detailed database errors in production and return a generic message. (Passive detection: based only on the response characteristics of captured traffic; no probe request was sent.)",
   "auditXssTitle": "Possible XSS Reflection Trace (Unencoded Parameters Echoed in HTML)",
   "auditXssDetail": "The response echoes request parameter values verbatim into HTML without HTML entity encoding, and the echoed content contains special characters such as {meta}; if an attacker can control that value, the browser may parse it as tags or script.",
-  "@auditXssDetail": {"placeholders": {"meta": {"type": "String"}}},
+  "@auditXssDetail": {
+    "placeholders": {
+      "meta": {
+        "type": "String"
+      }
+    }
+  },
   "auditXssSuggestion": "Encode according to the output context (HTML entity encoding) and pair the page with CSP; do not concatenate request parameters into HTML. (Passive detection: based only on the response characteristics of captured traffic; no probe request was sent.)",
   "auditCustomHitDetail": "Matched custom rule \"{name}\" ({describe}).",
-  "@auditCustomHitDetail": {"placeholders": {"name": {"type": "String"}, "describe": {"type": "String"}}},
+  "@auditCustomHitDetail": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "describe": {
+        "type": "String"
+      }
+    }
+  },
   "auditCustomHitSuggestion": "Confirm against your business security requirements whether this content should appear.",
   "auditSecretPrivateKey": "Private key",
   "auditPiiIdCard": "ID number",
   "auditPiiPhone": "Phone number",
   "auditRuleDescribe": "Scope: {target}; Match: {match}",
-  "@auditRuleDescribe": {"placeholders": {"target": {"type": "String"}, "match": {"type": "String"}}},
+  "@auditRuleDescribe": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "match": {
+        "type": "String"
+      }
+    }
+  },
   "auditTargetUrl": "Request URL",
   "auditTargetRequestHeader": "Request headers",
   "auditTargetRequestBody": "Request body",
@@ -1821,14 +2493,41 @@
   "diagSuggestChecklist": "If everything above looks fine but you still capture nothing, check these categories: ① the target uses QUIC/HTTP3 (enable Block QUIC on the phone, disable QUIC in the browser); ② Flutter apps (Dart ships its own root CA list and does not read the system CA); ③ the app enables certificate pinning (SSL Pinning) - matched if an SSL Certificate Pinning (suspected) item appears above; ④ processes with their own network stack on Windows (need Enhanced Windows Takeover or a TUN tool); ⑤ Mac App Store sandboxed apps (need Network Extension/TUN; unsigned builds from this repository cannot take over)",
   "diagItemProxyService": "Proxy Service",
   "diagProxyListening": "Listening on 127.0.0.1:{port}",
-  "@diagProxyListening": {"placeholders": {"port": {"type": "int"}}},
+  "@diagProxyListening": {
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
   "diagProxyNotRunning": "Not running, so no traffic can be captured. Tap Start Capture first",
   "diagItemSystemProxy": "System Proxy",
   "diagSystemProxyMatched": "Points to this app at {host}:{port}",
-  "@diagSystemProxyMatched": {"placeholders": {"host": {"type": "String"}, "port": {"type": "int"}}},
+  "@diagSystemProxyMatched": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
   "diagSystemProxyOff": "The system proxy is off, so app traffic will not go through this tool",
   "diagSystemProxyMismatch": "Points to {host}:{port}, which does not match this app port {expected} (maybe taken over by another proxy tool, or left over from an abnormal exit)",
-  "@diagSystemProxyMismatch": {"placeholders": {"host": {"type": "String"}, "port": {"type": "int"}, "expected": {"type": "int"}}},
+  "@diagSystemProxyMismatch": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      },
+      "expected": {
+        "type": "int"
+      }
+    }
+  },
   "diagItemTrafficEntry": "Traffic Entry",
   "diagMobileVpnEntry": "On mobile, the VPN tunnel handles IP-layer traffic (no system proxy needed)",
   "diagCaInSystemStore": "Already in the system trust store",
@@ -1839,41 +2538,125 @@
   "diagItemCaRoot": "CA Root Certificate",
   "diagCaDesktopHint": "On desktop, confirm in the Certificate page that the root certificate is installed into the system trusted roots",
   "diagReadFailed": "Read failed: {error}",
-  "@diagReadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@diagReadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "diagItemSslPinning": "SSL Certificate Pinning (suspected)",
   "diagSslPinningDetail": "The CA certificate is ready, but {count} domains only established a TLS tunnel and their content is never readable: {sample}. This usually means the peer enabled certificate pinning (SSL Pinning), or ships its own root CA list and does not read the system CA. Note that these apps are not offline: they rejected the certificate of this tool and therefore closed the connection.",
-  "@diagSslPinningDetail": {"placeholders": {"count": {"type": "int"}, "sample": {"type": "String"}}},
+  "@diagSslPinningDetail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sample": {
+        "type": "String"
+      }
+    }
+  },
   "diagItemWinTakeover": "Enhanced Windows Takeover",
   "diagWinTakeoverOn": "On: the WinHTTP service and CLI tools (curl/git/node) also go through the proxy",
   "diagWinTakeoverOff": "Off: apps with their own network stack, the WinHTTP service and CLI tools may not be captured. Enable it in Preferences -> Windows Takeover (the WinHTTP part requires administrator rights)",
   "diagItemRecentTraffic": "Recent Traffic",
   "diagNoRequests": "No requests captured in this session yet",
   "diagTrafficFresh": "{count} requests, latest {ago} seconds ago",
-  "@diagTrafficFresh": {"placeholders": {"count": {"type": "int"}, "ago": {"type": "int"}}},
+  "@diagTrafficFresh": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ago": {
+        "type": "int"
+      }
+    }
+  },
   "diagTrafficStale": "{count} requests, latest {ago} seconds ago (no new traffic coming in)",
-  "@diagTrafficStale": {"placeholders": {"count": {"type": "int"}, "ago": {"type": "int"}}},
+  "@diagTrafficStale": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ago": {
+        "type": "int"
+      }
+    }
+  },
   "diagItemExtensionMemory": "Extension Memory",
   "diagExtMemUnavailable": "Not available (the extension process cannot be read while the VPN is stopped)",
   "diagExtMemDetail": "Current {rss} MB, peak {peak} MB, {connections} connections, {buffered} MB buffered",
-  "@diagExtMemDetail": {"placeholders": {"rss": {"type": "String"}, "peak": {"type": "String"}, "connections": {"type": "String"}, "buffered": {"type": "String"}}},
+  "@diagExtMemDetail": {
+    "placeholders": {
+      "rss": {
+        "type": "String"
+      },
+      "peak": {
+        "type": "String"
+      },
+      "connections": {
+        "type": "String"
+      },
+      "buffered": {
+        "type": "String"
+      }
+    }
+  },
   "diagExtMemNearLimit": " (approaching the extension memory limit; consider reducing concurrency or lowering the buffered-send cap)",
   "auditPageVerifyTooltip": "Active verification (one request per captured domain, checking security headers)",
   "auditPageNoVerifiableHosts": "No verifiable domains captured yet",
   "auditPageVerifyTitle": "Active verification",
   "auditPageVerifyIntro": "It sends one GET each to the domains below that **already appeared in the captured traffic**, looking only at the security response headers:",
   "auditPageVerifyScope": "{hosts} domains in total, sent one after another with a {delay}ms gap, up to {max}. No port scanning, no payloads.",
-  "@auditPageVerifyScope": {"placeholders": {"hosts": {"type": "int"}, "delay": {"type": "int"}, "max": {"type": "int"}}},
+  "@auditPageVerifyScope": {
+    "placeholders": {
+      "hosts": {
+        "type": "int"
+      },
+      "delay": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "auditPageVerifyAuthz": "Only do this for targets you own or are authorized to test.",
   "auditPageVerifyStart": "Start verification",
   "auditPageVerifyFailed": "Verification failed: {error}",
-  "@auditPageVerifyFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@auditPageVerifyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "auditPageVerifyResultTitle": "Verification results",
   "auditPageVerifyResultIntro": "This only checked whether the security response headers below are present. Missing does not mean a vulnerability, but the server configuration is worth a look.",
   "auditPageVerifyHostFailed": "{host} — verification failed: {error}",
-  "@auditPageVerifyHostFailed": {"placeholders": {"host": {"type": "String"}, "error": {"type": "String"}}},
+  "@auditPageVerifyHostFailed": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "auditPageVerifyHeadersAllPresent": "All of these response headers are present",
   "auditPageVerifyHeaderMissing": "Missing {name} — {desc}",
-  "@auditPageVerifyHeaderMissing": {"placeholders": {"name": {"type": "String"}, "desc": {"type": "String"}}},
+  "@auditPageVerifyHeaderMissing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "desc": {
+        "type": "String"
+      }
+    }
+  },
   "diagPageRerun": "Re-run",
   "diagPageTip": "Checks whether the local capture path works. Read-only detection; it never changes your system settings. The same conclusion can be handed to AI via the MCP tool diagnose_capture.",
   "diagPageNextSteps": "Start here",
@@ -1910,7 +2693,13 @@
   "prefSplashBgTransparent": "Follow theme (recommended)",
   "prefSplashDuration": "Display duration",
   "prefSplashDurationSeconds": "{seconds} s",
-  "@prefSplashDurationSeconds": {"placeholders": {"seconds": {"type": "String"}}},
+  "@prefSplashDurationSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
   "prefSplashDurationFixed": "The original splash screen is a system screen and does not support a custom duration",
   "prefSplashNotSelected": "Not selected",
   "prefSplashSelectedTapChange": "Set, tap to change",
@@ -1932,7 +2721,13 @@
   "prefSysFallbackOn": "System-level fallback enabled: UDP:443 will be dropped (stops working after a system reboot)",
   "prefSysFallbackOff": "System-level fallback disabled",
   "prefExecFailed": "Failed: {error}",
-  "@prefExecFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@prefExecFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "prefIptablesUnavailable": "iptables unavailable",
   "prefMonet": "Monet theming",
   "prefMonetDesc": "Android 12+: colors follow the wallpaper (theme and splash screen pick colors automatically)",
@@ -1941,7 +2736,13 @@
   "prefCaptureBodyLimit": "Capture body limit",
   "prefBlockQuic": "Intercept QUIC (UDP:443)",
   "prefQuicBlocked": "Intercepted {count} QUIC packets; forcing a fallback to TCP so traffic can be captured",
-  "@prefQuicBlocked": {"placeholders": {"count": {"type": "int"}}},
+  "@prefQuicBlocked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "prefQuicBlockDesc": "Drop UDP 443 to force apps back to TCP so HTTPS traffic can be captured",
   "prefQuicBlockOff": "Turned off; takes effect after restarting capture",
   "prefSysFallbackDesc": "System-level fallback (requires Root + iptables): drop all UDP:443 to force a fallback to TCP; stops working after a system reboot",
@@ -1969,17 +2770,41 @@
   "cfgPreparing": "Preparing...",
   "cfgSelectSaveLocation": "Choose save location",
   "cfgExportedTo": "Config exported to: {path}",
-  "@cfgExportedTo": {"placeholders": {"path": {"type": "String"}}},
+  "@cfgExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "cfgExportFailed": "Export failed: {error}",
-  "@cfgExportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cfgExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cfgConfirmImport": "Confirm import",
   "cfgImportConfirmBody": "Importing the config will completely overwrite the current config. Continue?\n\nExporting the current config as a backup first is recommended.",
   "cfgImportSuccessRestart": "Config imported successfully; some settings may need an app restart to take effect",
   "cfgImportFailed": "Import failed: {error}",
-  "@cfgImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cfgImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cfgCopied": "Config copied to the clipboard; paste it on another device to import",
   "cfgCopyFailed": "Copy failed: {error}",
-  "@cfgCopyFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@cfgCopyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "cfgImportConfirmBodyShort": "Importing will overwrite the current config. Continue?",
   "cfgClipboardEmpty": "There is no text in the clipboard",
   "cfgClipboardNotConfig": "The clipboard content is not config JSON; copy the config text first",
@@ -2007,11 +2832,32 @@
   "devToolCronFieldWeekRange": "0-6 (0 is Sunday)",
   "devToolJwtInvalid": "A JWT should have at least two Base64Url segments (header.payload.signature)",
   "devToolJwtDecodeFailed": "Decode failed: {error}",
-  "@devToolJwtDecodeFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@devToolJwtDecodeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "devToolJwtExpiry": "{time} ({status})",
-  "@devToolJwtExpiry": {"placeholders": {"time": {"type": "String"}, "status": {"type": "String"}}},
+  "@devToolJwtExpiry": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "devToolJwtExpLabel": "Expires at: {time}",
-  "@devToolJwtExpLabel": {"placeholders": {"time": {"type": "String"}}},
+  "@devToolJwtExpLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "devToolJwtExpired": "expired",
   "devToolJwtValid": "valid",
   "devToolJwtLabel": "Paste a JWT token",
@@ -2031,13 +2877,25 @@
   "calcTabCrcHash": "CRC / Hash",
   "calcEmptyHint": "Enter a value and tap \"Calculate\" to see the result",
   "calcCopiedKey": "Copied {name}",
-  "@calcCopiedKey": {"placeholders": {"name": {"type": "String"}}},
+  "@calcCopiedKey": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "calcCompute": "Calculate",
   "calcLabelValue": "Value",
   "calcIntValueHint": "Accepts 0x / 0b / 0o / decimal, optional leading minus",
   "calcLabelWidth": "Bit width",
   "calcNBits": "{bits} bits",
-  "@calcNBits": {"placeholders": {"bits": {"type": "int"}}},
+  "@calcNBits": {
+    "placeholders": {
+      "bits": {
+        "type": "int"
+      }
+    }
+  },
   "calcLabelOperation": "Operation",
   "calcLabelOperandA": "Operand A",
   "calcLabelShiftAmount": "Shift amount (decimal)",
@@ -2049,7 +2907,13 @@
   "calcLabelByteWidth": "Byte width",
   "calcByteWidthAuto": "Match input length",
   "calcNBytes": "{bytes} bytes",
-  "@calcNBytes": {"placeholders": {"bytes": {"type": "int"}}},
+  "@calcNBytes": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
   "calcLabelMachineOrValue": "Machine code or number",
   "calcIeeeHint": "Hex machine code (e.g. 0x3f800000) or a decimal fraction (e.g. 1.5)",
   "calcLabelPrecision": "Precision",
@@ -2062,17 +2926,50 @@
   "wsPageRenameTitle": "Rename workspace",
   "wsPageDeleteTitle": "Delete workspace",
   "wsPageDeleteConfirm": "Delete \"{name}\" and its local data? This cannot be undone.",
-  "@wsPageDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@wsPageDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageNoCaptureData": "No captured requests to save",
   "wsPageSavedTo": "Saved {count} to \"{name}\"",
-  "@wsPageSavedTo": {"placeholders": {"count": {"type": "int"}, "name": {"type": "String"}}},
+  "@wsPageSavedTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageSaveFailed": "Save failed: {error}",
-  "@wsPageSaveFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPageSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageEmptyWorkspace": "Workspace is empty",
   "wsPageImportedToHistory": "Imported {count} requests to history",
-  "@wsPageImportedToHistory": {"placeholders": {"count": {"type": "int"}}},
+  "@wsPageImportedToHistory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "wsPageImportFailed": "Import failed: {error}",
-  "@wsPageImportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPageImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageServerTitle": "Workspace server",
   "wsPageServerUrlHint": "Base URL (e.g. http://10.0.0.5:8787)",
   "wsPageTokenTitle": "Token (optional)",
@@ -2080,14 +2977,38 @@
   "wsPageServerCleared": "Server config cleared",
   "wsPageServerNeeded": "Configure the workspace server first",
   "wsPagePushed": "Pushed to server ({bytes} bytes)",
-  "@wsPagePushed": {"placeholders": {"bytes": {"type": "int"}}},
+  "@wsPagePushed": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
   "wsPagePushFailed": "Push failed: {error}",
-  "@wsPagePushFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPagePushFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageServerNoWorkspaces": "Server has no workspaces",
   "wsPagePulled": "Pulled {count} workspaces",
-  "@wsPagePulled": {"placeholders": {"count": {"type": "int"}}},
+  "@wsPagePulled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "wsPagePullFailed": "Pull failed: {error}",
-  "@wsPagePullFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@wsPagePullFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "wsPageServerTooltip": "Server settings",
   "wsPagePullFromServer": "Pull from server",
   "wsPageEmptyHint": "No workspace yet. Create one, save the current capture into it, and manage captures per project.",
@@ -2097,12 +3018,27 @@
   "wsPageImportToHistory": "Import to history",
   "wsPagePushToServer": "Push to server",
   "wsPageItemMeta": "{count} requests · {time}",
-  "@wsPageItemMeta": {"placeholders": {"count": {"type": "int"}, "time": {"type": "String"}}},
+  "@wsPageItemMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "logViewReadyHint": "Log viewer is ready: runtime logs will show up here in real time (up to 500 entries).",
   "logViewExportSuccess": "Logs exported",
   "logViewExportFailed": "Log export failed",
   "logViewExportError": "Export failed: {error}",
-  "@logViewExportError": {"placeholders": {"error": {"type": "String"}}},
+  "@logViewExportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "logViewClearLogs": "Clear logs",
   "logViewClearConfirm": "Clear all logs? This cannot be undone.",
   "logViewCleared": "Logs cleared",
@@ -2129,7 +3065,13 @@
   "cmpHasDiff": "Differences found",
   "cmpIdentical": "Identical",
   "cmpTotalChanges": "{count} changes in total",
-  "@cmpTotalChanges": {"placeholders": {"count": {"type": "int"}}},
+  "@cmpTotalChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cmpFieldMethod": "Method",
   "cmpChangeStats": "Change summary",
   "cmpHeaderChanges": "Header changes",
@@ -2139,67 +3081,199 @@
   "cmpDetailedReport": "Detailed report",
   "cmpNoHeaderChanges": "No header changes",
   "cmpOldValue": "Old: {value}",
-  "@cmpOldValue": {"placeholders": {"value": {"type": "String"}}},
+  "@cmpOldValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "cmpNewValue": "New: {value}",
-  "@cmpNewValue": {"placeholders": {"value": {"type": "String"}}},
+  "@cmpNewValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "cmpNoBodyChanges": "No body changes",
   "cmpBodyA": "Request body A",
   "cmpBodyB": "Request body B",
   "cmpNoResponseData": "No response data",
   "cmpResponseHeaderChanges": "Response header changes ({count})",
-  "@cmpResponseHeaderChanges": {"placeholders": {"count": {"type": "int"}}},
+  "@cmpResponseHeaderChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cmpNoChanges": "No changes",
   "cmpResponseBodyA": "Response body A",
   "cmpResponseBodyB": "Response body B",
   "cmpModified": "Modified",
   "cmpRequestLabel": "Request {label}",
-  "@cmpRequestLabel": {"placeholders": {"label": {"type": "String"}}},
+  "@cmpRequestLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "cmpEmpty": "(empty)",
   "backupCreated": "Backup created: {name} ({count} items)",
-  "@backupCreated": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "@backupCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backupFailed": "Backup failed: {error}",
-  "@backupFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupNow": "Back up now (config + certificate + scripts + workspace)",
   "backupAutoToAppDataDir": "Configuration automatically backs up to the app data directory",
   "backupOk": "OK",
   "backupConfirmRestore": "Confirm restore",
   "backupRestoreConfirm": "Restoring backup \"{name}\" will overwrite the current configuration. Continue?",
-  "@backupRestoreConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@backupRestoreConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupConfirmDelete": "Confirm delete",
   "backupRestoredApplied": "Restored {restored} files; the configuration is now in effect",
-  "@backupRestoredApplied": {"placeholders": {"restored": {"type": "int"}}},
+  "@backupRestoredApplied": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      }
+    }
+  },
   "backupRestoredNotApplied": "Restored {restored} files (configuration not applied{failedSuffix})",
-  "@backupRestoredNotApplied": {"placeholders": {"restored": {"type": "int"}, "failedSuffix": {"type": "String"}}},
+  "@backupRestoredNotApplied": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      },
+      "failedSuffix": {
+        "type": "String"
+      }
+    }
+  },
   "backupFailedSuffix": ", {failed} items failed",
-  "@backupFailedSuffix": {"placeholders": {"failed": {"type": "int"}}},
+  "@backupFailedSuffix": {
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "backupAppliedSuffix": ", the configuration is now in effect",
   "backupConfigRestored": "Configuration restored",
   "backupRestoreFailed": "Restore failed: {error}",
-  "@backupRestoreFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupRestoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupRestoredSummary": "Restored {restored} files{applied}{failed}",
-  "@backupRestoredSummary": {"placeholders": {"restored": {"type": "int"}, "applied": {"type": "String"}, "failed": {"type": "String"}}},
+  "@backupRestoredSummary": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      },
+      "applied": {
+        "type": "String"
+      },
+      "failed": {
+        "type": "String"
+      }
+    }
+  },
   "backupRestored": "Backup restored",
   "backupChooseSaveLocation": "Choose a save location",
   "backupExportedTo": "Exported to: {path}",
-  "@backupExportedTo": {"placeholders": {"path": {"type": "String"}}},
+  "@backupExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "backupExportDialogTitle": "Export backup file",
   "backupExportSuccess": "Exported successfully",
   "backupExportFailed": "Export failed: {error}",
-  "@backupExportFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupDeleteConfirm": "Delete backup \"{name}\"?",
-  "@backupDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@backupDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupDeleteConfirmDesktop": "Delete backup file \"{name}\"?\n\nThis cannot be undone.",
-  "@backupDeleteConfirmDesktop": {"placeholders": {"name": {"type": "String"}}},
+  "@backupDeleteConfirmDesktop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupDeleted": "Backup deleted",
   "backupDeleteFailed": "Delete failed: {error}",
-  "@backupDeleteFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupDirNotFound": "Backup directory does not exist",
   "backupRestoreConfirmDesktop": "Restore backup file \"{name}\"?\n\nThe current configuration will be overwritten.",
-  "@backupRestoreConfirmDesktop": {"placeholders": {"name": {"type": "String"}}},
+  "@backupRestoreConfirmDesktop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupViewTitle": "View backup: {name}",
-  "@backupViewTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@backupViewTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backupViewFailed": "View failed: {error}",
-  "@backupViewFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@backupViewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "backupCopied": "Copied to clipboard",
   "backupJustNow": "Just now",
   "cfgDeskGeneratingConfig": "Generating config file...",
@@ -2211,11 +3285,23 @@
   "rootProxyNeedStopVpn": "Stop VPN capture first: the two capture methods cannot be used at the same time",
   "rootProxyStartDenied": "Failed to enable; make sure root permission has been granted",
   "rootProxyStartFailed": "Failed to enable: {reason}",
-  "@rootProxyStartFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@rootProxyStartFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "rootProxyActive": "Redirection is active",
   "rootProxyInactive": "Not active",
   "rootProxyTargetPort": "Target port: {port}　Protection: leftover rules are cleaned up automatically on the next launch",
-  "@rootProxyTargetPort": {"placeholders": {"port": {"type": "int"}}},
+  "@rootProxyTargetPort": {
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
   "rootProxyCheckRoot": "Check root permission",
   "rootProxyFirstCheck": "The first check will bring up the su authorization dialog",
   "rootProxyGranted": "Root permission granted",
@@ -2224,20 +3310,53 @@
   "rootProxyNotesBody": "· The device must be rooted and su permission granted;\n· The idea is to add a chain for ProxyPin only to the nat table, redirecting outbound TCP connections to the proxy port, without making any other changes;\n· Only IPv4 is handled; IPv6 traffic stays direct;\n· Mutually exclusive with VPN capture, so turn the VPN off first;\n· If the phone shows “connected to WiFi but no internet”, turn this off first; the app also cleans up leftover rules on every launch.",
   "fuzzDictDefaultName": "Imported dictionary",
   "fuzzDictImported": "Imported \"{name}\"",
-  "@fuzzDictImported": {"placeholders": {"name": {"type": "String"}}},
+  "@fuzzDictImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictDeleteTitle": "Delete dictionary",
   "fuzzDictDeleteConfirm": "Delete \"{name}\"?",
-  "@fuzzDictDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@fuzzDictDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictTitle": "Fuzz Dictionary",
   "fuzzDictTips": "Tap a dictionary to fill it into the current injection. No built-in attack payload library — the built-ins are just boundary/type-anomaly strings; fill, import or script the rest yourself.",
   "fuzzDictNoCustom": "No custom dictionaries yet",
   "fuzzDictImportFile": "Import from file",
   "fuzzDictNEntries": "{count} values",
-  "@fuzzDictNEntries": {"placeholders": {"count": {"type": "int"}}},
+  "@fuzzDictNEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "fuzzDictExpanded": "Expanded to {count} values: {preview}",
-  "@fuzzDictExpanded": {"placeholders": {"count": {"type": "int"}, "preview": {"type": "String"}}},
+  "@fuzzDictExpanded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictScriptFailed": "Script failed: {error}",
-  "@fuzzDictScriptFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@fuzzDictScriptFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzDictNameRequired": "Give the dictionary a name",
   "fuzzDictCreate": "New dictionary",
   "fuzzDictEditTitle": "Edit dictionary",
@@ -2245,15 +3364,39 @@
   "fuzzDictTestRun": "Try it",
   "fuzzDictScriptNote": "The script output is merged with the values above and de-duplicated",
   "apiEpTitle": "API Endpoints ({count})",
-  "@apiEpTitle": {"placeholders": {"count": {"type": "int"}}},
+  "@apiEpTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "apiEpSearchHint": "Search endpoints...",
   "apiEpTotalEndpoints": "Total endpoints",
   "apiEpResourceGroups": "Resource groups",
   "apiEpTotalRequests": "Total requests",
   "apiEpPathCalls": "{path} · {count} requests",
-  "@apiEpPathCalls": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
+  "@apiEpPathCalls": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "apiEpCallsSuccess": "{count} calls · Success rate {rate}",
-  "@apiEpCallsSuccess": {"placeholders": {"count": {"type": "int"}, "rate": {"type": "String"}}},
+  "@apiEpCallsSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
   "apiEpNoMatch": "No matching endpoints found",
   "apiEpGroupView": "Group view",
   "apiEpListView": "List view",
@@ -2264,9 +3407,24 @@
   "apiEpCollectionFormat": "Collection format",
   "apiEpExportJson": "Export as JSON",
   "apiEpExported": "{label} exported",
-  "@apiEpExported": {"placeholders": {"label": {"type": "String"}}},
+  "@apiEpExported": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "apiEpExportFailed": "{label} export failed: {error}",
-  "@apiEpExportFailed": {"placeholders": {"label": {"type": "String"}, "error": {"type": "String"}}},
+  "@apiEpExportFailed": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "apiEpFullUrl": "Full URL",
   "apiEpCallCount": "Call count",
   "apiEpAvgResponseTime": "Avg response time",
@@ -2274,12 +3432,24 @@
   "apiEpLastSeen": "Last seen",
   "apiEpTags": "Tags",
   "perfLoadFailed": "Failed to load data: {error}",
-  "@perfLoadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@perfLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "perfTitle": "Performance Monitoring",
   "perfRetry": "Retry",
   "perfLoading": "Loading data...",
   "perfLastUpdate": "Last updated: {time}",
-  "@perfLastUpdate": {"placeholders": {"time": {"type": "String"}}},
+  "@perfLastUpdate": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "perfProxyStatus": "Proxy Status",
   "perfRunning": "Running",
   "perfStopped": "Stopped",
@@ -2301,11 +3471,29 @@
   "rqStatRetried": "Retried",
   "rqStatPlanned": "Planned",
   "rqLastError": "Last error: {error}",
-  "@rqLastError": {"placeholders": {"error": {"type": "String"}}},
+  "@rqLastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rqPendingRequests": "Pending requests ({count})",
-  "@rqPendingRequests": {"placeholders": {"count": {"type": "int"}}},
+  "@rqPendingRequests": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rqMoreRemaining": "... and {count} more",
-  "@rqMoreRemaining": {"placeholders": {"count": {"type": "int"}}},
+  "@rqMoreRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rqStatusScheduled": "Waiting to send",
   "rqStatusRunning": "Sending",
   "rqStatusCompleted": "Completed",
@@ -2321,9 +3509,21 @@
   "bvDescUuid": "Random UUID (different on every reference)",
   "bvTitle": "Built-in variables",
   "bvIntro": "These variables need no definition — reference them directly anywhere {mark} is supported (rewrite rules, report URLs, scripts, etc.). Tap to copy.",
-  "@bvIntro": {"placeholders": {"mark": {"type": "String"}}},
+  "@bvIntro": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "bvCopied": "Copied {text}",
-  "@bvCopied": {"placeholders": {"text": {"type": "String"}}},
+  "@bvCopied": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "bvGotIt": "Got it",
   "toolboxNavCalcTip": "Base conversion / two's complement · bitwise ops · endianness · IEEE754 · CRC/hash",
   "toolboxNavMcpTip": "MCP Server settings",
@@ -2335,7 +3535,13 @@
   "toolboxNavCloudTip": "Account · cloud-hosted workspaces · real-time multi-user collaboration (self-hosted server)",
   "toolboxNavAiTip": "AI chat analysis of captured data (Agent mode supported)",
   "deskNavUpgradeTitle": "What's new in V{version}",
-  "@deskNavUpgradeTitle": {"placeholders": {"version": {"type": "String"}}},
+  "@deskNavUpgradeTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "deskNavUpgradeBody": "Note: HTTPS capture is disabled by default — please install the certificate before enabling HTTPS capture.\nClick the HTTPS capture (lock) icon, choose \"Install Root Certificate\", and follow the prompts to complete installation.\n\n1. Added a built-in MCP server so AI assistants (e.g. Claude) can inspect and debug captured traffic;\n2. Added built-in dynamic variables for environments;\n3. Request rewrite rules can now be reordered with move up/down actions;\n4. Fixed a crash triggered by the Windows context menu;\n5. Fixed multi-value headers (e.g. multiple Set-Cookie) being incorrectly merged when handled by scripts or rewrite rules;\n6. Fixed h2c (plaintext HTTP/2) capture, non-ASCII domain normalization, and certificate validation failures for IP hosts;\n7. Fixed an iOS 13 crash, dropped bodies for close-delimited responses, Android VPN destination-port recording, and other issues.\n",
   "setNavThemeTip": "Theme settings are in the top toolbar — click the sun/moon icon to switch",
   "setNavProxyDomainsHint": "Use ';' to separate multiple entries",
@@ -2344,7 +3550,13 @@
   "setNavProxyResidueCleared": "System proxy settings cleared — the network should be back to normal",
   "setNavRepair": "Repair",
   "mobNavUpgradeTitle": "What's new in V{version}",
-  "@mobNavUpgradeTitle": {"placeholders": {"version": {"type": "String"}}},
+  "@mobNavUpgradeTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "mobNavUpgradeBody": "Note: HTTPS capture is disabled by default — please install the certificate before enabling HTTPS capture.\n\n1. Added a built-in MCP server so AI assistants (e.g. Claude) can inspect and debug captured traffic;\n2. Added built-in dynamic variables for environments;\n3. Request rewrite rules can now be reordered with move up/down actions;\n4. Fixed a crash triggered by the Windows context menu;\n5. Fixed multi-value headers (e.g. multiple Set-Cookie) being incorrectly merged when handled by scripts or rewrite rules;\n6. Fixed h2c (plaintext HTTP/2) capture, non-ASCII domain normalization, and certificate validation failures for IP hosts;\n7. Fixed an iOS 13 crash, dropped bodies for close-delimited responses, Android VPN destination-port recording, and other issues.\n",
   "appFilterUnknownApp": "Unknown app",
   "appFilterClearInvalid": "clear invalid apps",
@@ -2354,18 +3566,48 @@
   "appFilterSearchHint": "Please enter the application or package name",
   "appFilterShowSystemApps": "Show system apps",
   "contentBodyOriginalMb": "({size} MB original)",
-  "@contentBodyOriginalMb": {"placeholders": {"size": {"type": "String"}}},
+  "@contentBodyOriginalMb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodyOriginalKb": "({size} KB original)",
-  "@contentBodyOriginalKb": {"placeholders": {"size": {"type": "String"}}},
+  "@contentBodyOriginalKb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodyTruncatedTip": "Trimmed to the capture size limit — the full content was not kept",
   "contentBodyTruncatedBadge": "Trimmed {size}",
-  "@contentBodyTruncatedBadge": {"placeholders": {"size": {"type": "String"}}},
+  "@contentBodyTruncatedBadge": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodySaveFailed": "Save failed: {error}",
-  "@contentBodySaveFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@contentBodySaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "contentBodyDecodeTruncatedTip": "Response body is large — the preview only decodes up to the limit (adjustable in Settings → Capture size limit). Preview only; forwarding and saved content are unaffected.",
   "contentBodyPreviewTruncated": "Preview truncated",
   "guideLoadFailed": "Failed to load document: {error}",
-  "@guideLoadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@guideLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "guideSearchHint": "Search documents",
   "guideMarkResetTooltip": "Reset the markup legend",
   "wsRuleMgrFrameActionTitle": "Frame-level actions",
@@ -2381,7 +3623,13 @@
   "wsRuleMgrRewriteNote": "Fragmented, compressed and control frames are not rewritten and are forwarded as-is",
   "wsRuleMgrDelayMs": "Delay (ms)",
   "pcCertInstallToSystem": " Install certificate to this system，{detail}",
-  "@pcCertInstallToSystem": {"placeholders": {"detail": {"type": "String"}}},
+  "@pcCertInstallToSystem": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "pcCertMacTrustHint": "After installation, double-click to select “Always Trust”。\n If installation and opening fail，Please export the certificate and drag it to the system certificate",
   "pcCertWinTrustHint": "choice“Trusted Root Certificate Authority”",
   "pcCertLinuxGuide": "Install the certificate to this system), take Ubuntu as an example to download the certificate:\nFirst copy the certificate to /usr/local/share/ca-certificates/, and then execute update-ca-certificates.\nFor other systems, please search online for installing root certificates.",
@@ -2392,28 +3640,73 @@
   "pcCertInstallSuccess": "Certificate installed successfully",
   "pcCertInstallFailed": "Certificate installation failed, please try manual installation",
   "fuzzerDictFilled": "Filled {count} values from “{name}”",
-  "@fuzzerDictFilled": {"placeholders": {"name": {"type": "String"}, "count": {"type": "String"}}},
+  "@fuzzerDictFilled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDictFailed": "Failed to expand dictionary: {error}",
-  "@fuzzerDictFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@fuzzerDictFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerFillFromDict": "Fill from dictionary",
   "fuzzerPayloadCount": "{count} entries",
-  "@fuzzerPayloadCount": {"placeholders": {"count": {"type": "String"}}},
+  "@fuzzerPayloadCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerRulesTitle": "Anomaly rules (compare with baseline)",
   "fuzzerNoRuleEnabled": "No rule enabled",
   "fuzzerRulesEnabled": "Enabled: {names}",
-  "@fuzzerRulesEnabled": {"placeholders": {"names": {"type": "String"}}},
+  "@fuzzerRulesEnabled": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerRulesNote": "Rules only flag what differs from the baseline; they do not prove a vulnerability — the conclusion is yours.",
   "capLimitUnlimitedOption": "Unlimited (keep full content, default)",
   "capLimitOption128": "128 KB (head and a little content only)",
   "capLimitUnlimitedDesc": "Unlimited: keep the full request/response body",
   "capLimitSizeMb": "Limit {mb} MB: only the first {mb} MB is kept for display",
-  "@capLimitSizeMb": {"placeholders": {"mb": {"type": "String"}}},
+  "@capLimitSizeMb": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
   "capLimitSizeKb": "Limit {kb} KB: only the first {kb} KB is kept for display",
-  "@capLimitSizeKb": {"placeholders": {"kb": {"type": "String"}}},
+  "@capLimitSizeKb": {
+    "placeholders": {
+      "kb": {
+        "type": "String"
+      }
+    }
+  },
   "capLimitDesc": "Bodies over the limit keep only the first N bytes (compressed bodies are released entirely), to reduce memory usage during long captures.\nTrimming happens after forwarding completes and does not affect the actual forwarding.",
   "navBarMultiSeparatorHint": "Use ';' to separate multiple entries",
   "navBarAiEnabled": "Enabled · {model}",
-  "@navBarAiEnabled": {"placeholders": {"model": {"type": "String"}}},
+  "@navBarAiEnabled": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "navBarAiNotConfigured": "Not configured · connect an OpenAI-compatible API to analyze captured requests",
   "navBarLogSubtitle": "View and export app runtime logs",
   "navBarDocSubtitle": "Tutorials · specs · dev docs (built-in offline)",
@@ -2425,38 +3718,98 @@
   "updFailed": "Update failed",
   "updCancelled": "Update cancelled",
   "updDownloadFailed": "Download failed: {error}",
-  "@updDownloadFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@updDownloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "updInvalidUrl": "Invalid download URL",
   "updDownloadHttpError": "Download failed (HTTP {code})",
-  "@updDownloadHttpError": {"placeholders": {"code": {"type": "int"}}},
+  "@updDownloadHttpError": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "updVerifyFailed": "Downloaded file verification failed",
   "updInstallerMissing": "Installer file missing",
   "updInPlaceFailed": "In-place update failed, please install manually",
   "updLaunchFailed": "Failed to launch installer: {error}",
-  "@updLaunchFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@updLaunchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "updPlatformUnsupported": "Auto-install is not supported on this platform",
   "updMacExtractFailed": "Failed to extract the update package: {error}",
-  "@updMacExtractFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@updMacExtractFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "updMacAppNotFound": "App not found in the update package",
   "updMacMultipleApps": "Multiple apps found in the update package; cannot determine the install target",
   "updMacInvalidApp": "Invalid app structure in the update package",
   "updMacAuthFailed": "Authorization was cancelled or the privileged install failed",
   "updWinUacLaunchFailed": "Failed to launch the update script with UAC elevation (ShellExecuteW result {code})",
-  "@updWinUacLaunchFailed": {"placeholders": {"code": {"type": "int"}}},
+  "@updWinUacLaunchFailed": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "updWinUacTimeout": "Timed out waiting for the elevated update script to start; make sure you clicked \"Yes\" in the permission prompt",
   "updWinExeNotFound": "Executable not found in the update package",
   "updWinMultipleExe": "Multiple executables found in the update package; cannot determine which one to launch",
   "domainAddHelper": "Host or URL prefix; * is wildcard",
   "splashSubtitle": "v{version} · Open-source free traffic capture tool",
-  "@splashSubtitle": {"placeholders": {"version": {"type": "String"}}},
+  "@splashSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "bvVariableWord": "variable",
   "bvSampleVariable": "{lb}{lb}{word}{rb}{rb}",
-  "@bvSampleVariable": {"placeholders": {"lb": {"type": "String"}, "word": {"type": "String"}, "rb": {"type": "String"}}},
+  "@bvSampleVariable": {
+    "placeholders": {
+      "lb": {
+        "type": "String"
+      },
+      "word": {
+        "type": "String"
+      },
+      "rb": {
+        "type": "String"
+      }
+    }
+  },
   "imageRenderFailed": "Unable to render image: {error}",
-  "@imageRenderFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@imageRenderFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "copyValue": "Copy Value",
   "repeatBatchCount": "Repeat {count} requests in batch",
-  "@repeatBatchCount": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatBatchCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiSettings": "AI Settings",
   "millisecond": "Millisecond",
   "minute": "Minute",
@@ -2475,46 +3828,136 @@
   "downloadAddress": "Download",
   "beautifyNotSupported": "Beautify is not supported for this type",
   "repeatResultSuccess": "Success: {count}",
-  "@repeatResultSuccess": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatResultSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "repeatResultFail": "Fail: {count}",
-  "@repeatResultFail": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatResultFail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "repeatResultRetry": "Retries: {count}",
-  "@repeatResultRetry": {"placeholders": {"count": {"type": "int"}}},
+  "@repeatResultRetry": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "repeatResultError": "Error: {error}",
-  "@repeatResultError": {"placeholders": {"error": {"type": "String"}}},
+  "@repeatResultError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "exportReqNoFileWritten": "Export failed: none of the {count} requests were written{detail}. Try \"Export HAR\" instead.",
-  "@exportReqNoFileWritten": {"placeholders": {"count": {"type": "int"}, "detail": {"type": "String"}}},
+  "@exportReqNoFileWritten": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "exportImportDialogTitle": "Import / Export",
   "exportImportClipboardTitle": "Import passcode from clipboard",
   "exportImportClipboardDesc": "Paste a previously exported passcode to restore requests into the list",
   "exportImportEmpty": "No requests in the passcode",
   "exportImportedCount": "Imported {count} requests",
-  "@exportImportedCount": {"placeholders": {"count": {"type": "int"}}},
+  "@exportImportedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "exportInvalidPasscodeWithError": "Invalid passcode: {error}",
-  "@exportInvalidPasscodeWithError": {"placeholders": {"error": {"type": "String"}}},
+  "@exportInvalidPasscodeWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "exportCsvDesc": "One request per line; sensitive query params (token / password / signature, etc.) are masked automatically",
   "exportJsonDesc": "Structured JSON with sensitive query params masked automatically, handy for feeding to AI or scripts",
   "exportCopyPasscode": "Copy passcode",
   "exportCopyPasscodeDesc": "Compress the selected requests into passcode text; paste it to others to import",
   "exportPasscodeCopied": "Passcode copied ({count} requests)",
-  "@exportPasscodeCopied": {"placeholders": {"count": {"type": "int"}}},
+  "@exportPasscodeCopied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cmpReportTitle": "=== Request comparison report ===",
   "cmpUrlChanges": "URL changes:",
   "cmpMethodChanges": "Method changes:",
   "cmpResultLabel": "Result: {value}",
-  "@cmpResultLabel": {"placeholders": {"value": {"type": "String"}}},
+  "@cmpResultLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "cmpChars": "chars",
   "wsPayloadEmpty": "Empty frame",
   "wsPayloadImage": "{format} image · {size}",
-  "@wsPayloadImage": {"placeholders": {"format": {"type": "String"}, "size": {"type": "String"}}},
+  "@wsPayloadImage": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "wsPayloadDecompressed": "{compression} decompressed → {kind} · {size}",
-  "@wsPayloadDecompressed": {"placeholders": {"compression": {"type": "String"}, "kind": {"type": "String"}, "size": {"type": "String"}}},
+  "@wsPayloadDecompressed": {
+    "placeholders": {
+      "compression": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "wsPayloadTextKind": "Text",
   "wsPayloadBinaryKind": "Binary",
   "wsPayloadText": "Text · {size}",
-  "@wsPayloadText": {"placeholders": {"size": {"type": "String"}}},
+  "@wsPayloadText": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "wsPayloadBinary": "Binary · {size}",
-  "@wsPayloadBinary": {"placeholders": {"size": {"type": "String"}}},
+  "@wsPayloadBinary": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "securityVerifHsts": "HSTS — makes browsers use HTTPS from now on",
   "securityVerifCsp": "CSP — restricts which resources a page may load and run",
   "securityVerifNoSniff": "Stops browsers from guessing Content-Type on their own",
@@ -2530,15 +3973,51 @@
   "mcpSchedWeekdaySep": ", ",
   "mcpSchedDaily": "Every day",
   "mcpSchedDailyCount": "Every day · {count} times",
-  "@mcpSchedDailyCount": {"placeholders": {"count": {"type": "int"}}},
+  "@mcpSchedDailyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedWeekly": "Every week on {days}",
-  "@mcpSchedWeekly": {"placeholders": {"days": {"type": "String"}}},
+  "@mcpSchedWeekly": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
   "mcpSchedWeeklyCount": "Every week on {days} · {count} times",
-  "@mcpSchedWeeklyCount": {"placeholders": {"days": {"type": "String"}, "count": {"type": "int"}}},
+  "@mcpSchedWeeklyCount": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedInterval": "Every {min} min",
-  "@mcpSchedInterval": {"placeholders": {"min": {"type": "int"}}},
+  "@mcpSchedInterval": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedIntervalCount": "Every {min} min · {count} times",
-  "@mcpSchedIntervalCount": {"placeholders": {"min": {"type": "int"}, "count": {"type": "int"}}},
+  "@mcpSchedIntervalCount": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "mcpSchedOnce": "Once",
   "apiExtractFullCrud": "Full CRUD",
   "apiExtractReadWrite": "Read-write",
@@ -2605,13 +4084,40 @@
   "capturePlanTplApiStepCatalogTitle": "Export the API inventory",
   "capturePlanTplApiStepCatalogDesc": "Open the API Endpoints tool to extract endpoints from the capture data; it can export OpenAPI / Postman / JSON.",
   "fuzzerBodyTruncated": "[Response too large, keeping the first {kb} KB]",
-  "@fuzzerBodyTruncated": {"placeholders": {"kb": {"type": "int"}}},
+  "@fuzzerBodyTruncated": {
+    "placeholders": {
+      "kb": {
+        "type": "int"
+      }
+    }
+  },
   "fuzzerDiffStatus": "Status {from} → {to}",
-  "@fuzzerDiffStatus": {"placeholders": {"from": {"type": "String"}, "to": {"type": "String"}}},
+  "@fuzzerDiffStatus": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDiffLength": "Length {delta}",
-  "@fuzzerDiffLength": {"placeholders": {"delta": {"type": "String"}}},
+  "@fuzzerDiffLength": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDiffDuration": "Duration {pct}%",
-  "@fuzzerDiffDuration": {"placeholders": {"pct": {"type": "String"}}},
+  "@fuzzerDiffDuration": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
   "fuzzerDiffError": "Request error",
   "fuzzerDiffSep": ", ",
   "fuzzerRuleFailedName": "Request failed",
@@ -2650,5 +4156,6 @@
   "rewriteTypeRemoveHeader": "Remove header",
   "rewriteTypeUpdateHeader": "Modify header",
   "sendToDecoder": "Send to Decoder",
-  "sendToAesDecrypt": "Send to AES Decrypt"
+  "sendToAesDecrypt": "Send to AES Decrypt",
+  "toolboxHash": "Hash"
 }

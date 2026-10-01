@@ -1088,6 +1088,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cipher => 'Cipher';
 
   @override
+  String get toolboxHash => 'Hash';
+
+  @override
   String get view => 'View';
 
   @override

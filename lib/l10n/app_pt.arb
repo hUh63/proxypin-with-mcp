@@ -50,7 +50,7 @@
   "downloadRootCaNote": "Observação: se você definir como navegador padrão algo diferente do Safari, clique nesta linha para copiar e colar o link no Safari",
   "profileDownload": "Download de perfil",
   "androidRoot": "Certificado do sistema (dispositivo ROOT)",
-  "androidRootMagisk": "Módulo Magisk: ",
+  "androidRootMagisk": "Módulo Magisk: \nDispositivos Android com ROOT podem usar o módulo de certificado do sistema Magisk ProxyPinCA. Após instalar e reiniciar o celular, verifique nos certificados do sistema se há um certificado ProxyPinCA; se houver, o certificado foi instalado com sucesso.",
   "androidRootRename": "Se o módulo não funcionar, você pode instalar o certificado raiz do sistema seguindo um tutorial online e nomeá-lo {name}",
   "androidRootCADownload": "Baixar certificado do sistema (.0)",
   "androidUserCA": "Certificado do usuário",
@@ -2281,5 +2281,6 @@
   "rewriteTypeUpdateQueryParam": "Modificar parâmetro",
   "rewriteTypeAddHeader": "Adicionar cabeçalho",
   "rewriteTypeRemoveHeader": "Remover cabeçalho",
-  "rewriteTypeUpdateHeader": "Modificar cabeçalho"
+  "rewriteTypeUpdateHeader": "Modificar cabeçalho",
+  "toolboxHash": "Hash"
 }

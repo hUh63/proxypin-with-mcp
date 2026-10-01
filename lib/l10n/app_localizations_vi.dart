@@ -648,14 +648,14 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get generateCADescribe =>
-      'Bạn có chắc muốn tạo chứng chỉ gốc mới không?';
+      'Bạn có chắc muốn tạo chứng chỉ gốc mới không? Nếu xác nhận,\nbạn cần cài lại và tin cậy chứng chỉ mới';
 
   @override
   String get resetDefaultCA => 'Đặt lại chứng chỉ gốc mặc định';
 
   @override
   String get resetDefaultCADescribe =>
-      'Bạn có chắc muốn đặt lại chứng chỉ gốc mặc định không?';
+      'Bạn có chắc muốn đặt lại về chứng chỉ gốc mặc định không?\nChứng chỉ gốc mặc định của ProxyPin giống nhau cho mọi người dùng.';
 
   @override
   String get exportCaP12 => 'Xuất chứng chỉ gốc (.p12)';
@@ -679,7 +679,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get install => 'Cài đặt';
 
   @override
-  String get installCaDescribe => 'Cài đặt chứng chỉ';
+  String get installCaDescribe => 'Cài chứng chỉ Cài đặt > Hồ sơ đã tải > Cài đặt';
 
   @override
   String get trustCaDescribe => 'Tin cậy chứng chỉ trong cài đặt hệ thống';
@@ -689,7 +689,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get androidRootMagisk =>
-      'Magisk module: \nAndroid ROOT devices can be used Magisk ProxyPinCA System Certificate Module, After installing and restarting the phone Check the system certificate to see if there is a ProxyPinCA certificate. If there is, it indicates that the certificate has been successfully installed。';
+      'Mô-đun Magisk: \nThiết bị Android đã ROOT có thể dùng mô-đun chứng chỉ hệ thống Magisk ProxyPinCA. Sau khi cài đặt và khởi động lại điện thoại, hãy kiểm tra trong chứng chỉ hệ thống xem có chứng chỉ ProxyPinCA không; nếu có nghĩa là đã cài đặt chứng chỉ thành công.';
 
   @override
   String androidRootRename(Object name) {
@@ -829,7 +829,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get invalidQRCode => 'Mã QR không hợp lệ';
 
   @override
-  String get remoteConnectFail => 'Kết nối thất bại';
+  String get remoteConnectFail => 'Kết nối thất bại. Kiểm tra xem có cùng mạng LAN và tường lửa có cho phép không; trên iOS cần bật quyền mạng nội bộ';
 
   @override
   String get remoteConnectSuccessTips =>
@@ -936,7 +936,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get logger => 'Nhật ký';
 
   @override
-  String get material3 => 'Material 3';
+  String get material3 => 'Material 3 là phiên bản mới nhất của hệ thống thiết kế mã nguồn mở của Google';
 
   @override
   String get iosVpnBackgroundAudio =>
@@ -1080,6 +1080,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cipher => 'Mật mã';
 
   @override
+  String get toolboxHash => 'Băm';
+
+  @override
   String get view => 'Xem';
 
   @override
@@ -1148,7 +1151,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get sponsorSupport => 'Ủng hộ phát triển dự án';
 
   @override
-  String get sponsorThanks => 'Cảm ơn bạn đã ủng hộ dự án mã nguồn mở này.';
+  String get sponsorThanks => 'Cảm ơn bạn đã ủng hộ dự án mã nguồn mở này, hãy chọn một trong các cách sau để giúp dự án phát triển lâu dài.';
 
   @override
   String get sponsorAfdian => 'AFDIAN';

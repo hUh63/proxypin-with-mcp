@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.24.76 (2026-10-02)
+
+### 工具箱：加解密 / 哈希 工具扩充
+
+- 新增通用对称加解密页 `CipherPage`：AES / DES / 3DES / SM4（国密）/ ChaCha20 / XOR，
+  模式 ECB / CBC，填充 PKCS7 / Zero / None；密钥与 IV 支持 `base64:` 前缀，密文支持 Base64 / Hex
+- 新增 `Sm4Engine`（GM/T 0002-2012），已用官方测试向量校验
+  （`0123456789abcdeffedcba9876543210` → `681edf34d206965e86b3e94f536e4246`）
+- 新增哈希页 `HashPage`：Hash（MD5 / SHA-1 / 224 / 256 / 384 / 512 / SM3）、HMAC、Bcrypt
+  （新增依赖 `bcrypt`）
+- 新增 RSA 页 `RsaPage`：加解密（PKCS#1 v1.5 / OAEP）、签名验签、密钥生成
+- 编码区扩充：Base32、Hex（原已实现但未在工具箱暴露）、HTML 实体、GZip、Deflate、URL 参数解析
+- “加解密”分区由仅 AES 扩展为 AES / DES / 3DES / SM4 / ChaCha20 / XOR / RSA，
+  并新增“哈希”分区（Hash / HMAC / Bcrypt）；新增 i18n key `toolboxHash`
+
+### i18n：修复 7 条长句被截断的译文
+
+- `androidRootMagisk`（5 语言）与 `remoteConnectFail` / `material3` / `installCaDescribe` /
+  `generateCADescribe` / `resetDefaultCADescribe` / `sponsorThanks`（es/id/th/vi）译文丢失
+  后半句或整段说明，已按源串补齐
+
 ## v1.24.75 (2026-10-01)
 
 ### 修复与加固（代码审查落地）

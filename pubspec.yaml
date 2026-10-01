@@ -50,6 +50,7 @@ dependencies:
   archive: ^4.2.0
   http: ^1.2.0
   provider: ^6.1.1
+  bcrypt: ^1.2.0
 
 dev_dependencies:
   flutter_test:

@@ -692,7 +692,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get androidRootMagisk =>
-      'Magisk module: \nAndroid ROOT devices can be used Magisk ProxyPinCA System Certificate Module, After installing and restarting the phone Check the system certificate to see if there is a ProxyPinCA certificate. If there is, it indicates that the certificate has been successfully installed。';
+      'Módulo Magisk: \nDispositivos Android com ROOT podem usar o módulo de certificado do sistema Magisk ProxyPinCA. Após instalar e reiniciar o celular, verifique nos certificados do sistema se há um certificado ProxyPinCA; se houver, o certificado foi instalado com sucesso.';
 
   @override
   String androidRootRename(Object name) {
@@ -1086,6 +1086,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get cipher => 'Cipher';
+
+  @override
+  String get toolboxHash => 'Hash';
 
   @override
   String get view => 'View';
@@ -6820,6 +6823,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get cipher => 'Cifra';
+
+  @override
+  String get toolboxHash => 'Hash';
 
   @override
   String get view => 'Visualizar';
