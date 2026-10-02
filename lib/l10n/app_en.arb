@@ -4157,5 +4157,111 @@
   "rewriteTypeUpdateHeader": "Modify header",
   "sendToDecoder": "Send to Decoder",
   "sendToAesDecrypt": "Send to AES Decrypt",
-  "toolboxHash": "Hash"
+  "toolboxHash": "Hash",
+  "commonAlgorithm": "Algorithm",
+  "commonMode": "Mode",
+  "commonPadding": "Padding",
+  "commonKey": "Key",
+  "commonKeyLength": "Key Length",
+  "commonCompute": "Compute",
+  "commonRun": "Run",
+  "commonFile": "File",
+  "commonVerify": "Verify",
+  "commonGenerate": "Generate",
+  "commonSign": "Sign",
+  "commonMessage": "Message",
+  "commonNotMatch": "Not match",
+  "commonBits": "{n} bits",
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "commonError": "Error: {error}",
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cryptoEncryptFailed": "Encryption failed",
+  "cryptoDecryptFailed": "Decryption failed",
+  "cryptoHexEvenLength": "Hex string must have an even length",
+  "cryptoValidSig": "Valid signature",
+  "cryptoInvalidSig": "Invalid signature",
+  "cryptoRsaKey": "Public / Private Key (PEM)",
+  "cryptoRsaSignature": "Signature (Base64)",
+  "cryptoBcryptHash": "Bcrypt hash",
+  "regexpPattern": "Pattern",
+  "regexpPatternHint": "Enter a regular expression",
+  "regexpDigits": "Digits",
+  "regexpLetters": "Letters",
+  "regexpAlphanumeric": "Alphanumeric",
+  "regexpEmail": "Email",
+  "regexpDate": "Date (YYYY-MM-DD)",
+  "regexpReplaceText": "Replace Text",
+  "regexpReplaceHint": "Enter replacement text",
+  "regexpResult": "Result",
+  "regexpInvalid": "Invalid regular expression: {error}",
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidTimestamp": "Invalid timestamp",
+  "invalidDateTime": "Invalid date time",
+  "wsInvalidUrl": "Invalid URL",
+  "wsClosed": "Closed",
+  "wsDisconnected": "Disconnected",
+  "wsConnectFailed": "Connect failed: {error}",
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsSendFileFailed": "Send file failed: {error}",
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsClearMessages": "Clear messages",
+  "wsJumpLatest": "Jump to latest messages",
+  "jsonTreeTab": "Tree",
+  "editorPlainText": "Plain Text",
+  "jwtHeader": "Header",
+  "jwtPayload": "Payload",
+  "encoderParams": "Params",
+  "toolboxEncodeUrlTip": "URL Encode/Decode",
+  "toolboxEncodeBase64Tip": "Base64 Encode/Decode",
+  "toolboxEncodeUnicodeTip": "Unicode Encode/Decode",
+  "toolboxEncodeBase32Tip": "Base32 Encode/Decode",
+  "toolboxEncodeHexTip": "Hex Encode/Decode",
+  "toolboxEncodeHtmlTip": "HTML Entity Encode/Decode",
+  "toolboxEncodeGzipTip": "GZip Compress/Decompress",
+  "toolboxEncodeDeflateTip": "Deflate/ZLib Compress/Decompress",
+  "toolboxUrlParams": "URL Params",
+  "toolboxUrlParamsTip": "URL Query Params Parse/Build",
+  "toolboxMd5Tip": "MD5 Hash",
+  "toolboxRsaTip": "RSA Encrypt/Decrypt/Sign",
+  "toolboxHashTip": "Hash digest (MD5/SHA/SM3)",
+  "toolboxBcryptTip": "Bcrypt hash",
+  "cipherButtonTip": "{label} Encrypt/Decrypt",
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "toolboxSslPinning": "SSL Pinning"
 }

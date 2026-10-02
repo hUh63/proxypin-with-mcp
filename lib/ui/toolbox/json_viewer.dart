@@ -256,7 +256,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
       appBar: PreferredSize(
         preferredSize: Platforms.isDesktop() ? const Size.fromHeight(23) : const Size.fromHeight(36),
         child: AppBar(
-            title: Text("JSON Viewer", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
+            title: Text(localizations.jsonViewer, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
             centerTitle: true),
       ),
       body: body,

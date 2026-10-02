@@ -13,7 +13,7 @@
   "autoStartupDescribe": "Memulai penangkapan saat membuka aplikasi",
   "bottomNavigation": "Navigasi bawah",
   "bottomNavigationSubtitle": "Tampilkan bar bawah; berlaku setelah restart",
-  "breakpoint": "Breakpoint",
+  "breakpoint": "Titik henti",
   "breakpointRule": "Aturan breakpoint",
   "cancel": "Batal",
   "clear": "Bersihkan",
@@ -96,7 +96,7 @@
   "historyRecordTitle": "{name} - {length} catatan",
   "historySubtitle": "Catatan {requestLength}  file {size}",
   "historyUnSave": "Catatan saat ini belum disimpan",
-  "hosts": "Hosts",
+  "hosts": "Host",
   "httpRequest": "Permintaan HTTP",
   "httpsProxy": "Proxy HTTPS",
   "import": "Impor",
@@ -127,7 +127,7 @@
   "mobileDisplayPacketCapture": "Tampilkan tangkapan di mobile:",
   "mobileScan": "Konfigurasi proxy Wi‑Fi atau pindai dengan aplikasi",
   "modify": "Ubah",
-  "multiple": "Multiple",
+  "multiple": "Beberapa",
   "myQRCode": "QR saya",
   "name": "Nama",
   "newBuilt": "Baru",
@@ -144,7 +144,7 @@
   "port": "Port: ",
   "preference": "Preferensi",
   "privacyPolicy": "Kebijakan privasi",
-  "proxy": "Proxy",
+  "proxy": "Proksi",
   "proxyIgnoreDomain": "Proxy mengabaikan domain",
   "proxyPinSoftware": "Perangkat lunak penangkapan lalu lintas open-source ProxyPin",
   "pullConfigFail": "Gagal mengambil konfigurasi, periksa koneksi",
@@ -196,8 +196,8 @@
   "save": "Simpan",
   "saveSuccess": "Berhasil disimpan",
   "scanCode": "Pindai kode",
-  "script": "Script",
-  "scriptEdit": "Edit script",
+  "script": "Skrip",
+  "scriptEdit": "Edit skrip",
   "scriptUseDescribe": "Gunakan JavaScript untuk mengubah permintaan dan respons",
   "scrollEnd": "Lompat ke akhir",
   "search": "Cari",
@@ -240,11 +240,11 @@
   "viewExport": "Lihat ekspor",
   "windowMode": "Mode jendela",
   "yellow": "Kuning",
-  "encode": "Encode",
+  "encode": "Enkode",
   "view": "Lihat",
   "cipher": "Sandi",
   "other": "Lainnya",
-  "environment": "Environment",
+  "environment": "Lingkungan",
   "environmentVariables": "Variabel Environment",
   "envGlobal": "Global",
   "envManage": "Kelola Environment…",
@@ -252,7 +252,7 @@
   "envDeleteConfirm": "Hapus environment ini?",
   "envEmptyHint": "Belum ada variabel. Klik + untuk menambahkan.",
   "envUsageHint": "Gunakan %s di aturan atau baca/tulis context.env di skrip.",
-  "envInsertBuiltIn": "Insert built-in variable",
+  "envInsertBuiltIn": "Sisipkan variabel bawaan",
   "weakNetwork": "Pembatasan Jaringan",
   "weakNetworkPreset": "Preset",
   "weakNetworkPresetOffline": "Offline",
@@ -748,7 +748,7 @@
   "securityAuditRuleExportSuccess": "Aturan diekspor",
   "securityAuditRuleExportFailed": "Gagal mengekspor:",
   "toolboxGroupUtilities": "Utilitas",
-  "toolboxGroupRuntime": "Runtime & debug",
+  "toolboxGroupRuntime": "Proses & debug",
   "toolboxGroupCapture": "Penangkapan & pemutaran ulang",
   "toolboxLog": "Log",
   "toolboxLogTip": "Lihat dan filter log runtime",
@@ -997,7 +997,7 @@
   "aiEnableSub": "API kompatibel OpenAI; data dikirim ke layanan yang Anda konfigurasi",
   "aiProvider": "Penyedia",
   "aiCustomService": "Layanan kustom…",
-  "aiBaseUrl": "Base URL",
+  "aiBaseUrl": "URL Dasar",
   "aiBaseUrlHelper": "Penyedia kustom — masukkan URL yang kompatibel dengan OpenAI",
   "aiModelLabel": "Model",
   "aiAgentSection": "Mode Agent",
@@ -1101,7 +1101,7 @@
   "cloudSignOut": "Keluar",
   "cloudSignIn": "Masuk",
   "cloudRegister": "Daftar",
-  "cloudRealtime": "Realtime",
+  "cloudRealtime": "Waktu nyata",
   "cloudRealtimeOn": "Terhubung — perubahan dari orang lain masuk secara langsung",
   "cloudRealtimeOff": "Tidak terhubung",
   "cloudWorkspaces": "Ruang kerja cloud",
@@ -1184,7 +1184,7 @@
   "mcpAutoServiceStopped": "Layanan MCP dihentikan",
   "mcpAutoServiceStarted": "Layanan MCP dimulai",
   "mcpAutoServiceNotStarted": "Layanan MCP tidak berjalan. Mulai dulu di halaman Koneksi.",
-  "mcpAutoEditRoot": "Edit Root",
+  "mcpAutoEditRoot": "Ubah Root",
   "mcpAutoAddRoot": "Tambah Root",
   "mcpAutoRootUriHint": "proxypin://workspace atau file:///path/ke/dir",
   "mcpAutoRootUriRequired": "Masukkan Root URI",
@@ -1311,7 +1311,7 @@
   "mcpAutoActStartCapture": "Mulai penangkapan",
   "mcpAutoActExportData": "Ekspor data",
   "mcpAutoFieldMethod": "Metode",
-  "mcpAutoFieldStatusCode": "Status code",
+  "mcpAutoFieldStatusCode": "Kode status",
   "mcpAutoFieldDuration": "Durasi (ms)",
   "mcpAutoFieldHost": "Host",
   "mcpAutoFieldPath": "Path",
@@ -1320,7 +1320,7 @@
   "mcpAutoFieldReqSize": "Ukuran permintaan",
   "mcpAutoFieldRespSize": "Ukuran respons",
   "mcpAutoFieldType": "Tipe",
-  "mcpAutoFieldTimestamp": "Timestamp",
+  "mcpAutoFieldTimestamp": "Stempel waktu",
   "mcpAutoFieldMemory": "Penggunaan memori (MB)",
   "mcpAutoFieldCaptureCount": "Jumlah penangkapan",
   "mcpAutoFieldDisk": "Penggunaan disk (MB)",
@@ -1393,7 +1393,7 @@
   "mcpConnApiUrlCopied": "API URL disalin",
   "mcpConnSseUrl": "SSE URL (transport lama)",
   "mcpConnSseUrlCopied": "SSE URL disalin",
-  "mcpConnHealthCheck": "Health Check",
+  "mcpConnHealthCheck": "Pemeriksaan kesehatan",
   "mcpConnHealthCheckUrlCopied": "URL Health Check disalin",
   "mcpConnFloatingBall": "Bola mengambang",
   "mcpConnFloatingBallDesc": "Bola mengambang di desktop menampilkan status MCP; ketuk untuk panel cepat. Layanan latar depan membantu menjaga aplikasi tetap hidup.",
@@ -2281,5 +2281,111 @@
   "rewriteTypeAddHeader": "Tambah Header",
   "rewriteTypeRemoveHeader": "Hapus Header",
   "rewriteTypeUpdateHeader": "Ubah Header",
-  "toolboxHash": "Hash"
+  "toolboxHash": "Hash",
+  "commonAlgorithm": "Algoritma",
+  "commonMode": "Mode",
+  "commonPadding": "Padding",
+  "commonKey": "Kunci",
+  "commonKeyLength": "Panjang kunci",
+  "commonCompute": "Hitung",
+  "commonRun": "Jalankan",
+  "commonFile": "File",
+  "commonVerify": "Verifikasi",
+  "commonGenerate": "Buat",
+  "commonSign": "Tanda tangani",
+  "commonMessage": "Pesan",
+  "commonNotMatch": "Tidak cocok",
+  "commonBits": "{n} bit",
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "commonError": "Kesalahan: {error}",
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cryptoEncryptFailed": "Enkripsi gagal",
+  "cryptoDecryptFailed": "Dekripsi gagal",
+  "cryptoHexEvenLength": "String hex harus memiliki panjang genap",
+  "cryptoValidSig": "Tanda tangan valid",
+  "cryptoInvalidSig": "Tanda tangan tidak valid",
+  "cryptoRsaKey": "Kunci publik / privat (PEM)",
+  "cryptoRsaSignature": "Tanda tangan (Base64)",
+  "cryptoBcryptHash": "Hash Bcrypt",
+  "regexpPattern": "Pola",
+  "regexpPatternHint": "Masukkan ekspresi reguler",
+  "regexpDigits": "Digit",
+  "regexpLetters": "Huruf",
+  "regexpAlphanumeric": "Alfanumerik",
+  "regexpEmail": "Email",
+  "regexpDate": "Tanggal (YYYY-MM-DD)",
+  "regexpReplaceText": "Teks pengganti",
+  "regexpReplaceHint": "Masukkan teks pengganti",
+  "regexpResult": "Hasil",
+  "regexpInvalid": "Ekspresi reguler tidak valid: {error}",
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidTimestamp": "Stempel waktu tidak valid",
+  "invalidDateTime": "Tanggal waktu tidak valid",
+  "wsInvalidUrl": "URL tidak valid",
+  "wsClosed": "Ditutup",
+  "wsDisconnected": "Terputus",
+  "wsConnectFailed": "Koneksi gagal: {error}",
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsSendFileFailed": "Gagal mengirim file: {error}",
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsClearMessages": "Hapus pesan",
+  "wsJumpLatest": "Lompat ke pesan terbaru",
+  "jsonTreeTab": "Pohon",
+  "editorPlainText": "Teks biasa",
+  "jwtHeader": "Header",
+  "jwtPayload": "Payload",
+  "encoderParams": "Parameter",
+  "toolboxEncodeUrlTip": "Encode/Decode URL",
+  "toolboxEncodeBase64Tip": "Encode/Decode Base64",
+  "toolboxEncodeUnicodeTip": "Encode/Decode Unicode",
+  "toolboxEncodeBase32Tip": "Encode/Decode Base32",
+  "toolboxEncodeHexTip": "Encode/Decode Hex",
+  "toolboxEncodeHtmlTip": "Encode/Decode Entitas HTML",
+  "toolboxEncodeGzipTip": "Kompresi/Dekompresi GZip",
+  "toolboxEncodeDeflateTip": "Kompresi/Dekompresi Deflate/ZLib",
+  "toolboxUrlParams": "Parameter URL",
+  "toolboxUrlParamsTip": "Parse/Build Parameter Kueri URL",
+  "toolboxMd5Tip": "Hash MD5",
+  "toolboxRsaTip": "Enkripsi/Dekripsi/Tanda tangan RSA",
+  "toolboxHashTip": "Digest hash (MD5/SHA/SM3)",
+  "toolboxBcryptTip": "Hash Bcrypt",
+  "cipherButtonTip": "Enkripsi/Dekripsi {label}",
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "toolboxSslPinning": "SSL Pinning"
 }

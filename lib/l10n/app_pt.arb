@@ -891,8 +891,8 @@
   "weakNetworkPresetSlow": "Lenta",
   "weakNetworkPresetWeak": "Rede fraca",
   "weakNetworkLatency": "Latência",
-  "weakNetworkUpload": "Upload",
-  "weakNetworkDownload": "Download",
+  "weakNetworkUpload": "Enviar",
+  "weakNetworkDownload": "Baixar",
   "weakNetworkBandwidth": "Largura de banda",
   "weakNetworkLossRate": "Perda de pacotes",
   "weakNetworkRules": "Regras de URL",
@@ -1394,7 +1394,7 @@
   "mcpConnApiUrlCopied": "URL da API copiada",
   "mcpConnSseUrl": "URL de SSE (transporte antigo)",
   "mcpConnSseUrlCopied": "URL de SSE copiada",
-  "mcpConnHealthCheck": "Health Check",
+  "mcpConnHealthCheck": "Verificação de integridade",
   "mcpConnHealthCheckUrlCopied": "URL de Health Check copiada",
   "mcpConnFloatingBall": "Bola flutuante",
   "mcpConnFloatingBallDesc": "A bola flutuante da área de trabalho mostra o status do MCP; toque nela para um painel rápido. O serviço em primeiro plano ajuda a manter o app ativo.",
@@ -1958,7 +1958,7 @@
   "apiEpAvgResponseTime": "Tempo médio de resposta",
   "apiEpFirstSeen": "Visto pela primeira vez",
   "apiEpLastSeen": "Visto pela última vez",
-  "apiEpTags": "Tags",
+  "apiEpTags": "Etiquetas",
   "perfLoadFailed": "Falha ao carregar os dados: {error}",
   "perfTitle": "Monitoramento de desempenho",
   "perfRetry": "Tentar novamente",
@@ -2282,5 +2282,111 @@
   "rewriteTypeAddHeader": "Adicionar cabeçalho",
   "rewriteTypeRemoveHeader": "Remover cabeçalho",
   "rewriteTypeUpdateHeader": "Modificar cabeçalho",
-  "toolboxHash": "Hash"
+  "toolboxHash": "Hash",
+  "commonAlgorithm": "Algoritmo",
+  "commonMode": "Modo",
+  "commonPadding": "Preenchimento",
+  "commonKey": "Chave",
+  "commonKeyLength": "Comprimento da chave",
+  "commonCompute": "Calcular",
+  "commonRun": "Executar",
+  "commonFile": "Arquivo",
+  "commonVerify": "Verificar",
+  "commonGenerate": "Gerar",
+  "commonSign": "Assinar",
+  "commonMessage": "Mensagem",
+  "commonNotMatch": "Não corresponde",
+  "commonBits": "{n} bits",
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "commonError": "Erro: {error}",
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cryptoEncryptFailed": "Falha na criptografia",
+  "cryptoDecryptFailed": "Falha na descriptografia",
+  "cryptoHexEvenLength": "A string hexadecimal deve ter um comprimento par",
+  "cryptoValidSig": "Assinatura válida",
+  "cryptoInvalidSig": "Assinatura inválida",
+  "cryptoRsaKey": "Chave pública / privada (PEM)",
+  "cryptoRsaSignature": "Assinatura (Base64)",
+  "cryptoBcryptHash": "Hash do Bcrypt",
+  "regexpPattern": "Padrão",
+  "regexpPatternHint": "Insira uma expressão regular",
+  "regexpDigits": "Dígitos",
+  "regexpLetters": "Letras",
+  "regexpAlphanumeric": "Alfanumérico",
+  "regexpEmail": "E-mail",
+  "regexpDate": "Data (YYYY-MM-DD)",
+  "regexpReplaceText": "Texto de substituição",
+  "regexpReplaceHint": "Insira o texto de substituição",
+  "regexpResult": "Resultado",
+  "regexpInvalid": "Expressão regular inválida: {error}",
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidTimestamp": "Carimbo de data/hora inválido",
+  "invalidDateTime": "Data e hora inválidas",
+  "wsInvalidUrl": "URL inválido",
+  "wsClosed": "Fechado",
+  "wsDisconnected": "Desconectado",
+  "wsConnectFailed": "Falha na conexão: {error}",
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsSendFileFailed": "Falha ao enviar o arquivo: {error}",
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsClearMessages": "Limpar mensagens",
+  "wsJumpLatest": "Ir para as mensagens mais recentes",
+  "jsonTreeTab": "Árvore",
+  "editorPlainText": "Texto simples",
+  "jwtHeader": "Cabeçalho",
+  "jwtPayload": "Carga útil",
+  "encoderParams": "Parâmetros",
+  "toolboxEncodeUrlTip": "Codificar/decodificar URL",
+  "toolboxEncodeBase64Tip": "Codificar/decodificar Base64",
+  "toolboxEncodeUnicodeTip": "Codificar/decodificar Unicode",
+  "toolboxEncodeBase32Tip": "Codificar/decodificar Base32",
+  "toolboxEncodeHexTip": "Codificar/decodificar Hex",
+  "toolboxEncodeHtmlTip": "Codificar/decodificar entidades HTML",
+  "toolboxEncodeGzipTip": "Comprimir/descomprimir GZip",
+  "toolboxEncodeDeflateTip": "Comprimir/descomprimir Deflate/ZLib",
+  "toolboxUrlParams": "Parâmetros de URL",
+  "toolboxUrlParamsTip": "Analisar/construir parâmetros de consulta URL",
+  "toolboxMd5Tip": "Hash MD5",
+  "toolboxRsaTip": "Criptografar/descriptografar/assinar RSA",
+  "toolboxHashTip": "Resumo hash (MD5/SHA/SM3)",
+  "toolboxBcryptTip": "Hash Bcrypt",
+  "cipherButtonTip": "Criptografar/descriptografar {label}",
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "toolboxSslPinning": "SSL Pinning"
 }

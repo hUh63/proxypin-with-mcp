@@ -49,7 +49,7 @@ class _AesWidgetState extends State<AesPage> {
       outputController.text = base64.encode(encrypted);
     } catch (e) {
       logger.e("Encryption error: $e");
-      FlutterToastr.show("Encryption failed", context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(localizations.cryptoEncryptFailed, context, duration: 3, backgroundColor: Colors.red);
     }
   }
 
@@ -66,7 +66,7 @@ class _AesWidgetState extends State<AesPage> {
     } catch (e) {
       outputController.text = "";
       logger.e("Decryption error: $e");
-      FlutterToastr.show("Decryption failed", context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(localizations.cryptoDecryptFailed, context, duration: 3, backgroundColor: Colors.red);
     }
   }
 
@@ -92,7 +92,7 @@ class _AesWidgetState extends State<AesPage> {
             SizedBox(
                 width: 120,
                 child: Row(children: [
-                  Text("Mode"),
+                  Text(localizations.commonMode),
                   const SizedBox(width: 15),
                   DropdownButton<String>(
                     value: selectedMode,
@@ -109,7 +109,7 @@ class _AesWidgetState extends State<AesPage> {
             SizedBox(
                 width: 196,
                 child: Row(children: [
-                  Text("Padding"),
+                  Text(localizations.commonPadding),
                   const SizedBox(width: 15),
                   DropdownButton<String>(
                     value: selectedPadding,
@@ -126,12 +126,12 @@ class _AesWidgetState extends State<AesPage> {
             SizedBox(
                 width: 190,
                 child: Row(children: [
-                  Text("Key Length"),
+                  Text(localizations.commonKeyLength),
                   const SizedBox(width: 15),
                   DropdownButton<int>(
                     value: selectedKeyLength,
                     items: keyLengths.map((length) {
-                      return DropdownMenuItem(value: length, child: Text("$length bits"));
+                      return DropdownMenuItem(value: length, child: Text(localizations.commonBits("$length")));
                     }).toList(),
                     onChanged: (value) {
                       setState(() {
@@ -150,7 +150,7 @@ class _AesWidgetState extends State<AesPage> {
                 SizedBox(
                     width: 230,
                     child: Row(children: [
-                      const SizedBox(width: 26, child: Text("Key")),
+                      SizedBox(width: 26, child: Text(localizations.commonKey)),
                       const SizedBox(width: 15),
                       SizedBox(
                           width: 180,

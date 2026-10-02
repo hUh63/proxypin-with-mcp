@@ -4011,5 +4011,111 @@
   "rewriteTypeUpdateHeader": "修改头部",
   "sendToDecoder": "发送到解码器",
   "sendToAesDecrypt": "发送到 AES 解密",
-  "toolboxHash": "哈希"
+  "toolboxHash": "哈希",
+  "commonAlgorithm": "算法",
+  "commonMode": "模式",
+  "commonPadding": "填充",
+  "commonKey": "密钥",
+  "commonKeyLength": "密钥长度",
+  "commonCompute": "计算",
+  "commonRun": "运行",
+  "commonFile": "文件",
+  "commonVerify": "校验",
+  "commonGenerate": "生成",
+  "commonSign": "签名",
+  "commonMessage": "消息",
+  "commonNotMatch": "不匹配",
+  "commonBits": "{n} 位",
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "commonError": "错误：{error}",
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cryptoEncryptFailed": "加密失败",
+  "cryptoDecryptFailed": "解密失败",
+  "cryptoHexEvenLength": "十六进制字符串长度必须为偶数",
+  "cryptoValidSig": "签名有效",
+  "cryptoInvalidSig": "签名无效",
+  "cryptoRsaKey": "公钥 / 私钥（PEM）",
+  "cryptoRsaSignature": "签名（Base64）",
+  "cryptoBcryptHash": "Bcrypt 哈希",
+  "regexpPattern": "表达式",
+  "regexpPatternHint": "输入正则表达式",
+  "regexpDigits": "数字",
+  "regexpLetters": "字母",
+  "regexpAlphanumeric": "字母数字",
+  "regexpEmail": "邮箱",
+  "regexpDate": "日期（YYYY-MM-DD）",
+  "regexpReplaceText": "替换文本",
+  "regexpReplaceHint": "输入替换内容",
+  "regexpResult": "结果",
+  "regexpInvalid": "正则表达式无效：{error}",
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidTimestamp": "无效的时间戳",
+  "invalidDateTime": "无效的日期时间",
+  "wsInvalidUrl": "无效的 URL",
+  "wsClosed": "已关闭",
+  "wsDisconnected": "已断开",
+  "wsConnectFailed": "连接失败：{error}",
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsSendFileFailed": "发送文件失败：{error}",
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsClearMessages": "清空消息",
+  "wsJumpLatest": "跳到最新消息",
+  "jsonTreeTab": "树形",
+  "editorPlainText": "纯文本",
+  "jwtHeader": "头部",
+  "jwtPayload": "载荷",
+  "encoderParams": "参数",
+  "toolboxEncodeUrlTip": "URL 编码/解码",
+  "toolboxEncodeBase64Tip": "Base64 编码/解码",
+  "toolboxEncodeUnicodeTip": "Unicode 编码/解码",
+  "toolboxEncodeBase32Tip": "Base32 编码/解码",
+  "toolboxEncodeHexTip": "Hex 编码/解码",
+  "toolboxEncodeHtmlTip": "HTML 实体编码/解码",
+  "toolboxEncodeGzipTip": "GZip 压缩/解压",
+  "toolboxEncodeDeflateTip": "Deflate/ZLib 压缩/解压",
+  "toolboxUrlParams": "URL 参数",
+  "toolboxUrlParamsTip": "URL 查询参数解析/构建",
+  "toolboxMd5Tip": "MD5 哈希",
+  "toolboxRsaTip": "RSA 加解密/签名",
+  "toolboxHashTip": "哈希摘要（MD5/SHA/SM3）",
+  "toolboxBcryptTip": "Bcrypt 哈希",
+  "cipherButtonTip": "{label} 加密/解密",
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "toolboxSslPinning": "SSL 证书固定"
 }

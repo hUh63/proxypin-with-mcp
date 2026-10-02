@@ -86,7 +86,7 @@ class _HashTabState extends State<_HashTab> {
       _output.text = HashTools.hex(HashTools.digest(_algorithm, bytes));
     } catch (e) {
       _output.text = '';
-      FlutterToastr.show('Error: $e', context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);
     }
   }
 
@@ -98,7 +98,7 @@ class _HashTabState extends State<_HashTab> {
         SizedBox(
           width: 240,
           child: Row(children: [
-            const Text('Algorithm'),
+            Text(localizations.commonAlgorithm),
             const SizedBox(width: 15),
             DropdownButton<String>(
               value: _algorithm,
@@ -122,7 +122,7 @@ class _HashTabState extends State<_HashTab> {
           child: FilledButton(
             style: _roundStyle(),
             onPressed: _compute,
-            child: const Text('Compute'),
+            child: Text(localizations.commonCompute),
           ),
         ),
         const SizedBox(height: 12),
@@ -173,7 +173,7 @@ class _HmacTabState extends State<_HmacTab> {
       _output.text = HashTools.hex(HashTools.hmac(_algorithm, key, bytes));
     } catch (e) {
       _output.text = '';
-      FlutterToastr.show('Error: $e', context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);
     }
   }
 
@@ -185,7 +185,7 @@ class _HmacTabState extends State<_HmacTab> {
         SizedBox(
           width: 240,
           child: Row(children: [
-            const Text('Algorithm'),
+            Text(localizations.commonAlgorithm),
             const SizedBox(width: 15),
             DropdownButton<String>(
               value: _algorithm,
@@ -200,7 +200,7 @@ class _HmacTabState extends State<_HmacTab> {
         TextField(
             controller: _key,
             onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
-            decoration: decoration(context, label: 'Key')),
+            decoration: decoration(context, label: localizations.commonKey)),
         const SizedBox(height: 10),
         SizedBox(
             height: 130,
@@ -214,7 +214,7 @@ class _HmacTabState extends State<_HmacTab> {
           child: FilledButton(
             style: _roundStyle(),
             onPressed: _compute,
-            child: const Text('Compute'),
+            child: Text(localizations.commonCompute),
           ),
         ),
         const SizedBox(height: 12),
@@ -254,19 +254,19 @@ class _BcryptTabState extends State<_BcryptTab> {
       _output.text = BCrypt.hashpw(_password.text, BCrypt.gensalt());
     } catch (e) {
       _output.text = '';
-      FlutterToastr.show('Error: $e', context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);
     }
   }
 
   void _check() {
     try {
       final ok = BCrypt.checkpw(_password.text, _verify.text.trim());
-      setState(() => _result = ok ? 'Match' : 'Not match');
-      FlutterToastr.show(ok ? 'Match' : 'Not match', context,
+      setState(() => _result = ok ? localizations.match : localizations.commonNotMatch);
+      FlutterToastr.show(ok ? localizations.match : localizations.commonNotMatch, context,
           duration: 2, backgroundColor: ok ? Colors.green : Colors.red);
     } catch (e) {
       setState(() => _result = '');
-      FlutterToastr.show('Error: $e', context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);
     }
   }
 
@@ -278,13 +278,13 @@ class _BcryptTabState extends State<_BcryptTab> {
         TextField(
             controller: _password,
             onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
-            decoration: decoration(context, label: 'Password')),
+            decoration: decoration(context, label: localizations.password)),
         const SizedBox(height: 12),
         Center(
           child: FilledButton(
             style: _roundStyle(),
             onPressed: _hash,
-            child: const Text('Hash'),
+            child: Text(localizations.toolboxHash),
           ),
         ),
         const SizedBox(height: 12),
@@ -295,13 +295,13 @@ class _BcryptTabState extends State<_BcryptTab> {
         TextField(
             controller: _verify,
             onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
-            decoration: decoration(context, label: 'bcrypt hash')),
+            decoration: decoration(context, label: localizations.cryptoBcryptHash)),
         const SizedBox(height: 10),
         Center(
           child: OutlinedButton(
             style: _roundStyle(),
             onPressed: _check,
-            child: const Text('Verify'),
+            child: Text(localizations.commonVerify),
           ),
         ),
         if (_result.isNotEmpty) ...[

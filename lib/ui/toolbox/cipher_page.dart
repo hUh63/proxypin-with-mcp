@@ -96,7 +96,7 @@ class _CipherPageState extends State<CipherPage> {
     } catch (e) {
       outputController.text = '';
       logger.e('Cipher error: $e');
-      FlutterToastr.show(encrypt ? 'Encryption failed' : 'Decryption failed', context,
+      FlutterToastr.show(encrypt ? localizations.cryptoEncryptFailed : localizations.cryptoDecryptFailed, context,
           duration: 3, backgroundColor: Colors.red);
     }
   }
@@ -118,7 +118,7 @@ class _CipherPageState extends State<CipherPage> {
                   decoration: decoration(context, label: localizations.inputContent))),
           const SizedBox(height: 12),
           Wrap(spacing: 18, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-            _dropdown('Algorithm', algorithm, CipherTools.algorithms, (v) {
+            _dropdown(localizations.commonAlgorithm, algorithm, CipherTools.algorithms, (v) {
               setState(() {
                 algorithm = v!;
                 final lens = CipherTools.keyLengthsOf(algorithm);
@@ -131,25 +131,25 @@ class _CipherPageState extends State<CipherPage> {
               });
             }, width: 150),
             if (!_isStream)
-              _dropdown('Mode', mode, CipherTools.modes,
+              _dropdown(localizations.commonMode, mode, CipherTools.modes,
                   (v) => setState(() => mode = v!), width: 130),
             if (!_isStream)
-              _dropdown('Padding', padding, CipherTools.paddings,
+              _dropdown(localizations.commonPadding, padding, CipherTools.paddings,
                   (v) => setState(() => padding = v!), width: 160),
             if (_hasKeyLength)
               DropdownButton<int>(
                 value: keyLength,
                 items: CipherTools.keyLengthsOf(algorithm)
-                    .map((l) => DropdownMenuItem<int>(value: l, child: Text('$l bits')))
+                    .map((l) => DropdownMenuItem<int>(value: l, child: Text(localizations.commonBits('$l'))))
                     .toList(),
                 onChanged: (v) => setState(() => keyLength = v!),
               ),
-            _dropdown('Format', outputEncoding, const ['Base64', 'Hex'],
+            _dropdown(localizations.format, outputEncoding, const ['Base64', 'Hex'],
                 (v) => setState(() => outputEncoding = v!), width: 150),
           ]),
           const SizedBox(height: 14),
           Wrap(spacing: 18, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-            _field('Key', keyController, 64),
+            _field(localizations.commonKey, keyController, 64),
             if (!_isStream) _field('IV', ivController, 32),
           ]),
           const SizedBox(height: 18),
@@ -238,10 +238,10 @@ class _CipherPageState extends State<CipherPage> {
   static String _toHex(Uint8List bytes) =>
       bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
-  static Uint8List _hexDecode(String hex) {
+  Uint8List _hexDecode(String hex) {
     final clean = hex.replaceAll(RegExp(r'\s+'), '');
     if (clean.length.isOdd) {
-      throw const FormatException('Hex string must have an even length');
+      throw FormatException(localizations.cryptoHexEvenLength);
     }
     final out = Uint8List(clean.length ~/ 2);
     for (var i = 0; i < out.length; i++) {

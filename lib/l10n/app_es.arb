@@ -252,7 +252,7 @@
   "envDeleteConfirm": "¿Eliminar este entorno?",
   "envEmptyHint": "Sin variables. Pulsa + para añadir.",
   "envUsageHint": "Usa %s en reglas o lee/escribe context.env en scripts.",
-  "envInsertBuiltIn": "Insert built-in variable",
+  "envInsertBuiltIn": "Insertar variable integrada",
   "weakNetwork": "Limitación de red",
   "weakNetworkPreset": "Preajuste",
   "weakNetworkPresetOffline": "Sin conexión",
@@ -1393,7 +1393,7 @@
   "mcpConnApiUrlCopied": "URL de API copiada",
   "mcpConnSseUrl": "URL de SSE (transporte antiguo)",
   "mcpConnSseUrlCopied": "URL de SSE copiada",
-  "mcpConnHealthCheck": "Health Check",
+  "mcpConnHealthCheck": "Comprobación de estado",
   "mcpConnHealthCheckUrlCopied": "URL de Health Check copiada",
   "mcpConnFloatingBall": "Bola flotante",
   "mcpConnFloatingBallDesc": "La bola flotante del escritorio muestra el estado del MCP; tócala para abrir un panel rápido. El servicio en primer plano ayuda a mantener la app activa.",
@@ -2281,5 +2281,111 @@
   "rewriteTypeAddHeader": "Añadir encabezado",
   "rewriteTypeRemoveHeader": "Eliminar encabezado",
   "rewriteTypeUpdateHeader": "Modificar encabezado",
-  "toolboxHash": "Hash"
+  "toolboxHash": "Hash",
+  "commonAlgorithm": "Algoritmo",
+  "commonMode": "Modo",
+  "commonPadding": "Relleno",
+  "commonKey": "Clave",
+  "commonKeyLength": "Longitud de clave",
+  "commonCompute": "Calcular",
+  "commonRun": "Ejecutar",
+  "commonFile": "Archivo",
+  "commonVerify": "Verificar",
+  "commonGenerate": "Generar",
+  "commonSign": "Firmar",
+  "commonMessage": "Mensaje",
+  "commonNotMatch": "No coincide",
+  "commonBits": "{n} bits",
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "commonError": "Error: {error}",
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cryptoEncryptFailed": "Error al cifrar",
+  "cryptoDecryptFailed": "Error al descifrar",
+  "cryptoHexEvenLength": "La cadena hexadecimal debe tener una longitud par",
+  "cryptoValidSig": "Firma válida",
+  "cryptoInvalidSig": "Firma no válida",
+  "cryptoRsaKey": "Clave pública / privada (PEM)",
+  "cryptoRsaSignature": "Firma (Base64)",
+  "cryptoBcryptHash": "Hash de Bcrypt",
+  "regexpPattern": "Patrón",
+  "regexpPatternHint": "Introduce una expresión regular",
+  "regexpDigits": "Dígitos",
+  "regexpLetters": "Letras",
+  "regexpAlphanumeric": "Alfanumérico",
+  "regexpEmail": "Correo electrónico",
+  "regexpDate": "Fecha (YYYY-MM-DD)",
+  "regexpReplaceText": "Texto de reemplazo",
+  "regexpReplaceHint": "Introduce el texto de reemplazo",
+  "regexpResult": "Resultado",
+  "regexpInvalid": "Expresión regular no válida: {error}",
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidTimestamp": "Marca de tiempo no válida",
+  "invalidDateTime": "Fecha y hora no válidas",
+  "wsInvalidUrl": "URL no válida",
+  "wsClosed": "Cerrado",
+  "wsDisconnected": "Desconectado",
+  "wsConnectFailed": "Error de conexión: {error}",
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsSendFileFailed": "Error al enviar el archivo: {error}",
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsClearMessages": "Borrar mensajes",
+  "wsJumpLatest": "Ir a los mensajes más recientes",
+  "jsonTreeTab": "Árbol",
+  "editorPlainText": "Texto sin formato",
+  "jwtHeader": "Encabezado",
+  "jwtPayload": "Carga útil",
+  "encoderParams": "Parámetros",
+  "toolboxEncodeUrlTip": "Codificar/decodificar URL",
+  "toolboxEncodeBase64Tip": "Codificar/decodificar Base64",
+  "toolboxEncodeUnicodeTip": "Codificar/decodificar Unicode",
+  "toolboxEncodeBase32Tip": "Codificar/decodificar Base32",
+  "toolboxEncodeHexTip": "Codificar/decodificar Hex",
+  "toolboxEncodeHtmlTip": "Codificar/decodificar entidades HTML",
+  "toolboxEncodeGzipTip": "Comprimir/descomprimir GZip",
+  "toolboxEncodeDeflateTip": "Comprimir/descomprimir Deflate/ZLib",
+  "toolboxUrlParams": "Parámetros de URL",
+  "toolboxUrlParamsTip": "Analizar/crear parámetros de consulta URL",
+  "toolboxMd5Tip": "Hash MD5",
+  "toolboxRsaTip": "Cifrar/descifrar/firmar RSA",
+  "toolboxHashTip": "Resumen hash (MD5/SHA/SM3)",
+  "toolboxBcryptTip": "Hash Bcrypt",
+  "cipherButtonTip": "Cifrar/descifrar {label}",
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "toolboxSslPinning": "SSL Pinning"
 }

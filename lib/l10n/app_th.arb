@@ -96,8 +96,8 @@
   "historyRecordTitle": "{name} - {length} รายการ",
   "historySubtitle": "รายการ {requestLength}  ไฟล์ {size}",
   "historyUnSave": "รายการปัจจุบันยังไม่ได้บันทึก",
-  "hosts": "Hosts",
-  "httpRequest": "HTTP Request",
+  "hosts": "โฮสต์",
+  "httpRequest": "คำขอ HTTP",
   "httpsProxy": "พร็อกซี HTTPS",
   "import": "นำเข้า",
   "importCaP12": "นำเข้าใบรับรองราก (.p12)",
@@ -252,7 +252,7 @@
   "envDeleteConfirm": "ลบสภาพแวดล้อมนี้?",
   "envEmptyHint": "ยังไม่มีตัวแปร คลิก + เพื่อเพิ่ม",
   "envUsageHint": "ใช้ %s ในกฎ หรืออ่าน/เขียน context.env ในสคริปต์",
-  "envInsertBuiltIn": "Insert built-in variable",
+  "envInsertBuiltIn": "แทรกตัวแปรในตัว",
   "weakNetwork": "จำกัดเครือข่าย",
   "weakNetworkPreset": "พรีเซ็ต",
   "weakNetworkPresetOffline": "ออฟไลน์",
@@ -2281,5 +2281,111 @@
   "rewriteTypeAddHeader": "เพิ่ม Header",
   "rewriteTypeRemoveHeader": "ลบ Header",
   "rewriteTypeUpdateHeader": "แก้ไข Header",
-  "toolboxHash": "แฮช"
+  "toolboxHash": "แฮช",
+  "commonAlgorithm": "อัลกอริทึม",
+  "commonMode": "โหมด",
+  "commonPadding": "การเติม",
+  "commonKey": "คีย์",
+  "commonKeyLength": "ความยาวคีย์",
+  "commonCompute": "คำนวณ",
+  "commonRun": "เรียกใช้",
+  "commonFile": "ไฟล์",
+  "commonVerify": "ตรวจสอบ",
+  "commonGenerate": "สร้าง",
+  "commonSign": "ลงนาม",
+  "commonMessage": "ข้อความ",
+  "commonNotMatch": "ไม่ตรงกัน",
+  "commonBits": "{n} บิต",
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "commonError": "ข้อผิดพลาด: {error}",
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cryptoEncryptFailed": "การเข้ารหัสล้มเหลว",
+  "cryptoDecryptFailed": "การถอดรหัสล้มเหลว",
+  "cryptoHexEvenLength": "สตริง hex ต้องมีความยาวเป็นจำนวนคู่",
+  "cryptoValidSig": "ลายมือชื่อถูกต้อง",
+  "cryptoInvalidSig": "ลายมือชื่อไม่ถูกต้อง",
+  "cryptoRsaKey": "คีย์สาธารณะ / ส่วนตัว (PEM)",
+  "cryptoRsaSignature": "ลายมือชื่อ (Base64)",
+  "cryptoBcryptHash": "แฮช Bcrypt",
+  "regexpPattern": "รูปแบบ",
+  "regexpPatternHint": "ป้อนนิพจน์ทั่วไป",
+  "regexpDigits": "ตัวเลข",
+  "regexpLetters": "ตัวอักษร",
+  "regexpAlphanumeric": "ตัวอักษรและตัวเลข",
+  "regexpEmail": "อีเมล",
+  "regexpDate": "วันที่ (YYYY-MM-DD)",
+  "regexpReplaceText": "ข้อความแทนที่",
+  "regexpReplaceHint": "ป้อนข้อความแทนที่",
+  "regexpResult": "ผลลัพธ์",
+  "regexpInvalid": "นิพจน์ทั่วไปไม่ถูกต้อง: {error}",
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidTimestamp": "ประทับเวลาไม่ถูกต้อง",
+  "invalidDateTime": "วันที่และเวลาไม่ถูกต้อง",
+  "wsInvalidUrl": "URL ไม่ถูกต้อง",
+  "wsClosed": "ปิดแล้ว",
+  "wsDisconnected": "ตัดการเชื่อมต่อแล้ว",
+  "wsConnectFailed": "การเชื่อมต่อล้มเหลว: {error}",
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsSendFileFailed": "ส่งไฟล์ล้มเหลว: {error}",
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsClearMessages": "ล้างข้อความ",
+  "wsJumpLatest": "ไปยังข้อความล่าสุด",
+  "jsonTreeTab": "ต้นไม้",
+  "editorPlainText": "ข้อความล้วน",
+  "jwtHeader": "ส่วนหัว",
+  "jwtPayload": "เพย์โหลด",
+  "encoderParams": "พารามิเตอร์",
+  "toolboxEncodeUrlTip": "เข้ารหัส/ถอดรหัส URL",
+  "toolboxEncodeBase64Tip": "เข้ารหัส/ถอดรหัส Base64",
+  "toolboxEncodeUnicodeTip": "เข้ารหัส/ถอดรหัส Unicode",
+  "toolboxEncodeBase32Tip": "เข้ารหัส/ถอดรหัส Base32",
+  "toolboxEncodeHexTip": "เข้ารหัส/ถอดรหัส Hex",
+  "toolboxEncodeHtmlTip": "เข้ารหัส/ถอดรหัสเอนทิตี HTML",
+  "toolboxEncodeGzipTip": "บีบอัด/แตกไฟล์ GZip",
+  "toolboxEncodeDeflateTip": "บีบอัด/แตกไฟล์ Deflate/ZLib",
+  "toolboxUrlParams": "พารามิเตอร์ URL",
+  "toolboxUrlParamsTip": "แยกวิเคราะห์/สร้างพารามิเตอร์คิวรี URL",
+  "toolboxMd5Tip": "แฮช MD5",
+  "toolboxRsaTip": "เข้ารหัส/ถอดรหัส/ลงนาม RSA",
+  "toolboxHashTip": "ไดเจสต์แฮช (MD5/SHA/SM3)",
+  "toolboxBcryptTip": "แฮช Bcrypt",
+  "cipherButtonTip": "เข้ารหัส/ถอดรหัส {label}",
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "toolboxSslPinning": "SSL Pinning"
 }

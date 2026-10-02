@@ -33,6 +33,15 @@ class _RsaPageState extends State<RsaPage> {
   String signAlgorithm = 'SHA-256';
   bool oaep = false;
 
+  String _modeLabel(String m) => switch (m) {
+        'Encrypt' => localizations.encrypt,
+        'Decrypt' => localizations.decrypt,
+        'Sign' => localizations.commonSign,
+        'Verify' => localizations.commonVerify,
+        'Generate' => localizations.commonGenerate,
+        _ => m,
+      };
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -80,13 +89,13 @@ class _RsaPageState extends State<RsaPage> {
               base64.decode(signatureController.text.trim()),
               keyController.text,
               signAlgorithm);
-          outputController.text = ok ? 'Valid signature' : 'Invalid signature';
+          outputController.text = ok ? localizations.cryptoValidSig : localizations.cryptoInvalidSig;
           break;
       }
     } catch (e) {
       outputController.text = '';
       logger.e('RSA error: $e');
-      FlutterToastr.show('Error: $e', context, duration: 3, backgroundColor: Colors.red);
+      FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);
     }
   }
 
@@ -110,11 +119,11 @@ class _RsaPageState extends State<RsaPage> {
             SizedBox(
               width: 180,
               child: Row(children: [
-                const Text('Mode'),
+                Text(localizations.commonMode),
                 const SizedBox(width: 12),
                 DropdownButton<String>(
                   value: mode,
-                  items: _modes.map((m) => DropdownMenuItem<String>(value: m, child: Text(m))).toList(),
+                  items: _modes.map((m) => DropdownMenuItem<String>(value: m, child: Text(_modeLabel(m)))).toList(),
                   onChanged: (v) => setState(() => mode = v!),
                 ),
               ]),
@@ -123,7 +132,7 @@ class _RsaPageState extends State<RsaPage> {
               SizedBox(
                 width: 240,
                 child: Row(children: [
-                  const Text('Hash'),
+                  Text(localizations.toolboxHash),
                   const SizedBox(width: 12),
                   DropdownButton<String>(
                     value: signAlgorithm,
@@ -148,11 +157,11 @@ class _RsaPageState extends State<RsaPage> {
                     controller: keyController,
                     maxLines: 8,
                     onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
-                    decoration: decoration(context, label: 'Public / Private Key (PEM)'))),
+                    decoration: decoration(context, label: localizations.cryptoRsaKey))),
             const SizedBox(height: 12),
           ],
           if (mode != 'Generate') ...[
-            Text(mode == 'Verify' ? 'Message' : localizations.inputContent),
+            Text(mode == 'Verify' ? localizations.commonMessage : localizations.inputContent),
             const SizedBox(height: 5),
             SizedBox(
                 height: 120,
@@ -167,7 +176,7 @@ class _RsaPageState extends State<RsaPage> {
             TextField(
                 controller: signatureController,
                 onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
-                decoration: decoration(context, label: 'Signature (Base64)')),
+                decoration: decoration(context, label: localizations.cryptoRsaSignature)),
             const SizedBox(height: 12),
           ],
           Center(
@@ -176,7 +185,7 @@ class _RsaPageState extends State<RsaPage> {
                   shape: WidgetStateProperty.all<RoundedRectangleBorder>(
                       RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))),
               onPressed: run,
-              child: Text(mode),
+              child: Text(_modeLabel(mode)),
             ),
           ),
           const SizedBox(height: 14),

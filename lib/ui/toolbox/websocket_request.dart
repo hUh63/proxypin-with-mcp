@@ -76,7 +76,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
   Future<void> _connect() async {
     final url = _urlController.text.trim();
     if (url.isEmpty || !(url.startsWith('ws://') || url.startsWith('wss://'))) {
-      CustomToast.error('Invalid URL').show(context);
+      CustomToast.error(localizations.wsInvalidUrl).show(context);
       return;
     }
     setState(() {
@@ -89,12 +89,12 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
       _connecting = false;
       _listen();
       setState(() {});
-      _addSys('Connected');
+      _addSys(localizations.connected);
     } catch (e) {
       _connecting = false;
       _connected = false;
       setState(() {});
-      _addSys('Connect failed: $e');
+      _addSys(localizations.wsConnectFailed('$e'));
     }
   }
 
@@ -112,11 +112,11 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
       setState(() {});
       _scheduleScroll();
     }, onError: (error) {
-      _addSys('Error: $error');
+      _addSys(localizations.commonError('$error'));
     }, onDone: () {
       _connected = false;
       setState(() {});
-      _addSys('Closed');
+      _addSys(localizations.wsClosed);
     });
   }
 
@@ -126,7 +126,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
     } catch (_) {}
     _connected = false;
     setState(() {});
-    _addSys('Disconnected');
+    _addSys(localizations.wsDisconnected);
   }
 
   void _sendText() {
@@ -164,7 +164,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
       }
     } catch (e) {
       if (mounted) {
-        CustomToast.error('Send file failed: $e').show(context);
+        CustomToast.error(localizations.wsSendFileFailed('$e')).show(context);
       }
     }
   }
@@ -244,7 +244,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
           centerTitle: true,
           actions: [
             IconButton(
-              tooltip: 'Clear messages',
+              tooltip: localizations.wsClearMessages,
               icon: const Icon(Icons.delete),
               onPressed: () => _clearMessages(),
             ),
@@ -377,7 +377,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
               duration: const Duration(milliseconds: 220),
               opacity: !_isNearBottom ? 1.0 : 0.0,
               child: Semantics(
-                label: 'Jump to latest messages',
+                label: localizations.wsJumpLatest,
                 button: true,
                 child: Material(
                   elevation: 10,

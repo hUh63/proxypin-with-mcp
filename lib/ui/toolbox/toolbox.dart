@@ -128,7 +128,7 @@ class _ToolboxState extends State<Toolbox> {
                           Navigator.of(context).push(MaterialPageRoute(builder: (context) => const JsonViewerPage()));
                           return;
                         }
-                        MultiWindow.openWindow("JSON Viewer", 'JsonViewerPage', size: const Size(780, 820));
+                        MultiWindow.openWindow(localizations.jsonViewer, 'JsonViewerPage', size: const Size(780, 820));
                       },
                       icon: Icons.data_object,
                       text: 'JSON'),
@@ -138,7 +138,7 @@ class _ToolboxState extends State<Toolbox> {
                           Navigator.of(context).push(MaterialPageRoute(builder: (context) => const XmlViewerPage()));
                           return;
                         }
-                        MultiWindow.openWindow("XML Viewer", 'XmlViewerPage', size: const Size(900, 700));
+                        MultiWindow.openWindow(localizations.xmlViewer, 'XmlViewerPage', size: const Size(900, 700));
                       },
                       icon: Icons.code,
                       text: 'XML'),
@@ -187,61 +187,61 @@ class _ToolboxState extends State<Toolbox> {
                     onTap: () => encodeWindow(EncoderType.url, context),
                     icon: Icons.link,
                     text: 'URL',
-                    tooltip: 'URL Encode/Decode',
+                    tooltip: localizations.toolboxEncodeUrlTip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.base64, context),
                     icon: Icons.format_bold_outlined,
                     text: 'Base64',
-                    tooltip: 'Base64 Encode/Decode',
+                    tooltip: localizations.toolboxEncodeBase64Tip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.unicode, context),
                     icon: Icons.format_underline_outlined,
                     text: 'Unicode',
-                    tooltip: 'Unicode Encode/Decode',
+                    tooltip: localizations.toolboxEncodeUnicodeTip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.base32, context),
                     icon: Icons.text_fields,
                     text: 'Base32',
-                    tooltip: 'Base32 Encode/Decode',
+                    tooltip: localizations.toolboxEncodeBase32Tip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.hex, context),
                     icon: Icons.numbers,
                     text: 'Hex',
-                    tooltip: 'Hex Encode/Decode',
+                    tooltip: localizations.toolboxEncodeHexTip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.html, context),
                     icon: Icons.html,
                     text: 'HTML',
-                    tooltip: 'HTML Entity Encode/Decode',
+                    tooltip: localizations.toolboxEncodeHtmlTip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.gzip, context),
                     icon: Icons.archive_outlined,
                     text: 'GZip',
-                    tooltip: 'GZip Compress/Decompress',
+                    tooltip: localizations.toolboxEncodeGzipTip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.deflate, context),
                     icon: Icons.compress,
                     text: 'Deflate',
-                    tooltip: 'Deflate/ZLib Compress/Decompress',
+                    tooltip: localizations.toolboxEncodeDeflateTip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.urlParams, context),
                     icon: Icons.manage_search,
-                    text: 'URL Params',
-                    tooltip: 'URL Query Params Parse/Build',
+                    text: localizations.toolboxUrlParams,
+                    tooltip: localizations.toolboxUrlParamsTip,
                   ),
                   IconText(
                     onTap: () => encodeWindow(EncoderType.md5, context),
                     icon: Icons.tag_outlined,
                     text: 'MD5',
-                    tooltip: 'MD5 Hash',
+                    tooltip: localizations.toolboxMd5Tip,
                   ),
                 ],
               ),
@@ -261,7 +261,7 @@ class _ToolboxState extends State<Toolbox> {
                         .push(MaterialPageRoute(builder: (context) => const RsaPage())),
                     icon: Icons.security_outlined,
                     text: 'RSA',
-                    tooltip: 'RSA Encrypt/Decrypt/Sign',
+                    tooltip: localizations.toolboxRsaTip,
                   ),
                 ],
               ),
@@ -275,7 +275,7 @@ class _ToolboxState extends State<Toolbox> {
                         .push(MaterialPageRoute(builder: (context) => const HashPage(initialIndex: 0))),
                     icon: Icons.fingerprint,
                     text: 'Hash',
-                    tooltip: 'Hash digest (MD5/SHA/SM3)',
+                    tooltip: localizations.toolboxHashTip,
                   ),
                   IconText(
                     onTap: () => Navigator.of(context)
@@ -289,7 +289,7 @@ class _ToolboxState extends State<Toolbox> {
                         .push(MaterialPageRoute(builder: (context) => const HashPage(initialIndex: 2))),
                     icon: Icons.password,
                     text: 'Bcrypt',
-                    tooltip: 'Bcrypt hash',
+                    tooltip: localizations.toolboxBcryptTip,
                   ),
                 ],
               ),
@@ -490,7 +490,7 @@ class _ToolboxState extends State<Toolbox> {
                       onTap: () => Navigator.of(context)
                           .push(MaterialPageRoute(builder: (context) => const PinningPage())),
                       icon: Icons.lock_open_outlined,
-                      text: 'SSL Pinning',
+                      text: localizations.toolboxSslPinning,
                       tooltip: localizations.toolboxNavPinningTip),
                   IconText(
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(
@@ -558,7 +558,7 @@ class _ToolboxState extends State<Toolbox> {
           MaterialPageRoute(builder: (context) => CipherPage(initialAlgorithm: algorithm))),
       icon: icon,
       text: label,
-      tooltip: '$label Encrypt/Decrypt',
+      tooltip: localizations.cipherButtonTip(label),
     );
   }
 }

@@ -96,8 +96,8 @@
   "historyRecordTitle": "{name} - {length} bản ghi",
   "historySubtitle": "Bản ghi {requestLength}  tệp {size}",
   "historyUnSave": "Bản ghi hiện tại chưa được lưu",
-  "hosts": "Hosts",
-  "httpRequest": "HTTP Request",
+  "hosts": "Máy chủ",
+  "httpRequest": "Yêu cầu HTTP",
   "httpsProxy": "Proxy HTTPS",
   "import": "Nhập",
   "importCaP12": "Nhập chứng chỉ gốc (.p12)",
@@ -252,7 +252,7 @@
   "envDeleteConfirm": "Xóa môi trường này?",
   "envEmptyHint": "Chưa có biến. Nhấn + để thêm.",
   "envUsageHint": "Dùng %s trong quy tắc hoặc đọc/ghi context.env trong script.",
-  "envInsertBuiltIn": "Insert built-in variable",
+  "envInsertBuiltIn": "Chèn biến tích hợp",
   "weakNetwork": "Giới hạn mạng",
   "weakNetworkPreset": "Cài sẵn",
   "weakNetworkPresetOffline": "Ngoại tuyến",
@@ -1393,7 +1393,7 @@
   "mcpConnApiUrlCopied": "Đã sao chép URL API",
   "mcpConnSseUrl": "URL SSE (truyền tải cũ)",
   "mcpConnSseUrlCopied": "Đã sao chép URL SSE",
-  "mcpConnHealthCheck": "Health Check",
+  "mcpConnHealthCheck": "Kiểm tra trạng thái",
   "mcpConnHealthCheckUrlCopied": "Đã sao chép URL Health Check",
   "mcpConnFloatingBall": "Bóng nổi",
   "mcpConnFloatingBallDesc": "Bóng nổi trên màn hình hiển thị trạng thái MCP; nhấn để mở bảng nhanh. Dịch vụ chạy nền trước giúp ứng dụng khó bị dừng hơn.",
@@ -2281,5 +2281,111 @@
   "rewriteTypeAddHeader": "Thêm header",
   "rewriteTypeRemoveHeader": "Xóa header",
   "rewriteTypeUpdateHeader": "Sửa header",
-  "toolboxHash": "Băm"
+  "toolboxHash": "Băm",
+  "commonAlgorithm": "Thuật toán",
+  "commonMode": "Chế độ",
+  "commonPadding": "Đệm",
+  "commonKey": "Khóa",
+  "commonKeyLength": "Độ dài khóa",
+  "commonCompute": "Tính toán",
+  "commonRun": "Chạy",
+  "commonFile": "Tệp",
+  "commonVerify": "Xác minh",
+  "commonGenerate": "Tạo",
+  "commonSign": "Ký",
+  "commonMessage": "Thông điệp",
+  "commonNotMatch": "Không khớp",
+  "commonBits": "{n} bit",
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "commonError": "Lỗi: {error}",
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cryptoEncryptFailed": "Mã hóa thất bại",
+  "cryptoDecryptFailed": "Giải mã thất bại",
+  "cryptoHexEvenLength": "Chuỗi hex phải có độ dài chẵn",
+  "cryptoValidSig": "Chữ ký hợp lệ",
+  "cryptoInvalidSig": "Chữ ký không hợp lệ",
+  "cryptoRsaKey": "Khóa công khai / riêng tư (PEM)",
+  "cryptoRsaSignature": "Chữ ký (Base64)",
+  "cryptoBcryptHash": "Băm Bcrypt",
+  "regexpPattern": "Mẫu",
+  "regexpPatternHint": "Nhập biểu thức chính quy",
+  "regexpDigits": "Chữ số",
+  "regexpLetters": "Chữ cái",
+  "regexpAlphanumeric": "Chữ và số",
+  "regexpEmail": "Email",
+  "regexpDate": "Ngày (YYYY-MM-DD)",
+  "regexpReplaceText": "Văn bản thay thế",
+  "regexpReplaceHint": "Nhập văn bản thay thế",
+  "regexpResult": "Kết quả",
+  "regexpInvalid": "Biểu thức chính quy không hợp lệ: {error}",
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidTimestamp": "Dấu thời gian không hợp lệ",
+  "invalidDateTime": "Ngày giờ không hợp lệ",
+  "wsInvalidUrl": "URL không hợp lệ",
+  "wsClosed": "Đã đóng",
+  "wsDisconnected": "Đã ngắt kết nối",
+  "wsConnectFailed": "Kết nối thất bại: {error}",
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsSendFileFailed": "Gửi tệp thất bại: {error}",
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wsClearMessages": "Xóa tin nhắn",
+  "wsJumpLatest": "Đi tới tin nhắn mới nhất",
+  "jsonTreeTab": "Dạng cây",
+  "editorPlainText": "Văn bản thuần",
+  "jwtHeader": "Tiêu đề",
+  "jwtPayload": "Tải trọng",
+  "encoderParams": "Tham số",
+  "toolboxEncodeUrlTip": "Mã hóa/Giải mã URL",
+  "toolboxEncodeBase64Tip": "Mã hóa/Giải mã Base64",
+  "toolboxEncodeUnicodeTip": "Mã hóa/Giải mã Unicode",
+  "toolboxEncodeBase32Tip": "Mã hóa/Giải mã Base32",
+  "toolboxEncodeHexTip": "Mã hóa/Giải mã Hex",
+  "toolboxEncodeHtmlTip": "Mã hóa/Giải mã thực thể HTML",
+  "toolboxEncodeGzipTip": "Nén/Giải nén GZip",
+  "toolboxEncodeDeflateTip": "Nén/Giải nén Deflate/ZLib",
+  "toolboxUrlParams": "Tham số URL",
+  "toolboxUrlParamsTip": "Phân tích/Tạo tham số truy vấn URL",
+  "toolboxMd5Tip": "Băm MD5",
+  "toolboxRsaTip": "Mã hóa/Giải mã/Ký RSA",
+  "toolboxHashTip": "Bản tóm tắt băm (MD5/SHA/SM3)",
+  "toolboxBcryptTip": "Băm Bcrypt",
+  "cipherButtonTip": "Mã hóa/Giải mã {label}",
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "toolboxSslPinning": "SSL Pinning"
 }

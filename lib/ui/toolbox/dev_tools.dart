@@ -316,11 +316,11 @@ class _JwtDecodePageState extends State<JwtDecodePage> {
         ],
         if (_header != null) ...[
           const SizedBox(height: 14),
-          _section('Header', _header!),
+          _section(AppLocalizations.of(context)!.jwtHeader, _header!),
         ],
         if (_payload != null) ...[
           const SizedBox(height: 12),
-          _section('Payload', _payload!),
+          _section(AppLocalizations.of(context)!.jwtPayload, _payload!),
         ],
         if (_expText() != null)
           Padding(

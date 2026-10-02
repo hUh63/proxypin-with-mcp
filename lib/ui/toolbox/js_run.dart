@@ -109,7 +109,7 @@ class _JavaScriptState extends State<JavaScript> {
                         }
                       },
                       icon: const Icon(Icons.folder_open),
-                      label: const Text("File")),
+                      label: Text(AppLocalizations.of(context)!.commonFile)),
                   const SizedBox(width: 15),
                   FilledButton.icon(
                       onPressed: () async {
@@ -128,7 +128,7 @@ class _JavaScriptState extends State<JavaScript> {
                         }
                       },
                       icon: const Icon(Icons.play_arrow_rounded),
-                      label: const Text("Run")),
+                      label: Text(AppLocalizations.of(context)!.commonRun)),
                   const SizedBox(width: 10),
                 ],
               ),

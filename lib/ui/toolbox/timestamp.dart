@@ -240,9 +240,9 @@ class _TimestampPageState extends State<TimestampPage> {
         timestampOut.text = DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp) * 1000).format();
         return;
       }
-      FlutterToastr.show('Invalid timestamp', context);
+      FlutterToastr.show(localizations.invalidTimestamp, context);
     } catch (e) {
-      FlutterToastr.show('Invalid timestamp', context);
+      FlutterToastr.show(localizations.invalidTimestamp, context);
     }
   }
 
@@ -252,7 +252,7 @@ class _TimestampPageState extends State<TimestampPage> {
       var date = DateTime.parse(dateTime);
       dateTimeOut.text = (date.millisecondsSinceEpoch ~/ 1000).toString();
     } catch (e) {
-      FlutterToastr.show('Invalid date time', context);
+      FlutterToastr.show(localizations.invalidDateTime, context);
     }
   }
 }

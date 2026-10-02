@@ -46,18 +46,18 @@ class EncoderWidget extends StatefulWidget {
 }
 
 class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateMixin {
-  var tabs = const [
-    Tab(text: 'URL'),
-    Tab(text: 'Base64'),
-    Tab(text: 'Base32'),
-    Tab(text: 'Hex'),
-    Tab(text: 'Unicode'),
-    Tab(text: 'HTML'),
-    Tab(text: 'GZip'),
-    Tab(text: 'Deflate'),
-    Tab(text: 'Params'),
-    Tab(text: 'MD5'),
-  ];
+  List<Tab> _tabs(AppLocalizations l) => [
+        const Tab(text: 'URL'),
+        const Tab(text: 'Base64'),
+        const Tab(text: 'Base32'),
+        const Tab(text: 'Hex'),
+        const Tab(text: 'Unicode'),
+        const Tab(text: 'HTML'),
+        const Tab(text: 'GZip'),
+        const Tab(text: 'Deflate'),
+        Tab(text: l.encoderParams),
+        const Tab(text: 'MD5'),
+      ];
 
   late EncoderType type;
   late TabController tabController;
@@ -73,7 +73,7 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
     type = widget.type;
     inputText = widget.text ?? '';
 
-    tabController = TabController(initialIndex: type.index, length: tabs.length, vsync: this);
+    tabController = TabController(initialIndex: type.index, length: EncoderType.values.length, vsync: this);
     HardwareKeyboard.instance.addHandler(onKeyEvent);
   }
 
@@ -106,7 +106,7 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
           bottom: TabBar(
             controller: tabController,
             isScrollable: true,
-            tabs: tabs,
+            tabs: _tabs(localizations),
             onTap: (index) {
               setState(() {
                 type = EncoderType.values[index];

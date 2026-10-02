@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.24.77 (2026-10-02)
+
+### i18n：工具箱全页面文案本地化（7 语言）
+
+- 新增 64 个 i18n key，覆盖加解密 / 哈希 / RSA / 正则 / 时间戳 / 证书 / WebSocket /
+  JSON·XML 查看器 / JS 运行 / 文本编辑器 / 编码器等页面的标题、按钮、字段、提示与错误提示
+- 新工具页内部标签本地化：`CipherPage`（算法 / 模式 / 填充 / 格式 / 密钥 / IV）、
+  `HashPage`（算法 / 计算 / 口令 / 校验 / Bcrypt）、`RsaPage`（模式 / 哈希 / OAEP / 公钥 / 消息 / 签名）
+- 旧工具页面本地化：AES、证书哈希（文件 / 清空 / 运行）、正则（表达式 / 数字 / 字母 / 邮箱 /
+  日期 / 替换 / 运行 / 结果）、时间戳、WebSocket（连接状态 / 清空 / 跳转最新）、
+  JSON / XML 查看器标题、JWT（Header / Payload）、JS 运行（文件 / 运行）、
+  文本编辑器（纯文本）、编码器（参数页签）、工具箱编码/加解密条目的提示语
+
+### i18n：补齐小语种 same-as-en 待译项
+
+- 印尼语（id）16 项：`breakpoint` / `script` / `proxy` / `multiple` / `encode` / `scriptEdit` /
+  `environment` / `hosts` / `envInsertBuiltIn` / `aiBaseUrl` / `cloudRealtime` / `mcpAutoEditRoot` /
+  `mcpAutoFieldStatusCode` / `mcpAutoFieldTimestamp` / `mcpConnHealthCheck` / `toolboxGroupRuntime`
+- 西语 2 项、葡语 4 项、泰语 3 项、越语 4 项
+
 ## v1.24.76 (2026-10-02)
 
 ### 工具箱：加解密 / 哈希 工具扩充

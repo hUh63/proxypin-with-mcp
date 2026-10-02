@@ -313,7 +313,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           underline: const SizedBox.shrink(),
           icon: const Icon(Icons.arrow_drop_down, size: 18),
           items: _langs
-              .map((l) => DropdownMenuItem(value: l, child: Text(l.label, style: const TextStyle(fontSize: 12.5))))
+              .map((l) => DropdownMenuItem(value: l, child: Text(l.label == 'Plain Text' ? localizations.editorPlainText : l.label, style: const TextStyle(fontSize: 12.5))))
               .toList(),
           onChanged: (v) {
             if (v == null || v == _lang) return;
