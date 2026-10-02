@@ -32,6 +32,7 @@ import 'package:proxypin/utils/platform.dart';
 import 'cert_hash.dart';
 import 'cipher_page.dart';
 import 'sign_page.dart';
+import 'device_profile_page.dart';
 import 'encoder.dart';
 import 'hash_page.dart';
 import 'rsa_page.dart';
@@ -270,6 +271,13 @@ class _ToolboxState extends State<Toolbox> {
                     icon: Icons.verified_outlined,
                     text: localizations.toolboxSign,
                     tooltip: localizations.toolboxSign,
+                  ),
+                  IconText(
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) => const DeviceProfilePage())),
+                    icon: Icons.smartphone,
+                    text: localizations.toolboxDevice,
+                    tooltip: localizations.toolboxDevice,
                   ),
                 ],
               ),

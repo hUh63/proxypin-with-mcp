@@ -2404,5 +2404,8 @@
   "signAppVersion": "Versão do app",
   "signVersionCode": "Código da versão",
   "signMssdk": "Código da versão do MSSDK",
-  "signParamsHint": "Estes parâmetros dependem da versão; ajuste-os conforme a versão do app."
+  "signParamsHint": "Estes parâmetros dependem da versão; ajuste-os conforme a versão do app.",
+  "toolboxDevice": "Perfil do dispositivo",
+  "deviceModel": "Modelo",
+  "deviceHint": "Escolha um modelo de dispositivo e toque em Gerar para sintetizar uma impressão digital consistente."
 }

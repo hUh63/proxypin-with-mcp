@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.24.79 (2026-10-03)
+
+### 新增：设备指纹生成器
+
+- 工具箱新增「设备指纹」页：按机型模板一键合成一份**内部自洽**的 Android 设备指纹
+  （openudid / clientudid / cdid / req_id / google_aid / udid / 序列号 / MAC + 硬件规格
+  + 系统信息 + 应用元数据），可一键复制为查询串
+- 内置机型模板：小米 14 / 13、华为 Mate 60 Pro / P60 Pro、荣耀 Magic 6 Pro、OPPO Find X7、
+  vivo X100、Pixel 8 Pro、三星 S24 Ultra、一加 12
+- 模板以常量表内置（见 `lib/network/util/device_profile.dart` 的 `DeviceProfile.templates`），
+  字段名与线上参数一致，平台方调整时可扩展模板而不影响调用方
+
 ## v1.24.78 (2026-10-03)
 
 ### 新增：字节系 / 抖音签名工具

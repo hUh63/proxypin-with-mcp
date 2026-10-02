@@ -4279,5 +4279,8 @@
   "signAppVersion": "App version",
   "signVersionCode": "Version code",
   "signMssdk": "MSSDK version code",
-  "signParamsHint": "These parameters are version-bound; adjust them to match the target App version."
+  "signParamsHint": "These parameters are version-bound; adjust them to match the target App version.",
+  "toolboxDevice": "Device Profile",
+  "deviceModel": "Model",
+  "deviceHint": "Choose a device model and tap Generate to synthesize a consistent device fingerprint."
 }

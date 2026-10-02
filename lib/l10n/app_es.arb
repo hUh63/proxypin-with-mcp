@@ -2403,5 +2403,8 @@
   "signAppVersion": "Versión de la app",
   "signVersionCode": "Código de versión",
   "signMssdk": "Código de versión de MSSDK",
-  "signParamsHint": "Estos parámetros dependen de la versión; ajústalos según la versión de la app."
+  "signParamsHint": "Estos parámetros dependen de la versión; ajústalos según la versión de la app.",
+  "toolboxDevice": "Perfil de dispositivo",
+  "deviceModel": "Modelo",
+  "deviceHint": "Elige un modelo de dispositivo y pulsa Generar para sintetizar una huella coherente."
 }

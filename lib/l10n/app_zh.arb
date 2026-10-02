@@ -4133,5 +4133,8 @@
   "signAppVersion": "应用版本",
   "signVersionCode": "版本号",
   "signMssdk": "MSSDK 版本号",
-  "signParamsHint": "这些参数随版本变化，请按目标 App 版本调整。"
+  "signParamsHint": "这些参数随版本变化，请按目标 App 版本调整。",
+  "toolboxDevice": "设备指纹",
+  "deviceModel": "机型",
+  "deviceHint": "选择机型后点击「生成」，合成一份自洽的设备指纹。"
 }

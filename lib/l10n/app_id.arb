@@ -2403,5 +2403,8 @@
   "signAppVersion": "Versi aplikasi",
   "signVersionCode": "Kode versi",
   "signMssdk": "Kode versi MSSDK",
-  "signParamsHint": "Parameter ini bergantung pada versi; sesuaikan dengan versi aplikasi target."
+  "signParamsHint": "Parameter ini bergantung pada versi; sesuaikan dengan versi aplikasi target.",
+  "toolboxDevice": "Profil Perangkat",
+  "deviceModel": "Model",
+  "deviceHint": "Pilih model perangkat lalu ketuk Buat untuk menyintesis sidik jari perangkat yang konsisten."
 }

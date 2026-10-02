@@ -2403,5 +2403,8 @@
   "signAppVersion": "Phiên bản ứng dụng",
   "signVersionCode": "Mã phiên bản",
   "signMssdk": "Mã phiên bản MSSDK",
-  "signParamsHint": "Các tham số này phụ thuộc phiên bản; hãy điều chỉnh cho khớp với phiên bản ứng dụng."
+  "signParamsHint": "Các tham số này phụ thuộc phiên bản; hãy điều chỉnh cho khớp với phiên bản ứng dụng.",
+  "toolboxDevice": "Hồ sơ thiết bị",
+  "deviceModel": "Mẫu máy",
+  "deviceHint": "Chọn mẫu thiết bị rồi nhấn Tạo để tổng hợp dấu vân tay thiết bị nhất quán."
 }
