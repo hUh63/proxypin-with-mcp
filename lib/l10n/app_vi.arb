@@ -2387,5 +2387,21 @@
       }
     }
   },
-  "toolboxSslPinning": "SSL Pinning"
+  "toolboxSslPinning": "SSL Pinning",
+  "toolboxSign": "Chữ ký ByteDance",
+  "signTabSign": "Chữ ký",
+  "signTabWeb": "Web (a_bogus)",
+  "signTabParams": "Tham số",
+  "signPlatform": "Nền tảng",
+  "signUrl": "URL / Truy vấn",
+  "signUrlHint": "Dán URL đầy đủ hoặc chỉ chuỗi truy vấn",
+  "signBody": "Nội dung yêu cầu (tùy chọn)",
+  "signCompute": "Tạo",
+  "signHeaders": "Tiêu đề chữ ký",
+  "signCopyAll": "Sao chép tất cả",
+  "signNeedInput": "Nhập URL hoặc chuỗi truy vấn",
+  "signAppVersion": "Phiên bản ứng dụng",
+  "signVersionCode": "Mã phiên bản",
+  "signMssdk": "Mã phiên bản MSSDK",
+  "signParamsHint": "Các tham số này phụ thuộc phiên bản; hãy điều chỉnh cho khớp với phiên bản ứng dụng."
 }

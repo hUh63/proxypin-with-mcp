@@ -4117,5 +4117,21 @@
       }
     }
   },
-  "toolboxSslPinning": "SSL 证书固定"
+  "toolboxSslPinning": "SSL 证书固定",
+  "toolboxSign": "字节签名",
+  "signTabSign": "签名",
+  "signTabWeb": "Web 签名",
+  "signTabParams": "参数",
+  "signPlatform": "平台",
+  "signUrl": "URL / 查询串",
+  "signUrlHint": "粘贴完整 URL 或仅查询串",
+  "signBody": "请求体（可选）",
+  "signCompute": "生成",
+  "signHeaders": "签名头",
+  "signCopyAll": "全部复制",
+  "signNeedInput": "请输入 URL 或查询串",
+  "signAppVersion": "应用版本",
+  "signVersionCode": "版本号",
+  "signMssdk": "MSSDK 版本号",
+  "signParamsHint": "这些参数随版本变化，请按目标 App 版本调整。"
 }

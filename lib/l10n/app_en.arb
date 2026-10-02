@@ -4263,5 +4263,21 @@
       }
     }
   },
-  "toolboxSslPinning": "SSL Pinning"
+  "toolboxSslPinning": "SSL Pinning",
+  "toolboxSign": "ByteDance Signatures",
+  "signTabSign": "Signatures",
+  "signTabWeb": "Web (a_bogus)",
+  "signTabParams": "Parameters",
+  "signPlatform": "Platform",
+  "signUrl": "URL / Query",
+  "signUrlHint": "Paste a full URL or just the query string",
+  "signBody": "Request Body (optional)",
+  "signCompute": "Generate",
+  "signHeaders": "Signature headers",
+  "signCopyAll": "Copy all",
+  "signNeedInput": "Enter a URL or query string",
+  "signAppVersion": "App version",
+  "signVersionCode": "Version code",
+  "signMssdk": "MSSDK version code",
+  "signParamsHint": "These parameters are version-bound; adjust them to match the target App version."
 }

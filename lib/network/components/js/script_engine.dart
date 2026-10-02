@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_js/flutter_js.dart';
 import 'package:proxypin/network/components/js/xhr.dart';
 
@@ -132,8 +133,26 @@ class JavaScriptEngine {
     // 上游 #645：注入全局 clearRequests() / removeRequest(id)，让脚本能自行清理列表
     RequestsBridge.registerRequests(flutterJs);
 
+    // 注入字节系/抖音签名库：脚本里可直接调用 DouyinSign.*（Gorgon/Helios/a_bogus 等）
+    await _loadDouyinSignLib(flutterJs);
+
     flutterJs.enableFetch2();
     return flutterJs;
+  }
+
+  static String? _douyinSignSource;
+
+  /// 把打包在 assets 里的签名库注入运行时（幂等：源码只读一次）。
+  static Future<void> _loadDouyinSignLib(JavascriptRuntime flutterJs) async {
+    try {
+      _douyinSignSource ??= await rootBundle.loadString('assets/js/douyin_sign.js');
+      final result = flutterJs.evaluate(_douyinSignSource!);
+      if (result.isError) {
+        logger.w('注入签名库失败: ${result.stringResult}');
+      }
+    } catch (e) {
+      logger.w('注入签名库异常: $e');
+    }
   }
 
   /// js结果转换

@@ -2387,5 +2387,21 @@
       }
     }
   },
-  "toolboxSslPinning": "SSL Pinning"
+  "toolboxSslPinning": "SSL Pinning",
+  "toolboxSign": "Tanda Tangan ByteDance",
+  "signTabSign": "Tanda Tangan",
+  "signTabWeb": "Web (a_bogus)",
+  "signTabParams": "Parameter",
+  "signPlatform": "Platform",
+  "signUrl": "URL / Kueri",
+  "signUrlHint": "Tempel URL lengkap atau hanya string kueri",
+  "signBody": "Body Permintaan (opsional)",
+  "signCompute": "Buat",
+  "signHeaders": "Header tanda tangan",
+  "signCopyAll": "Salin semua",
+  "signNeedInput": "Masukkan URL atau string kueri",
+  "signAppVersion": "Versi aplikasi",
+  "signVersionCode": "Kode versi",
+  "signMssdk": "Kode versi MSSDK",
+  "signParamsHint": "Parameter ini bergantung pada versi; sesuaikan dengan versi aplikasi target."
 }

@@ -2388,5 +2388,21 @@
       }
     }
   },
-  "toolboxSslPinning": "SSL Pinning"
+  "toolboxSslPinning": "SSL Pinning",
+  "toolboxSign": "Assinaturas ByteDance",
+  "signTabSign": "Assinaturas",
+  "signTabWeb": "Web (a_bogus)",
+  "signTabParams": "Parâmetros",
+  "signPlatform": "Plataforma",
+  "signUrl": "URL / Consulta",
+  "signUrlHint": "Cole uma URL completa ou apenas a string de consulta",
+  "signBody": "Corpo da solicitação (opcional)",
+  "signCompute": "Gerar",
+  "signHeaders": "Cabeçalhos de assinatura",
+  "signCopyAll": "Copiar tudo",
+  "signNeedInput": "Insira uma URL ou string de consulta",
+  "signAppVersion": "Versão do app",
+  "signVersionCode": "Código da versão",
+  "signMssdk": "Código da versão do MSSDK",
+  "signParamsHint": "Estes parâmetros dependem da versão; ajuste-os conforme a versão do app."
 }

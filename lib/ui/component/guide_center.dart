@@ -47,6 +47,7 @@ class GuideCenter {
     GuideDoc('ssl_pinning', '抓不到 HTTPS 排查', '功能指南', 'docs/ssl_pinning_guide.md', Icons.enhanced_encryption_outlined),
     GuideDoc('calculator', '计算器与批处理', '功能指南', 'docs/calculator_guide.md', Icons.calculate_outlined),
     GuideDoc('js_restore', 'JS 还原指南', '功能指南', 'docs/js_restore_guide.md', Icons.auto_fix_high_outlined),
+    GuideDoc('douyin', '字节签名与抓包', '功能指南', 'docs/douyin_guide.md', Icons.vpn_key_outlined),
     GuideDoc('fuzzer', '手动 Fuzz 指南', '功能指南', 'docs/fuzzer_guide.md', Icons.science_outlined),
     GuideDoc('waf', 'WAF 变异与探测', '功能指南', 'docs/waf_guide.md', Icons.security_outlined),
     GuideDoc('extension_guide', '扩展与定制指南', '功能指南', 'docs/extension_guide.md', Icons.extension_outlined),

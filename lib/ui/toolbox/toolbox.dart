@@ -31,6 +31,7 @@ import 'package:proxypin/utils/platform.dart';
 
 import 'cert_hash.dart';
 import 'cipher_page.dart';
+import 'sign_page.dart';
 import 'encoder.dart';
 import 'hash_page.dart';
 import 'rsa_page.dart';
@@ -262,6 +263,13 @@ class _ToolboxState extends State<Toolbox> {
                     icon: Icons.security_outlined,
                     text: 'RSA',
                     tooltip: localizations.toolboxRsaTip,
+                  ),
+                  IconText(
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) => const SignPage())),
+                    icon: Icons.verified_outlined,
+                    text: localizations.toolboxSign,
+                    tooltip: localizations.toolboxSign,
                   ),
                 ],
               ),

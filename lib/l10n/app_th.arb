@@ -2387,5 +2387,21 @@
       }
     }
   },
-  "toolboxSslPinning": "SSL Pinning"
+  "toolboxSslPinning": "SSL Pinning",
+  "toolboxSign": "ลายเซ็น ByteDance",
+  "signTabSign": "ลายเซ็น",
+  "signTabWeb": "เว็บ (a_bogus)",
+  "signTabParams": "พารามิเตอร์",
+  "signPlatform": "แพลตฟอร์ม",
+  "signUrl": "URL / คิวรี",
+  "signUrlHint": "วาง URL แบบเต็มหรือเฉพาะสตริงคิวรี",
+  "signBody": "เนื้อหาคำขอ (ไม่บังคับ)",
+  "signCompute": "สร้าง",
+  "signHeaders": "ส่วนหัวลายเซ็น",
+  "signCopyAll": "คัดลอกทั้งหมด",
+  "signNeedInput": "ป้อน URL หรือสตริงคิวรี",
+  "signAppVersion": "เวอร์ชันแอป",
+  "signVersionCode": "รหัสเวอร์ชัน",
+  "signMssdk": "รหัสเวอร์ชัน MSSDK",
+  "signParamsHint": "พารามิเตอร์เหล่านี้ผูกกับเวอร์ชัน โปรดปรับให้ตรงกับเวอร์ชันแอปเป้าหมาย"
 }

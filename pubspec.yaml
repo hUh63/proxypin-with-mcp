@@ -78,6 +78,7 @@ flutter:
     - docs/ssl_pinning_guide.md
     - docs/calculator_guide.md
     - docs/js_restore_guide.md
+    - docs/douyin_guide.md
     - docs/fuzzer_guide.md
     - docs/waf_guide.md
     - docs/overview.md

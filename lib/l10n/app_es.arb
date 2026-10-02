@@ -2387,5 +2387,21 @@
       }
     }
   },
-  "toolboxSslPinning": "SSL Pinning"
+  "toolboxSslPinning": "SSL Pinning",
+  "toolboxSign": "Firmas de ByteDance",
+  "signTabSign": "Firmas",
+  "signTabWeb": "Web (a_bogus)",
+  "signTabParams": "Parámetros",
+  "signPlatform": "Plataforma",
+  "signUrl": "URL / Consulta",
+  "signUrlHint": "Pega una URL completa o solo la cadena de consulta",
+  "signBody": "Cuerpo de la solicitud (opcional)",
+  "signCompute": "Generar",
+  "signHeaders": "Encabezados de firma",
+  "signCopyAll": "Copiar todo",
+  "signNeedInput": "Introduce una URL o cadena de consulta",
+  "signAppVersion": "Versión de la app",
+  "signVersionCode": "Código de versión",
+  "signMssdk": "Código de versión de MSSDK",
+  "signParamsHint": "Estos parámetros dependen de la versión; ajústalos según la versión de la app."
 }

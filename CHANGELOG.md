@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.24.78 (2026-10-03)
+
+### 新增：字节系 / 抖音签名工具
+
+- 工具箱新增「字节签名」页：输入 URL/查询串与请求体，一键生成
+  `X-Gorgon`（Android 8404 + iOS 变体）、`X-Helios`（Android / iOS）、`X-SS-Stub`、
+  `X-Khronos`、`X-Argus`、`X-Ladon`、`X-TT-Trace-Id`；「Web 签名」页可算 `X-Bogus` / `a_bogus`
+- 底层算法以纯 JS 实现并打包为 `assets/js/douyin_sign.js`（含 MD5 / SM3 变体 / AES-128 / RC4），
+  已用参考实现**逐字节校验通过**：X-Gorgon(8404) / X-Helios(Android+iOS) / X-SS-Stub /
+  X-Bogus / a_bogus
+- **降低版本耦合**：AID / 应用版本 / 版本号 / License ID / MSSDK 版本号全部参数化，
+  「参数」标签页可直接调整，无需改代码即可适配新版本
+- 脚本引擎注入签名库（`assets/js/douyin_sign.js`）：脚本内可直接调用 `DouyinSign.*`，
+  例如在 `onRequest` 里为抖音 web 请求自动补 `a_bogus` / `X-Bogus`
+
+### 文档
+
+- 指南中心新增《字节签名与抓包》（`docs/douyin_guide.md`）：签名头速查、工具箱/脚本用法、
+  抓不到明文的常见原因与设备要点、版本耦合说明
+
+### 说明
+
+- 未纳入 `X-Medusa`、`TTEncrypt v5`（依赖 Protobuf 与官方原生库，移植/校验成本高，暂不内置）
+
 ## v1.24.77 (2026-10-02)
 
 ### i18n：工具箱全页面文案本地化（7 语言）
