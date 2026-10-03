@@ -31,6 +31,20 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
   //h2 stream dependency Sequential exec
   SequentialTaskQueue taskQueue = SequentialTaskQueue();
 
+  /// HTTP/1.1 读事件串行化专用队列。
+  ///
+  /// `Socket.listen` 的回调不会等待返回的 Future：上一条读事件若在
+  /// `channelRead` 的 `await`（如 `remoteChannel.writeBytes`）期间尚未结束，
+  /// 下一条读事件就会并发进入并再次读写**同一个** `buffer`，
+  /// 造成帧边界/请求体交错（详见 docs/network_robustness.md §1）。
+  /// 这里把每个读事件排入本队列，保证同一连接内读处理严格串行。
+  ///
+  /// 注意：这里**不**改用 taskQueue（其 id 语义是 h2 streamId、且带依赖排序），
+  /// 也**不**把 `channelRead` 内部的递归改成队列任务——那会自锁；
+  /// 本方案只闸住「两个 socket 读事件之间」的重叠，递归仍在同一任务内完成。
+  final SequentialTaskQueue readQueue = SequentialTaskQueue();
+  int _readSeq = 0;
+
   //正在处理中的读事件(HTTP/1.1 不走 taskQueue). 两处 listen(Network.listen / ChannelDispatcher.listen)
   //都汇聚到本 dispatcher 的 channelRead/channelInactive, 故在此层等待可覆盖所有连接类型.
   //channelInactive 需等待其完成再关闭对端连接, 避免服务端关闭时提前关闭客户端连接导致 socket hang up.
@@ -54,11 +68,20 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       channel.dispatcher.exceptionCaught(channelContext, channel, error, trace: trace);
       return null;
     });
-    final subscription = channel.socket.listen((data) => channel.dispatcher.channelRead(channelContext, channel, data),
+    final subscription = channel.socket.listen((data) => enqueueRead(channelContext, channel, data),
         onError: (error, trace) => channel.dispatcher.exceptionCaught(channelContext, channel, error, trace: trace),
         onDone: () => channel.dispatcher.channelInactive(channelContext, channel));
     // 记录读订阅：通道关闭时取消，避免停止后仍有残留回调处理数据
     channel.attachSocketSubscription(subscription);
+  }
+
+  /// 把一次 socket 读事件排入串行队列（HTTP/1.1 读事件串行化的统一入口）。
+  ///
+  /// 所有读事件入口（[listen] 与 `Network.onEvent`）都必须走这里，
+  /// 否则仍会有并发读事件改写共享 [buffer]。
+  void enqueueRead(ChannelContext channelContext, Channel channel, Uint8List data) {
+    readQueue.add(++_readSeq, null, () => channelRead(channelContext, channel, data),
+        onError: (error, trace) => exceptionCaught(channelContext, channel, error, trace: trace));
   }
 
   @override
@@ -368,6 +391,8 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
   channelInactive(ChannelContext channelContext, Channel channel) async {
     if (identical(channel, channelContext.clientChannel)) channelContext.http2Requests.close();
     await taskQueue.waitForAll();
+    // 等待已排队的读事件处理完成（读事件串行化队列），再判断是否还有在途读事件。
+    await readQueue.waitForAll();
     //等待正在处理中的读事件完成(例如 HTTP/1.1 响应写回客户端), 避免服务端关闭时提前关闭对端连接导致 socket hang up。
     // 加超时上限：任一读事件因对端不释放而长期挂起时不再无限等待，避免连接/socket 永久悬挂。
     final deadline = DateTime.now().add(const Duration(seconds: 5));

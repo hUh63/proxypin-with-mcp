@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.24.82 (2026-10-04)
+
+### 新增：内置抖音抓包方案（抖音专项优先）
+
+本应用首先是**面向抖音**的抓包工具，采集方案（抓包配置）按此定位排序：
+
+- 新增两个**抖音专项**内置方案，并置于列表最前：
+  - **抖音 App 抓包（Android）**：域名白名单取自真实抓包（`aweme.snssdk.com`、
+    `*.amemv.com`、`*.zijieapi.com`、`*.douyin.com` 等），排除日志/统计噪声域名；
+    步骤覆盖「连接与证书 → 一键应用域名 → 签名与明文（含已 Root 替换
+    `libsscronet.so` 的抓包指导要点）」
+  - **抖音 Web 抓包**：聚焦 `*.douyin.com` / `*.iesdouyin.com` 与 `a_bogus` / `X-Bogus`
+- 内置方案顺序固定为「抖音 Android → 抖音 Web → 移动端通用 → 接口梳理」，
+  用户自建方案保持原有相对顺序（`BuiltInCapturePlans.builtInOrder`）
+
+### 新增：工具箱「字节签名」页增加 X-Medusa / TTEncrypt 标签页
+
+- 新增 **X-Medusa** 标签页：输入 URL（可选设备上下文 JSON、lanusk）生成 X-Medusa 头
+- 新增 **TTEncrypt** 标签页：明文 ↔ 密文 Hex 双向加解密（内部 gzip）
+- 页签改为可滚动，避免 5 个标签挤压
+
+### 修复：HTTP/1.1 读事件跨 await 竞态（P0，docs/network_robustness.md §1）
+
+- `ChannelDispatcher` 每个连接复用同一个 `buffer`，而 `Socket.listen` 回调不等待返回的
+  Future：上一条读事件在 `await`（如 `remoteChannel.writeBytes`）期间未结束时，
+  下一条读事件会并发进入并改写同一 buffer，导致帧边界/请求体交错
+- 新增**专用读事件串行队列** `readQueue`，两个入口（`ChannelDispatcher.listen`、
+  `Network.onEvent`）统一走 `enqueueRead`，保证同一连接内读处理严格串行
+- 采用「闸住两个读事件之间」的方案，不把 `channelRead` 内部递归改成队列任务（避免自锁），
+  因此无需先做递归迭代化
+- `channelInactive` 同步等待 `readQueue`，与既有 `taskQueue` 一起收敛后再关闭
+
+### 说明
+
+- §2 写背压与 §3 O(n²) 拷贝热点仍按 docs/network_robustness.md 排期（需基准测试）
+- httpdbg 对标中「Cookies 查看器 / URL Params 查看器 / CSV 导出」经核对**本 fork 已具备**，无需新增
+
 ## v1.24.81 (2026-10-04)
 
 ### 新增：X-Medusa 签名 + TTEncrypt v5 载荷加密（纯 JS）

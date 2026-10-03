@@ -189,9 +189,97 @@ class CaptureDomainMatcher {
   }
 }
 
-/// 内置采集方案：开箱即用的任务模板（不含具体业务域名，由用户自行补充）。
+/// 内置采集方案：开箱即用的任务模板。
+///
+/// 顺序即展示顺序：**抖音专项方案在前**（本应用首先是抖音抓包工具），
+/// 通用方案在后。方案只描述「抓什么、怎么抓」与域名规则，不代操作用户设备。
 class BuiltInCapturePlans {
   const BuiltInCapturePlans._();
+
+  /// 抖音 App（Android）专项方案。域名取自真实抓包（v40.5.0）。
+  static CapturePlan douyinAndroid(AppLocalizations loc) => CapturePlan(
+    id: 'builtin.douyin-android',
+    name: loc.capturePlanTplDouyinAndroidName,
+    appName: loc.capturePlanTplDouyinAndroidApp,
+    description: loc.capturePlanTplDouyinAndroidDesc,
+    builtIn: true,
+    includeDomains: const [
+      '*.snssdk.com',
+      '*.amemv.com',
+      '*.zijieapi.com',
+      '*.douyin.com',
+      '*.douyinpic.com',
+      '*.douyinvod.com',
+      '*.bytedance.com',
+      '*.byteimg.com',
+      '*.pstatp.com',
+      '*.ibytedtos.com',
+      '*.zjcdn.com',
+      '*.ixigua.com',
+      '*.toutiao.com',
+    ],
+    excludeDomains: const [
+      '*.volces.com',
+      '*.volccdn.com',
+      'mon.zijieapi.com',
+      'log.snssdk.com',
+    ],
+    steps: [
+      CapturePlanStep(
+        id: 'connect',
+        title: loc.capturePlanTplDouyinAndroidStepConnectTitle,
+        description: loc.capturePlanTplDouyinAndroidStepConnectDesc,
+      ),
+      CapturePlanStep(
+        id: 'domain',
+        title: loc.capturePlanTplDouyinAndroidStepDomainTitle,
+        description: loc.capturePlanTplDouyinAndroidStepDomainDesc,
+      ),
+      CapturePlanStep(
+        id: 'sign',
+        title: loc.capturePlanTplDouyinAndroidStepSignTitle,
+        description: loc.capturePlanTplDouyinAndroidStepSignDesc,
+      ),
+    ],
+  );
+
+  /// 抖音网页版专项方案。
+  static CapturePlan douyinWeb(AppLocalizations loc) => CapturePlan(
+    id: 'builtin.douyin-web',
+    name: loc.capturePlanTplDouyinWebName,
+    appName: loc.capturePlanTplDouyinWebApp,
+    description: loc.capturePlanTplDouyinWebDesc,
+    builtIn: true,
+    includeDomains: const [
+      '*.douyin.com',
+      '*.iesdouyin.com',
+      '*.douyinpic.com',
+      '*.douyinvod.com',
+      '*.byteimg.com',
+      '*.bytedance.com',
+    ],
+    excludeDomains: const [
+      '*.volces.com',
+      '*.volccdn.com',
+    ],
+    steps: [
+      CapturePlanStep(
+        id: 'connect',
+        title: loc.capturePlanTplDouyinWebStepConnectTitle,
+        description: loc.capturePlanTplDouyinWebStepConnectDesc,
+      ),
+      CapturePlanStep(
+        id: 'domain',
+        title: loc.capturePlanTplDouyinWebStepDomainTitle,
+        description: loc.capturePlanTplDouyinWebStepDomainDesc,
+      ),
+      CapturePlanStep(
+        id: 'sign',
+        title: loc.capturePlanTplDouyinWebStepSignTitle,
+        description: loc.capturePlanTplDouyinWebStepSignDesc,
+      ),
+    ],
+  );
 
   static CapturePlan mobileTroubleshoot(AppLocalizations loc) => CapturePlan(
     id: 'builtin.mobile-app-troubleshoot',
@@ -248,7 +336,17 @@ class BuiltInCapturePlans {
     ],
   );
 
-  static List<CapturePlan> values(AppLocalizations loc) => [mobileTroubleshoot(loc), apiReview(loc)];
+  /// 内置方案（顺序即展示顺序，抖音专项在前）。
+  static List<CapturePlan> values(AppLocalizations loc) =>
+      [douyinAndroid(loc), douyinWeb(loc), mobileTroubleshoot(loc), apiReview(loc)];
+
+  /// 内置方案 id 的规范顺序，供 [CapturePlanManager] 排序用。
+  static const List<String> builtInOrder = [
+    'builtin.douyin-android',
+    'builtin.douyin-web',
+    'builtin.mobile-app-troubleshoot',
+    'builtin.api-review',
+  ];
 }
 
 /// 采集方案管理器（本地 JSON 持久化）。
@@ -294,12 +392,26 @@ class CapturePlanManager extends ChangeNotifier {
     }
 
     // 内置方案：文件里已有同 id 的条目时以文件为准（保留用户的启用开关与域名补充），
-    // 仅当缺失时才补入。
-    for (final builtin in BuiltInCapturePlans.values(loc)) {
-      if (!_plans.any((plan) => plan.id == builtin.id)) {
-        _plans.insert(0, builtin);
-      }
+    // 仅当缺失时才补入；随后按规范顺序把内置方案置顶（**抖音专项在前**），
+    // 用户自建方案保持原有相对顺序。
+    final builtins = BuiltInCapturePlans.values(loc);
+    final existingIds = _plans.map((plan) => plan.id).toSet();
+    final missing = builtins.where((builtin) => !existingIds.contains(builtin.id)).toList();
+    if (missing.isNotEmpty) {
+      _plans.insertAll(0, missing);
     }
+    final byId = {for (final plan in _plans) plan.id: plan};
+    final ordered = <CapturePlan>[];
+    for (final id in BuiltInCapturePlans.builtInOrder) {
+      final plan = byId[id];
+      if (plan != null) ordered.add(plan);
+    }
+    for (final plan in _plans) {
+      if (!BuiltInCapturePlans.builtInOrder.contains(plan.id)) ordered.add(plan);
+    }
+    _plans
+      ..clear()
+      ..addAll(ordered);
     notifyListeners();
   }
 

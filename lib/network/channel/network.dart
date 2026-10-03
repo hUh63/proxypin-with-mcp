@@ -365,6 +365,7 @@ class Client extends Network {
 
   @override
   Future<void> onEvent(Uint8List data, ChannelContext channelContext, Channel channel) async {
-    channel.dispatcher.channelRead(channelContext, channel, data);
+    // 读事件串行化：与 ChannelDispatcher.listen 共用同一队列，避免共享 buffer 跨 await 竞态。
+    channel.dispatcher.enqueueRead(channelContext, channel, data);
   }
 }

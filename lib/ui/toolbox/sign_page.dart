@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
@@ -51,7 +53,7 @@ class _SignPageState extends State<SignPage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 3, vsync: this);
+    _tab = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -67,15 +69,20 @@ class _SignPageState extends State<SignPage> with SingleTickerProviderStateMixin
       appBar: AppBar(
         title: Text(localizations.toolboxSign, style: const TextStyle(fontSize: 16)),
         centerTitle: true,
+        isScrollable: true,
         bottom: TabBar(controller: _tab, tabs: [
           Tab(text: localizations.signTabSign),
           Tab(text: localizations.signTabWeb),
+          const Tab(text: 'X-Medusa'),
+          const Tab(text: 'TTEncrypt'),
           Tab(text: localizations.signTabParams),
         ]),
       ),
       body: TabBarView(controller: _tab, children: [
         _SignTab(params: _params),
         const _WebBogusTab(),
+        _MedusaTab(params: _params),
+        const _TtEncryptTab(),
         _ParamsTab(params: _params),
       ]),
     );
@@ -394,5 +401,242 @@ class _ParamsTabState extends State<_ParamsTab> {
         decoration: decoration(context, label: label),
       ),
     );
+  }
+}
+
+/// 把输入（URL 或查询串）解析成参数表，供 X-Medusa 的 protobuf 使用。
+Map<String, dynamic> parseQueryParams(String input) {
+  final query = extractQuery(input);
+  if (query.isEmpty) return const {};
+  try {
+    return Uri.splitQueryString(query);
+  } catch (_) {
+    return const {};
+  }
+}
+
+/// X-Medusa 签名页
+class _MedusaTab extends StatefulWidget {
+  final ValueNotifier<DouyinSignParams> params;
+
+  const _MedusaTab({required this.params});
+
+  @override
+  State<_MedusaTab> createState() => _MedusaTabState();
+}
+
+class _MedusaTabState extends State<_MedusaTab> {
+  final _url = TextEditingController();
+  final _device = TextEditingController();
+  final _lanusk = TextEditingController();
+  bool _busy = false;
+  String _result = '';
+
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
+
+  @override
+  void dispose() {
+    _url.dispose();
+    _device.dispose();
+    _lanusk.dispose();
+    super.dispose();
+  }
+
+  Future<void> _compute() async {
+    final url = _url.text.trim();
+    if (url.isEmpty) {
+      FlutterToastr.show(localizations.signNeedInput, context, duration: 2);
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      var device = <String, dynamic>{};
+      final devText = _device.text.trim();
+      if (devText.isNotEmpty) {
+        final decoded = jsonDecode(devText);
+        if (decoded is Map) device = Map<String, dynamic>.from(decoded);
+      }
+      final res = await DouyinSign.xMedusa(
+        url: url,
+        params: parseQueryParams(url),
+        device: device,
+        lanusk: _lanusk.text.trim().isEmpty ? null : _lanusk.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _result = res;
+        _busy = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(padding: const EdgeInsets.all(15), children: [
+      Text(localizations.signMedusaHint, style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+      const SizedBox(height: 14),
+      TextField(
+        controller: _url,
+        minLines: 1,
+        maxLines: 3,
+        onTapOutside: (e) => FocusManager.instance.primaryFocus?.unfocus(),
+        decoration: decoration(context, label: localizations.signUrl, hintText: localizations.signUrlHint),
+      ),
+      const SizedBox(height: 10),
+      TextField(
+        controller: _device,
+        minLines: 2,
+        maxLines: 5,
+        onTapOutside: (e) => FocusManager.instance.primaryFocus?.unfocus(),
+        decoration: decoration(context, label: localizations.signMedusaDevice),
+      ),
+      const SizedBox(height: 10),
+      TextField(
+        controller: _lanusk,
+        onTapOutside: (e) => FocusManager.instance.primaryFocus?.unfocus(),
+        decoration: decoration(context, label: localizations.signMedusaSalt),
+      ),
+      const SizedBox(height: 14),
+      Center(
+        child: FilledButton.icon(
+          style: Buttons.buttonStyle,
+          onPressed: _busy ? null : _compute,
+          icon: _busy
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.shield_outlined),
+          label: Text(localizations.signCompute),
+        ),
+      ),
+      const SizedBox(height: 16),
+      if (_result.isNotEmpty) ...[
+        Row(children: [
+          Text(localizations.signHeaders, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: _result));
+              FlutterToastr.show(localizations.copied, context);
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: Text(localizations.signCopyAll),
+          ),
+        ]),
+        const SizedBox(height: 4),
+        _HeaderRow(name: 'X-Medusa', value: _result),
+      ],
+    ]);
+  }
+}
+
+/// TTEncrypt v5 载荷加解密页
+class _TtEncryptTab extends StatefulWidget {
+  const _TtEncryptTab();
+
+  @override
+  State<_TtEncryptTab> createState() => _TtEncryptTabState();
+}
+
+class _TtEncryptTabState extends State<_TtEncryptTab> {
+  final _input = TextEditingController();
+  bool _busy = false;
+  String _result = '';
+
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(bool encrypt) async {
+    final text = _input.text.trim();
+    if (text.isEmpty) {
+      FlutterToastr.show(localizations.signNeedInput, context, duration: 2);
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final String out;
+      if (encrypt) {
+        final bytes = await DouyinSign.ttEncryptString(text);
+        out = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+      } else {
+        out = await DouyinSign.ttDecrypt(_hexToBytes(text));
+      }
+      if (!mounted) return;
+      setState(() {
+        _result = out;
+        _busy = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);
+    }
+  }
+
+  List<int> _hexToBytes(String hex) {
+    final clean = hex.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+    final bytes = <int>[];
+    for (var i = 0; i + 1 < clean.length; i += 2) {
+      bytes.add(int.parse(clean.substring(i, i + 2), radix: 16));
+    }
+    return bytes;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(padding: const EdgeInsets.all(15), children: [
+      Text(localizations.signTtHint, style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+      const SizedBox(height: 14),
+      TextField(
+        controller: _input,
+        minLines: 3,
+        maxLines: 10,
+        onTapOutside: (e) => FocusManager.instance.primaryFocus?.unfocus(),
+        decoration: decoration(
+          context,
+          label: '${localizations.signTtPlain} / ${localizations.signTtCipher}',
+        ),
+      ),
+      const SizedBox(height: 14),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        FilledButton.icon(
+          style: Buttons.buttonStyle,
+          onPressed: _busy ? null : () => _run(true),
+          icon: const Icon(Icons.lock_outline, size: 18),
+          label: Text(localizations.signTtEncryptBtn),
+        ),
+        const SizedBox(width: 12),
+        FilledButton.icon(
+          style: Buttons.buttonStyle,
+          onPressed: _busy ? null : () => _run(false),
+          icon: const Icon(Icons.lock_open_outlined, size: 18),
+          label: Text(localizations.signTtDecryptBtn),
+        ),
+      ]),
+      const SizedBox(height: 16),
+      if (_result.isNotEmpty) ...[
+        Row(children: [
+          Text(localizations.signHeaders, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: _result));
+              FlutterToastr.show(localizations.copied, context);
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: Text(localizations.signCopyAll),
+          ),
+        ]),
+        const SizedBox(height: 4),
+        SelectableText(_result, style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5)),
+      ],
+    ]);
   }
 }
