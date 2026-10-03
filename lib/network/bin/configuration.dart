@@ -28,7 +28,7 @@ import 'package:proxypin/utils/platform.dart';
 /// 应用版本的单一真源。与 `pubspec.yaml` 的 `version:` 保持一致，
 /// 对外暴露处（关于页、MCP initialize 的 serverInfo）都必须引用它，
 /// 避免出现「同一份代码声明多个版本号」的不一致。
-const String appVersion = '1.3.2';
+const String appVersion = '1.3.3';
 
 class Configuration {
   ///代理相关配置

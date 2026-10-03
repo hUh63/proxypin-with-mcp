@@ -15,11 +15,19 @@ class NewVersionDialog extends StatelessWidget {
     this.currentVersion,
     this.newVersion, {
     this.canIgnore = true,
+    this.isFork = false,
+    this.versionKey,
   }) : super(key: _dialogKey);
 
   final String currentVersion;
   final RemoteVersionEntity newVersion;
   final bool canIgnore;
+
+  /// true = 本分支(fork)更新，false = 上游更新。用于在弹窗内区分来源。
+  final bool isFork;
+
+  /// 忽略记录键(来源+版本)，缺省回退到裸版本号以兼容旧逻辑。
+  final String? versionKey;
 
   static final _dialogKey = GlobalKey(debugLabel: 'new version dialog');
 
@@ -55,6 +63,19 @@ class NewVersionDialog extends StatelessWidget {
               Text.rich(
                 TextSpan(
                   children: [
+                    TextSpan(text: "${localizations.appUpdateSourceLbl}: ", style: theme.textTheme.bodySmall),
+                    TextSpan(
+                      text: isFork
+                          ? localizations.appUpdateSourceFork
+                          : localizations.appUpdateSourceUpstream,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ],
+                ),
+              ),
+              Text.rich(
+                TextSpan(
+                  children: [
                     TextSpan(text: "${localizations.appUpdateCurrentVersionLbl}: ", style: theme.textTheme.bodySmall),
                     TextSpan(text: currentVersion, style: theme.textTheme.labelMedium),
                   ],
@@ -76,7 +97,8 @@ class NewVersionDialog extends StatelessWidget {
           if (canIgnore)
             TextButton(
               onPressed: () async {
-                SharedPreferencesAsync().setString(Constants.ignoreReleaseVersionKey, newVersion.version);
+                SharedPreferencesAsync()
+                    .setString(Constants.ignoreReleaseVersionKey, versionKey ?? newVersion.version);
                 logger.i("ignored release [${newVersion.version}]");
                 if (context.mounted) Navigator.pop(context);
               },

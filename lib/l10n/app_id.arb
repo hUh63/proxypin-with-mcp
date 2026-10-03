@@ -2406,5 +2406,8 @@
   "signParamsHint": "Parameter ini bergantung pada versi; sesuaikan dengan versi aplikasi target.",
   "toolboxDevice": "Profil Perangkat",
   "deviceModel": "Model",
-  "deviceHint": "Pilih model perangkat lalu ketuk Buat untuk menyintesis sidik jari perangkat yang konsisten."
+  "deviceHint": "Pilih model perangkat lalu ketuk Buat untuk menyintesis sidik jari perangkat yang konsisten.",
+  "appUpdateSourceLbl": "Sumber",
+  "appUpdateSourceUpstream": "ProxyPin hulu",
+  "appUpdateSourceFork": "Build ini (proxypin-with-mcp)"
 }

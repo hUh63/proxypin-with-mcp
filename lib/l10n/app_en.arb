@@ -4282,5 +4282,8 @@
   "signParamsHint": "These parameters are version-bound; adjust them to match the target App version.",
   "toolboxDevice": "Device Profile",
   "deviceModel": "Model",
-  "deviceHint": "Choose a device model and tap Generate to synthesize a consistent device fingerprint."
+  "deviceHint": "Choose a device model and tap Generate to synthesize a consistent device fingerprint.",
+  "appUpdateSourceLbl": "Source",
+  "appUpdateSourceUpstream": "Upstream ProxyPin",
+  "appUpdateSourceFork": "This build (proxypin-with-mcp)"
 }

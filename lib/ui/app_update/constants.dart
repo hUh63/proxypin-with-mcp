@@ -7,6 +7,13 @@ abstract class Constants {
   static const githubLatestReleaseUrl =
       "https://github.com/wanghongenpin/proxypin/releases/latest";
 
+  /// 本分支(fork)仓库地址。与上游仓库区分，避免更新弹窗把上游版本误报成本分支更新。
+  static const githubForkUrl = "https://github.com/hUh63/proxypin-with-mcp";
+  static const githubForkReleasesApiUrl =
+      "https://api.github.com/repos/hUh63/proxypin-with-mcp/releases";
+  static const githubForkLatestReleaseUrl =
+      "https://github.com/hUh63/proxypin-with-mcp/releases/latest";
+
   static const String ignoreReleaseVersionKey = "ignored_release_version";
 
   /// GitHub 下载镜像前缀，仅中文环境使用。

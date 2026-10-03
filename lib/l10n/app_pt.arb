@@ -2407,5 +2407,8 @@
   "signParamsHint": "Estes parâmetros dependem da versão; ajuste-os conforme a versão do app.",
   "toolboxDevice": "Perfil do dispositivo",
   "deviceModel": "Modelo",
-  "deviceHint": "Escolha um modelo de dispositivo e toque em Gerar para sintetizar uma impressão digital consistente."
+  "deviceHint": "Escolha um modelo de dispositivo e toque em Gerar para sintetizar uma impressão digital consistente.",
+  "appUpdateSourceLbl": "Origem",
+  "appUpdateSourceUpstream": "ProxyPin oficial",
+  "appUpdateSourceFork": "Esta compilação (proxypin-with-mcp)"
 }

@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.24.80 (2026-10-04)
+
+### 同步上游 v1.3.3（补齐 3 处漏合并）
+
+- **#953**（`lib/network/http/codec.dart`）：CONNECT 响应判定收敛到响应解码器
+  （`this is HttpResponseCodec && ...`），避免非响应解码路径误判
+- **应用更新版本比较**（`app_update_repository.dart` / `remote_version_entity.dart`）：
+  标签前缀兼容 `v` / `V`；版本段只取前导数字（兼容 `beta` / `rc` 等后缀），
+  无法解析时按 0 处理
+
+### 版本号统一（单一真源）
+
+- 应用版本 `1.3.2+37` → **`1.3.3+39`**，同步四处版本声明：`pubspec.yaml`、
+  `lib/network/bin/configuration.dart`（`appVersion`，关于页与 MCP `serverInfo` 同源）、
+  `linux/build.sh`、`windows/packaging/msix/make_config.yaml`
+- `lib/ui/configuration.dart` 保持引用 `appVersion`，不再内联版本号
+
+### 更新弹窗区分「上游 / 本分支」
+
+- 更新检查同时查询**上游**（`wanghongenpin/proxypin`）与**本分支**
+  （`hUh63/proxypin-with-mcp`）两个 release 源
+- 优先提示本分支更新；本分支无更新时再提示上游更新，弹窗内标注「来源」
+- 本分支版本以**资产名**解析（`proxypin-<版本>+<构建号>-<abi>`），
+  避免用 fork 的 tag 号（v1.24.x）与应用版本体系混淆导致误判
+- 「忽略」按「来源+版本」区分：忽略上游不会连带忽略本分支，反之亦然
+
+### 测试（随上游同步）
+
+- 新增 `test/app_update_test.dart`、`test/issue953_regression_test.dart`
+
 ## v1.24.79 (2026-10-03)
 
 ### 新增：设备指纹生成器

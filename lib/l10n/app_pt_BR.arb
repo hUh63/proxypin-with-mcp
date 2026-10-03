@@ -263,5 +263,8 @@
   "weakNetworkDownload": "Download",
   "weakNetworkBandwidth": "Largura de banda",
   "weakNetworkLossRate": "Perda de pacotes",
-  "weakNetworkRules": "Regras de URL"
+  "weakNetworkRules": "Regras de URL",
+  "appUpdateSourceLbl": "Origem",
+  "appUpdateSourceUpstream": "ProxyPin oficial",
+  "appUpdateSourceFork": "Esta compilação (proxypin-with-mcp)"
 }

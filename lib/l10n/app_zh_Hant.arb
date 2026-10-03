@@ -824,5 +824,8 @@
   "fuzzerLength": "長度",
   "fuzzerDuration": "耗時",
   "fuzzerClear": "清空",
-  "envInsertBuiltIn": "插入內建變數"
+  "envInsertBuiltIn": "插入內建變數",
+  "appUpdateSourceLbl": "來源",
+  "appUpdateSourceUpstream": "上游 ProxyPin",
+  "appUpdateSourceFork": "本分支（proxypin-with-mcp）"
 }
