@@ -184,7 +184,14 @@ class _MobileScriptState extends State<MobileScript> {
               title: Text(localizations.scriptTemplateDouyin),
               onTap: () {
                 Navigator.pop(ctx);
-                showEdit(null, ScriptManager.douyinTemplate);
+                Navigator.of(context)
+                    .push(MaterialPageRoute(
+                        builder: (context) => ScriptEdit(script: ScriptManager.douyinTemplate)))
+                    .then((value) {
+                  if (value != null) {
+                    setState(() {});
+                  }
+                });
               },
             ),
           ],
