@@ -4139,5 +4139,6 @@
   "deviceHint": "选择机型后点击「生成」，合成一份自洽的设备指纹。",
   "appUpdateSourceLbl": "来源",
   "appUpdateSourceUpstream": "上游 ProxyPin",
-  "appUpdateSourceFork": "本分支（proxypin-with-mcp）"
+  "appUpdateSourceFork": "本分支（proxypin-with-mcp）",
+  "scriptTemplateDouyin": "新建抖音签名脚本"
 }

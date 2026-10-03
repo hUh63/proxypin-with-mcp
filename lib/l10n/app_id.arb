@@ -2409,5 +2409,6 @@
   "deviceHint": "Pilih model perangkat lalu ketuk Buat untuk menyintesis sidik jari perangkat yang konsisten.",
   "appUpdateSourceLbl": "Sumber",
   "appUpdateSourceUpstream": "ProxyPin hulu",
-  "appUpdateSourceFork": "Build ini (proxypin-with-mcp)"
+  "appUpdateSourceFork": "Build ini (proxypin-with-mcp)",
+  "scriptTemplateDouyin": "Skrip tanda tangan Douyin baru"
 }

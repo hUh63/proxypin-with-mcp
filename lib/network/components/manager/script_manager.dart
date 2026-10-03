@@ -58,6 +58,43 @@ async function onResponse(context, request, response) {
 }
   """;
 
+  /// 内置「抖音签名」脚本模板：命中抖音域名时自动补签名头。
+  /// 依赖注入运行时的签名库：DouyinSign / XMedusa / TTEncryptV5
+  /// （见 工具箱 → 字节签名）。
+  static String douyinTemplate = """
+// 抖音（字节系）请求自动签名
+// 命中下方域名时自动补 X-Khronos / X-Gorgon / X-Helios / X-SS-Stub（可选 X-Medusa）
+const DOUYIN_HOSTS = ['snssdk.com', 'amemv.com', 'douyin.com', 'bytedance.com'];
+
+async function onRequest(context, request) {
+  const url = request.url || '';
+  if (!DOUYIN_HOSTS.some(function (h) { return url.indexOf(h) >= 0; })) {
+    return request;
+  }
+
+  const q = url.indexOf('?');
+  const query = q >= 0 ? url.substring(q + 1) : '';
+  const body = typeof request.body === 'string' ? request.body : '';
+
+  const khronos = DouyinSign.khronos();
+  request.headers['X-Khronos'] = String(khronos);
+  request.headers['X-Gorgon'] = DouyinSign.xgorgon({ query: query, body: body, khronos: khronos });
+  request.headers['X-Helios'] = DouyinSign.helios({ khronos: khronos });
+  if (body) {
+    request.headers['X-SS-Stub'] = DouyinSign.xssStub(body);
+  }
+
+  // X-Medusa（可选，Android）：多维环境动态挑战签名
+  // request.headers['X-Medusa'] = XMedusa.encrypt({ url: url, params: {}, khronos: khronos });
+
+  return request;
+}
+
+async function onResponse(context, request, response) {
+  return response;
+}
+  """;
+
   static String separator = Platform.pathSeparator;
   static ScriptManager? _instance;
   bool enabled = true;

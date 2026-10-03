@@ -2410,5 +2410,6 @@
   "deviceHint": "Escolha um modelo de dispositivo e toque em Gerar para sintetizar uma impressão digital consistente.",
   "appUpdateSourceLbl": "Origem",
   "appUpdateSourceUpstream": "ProxyPin oficial",
-  "appUpdateSourceFork": "Esta compilação (proxypin-with-mcp)"
+  "appUpdateSourceFork": "Esta compilação (proxypin-with-mcp)",
+  "scriptTemplateDouyin": "Novo script de assinatura do Douyin"
 }

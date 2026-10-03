@@ -2409,5 +2409,6 @@
   "deviceHint": "เลือกรุ่นอุปกรณ์แล้วแตะสร้างเพื่อสังเคราะห์ลายนิ้วมืออุปกรณ์ที่สอดคล้องกัน",
   "appUpdateSourceLbl": "แหล่งที่มา",
   "appUpdateSourceUpstream": "ProxyPin ต้นทาง",
-  "appUpdateSourceFork": "บิลด์นี้ (proxypin-with-mcp)"
+  "appUpdateSourceFork": "บิลด์นี้ (proxypin-with-mcp)",
+  "scriptTemplateDouyin": "สร้างสคริปต์ลายเซ็น Douyin"
 }

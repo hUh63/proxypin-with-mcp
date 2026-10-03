@@ -877,6 +877,10 @@ class _ScriptListState extends State<ScriptList> {
   void showGlobalMenu(Offset offset) {
     showContextMenu(context, offset, items: [
       PopupMenuItem(height: 35, child: Text(localizations.newBuilt), onTap: () => showEdit()),
+      PopupMenuItem(
+          height: 35,
+          child: Text(localizations.scriptTemplateDouyin),
+          onTap: () => showEdit(null, ScriptManager.douyinTemplate)),
       PopupMenuItem(height: 35, child: Text(localizations.export), onTap: () => export(selected.toList())),
       const PopupMenuDivider(),
       PopupMenuItem(height: 35, child: Text(localizations.enableSelect), onTap: () => enableStatus(true)),
@@ -924,7 +928,7 @@ class _ScriptListState extends State<ScriptList> {
     });
   }
 
-  Future<void> showEdit([int? index]) async {
+  Future<void> showEdit([int? index, String? initialScript]) async {
     String? script;
     if (index != null) {
       var scriptManager = await ScriptManager.instance;
@@ -940,7 +944,8 @@ class _ScriptListState extends State<ScriptList> {
     showDialog(
             barrierDismissible: false,
             context: context,
-            builder: (_) => ScriptEdit(scriptItem: index == null ? null : widget.scripts[index], script: script))
+            builder: (_) => ScriptEdit(
+                scriptItem: index == null ? null : widget.scripts[index], script: script ?? initialScript))
         .then((value) {
       if (value != null) {
         setState(() {});

@@ -266,5 +266,6 @@
   "weakNetworkRules": "Regras de URL",
   "appUpdateSourceLbl": "Origem",
   "appUpdateSourceUpstream": "ProxyPin oficial",
-  "appUpdateSourceFork": "Esta compilação (proxypin-with-mcp)"
+  "appUpdateSourceFork": "Esta compilação (proxypin-with-mcp)",
+  "scriptTemplateDouyin": "Novo script de assinatura do Douyin"
 }

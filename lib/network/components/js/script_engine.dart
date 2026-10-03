@@ -140,18 +140,30 @@ class JavaScriptEngine {
     return flutterJs;
   }
 
-  static String? _douyinSignSource;
+  static final Map<String, String> _signLibSources = {};
 
-  /// 把打包在 assets 里的签名库注入运行时（幂等：源码只读一次）。
+  /// 脚本里可直接调用的签名库（按序注入，幂等：源码只读一次）。
+  /// - `DouyinSign.*`  —— Gorgon / Helios / a_bogus / X-SS-Stub 等
+  /// - `XMedusa.*`     —— X-Medusa 动态挑战签名
+  /// - `TTEncryptV5.*` —— TTEncrypt v5 载荷加密（device_register 等）
+  static const List<String> _signLibAssets = [
+    'assets/js/douyin_sign.js',
+    'assets/js/xmedusa.js',
+    'assets/js/ttencrypt_v5.js',
+  ];
+
+  /// 把打包在 assets 里的签名库注入运行时。
   static Future<void> _loadDouyinSignLib(JavascriptRuntime flutterJs) async {
-    try {
-      _douyinSignSource ??= await rootBundle.loadString('assets/js/douyin_sign.js');
-      final result = flutterJs.evaluate(_douyinSignSource!);
-      if (result.isError) {
-        logger.w('注入签名库失败: ${result.stringResult}');
+    for (final asset in _signLibAssets) {
+      try {
+        final source = _signLibSources[asset] ??= await rootBundle.loadString(asset);
+        final result = flutterJs.evaluate(source);
+        if (result.isError) {
+          logger.w('注入签名库 $asset 失败: ${result.stringResult}');
+        }
+      } catch (e) {
+        logger.w('注入签名库 $asset 异常: $e');
       }
-    } catch (e) {
-      logger.w('注入签名库异常: $e');
     }
   }
 

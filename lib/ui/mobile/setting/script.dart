@@ -95,7 +95,7 @@ class _MobileScriptState extends State<MobileScript> {
                             children: [
                               TextButton.icon(
                                   icon: const Icon(Icons.add, size: 18),
-                                  onPressed: scriptEdit,
+                                  onPressed: newScriptMenu,
                                   label: Text(localizations.add)),
                               const SizedBox(width: 5),
                               TextButton.icon(
@@ -161,6 +161,36 @@ class _MobileScriptState extends State<MobileScript> {
         setState(() {});
       }
     });
+  }
+
+  /// 新建脚本：选择「空白脚本」或「抖音签名」内置模板。
+  Future<void> newScriptMenu() async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.code),
+              title: Text(localizations.add),
+              onTap: () {
+                Navigator.pop(ctx);
+                scriptEdit();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bolt),
+              title: Text(localizations.scriptTemplateDouyin),
+              onTap: () {
+                Navigator.pop(ctx);
+                showEdit(null, ScriptManager.douyinTemplate);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1033,7 +1063,7 @@ class _ScriptListState extends State<ScriptList> {
     });
   }
 
-  Future<void> showEdit([int? index]) async {
+  Future<void> showEdit([int? index, String? initialScript]) async {
     String? script;
     if (index != null) {
       var scriptManager = await ScriptManager.instance;
@@ -1048,7 +1078,8 @@ class _ScriptListState extends State<ScriptList> {
 
     Navigator.of(context)
         .push(MaterialPageRoute(
-            builder: (context) => ScriptEdit(scriptItem: index == null ? null : widget.scripts[index], script: script)))
+            builder: (context) => ScriptEdit(
+                scriptItem: index == null ? null : widget.scripts[index], script: script ?? initialScript)))
         .then((value) {
       if (value != null) {
         setState(() {});

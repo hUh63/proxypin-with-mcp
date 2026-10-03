@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.24.81 (2026-10-04)
+
+### 新增：X-Medusa 签名 + TTEncrypt v5 载荷加密（纯 JS）
+
+- **X-Medusa**：多维环境 Protobuf 动态挑战签名，纯 JS 实现（`assets/js/xmedusa.js`），
+  含标准 SM3、手写 protobuf v3 编码、XMXOR 状态调度、自定义 AES_V3 与 hash_f13 三分支。
+  已对照 Python 参考实现**逐字节校验**（24 例，含全部中间量：protobuf 字节 / query SM3 /
+  hash_f13 / key / scrambled / assembled / encrypted）
+- **TTEncrypt v5**：抖音 `device_register` 等接口的载荷加密（`74 63 05 10 00 00` 开头，
+  内部 gzip level 9 / mtime 0），纯 JS 实现（`assets/js/ttencrypt_v5.js`），
+  已对照参考实现**逐字节校验**（42 例，含加解密双向交叉验证）
+- Dart 服务层扩展（`lib/network/util/douyin_sign.dart`）：
+  `DouyinSign.xMedusa(...)` / `ttEncrypt` / `ttEncryptString` / `ttDecrypt` / `ttDecryptRaw`
+  （大体积库按需加载，不拖慢启动）
+
+### 新增：脚本引擎注入 X-Medusa / TTEncrypt
+
+- 脚本运行时（`script_engine.dart`）除 `DouyinSign.*` 外，再注入 `XMedusa.*`、`TTEncryptV5.*`，
+  脚本内可直接调用（源码按 asset 幂等缓存）
+
+### 新增：内置「抖音签名」脚本模板（预制抖音适配）
+
+- `ScriptManager.douyinTemplate`：命中抖音域名时自动补
+  `X-Khronos / X-Gorgon / X-Helios / X-SS-Stub`，并预留 `X-Medusa` 一行
+- 桌面端脚本右键菜单、移动端「＋」按钮新增「新建抖音签名脚本」入口
+
+### 说明
+
+- 仍不内置 `X-Argus` / `X-Ladon`（依赖官方原生库，采用确定性回退以保持可用）
+
 ## v1.24.80 (2026-10-04)
 
 ### 同步上游 v1.3.3（补齐 3 处漏合并）

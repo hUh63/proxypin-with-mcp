@@ -827,5 +827,6 @@
   "envInsertBuiltIn": "插入內建變數",
   "appUpdateSourceLbl": "來源",
   "appUpdateSourceUpstream": "上游 ProxyPin",
-  "appUpdateSourceFork": "本分支（proxypin-with-mcp）"
+  "appUpdateSourceFork": "本分支（proxypin-with-mcp）",
+  "scriptTemplateDouyin": "新增抖音簽名腳本"
 }

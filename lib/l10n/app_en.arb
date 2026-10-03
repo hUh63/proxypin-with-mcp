@@ -4285,5 +4285,6 @@
   "deviceHint": "Choose a device model and tap Generate to synthesize a consistent device fingerprint.",
   "appUpdateSourceLbl": "Source",
   "appUpdateSourceUpstream": "Upstream ProxyPin",
-  "appUpdateSourceFork": "This build (proxypin-with-mcp)"
+  "appUpdateSourceFork": "This build (proxypin-with-mcp)",
+  "scriptTemplateDouyin": "New Douyin signing script"
 }

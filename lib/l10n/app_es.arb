@@ -2409,5 +2409,6 @@
   "deviceHint": "Elige un modelo de dispositivo y pulsa Generar para sintetizar una huella coherente.",
   "appUpdateSourceLbl": "Origen",
   "appUpdateSourceUpstream": "ProxyPin oficial",
-  "appUpdateSourceFork": "Esta compilación (proxypin-with-mcp)"
+  "appUpdateSourceFork": "Esta compilación (proxypin-with-mcp)",
+  "scriptTemplateDouyin": "Nuevo script de firma de Douyin"
 }

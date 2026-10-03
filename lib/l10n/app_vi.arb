@@ -2409,5 +2409,6 @@
   "deviceHint": "Chọn mẫu thiết bị rồi nhấn Tạo để tổng hợp dấu vân tay thiết bị nhất quán.",
   "appUpdateSourceLbl": "Nguồn",
   "appUpdateSourceUpstream": "ProxyPin gốc",
-  "appUpdateSourceFork": "Bản dựng này (proxypin-with-mcp)"
+  "appUpdateSourceFork": "Bản dựng này (proxypin-with-mcp)",
+  "scriptTemplateDouyin": "Tạo script chữ ký Douyin mới"
 }
