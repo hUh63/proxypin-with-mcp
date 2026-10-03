@@ -69,8 +69,7 @@ class _SignPageState extends State<SignPage> with SingleTickerProviderStateMixin
       appBar: AppBar(
         title: Text(localizations.toolboxSign, style: const TextStyle(fontSize: 16)),
         centerTitle: true,
-        isScrollable: true,
-        bottom: TabBar(controller: _tab, tabs: [
+        bottom: TabBar(controller: _tab, isScrollable: true, tabs: [
           Tab(text: localizations.signTabSign),
           Tab(text: localizations.signTabWeb),
           const Tab(text: 'X-Medusa'),
