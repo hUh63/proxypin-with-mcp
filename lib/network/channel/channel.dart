@@ -86,10 +86,12 @@ class Channel {
   bool _draining = false;
 
   /// 写背压阈值（docs/network_robustness.md §2）：
-  /// 待写队列长度上限 / 底层发送缓冲字节上限 / 单次最长等待毫秒。
-  static const int _maxWriteQueueLength = 64;
+  /// 累计未 flush 字节上限 / 单次 flush 最长等待毫秒。
   static const int _maxSocketBufferBytes = 2 * 1024 * 1024;
   static const int _maxBackpressureWaitMs = 2000;
+
+  /// 自上次 flush 以来交给 socket 的字节数，用于触发写背压。
+  int _unflushedBytes = 0;
 
   Object? error; //异常
   //是否使用代理
@@ -198,22 +200,11 @@ class Channel {
     }
 
     // 背压（docs/network_robustness.md §2）：
-    // dart:io 的 Socket 没有 pause()，对端慢时数据会堆在发送缓冲里，
-    // 内存放大。这里在「写队列过长」或「底层发送缓冲积压」时先让出事件循环
-    // 等待排空；因为读事件已串行化（§1），等待会自然回压到上游读取。
-    // 等待有上限，避免对端长期不消费时永久挂起。
-    var waitedMs = 0;
-    while (!isClosed &&
-        waitedMs < _maxBackpressureWaitMs &&
-        (_writeQueue.length >= _maxWriteQueueLength || _socket.writeBuffer.length > _maxSocketBufferBytes)) {
-      await Future.delayed(const Duration(milliseconds: 5));
-      waitedMs += 5;
-    }
-    if (waitedMs > 0) {
-      logger.d("[$id] write backpressure waited ${waitedMs}ms "
-          "(queue=${_writeQueue.length}, socketBuffer=${_socket.writeBuffer.length})");
-    }
-
+    // dart:io 的 Socket 没有 pause()，对端慢时数据会堆在发送缓冲里，内存放大。
+    // 这里以「累计未 flush 的字节数」为信号：超过阈值就 await flush()，
+    // 等底层把数据交给内核后再继续；因为读事件已串行化（§1），
+    // 等待会自然回压到上游读取。flush 带超时上限，不会永久挂起。
+    //
     // Socket.add 内部同步排队，按到达顺序写入即可，无需等待前一次写完。
     // 只在同一事件循环内串行排空，避免无界增长。
     _writeQueue.add(bytes);
@@ -224,6 +215,12 @@ class Channel {
         final chunk = _writeQueue.removeFirst();
         if (!isClosed) {
           _socket.add(chunk);
+          _unflushedBytes += chunk.length;
+          if (_unflushedBytes >= _maxSocketBufferBytes) {
+            await _socket.flush().timeout(const Duration(milliseconds: _maxBackpressureWaitMs), onTimeout: () {});
+            logger.d("[$id] write flush backpressure (${_writeQueue.length} pending)");
+            _unflushedBytes = 0;
+          }
         }
       }
     } catch (e, t) {
