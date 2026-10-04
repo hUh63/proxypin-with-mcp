@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:code_forge/code_forge.dart';
@@ -28,11 +30,14 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/utils/text_diff.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 文本对比工具
 /// - 左右两个 CodeForge 输入；
-/// - 点对比后差异直接在原文 / 新文上染色（删行红、增行绿），无单独结果区；
-/// - 用户开始编辑任一侧时清空高亮，避免行号错位误导。
+/// - 差异按块（连续 delete/insert）分类为新增 / 修改 / 删除并染色；
+/// - 上一处 / 下一处会同时滚动两侧并把光标定位到差异处；
+/// - 长按某处差异可把它「应用到另一侧」对应位置；
+/// - 退出时询问是否保留内容，保留后下次进入自动恢复。
 ///
 /// @author Hongen Wang
 class TextDiffPage extends StatefulWidget {
@@ -47,20 +52,35 @@ class TextDiffPage extends StatefulWidget {
 }
 
 class _TextDiffPageState extends State<TextDiffPage> {
+  static const String _storeKey = 'text_diff_content_v1';
+
   late final CodeForgeController _left;
   late final CodeForgeController _right;
+  late final UndoRedoController _leftUndo;
+  late final UndoRedoController _rightUndo;
 
   bool _wrap = true;
   String? _summary;
 
-  /// 差异块（用于上一处 / 下一处导航）。每个块记录左右两侧的起始行（0-based）。
-  List<_DiffHunk> _hunks = [];
+  /// 差异块（用于导航、分类与整块替换）。
+  List<DiffBlock> _blocks = [];
   int _navIndex = -1;
 
-  /// 上一次对比时左右文本的快照；用来判断 listener 收到的变化是不是真改了文本，
-  /// 因为 CodeForgeController 的 listener 选区 / 装饰变化也会触发。
+  /// 撤销 / 重做作用的对象：最近一次触摸的编辑器。
+  bool _leftActive = true;
+
+  /// 上一次对比时左右文本的快照；用来判断 listener 收到的变化是不是真改了文本。
   String _leftSnapshot = '';
   String _rightSnapshot = '';
+
+  /// 退出确认已在处理中，避免重入。
+  bool _leaving = false;
+
+  Timer? _persistTimer;
+
+  // 长按检测（Listener 只观察、不吃事件，故不影响选中与输入法）。
+  Timer? _longPressTimer;
+  Offset? _pressDown;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -69,20 +89,35 @@ class _TextDiffPageState extends State<TextDiffPage> {
     super.initState();
     _left = CodeForgeController()..text = widget.initialLeft ?? '';
     _right = CodeForgeController()..text = widget.initialRight ?? '';
+    _leftUndo = UndoRedoController();
+    _rightUndo = UndoRedoController();
+    _left.setUndoController(_leftUndo);
+    _right.setUndoController(_rightUndo);
+
     _left.addListener(_onLeftChanged);
     _right.addListener(_onRightChanged);
+    _leftUndo.addListener(_onUndoChanged);
+    _rightUndo.addListener(_onUndoChanged);
 
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
     }
+
+    _restoreIfNeeded();
   }
 
   @override
   void dispose() {
+    _persistTimer?.cancel();
+    _longPressTimer?.cancel();
     _left.removeListener(_onLeftChanged);
     _right.removeListener(_onRightChanged);
+    _leftUndo.removeListener(_onUndoChanged);
+    _rightUndo.removeListener(_onUndoChanged);
     _left.dispose();
     _right.dispose();
+    _leftUndo.dispose();
+    _rightUndo.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     }
@@ -100,6 +135,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
     return false;
   }
 
+  void _onUndoChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _onLeftChanged() {
     if (_left.text == _leftSnapshot) return; // 选区 / 滚动等非文本变化忽略
     _onTextChange();
@@ -115,128 +154,139 @@ class _TextDiffPageState extends State<TextDiffPage> {
   void _onTextChange() {
     if (textChanged) return;
     textChanged = true;
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (!mounted) return;
       _compare();
       textChanged = false;
     });
   }
 
-  // ---------- 操作 ----------
+  // ---------- 持久化 ----------
+
+  Future<void> _restoreIfNeeded() async {
+    if (widget.initialLeft != null || widget.initialRight != null) return;
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final raw = sp.getString(_storeKey);
+      if (raw == null || raw.isEmpty) return;
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      final l = (m['left'] as String?) ?? '';
+      final r = (m['right'] as String?) ?? '';
+      if (l.isEmpty && r.isEmpty) return;
+      if (!mounted) return;
+      _left.text = l;
+      _right.text = r;
+      _compare();
+    } catch (_) {
+      // 忽略损坏的存档
+    }
+  }
+
+  void _schedulePersist() {
+    _persistTimer?.cancel();
+    _persistTimer = Timer(const Duration(milliseconds: 700), _persistNow);
+  }
+
+  Future<void> _persistNow() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setString(_storeKey, jsonEncode({'left': _left.text, 'right': _right.text}));
+    } catch (_) {}
+  }
+
+  Future<void> _clearPersist() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.remove(_storeKey);
+    } catch (_) {}
+  }
+
+  // ---------- 对比 ----------
+
   void _compare() {
-    if (_left.text.isEmpty && _right.text.isEmpty) return;
+    if (_left.text.isEmpty && _right.text.isEmpty) {
+      if (_summary != null || _blocks.isNotEmpty) {
+        setState(() {
+          _summary = null;
+          _blocks = [];
+          _navIndex = -1;
+        });
+      }
+      return;
+    }
+
+    // 先同步快照：随后 clearDecoration / notifyListeners 都会触发 listener，
+    // 快照一致可让 _onLeftChanged 直接早退，避免多余的 1.2s 兜底重排。
+    _leftSnapshot = _left.text;
+    _rightSnapshot = _right.text;
+
     final diffs = diffLines(_left.text, _right.text);
+    final blocks = buildDiffBlocks(diffs);
+    final stats = diffStats(blocks);
 
-    final addBg = Colors.green.withValues(alpha: 0.18);
-    final delBg = Colors.red.withValues(alpha: 0.18);
-    final modBg = Colors.orange.withValues(alpha: 0.20);
-    const addColor = Colors.green;
-    const delColor = Colors.red;
-    const modColor = Colors.orange;
+    final addBg = Colors.green.withValues(alpha: 0.16);
+    final delBg = Colors.red.withValues(alpha: 0.16);
+    final modBg = Colors.orange.withValues(alpha: 0.16);
 
-    final leftGutterDecos = <GutterDecoration>[];
-    final rightGutterDecos = <GutterDecoration>[];
+    final leftDecos = <LineDecoration>[];
+    final rightDecos = <LineDecoration>[];
+    final leftGutter = <GutterDecoration>[];
+    final rightGutter = <GutterDecoration>[];
+    final leftHL = <SearchHighlight>[];
+    final rightHL = <SearchHighlight>[];
 
-    // 字符级高亮要走 controller.searchHighlights：那是按全文 utf16 offset 标范围。
-    // 这里先算每行起始 offset，后面把行号转成 offset。
-    final leftLineStarts = _lineStartOffsets(_left.text);
-    final rightLineStarts = _lineStartOffsets(_right.text);
-    final leftCharHighlights = <SearchHighlight>[];
-    final rightCharHighlights = <SearchHighlight>[];
-
-    // 整行底色只给"没参与字符配对"的纯增/纯删行——
-    // CodeForge 渲染顺序是 SearchHighlights 先于 LineDecorations，
-    // 整行 LineDecoration 会盖掉字符高亮。所以配对行不加整行色，靠
-    // gutter 色条 + 字符级 searchHighlights 即可表达差异。
-    final pairedDeleteLines = <int>{}; // 0-based 左侧行号
-    final pairedInsertLines = <int>{}; // 0-based 右侧行号
-
-    var inserts = 0, deletes = 0;
-    for (final d in diffs) {
-      switch (d.type) {
-        case LineDiffType.equal:
-          break;
-        case LineDiffType.delete:
-          deletes++;
-        case LineDiffType.insert:
-          inserts++;
-      }
-    }
-
-    // 第二趟：扫描"紧邻的 delete + insert"做字符级配对。
-    // 新版 diffLines 用的是双指针 + 前瞻：发现错位时左 delete / 右 insert
-    // 总是紧贴出现（"同行修改"或"局部增删"），所以这里只需识别相邻配对，
-    // 不必再做全局匹配。
-    for (var k = 0; k + 1 < diffs.length; k++) {
-      final a = diffs[k];
-      final b = diffs[k + 1];
-      LineDiff? dl, dr;
-      if (a.type == LineDiffType.delete && b.type == LineDiffType.insert) {
-        dl = a;
-        dr = b;
-      } else if (a.type == LineDiffType.insert && b.type == LineDiffType.delete) {
-        dl = b;
-        dr = a;
-      }
-      if (dl == null || dr == null) continue;
-      // 已经被前一对消费过的行就跳过
-      final lLine = dl.leftLine! - 1;
-      final rLine = dr.rightLine! - 1;
-      if (pairedDeleteLines.contains(lLine) || pairedInsertLines.contains(rLine)) continue;
-
-      final cd = diffChars(dl.text, dr.text);
-      final lOff = leftLineStarts[lLine];
-      final rOff = rightLineStarts[rLine];
-      for (final r in cd.leftRanges) {
-        leftCharHighlights.add(SearchHighlight(start: lOff + r.start, end: lOff + r.end));
-      }
-      for (final r in cd.rightRanges) {
-        rightCharHighlights.add(SearchHighlight(start: rOff + r.start, end: rOff + r.end));
-      }
-      pairedDeleteLines.add(lLine);
-      pairedInsertLines.add(rLine);
-    }
-
-    // 第三趟：所有差异行都加整行底色 + 行号色条。
-    // 配对过的「删+增」视为**修改**，用橙色与纯新增（绿）/纯删除（红）区分；
-    // 整行 alpha 只有 0.18~0.20，字符级 searchHighlights 用 0.85+ 的深色压在上面，
-    // 叠加后差异字符仍然明显比整行其他位置深。
-    final leftLineDecos = <LineDecoration>[];
-    final rightLineDecos = <LineDecoration>[];
-    for (final d in diffs) {
-      if (d.type == LineDiffType.delete) {
-        final ln = d.leftLine! - 1;
-        final isMod = pairedDeleteLines.contains(ln);
-        leftLineDecos.add(LineDecoration(
-          id: 'del-$ln',
+    for (final b in blocks) {
+      final paired = b.pairedCount;
+      for (var i = 0; i < b.leftLines.length; i++) {
+        final ln = b.leftLines[i];
+        final isMod = b.isModify && i < paired;
+        leftDecos.add(LineDecoration(
+          id: 'ld-$ln',
           startLine: ln,
           endLine: ln,
           type: LineDecorationType.background,
           color: isMod ? modBg : delBg,
         ));
-        leftGutterDecos.add(GutterDecoration(
-          id: 'del-g-$ln',
+        leftGutter.add(GutterDecoration(
+          id: 'lg-$ln',
           startLine: ln,
           endLine: ln,
           type: GutterDecorationType.colorBar,
-          color: isMod ? modColor : delColor,
+          color: isMod ? Colors.orange : Colors.red,
         ));
-      } else if (d.type == LineDiffType.insert) {
-        final ln = d.rightLine! - 1;
-        final isMod = pairedInsertLines.contains(ln);
-        rightLineDecos.add(LineDecoration(
-          id: 'ins-$ln',
+      }
+      for (var j = 0; j < b.rightLines.length; j++) {
+        final ln = b.rightLines[j];
+        final isMod = b.isModify && j < paired;
+        rightDecos.add(LineDecoration(
+          id: 'rd-$ln',
           startLine: ln,
           endLine: ln,
           type: LineDecorationType.background,
           color: isMod ? modBg : addBg,
         ));
-        rightGutterDecos.add(GutterDecoration(
-          id: 'ins-g-$ln',
+        rightGutter.add(GutterDecoration(
+          id: 'rg-$ln',
           startLine: ln,
           endLine: ln,
           type: GutterDecorationType.colorBar,
-          color: isMod ? modColor : addColor,
+          color: isMod ? Colors.orange : Colors.green,
         ));
+      }
+
+      // 配对行做字符级高亮。
+      for (var i = 0; i < paired; i++) {
+        final ll = b.leftLines[i];
+        final rl = b.rightLines[i];
+        final cd = diffChars(_left.getLineText(ll), _right.getLineText(rl));
+        final lo = _left.getLineStartOffset(ll);
+        final ro = _right.getLineStartOffset(rl);
+        for (final r in cd.leftRanges) {
+          leftHL.add(SearchHighlight(start: lo + r.start, end: lo + r.end));
+        }
+        for (final r in cd.rightRanges) {
+          rightHL.add(SearchHighlight(start: ro + r.start, end: ro + r.end));
+        }
       }
     }
 
@@ -244,106 +294,180 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _left.clearGutterDecorations();
     _right.clearLineDecorations();
     _right.clearGutterDecorations();
-    _left.addLineDecorations(leftLineDecos);
-    _left.addGutterDecorations(leftGutterDecos);
-    _right.addLineDecorations(rightLineDecos);
-    _right.addGutterDecorations(rightGutterDecos);
+    _left.addLineDecorations(leftDecos);
+    _left.addGutterDecorations(leftGutter);
+    _right.addLineDecorations(rightDecos);
+    _right.addGutterDecorations(rightGutter);
 
-    // searchHighlights 是个普通 List 字段，赋值后要 notify 让编辑器重绘。
-    _left.searchHighlights = leftCharHighlights;
-    _right.searchHighlights = rightCharHighlights;
+    _left.searchHighlights = leftHL;
     _left.searchHighlightsChanged = true;
+    _right.searchHighlights = rightHL;
     _right.searchHighlightsChanged = true;
     _left.notifyListeners();
     _right.notifyListeners();
 
-    _leftSnapshot = _left.text;
-    _rightSnapshot = _right.text;
-
-    final modified = pairedDeleteLines.length;
-    final additions = inserts - modified;
-    final deletions = deletes - modified;
-    final hunks = _buildHunks(diffs);
-
-    setState(() {
-      _hunks = hunks;
-      _navIndex = -1;
-      if (inserts == 0 && deletes == 0) {
-        _summary = localizations.diffIdentical;
-      } else {
-        _summary = localizations.diffSummaryDetail(additions, deletions, modified);
-      }
-    });
-  }
-
-  /// 把连续的差异行归并成一个个"差异块"，供上一处 / 下一处导航使用。
-  static List<_DiffHunk> _buildHunks(List<LineDiff> diffs) {
-    final hunks = <_DiffHunk>[];
-    _DiffHunk? current;
-    for (final d in diffs) {
-      if (d.type == LineDiffType.equal) {
-        current = null;
-        continue;
-      }
-      final l = d.type == LineDiffType.delete ? d.leftLine! - 1 : null;
-      final r = d.type == LineDiffType.insert ? d.rightLine! - 1 : null;
-      if (current == null) {
-        current = _DiffHunk(l, r);
-        hunks.add(current);
-      } else {
-        current.leftLine ??= l;
-        current.rightLine ??= r;
-      }
+    if (mounted) {
+      setState(() {
+        _blocks = blocks;
+        _navIndex = -1;
+        _summary = stats.identical
+            ? localizations.diffIdentical
+            : localizations.diffSummaryDetail(stats.added, stats.deleted, stats.modified);
+      });
     }
-    return hunks;
+    _schedulePersist();
   }
 
-  /// 跳到上一处（[delta] < 0）或下一处（[delta] > 0）差异，两侧一起滚动。
+  /// 跳到上一处（[delta] < 0）或下一处（[delta] > 0）差异，两侧一起滚动并把光标定位过去。
   void _navigate(int delta) {
-    if (_hunks.isEmpty) return;
+    if (_blocks.isEmpty) return;
     var index = _navIndex;
     if (index < 0) {
-      index = delta > 0 ? 0 : _hunks.length - 1;
+      index = delta > 0 ? 0 : _blocks.length - 1;
     } else {
-      index = (index + delta) % _hunks.length;
-      if (index < 0) index += _hunks.length;
+      index = (index + delta) % _blocks.length;
+      if (index < 0) index += _blocks.length;
     }
     setState(() => _navIndex = index);
 
-    final hunk = _hunks[index];
-    if (hunk.leftLine != null) _left.scrollToLine(hunk.leftLine!);
-    if (hunk.rightLine != null) _right.scrollToLine(hunk.rightLine!);
+    final b = _blocks[index];
+    _gotoLine(_left, b.leftStart);
+    _gotoLine(_right, b.rightStart);
   }
 
-  /// 用左侧内容整体覆盖右侧。
-  void _applyLeftToRight() {
-    if (_left.text == _right.text) return;
-    _right.text = _left.text;
-    _compare();
+  /// 把编辑器滚动到 [line]（0-based），并在该行行首放置光标。两侧都会执行，
+  /// 因此「上一处 / 下一处」会同时定位两个窗口。
+  void _gotoLine(CodeForgeController controller, int line) {
+    if (controller.lineCount == 0) return;
+    final target = line.clamp(0, controller.lineCount - 1);
+    try {
+      controller.selection = TextSelection.collapsed(offset: controller.getLineStartOffset(target));
+    } catch (_) {}
+    try {
+      controller.scrollToLine(target);
+    } catch (_) {}
   }
 
-  /// 用右侧内容整体覆盖左侧。
-  void _applyRightToLeft() {
-    if (_left.text == _right.text) return;
-    _left.text = _right.text;
-    _compare();
+  void _undo() => (_leftActive ? _leftUndo : _rightUndo).undo();
+
+  void _redo() => (_leftActive ? _leftUndo : _rightUndo).redo();
+
+  // ---------- 长按：把此处差异应用到另一侧 ----------
+
+  void _onPointerDown(bool isLeft, PointerDownEvent e) {
+    _leftActive = isLeft;
+    _pressDown = e.position;
+    _longPressTimer?.cancel();
+    _longPressTimer = Timer(const Duration(milliseconds: 560), () {
+      if (!mounted) return;
+      _onLongPress(isLeft, e.position);
+    });
   }
 
-  /// 累计 \n 偏移得到每行起始处的全文 utf16 offset。下标 0-based。
-  static List<int> _lineStartOffsets(String text) {
-    final offsets = <int>[0];
-    for (var i = 0; i < text.length; i++) {
-      if (text.codeUnitAt(i) == 0x0A) offsets.add(i + 1);
+  void _onPointerMove(PointerMoveEvent e) {
+    final start = _pressDown;
+    if (start == null) return;
+    if ((e.position - start).distance > 14) _cancelLongPress();
+  }
+
+  void _cancelLongPress() {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    _pressDown = null;
+  }
+
+  void _onLongPress(bool isLeft, Offset globalPos) {
+    if (!mounted) return;
+    final controller = isLeft ? _left : _right;
+    int line;
+    try {
+      final sel = controller.selection.start.clamp(0, controller.text.length);
+      line = controller.getLineAtOffset(sel);
+    } catch (_) {
+      return;
     }
-    return offsets;
+    final block = _blockAtLine(isLeft, line);
+    if (block == null) {
+      _toast(localizations.diffNoChangeHere);
+      return;
+    }
+
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final size = overlay?.size ?? MediaQuery.of(context).size;
+    final pos = RelativeRect.fromLTRB(
+      globalPos.dx,
+      globalPos.dy,
+      (size.width - globalPos.dx).clamp(0.0, size.width),
+      (size.height - globalPos.dy).clamp(0.0, size.height),
+    );
+
+    showMenu<String>(
+      context: context,
+      position: pos,
+      items: [
+        PopupMenuItem<String>(
+          value: 'apply',
+          child: Row(children: [
+            const Icon(Icons.input, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(isLeft ? localizations.diffReplaceBlockLeft : localizations.diffReplaceBlockRight),
+            ),
+          ]),
+        ),
+      ],
+    ).then((v) {
+      if (v == 'apply') _applyBlock(block, fromLeft: isLeft);
+    });
   }
+
+  DiffBlock? _blockAtLine(bool isLeft, int line) {
+    for (final b in _blocks) {
+      final lines = isLeft ? b.leftLines : b.rightLines;
+      if (lines.contains(line)) return b;
+    }
+    // 空块（纯增 / 纯删）里光标可能落在块起止行上，做一次范围兜底匹配。
+    for (final b in _blocks) {
+      final lines = isLeft ? b.leftLines : b.rightLines;
+      final start = isLeft ? b.leftStart : b.rightStart;
+      if (lines.isEmpty && (line == start || line == start - 1)) return b;
+    }
+    return null;
+  }
+
+  /// 把 [b] 这一整块文本从 [fromLeft] 侧复制到另一侧对应位置。
+  void _applyBlock(DiffBlock b, {required bool fromLeft}) {
+    if (!mounted) return;
+    final src = fromLeft ? _left : _right;
+    final dst = fromLeft ? _right : _left;
+    final srcStart = fromLeft ? b.leftStart : b.rightStart;
+    final srcCount = fromLeft ? b.leftLines.length : b.rightLines.length;
+    final dstStart = fromLeft ? b.rightStart : b.leftStart;
+    final dstCount = fromLeft ? b.rightLines.length : b.leftLines.length;
+
+    try {
+      final srcStartOff = src.getLineStartOffset(srcStart.clamp(0, src.lineCount - 1));
+      final srcEndOff = srcStart + srcCount < src.lineCount
+          ? src.getLineStartOffset(srcStart + srcCount)
+          : src.text.length;
+      final srcText = src.text.substring(srcStartOff, srcEndOff);
+
+      final dstStartOff = dst.getLineStartOffset(dstStart.clamp(0, dst.lineCount - 1));
+      final dstEndOff =
+          dstStart + dstCount < dst.lineCount ? dst.getLineStartOffset(dstStart + dstCount) : dst.text.length;
+
+      dst.replaceRange(dstStartOff, dstEndOff, srcText);
+      _compare();
+      _toast(localizations.diffApplied);
+    } catch (e) {
+      _toast('${localizations.fail}: $e');
+    }
+  }
+
+  // ---------- 其它操作 ----------
 
   /// 清掉两侧高亮，但保留文本内容。
   void _clearHighlights() {
-    if (_summary == null) return;
-    // 必须先翻成 false：clearLineDecorations / searchHighlights 赋值都会触发
-    // controller.notifyListeners → _onLeftChanged/_onRightChanged 重入，
-
     _left.clearLineDecorations();
     _left.clearGutterDecorations();
     _right.clearLineDecorations();
@@ -360,7 +484,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
     setState(() {
       _summary = null;
-      _hunks = [];
+      _blocks = [];
       _navIndex = -1;
     });
   }
@@ -369,7 +493,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (_left.text.isEmpty && _right.text.isEmpty) return;
     _left.text = '';
     _right.text = '';
+    _leftUndo.clear();
+    _rightUndo.clear();
     _clearHighlights();
+    _schedulePersist();
   }
 
   Future<void> _openFileInto(CodeForgeController target) async {
@@ -396,75 +523,129 @@ class _TextDiffPageState extends State<TextDiffPage> {
     FlutterToastr.show(msg, context, duration: 3);
   }
 
+  /// 退出确认：内容非空时询问是否保留，保留会写入存档供下次恢复。
+  /// 返回 true=保留退出，false=不保留退出，null=取消。
+  Future<bool?> _confirmExit() async {
+    if (_left.text.isEmpty && _right.text.isEmpty) return false;
+    return showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(localizations.diffExitKeepTitle),
+        content: Text(localizations.diffExitKeepBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(c).pop(null), child: Text(localizations.cancel)),
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(false),
+            child: Text(localizations.editorDiscard),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(c).pop(true),
+            child: Text(localizations.diffKeep),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handlePop() async {
+    if (_leaving) return;
+    _leaving = true;
+    final keep = await _confirmExit();
+    if (!mounted) return;
+    if (keep == null) {
+      _leaving = false;
+      return; // 取消，留在页面
+    }
+    _persistTimer?.cancel();
+    if (keep) {
+      await _persistNow();
+    } else {
+      await _clearPersist();
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
   // ---------- UI ----------
 
   @override
   Widget build(BuildContext context) {
     bool isNewWindows = widget.windowId != null && Platform.isWindows;
 
-    return Scaffold(
-      appBar: isNewWindows
-          ? null
-          : PreferredSize(
-              preferredSize: Platforms.isDesktop() ? const Size.fromHeight(23) : const Size.fromHeight(36),
-              child: AppBar(
-                title: Text(localizations.textDiff, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
-                centerTitle: true,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _handlePop();
+      },
+      child: Scaffold(
+        appBar: isNewWindows
+            ? null
+            : PreferredSize(
+                preferredSize: Platforms.isDesktop() ? const Size.fromHeight(23) : const Size.fromHeight(36),
+                child: AppBar(
+                  title: Text(localizations.textDiff, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
+                  centerTitle: true,
+                ),
+              ),
+        body: Column(children: [
+          Row(children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _legend(),
               ),
             ),
-      body: Column(children: [
-        Row(children: [
+            _toolbar(),
+          ]),
+          const Divider(height: 1, thickness: 0.3),
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: _legend(),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // 800 是经验阈值：再窄左右两个编辑器单独宽度不够，堆叠更舒服。
+                final wide = constraints.maxWidth >= 800;
+                return wide ? _wideLayout() : _narrowLayout();
+              },
             ),
           ),
-          _toolbar(),
+          if (_summary != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Row(children: [
+                Expanded(child: Text(_summary!, style: const TextStyle(fontSize: 14))),
+                if (_blocks.isNotEmpty && _navIndex >= 0)
+                  Text(
+                    localizations.diffPosition(_navIndex + 1, _blocks.length),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary),
+                  ),
+              ]),
+            ),
         ]),
-        const Divider(height: 1, thickness: 0.3),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // 800 是经验阈值：再窄左右两个编辑器单独宽度不够，堆叠更舒服。
-              final wide = constraints.maxWidth >= 800;
-              return wide ? _wideLayout() : _narrowLayout();
-            },
-          ),
-        ),
-        if (_summary != null)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Row(children: [
-              Expanded(child: Text(_summary!, style: const TextStyle(fontSize: 14))),
-              if (_hunks.isNotEmpty && _navIndex >= 0)
-                Text(
-                  localizations.diffPosition(_navIndex + 1, _hunks.length),
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary),
-                ),
-            ]),
-          ),
-      ]),
+      ),
     );
   }
 
-  /// 左上角图例：说明三种差异配色。
+  /// 左上角图例：紧凑说明三种差异配色。
   Widget _legend() {
     Widget item(Color c, String label) {
       return Padding(
-        padding: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.only(right: 8),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Container(width: 10, height: 10, color: c.withValues(alpha: 0.55)),
-          const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 12)),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: c.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(1.5)),
+          ),
+          const SizedBox(width: 3),
+          Text(label, style: const TextStyle(fontSize: 11, height: 1.0)),
         ]),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       child: Row(children: [
         item(Colors.green, localizations.diffAdded),
         item(Colors.orange, localizations.diffModified),
@@ -475,17 +656,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   Widget _toolbar() {
     final color = Theme.of(context).colorScheme.primary;
-    final hasDiff = _hunks.isNotEmpty;
+    final hasDiff = _blocks.isNotEmpty;
+    final activeUndo = _leftActive ? _leftUndo : _rightUndo;
     return Container(
       padding: const EdgeInsets.only(top: 2, bottom: 2, right: 12),
       child: Wrap(
         spacing: 0,
         runSpacing: 0,
         children: [
+          _iconBtn(Icons.undo, localizations.editorUndo, activeUndo.canUndo ? _undo : null),
+          _iconBtn(Icons.redo, localizations.editorRedo, activeUndo.canRedo ? _redo : null),
           _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
           _iconBtn(Icons.keyboard_arrow_down, localizations.diffNext, hasDiff ? () => _navigate(1) : null),
-          _iconBtn(Icons.arrow_forward, localizations.diffReplaceLeftToRight, _applyLeftToRight),
-          _iconBtn(Icons.arrow_back, localizations.diffReplaceRightToLeft, _applyRightToLeft),
           _iconBtn(Icons.compare_arrows, localizations.compare, _onTextChange),
           _iconBtn(Icons.delete_outline, localizations.clear, _clearAll),
           _iconBtn(
@@ -536,9 +718,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
         : baseTheme;
 
     // 字符级差异：左边删除（深红底），右边新增（深绿底）。
-    // 用接近不透明的 alpha：CodeForge 渲染顺序是 SearchHighlight 在 LineDecoration
-    // 之前，整行浅底色会盖在它上面（alpha blend），所以这里调到 0xCC 才能在
-    // 整行 0x2E 的浅红/浅绿之上保持可辨识对比。
     final charStyle = isLeft
         ? const TextStyle(backgroundColor: Color(0xCCE53935)) // 深红
         : const TextStyle(backgroundColor: Color(0xCC43A047)); // 深绿
@@ -565,29 +744,28 @@ class _TextDiffPageState extends State<TextDiffPage> {
         child: Container(
           margin: const EdgeInsets.fromLTRB(4, 0, 4, 4),
           decoration: BoxDecoration(border: Border.all(color: Colors.black12)),
-          child: CodeForge(
-            // CodeForge 的 lineWrap 是 late final，切换得新 key 重建；
-            // controller 在 State 持有，重建不丢文本与撤销栈。
-            key: ValueKey('diff-$title-$_wrap'),
-            controller: controller,
-            lineWrap: _wrap,
-            enableGuideLines: false,
-            editorTheme: editorTheme,
-            textStyle: const TextStyle(fontSize: 14.5),
-            matchHighlightStyle: matchStyle,
-            finderBuilder: (c, controller) => FindPanelView(controller: controller),
-            selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
+          child: Listener(
+            onPointerDown: (e) => _onPointerDown(isLeft, e),
+            onPointerMove: _onPointerMove,
+            onPointerUp: (_) => _cancelLongPress(),
+            onPointerCancel: (_) => _cancelLongPress(),
+            child: CodeForge(
+              // CodeForge 的 lineWrap 是 late final，切换得新 key 重建；
+              // controller / undoController 在 State 持有，重建不丢文本与撤销栈。
+              key: ValueKey('diff-$title-$_wrap'),
+              controller: controller,
+              undoController: isLeft ? _leftUndo : _rightUndo,
+              lineWrap: _wrap,
+              enableGuideLines: false,
+              editorTheme: editorTheme,
+              textStyle: const TextStyle(fontSize: 14.5),
+              matchHighlightStyle: matchStyle,
+              finderBuilder: (c, controller) => FindPanelView(controller: controller),
+              selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ),
       ),
     ]);
   }
-}
-
-/// 一段连续的差异（可能同时含删除与新增），用于上一处 / 下一处导航。
-class _DiffHunk {
-  int? leftLine;
-  int? rightLine;
-
-  _DiffHunk(this.leftLine, this.rightLine);
 }

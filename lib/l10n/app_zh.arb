@@ -4243,5 +4243,12 @@
   "editorGutterAnchorSet": "已记下起始行 {line}，再长按另一行号即选中区间",
   "@editorGutterAnchorSet": {"placeholders": {"line": {"type": "int"}}},
   "editorGutterRangeSelected": "已选中第 {from} — {to} 行",
-  "@editorGutterRangeSelected": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}}
+  "@editorGutterRangeSelected": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}},
+  "diffReplaceBlockLeft": "用此处替换右侧",
+  "diffReplaceBlockRight": "用此处替换左侧",
+  "diffApplied": "已应用到另一侧",
+  "diffNoChangeHere": "此处没有可应用的差异",
+  "diffExitKeepTitle": "保留本次对比内容吗？",
+  "diffExitKeepBody": "将保存左右两段文本，下次进入自动恢复。",
+  "diffKeep": "保留"
 }

@@ -4389,5 +4389,12 @@
   "editorGutterAnchorSet": "Start line {line} set; long-press another line number to finish",
   "@editorGutterAnchorSet": {"placeholders": {"line": {"type": "int"}}},
   "editorGutterRangeSelected": "Selected lines {from}–{to}",
-  "@editorGutterRangeSelected": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}}
+  "@editorGutterRangeSelected": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}},
+  "diffReplaceBlockLeft": "Replace right with this",
+  "diffReplaceBlockRight": "Replace left with this",
+  "diffApplied": "Applied to the other side",
+  "diffNoChangeHere": "No change to apply here",
+  "diffExitKeepTitle": "Keep this comparison?",
+  "diffExitKeepBody": "Both texts will be saved and restored next time.",
+  "diffKeep": "Keep"
 }

@@ -330,3 +330,106 @@ List<({int start, int end})> _mergeAdjacent(List<int> positions) {
   ranges.add((start: start, end: prev + 1));
   return ranges;
 }
+
+/// 一段连续的差异（相邻的 delete / insert 行聚合而成），供 UI 做导航、
+/// 整块替换与「新增 / 修改 / 删除」分类。[leftStart] / [rightStart] 是块在
+/// 左 / 右文本里的 0-based 起始行号（纯增块的 [leftLines] 为空，反之亦然）。
+class DiffBlock {
+  /// 块在左文本里的起始行号（0-based）。
+  final int leftStart;
+
+  /// 块在右文本里的起始行号（0-based）。
+  final int rightStart;
+
+  /// 被删除行的 0-based 行号（按出现顺序）。
+  final List<int> leftLines;
+
+  /// 被新增行的 0-based 行号（按出现顺序）。
+  final List<int> rightLines;
+
+  const DiffBlock({
+    required this.leftStart,
+    required this.rightStart,
+    required this.leftLines,
+    required this.rightLines,
+  });
+
+  /// 同时含删除与新增行 —— 视为「修改」块。
+  bool get isModify => leftLines.isNotEmpty && rightLines.isNotEmpty;
+
+  /// 左右配对（同行修改）的行数：取删除行与新增行的较小值。
+  int get pairedCount => leftLines.length < rightLines.length ? leftLines.length : rightLines.length;
+}
+
+/// 把 [diffLines] 的结果按「连续的差异行」聚合为一个个 [DiffBlock]。
+/// 这是 UI 侧「新增 / 修改 / 删除」分类与上一处 / 下一处导航的唯一真源。
+List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs) {
+  final blocks = <DiffBlock>[];
+  List<int>? leftLines;
+  List<int>? rightLines;
+  int? leftStart;
+  int? rightStart;
+  var li = 0, ri = 0;
+
+  void flush() {
+    if (leftLines != null) {
+      blocks.add(DiffBlock(
+        leftStart: leftStart!,
+        rightStart: rightStart!,
+        leftLines: leftLines!,
+        rightLines: rightLines!,
+      ));
+    }
+    leftLines = null;
+    rightLines = null;
+    leftStart = null;
+    rightStart = null;
+  }
+
+  for (final d in diffs) {
+    switch (d.type) {
+      case LineDiffType.equal:
+        flush();
+        li++;
+        ri++;
+      case LineDiffType.delete:
+        leftLines ??= <int>[];
+        rightLines ??= <int>[];
+        leftStart ??= li;
+        rightStart ??= ri;
+        leftLines!.add(li);
+        li++;
+      case LineDiffType.insert:
+        leftLines ??= <int>[];
+        rightLines ??= <int>[];
+        leftStart ??= li;
+        rightStart ??= ri;
+        rightLines!.add(ri);
+        ri++;
+    }
+  }
+  flush();
+  return blocks;
+}
+
+/// 对比统计：新增 / 删除 / 修改（修改 = 一个块里被配对的行数）。
+class DiffStats {
+  final int added;
+  final int deleted;
+  final int modified;
+
+  const DiffStats({required this.added, required this.deleted, required this.modified});
+
+  bool get identical => added == 0 && deleted == 0 && modified == 0;
+}
+
+DiffStats diffStats(List<DiffBlock> blocks) {
+  var added = 0, deleted = 0, modified = 0;
+  for (final b in blocks) {
+    final paired = b.pairedCount;
+    modified += paired;
+    added += b.rightLines.length - paired;
+    deleted += b.leftLines.length - paired;
+  }
+  return DiffStats(added: added, deleted: deleted, modified: modified);
+}
