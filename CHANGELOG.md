@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.24.93 (2026-10-05)
+
+### 依赖升级：桌面托盘迁移到原生 API 家族
+
+- `tray_manager` 0.5.3 → **0.7.0**：从 0.6 起该插件改为基于 `nativeapi` 的统一 C++ 内核，
+  旧 `trayManager` / `TrayListener` / `Menu` / `MenuItem` API 整体搬到
+  `package:tray_manager/legacy.dart`。本次只把 `lib/utils/desktop_tray.dart` 的 import 换成
+  `legacy.dart`（对外行为不变），并去掉对已不再是依赖的 `menu_base` 的直接引用。
+  附带好处：Linux 构建不再需要 `libayatana-appindicator3-dev`（GTK3 + X11 + Xi 即可）。
+- `dynamic_color` 约束收紧为 `^1.9.0`（实际已解析到 1.9.0，即最新 1.x）。
+  **不升 2.x**：2.0 起该插件改用独立的 `material_ui` 包，产出的是 `material_ui.ColorScheme`，
+  与本项目的 `package:flutter/material.dart` 的 `ColorScheme` **不是同一个类型**，直接升会在
+  主题注入处类型不匹配；要升必须先整体迁移到 `material_ui`（另行评估）。
+- 其余直接依赖经与 pub.dev 逐一比对，均已是各自最新的安全版本。
+
 ## v1.24.92 (2026-10-05)
 
 ### 内置 JavaScript 编译器前端（文本编辑器「激进压缩」）
