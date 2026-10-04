@@ -4396,5 +4396,6 @@
   "diffNoChangeHere": "No change to apply here",
   "diffExitKeepTitle": "Keep this comparison?",
   "diffExitKeepBody": "Both texts will be saved and restored next time.",
-  "diffKeep": "Keep"
+  "diffKeep": "Keep",
+  "editorSmoothKeepIme": "Keep IME suggestions in smooth mode"
 }

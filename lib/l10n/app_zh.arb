@@ -4250,5 +4250,6 @@
   "diffNoChangeHere": "此处没有可应用的差异",
   "diffExitKeepTitle": "保留本次对比内容吗？",
   "diffExitKeepBody": "将保存左右两段文本，下次进入自动恢复。",
-  "diffKeep": "保留"
+  "diffKeep": "保留",
+  "editorSmoothKeepIme": "流畅模式保留输入法建议"
 }

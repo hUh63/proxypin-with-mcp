@@ -119,6 +119,7 @@ const int _kMaxHighlights = 3000;
 
 const String _kPrefRetainMode = 'text_editor_retain_mode_v1';
 const String _kPrefNewline = 'text_editor_newline_v1';
+const String _kPrefSmoothKeepIme = 'text_editor_smooth_keep_ime_v1';
 
 class _TextEditorPageState extends State<TextEditorPage> {
   final EditorDocuments _docs = EditorDocuments.instance;
@@ -128,6 +129,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   bool _wrap = true;
   bool _smooth = false;
+
+  /// 流畅模式是否保留输入法候选建议。默认 true（不牺牲输入法）；
+  /// 关掉后流畅模式会同时禁用输入法建议，换取超长文本下的更高流畅度。
+  bool _smoothKeepIme = true;
   bool _showAscii = false;
   bool _showUnicode = false;
   bool _dirty = false;
@@ -185,6 +190,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<void> _loadPrefs() async {
     final raw = await SharedPreferencesAsync().getInt(_kPrefRetainMode);
     final nl = await SharedPreferencesAsync().getString(_kPrefNewline);
+    final keepIme = await SharedPreferencesAsync().getBool(_kPrefSmoothKeepIme);
     final snippets = await ToolSnippetStore.load('editor');
     if (!mounted) return;
     setState(() {
@@ -194,12 +200,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (nl != null) {
         _newline = _Newline.values.firstWhere((e) => e.name == nl, orElse: () => _Newline.lf);
       }
+      if (keepIme != null) _smoothKeepIme = keepIme;
       if (snippets != null) _snippets = snippets;
     });
   }
 
   Future<void> _saveRetainMode() async {
     await SharedPreferencesAsync().setInt(_kPrefRetainMode, _retainMode.index);
+  }
+
+  Future<void> _saveSmoothKeepIme() async {
+    await SharedPreferencesAsync().setBool(_kPrefSmoothKeepIme, _smoothKeepIme);
   }
 
   Future<void> _saveNewline() async {
@@ -1127,6 +1138,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _showSpecialReport();
           case 'smooth':
             setState(() => _smooth = !_smooth);
+          case 'smoothKeepIme':
+            _setSmoothKeepIme(!_smoothKeepIme);
           case 'selectLine':
             _selectToLine();
           case 'replaceLine':
@@ -1157,6 +1170,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
           checked: _smooth,
           child: Text(localizations.editorSmoothMode),
         ),
+        CheckedPopupMenuItem(
+          value: 'smoothKeepIme',
+          checked: _smoothKeepIme,
+          child: Text(localizations.editorSmoothKeepIme),
+        ),
         PopupMenuItem(value: 'selectLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
         PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
@@ -1171,6 +1189,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ),
       ],
     );
+  }
+
+  void _setSmoothKeepIme(bool value) {
+    setState(() => _smoothKeepIme = value);
+    _saveSmoothKeepIme();
   }
 
   String _newlineLabel() {
@@ -1300,17 +1323,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
         child: CodeForge(
           // CodeForge 的 language / lineWrap 是 late final，切换得新 key 重建；
           // controller / findController / undoController 在文档对象持有，重建不丢数据。
-          key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth'),
+          key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme'),
           controller: controller,
           findController: _doc!.findController,
           undoController: _doc!.undoController,
-          // 流畅模式：关高亮 / 折叠 / 自动换行 / 输入法建议，换取超长文本下的流畅度
+          // 流畅模式：关高亮 / 折叠 / 自动换行，换取超长文本下的流畅度。
+          // 输入法候选建议是否一并关闭，由「保留输入法」开关决定（默认保留，不牺牲输入法）。
           lineWrap: _wrap && !_smooth,
           language: _smooth ? null : _lang.mode,
           enableGuideLines: false,
           enableFolding: !_smooth,
           enableLocalSuggestions: false,
-          enableKeyboardSuggestions: !_smooth,
+          enableKeyboardSuggestions: !_smooth || _smoothKeepIme,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
           finderBuilder: (c, controller) => FindPanelView(controller: controller),
