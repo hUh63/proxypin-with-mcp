@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.24.83 (2026-10-04)
+
+### 网络层 §2：`Channel.writeBytes` 写背压
+
+- 新增阈值（待写队列长度 / 底层发送缓冲字节 / 单次最长等待），积压时先让出事件循环等待
+  排空再写入；因读事件已串行化（§1），等待会自然回压到上游读取，避免对端慢时内存放大
+- 等待有上限（2s），不会在对端长期不消费时永久挂起
+
+### 网络层 §3：三处 O(n²) 拷贝热点
+
+- **SSE**（`sse.dart`）：改用增量 UTF-8 解码（chunked conversion）——旧实现逐块
+  `utf8.decode(..., allowMalformed: true)` 会把被 TCP 分片切断的中文/emoji 解成 U+FFFD
+  （**内容乱码 bug**）；同时改为游标扫描，去掉每块 `toString()` + `substring` 的 O(n²)
+- **WebSocket**（`websocket.dart` 的 `ByteBuffer`）：`putBytes` 由「每次新建 + 两次 setAll」
+  改为 `BytesBuilder` 追加 + 读取时一次物化（带缓存）
+- **HTTP/2**（`h2_codec.dart`）：DATA 帧 body 累积由「每帧 `toBytes()` 整体拷贝」改为
+  按 stream 常驻 `BytesBuilder`，仅在 END_STREAM 物化一次；流被 RST 时清理累积器
+
+### #956：受限放开「不支持解析」响应的响应体替换
+
+- 原实现只补跑 `onResponse`，body 走原样转发，脚本改 body 不生效
+- 现在：**仅当**响应声明了 `Content-Length`、body 已在本缓冲区**完整到达**、且体量不超
+  `Codec.maxBodyLength` 时，才「缓冲 → 跑拦截器 → 按拦截器结果改写回写（同步修正
+  `Content-Length`）」；任一条件不满足完全回退到原样转发（含 close-delimited / 分片大 body
+  等流式场景），行为与放开前逐字节一致
+- 找不到可改写的 `Content-Length` 时安全回退为原字节转发（丢弃脚本改写并告警），
+  绝不发出长度不符的报文
+
+### 测试：两个移植库的逐字节回归测试固化
+
+- 新增 `test/douyin_sign_vectors_test.dart` + `test/data/*.json` 金标
+  （由 Python 参考实现生成）：
+  - TTEncrypt v5：8 例固定 keystream 逐字节 + 3 例加解密往返
+  - X-Medusa：23 例（含 hash_f13 三分支覆盖与默认 LCG 路径）
+- JS 引擎不可用的环境会打印告警并跳过断言，不误判为失败
+
 ## v1.24.82 (2026-10-04)
 
 ### 新增：内置抖音抓包方案（抖音专项优先）

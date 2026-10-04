@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show latin1;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -357,6 +358,16 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       return;
     }
 
+    // ── #956 受限放开 ──────────────────────────────────────────────
+    // 定长且已完整到达的响应体，允许「缓冲 → 跑拦截器 → 改写回写」；
+    // 条件不满足时完全走下面的原样转发，行为与放开前逐字节一致，
+    // 因此 close-delimited / 分片大 body 等流式场景不受影响。
+    if (decodeResult.data is HttpResponse) {
+      final handled = await _tryRewriteUnsupportedResponse(
+          channelContext, channel, decodeResult.data as HttpResponse, currentHandler);
+      if (handled) return;
+    }
+
     // Fallback: generic relay for unsupported body types.
     // `forward` is a view into the same buffer (decoder only advanced the
     // reader index), and `relay` flushes the raw buffer via `.bytes`, so it
@@ -380,6 +391,94 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       }
       channelContext.listener?.onResponse(channelContext, response);
     }
+  }
+
+  /// #956 受限放开：尝试对「不支持解析」的响应做缓冲-改写-回写。
+  ///
+  /// 返回 true 表示本次已接管转发与后续通知（调用方不得再 relay）；
+  /// 返回 false 表示条件不成立，需回退到原样转发（拦截器尚未运行）。
+  ///
+  /// 仅当**同时**满足下列条件才接管，任一不满足即回退：
+  /// 1. 声明了 `Content-Length`（流式/close-delimited 无此头，天然排除）；
+  /// 2. body 已在本缓冲区**完整到达**（`buffer.length - headEnd == contentLength`）；
+  /// 3. 体量不超过 [Codec.maxBodyLength]（避免大 body 驻留内存）。
+  Future<bool> _tryRewriteUnsupportedResponse(
+      ChannelContext channelContext, Channel channel, HttpResponse response, ChannelHandler currentHandler) async {
+    final raw = buffer.bytes;
+    final headEnd = _headerEndIndex(raw);
+    final declared = response.headers.contentLength;
+    if (headEnd <= 0 || declared <= 0 || declared > Codec.maxBodyLength || raw.length - headEnd != declared) {
+      return false;
+    }
+
+    final request = response.request ?? channelContext.currentRequest;
+    response.request ??= request;
+    final originalBody = Uint8List.sublistView(raw, headEnd);
+    response.body = originalBody;
+
+    if (currentHandler is HttpResponseProxyHandler && request != null) {
+      try {
+        await currentHandler.interceptUnsupportedResponse(request, response);
+      } catch (e, s) {
+        logger.e("[$channel] intercept unsupported response failed", error: e, stackTrace: s);
+      }
+    }
+    channelContext.currentRequest?.response = response;
+    channelContext.listener?.onResponse(channelContext, response);
+
+    final List<int>? newBody = response.body;
+    if (newBody == null || _sameBytes(newBody, originalBody)) {
+      // body 未被改写：按原字节转发（与放开前完全一致）。
+      buffer.clear();
+      handler.channelRead(channelContext, channel, raw);
+      return true;
+    }
+
+    final head = _replaceContentLength(Uint8List.sublistView(raw, 0, headEnd), newBody.length);
+    if (head == null) {
+      // 找不到可改写的 Content-Length（异常写法）：安全起见按原字节转发，
+      // 本次脚本改写被丢弃并告警，绝不发出长度不符的报文。
+      logger.w("[$channel] cannot adjust Content-Length, keep original body");
+      buffer.clear();
+      handler.channelRead(channelContext, channel, raw);
+      return true;
+    }
+
+    final out = Uint8List(head.length + newBody.length);
+    out.setAll(0, head);
+    out.setAll(head.length, newBody);
+    buffer.clear();
+    handler.channelRead(channelContext, channel, out);
+    logger.d("[$channel] not-supported response body rewritten ($declared -> ${newBody.length} bytes)");
+    return true;
+  }
+
+  /// 返回 header 段结束位置（`\r\n\r\n` 之后的下标），找不到返回 -1。
+  static int _headerEndIndex(Uint8List raw) {
+    for (var i = 0; i + 3 < raw.length; i++) {
+      if (raw[i] == 13 && raw[i + 1] == 10 && raw[i + 2] == 13 && raw[i + 3] == 10) return i + 4;
+    }
+    for (var i = 0; i + 1 < raw.length; i++) {
+      if (raw[i] == 10 && raw[i + 1] == 10) return i + 2;
+    }
+    return -1;
+  }
+
+  static bool _sameBytes(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// 用 latin1 就地替换头部里的 Content-Length 数值，保持其它字节不变。
+  static Uint8List? _replaceContentLength(Uint8List head, int newLength) {
+    final text = latin1.decode(head, allowInvalid: true);
+    final pattern = RegExp(r'([Cc]ontent-[Ll]ength:\s*)\d+');
+    if (!pattern.hasMatch(text)) return null;
+    final replaced = text.replaceFirstMapped(pattern, (m) => '${m.group(1)}$newLength');
+    return Uint8List.fromList(latin1.encode(replaced));
   }
 
   @override
