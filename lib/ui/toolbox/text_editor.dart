@@ -33,6 +33,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_manager.dart';
 import 'package:proxypin/utils/code_minifier.dart';
+import 'package:proxypin/utils/js_compiler.dart';
 import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
@@ -879,6 +880,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _toast(localizations.editorMinified('${text.length}', '${result.length}'));
   }
 
+  /// 激进压缩：走内置 JS 编译器前端（DCE + 局部变量重命名）。仅 JS/TS；
+  /// 语法超出子集时不给结果，提示用户，绝不猜测。
+  void _minifyAggressive() {
+    final controller = _controller;
+    final doc = _doc;
+    if (controller == null || doc == null) return;
+    final label = doc.langLabel;
+    if (label != 'JavaScript' && label != 'TypeScript') {
+      _toast(localizations.editorMinifyUnsupported);
+      return;
+    }
+    final text = controller.text;
+    if (text.trim().isEmpty) return;
+    final result = JsCompiler.minify(text);
+    if (result == null) {
+      _toast(localizations.editorMinifyAggressiveUnsupported);
+      return;
+    }
+    if (result == text) return;
+    controller.text = result;
+    _toast(localizations.editorMinified('${text.length}', '${result.length}'));
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     FlutterToastr.show(msg, context, duration: 3);
@@ -1146,6 +1170,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _replaceCurrentLine();
           case 'minify':
             _minify();
+          case 'minifyAggressive':
+            _minifyAggressive();
           case 'retainMode':
             _pickRetainMode();
           case 'newline':
@@ -1178,6 +1204,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'selectLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
         PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
+        PopupMenuItem(value: 'minifyAggressive', child: Text(localizations.editorMinifyAggressive)),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: 'newline',

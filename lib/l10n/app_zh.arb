@@ -4251,5 +4251,7 @@
   "diffExitKeepTitle": "保留本次对比内容吗？",
   "diffExitKeepBody": "将保存左右两段文本，下次进入自动恢复。",
   "diffKeep": "保留",
-  "editorSmoothKeepIme": "流畅模式保留输入法建议"
+  "editorSmoothKeepIme": "流畅模式保留输入法建议",
+  "editorMinifyAggressive": "激进压缩（重命名 / 去死代码）",
+  "editorMinifyAggressiveUnsupported": "语法超出内置编译器支持的子集范围，已跳过"
 }

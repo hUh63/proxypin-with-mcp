@@ -4397,5 +4397,7 @@
   "diffExitKeepTitle": "Keep this comparison?",
   "diffExitKeepBody": "Both texts will be saved and restored next time.",
   "diffKeep": "Keep",
-  "editorSmoothKeepIme": "Keep IME suggestions in smooth mode"
+  "editorSmoothKeepIme": "Keep IME suggestions in smooth mode",
+  "editorMinifyAggressive": "Aggressive minify (rename / drop dead code)",
+  "editorMinifyAggressiveUnsupported": "Syntax is beyond the built-in compiler's supported subset; skipped"
 }
