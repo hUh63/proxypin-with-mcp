@@ -17,6 +17,7 @@
 import 'dart:async';
 
 import 'package:code_forge/code_forge.dart';
+import 'package:flutter/material.dart';
 import 'package:proxypin/utils/text_special_chars.dart';
 
 /// 不可见字符着色用的高亮样式：
