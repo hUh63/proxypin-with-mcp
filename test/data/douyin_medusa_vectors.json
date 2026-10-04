@@ -1,0 +1,496 @@
+{
+ "vectors": [
+  {
+   "name": "case1_basic_get",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/aweme/detail/?aweme_id=7418611054483082546&aid=1128",
+    "params": {
+     "aweme_id": "7418611054483082546",
+     "device_id": "4985375294231"
+    },
+    "device": {},
+    "khronos": 1789720000,
+    "hashRand": 195948557,
+    "xmRand": 252645135,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "rand": 305419896,
+    "launchTime": 101,
+    "pid": 10007
+   },
+   "expected": "w/Wsajcd85AXInBRFt9kGpc6zXIN8AABwBVPCx8HA2GFGF9fCLYXC6ASL3O3obIojrMG/fgzRwbsZVVkPB1vdXIrbFiiw2JkROSlA35Sn2hyMmheZmEOHU39d+Zmbaddo0h8SCUXG0cgeLEBMUFYpYiKrEIxIR0uz3kAXLFIvDU2PhhUwwLfFH67GL1k2Or3GRAqGUvsK3kpgdtmdn4r3k98amonL8LHonVMh0Wvd3RmKAAx8DPJ+cAinU7f5Ce4q+TYlqUurVM65xGUT5y2+WrEOPzL31xMjzm8Prp7vHa4G0Kn2ze80VIx+w9P0gbi++k9TG5qnL7Hy/EjCC5rh/De1jNl0SehhWn6DDA7HiL2fF9C3swSD42lFPPhU7SaDwijW0Bo7DCH07R4yUsiWV+Ti9trLE6UCRvLbZ0sUT7cdXH23C11o5m5RaBdGsgCZqnylKjLJ7YbJyzht8aO5hEPcdCFCdYuXFrqZkF+9CgzMBQfFCmuvVAtFRmsdI+WPBcnChTnNd5GXECaddFuv7hcLnmaig1EDAXQ2L4Bu6O3LBDvxS+b36ggozcA8YHM0Q4cNSQRsstNRU4YjUKACMuTzICpu/NRUDBadeDFmf7H6q1+C+cDNpVLTpanO8k12xUyIIoUyCVtVp6OY803HTWk/Z9QX+hJ/q4QwqXXOXd01DV5r/N3NHrBdLcwIUdzzIOQX5kpqrZNDXumr9ywV0BpUP9TD/kgxVWYGp9baynuIbDllrg41aDhNygxUal+YnSPDwpHFbjKFkkV8fm6GHVsK3ebhvtpz97Pc0M0Y61UTQi5QqhCrWOviDDglf5RZ5PONKz5Y2QMre8VNtTKI5AOOySxMSGf9iopnhR/hQ8h1BzYoRAt7pgeFEdioW8rO8qTw7yhIAs14sxpp9QL+0rnsgHkMAnPvGJBldr1d22wgOzdigagoW+qKJzM9mJu1AGpoLYpWWWWAVtQY7lKc5dc//qXXP66rQs="
+  },
+  {
+   "name": "case2_body_str",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/comment/list/?aweme_id=111&cursor=0",
+    "params": {
+     "aweme_id": "111",
+     "cursor": "0",
+     "device_id": "1234567890"
+    },
+    "device": {
+     "device_id": "99887766",
+     "version_name": "31.0.0",
+     "os_version": "13",
+     "device_model": "PIXEL-7",
+     "device_brand": "google",
+     "device_manufacturer": "Google"
+    },
+    "khronos": 1700000000,
+    "hashRand": 3735928559,
+    "xmRand": 3405691582,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "rand": 2059198193,
+    "launchTime": 118,
+    "pid": 11999,
+    "body": "hello=world&foo=bar"
+   },
+   "expected": "A/FTZfcZDJ/XJo9e1tubFVc+Mn3vvgABXDX+uv7KAyQKGLGF333oqQiCvgvmtJelPP2ZdRCvwdxpehfyR8TSQrh3QsktagdoIlzWgDni+2ZizwJV1iINjvpJnejN2xxlsAmQNTbW2m4r9EWK3aOt3m1YyBo9W2ZkOySERjwCNkSMv9b5l5tB/ozQ3a0IjNYrp0uZbbC9+WrrL1X5v1Ykdl21yZCU0N4PTX7lElBo9aFgCvuYTJCq+pmD07GFlBATDsPBWTw3M+1Gfe9KwycMUGiW7Xs5h4c6oPv/id40sdz9NknJzE0o3FOwSKeHBYXSIfIhgVfNCG3tDdNm0l/Sic6Vm7p6Strrw/SSE3ackRhQ4unstCboQsG9/6JqvUsxJh+u7Pq/B3oU0nyBPOe1SemWgc5eDSl+PW10IeAvqyRKYL0LH94KBPFHJUVh9HIkeuvpt8ZAzZ9arw4fjG4tWyCxrFmFHgvT9K/gjFBHSPPCP/ttCyqJhM1X73BqCofEvkyvBN+3ZhpLjNs8dqlI2AtdEHZhBSsO28SSEKz4V0i4/oruUvowzTL3HRe/VJPMjdEbBDi2Kl7mpRDw3WycF1Q2Dfjno/ycUAj8T2tw0whzVfNtY/9ftz6XgkSj10XBg2BOZ46HuEYulooTcYR9Z/Y5IffHbaRoS9fT1+NK8q/DwthHHT/ThSi2GloA4e+YNOz3o1aRj1hoHiMHOXS7XVNZuPNA49mw5xjDP1GG2V+U7W3nxcxSPTbeN41Pjthn4PgEFMuaJkPs4MQa2TGhdzq8tMqYGN9CAOQW351efHMGFZmpg3wBiHytH3I/JkkiQ1i+TWn3Bz//U951l1hyJadWD+fCneRylxlB4uRCOeJOTxwdiGC4sytOtjELELzM+29m6X8YsI7D7/pYlMXpfhojfEcC9T1HDWk7hxve9TyRNnqnireVOEnf0lZ0l2cjaER4+peJ//qXiL+t3g=="
+  },
+  {
+   "name": "case3_body_dict_json",
+   "opts": {
+    "url": "https://api.snssdk.com/service/2/device_register/?device_id=55",
+    "params": {
+     "device_id": "55"
+    },
+    "device": {
+     "device_id": "55",
+     "report_time": 1699999999
+    },
+    "khronos": 1699999999,
+    "hashRand": 7,
+    "xmRand": 9,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "rand": 1,
+    "launchTime": 100,
+    "pid": 10001,
+    "body": {
+     "aid": 1128,
+     "device_id": "55"
+    },
+    "data_type": "application/json; charset=utf-8"
+   },
+   "expected": "/PBTZQgYDJ8oJ49eKdqbFag/Mn0HAAABkDUJBAAAAeeMGEtgQiqWmWcdjcDo3DQQ4dTAg+3Y+I5nR6Xd6kqyYAFOFBJch/AuROxyK//llN3SprQsNytuiEzQZxSYkb0+gslPr9HLMovkuH4ON+HHVibR2N9LEVqMo6XArPyLBuLc0VCfs+G5JI1hmwcWWo34hEwao6FUTnIybWonALkekZBtgkx629eqvTBU14dAgjKYbGTP96wPNx4CLAd+MV+5wRmo3uBqnskWR75YdiGATUQH9E5VYydiA6TbOMIW46FQ4v84iN3LYgnE1L+ueda+/XlHKG5KKjLn4zAmOzJ8/pR4CYd0lQJOD9VRQRhK/+/fQpLzXomXirsO4cCASePceyTZ+lerGbuOfnnbitsUSO9K8/cNsvn1llql5VQ3bc18qrsJtrxdVl2PwabWcxh0SmI7w5EAV2IMMvNIyaWBCJ9HfMCCMvriOHlQCFluLfhIUEKkBMNPoMxd6WuNpXEOr+m4dpqLsXuG2mRED4QAn/5I8mrLd+CBqUjK/9hxUIR1+eEe9xTuz8c8n8BcpHJZpSj12NP6K04szjeapbSxLqnhw4mx8K82N13k/FW90BiZxpbQjkc2sZqvxqPdkCHYNutKA1S0h4FSKdr+UAjwOvFpk4AKPF+ZCV8snMawr1196wOWM2GGStm3mJHxcqVdJLbCqfK35z+ngnoktNkOCF4cNeNOQ9DtgcWqVFXvluak+dONfaZALNC2d+z2L1adNCCSZQvHpYtFO+8x8E8c16QcnRz5at8EQvqKZHUpNpBkTcfviIyJgOw7XjOJLKECtYFAvLv5It1rT3o7GNZEf8eLtxlMGutc4eXX1mfYamrfKiaXfAFG4qDxo2rL/73tRnEarw44b4JJ0b/dedAdCfXnyn81G4onjJbOlqeN1SjP5JTPgpj////////+vwAA"
+  },
+  {
+   "name": "case5_noquery",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/hot/search/list/",
+    "params": {},
+    "device": {
+     "device_id": "0",
+     "os_version": "11",
+     "device_model": "ALN-AL00"
+    },
+    "khronos": 1800000000,
+    "hashRand": 2147483648,
+    "xmRand": 2147483647,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "rand": 4294967295,
+    "launchTime": 120,
+    "pid": 12000
+   },
+   "expected": "A9JJa/c6FpHXBZVQ1viBG1cdKHMAAAABcDX///9/AZSGOGV+eu8V7UTGzVnZ01zoUqzZP0gL9JvBSnFijZmE6W4aL0yZIs4JjOGjGw9NA/wIZQjXfvidLruJrwYu0BZ+u03OwepSAMAfiIpE2J/DsnmgqPhZpFnqs5l/PQ1zkvmKhQS/sRJaJ36ginNj3rM12Kt9Xarhv/f6Wo71ENitpTFsjANBjD9GpBVtyXyFYC3T5HxZJ7NaGv1YH3Ff19QKoBO3D8Om0+7KOdnb66igBtPKvWL6TkSuAcj6DmFNdmE7eecyFmi+LC5nbY97WwrEQHbYlVmL/VvbkVt50L/a8h0uHIOG93J6juvrjTcaTNLS2SqFUE8T55u0FUBGFQBAONTB8KaJC658YrrWA82R0qCKrQQs/rWCvwLZ0D4E0MJxtVgWkiBdB8WNZuyw27Qamg2hQ3q1HgsuHleVemCNLBsRIFL0hoeRdMlxy1mf0War4muCVHbLMIH5tf4gi2ypeqYMndngctlQqPutOer61BXdGrZ6z4U/oOlFGM30Hr5fM97kzcn864An2QPRSCedRg2QQmyt3Okf9IjcZAErWOYD6GHhdBUtf1WxuXygkMxc+YW0cM3HE5NGNfzaOOaXTCQDZ356WKwPW4ECkVs/ObHpzUjfrgK7N0k6xUzIK7bt/V/SiYagaIAvzwy65H92VeqATabyR0RfYKhgjdqlvjKbycS9LNWFtizGtP0cOTOdQHtnk7xNg4KtiKq5AeYZ8XrPkoUQuCLbwTTpp+zHah2WdOHNFtS+9/XA5UoIjVdZcQdRpTUlwrPDhSnZ6Fgo2z/bVeEkUaOn8fZ3Tbsax25fpyIzlYVZfVvyUAoQ/QkfYIXk2+U5VEZTfrFk1R6tXI6lJ3JnK8Bv5EfSgOLO50VMHx6PK4mTlDPV95KEeOQjksKcY/ubff9/////f/6/AIA="
+  },
+  {
+   "name": "case6_body_dict_form",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/search/sug/?keyword=%E7%83%AD%E9%97%A8",
+    "params": {
+     "keyword": "热门"
+    },
+    "device": {
+     "device_id": "7654321",
+     "device_manufacturer": "XIAOMI"
+    },
+    "khronos": 1650000000,
+    "hashRand": 168430090,
+    "xmRand": 185273099,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "rand": 43981,
+    "launchTime": 105,
+    "pid": 10321,
+    "body": {
+     "query": "热门",
+     "count": "10"
+    },
+    "data_type": "application/x-www-form-urlencoded"
+   },
+   "expected": "gwBZYnfoBphX14VZViqREtfPOHoKCgABEBVLCwsDA1aOOGEVmGiI5+1ywtE9i4XdvBBGY0bgOvuoraNyawib3CfrWWo+F+rwBeaHJXnIm5+kVu96P2V5yS0xUfbHlNDicBzVFDD+ifiNVDBvf8xbmBLfn6/MkMX4ueBB1l8WFgw5dItYdZT5yHjXFyGuJru6b7DD5K768EJP3ue26wnppiZ2PZSU4ztbb+Sd/eHDGFSac3/61ALyBkWT5TrXZ9i/j8lUKuYV8hzH5PUmW8dpusW88WDYwRKfwE/xeLhntMfdDzoLnPeqVHtH/ShTIfMNbZRClq6IRB5FapwzdXa7Y2+qe7YPDtpr7raizfo0NJXNk3FA75bTVgyCIixY+eeN6Wr/WRyU5NSP/2tWh6IyZJ847x2fXnWPu0v0MmaGb7B1vXVXW5MwLJ9gs5qEIN8EtrNNKFihWL2kbnXB+2Ld16NSh8Vae/wiIgGkAkknrxe1btPm2L6EQFOcPIdBSGR1XH3ltBVfstJLW2R5/dxOiythOoL91UAFFRcfAbDgjR41ZMbs76+K8YTqvz/1qiGoPnGQ2D6JcZsgPyXJCyVKR0I+H6axnT6eiungv57VZxDVgFSAT1jOIPFIW16KHLlXX3xcov4btSyYZ9XdOB5VPqC4C1SmWxak8hqHXhQ2G6Kf25916WtcTiiXHT4/LA4Q/NuHh4/GPc5iByEZ5IT5jWgANdx32QF3IehsZH6AniXZmwSyGs7rDuoodHFE+YuSmR+80bRLLvApnOBsY6NLy7G+S74w4c9zdskTuN2ogMfoh+4x9GJW+Zkhrs2DP2p5JzvaXMOW/vCGkBCa7z9Oa5vZMNKOaXhU0QTl7dehDifUc6dabpsZl8eRJVSUXiNA+Wnp8EqU0QOiTL3FsJ40rhh3Nzoe3xJn921xsgt6IJbgE4D+5zb+xJGjCW9g2jzjh27//6////+uvwoK"
+  },
+  {
+   "name": "cov_b0_v0",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=25",
+    "params": {
+     "k": "25"
+    },
+    "device": {},
+    "khronos": 1789720001,
+    "hashRand": 2712847312,
+    "xmRand": 219025168,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "rand": 279694831,
+    "launchTime": 100,
+    "pid": 10001
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLQwwAB2DVQDx4FASEFGHJu7F3ym+1pg/tX2bl8mKUmppJi5UjPW3E3XATXtaZd7oAQuazX/j+cC/bVO9HUpFE+Zv6Mn80HzUc4JXMtj+a3u+koO/rhppIFz9cJjgOKjkfZu72S35li4lRETesSsbupoZLbgWgDtWD8obgoWk0ErLoS8i4UzjLpUEGBAg8dH9NvZhrQykvC0zmxi2nsvIc6I57njt1FPbmeXIu5mPl5TcHOfQPgUGrZCOHTctU5eElZ5kWZKho1qzExRkRICrdqT7Vw7EYyroVZz/gV3ERv6bEriPyaJXKPsrkO6UteNsJx3j4eJrJZgX59IcD9VqrCwqAtjXaoKi8MLAdE8NUuNf7eB2FtSp7kRH4vr/RNCi0uBZCW30A21/qKK3XuUwXUyRa7FoAye2F+WWTEW9HiYUuQMaeBPgSIKNXU+YQWqzF7wAfhBiyjm82j1F1096Emlp4aUUb00kVk18otf+r2X12OqeVgD9S5P8QUWmeJFtFlQd4+01r3gUL18dT4XJ27lxQLINwaNA4x8NfZ/HqX6pFHrtOvJF3ZbrMOy1/UQnQsOV8/rzgebDypwyMrIFIOdwkTXXCw62vRy13hR52Tx9BPg5xxbUXVxfMz0evq7itnyloKq8TqhBxU14melrFvj7WP/WrTSIx/tlBxqzLRHeh5Ot1yJ4S0ZS8D15QQ77iuhigbgNcfh7JTR6KJ8EaP/8TWW6NyqDiz9pKX07LTogKWcT4HLhMJ51v8ZqLlCypLDxkfFqi4eglPqsiVJljj4rtjEMKFBDl3z8hojq1Qk/sSNUY3At5y4XxPN1IQpsk6PeXZ5JGMY00Ub+85ewMvv1/9MKyIBkyufNpgIasjdOL9HHJKRJvEQKlckxeOaerx0XbSdMWNH/FRdrhM5P/6b+n/+m6psqE="
+  },
+  {
+   "name": "cov_b0_v1",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=5",
+    "params": {},
+    "device": {
+     "device_id": "90000001"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847313,
+    "xmRand": 219025169,
+    "lanusk": "",
+    "nowMs": 1750000000013,
+    "rand": 297594898,
+    "launchTime": 101,
+    "pid": 10008
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLRwwAB0RURCw4NA30OGDTf3GojvD1XoH4IixXXAEtkfJqjax78xQjnN4RcvVdfTXF3fXS+4FjIXJBEX/AuWXaaMAd9XJFCVgcW2PvTCfNHW6pl2xgQsBUKf1sskFDQvl2FFlzU58FOlfDPSCwxIfK0navctNFaPfCpwG1TMND1JUZKRbGAIcIpCuWOTZ2Cwal7dF8upJ2ikTwzItuhiDpokG6Pp+V0jOD+T9aBW59/qnhjDOqhD3KmPmAQXhkD2YenzA110+BsGbLle2jsOq8KsF1Lawm5/y+aQtWbbNiVz2Bp160DJiennvlcbX/FqFhueLPkPEspxG1O22A+LdFZC/r29Dpv0r8k5Ucr98ohFh7B2I31p1LvlT+w4Z2qNlNTkyc7Y84NE4LxJ4Rm6I+6S2Qd6QQsR+5E07irDKODOaMS3KcX9mkhoSV4MAjId6i2/yiFtNb7aWeo+t0GLMjluuQbqTM4X8qF4uxzIeKt0z0XRdXb4t3SnEh0SN9kbdLm+sk63pWBv+E6lsdgBmI1CcxALFwWAmLDI0QjtUJ6WoHQ8zhV05DsOlhowg/K8bOX6J4EGvu2qPJmv1mDiryTVfeWh9uRQ6nhh1pzld+HQXKLvXB0yQgLv8eKJf9Ko+MLMpnGxQblJBEz/U5XgGtBRShViI0iGveDo/8f6SXgri7NVV3mGmicsi1PVpH8I6X62wn160SBhHqfH5cretIRlJ1x3SlyxaOt9Sls0xDt8uTu0Wlf7R43B9hNYVBVU33Te0tUP+fmwGFK9EaufO+E+8TSEF7PHYL7T+xwF1Nd7i7kfoV+E6srFfROCAJj4/o0G1ZNm/FlaJBoUHDxeF4i86Ecp8HurUmiE76YVlFdvOx/P8ZQzqHeOdOToWD5J4kbbi1XQuZHMl6N74QJ3ccmH5LZdhW3eBUqGWdkh6eWB59S//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_b0_v2",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=41",
+    "params": {
+     "k": "41"
+    },
+    "device": {
+     "device_id": "90000002",
+     "os_version": "14",
+     "device_model": "CPH2451",
+     "device_brand": "OPPO"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847314,
+    "xmRand": 219025170,
+    "lanusk": "",
+    "nowMs": 1750000000026,
+    "rand": 315494965,
+    "launchTime": 102,
+    "pid": 10015
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLSwwABwRUSCw4NA/0JOI71+s7IDjYObahwXStco65ET5xvd/Nyd3rbBEbXkGrZI1/7uDpinwHRBPRg3kjvEs3rB9rmB5XgGjjWLiBed55CNRAVXszmqDsu+UxptvDW6sLpPZw1ZzRAi8dAcxgnlhW9pZhZafnZBdGLkGdD4kIuIPBqG0CVtVkU9Gq7Jx0/FBeIH7jktgDIzIVA6H1VI78uAEAuCWT+fT6TYVTRuLYawfH9E/jXrTy1M9ug0v6O1S/zSdLOhvWWSC86sFEM4l/GRXD/TXqEPrOCPccOonzHpVTuB22jjG0JPK2ivTGfUUqMe6hU6zCTJZEs+gK5hAFFJjMzdYZfpk00lz0UxX1DGVLvDYx1lOqKg7csZ/VXGMjh0FEkn+iR8q3oDLvVuXnLfYnmoBjSxRFQL9sTh0gA1fzfIR+q5wGkKoYtB1k5CLHGHD92PWtGTqC8Yy3xd0yNHdIR5CILMtlz5ljq3q5tUKeCjXT5ZNoVlodojfmkJB9++GwdYxsZHJMH9x5qASHP4vIKcDG9+WGfAZA1NX4KCuxopSoqENz+0Radl60LwOg/lcxj0/L+5I/bc0G4UAgZ9So+raP+AMtpuXH2IqVD/HVku2VQyV4ghI/v2OXR6Y1kL8LZtFL5g9+FJBbspOHvdMLIrEkg9sY9IH14SkA/DtMPwNivQOvSm+QU5qRedtg2fULGRxhJG3M09UA5vopHBxNg24WU8yoLsr4LguC7LCnuvwvbeP9HGC7zNbSTKM7b5xcl0UqJ7xTOmb71nIJmf3qXtM0prqtN8ONvgUc4JW+POASYAxsFQflMR4IjZKArEGQceNcR5rLMLQfXpp3Jx0ZOD59SfGnVh8eGasXbmBODrBIjNbC2OR+O6mNm8KfBLD2GxJXHZlJW57InmVuNQ3U3ZQ4mhfpv6f/6b+i/sqE="
+  },
+  {
+   "name": "cov_b0_v3",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=27",
+    "params": {},
+    "device": {
+     "device_id": "90000003",
+     "version_name": "30.1.0"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847315,
+    "xmRand": 219025171,
+    "lanusk": "",
+    "nowMs": 1750000000039,
+    "rand": 333395032,
+    "launchTime": 103,
+    "pid": 10022
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLTwwAB9jVTCx4FA2ILGNqEGqqHE6frDK2yIwlIhHB9j9wN/tsUe5jIbSAlPVV/YMwi0yWRyZo98c+oFQC2HojeI0nhQZLdCpwih2fTAOvoDorQaAms8DcdUK2mAMFuxykwtRLJAGG8mYWu2qI29/JAyTBeCLd4+aNf7ojyvFaf8qCKV9Nv4yn+VZqEIYBm+KsPDUUpRZWmdlPSkQejgPqJ2lnQQ7S7Z1D7kQS2mVZk1/rl5lyjFyu/34T+2myxbqK34QSpsczIhK2C8DEa1CBWB6HxK+b5/wf1W5l6rDwamLg0fx4Lumai+UmoQuhzSghdDzm+VV3QsjrU80QCBWjb24BmlCQchgE92dnB2S8/sNYEimJREjxFefOCZtiEvUOfI93SruRKIpSx56iI75T1nrnEoPIi5JNFQcNcU5ogxpPgUR/YUepONchjBplF8T1MlofbApzuatIjQU92nPDg18IuLIc5zG9ipD+aFvNjgawTAr2O4RGnsyA9bTS98dM6F3ZrTqG9fUOT4dsohdcKl3ld2B1LSHV+YwnzdbX29d3dgMiEHqrMje+Eu3UfuowIgZgZe0CuD2rjCgXp4C1UAf4FWcC2i+tAbqkli5i/MFr5A+EbwPXCg7lCM1gAyGPZwktOtjLUrHRJVZIsYHiLSWH4SNPzte8SjTVajFORJdzRIYHnrzVvP266ka+tSDf8h6NWlz2dlabkIfGfELa4wSbPOF2ktGpCAU/5OirWCB72Fqifj04pmzVlo9thjnULhaa76Z3wCHDYb2/fu9E+sPJRoBemkCt55kAEw9KOzfJDgqEczf5fe2nU4DgZDw1L8wvpuD0ZtX9V5blFEcZnDoiqICDxqY5b3Ss5Ydw1Rlc784JptFhbKdWEXP3LFvocC29co4Ws3jCrNuP2xNsT7TOmuDFb9PmGb/rJ+rwAn1zf//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_b0_v4",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=32",
+    "params": {
+     "k": "32"
+    },
+    "device": {
+     "device_brand": "vivo",
+     "device_manufacturer": "vivo"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847316,
+    "xmRand": 219025172,
+    "lanusk": "8496779ddb6dbcb6d4150bf880010000",
+    "nowMs": 1750000000052,
+    "rand": 351295099,
+    "launchTime": 104,
+    "pid": 10029
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLUwwABTzUUDw4NATyFOHYws/D7nf2r6uS3ldZu1FrHNkDRFbtjg+SEkbDslM+I/SxS1qznlhyzLOVbn2f8zfFzIl3iIo8GVlXDdysVUeH7fSzPnCffhKWPK8l3g0Z60dKSy1wl/Lzldz9rISLrpadQIkKzUD9E22czNt8Vs9rKZSpwQLr5PIHZ2UV9drhybp9fjFLcPeNRJn1X+z1wuiaio+YmDQPeG76LKopC3bNPZxWVlxxx9Z0ejIkEwVLUhKyrqYB+UAiXM1TFTMteXVKe46WwwAJbN79pXUoIAkHfsIAVH3G8+2acWi3sz9uH/8qBmzpY7zNgeWD/vIAZkevf2xisEp22+2/OwHkiy1uK1l3pQtb8F5Rg/0NotdqJyucv58dP4G31NPjBe/7Fh/4zkxGE5UZ3KQjjuPApUYBKuzunMj2dnsJ5QTlNwWP80wk28HJAzMYBEz3UvqeBcHzM/YAb3QAtd1OwJ9cx1mCR8WbcDRqF1UeRK2/O4ovIapoiYTZcMfGHdLo8WBu0BCOUEkihmzDoix6OKEguSJ4SZeXliJabZvIq1zwphIwIKN7UkpMuJ3ki8UmxThsjogBrlLZhv6HCjSdhWgqOS1oH48GDvHyqS+jlGk8ZFbDI4BrVyMJ2+Od70ktlHjulEPPc0FMV7+UKRz7bJDSYaQoMyapneBGMxXLzRi0NvQN6Ols80Te0elgjFNyI7II6rrAL1UASIeamxuSK3TwhOD23leRz959FJzC3HwzP417J0uXR2bevDOOnMt968ZMUYZlDZP/AjXQSgOjC/NAE+auEUWgmINVmeuGoEZVfa+uXo1N6HteWPxk0dfRY4edQsSErVplxWDUXtg5vGdMnE3sh1KQN1PHLW+k9NXzEsh+vJXEr43LaBc6w9w9JRnPKTufVJDe9KB6qCCWWyf/6b+n/+m6psqE="
+  },
+  {
+   "name": "cov_b0_v5",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=4",
+    "params": {},
+    "device": {
+     "device_id": "90000005",
+     "device_type": "V2217A"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847317,
+    "xmRand": 219025173,
+    "lanusk": "",
+    "nowMs": 1750000000065,
+    "rand": 369195166,
+    "launchTime": 105,
+    "pid": 10036
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLVwwABwjVVDw4NAxYMOOqheEfENgJYLkU7nyenbpgMGhWPj4E6HYuxwwkmZakz+FJPzUpNFk0HxX+aVGkhRkfw/k+8bwYbCi4p/pm5gd7WVF8X807fwArw3wAy10Rx6Gp6hL8T3TXM5yNY6f/i7GehbCd3p38TsX8FTR3f6Z5NQ52Nv8YQTWEA8KChk+PN/UV0E72GD86QJ/l5dDBgzwSQKSpqXvDqmA7ZuNNHXb55JsDeSzAgCU+pN8gijF5srSMslBpbyj6zUTsCbpA8g36lJTZO7uZMnC4G++bnP14IxZhGL3ruFpAIu1gKIawy9AHef3livhJN2sOUGNZgRNu8aPUS7iShs2gnpzDMTE/XqFm3fgswN8aFGOW1KX6xA7XNsbgCesk+rUhZBLCmAQNn/XqVHkwe5r+fjkf4sGHes9ZTlfIhcqMp44g388dDbKcJ+7GDVA/Vcc2xOHoEm7Yl8jrUJCLfQOGPmNHiINVZ70JDGgEVoErOxx/IHFfUIHwakY6rPbuDt1uDXYecPVjjx3JRxOTnRcHFAj9FfWoAbeKOEZ9EbGnQPt7oNs8kVqLMkZBlhTIIoKzlKP35MURb38gmtSEUCFnZAZ2xjHW+RWfQTdArsy8TvPwBlnGrH4Io4wWzYDjPK7sPnI9vvsK04z5o8Zf51h9GSXcrphJsbciTV121UNpzcSLW25ifIDIR0hRppR5l9+E2zw2hFDsLcaw71MU3uNHnz4BlRfQdpaxplU70PQF1EoBw2qcKYZ+6DmdxQdMp6K+25/S1JoR5awv7eWAHVBx+Xfuzs11RrIYZZIMePlMtmeGSw3lLi1cjUE6mj7z0TYh/8lrvYqEhTA2gZDLi90kwLBXWMmRIHUwJnY9xsDc0Zkdy5NBtfy4Mj3s08SCBIMph7uqzJnOomxQJ7Tjl/hsCMLzfT6pHYCnt//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_b1_v0",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=2",
+    "params": {
+     "k": "2"
+    },
+    "device": {},
+    "khronos": 1789720001,
+    "hashRand": 2712847318,
+    "xmRand": 219025174,
+    "lanusk": "",
+    "nowMs": 1750000000078,
+    "rand": 387095233,
+    "launchTime": 106,
+    "pid": 10043
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLWwwABJDUWCx4FA1iHOD3qFy4RMz3Ki47x8mDlHr6AZEWGzOIEoh3is4jN5SLrcxg2GudPdqQ8qGDEUqfF81lTcMRGAv5Ft0hfs/mf0X2IL+EEcJqydLm3lDN+hsP2AEUgWsVtC1pVvvx9mXI7C3/PkxVZ4zeQTSoKaAkV9wk0N6qC8Wb1IBQm2D6DT0kArW/1sg8BygGNOQx41lNLCz1Ut7F/4Uj5ro1xHTEOYhisDuN6v7rQkXUPvja4at8NhtYMcQIer/pp7Ne0uVrLRrEI/QDJMX5gNiliv5ip5AnWM/1Wqk5GdSzNkYzZQ1u60SMcHupUCxXWWviM185SPvYUP3Ebbmogibyeab5fWiFjhyfJcI+mqbFnMtwQqhn/AO2Vui/BN54cQc9BAQNb2YSxtq3ZJY5MngqNDCUbiBT/MbOxwz12g1DbVS8b109rmxlzSHDn6iyezOdvr7SF2etkO/HpEwEZ8pE1qrULn9Bnf5SCG97X/nrl3M+4cD7cXU7P9ZtXuCaZA21aphCGszRuK+Y/gTn6NJpeLdRPANOmJ3m7n81LWpbhX7DVSj1ZtNpwbcIGoLb/XIW0+S4w4iVubgFX1o2/VCiL+KeA5xKLe/TKlb9y7Oqt3IPPwdirIZACKM4iKkvru2OiPaVcPVYvUYPBrPU9EhD2ywmdEJjnFnMvKXUipKtOFp4HfmntebmlyUCnqeFnOWZppZVWv3RBlAkldvVj3WJ3PGMrAkF1UO5jJcfxrdnMFvvCHhd11FRYCyHT7HoHxRyynqX+tdlstjROk6ip1xmaEimfhEuFhLM958Q2QMZmBrEVx9RcclV1MbMUuf443X/hyPQe0bHTj/0CQG9uY4fqix99efGNxGSUzmCYmNdkQPex/8yEnF/S55+GCjokwReaP8H7K//6b+n/+m6psqE="
+  },
+  {
+   "name": "cov_b1_v1",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=12",
+    "params": {},
+    "device": {
+     "device_id": "90000001"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847319,
+    "xmRand": 219025175,
+    "lanusk": "",
+    "nowMs": 1750000000091,
+    "rand": 404995300,
+    "launchTime": 107,
+    "pid": 10050
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLXwwABghUXDx4NAd2NGDqyzTCCSPkgYNbiLsA4zf7TuRoDqqMSeliuvkyRmNNh50HFaQBTP969XhIKzcy3g8OURp4fo+woM4vU9+LEjAVWajg/MW/p+8MseWlqTsLUSMElDZmh0417TvhSLKHPO+Mr07MKoEVir7ZoquXn4A7Xxl4d5iBdHXopJApcjj6svH0/cZUCt8HwpnjJtxaQFY8MozOKbCflxRRGckEtmWwYhVcWWrHPcJi1J3GN20zLaRfCNwx/dgq4vGwcgA1eQmu2cD4Q28ORuOeufmILnBCv76zTBPRAf70XQ0LT1q0h5hK9jooJlMOgZDAWyB64g9UfKHMVFOK3laraJcoBX99uAxvNsQw8N9C8/j5fUfEl+a/tGnNWspFACShfdq7ad2IzUW9POjCqivM83CrGzVzwNxsF+NPombwNiras7gZobRFYGhFvbKzZd5yIZMuIKnsH8PBnHM6O3r2yUhoVzMFgQBYTCukX3HdAe0Vvb+U+3gAMDbmek9ddHBW0yIXIG2cRHi4gAxGLgdKqukpqjQZLFl9Ny7bFpbTkeSzEQPu1IhsSjpv44sRuOvWWy+Ryw87Heloo5JvspZmo67yaMP+eOaITfZSbrLdZoPskvqFPnKkI5mzzt4CPG2N6DhsUb/zDdw5e6P9mjc4y/fnjEAr7hmVTXaD1CgLeMdNniCf1OjXilfOSEsTbLxQNbZRldu+Frqx/viSZbsIiQkawj8i8me/YR23xMra6EH7TDcU79qlDRy5Vb1xwJEsJG7ioBZOxC+C3ne3qzGhMaIrk6XPxQHKKPXcAn0jv/zVpCF/KpjY6x6yUG3EmoZzirNtwnqOmEYXsuiED7dcbnkaCVnhN7Ov0aLfEgxaRTRx/2VfN9Ej3/t0ONEDFqZHVWgcC2hPKsQQBZDE4EzQLlvqnmN2Rvmdh//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_b1_v2",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=9",
+    "params": {
+     "k": "9"
+    },
+    "device": {
+     "device_id": "90000002",
+     "os_version": "14",
+     "device_model": "CPH2451",
+     "device_brand": "OPPO"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847320,
+    "xmRand": 219025176,
+    "lanusk": "",
+    "nowMs": 1750000000104,
+    "rand": 422895367,
+    "launchTime": 108,
+    "pid": 10057
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLYwwABWDUYCw4NAcuKGG0AjRSArJ/hS6+UoX728u++uiOfKNgOQ8WYOpPrwRh7oVz8a+m4ZtlOkVraOerrMHklwJ5n2wbI17cMm2OPtJXjWBTsqapgMU2Vu0sbyGCc+EHT6zo1EcrZLtiGgdaQlIsse2vvGUX4oPDBSPY9FiIulqXNUoeu8GUh5sYCleyL76WETyk7AHkaVjOPgq5Rte4Brp+U6JTRxbtrudCuotynTHpmGKAavBA+eYWwHP5UL/v/eSnatqF4Bjs9iu3q4bijMh29R75FfWrzBpU18x+9KvfUfNiWH6q7pojNNwlfe5ZQXNFCiLkXf8Ov5nrkm6pASC5F9WaUOC+PCySm9z7Lv9M9NtZGDxexPJOKMg4nai+8++0UPTU1ban966oQJiZznSrzJacetq0T8U7rnzi/z3mVGGyNkwUVmb9Re3BcFjB0QrsoAizDEO1QEmDXfaJQcQ5jXUc1aliDQ+EMOj8tgF/AIHkJuMAhS1TDJbyaVKqZavXd9uv7zg1p+oKK+jrpnhP9EKNJnDtlnF486HUrs4mMXwVnl7Vi5stNyhne1tRjQ75Ek30i5iRNHPW4hM4kLlKWfsZGkiWc32Hqi6D4gDdnMdgWstXThoWJR7Yk/wQqM5AxBrsYNhnm4X0cDkDgJ/PSIH3phFIHCV7al4Tu4x+eoK+T3Cvvy6sijoavy56vQLBekdaRrGxjfmwNf7h0RKmzt1LehgT56waxNfusOKSLGNVcJgQXFHVtpBThj5kM9EYexwsV6Cn+a7ZL+bf1N4moPGAA+p6nCG6QTc64CoQFUVetp6W8tO8xMJJ0+gKK+ojl7Vo+QEKl/mI5DhZNemuog83wE1Ap2ZHqixaWrOXksaNpGnMe7ZGmrZN0pNYICWMK8gChgZ6SqSP5Mjh8+THHInGc0fpv6f/6b+i/sqE="
+  },
+  {
+   "name": "cov_b1_v3",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=28",
+    "params": {},
+    "device": {
+     "device_id": "90000003",
+     "version_name": "30.1.0"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847321,
+    "xmRand": 219025177,
+    "lanusk": "",
+    "nowMs": 1750000000117,
+    "rand": 440795434,
+    "launchTime": 109,
+    "pid": 10064
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLZwwABhhVZDw4FAaiOGDZOUlw2hdNeSoU9EdPDTR7aMzkkgEk3XEl55a/D54Zxyb54lRF4Gas+n3fFCEmQLEX164RFwGVQR9z284xGxIMVFgvap/fpULjCIbGXdq54myEWBnPi3HfGyq3qlDc/NcAOCSo4wzn86F1OEm58LmE7RV9NGqAnu436xUk0hLjlr1LrQABnmsApeZO/ejXy8yggc7UcU0CbjZo5b4+yek5dyTz3IctPJri618drzH1IauY6Q1Lb+LrZr0nARBgWE/HJxieH2YE2GZAjgjpoTOej+aFXtE2fwuwu/a7OtufS7DXCBBJQVPVzOuU0PeRKqcaJN7fNa7s1iGaQtedfetRZA5dNRaG7eMcF6L1VFyeguRKHMht3nJ5wzZ4kQ2jjLiP+cMUHFDse8SqZLnpEy/6FNsws0qzwefYNMNmiwwf6bKP4U1hl8hMczHL6EbPXhUUXDfcju11SPwAy4dIeLrzLSbpVLJmLNcaW3hKX4JMTly36bRsUBz4cqSNifIStADTO8wTlDtp5sQ8YTFwFhvrDHm+/E58yZoEowN/QD1JRcO+rybU67Nm+CxSuyD7r5VYBHMeDto4Rb4x1+qjA3JlR7RB4U5W/Z91/aBGYutfffsIsZm9iTJOIlv4VD3YfU3iNhT/4catfmjWqrEoooa4pmid1zZjq4NxqSphxVymlNMcL4o1qAuOIKBlUP6vcSmnRqiBG9Btqegcgias9jnOKdarSTTxbB0uWaA2h2N5IqU7xCerTsU2w4S2FKrSlYQTJD4KRgL1rxvPWHfx6re94uOD8I7N6tLUlql9ACEqSHgVntNuDagu0rXpjjVZceNZl1kaazdal+zt2/4+0Hvx82Uc+DdeE3N02LzJPZ1Bvvew/frVEULqojvnPToq0CeFcW0NFfYhJ9zQTLnvqbRUMKM+m//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_b1_v4",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=0",
+    "params": {
+     "k": "0"
+    },
+    "device": {
+     "device_brand": "vivo",
+     "device_manufacturer": "vivo"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847322,
+    "xmRand": 219025178,
+    "lanusk": "",
+    "nowMs": 1750000000130,
+    "rand": 458695501,
+    "launchTime": 110,
+    "pid": 10071
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLawwABtTVaDx4FA3gKGBiQzERpY06z5DnKabkgCE9TRkFGquXFEZEXI1DJChDK8UJ/9KkO03CzcXhTREmbLMvZq/coi1ce8DqSvVzAZVvuqmdF/pq3/iGInbxNwE1qeHMiKvLjoTg2MgbcjvsHZcibr5P2FDKR5wopnX1nM+HeP16tw8GCdoFGlz2ZGoCxgXBkInSABEA5xtYLYVVfa4W3Kf+TG/CwamvVIKMbTRzjU8v8MwhCpnTNN5YWWi8ImYnCPkIDP/vW2/CKM5iBHUtyVLdTZH3R01XomCsSd4YgVBKfiXGTOGJ30C56BvHyL56S5Rmg4PxpvluWWWAQ15tsXzc7fYP2OuT+9PC0lAiFZEsCEG/+1nibNbY0dBTD69xg/g4+8IPjXIFe2XHBzJU9JuTdnFb5wfLrovzGShGEWMjt+9b0kvNXL+6xXMiDS04Y/6gWMA+9DW/e+KxrNBWuHpCNWCrvrrLvdEbz2nTjzDVaB2hP+Y36Sn8hXs0D0xaOJX7+3dDT9g17uYVmk/lJyAD5DIIy2hBz8L0BZCyzoU/CvC0+O+yETf+v58srIS3pkwb1+I0AU19ga5dux6QUxfsx9LuGldK+3t1AkqOzgBqBR62Rowve+wrC6Mn26oPVGkj3DySmHnh1SSTb8LeWf3whvLh4TkCjhx6aKQkTGalcoegmBIlMxpPGw9m6Lljdh0UcUWolRF56xuI7E2jxedkMcZ4ByhQU7cSBK7yT2nUM1DXxxzVeUruMehVj1v2fVOwMEPG3QByTJy9fbMZtG9B0YdO9vVi0x/FUR9lXqGx6LxUHEvsU80bQpFbLHqot3jUIP6ajybCJctvapnS0dxp0zE6DQO9T8/5azBo6WmJ6tYZKv+JQa5m9uYb9qy11d/w2Hlj/+m/p//puqbKh"
+  },
+  {
+   "name": "cov_b2_v0",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=11",
+    "params": {},
+    "device": {
+     "device_id": "90000005",
+     "device_type": "V2217A"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847323,
+    "xmRand": 219025179,
+    "lanusk": "",
+    "nowMs": 1750000000143,
+    "rand": 476595568,
+    "launchTime": 111,
+    "pid": 10078
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLbwwABNzVbCw4NAXsKOCxNj4yPGJeygTnRcZ1+cSvv5/flWKJQKt6zr1wYf1DWI6S2WLzhEIKVLwsIPIAZrOve6iTmyMbZyBsF9kmXz1cpveIj6TjDUgft8XHhtj1sdQBF+0txbzF6FO1vLtF5aKmAn8kLRql0XQQ8hbzvVSGl11Y3XegnPVxDrkMaL7X8yTzNFwa8XDd7/gbLZS/tVOm8s051dJPaAiVZ2n0xCybPYyi+bIeHVhq1ODScbpIYJk7GKDl+r13AfGOngK1MBXucoV7h0ZJymJHN8lPk3bliZD+Ef2CqntB0qWv5lvzs4WFS38i4YISRDPGDo4ufqKzZrjSZaXLl4dXG558N4FTHZxLONqE4CtNHYHxXPTucDIsYub2+OZr4hdkxekzba1GgY1pc5FXlK5co9/M2UZ10ZCANN8fHQwHoXS6eOFejzoVy4nxKKLofJQ+/FDkJR5m/1AnwhAd7VDIZC/0ugqHPeQFXeRLjFQeIYgDuRFR5HZvWRU71ytWAPiZvq6BKe/Ab7HI8E1vYeOAoWLf7W45vj1fBQ4TW8jFZfGUZMDPQ2Ds9k9xh/N5ruspQVI4LEHoXwHBXWlrzpU9xwrylWjjziolKCPCo2m4YgpiJ1jQUrixrK/VsOdL6dB4BolxQ84LyAkPR69jaIWvEei+wsuaYR5548aHXaKxhB+gE5VpYwgUdBxifu7sjNZv8DQAz+idTc0c/hVN9Ogy9TC+9meltuLzgJzgR8VUoRAug/XH8Mi7jxhIGfP5wiGbotpbkK3gUGIITOWF4wuJXzgwVgoV7Rp/YWrnspK/FSG+3CA/eHIHwU+ZuTH/dGmydz93Lu2d7+ZqJ/BJyYbT05QFpLhQYmkx8edNQjtgA2Xpsmxb31i+sbhrMQBTNLxJcbcVsGIFkejv1QlpITaovKJtO/d8qb0Ml//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_b2_v1",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=8",
+    "params": {
+     "k": "8"
+    },
+    "device": {},
+    "khronos": 1789720001,
+    "hashRand": 2712847324,
+    "xmRand": 219025180,
+    "lanusk": "",
+    "nowMs": 1750000000156,
+    "rand": 494495635,
+    "launchTime": 112,
+    "pid": 10085
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLcwwABEzVcCw4FA2IOODlulhGpuGbinOwdvdAug5LKwsHvL2RIwN4A8jI5mFpaZ2XZB5LhRa5xVqKxH6ZjD5RRTaFkCD1PqeZu6ZKep9M+DQVI1P/wINNgCeVTH8vkPKQRU2KyYdGGlaq73SPaXBnRn2ybrPjVQo0l28Q15zr/x8EOIY7ceArjbWIdpuWcwI6XjPjhtzerBE3+N3oUwCGEk95AfVrNIlfb9Tu+zuP2eSI4zuv8Mj947gaZBnYuS4dXPc0gqIK8hwNBgJty8UKaACIT9XvNpOwOZkTq4dC8CFf8a/oJ0jTQrln/K4tiv5oB4tSNSS8RKrRDCI5UHAzBBOnmCYP9BslC7VR8tGlEUvpkHvYeChrdSIRoMDhopJZ4m/UMyBBqCAfbU/hh7qiriqRXJxfOXLwyYbmjKI0KM+bycehJO92GgkFR6P/odK09c4VVE+vvYNNhqW1EGun+dW7R2kCGjrEYETB1mo/5BFjOcLxseqihqDaFU/NE51Ej4u3Jb2ybEXnu1R/8R0TnGf2f3pzQufTktzCmtrO0i2yY7XvfvI6r+9xQZ5LJevIhTW5KQ8Ekjdw7eKAS+Zx4760n8N/feG0PlcQviqqupiehC526ejfXogBjBXNYIjKU8TwJRlDG1c24gapnoj7PMB30u0PQNgDYtD5lKxUXIFh+ciWMFNMZ9H3Qgh51T6SnZYGyfS0S8uWD7UAxHaglycIkzwZNsh7vpcG5T6ikh+FQIJ8lTr3Y6nEYWpACrXwM+NjXAiSVQ34sfixVasO3FPHIbqQINeeLX+jGhCdX8gQhGiP/nVkTgjcn3D9E1r6OeDRv1vai89i5pS/kQXrBEBVu3wT2QuTQ9NRjRff+YSoR+kLavmG1SYGvcYnEiHthC/t10BcyaM+kKJY1KP/6b+n/+m6psqE="
+  },
+  {
+   "name": "cov_b2_v2",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=48",
+    "params": {},
+    "device": {
+     "device_id": "90000001"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847325,
+    "xmRand": 219025181,
+    "lanusk": "",
+    "nowMs": 1750000000169,
+    "rand": 512395702,
+    "launchTime": 113,
+    "pid": 10092
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLdwwAB0zUdCw4FA5qCGK6KZOK4Kcu4lbFT3kQ7LbcEoP+w9W5CX/xtpumNJ9Qw7n7HWweQC+FTROjV9aU6+4DAK89an1ms6yOVoHyrom62Bhp1628wACDY8U8P7+qgp/CwXk7ZmlgxfM8MxJnyt1cIDkOhvHvbBlvPuW0kbGszP6HECf94D91TEZRbjiR4eHX7DtG4wat1Pk5vQp8oeB98xK+qUkIik9PtJC7u89SaGvXJ3iwmktMvM+SntJ5c4ty6X3086jv8TSc8HsDuavjLLDESzOFbAg3bCKGYJFce61voHI05N7TJxlff3TCtdh1xkJgPqfLMazCyDX0TCXzBZ4RZOFjrixhQhgN1HhPJMYbi6Rxra1HaEAJiPWGCGU09WGekpHlHI9CdxfigUo17Y9g6/ioKlqUCahdRfytt7z/K8OlWPSgvW/11BxdMWmaZBi4j6Jf/DxG/ZV9aR4CNEqN5D8ugpnZ0Fuj+dgymWu+vo2FBvWhPkqLZyFoznB9admaCZYms83Use8AGD410a0ZkzgoN8uEcXoVLVXSGqM2a5Z01As/wmVHg+rNDL/fSAhX7SFVOyC47Yet03DY+IdyjtjjWpU3hMqXq0FUZJV6/Znk58Y1FyXvnUZfURFj+7UTWSoUGhbv7ONPTKqRW88qePbqtsdvWw8KHAZI/0is7tn+V6v1rB6sgIkvxFHICvLFIzQn/0ZaRaaH9S6u9gys6gJkQfxcW8Emd/xamsSGryJHMUAAbBtAu8aYeOMTSjqpQj43bnk9Fz+G/zNeWjVXuMHdvXGHAYYhPnSOeIWvBvEY6Kwm/2mssLVoPklTkdZU2WD2bMkmGLDQYAmfqW8be1adQ8xrDaGtyB/T/r+yoIRr3kL4jxJ0qXa+AQ6kLGsR5voBd48QQLvCybY6dbJa/mKMlxZdE0LicFlrnWHUg//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_b2_v3",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=7",
+    "params": {
+     "k": "7"
+    },
+    "device": {
+     "device_id": "90000002",
+     "os_version": "14",
+     "device_model": "CPH2451",
+     "device_brand": "OPPO"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847326,
+    "xmRand": 219025182,
+    "lanusk": "",
+    "nowMs": 1750000000182,
+    "rand": 530295769,
+    "launchTime": 114,
+    "pid": 10099
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLewwABoBUeCx4NAweJGK9y4GmDHZl+ZYeQpleLaj+nEnyB/hCmlmvsA8sWs6xRl2g88SKre0gqgisUekntIKNCQpz4cSawonbOlIt06fHecPP/kBiY3OT+WD7Ebchv0YrBbdsfTWrNjfYriXX7ffIMF0DPRfhPguEuoacitjTblVCZDdkfFMUQ5NCZLB5Gjh7YViOwcH983ryTRvHlfBlO3Gr3OcHTZUwLIDVSu7brv6LpXt4Neqx6MnqcmZI6VrsXm0OFwYBF4KAuTrIsbavLtJmH/cWxfy1HoB2PkBzJh1nEe/4XSEA3V71mXKJcbdSuxCAE07c08+g1DF5R4WeDKIlJ7cZE0SFBUFnpvAjMaD1FeTXeOx1ui/MEG/OOceE0UAbWroDTeNj6F4GhZd6FRwNeN2IbCtaJXo+AQbQ4nlmEihQN0MLJZYeRU0VIVmdnQ0jJu2UNSKrqSaPNuYsOvxl+nCDk0A02INWIxK/8TTmdRSqdmnAnWtP7PXjpdMcn5RZbKb7r6s88fJFxMyyzV3wv36/LOpLjNIzBDyrn5CRfuQalbxWAxiVpFX+PYK/rc6YFKwqENVFyL6ih5qEMdYNMXz9d/Ey8XsIhvgORSTE1HLrIHUfBt7GKskJ5wFnwGxyUgbEnVqaezBpu28OWhC1aEzAJJWSaR3TsNTCEhetWW28O5TDps7bpumjTre49+3b9/DMI7tqpyVLXKK3SVew3BCgn8O3NQ/C/u+CPy4VqqXcc+5XP1AzbC7PcKBjMyXFnn7OlQrOTgOPCj5zlnwRafWYGA/rIIBjYg8evEijAtW40184UR9xpC/fBHQlCZKbW0itvqrfMLE9Gf0unSzB/L4PLoW39wgK8gv/xHeTXOaUbBtSGu34eTcAbpyizLWkrqxS/FIMiurS+6E6EZSxBYaay9/pv6f/6b+i/sqE="
+  },
+  {
+   "name": "cov_b2_v4",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/mix/?k=1",
+    "params": {},
+    "device": {
+     "device_id": "90000003",
+     "version_name": "30.1.0"
+    },
+    "khronos": 1789720001,
+    "hashRand": 2712847327,
+    "xmRand": 219025183,
+    "lanusk": "",
+    "nowMs": 1750000000195,
+    "rand": 548195836,
+    "launchTime": 115,
+    "pid": 10106
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLfwwABiRUfDw4NA7oMOFNmKMzT4zrZc4fPnADfJHE0C5u8IeuWoMWC4uyjHsa2UhPhl5diLCnf2AeFifDBu9NeL03aY5Q/2aFLTOfHut21MZVO6GCHUKWW8RlliNd0fXDRachgsScqb22wfwc3ffXNpS/fqTVfopqwnUHrf9wMkPbfaUqOJlIr3BgFwOGFO6x75pBguMSRJgU9DWiMfACaW1UoaiswM2o3UZFIlcO4DYoLpNODg6BFqq4npKCzlZgeWgEJPx/wkyiLTkByogR1Lf5dvCiEXOuGA0cyZ8IPNDIRnJ0NRdvDyP2fzFZ9JEXs1PmWEF/R/p4rqX0Pth4587mytlPjD2CszmNUbTq+74Q4mGjdT9f+DBJ/H7nVCg4/ZRdstlyzBaZAd9Yh95DSnliwXN2MbtA0njNe6bFimcEjmBstGrdI/mK2uLV0RMiSVAi66vw9HszuLG6GPBCGs1/LfIDybkao7Q7caX2yd6c2DbdBlYicRT6abBSfGEUNshWHNot0w6Xi+xD43gKlY8OpD/kBKocq3fGBScTmrcz9d5LxsP8hENCbWEkbUoiXA2r7O10C/hIDjtb39hPRWrNbRE3ljkwpQABflDy3tN9XGqgtWkPpoXER1qMc8baFl0p6M/QzcQaKXrtexIexfKXoX7e+l9rTfJ5+iqBggtnIIRrFKjpLKELj7aJbeae6V+wPFgZRN4E3usMNlzzIRqrT0oqnnMsNFO2KZZ6xX7BdSf1G8ZiKK5g458hYssq1GaFZZDHEBhubSxXE3GElEZ5qa1bQcb8UMblMrMbJStJD6yC9dN9egEYhQoS1SjSWjl6xI3glnk1adxhKyfjpqaTd1RyS4zhF6nsuLfSIAoHw9qopyHs/ymkGVnNOIOfrV+v/OMSeLforV66xtpaWpU2uKGcZKeKYb4cs2AlMzlWJ//pv6f/6bqmyoQ=="
+  },
+  {
+   "name": "cov_lcg_provided",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/nearby/?k=77",
+    "params": {
+     "k": "77"
+    },
+    "device": {
+     "device_id": "70000001",
+     "device_brand": "honor"
+    },
+    "khronos": 1789720001,
+    "hashRand": 305441741,
+    "xmRand": 48879,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "seed": 1789720001
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXLNqwABMRXvvgAIA+8IOB9akbtTULdxcVhakXMWGaywq7pnyi+leP65L9DZ5mJSFgitBLK6O10ZATdkrB4ad91Jaa4DdJcaj8+5IzxF0Wxv5UEKHBL0mOHr6tbi4Q0bbuoGl6x0+51egBZO6boiYdDfxsw7/5ukA6Z7q8Gnunk2K7xlwcxkrOn7nWruWuGDlnuk3dai+9WXr8TYeeDy6gk4D38d3RPvjee9dn7X9lKL+gRCwP5aud7cv4UTqGwtBusntg++Sg6slTwcYCp5u9rAb5KrtP37adF7BjFPPD+4DBl+aNKoXlcqwQIkP5skl1tFm/AfIRSlquzT/Cg4rqRSjrKHoM5paV0aw+/Bw697xvSEy+di0PXHb2IjtzKYiwDqmfhYxWj7StYSSxNtqeGky+D2MXaJhsWc7MLQ+Njp1qhR4rbMRmRB5TbDNERfjL5JlO/DMNtUrqT9tgG53F+hXYHniMVZ6VZFKT3mAR2hm8XRnESh8ySgHCtrtDGSNx5gcPBQJwP7BHTB5TC97Ivk8tDgvBFdnsGMKIZhIVuVktacOAkuyDgSlxXK+bGVQEUzeb1vAME6XNcQRfF8mLwIA+2On2oPgrAe8mhE8mxpOj1F7PXHLGaaM50485ekVPs+Eme0uKYenAW9RjuYGrOxIHVkl6a1G1Q3P+NlOhuoe2oQ6V2Ft2WsP+IkIpBzS/WsUI7TRAn87Ml4qgLuIw+h+g4ysMtkKG+UI7nOhrWTDdEwxNRfGQ+bpOSwO2ax0ncfHwt3mV3QERcV9a3rnlNl18Xws2sVbh35jptXcuhpjtKIpVasNa3kxZR3GewVN5PbyJCu53XXMFu4mJYmW0ZLe/QboJfKw47YqkbVm/N3o3jEA1fdLyyMd8k1YaRgNB5Yc23sAVFuWEdeJ9hw/9mq2PEx1ckuzec6To4/Div//l/Y//5emDQS"
+  },
+  {
+   "name": "cov_lcg_all_random",
+   "opts": {
+    "url": "https://aweme.snssdk.com/aweme/v1/nearby/?k=88",
+    "params": {},
+    "device": {
+     "device_id": "70000002",
+     "device_manufacturer": "honor"
+    },
+    "khronos": 1789720001,
+    "hashRand": 0,
+    "xmRand": 0,
+    "lanusk": "",
+    "nowMs": 1750000000000,
+    "seed": 48879
+   },
+   "expected": "wvWsajYd85AWInBRF99kGpY6zXKTIQABlhWWOYqeA3ABGNOwRSwRFx8jBsgv6PK2sllJGHqdldyWTAF6TDyvYQnEAFdyMFwsTgxZw/R9t393F0LG7d/wp5WTu4wCfmc1gpEIAFo4GPremqdKkMom342iGVNHVcGyl2d0dfKTw8bGcQmCPmn+geYxR1McKsLOKkWKmnilktBGLiHEIe/dWd6VtsI6pCSeYDvUY7EG6WuzHELgRSa5telOitUcSUo9rh04Ou3akcMSoJEBCgLijZGdEnI5niQb8xwdD0qAI1D0YbV/2j6MnYacf4IWee1XiTRhpj+4bXI5pre/0xAsBzDYYKYuXNVwD6mDWtQF/+cUX/7fOWW9lW0esdJC/1B/fAuK2dbDiZ4kxOo28KpeFdPij5ax7mtDGZSQ8qRu0E1ZzRYkDt5aCoZ0pfzBYPtJDHBNyxCGSHEpMO56KHo8e3mr+ildLKrUaLR7JmfscfnAz7HbewM5vF0I4ipKMgZUFhpyVEf3scDhoY/kNcHZFLdQWwNQspgY+yhq6lQ9ZCTRwpU3wl+0eGhw1BNxyMT60G2K7cWEWJ/BRp7WMRsyixUAsFZ8339ooeRPX71jp1nQBiNaqYWMO+qwwHvZ3J/4xYBkplutmlnn7iGipl7I0HXNwMhcXx5f67zHmKj7RZU3GyavgvODjc0XXuqT6cJ0xUDycK99biL8o2uOGKfMEB359cWAxIzwNL8B20PcF7MDYFH6v/qywjZZRSB+LGnRXwRNwDwz+dpkEfxUIw/JjldohRhUuUpYG+e+vPN4+lpw9KNZi+qelKjV6ADXK7SJtBX4cmnGTd6ZIlZIig6lVosHnkN5QBUI5L9e6GGUXGU3eS21tALpQJ9aMi0pHtr9bfT+87mQ33SlM5oaUloh9noi1AVOsqt87NJf8PkS6vs7h5XtzqlJq4KCHP/UUMvfUYQexjeh//rPof/7j6b9"
+  }
+ ]
+}

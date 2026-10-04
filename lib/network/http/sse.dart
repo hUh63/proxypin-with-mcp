@@ -10,7 +10,20 @@ import 'package:proxypin/network/http/websocket.dart';
 /// Parse SSE stream chunks into message frames.
 /// We reuse WebSocketFrame as a generic message container so UI and listeners work.
 class SseDecoder {
+  /// 已解码文本缓冲（保留尚未成行的尾部）。
   final StringBuffer _lineBuf = StringBuffer();
+
+  /// 增量 UTF-8 解码器。
+  ///
+  /// 旧实现是 `utf8.decode(bytes, allowMalformed: true)` **逐块**解码，
+  /// 一旦一个多字节字符（中文、emoji）被 TCP 分片切断，就会在两个块里
+  /// 各解出 U+FFFD，SSE 内容出现乱码。改用 chunked conversion 后，
+  /// 未完成的多字节序列会被保留到下一块继续拼装。
+  late final ByteConversionSink _utf8Sink =
+      utf8.decoder.startChunkedConversion(_StringSinkAdapter(_lineBuf));
+
+  /// 行扫描游标：记录已消费到的位置，避免每次 `toString()` 后从头 substring（O(n²)）。
+  int _scanOffset = 0;
 
   // current event fields
   final StringBuffer _data = StringBuffer();
@@ -22,17 +35,17 @@ class SseDecoder {
   List<WebSocketFrame> feed(Uint8List bytes) {
     final List<WebSocketFrame> frames = [];
 
-    // Append decoded text to buffer; allowMalformed to survive split UTF-8 sequences.
-    _lineBuf.write(utf8.decode(bytes, allowMalformed: true));
+    _utf8Sink.add(bytes);
+
+    final String current = _lineBuf.toString();
+    int start = _scanOffset;
 
     while (true) {
-      final String current = _lineBuf.toString();
-      final int nl = current.indexOf('\n');
+      final int nl = current.indexOf('\n', start);
       if (nl == -1) break;
 
-      String line = current.substring(0, nl);
-      _lineBuf.clear();
-      if (nl + 1 < current.length) _lineBuf.write(current.substring(nl + 1));
+      String line = current.substring(start, nl);
+      start = nl + 1;
 
       if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
 
@@ -83,6 +96,17 @@ class SseDecoder {
       }
     }
 
+    // 丢弃已消费部分，仅保留未成行的尾部；避免缓冲随流长度无界增长。
+    if (start > 0) {
+      final String rest = current.substring(start);
+      _lineBuf
+        ..clear()
+        ..write(rest);
+      _scanOffset = 0;
+    } else {
+      _scanOffset = current.length;
+    }
+
     return frames;
   }
 
@@ -115,3 +139,15 @@ class SseDecoder {
   }
 }
 
+/// 把 chunked UTF-8 解码器的输出直接写入 [StringBuffer]。
+class _StringSinkAdapter implements Sink<String> {
+  final StringBuffer _buffer;
+
+  _StringSinkAdapter(this._buffer);
+
+  @override
+  void add(String data) => _buffer.write(data);
+
+  @override
+  void close() {}
+}

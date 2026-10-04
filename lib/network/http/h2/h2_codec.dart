@@ -59,6 +59,13 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
   // CONTINUATION 完成时用来判定"其实没 body"，避免激活 streaming 让远端空等。
   final Set<int> _headerEndStreamPending = {};
 
+  // DATA 帧 body 累积器（按 streamId）。
+  // 旧实现每来一帧就 `BytesBuilder..add(body)..add(data)` 再 `toBytes()`，
+  // 「分片多、body 大」时每帧都要把已累积部分整体拷贝一次 → O(N²)。
+  // 这里把 builder 挂在流上，只在 END_STREAM 时物化一次；
+  // 流被 RST / 移除时清理，避免连接存活期内累积器泄漏。
+  final Map<int, BytesBuilder> _bodyBuilders = {};
+
   @override
   DecoderResult<T> decode(ChannelContext channelContext, ByteBuf byteBuf, {bool resolveBody = true}) {
     DecoderResult<T> result = DecoderResult<T>();
@@ -219,7 +226,8 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
           return result;
         }
 
-        _handleDataFrame(channelContext, frameHeader, message, ByteBuf(framePayload));
+        _handleDataFrame(channelContext, frameHeader, message, ByteBuf(framePayload),
+            endStream: frameHeader.hasEndStreamFlag);
         result.isDone = frameHeader.hasEndStreamFlag;
         if (frameHeader.hasEndStreamFlag) {
           _largeBodyStreamIds.remove(frameHeader.streamIdentifier);
@@ -240,6 +248,8 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
       case FrameType.rstStream:
         // stream 中断：清理 streaming upload 标记，避免泄漏
         _headerEndStreamPending.remove(frameHeader.streamIdentifier);
+        // 清理该流的 body 累积器，避免流被 RST 后累积器常驻（资源泄漏）
+        _bodyBuilders.remove(frameHeader.streamIdentifier);
         if (_largeBodyStreamIds.remove(frameHeader.streamIdentifier)) {
           logger.w("[${channelContext.clientChannel?.id}] h2 streaming stream:${frameHeader.streamIdentifier} reset");
         }
@@ -538,8 +548,8 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     }
   }
 
-  DataFrame _handleDataFrame(
-      ChannelContext channelContext, FrameHeader frameHeader, HttpMessage message, ByteBuf payload) {
+  DataFrame _handleDataFrame(ChannelContext channelContext, FrameHeader frameHeader, HttpMessage message,
+      ByteBuf payload, {required bool endStream}) {
     //  DATA 帧格式
     int padLength = 0;
     if (frameHeader.hasPaddedFlag) {
@@ -551,15 +561,26 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     var data = payload.readBytes(dataLength);
 
     // Regular body accumulation.
-    // 用 BytesBuilder 拼接，比 List.from(body!)..addAll(data) 少一次中间拷贝；
-    // 整体累积仍是 O(N²)（每次 toBytes 分配 sum 大 buffer），但常数更小。
+    // 累积改为「流上常驻 BytesBuilder」，仅在 END_STREAM 时物化一次，
+    // 消除旧实现每帧 `toBytes()` 整体拷贝造成的 O(N²)（见 _bodyBuilders 注释）。
+    final streamId = frameHeader.streamIdentifier;
     if (message.body == null) {
+      // 首帧直接引用（零拷贝）；若还有后续帧则建累积器继续追加。
       message.body = data;
+      if (!endStream) {
+        _bodyBuilders[streamId] = BytesBuilder(copy: false)..add(data);
+      }
     } else {
-      final builder = BytesBuilder(copy: false)
-        ..add(message.body!)
-        ..add(data);
-      message.body = builder.toBytes();
+      final builder = _bodyBuilders.putIfAbsent(streamId, () {
+        final b = BytesBuilder(copy: false);
+        b.add(message.body!);
+        return b;
+      });
+      builder.add(data);
+      if (endStream) {
+        message.body = builder.takeBytes();
+        _bodyBuilders.remove(streamId);
+      }
     }
     message.packageSize = (message.packageSize ?? 0) + frameHeader.length;
     return DataFrame(frameHeader, padLength, data);

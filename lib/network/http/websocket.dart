@@ -288,27 +288,42 @@ class PausedWebSocketFrame {
   }
 }
 
+/// WebSocket 字节累积缓冲。
+///
+/// 旧实现每次 `putBytes` 都新建 `Uint8List(totalLen)` 再做两次 `setAll`，
+/// 当 TCP 分片很碎而帧很大时形成 **O(n²)** 拷贝；这里改为 `BytesBuilder` 追加，
+/// 且只在读取时物化一次（带缓存），一次 `decode` 里多次读 `bytes` 不再重复分配。
 class ByteBuffer {
-  Uint8List _bytes = Uint8List(0);
+  final BytesBuilder _builder = BytesBuilder(copy: false);
 
-  Uint8List get bytes => _bytes;
+  /// 物化缓存，避免重复 `toBytes()`。
+  Uint8List? _cache;
+
+  Uint8List get bytes => _cache ??= _builder.toBytes();
 
   void putBytes(Uint8List newBytes) {
-    Uint8List tmp = Uint8List(_bytes.length + newBytes.length);
-    tmp.setAll(0, _bytes);
-    tmp.setAll(_bytes.length, newBytes);
-    _bytes = tmp;
+    if (newBytes.isEmpty) return;
+    _builder.add(newBytes);
+    _cache = null;
   }
 
   void clear() {
-    _bytes = Uint8List(0);
+    _builder.clear();
+    _cache = Uint8List(0);
   }
 
   void removeBytes(int count) {
-    if (count >= _bytes.length) {
-      _bytes = Uint8List(0);
+    if (count <= 0) return;
+    final current = bytes;
+    if (count >= current.length) {
+      _builder.clear();
+      _cache = Uint8List(0);
     } else {
-      _bytes = _bytes.sublist(count);
+      // 仅剩「移走已消费前缀」这一次必要拷贝（无读游标时的下限）。
+      _builder
+        ..clear()
+        ..add(current.sublist(count));
+      _cache = null;
     }
   }
 }
