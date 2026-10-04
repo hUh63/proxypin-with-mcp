@@ -4235,5 +4235,9 @@
   "editorExitRetainTitle": "要保留这些文件吗？",
   "editorExitRetainBody": "有文件未标记为「保留」，退出后将从编辑器移除。",
   "editorDiscard": "不保留",
-  "editorUnsaved": "未保存"
+  "editorUnsaved": "未保存",
+  "editorMinify": "压缩代码",
+  "editorMinifyUnsupported": "当前语法不支持压缩",
+  "editorMinified": "已压缩：{before} → {after} 字符",
+  "@editorMinified": {"placeholders": {"before": {"type": "String"}, "after": {"type": "String"}}}
 }

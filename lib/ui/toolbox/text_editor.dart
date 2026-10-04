@@ -32,6 +32,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_manager.dart';
+import 'package:proxypin/utils/code_minifier.dart';
 import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
@@ -863,6 +864,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 压缩当前文档（保守压缩：删注释 / 去缩进 / 合并多余空白）。
+  void _minify() {
+    final controller = _controller;
+    final doc = _doc;
+    if (controller == null || doc == null) return;
+    final text = controller.text;
+    if (text.trim().isEmpty) return;
+    final result = CodeMinifier.minify(doc.langLabel, text);
+    if (result == null) {
+      _toast(localizations.editorMinifyUnsupported);
+      return;
+    }
+    if (result == text) return;
+    controller.text = result;
+    _toast(localizations.editorMinified('${text.length}', '${result.length}'));
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     FlutterToastr.show(msg, context, duration: 3);
@@ -954,13 +972,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   Widget _docTile(EditorDocument doc, int index) {
     final selected = identical(doc, _doc);
-    return GestureDetector(
+    return _SwipeTile(
       key: ValueKey(doc.id),
-      onHorizontalDragEnd: (details) {
-        if ((details.primaryVelocity ?? 0) > 200) {
-          _showDocActions(doc);
-        }
+      onTap: () {
+        _activate(doc);
+        Navigator.of(context).pop();
       },
+      actions: [
+        _SwipeAction(
+          icon: doc.pinned ? Icons.push_pin_outlined : Icons.push_pin,
+          tooltip: doc.pinned ? localizations.editorUnpin : localizations.editorPin,
+          color: Theme.of(context).colorScheme.primary,
+          onTap: () => _togglePin(doc),
+        ),
+        _SwipeAction(
+          icon: Icons.close,
+          tooltip: localizations.editorCloseFile,
+          color: Colors.red,
+          onTap: () => _closeDoc(doc),
+        ),
+      ],
       child: ReorderableDelayedDragStartListener(
         index: index,
         child: ListTile(
@@ -990,10 +1021,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
               onPressed: () => _showDocActions(doc),
             ),
           ]),
-          onTap: () {
-            _activate(doc);
-            Navigator.of(context).pop();
-          },
         ),
       ),
     );
@@ -1117,6 +1144,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _selectToLine();
           case 'replaceLine':
             _replaceCurrentLine();
+          case 'minify':
+            _minify();
           case 'retainMode':
             _pickRetainMode();
           case 'newline':
@@ -1143,6 +1172,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ),
         PopupMenuItem(value: 'selectLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
+        PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: 'newline',
@@ -1305,6 +1335,119 @@ class _TextEditorPageState extends State<TextEditorPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+/// 右滑露出操作的列表项（用于文档列表的「置顶 / 关闭」）。
+class _SwipeAction {
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SwipeAction({required this.icon, required this.tooltip, required this.color, required this.onTap});
+}
+
+class _SwipeTile extends StatefulWidget {
+  final Widget child;
+  final List<_SwipeAction> actions;
+  final VoidCallback onTap;
+
+  const _SwipeTile({super.key, required this.child, required this.actions, required this.onTap});
+
+  @override
+  State<_SwipeTile> createState() => _SwipeTileState();
+}
+
+class _SwipeTileState extends State<_SwipeTile> with SingleTickerProviderStateMixin {
+  static const double _actionWidth = 76;
+
+  late final AnimationController _ctrl;
+  bool _open = false;
+
+  double get _maxOffset => widget.actions.length * _actionWidth;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    if (_maxOffset <= 0) return;
+    final next = (_ctrl.value * _maxOffset + d.delta.dx).clamp(0.0, _maxOffset);
+    _ctrl.value = next / _maxOffset;
+    _open = _ctrl.value > 0;
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    final velocity = d.primaryVelocity ?? 0;
+    final open = _ctrl.value > 0.5 || velocity > 400;
+    _open = open;
+    _ctrl.animateTo(open ? 1 : 0);
+  }
+
+  void _close() {
+    if (!_open) return;
+    _open = false;
+    _ctrl.animateTo(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final offset = _ctrl.value * _maxOffset;
+        return Stack(children: [
+          // 露出的操作区（在左侧）
+          Positioned.fill(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: widget.actions.map((a) {
+                return SizedBox(
+                  width: _actionWidth,
+                  child: Material(
+                    color: a.color.withValues(alpha: 0.12),
+                    child: InkWell(
+                      onTap: () {
+                        _close();
+                        a.onTap();
+                      },
+                      child: Tooltip(
+                        message: a.tooltip,
+                        child: Center(child: Icon(a.icon, size: 19, color: a.color)),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Transform.translate(
+            offset: Offset(offset, 0),
+            child: GestureDetector(
+              onHorizontalDragUpdate: _onDragUpdate,
+              onHorizontalDragEnd: _onDragEnd,
+              child: Material(
+                color: Theme.of(context).colorScheme.surface,
+                child: InkWell(
+                  onTap: _open ? _close : widget.onTap,
+                  child: widget.child,
+                ),
+              ),
+            ),
+          ),
+        ]);
+      },
     );
   }
 }

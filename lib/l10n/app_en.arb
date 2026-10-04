@@ -4381,5 +4381,9 @@
   "editorExitRetainTitle": "Keep these files?",
   "editorExitRetainBody": "Some files are not marked as kept and will be removed from the editor on exit.",
   "editorDiscard": "Don't keep",
-  "editorUnsaved": "Unsaved"
+  "editorUnsaved": "Unsaved",
+  "editorMinify": "Minify code",
+  "editorMinifyUnsupported": "Minifying is not supported for this syntax",
+  "editorMinified": "Minified: {before} → {after} chars",
+  "@editorMinified": {"placeholders": {"before": {"type": "String"}, "after": {"type": "String"}}}
 }
