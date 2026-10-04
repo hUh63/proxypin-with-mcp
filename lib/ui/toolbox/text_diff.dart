@@ -53,6 +53,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   bool _wrap = true;
   String? _summary;
 
+  /// 差异块（用于上一处 / 下一处导航）。每个块记录左右两侧的起始行（0-based）。
+  List<_DiffHunk> _hunks = [];
+  int _navIndex = -1;
+
   /// 上一次对比时左右文本的快照；用来判断 listener 收到的变化是不是真改了文本，
   /// 因为 CodeForgeController 的 listener 选区 / 装饰变化也会触发。
   String _leftSnapshot = '';
@@ -124,8 +128,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
     final addBg = Colors.green.withValues(alpha: 0.18);
     final delBg = Colors.red.withValues(alpha: 0.18);
+    final modBg = Colors.orange.withValues(alpha: 0.20);
     const addColor = Colors.green;
     const delColor = Colors.red;
+    const modColor = Colors.orange;
 
     final leftGutterDecos = <GutterDecoration>[];
     final rightGutterDecos = <GutterDecoration>[];
@@ -150,26 +156,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
         case LineDiffType.equal:
           break;
         case LineDiffType.delete:
-          // CodeForge 行号 0-based，LineDiff 行号 1-based
-          final ln = d.leftLine! - 1;
           deletes++;
-          leftGutterDecos.add(GutterDecoration(
-            id: 'del-g-$ln',
-            startLine: ln,
-            endLine: ln,
-            type: GutterDecorationType.colorBar,
-            color: delColor,
-          ));
         case LineDiffType.insert:
-          final ln = d.rightLine! - 1;
           inserts++;
-          rightGutterDecos.add(GutterDecoration(
-            id: 'ins-g-$ln',
-            startLine: ln,
-            endLine: ln,
-            type: GutterDecorationType.colorBar,
-            color: addColor,
-          ));
       }
     }
 
@@ -207,29 +196,46 @@ class _TextDiffPageState extends State<TextDiffPage> {
       pairedInsertLines.add(rLine);
     }
 
-    // 第三趟：所有差异行都加整行底色——配对行也要加，让用户能扫到"这行有改动"。
-    // 整行 alpha 只有 0.18，字符级 searchHighlights 用 0.85+ 的深色压在上面，
+    // 第三趟：所有差异行都加整行底色 + 行号色条。
+    // 配对过的「删+增」视为**修改**，用橙色与纯新增（绿）/纯删除（红）区分；
+    // 整行 alpha 只有 0.18~0.20，字符级 searchHighlights 用 0.85+ 的深色压在上面，
     // 叠加后差异字符仍然明显比整行其他位置深。
     final leftLineDecos = <LineDecoration>[];
     final rightLineDecos = <LineDecoration>[];
     for (final d in diffs) {
       if (d.type == LineDiffType.delete) {
         final ln = d.leftLine! - 1;
+        final isMod = pairedDeleteLines.contains(ln);
         leftLineDecos.add(LineDecoration(
           id: 'del-$ln',
           startLine: ln,
           endLine: ln,
           type: LineDecorationType.background,
-          color: delBg,
+          color: isMod ? modBg : delBg,
+        ));
+        leftGutterDecos.add(GutterDecoration(
+          id: 'del-g-$ln',
+          startLine: ln,
+          endLine: ln,
+          type: GutterDecorationType.colorBar,
+          color: isMod ? modColor : delColor,
         ));
       } else if (d.type == LineDiffType.insert) {
         final ln = d.rightLine! - 1;
+        final isMod = pairedInsertLines.contains(ln);
         rightLineDecos.add(LineDecoration(
           id: 'ins-$ln',
           startLine: ln,
           endLine: ln,
           type: LineDecorationType.background,
-          color: addBg,
+          color: isMod ? modBg : addBg,
+        ));
+        rightGutterDecos.add(GutterDecoration(
+          id: 'ins-g-$ln',
+          startLine: ln,
+          endLine: ln,
+          type: GutterDecorationType.colorBar,
+          color: isMod ? modColor : addColor,
         ));
       }
     }
@@ -254,13 +260,73 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _leftSnapshot = _left.text;
     _rightSnapshot = _right.text;
 
+    final modified = pairedDeleteLines.length;
+    final additions = inserts - modified;
+    final deletions = deletes - modified;
+    final hunks = _buildHunks(diffs);
+
     setState(() {
+      _hunks = hunks;
+      _navIndex = -1;
       if (inserts == 0 && deletes == 0) {
         _summary = localizations.diffIdentical;
       } else {
-        _summary = localizations.diffSummary(inserts, deletes);
+        _summary = localizations.diffSummaryDetail(additions, deletions, modified);
       }
     });
+  }
+
+  /// 把连续的差异行归并成一个个"差异块"，供上一处 / 下一处导航使用。
+  static List<_DiffHunk> _buildHunks(List<LineDiff> diffs) {
+    final hunks = <_DiffHunk>[];
+    _DiffHunk? current;
+    for (final d in diffs) {
+      if (d.type == LineDiffType.equal) {
+        current = null;
+        continue;
+      }
+      final l = d.type == LineDiffType.delete ? d.leftLine! - 1 : null;
+      final r = d.type == LineDiffType.insert ? d.rightLine! - 1 : null;
+      if (current == null) {
+        current = _DiffHunk(l, r);
+        hunks.add(current);
+      } else {
+        current.leftLine ??= l;
+        current.rightLine ??= r;
+      }
+    }
+    return hunks;
+  }
+
+  /// 跳到上一处（[delta] < 0）或下一处（[delta] > 0）差异，两侧一起滚动。
+  void _navigate(int delta) {
+    if (_hunks.isEmpty) return;
+    var index = _navIndex;
+    if (index < 0) {
+      index = delta > 0 ? 0 : _hunks.length - 1;
+    } else {
+      index = (index + delta) % _hunks.length;
+      if (index < 0) index += _hunks.length;
+    }
+    setState(() => _navIndex = index);
+
+    final hunk = _hunks[index];
+    if (hunk.leftLine != null) _left.scrollToLine(hunk.leftLine!);
+    if (hunk.rightLine != null) _right.scrollToLine(hunk.rightLine!);
+  }
+
+  /// 用左侧内容整体覆盖右侧。
+  void _applyLeftToRight() {
+    if (_left.text == _right.text) return;
+    _right.text = _left.text;
+    _compare();
+  }
+
+  /// 用右侧内容整体覆盖左侧。
+  void _applyRightToLeft() {
+    if (_left.text == _right.text) return;
+    _left.text = _right.text;
+    _compare();
   }
 
   /// 累计 \n 偏移得到每行起始处的全文 utf16 offset。下标 0-based。
@@ -292,7 +358,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _right.searchHighlightsChanged = true;
       _right.notifyListeners();
     }
-    setState(() => _summary = null);
+    setState(() {
+      _summary = null;
+      _hunks = [];
+      _navIndex = -1;
+    });
   }
 
   void _clearAll() {
@@ -343,7 +413,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
               ),
             ),
       body: Column(children: [
-        Align(alignment: Alignment.centerRight, child: _toolbar()),
+        Row(children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: _legend(),
+            ),
+          ),
+          _toolbar(),
+        ]),
         const Divider(height: 1, thickness: 0.3),
         Expanded(
           child: LayoutBuilder(
@@ -359,20 +437,55 @@ class _TextDiffPageState extends State<TextDiffPage> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Text(_summary!, style: const TextStyle(fontSize: 14)),
+            child: Row(children: [
+              Expanded(child: Text(_summary!, style: const TextStyle(fontSize: 14))),
+              if (_hunks.isNotEmpty && _navIndex >= 0)
+                Text(
+                  localizations.diffPosition(_navIndex + 1, _hunks.length),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary),
+                ),
+            ]),
           ),
+      ]),
+    );
+  }
+
+  /// 左上角图例：说明三种差异配色。
+  Widget _legend() {
+    Widget item(Color c, String label) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 10, height: 10, color: c.withValues(alpha: 0.55)),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ]),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(children: [
+        item(Colors.green, localizations.diffAdded),
+        item(Colors.orange, localizations.diffModified),
+        item(Colors.red, localizations.diffDeleted),
       ]),
     );
   }
 
   Widget _toolbar() {
     final color = Theme.of(context).colorScheme.primary;
+    final hasDiff = _hunks.isNotEmpty;
     return Container(
       padding: const EdgeInsets.only(top: 2, bottom: 2, right: 12),
       child: Wrap(
         spacing: 0,
         runSpacing: 0,
         children: [
+          _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
+          _iconBtn(Icons.keyboard_arrow_down, localizations.diffNext, hasDiff ? () => _navigate(1) : null),
+          _iconBtn(Icons.arrow_forward, localizations.diffReplaceLeftToRight, _applyLeftToRight),
+          _iconBtn(Icons.arrow_back, localizations.diffReplaceRightToLeft, _applyRightToLeft),
           _iconBtn(Icons.compare_arrows, localizations.compare, _onTextChange),
           _iconBtn(Icons.delete_outline, localizations.clear, _clearAll),
           _iconBtn(
@@ -386,11 +499,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
-  Widget _iconBtn(IconData icon, String tooltip, VoidCallback onTap, {Color? tint}) {
+  Widget _iconBtn(IconData icon, String tooltip, VoidCallback? onTap, {Color? tint}) {
     return IconButton(
       onPressed: onTap,
       tooltip: tooltip,
-      icon: Icon(icon, size: 17, color: tint),
+      icon: Icon(icon, size: 17, color: onTap == null ? Colors.grey : tint),
       visualDensity: VisualDensity.compact,
     );
   }
@@ -469,4 +582,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
       ),
     ]);
   }
+}
+
+/// 一段连续的差异（可能同时含删除与新增），用于上一处 / 下一处导航。
+class _DiffHunk {
+  int? leftLine;
+  int? rightLine;
+
+  _DiffHunk(this.leftLine, this.rightLine);
 }
