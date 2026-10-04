@@ -216,7 +216,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return;
     }
 
-    final existing = _docs.byId(_docs.activeId ?? '') ?? (_docs.isEmpty ? null : _docs.first);
+    final existing = _docs.byId(_docs.activeId ?? '') ?? (_docs.isEmpty ? null : _docs.docs.first);
     if (existing != null) {
       _activate(existing);
     } else {

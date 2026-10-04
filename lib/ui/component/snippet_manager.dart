@@ -160,8 +160,8 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
           width: 110,
           child: TextField(
             controller: row.label,
-            isDense: true,
             decoration: InputDecoration(
+              isDense: true,
               labelText: localizations.snippetManagerLabel,
               border: const OutlineInputBorder(),
             ),
@@ -171,8 +171,8 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
         Expanded(
           child: TextField(
             controller: row.insert,
-            isDense: true,
             decoration: InputDecoration(
+              isDense: true,
               labelText: localizations.snippetManagerInsert,
               border: const OutlineInputBorder(),
             ),
