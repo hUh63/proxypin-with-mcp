@@ -4,6 +4,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'dart:async';
 import 'dart:io';
@@ -465,6 +466,7 @@ class _LogViewerPageState extends State<LogViewerPage> {
                             ? const Icon(Icons.bug_report_outlined, size: 20)
                             : null,
                         onTap: () => _showLogDetail(log),
+                        onLongPress: () => _copyLog(log),
                       );
                     },
                   ),
@@ -522,6 +524,29 @@ class _LogViewerPageState extends State<LogViewerPage> {
     );
   }
 
+  /// 把一条日志格式化成可粘贴的纯文本（时间 / 级别 / 标签 / 正文 / 堆栈）
+  String _formatLogForCopy(LogEntry log) {
+    final buffer = StringBuffer()
+      ..writeln('[${_formatTime(log.timestamp, full: true)}] '
+          '${log.level.name.toUpperCase()} ${log.tag}')
+      ..write(log.message);
+    final stack = log.stackTrace;
+    if (stack != null && stack.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..write(stack);
+    }
+    return buffer.toString();
+  }
+
+  /// 复制一条日志到剪贴板并提示
+  void _copyLog(LogEntry log) {
+    final messenger = ScaffoldMessenger.of(context);
+    final copied = localizations.copied;
+    Clipboard.setData(ClipboardData(text: _formatLogForCopy(log)));
+    messenger.showSnackBar(SnackBar(content: Text(copied)));
+  }
+
   void _showLogDetail(LogEntry log) {
     showDialog(
       context: context,
@@ -576,8 +601,7 @@ class _LogViewerPageState extends State<LogViewerPage> {
           ),
           TextButton(
             onPressed: () {
-              // 复制日志内容
-              // 这里可以添加复制功能
+              _copyLog(log);
               Navigator.pop(context);
             },
             child: Text(localizations.copy),

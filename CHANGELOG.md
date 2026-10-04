@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.24.84 (2026-10-04)
+
+### 修复：日志管理页「复制」按钮无效
+
+- 日志详情弹窗的「复制」按钮长期是占位实现（只有 `Navigator.pop`，从未写剪贴板），
+  现改为把「时间 / 级别 / 标签 / 正文 / 堆栈」格式化后写入剪贴板并提示「已复制到剪切板」
+- 日志列表项新增**长按复制**（无需打开详情）
+
+### 降噪：启动/进入页面时的三条误导性日志
+
+- `[PinningHelper] su failed` / `[SystemCa] su failed`：设备未 root、无 `su` 属常见情况，
+  由 `ERROR` 降级为 `WARNING`，文案改为 `su unavailable (device not rooted?)`；
+  该日志仅在进入「SSL Pinning / 系统证书」页面时触发，并非应用启动即报错
+- `[AppUpdate] failed to fetch ... status=403 bodyLen=279`：经核实为 GitHub 未认证接口
+  **限流**（60 次/小时/IP），非故障；按 `DEBUG` 记录不再刷 `WARNING`
+- 更新检查新增 **6 小时自动检查间隔**（`force: true` 供「关于」页手动检查绕过），
+  把每次启动的 2 次 GitHub 请求降下来，从源头减少触发限流
+
 ## v1.24.83 (2026-10-04)
 
 ### 网络层 §2：`Channel.writeBytes` 写背压

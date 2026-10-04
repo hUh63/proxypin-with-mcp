@@ -192,7 +192,8 @@ class PinningHelper {
       });
       return (r.exitCode, '${r.stdout}${r.stderr}');
     } catch (e) {
-      logger.e('[PinningHelper] su failed: $e');
+      // 设备未 root / 无 su 属常见情况，非应用错误，降级为 WARNING。
+      logger.w('[PinningHelper] su unavailable (device not rooted?): $e');
       return (-1, '$e');
     }
   }

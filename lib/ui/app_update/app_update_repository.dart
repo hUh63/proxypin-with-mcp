@@ -16,12 +16,29 @@ import 'new_version_dialog.dart';
 class AppUpdateRepository {
   static final HttpClient httpClient = HttpClient();
 
+  /// 最近一次检查时间戳（毫秒）。用于限制自动检查频率，避免每次启动
+  /// 都打 GitHub 未认证接口（60 次/小时/IP），从而频繁触发 403 限流。
+  static const String _lastCheckKey = 'app_update_last_check_ms';
+  static const Duration _autoCheckInterval = Duration(hours: 6);
+
   /// 更新检查同时查询**上游**与**本分支(fork)**两个 release 源，并区分来源：
   /// - 优先提示本分支更新(用户装的就是本分支)；
   /// - 本分支无更新时，再提示上游更新(标注为「上游」)。
   /// 两个源的「忽略」记录互不影响。
-  static Future<void> checkUpdate(BuildContext context, {bool canIgnore = true, bool showToast = false}) async {
+  ///
+  /// [force] 为 true 时忽略自动检查间隔（用户在「关于」页手动点击检查）。
+  static Future<void> checkUpdate(BuildContext context,
+      {bool canIgnore = true, bool showToast = false, bool force = false}) async {
     try {
+      if (!force) {
+        final last = await SharedPreferencesAsync().getInt(_lastCheckKey) ?? 0;
+        final elapsed = DateTime.now().millisecondsSinceEpoch - last;
+        if (elapsed >= 0 && elapsed < _autoCheckInterval.inMilliseconds) {
+          logger.d('[AppUpdate] skipped: last check ${elapsed ~/ 60000} min ago');
+          return;
+        }
+      }
+      await SharedPreferencesAsync().setInt(_lastCheckKey, DateTime.now().millisecondsSinceEpoch);
       final latestList = await Future.wait<RemoteVersionEntity?>([
         getLatestVersion(fork: true),
         getLatestVersion(),
@@ -97,8 +114,14 @@ class AppUpdateRepository {
       return null;
     }
     if (response.statusCode != 200 || response.body.isEmpty) {
-      logger.w(
-          "[AppUpdate] failed to fetch latest version info($apiUrl): status=${response.statusCode} bodyLen=${response.body.length}");
+      if (response.statusCode == 403 || response.statusCode == 429) {
+        // GitHub 未认证请求限流（60 次/小时/IP）：可自愈的临时情况，
+        // 按 DEBUG 记录，避免每次启动刷 WARNING。
+        logger.d('[AppUpdate] rate limited(status=${response.statusCode}), will retry later');
+      } else {
+        logger.w(
+            "[AppUpdate] failed to fetch latest version info($apiUrl): status=${response.statusCode} bodyLen=${response.body.length}");
+      }
       return null;
     }
 

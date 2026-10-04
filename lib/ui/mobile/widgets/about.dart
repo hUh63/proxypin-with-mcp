@@ -83,7 +83,7 @@ class _AboutState extends State<About> {
                     onTap: () async {
                       if (checkUpdating) return;
                       setState(() => checkUpdating = true);
-                      await AppUpdateRepository.checkUpdate(context, canIgnore: false, showToast: true);
+                      await AppUpdateRepository.checkUpdate(context, canIgnore: false, showToast: true, force: true);
                       if (mounted) setState(() => checkUpdating = false);
                     }),
                 Divider(height: 0, thickness: 0.4, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),

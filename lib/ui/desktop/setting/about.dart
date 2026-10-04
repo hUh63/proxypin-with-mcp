@@ -71,7 +71,7 @@ class _AppUpdateStateChecking extends State<DesktopAbout> {
                   onTap: () async {
                     if (checkUpdating) return;
                     setState(() => checkUpdating = true);
-                    await AppUpdateRepository.checkUpdate(context, canIgnore: false, showToast: true);
+                    await AppUpdateRepository.checkUpdate(context, canIgnore: false, showToast: true, force: true);
                     if (mounted) setState(() => checkUpdating = false);
                   }),
               ListTile(
