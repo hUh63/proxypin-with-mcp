@@ -4318,10 +4318,22 @@
   "regexpNoMatch": "No matching content",
   "regexpModifiers": "Flags",
   "regexpMatches": "{count} match(es)",
-  "@regexpMatches": {"placeholders": {"count": {"type": "int"}}},
+  "@regexpMatches": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "regexpApplyToInput": "Replace test data with result",
   "regexpReplaced": "Replaced {count} occurrence(s)",
-  "@regexpReplaced": {"placeholders": {"count": {"type": "int"}}},
+  "@regexpReplaced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "snippetManagerTitle": "Quick Insert",
   "snippetManagerHint": "Leave the label empty to show the inserted text itself; rows with empty content are dropped.",
   "snippetManagerEmpty": "No items yet, tap \"Add\" to create one.",
@@ -4336,9 +4348,30 @@
   "diffReplaceLeftToRight": "Copy left → right (overwrite)",
   "diffReplaceRightToLeft": "Copy right → left (overwrite)",
   "diffSummaryDetail": "{added} added, {deleted} deleted, {modified} modified",
-  "@diffSummaryDetail": {"placeholders": {"added": {"type": "int"}, "deleted": {"type": "int"}, "modified": {"type": "int"}}},
+  "@diffSummaryDetail": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "deleted": {
+        "type": "int"
+      },
+      "modified": {
+        "type": "int"
+      }
+    }
+  },
   "diffPosition": "Change {index}/{total}",
-  "@diffPosition": {"placeholders": {"index": {"type": "int"}, "total": {"type": "int"}}},
+  "@diffPosition": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "editorUntitled": "Untitled",
   "editorNewFile": "New file",
   "editorDocuments": "Documents",
@@ -4355,7 +4388,13 @@
   "editorJumpTo": "Jump to",
   "editorRemoveAll": "Remove every occurrence",
   "editorRemoved": "Removed {count} character(s)",
-  "@editorRemoved": {"placeholders": {"count": {"type": "int"}}},
+  "@editorRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "editorTooManySpecial": "Too many invisible characters; only the first 3000 are highlighted",
   "editorSmoothMode": "Smooth mode",
   "editorSmoothAutoEnabled": "Text is very long; smooth mode has been enabled automatically",
@@ -4385,11 +4424,35 @@
   "editorMinify": "Minify code",
   "editorMinifyUnsupported": "Minifying is not supported for this syntax",
   "editorMinified": "Minified: {before} → {after} chars",
-  "@editorMinified": {"placeholders": {"before": {"type": "String"}, "after": {"type": "String"}}},
+  "@editorMinified": {
+    "placeholders": {
+      "before": {
+        "type": "String"
+      },
+      "after": {
+        "type": "String"
+      }
+    }
+  },
   "editorGutterAnchorSet": "Start line {line} set; long-press another line number to finish",
-  "@editorGutterAnchorSet": {"placeholders": {"line": {"type": "int"}}},
+  "@editorGutterAnchorSet": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
   "editorGutterRangeSelected": "Selected lines {from}–{to}",
-  "@editorGutterRangeSelected": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}},
+  "@editorGutterRangeSelected": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
   "diffReplaceBlockLeft": "Replace right with this",
   "diffReplaceBlockRight": "Replace left with this",
   "diffApplied": "Applied to the other side",
@@ -4399,5 +4462,23 @@
   "diffKeep": "Keep",
   "editorSmoothKeepIme": "Keep IME suggestions in smooth mode",
   "editorMinifyAggressive": "Aggressive minify (rename / drop dead code)",
-  "editorMinifyAggressiveUnsupported": "Syntax is beyond the built-in compiler's supported subset; skipped"
+  "editorMinifyAggressiveUnsupported": "Syntax is beyond the built-in compiler's supported subset; skipped",
+  "trafficAnalytics": "Traffic Analytics",
+  "trafficAnalyticsTitle": "Traffic Analytics",
+  "trafficOverview": "Overview",
+  "trafficTotal": "Total requests",
+  "trafficSuccess": "Success",
+  "trafficFail": "Failed",
+  "trafficPending": "Pending",
+  "trafficUplinkBytes": "Uploaded",
+  "trafficDownlinkBytes": "Downloaded",
+  "trafficAvgTime": "Avg duration",
+  "trafficTopHosts": "Top hosts",
+  "trafficTopContentTypes": "Content types",
+  "trafficStatusCodes": "Status codes",
+  "trafficSlowest": "Slowest requests",
+  "trafficLargest": "Largest responses",
+  "trafficEmpty": "No requests to analyze.",
+  "exportExcel": "Export Excel",
+  "exportExcelDesc": "One row per request; opens in Excel / WPS / Numbers"
 }

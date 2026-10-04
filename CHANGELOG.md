@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.24.94 (2026-10-05)
+
+### 对标 HTTP Debugger：Excel 导出 + 流量分析
+
+先做了一轮**差距复核**：原先以为缺的 **HAR 导入**、**书签**、**gRPC 解析**，仓库里其实已经有了
+（`history.dart` 的「导入 HAR」、收藏 `FavoriteStorage`、`GrpcDecoder` + 请求体页展示），
+所以这版只补**真正缺**的两块：
+
+- **导出 Excel(.xlsx)**：导出菜单新增一项，一行一条请求（时间 / 方法 / 状态 / 协议 / 域名 /
+  路径 / 进程 / 耗时 / 上行·下行大小 / 内容类型）。用内置的极简 xlsx 写出器
+  （`lib/utils/excel_export.dart`，只依赖已有的 `archive` 打 zip，不引第三方 Excel 库），
+  Excel / WPS / Numbers 均可直接打开。
+- **流量分析**（请求列表「⋮」菜单）：对当前抓包做聚合 —— 概览（成功 / 失败 / 未完成、上下行
+  流量、平均耗时）、Top 域名、内容类型分布、状态码分布、最慢请求 Top10、最大响应 Top10。
+  统计逻辑在 `lib/utils/traffic_stats.dart`（纯函数、可单测），UI 在 `traffic_analytics.dart`。
+  与工具箱里的「性能监控」区分：那个看连接池 / QPS 等**运行时指标**，这个看**请求本身的分布**。
+
+验证：`traffic_stats` 共 17 组断言全过；xlsx 序列化产物用 openpyxl 回读校验，特殊字符 / 中文 /
+负数 / 空串 / 工作表名清洗均正确。
+
 ## v1.24.93 (2026-10-05)
 
 ### 依赖升级：桌面托盘迁移到原生 API 家族

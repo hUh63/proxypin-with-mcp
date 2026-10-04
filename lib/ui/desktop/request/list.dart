@@ -29,6 +29,7 @@ import 'package:proxypin/ui/component/api_endpoint_page.dart';
 import 'package:proxypin/ui/component/memory_cleanup.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
 import 'package:proxypin/ui/component/request_compare_page.dart';
+import 'package:proxypin/ui/component/traffic_analytics.dart';
 import 'package:proxypin/ui/component/selection_action_bar.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
@@ -210,6 +211,8 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
                 icon: const Icon(Icons.cloud_upload_outlined, size: 16), text: localizations.reportServers),
             _menuItem(_RequestListMenuAction.apiEndpoints,
                 icon: const Icon(Icons.api, size: 16), text: localizations.toolboxApiEndpoints),
+            _menuItem(_RequestListMenuAction.trafficAnalytics,
+                icon: const Icon(Icons.insights, size: 16), text: localizations.trafficAnalytics),
           ];
         });
   }
@@ -247,6 +250,10 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       case _RequestListMenuAction.apiEndpoints:
         // 用当前抓包数据提取 API 端点（同进程打开，支持导出 OpenAPI/Postman/JSON）
         ApiEndpointUtils.showEndpoints(context, container.source);
+        break;
+      case _RequestListMenuAction.trafficAnalytics:
+        // 对当前抓包列表做聚合统计（Top 域名/类型/状态码、最慢、最大）
+        showTrafficAnalytics(context, container.source);
         break;
     }
   }
@@ -457,4 +464,4 @@ class _ClearSelectionIntent extends Intent {
   const _ClearSelectionIntent();
 }
 
-enum _RequestListMenuAction { search, export, repeat, select, sort, report, apiEndpoints }
+enum _RequestListMenuAction { search, export, repeat, select, sort, report, apiEndpoints, trafficAnalytics }

@@ -12,6 +12,7 @@ import 'package:proxypin/network/http/passcode.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/configuration.dart';
+import 'package:proxypin/utils/excel_export.dart';
 import 'package:proxypin/utils/har.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
@@ -521,6 +522,20 @@ void showExportDialog(
               },
             ),
             ListTile(
+              leading: const Icon(Icons.grid_on),
+              title: Text(localizations.exportExcel),
+              subtitle: Text(localizations.exportExcelDesc, style: const TextStyle(fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                exportRequestsExcel(
+                  requests,
+                  '$folderName.xlsx',
+                  context: ctx,
+                  onSuccess: onExportSuccess,
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.copy_all_outlined),
               title: Text(localizations.exportCopyPasscode),
               subtitle: Text(localizations.exportCopyPasscodeDesc, style: const TextStyle(fontSize: 12)),
@@ -653,6 +668,28 @@ Future<void> exportRequestsJson(
     onSuccess?.call();
     if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
   } catch (e) {
+    if (context.mounted) {
+      FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
+    }
+  }
+}
+
+/// 导出为 Excel(.xlsx)：一行一条请求，列含 时间/方法/状态/域名/路径/进程/耗时/大小/类型。
+/// 对标 HTTP Debugger Pro 的 Excel 导出。用内置极简写出器（仅依赖 archive，不引第三方 Excel 库）。
+Future<void> exportRequestsExcel(
+  List<HttpRequest> requests,
+  String fileName, {
+  required BuildContext context,
+  VoidCallback? onSuccess,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  try {
+    final bytes = ExcelExport.requestsToXlsx(requests);
+    await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+    onSuccess?.call();
+    if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
+  } catch (e, st) {
+    logger.e('Export Excel error: ', error: e, stackTrace: st);
     if (context.mounted) {
       FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
     }
