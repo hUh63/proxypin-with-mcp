@@ -27,6 +27,7 @@ import 'package:re_highlight/styles/atom-one-light.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/content_type.dart';
+import 'package:proxypin/ui/component/invisible_char_highlighter.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
 import 'package:proxypin/utils/platform.dart';
@@ -55,12 +56,16 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
   /// controller 在本 State 持有，重建不会丢文本与撤销栈。
   bool _wrap = true;
 
+  /// 不可见字符（空格 / 控制字符 / Unicode 特殊字符）可视化
+  final InvisibleCharHighlighter _invisible = InvisibleCharHighlighter();
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
   void initState() {
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
+    _invisible.attach(_controller);
 
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
@@ -69,6 +74,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
 
   @override
   void dispose() {
+    _invisible.detach();
     _controller.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
@@ -202,8 +208,38 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
           ),
           _iconBtn(Icons.copy, localizations.copy, _copy),
           _iconBtn(Icons.file_download_outlined, localizations.download, _download),
+          _invisibleMenu(),
         ],
       ),
+    );
+  }
+
+  /// 不可见字符可视化开关。
+  Widget _invisibleMenu() {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.visibility_off_outlined, size: 18),
+      tooltip: localizations.editorShowAsciiControl,
+      onSelected: (value) {
+        setState(() {
+          if (value == 'ascii') {
+            _invisible.setAscii(!_invisible.showAscii);
+          } else {
+            _invisible.setUnicode(!_invisible.showUnicode);
+          }
+        });
+      },
+      itemBuilder: (context) => [
+        CheckedPopupMenuItem(
+          value: 'ascii',
+          checked: _invisible.showAscii,
+          child: Text(localizations.editorShowAsciiControl),
+        ),
+        CheckedPopupMenuItem(
+          value: 'unicode',
+          checked: _invisible.showUnicode,
+          child: Text(localizations.editorShowUnicodeSpecial),
+        ),
+      ],
     );
   }
 
@@ -239,6 +275,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
           lineWrap: _wrap,
           language: HighlightLanguages.getLanguage(ContentType.xml),
           enableGuideLines: false,
+          matchHighlightStyle: kInvisibleCharHighlightStyle,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
           finderBuilder: (c, controller) => FindPanelView(controller: controller),

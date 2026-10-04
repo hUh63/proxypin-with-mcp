@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.24.86 (2026-10-04)
+
+### 不可见字符可视化扩展到 JSON / XML 查看器
+
+- 新增可复用的 `InvisibleCharHighlighter`（`ui/component/invisible_char_highlighter.dart`）：
+  挂载到编辑器 controller 后，自动跟踪文本变化（600ms 防抖）并给不可见字符着色
+- **JSON 查看器**与 **XML 查看器**的工具栏新增「显示 ASCII 控制字符 / 显示 Unicode 特殊字符」
+  两个开关，配色与文本编辑器一致（蓝＝空格/ASCII 控制字符，橙＝Unicode 特殊字符）；
+  用于排查从网页或接口里复制来的、肉眼看不见的空白与零宽字符
+
 ## v1.24.85 (2026-10-04)
 
 ### 正则表达式工具：内置帮助文档 + 可自定义快捷插入 + 匹配/替换增强
