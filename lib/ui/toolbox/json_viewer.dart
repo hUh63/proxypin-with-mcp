@@ -72,7 +72,6 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
     _tabs = TabController(length: 2, vsync: this);
-    _invisible.attach(_controller);
 
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
@@ -86,7 +85,6 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
 
   @override
   void dispose() {
-    _invisible.detach();
     _controller.dispose();
     _tabs.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -354,7 +352,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
           lineWrap: _wrap,
           language: HighlightLanguages.getLanguage(ContentType.json),
           enableGuideLines: false,
-          matchHighlightStyle: kInvisibleCharHighlightStyle,
+          invisibleChars: _invisible.style,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
           finderBuilder: (c, controller) => FindPanelView(controller: controller),

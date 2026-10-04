@@ -4385,5 +4385,9 @@
   "editorMinify": "Minify code",
   "editorMinifyUnsupported": "Minifying is not supported for this syntax",
   "editorMinified": "Minified: {before} → {after} chars",
-  "@editorMinified": {"placeholders": {"before": {"type": "String"}, "after": {"type": "String"}}}
+  "@editorMinified": {"placeholders": {"before": {"type": "String"}, "after": {"type": "String"}}},
+  "editorGutterAnchorSet": "Start line {line} set; long-press another line number to finish",
+  "@editorGutterAnchorSet": {"placeholders": {"line": {"type": "int"}}},
+  "editorGutterRangeSelected": "Selected lines {from}–{to}",
+  "@editorGutterRangeSelected": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}}
 }

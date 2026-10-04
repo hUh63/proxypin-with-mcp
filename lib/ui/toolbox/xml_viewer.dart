@@ -65,7 +65,6 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
   void initState() {
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
-    _invisible.attach(_controller);
 
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
@@ -74,7 +73,6 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
 
   @override
   void dispose() {
-    _invisible.detach();
     _controller.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
@@ -275,7 +273,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
           lineWrap: _wrap,
           language: HighlightLanguages.getLanguage(ContentType.xml),
           enableGuideLines: false,
-          matchHighlightStyle: kInvisibleCharHighlightStyle,
+          invisibleChars: _invisible.style,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
           finderBuilder: (c, controller) => FindPanelView(controller: controller),

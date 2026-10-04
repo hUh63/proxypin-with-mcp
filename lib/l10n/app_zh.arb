@@ -4239,5 +4239,9 @@
   "editorMinify": "压缩代码",
   "editorMinifyUnsupported": "当前语法不支持压缩",
   "editorMinified": "已压缩：{before} → {after} 字符",
-  "@editorMinified": {"placeholders": {"before": {"type": "String"}, "after": {"type": "String"}}}
+  "@editorMinified": {"placeholders": {"before": {"type": "String"}, "after": {"type": "String"}}},
+  "editorGutterAnchorSet": "已记下起始行 {line}，再长按另一行号即选中区间",
+  "@editorGutterAnchorSet": {"placeholders": {"line": {"type": "int"}}},
+  "editorGutterRangeSelected": "已选中第 {from} — {to} 行",
+  "@editorGutterRangeSelected": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}}
 }

@@ -14,111 +14,28 @@
  * limitations under the License.
  */
 
-import 'dart:async';
-
 import 'package:code_forge/code_forge.dart';
-import 'package:flutter/material.dart';
-import 'package:proxypin/utils/text_special_chars.dart';
 
-/// 不可见字符着色用的高亮样式：
-/// - currentMatchStyle（蓝）对应 ASCII 空格 / 控制字符；
-/// - otherMatchStyle（橙）对应 Unicode 特殊字符。
-const MatchHighlightStyle kInvisibleCharHighlightStyle = MatchHighlightStyle(
-  currentMatchStyle: TextStyle(backgroundColor: Color(0x5533A1FF)),
-  otherMatchStyle: TextStyle(backgroundColor: Color(0x55FF9800)),
-);
-
-/// 不可见字符可视化：把空格、制表符、零宽字符等以底色标出。
+/// 不可见字符可视化的开关（真正的绘制在编辑器内核里完成）。
 ///
-/// 用法：
-/// ```dart
-/// final highlighter = InvisibleCharHighlighter();
-/// highlighter.attach(controller);   // initState
-/// highlighter.detach();             // dispose
-/// highlighter.setAscii(true);       // 菜单开关
-/// ```
+/// 编辑器内核（本 fork 版 code_forge）新增了 `InvisibleCharsStyle`：
+/// 它会在**不改动文本**的前提下叠加绘制标记——空格画中点、制表符与控制字符画横条、
+/// 零宽与 Unicode 特殊字符画竖线，因此连零宽字符也能被看见，而且完全不影响
+/// 光标位置、选区与命中测试。
 ///
-/// 编辑器内核（code_forge）没有"渲染空白字符"的开关，也不允许注入自定义
-/// InlayHint，因此这里用 searchHighlights 给不可见字符**底色**——位置能看见，
-/// 但零宽字符本身没有宽度，仍无法显示，请配合「特殊字符检测」定位。
+/// 这里只负责保存开关状态并生成内核需要的样式对象；页面把它传给 `CodeForge`
+/// 的 `invisibleChars` 参数即可。
 class InvisibleCharHighlighter {
-  /// 单个控制字符按 1 个 utf16 code unit 计算，超出上限只着色前 N 个。
-  static const int maxHighlights = 3000;
-
   bool showAscii = false;
   bool showUnicode = false;
 
-  CodeForgeController? _controller;
-  VoidCallback? _listener;
-  Timer? _timer;
-  String _lastText = '';
-
   bool get enabled => showAscii || showUnicode;
 
-  void attach(CodeForgeController controller) {
-    _controller = controller;
-    _listener = _onControllerChanged;
-    _lastText = controller.text;
-    controller.addListener(_listener!);
-  }
+  void setAscii(bool value) => showAscii = value;
 
-  void detach() {
-    _timer?.cancel();
-    _timer = null;
-    final listener = _listener;
-    if (listener != null) {
-      _controller?.removeListener(listener);
-    }
-    _listener = null;
-    _controller = null;
-  }
+  void setUnicode(bool value) => showUnicode = value;
 
-  void setAscii(bool value) {
-    showAscii = value;
-    apply();
-  }
-
-  void setUnicode(bool value) {
-    showUnicode = value;
-    apply();
-  }
-
-  void _onControllerChanged() {
-    final controller = _controller;
-    if (controller == null) return;
-    if (controller.text == _lastText) return; // 选区 / 滚动变化忽略
-    _lastText = controller.text;
-    if (!enabled) return;
-    _timer?.cancel();
-    _timer = Timer(const Duration(milliseconds: 600), apply);
-  }
-
-  /// 重新计算并写入高亮（关闭时清空）。
-  void apply() {
-    final controller = _controller;
-    if (controller == null) return;
-
-    if (!enabled) {
-      if (controller.searchHighlights.isNotEmpty) {
-        controller.searchHighlights = [];
-        controller.searchHighlightsChanged = true;
-        controller.notifyListeners();
-      }
-      return;
-    }
-
-    final hits = SpecialCharScanner.scan(controller.text,
-        ascii: showAscii, unicode: showUnicode, limit: maxHighlights + 1);
-    final shown = hits.length > maxHighlights ? hits.sublist(0, maxHighlights) : hits;
-    controller.searchHighlights = shown
-        .map((h) => SearchHighlight(
-              start: h.index,
-              end: h.index + 1,
-              isCurrentMatch: h.kind == SpecialCharKind.ascii,
-            ))
-        .toList();
-    controller.searchHighlightsChanged = true;
-    controller.notifyListeners();
-    _lastText = controller.text;
-  }
+  /// 传给编辑器内核的样式。
+  InvisibleCharsStyle get style =>
+      InvisibleCharsStyle(ascii: showAscii, unicode: showUnicode);
 }

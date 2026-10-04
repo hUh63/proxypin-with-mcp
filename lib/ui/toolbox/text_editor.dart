@@ -131,6 +131,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool _showAscii = false;
   bool _showUnicode = false;
   bool _dirty = false;
+  int? _gutterAnchorLine;
 
   _RetainMode _retainMode = _RetainMode.never;
   _Newline _newline = _Newline.lf;
@@ -138,13 +139,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
   List<ToolSnippet> _snippets = ToolSnippetDefaults.editor;
 
   String _lastText = '';
-  Timer? _specialTimer;
-  bool _suppressChange = false;
   bool _confirmingExit = false;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   CodeForgeController? get _controller => _doc?.controller;
+
+  InvisibleCharsStyle get _invisibleCharsStyle =>
+      InvisibleCharsStyle(ascii: _showAscii, unicode: _showUnicode);
 
   _LangOption get _lang =>
       _langs.firstWhere((l) => l.label == (_doc?.langLabel ?? 'Plain Text'), orElse: () => _langs.first);
@@ -161,7 +163,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   @override
   void dispose() {
-    _specialTimer?.cancel();
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -239,7 +240,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     doc.controller.addListener(_onControllerChanged);
     doc.undoController.addListener(_onUndoChanged);
-    _refreshSpecialHighlights();
   }
 
   void _onUndoChanged() {
@@ -247,15 +247,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _onControllerChanged() {
-    if (_suppressChange) return;
     final text = _doc?.text ?? '';
     if (text != _lastText) {
       _lastText = text;
       if (!_dirty) setState(() => _dirty = true);
-      if (_showAscii || _showUnicode) {
-        _specialTimer?.cancel();
-        _specialTimer = Timer(const Duration(milliseconds: 600), _refreshSpecialHighlights);
-      }
     }
   }
 
@@ -340,46 +335,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   // ---------- 不可见字符 ----------
 
-  void _refreshSpecialHighlights() {
-    final controller = _controller;
-    if (controller == null) return;
-    _suppressChange = true;
-    try {
-      if (!_showAscii && !_showUnicode) {
-        if (controller.searchHighlights.isNotEmpty) {
-          controller.searchHighlights = [];
-          controller.searchHighlightsChanged = true;
-          controller.notifyListeners();
-        }
-        return;
-      }
-      final hits = SpecialCharScanner.scan(controller.text,
-          ascii: _showAscii, unicode: _showUnicode, limit: _kMaxHighlights + 1);
-      final truncated = hits.length > _kMaxHighlights;
-      final shown = truncated ? hits.sublist(0, _kMaxHighlights) : hits;
-      controller.searchHighlights = shown
-          .map((h) => SearchHighlight(
-                start: h.index,
-                end: h.index + 1,
-                isCurrentMatch: h.kind == SpecialCharKind.ascii,
-              ))
-          .toList();
-      controller.searchHighlightsChanged = true;
-      controller.notifyListeners();
-      if (truncated && mounted) _toast(localizations.editorTooManySpecial);
-    } finally {
-      _suppressChange = false;
-    }
-  }
-
   void _setShowAscii(bool value) {
     setState(() => _showAscii = value);
-    _refreshSpecialHighlights();
   }
 
   void _setShowUnicode(bool value) {
     setState(() => _showUnicode = value);
-    _refreshSpecialHighlights();
   }
 
   Future<void> _showSpecialReport() async {
@@ -553,6 +514,32 @@ class _TextEditorPageState extends State<TextEditorPage> {
     setState(() => _snippets = result);
     await ToolSnippetStore.save('editor', result);
   }
+
+  /// 行号栏长按选行：第一次长按记录起始行，第二次长按选中两行之间的文本。
+  void _onGutterLineLongPress(int line) {
+    final controller = _controller;
+    if (controller == null) return;
+
+    final anchor = _gutterAnchorLine;
+    if (anchor == null) {
+      setState(() => _gutterAnchorLine = line);
+      _toast(localizations.editorGutterAnchorSet(line + 1));
+      return;
+    }
+
+    setState(() => _gutterAnchorLine = null);
+    final a = anchor <= line ? anchor : line;
+    final b = anchor <= line ? line : anchor;
+    final offsets = _lineStartOffsets(controller.text);
+    final start = a < offsets.length ? offsets[a] : controller.text.length;
+    final end = (b + 1) < offsets.length ? offsets[b + 1] - 1 : controller.text.length;
+    controller.selection = TextSelection(baseOffset: start, extentOffset: end);
+    controller.scrollToLine(a);
+    _toast(localizations.editorGutterRangeSelected(a + 1, b + 1));
+  }
+
+  /// 传给编辑器内核的行号长按回调。
+  void _handleGutterLongPress(int line) => _onGutterLineLongPress(line);
 
   Future<void> _selectToLine() async {
     final controller = _controller;
@@ -1277,7 +1264,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 解绑当前文档的监听（退出 / 关闭前调用，避免对已 dispose 的对象再操作）。
   void _unbindActiveDoc() {
-    _specialTimer?.cancel();
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
     _doc = null;
@@ -1327,12 +1313,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           textStyle: const TextStyle(fontSize: 13),
           finderBuilder: (c, controller) => FindPanelView(controller: controller),
           selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
-          matchHighlightStyle: const MatchHighlightStyle(
-            // ASCII 控制字符 / 空格
-            currentMatchStyle: TextStyle(backgroundColor: Color(0x5533A1FF)),
-            // Unicode 特殊字符
-            otherMatchStyle: TextStyle(backgroundColor: Color(0x55FF9800)),
-          ),
+          invisibleChars: _invisibleCharsStyle,
+          onGutterLineLongPress: _handleGutterLongPress,
         ),
       ),
     );
