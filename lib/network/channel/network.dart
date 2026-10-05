@@ -23,6 +23,7 @@ import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/channel/channel.dart';
 import 'package:proxypin/network/channel/channel_context.dart';
 import 'package:proxypin/network/channel/channel_dispatcher.dart';
+import 'package:proxypin/network/channel/connection_registry.dart';
 import 'package:proxypin/network/components/host_filter.dart';
 import 'package:proxypin/network/handle/relay_handle.dart';
 import 'package:proxypin/network/mqtt/protocol_sniffer.dart';
@@ -102,6 +103,8 @@ class Server extends Network {
       channelContext.listener = listener;
       _contexts.add(channelContext);
       socket.done.whenComplete(() => _contexts.remove(channelContext));
+      ConnectionRegistry.instance.register(channelContext);
+      socket.done.whenComplete(() => ConnectionRegistry.instance.unregister(channelContext));
       listen(channel, channelContext);
     }, onError: (error, StackTrace trace) {
       logger.e('server socket listen error on port $port', error: error, stackTrace: trace);
@@ -261,7 +264,10 @@ class Server extends Network {
       if (remoteChannel != null && !remoteChannel.isSsl) {
         var supportProtocols = configuration.enabledHttp2 ? TLS.supportProtocols(data) : ['http/1.1'];
         if (supportProtocols?.isEmpty == true) supportProtocols = null;
+        final tlsStart = DateTime.now();
         await remoteChannel.startSecureSocket(channelContext, host: serviceName, supportedProtocols: supportProtocols);
+        channelContext.tlsTimeMs = DateTime.now().difference(tlsStart).inMilliseconds;
+        channelContext.currentRequest?.tlsTimeMs = channelContext.tlsTimeMs;
       }
 
       //ssl自签证书

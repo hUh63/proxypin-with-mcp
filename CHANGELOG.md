@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.24.97 (2026-10-05)
+
+### HTTP/2 连接树 + 分阶段耗时
+
+两项都属网络层，改动均为**只读侧、可回退**：
+
+- **连接视图**（请求列表「⋮」菜单 → 连接）：新增 [ConnectionRegistry]，在 `Server.bind`
+  接受客户端连接时登记、socket 结束时注销，每个请求经 `prepareRequest` 记一笔。展开一条
+  连接即可看到协议（HTTP/2 / HTTP/1.1）、TLS、客户端地址、到服务端的连接 / TLS 耗时，
+  以及该连接上的最近请求；HTTP/2 下按 streamId 呈现多路复用。
+- **分阶段耗时**（请求详情 General 页）：新增 [RequestTiming]，把一次请求拆成
+  连接(TCP+DNS) / TLS 握手 / 等待(TTFB) / 接收 / 总计。
+  - 「连接」在 `ChannelContext._connectServerChannel` 处计时；「TLS」在
+    `secureSocket` / `startSecureSocket` 处计时，写入触发该连接的请求。
+  - 「等待」= 响应头时间 − 请求时间；「接收」= 响应体读完 − 响应头时间（在 `codec` 里
+    当 body 读完时写入 `HttpMessage.completeTime`）。
+  - **如实标注**：Dart 的 `Socket.connect` 把 DNS 解析与 TCP 建连合并成一次调用，二者
+    无法分离，故标注为「连接(TCP+DNS)」；连接复用（keep-alive）时没有 connect / TLS
+    耗时，显示 `—`。
+
+验证：[RequestTiming] 本地纯 Dart 单测 11 组断言全过（含连接复用、无 completeTime 的回退）。
+
 ## v1.24.96 (2026-10-05)
 
 ### dynamic_color 升到 2.x（material_ui 桥接）

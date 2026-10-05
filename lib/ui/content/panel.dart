@@ -26,6 +26,7 @@ import 'package:proxypin/ui/content/web_socket.dart';
 import 'package:proxypin/ui/content/mqtt.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
+import 'package:proxypin/utils/request_timing.dart';
 
 import 'body.dart';
 import 'headers.dart';
@@ -320,6 +321,8 @@ class General extends StatelessWidget {
       return const SizedBox();
     }
     var response = this.response.get();
+    final timing = RequestTiming.of(request);
+    final l10n = AppLocalizations.of(context)!;
     String requestUrl = request.requestUrl;
     try {
       requestUrl = Uri.decodeFull(request.requestUrl);
@@ -360,6 +363,16 @@ class General extends StatelessWidget {
       RowWidget("Request Time", request.requestTime.formatMillisecond()),
       const SizedBox(height: 15),
       RowWidget("Duration", response?.costTime()),
+      const SizedBox(height: 15),
+      RowWidget(l10n.timingConnect, timing.connectMs == null ? '—' : '${timing.connectMs} ms'),
+      const SizedBox(height: 15),
+      RowWidget(l10n.timingTls, timing.tlsMs == null ? '—' : '${timing.tlsMs} ms'),
+      const SizedBox(height: 15),
+      RowWidget(l10n.timingWait, timing.waitMs == null ? '—' : '${timing.waitMs} ms'),
+      const SizedBox(height: 15),
+      RowWidget(l10n.timingReceive, timing.receiveMs == null ? '—' : '${timing.receiveMs} ms'),
+      const SizedBox(height: 15),
+      RowWidget(l10n.timingTotal, timing.totalMs == null ? '—' : '${timing.totalMs} ms'),
       const SizedBox(height: 15),
       RowWidget("Request Content-Type", request.headers.contentType),
       const SizedBox(height: 15),

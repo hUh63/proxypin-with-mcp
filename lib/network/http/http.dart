@@ -84,6 +84,9 @@ abstract class HttpMessage {
   /// 裁剪前的原始 body 长度（[bodyTruncated] 为 true 时有效）
   int? originalBodyLength;
 
+  /// 响应体读取完成的时间（用于计算「接收」阶段耗时，仅响应会设置）。
+  DateTime? completeTime;
+
   /// 只读预览解码是否因达到上限而截断（上游 #456）：
   /// 经 [bodyPreview] / [decodeBodyStringBounded] 解码大压缩体时置位，供界面提示。
   bool bodyDecodeTruncated = false;
@@ -259,6 +262,16 @@ class HttpRequest extends HttpMessage {
   DateTime requestTime = DateTime.now(); //请求时间
   HttpResponse? response;
   Map<String, dynamic> attributes = {};
+
+  /// 建立服务端连接耗时（毫秒，TCP，含 DNS 解析——Dart 的 Socket.connect 二者合一）。
+  /// 仅在「本次请求触发了新建连接」时由网络层写入。
+  int? connectTimeMs;
+
+  /// TLS 握手耗时（毫秒），同上前提。
+  int? tlsTimeMs;
+
+  /// 是否复用了已有的服务端连接（复用则没有 connect/tls 耗时）。
+  bool connectionReused = false;
   ProcessInfo? processInfo;
 
   String get uri => _uri;

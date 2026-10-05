@@ -24,6 +24,10 @@ class ChannelContext {
   //和远程服务端的连接
   Channel? serverChannel;
 
+  // 建立服务端连接 / TLS 握手耗时（毫秒），供「分阶段耗时」展示
+  int? connectTimeMs;
+  int? tlsTimeMs;
+
   // 明文连接没有ALPN，识别完整前置帧后由两端编解码器共用此状态。
   bool isHttp2PriorKnowledge = false;
   final BytesBuilder _pendingHttp2Frames = BytesBuilder();
@@ -70,13 +74,23 @@ class ChannelContext {
     final connecting = _connectingServerChannel;
     if (connecting != null) return connecting;
     final connected = serverChannel;
-    if (connected != null) return Future.value(connected);
+    if (connected != null) {
+      currentRequest?.connectionReused = true;
+      return Future.value(connected);
+    }
     return _connectingServerChannel ??= _connectServerChannel(hostAndPort, channelHandler);
   }
 
   Future<Channel> _connectServerChannel(HostAndPort hostAndPort, ChannelHandler channelHandler) async {
     try {
+      final connectStart = DateTime.now();
       serverChannel = await startConnect(hostAndPort, channelHandler, this);
+      connectTimeMs = DateTime.now().difference(connectStart).inMilliseconds;
+      final trigger = currentRequest;
+      if (trigger != null) {
+        trigger.connectTimeMs = connectTimeMs;
+        trigger.connectionReused = false;
+      }
       putAttribute(clientChannel!.id, serverChannel);
       putAttribute(serverChannel!.id, clientChannel);
       // :authority到达前还不知道目标，前置帧和SETTINGS不能在此之前丢弃。

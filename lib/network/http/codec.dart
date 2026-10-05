@@ -158,6 +158,7 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
 
       if (_state == State.done) {
         result.data!.body = _convertBody(result.data!.body);
+        result.data!.completeTime = DateTime.now();
         _state = State.readInitial;
         pendingConnectResponse = false; // CONNECT 应答已读完，自动消费
         result.isDone = true;

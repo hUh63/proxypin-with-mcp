@@ -28,6 +28,7 @@ import 'package:proxypin/network/components/repeat_task_manager.dart';
 import 'package:proxypin/ui/component/api_endpoint_page.dart';
 import 'package:proxypin/ui/component/memory_cleanup.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
+import 'package:proxypin/ui/component/connection_tree.dart';
 import 'package:proxypin/ui/component/request_compare_page.dart';
 import 'package:proxypin/ui/component/traffic_analytics.dart';
 import 'package:proxypin/ui/component/selection_action_bar.dart';
@@ -213,6 +214,8 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
                 icon: const Icon(Icons.api, size: 16), text: localizations.toolboxApiEndpoints),
             _menuItem(_RequestListMenuAction.trafficAnalytics,
                 icon: const Icon(Icons.insights, size: 16), text: localizations.trafficAnalytics),
+            _menuItem(_RequestListMenuAction.connections,
+                icon: const Icon(Icons.hub_outlined, size: 16), text: localizations.connectionTree),
           ];
         });
   }
@@ -254,6 +257,10 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       case _RequestListMenuAction.trafficAnalytics:
         // 对当前抓包列表做聚合统计（Top 域名/类型/状态码、最慢、最大）
         showTrafficAnalytics(context, container.source);
+        break;
+      case _RequestListMenuAction.connections:
+        // 活动连接视图（HTTP/2 连接树 + 连接/TLS 耗时）
+        showConnectionTree(context);
         break;
     }
   }
@@ -464,4 +471,4 @@ class _ClearSelectionIntent extends Intent {
   const _ClearSelectionIntent();
 }
 
-enum _RequestListMenuAction { search, export, repeat, select, sort, report, apiEndpoints, trafficAnalytics }
+enum _RequestListMenuAction { search, export, repeat, select, sort, report, apiEndpoints, trafficAnalytics, connections }

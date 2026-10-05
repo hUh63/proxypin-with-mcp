@@ -2454,5 +2454,17 @@
   "trafficLargest": "Largest responses",
   "trafficEmpty": "No requests to analyze.",
   "exportExcel": "Export Excel",
-  "exportExcelDesc": "One row per request; opens in Excel / WPS / Numbers"
+  "exportExcelDesc": "One row per request; opens in Excel / WPS / Numbers",
+  "connectionTree": "Connections",
+  "connectionTreeTitle": "Active connections",
+  "connEmpty": "No active connections.",
+  "connRequests": "{count} requests",
+  "connRecent": "Recent requests",
+  "connNoRecent": "No request yet.",
+  "connOpened": "Opened",
+  "timingConnect": "Connect (TCP+DNS)",
+  "timingTls": "TLS handshake",
+  "timingWait": "Waiting (TTFB)",
+  "timingReceive": "Receiving",
+  "timingTotal": "Total"
 }

@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:proxypin/native/process_info.dart';
 import 'package:proxypin/network/channel/channel.dart';
 import 'package:proxypin/network/channel/channel_context.dart';
+import 'package:proxypin/network/channel/connection_registry.dart';
 import 'package:proxypin/network/handle/relay_handle.dart';
 import 'package:proxypin/network/mqtt/mqtt_relay_handler.dart';
 import 'package:proxypin/network/channel/host_port.dart';
@@ -102,7 +103,10 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
         await HttpClients.connectRequest(channelContext, remote, remoteChannel, proxyInfo: proxyInfo);
       }
 
+      final tlsStart = DateTime.now();
       await remoteChannel.secureSocket(channelContext, host: channelContext.getAttribute(AttributeKeys.domain));
+      channelContext.tlsTimeMs = DateTime.now().difference(tlsStart).inMilliseconds;
+      channelContext.currentRequest?.tlsTimeMs = channelContext.tlsTimeMs;
     }
 
     relay(channelContext, clientChannel, remoteChannel);
@@ -249,6 +253,7 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
 
   Future<void> prepareRequest(ChannelContext channelContext, Channel channel, HttpRequest data) async {
     channelContext.currentRequest = data;
+    ConnectionRegistry.instance.noteRequest(channelContext, data);
     data.hostAndPort ??= channelContext.host ?? getHostAndPort(data, ssl: channel.isSsl);
     if (data.headers.host != null && data.headers.host?.contains(":") == false) {
       data.hostAndPort?.host = data.headers.host!;

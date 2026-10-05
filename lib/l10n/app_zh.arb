@@ -4334,5 +4334,17 @@
   "trafficLargest": "最大响应",
   "trafficEmpty": "当前没有可分析的请求。",
   "exportExcel": "导出 Excel",
-  "exportExcelDesc": "一行一条请求，可用 Excel / WPS / Numbers 打开"
+  "exportExcelDesc": "一行一条请求，可用 Excel / WPS / Numbers 打开",
+  "connectionTree": "连接",
+  "connectionTreeTitle": "活动连接",
+  "connEmpty": "当前没有活动连接。",
+  "connRequests": "{count} 个请求",
+  "connRecent": "最近请求",
+  "connNoRecent": "暂无请求。",
+  "connOpened": "建立时间",
+  "timingConnect": "连接(TCP+DNS)",
+  "timingTls": "TLS 握手",
+  "timingWait": "等待(TTFB)",
+  "timingReceive": "接收",
+  "timingTotal": "总计"
 }
