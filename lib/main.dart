@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:code_forge/code_forge.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:proxypin/ui/dynamic_color_bridge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/network/bin/configuration.dart';
@@ -259,19 +260,19 @@ class FluentApp extends StatelessWidget {
         builder: (_, current, __) {
           // 莫奈取色：Android 12+ 从壁纸提取动态色板（monetEnabled 关闭或低版本回退到固定主题）
           return DynamicColorBuilder(
-              builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+              builder: (lightDynamic, darkDynamic) {
             final useMonet = appConfiguration.monetEnabled;
             final ThemeData lightTheme;
             final ThemeData darkTheme;
             if (useMonet && lightDynamic != null) {
               lightTheme = theme(Brightness.light)
-                  .copyWith(colorScheme: lightDynamic.harmonized());
+                  .copyWith(colorScheme: dynamicToMaterialColorScheme(lightDynamic.harmonized()));
             } else {
               lightTheme = theme(Brightness.light);
             }
             if (useMonet && darkDynamic != null) {
               darkTheme = theme(Brightness.dark)
-                  .copyWith(colorScheme: darkDynamic.harmonized());
+                  .copyWith(colorScheme: dynamicToMaterialColorScheme(darkDynamic.harmonized()));
             } else {
               darkTheme = theme(Brightness.dark);
             }

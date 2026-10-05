@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.24.96 (2026-10-05)
+
+### dynamic_color 升到 2.x（material_ui 桥接）
+
+- `dynamic_color` 1.9.0 → **2.1.0**；相应新增 `material_ui: ^1.5.0` 直接依赖。
+- 2.0 起该插件改用独立的 `material_ui` 包，产出的 `material_ui.ColorScheme` 与
+  Flutter 自带的 `ColorScheme` **不是同一个类**，不能直接赋给 `ThemeData.colorScheme`。
+  新增 `lib/ui/dynamic_color_bridge.dart`：`dynamicToMaterialColorScheme()` 先用种子色构造
+  同亮度基色板，再把 46 个颜色角色逐一搬运（两边颜色字段都是 `dart:ui.Color`、`Brightness`
+  也是同一个类，本质只是换个类壳）。刻意跳过 `background`/`onBackground`/`surfaceVariant`
+  三个已被 Flutter 弃用的别名。
+- `main.dart` 的 `DynamicColorBuilder` 回调改为类型推断，接入该转换器。
+
 ## v1.24.95 (2026-10-05)
 
 ### Fiddler SAZ 导入
