@@ -191,15 +191,18 @@ class _HistoryListState extends State<_HistoryListWidget> {
         ));
   }
 
-  //导入har
+  //导入 har / saz
   Future<void> import() async {
-    final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['har']);
+    final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['har', 'saz']);
     if (file == null) {
       return;
     }
 
     try {
-      var historyItem = await storage.addHarFile(file.xFile);
+      final isSaz = file.name.toLowerCase().endsWith('.saz');
+      var historyItem = isSaz
+          ? await storage.addSazFile(file.xFile)
+          : await storage.addHarFile(file.xFile);
       setState(() {
         toRequestsView(historyItem);
         FlutterToastr.show(localizations.importSuccess, context);

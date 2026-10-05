@@ -26,6 +26,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/files.dart';
 import 'package:proxypin/utils/har.dart';
+import 'package:proxypin/utils/saz.dart';
 import 'package:proxypin/utils/listenable_list.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -222,6 +223,21 @@ class HistoryStorage {
     //解析请求
     List entries = log['entries'];
     var list = entries.map((e) => Har.toRequest(e)).toList();
+
+    return addRequests(list, name: name);
+  }
+
+  /// 从 Fiddler SAZ 文件导入历史（解成 HAR entry 后复用 Har.toRequest）。
+  Future<HistoryItem> addSazFile(XFile file) async {
+    final bytes = await file.readAsBytes();
+    final entries = SazParser.parse(bytes);
+    final list = entries.map((e) => Har.toRequest(e)).toList();
+
+    var base = file.name.split(RegExp(r'[\\/]')).last;
+    if (base.toLowerCase().endsWith('.saz')) base = base.substring(0, base.length - 4);
+    final name = base.trim().isEmpty
+        ? formatDate(DateTime.now(), [mm, '-', d, ' ', HH, ':', nn, ':', ss])
+        : base;
 
     return addRequests(list, name: name);
   }

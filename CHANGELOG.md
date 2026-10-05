@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.24.95 (2026-10-05)
+
+### Fiddler SAZ 导入
+
+- 历史面板「导入」现在同时接受 `.har` 与 `.saz`（Fiddler Session Archive Zip）。
+- 新增 `lib/utils/saz.dart`：把 SAZ 里的 `raw/*_c.txt` / `*_s.txt`（Fiddler 已解密的
+  明文 HTTP）解析成**标准 HAR entry**，再交给既有的 `Har.toRequest` 完成导入 ——
+  不重复实现 HAR→HttpRequest。支持：chunked 解块、gzip / deflate / br 解压、
+  绝对 / 相对请求行、按端口与 meta 推断 http/https、二进制响应转 base64、
+  CONNECT 隧道跳过。
+- 挂载：`HistoryStorage.addSazFile()` + 历史面板按扩展名分流（`history.dart`）。
+- 验证：本地纯 Dart 单测 **11 组断言全过**（gzip / chunked / 二进制 / 端口推断 /
+  CONNECT 跳过 / POST body 字节保真）。
+
 ## v1.24.94 (2026-10-05)
 
 ### 对标 HTTP Debugger：Excel 导出 + 流量分析
