@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.24.98 (2026-10-05)
+
+### PCAPNG 导出
+
+- 导出菜单新增「导出 PCAPNG」。ProxyPin 工作在 TCP 流层、且对 TLS 做了 MITM，手里只有
+  **解密后的明文 HTTP 字节、没有原始链路层报文**，因此新增的 `lib/utils/pcapng.dart`
+  把每个请求 / 响应**合成为以太网 / IPv4 / TCP 帧**（IPv4 头校验和与 TCP 校验和都正确计算）
+  写入标准 PCAPNG，Wireshark 可直接打开并按 TCP 流重组查看明文 HTTP。
+- 说明：HTTPS 的端口仍是 443 但内容是明文，Wireshark 默认按 TLS 解析会显示乱码，
+  需右键 → Decode As → HTTP。
+- 验证：产出的 pcapng 用独立 Python 解析器校验 —— 块结构、IPv4 / TCP 校验和、
+  四个报文的负载与顺序全部正确。
+
 ## v1.24.97 (2026-10-05)
 
 ### HTTP/2 连接树 + 分阶段耗时

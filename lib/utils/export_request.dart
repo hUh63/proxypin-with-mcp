@@ -13,6 +13,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/utils/excel_export.dart';
+import 'package:proxypin/utils/pcapng.dart';
 import 'package:proxypin/utils/har.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
@@ -536,6 +537,20 @@ void showExportDialog(
               },
             ),
             ListTile(
+              leading: const Icon(Icons.rss_feed),
+              title: Text(localizations.exportPcapng),
+              subtitle: Text(localizations.exportPcapngDesc, style: const TextStyle(fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                exportRequestsPcapng(
+                  requests,
+                  '$folderName.pcapng',
+                  context: ctx,
+                  onSuccess: onExportSuccess,
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.copy_all_outlined),
               title: Text(localizations.exportCopyPasscode),
               subtitle: Text(localizations.exportCopyPasscodeDesc, style: const TextStyle(fontSize: 12)),
@@ -690,6 +705,51 @@ Future<void> exportRequestsExcel(
     if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
   } catch (e, st) {
     logger.e('Export Excel error: ', error: e, stackTrace: st);
+    if (context.mounted) {
+      FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
+    }
+  }
+}
+
+/// 导出为 PCAPNG：把**已解密的明文 HTTP** 合成为以太网/IPv4/TCP 帧写入 pcapng，
+/// 便于用 Wireshark 按 TCP 流查看。注意 ProxyPin 无原始链路层报文，这里是**合成**帧；
+/// HTTPS 的端口仍是 443 但内容是明文，Wireshark 里需 Decode As → HTTP。
+Future<void> exportRequestsPcapng(
+  List<HttpRequest> requests,
+  String fileName, {
+  required BuildContext context,
+  VoidCallback? onSuccess,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  try {
+    final sessions = <PcapSession>[];
+    for (final r in requests) {
+      final resp = r.response;
+      final clientIp = PcapNg.parseIpv4(r.remoteHost) ?? const [10, 0, 0, 1];
+      final serverIp = PcapNg.parseIpv4(resp?.remoteHost) ?? const [10, 0, 0, 2];
+      final requestBytes = utf8.encode(copyRawRequest(r));
+      List<int> responseBytes = const [];
+      if (resp != null) {
+        responseBytes = utf8.encode(await copyRawResponse(resp));
+      }
+      var serverPort = r.hostAndPort?.port ?? 80;
+      sessions.add(PcapSession(
+        clientIp: clientIp,
+        clientPort: r.remotePort ?? 0,
+        serverIp: serverIp,
+        serverPort: serverPort,
+        requestBytes: requestBytes,
+        responseBytes: responseBytes,
+        requestTime: r.requestTime,
+        responseTime: resp?.responseTime,
+      ));
+    }
+    final bytes = PcapNg.build(sessions);
+    await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+    onSuccess?.call();
+    if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
+  } catch (e, st) {
+    logger.e('Export pcapng error: ', error: e, stackTrace: st);
     if (context.mounted) {
       FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
     }

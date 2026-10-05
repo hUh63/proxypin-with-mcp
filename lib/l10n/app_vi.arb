@@ -2466,5 +2466,7 @@
   "timingTls": "TLS handshake",
   "timingWait": "Waiting (TTFB)",
   "timingReceive": "Receiving",
-  "timingTotal": "Total"
+  "timingTotal": "Total",
+  "exportPcapng": "Export PCAPNG",
+  "exportPcapngDesc": "Synthesized Ethernet/IP/TCP frames carrying the decrypted HTTP (open with Wireshark)"
 }
