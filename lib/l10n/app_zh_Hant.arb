@@ -886,5 +886,7 @@
   "timingReceive": "接收",
   "timingTotal": "總計",
   "exportPcapng": "匯出 PCAPNG",
-  "exportPcapngDesc": "合成乙太網路/IP/TCP 幀承載解密後的 HTTP（可用 Wireshark 開啟）"
+  "exportPcapngDesc": "合成乙太網路/IP/TCP 幀承載解密後的 HTTP（可用 Wireshark 開啟）",
+  "htmlPreview": "預覽",
+  "htmlPreviewNoJs": "渲染預覽（不執行 JavaScript）"
 }

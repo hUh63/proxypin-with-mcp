@@ -17,6 +17,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:proxypin/ui/component/html_preview.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -262,6 +263,13 @@ class HttpBodyState extends State<HttpBodyWidget> {
             bodyString.startsWith('[') && bodyString.endsWith(']'));
   }
 
+  /// 打开内置 HTML 渲染预览（仅 HTML 正文可见入口）
+  Future<void> _openHtmlPreview() async {
+    final body = await bodyKey.currentState?.getBody();
+    if (body == null || !mounted) return;
+    showHtmlPreview(context, body);
+  }
+
   /// 标题
   Widget titleWidget({bool inNewWindow = false}) {
     var type = widget.httpMessage is HttpRequest ? "Request" : "Response";
@@ -302,6 +310,14 @@ class HttpBodyState extends State<HttpBodyWidget> {
               });
             },
           );
+
+    final previewBtn = IconButton(
+      visualDensity: visualDensity,
+      iconSize: 16,
+      icon: const Icon(Icons.visibility_outlined),
+      tooltip: localizations.htmlPreview,
+      onPressed: _openHtmlPreview,
+    );
 
     final rewriteBtn = IconButton(
       visualDensity: visualDensity,
@@ -350,6 +366,9 @@ class HttpBodyState extends State<HttpBodyWidget> {
     //   the crypto toggle visible.
     if (isMobile && cryptoToggle != null) {
       final overflowItems = <PopupMenuEntry<String>>[];
+      if (widget.httpMessage?.contentType == ContentType.html) {
+        overflowItems.add(PopupMenuItem(value: 'preview', child: Text(localizations.htmlPreview)));
+      }
       if (!widget.hideRequestRewrite) {
         overflowItems.add(PopupMenuItem(
             value: 'rewrite',
@@ -376,6 +395,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, size: 20),
               onSelected: (v) {
+                if (v == 'preview') _openHtmlPreview();
                 if (v == 'rewrite') showRequestRewrite();
                 if (v == 'encode') {
                   bodyKey.currentState?.getBody().then((body) {
@@ -399,6 +419,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
       searchBtn,
       const SizedBox(width: 4),
       copyBtn,
+      if (widget.httpMessage?.contentType == ContentType.html) previewBtn,
     ];
 
     if (!widget.hideRequestRewrite) {

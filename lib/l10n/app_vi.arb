@@ -2468,5 +2468,7 @@
   "timingReceive": "Receiving",
   "timingTotal": "Total",
   "exportPcapng": "Export PCAPNG",
-  "exportPcapngDesc": "Synthesized Ethernet/IP/TCP frames carrying the decrypted HTTP (open with Wireshark)"
+  "exportPcapngDesc": "Synthesized Ethernet/IP/TCP frames carrying the decrypted HTTP (open with Wireshark)",
+  "htmlPreview": "Preview",
+  "htmlPreviewNoJs": "Rendered preview (JavaScript is NOT executed)"
 }
