@@ -44,7 +44,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
 
   final _capture = TransparentCapture.instance;
   final _tcpPortsCtrl = TextEditingController(text: '80,443');
-  final _udpPortsCtrl = TextEditingController(text: '53');
+  final _udpPortsCtrl = TextEditingController(text: '53,443');
   final _dnsRulesCtrl = TextEditingController();
   StreamSubscription? _sub;
   bool _busy = false;
@@ -79,7 +79,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
       if (!mounted) return;
       setState(() {
         _tcpPortsCtrl.text = ((m['tcpPorts'] as List?)?.join(',') ?? '80,443');
-        _udpPortsCtrl.text = ((m['udpPorts'] as List?)?.join(',') ?? '53');
+        _udpPortsCtrl.text = ((m['udpPorts'] as List?)?.join(',') ?? '53,443');
         _captureUdp = m['captureUdp'] == true;
         final rw = m['dnsRewrite'];
         if (rw is Map) {
@@ -274,7 +274,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
                         style: const TextStyle(fontSize: 13),
                         decoration: const InputDecoration(
                           isDense: true,
-                          hintText: '53',
+                          hintText: '53,443',
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                         ),

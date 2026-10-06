@@ -23,6 +23,7 @@ import 'package:ffi/ffi.dart';
 import 'package:proxypin/network/transparent/dns.dart';
 import 'package:proxypin/network/transparent/inet.dart';
 import 'package:proxypin/network/transparent/process_lookup.dart';
+import 'package:proxypin/network/util/quic/quic_probe.dart';
 import 'package:proxypin/network/transparent/windivert.dart';
 
 /// 内核抓包的抓取范围配置。
@@ -43,7 +44,7 @@ class TransparentCaptureConfig {
   const TransparentCaptureConfig({
     this.tcpPorts = const [80, 443],
     this.captureUdp = false,
-    this.udpPorts = const [53],
+    this.udpPorts = const [53, 443],
     this.dnsRewrite = const {},
   });
 
@@ -220,6 +221,15 @@ class TransparentCapture {
           _changes.add(null);
         }
         break;
+      case 'quic':
+        final data = msg['data'];
+        if (data is Uint8List) {
+          // 交给我们自己的 QUIC 探测单例解析（SNI / 版本 / 连接 ID / 1-RTT 解密）
+          try {
+            QuicProbe.instance.handlePacket(data, msg['remote'] as String? ?? '');
+          } catch (_) {}
+        }
+        break;
       case 'stats':
         stats.redirectedSyn = (msg['syn'] as int?) ?? stats.redirectedSyn;
         stats.redirectedPackets = (msg['redir'] as int?) ?? stats.redirectedPackets;
@@ -348,6 +358,16 @@ void _entry(Map<String, Object> config) {
               'rewritten': rewritten,
             });
           }
+        }
+        // QUIC（UDP/443）：把长头包（Initial/Handshake/0-RTT，首字节高位为 1）转发给
+        // 主 isolate 的 QuicProbe 做元数据解析，使 QUIC 会话页在内核抓包路径也能用。
+        // 只转长头包（握手类），控制跨 isolate 传输量；短头数据包不转。
+        if (u.dstPort == 443 && copy.length > u.payloadOffset && (copy[u.payloadOffset] & 0x80) != 0) {
+          mainSend.send({
+            'type': 'quic',
+            'data': Uint8List.fromList(Uint8List.sublistView(copy, u.payloadOffset)),
+            'remote': u.dstIpText,
+          });
         }
         if (!injected) windivert.send(handle, packetBuf, len, addr); // 未改写才原样放回
         continue;
