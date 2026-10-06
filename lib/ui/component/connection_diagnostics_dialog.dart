@@ -67,12 +67,12 @@ class _ConnectionDiagnosticsDialogState extends State<_ConnectionDiagnosticsDial
     try {
       final json = ConnectionDiagnostics.toJson(_entries, _report);
       final bytes = Uint8List.fromList(utf8.encode(json));
-      final path = await FilePicker.platform.saveFile(
+      final Uri? path = await FilePicker.saveFile(
         fileName: 'connection_report.json',
         bytes: bytes,
       );
       if (path != null && mounted) {
-        FlutterToastr.show(l.connDiagExported(path), context);
+        FlutterToastr.show(l.connDiagExported(path.toString()), context);
       }
     } catch (e) {
       if (mounted) {
@@ -165,15 +165,15 @@ class _ConnectionDiagnosticsDialogState extends State<_ConnectionDiagnosticsDial
     late final IconData icon;
     late final Color color;
     switch (issue.level) {
-      case DiagnosticLevel.error:
+      case ConnDiagLevel.error:
         icon = Icons.error_outline;
         color = Colors.red;
         break;
-      case DiagnosticLevel.warn:
+      case ConnDiagLevel.warn:
         icon = Icons.warning_amber_rounded;
         color = Colors.orange;
         break;
-      case DiagnosticLevel.info:
+      case ConnDiagLevel.info:
         icon = Icons.info_outline;
         color = Colors.blueGrey;
         break;

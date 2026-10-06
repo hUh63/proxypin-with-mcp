@@ -82,19 +82,19 @@ class _DriverSetupDialogState extends State<_DriverSetupDialog> {
       _busy = false;
       _progress = null;
     });
-    FlutterToastr.show(
-      err == null ? l.kernelDriverInstallOk : '${l.kernelDriverInstallFail}: $err',
-      context,
-      backgroundColor: err == null ? null : Colors.red,
-    );
+    if (err == null) {
+      FlutterToastr.show(l.kernelDriverInstallOk, context);
+    } else {
+      FlutterToastr.show('${l.kernelDriverInstallFail}: $err', context, backgroundColor: Colors.red);
+    }
   }
 
   Future<void> _pickZip() async {
     final l = AppLocalizations.of(context)!;
     try {
-      final picked = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
-      final path = picked?.files.single.path;
-      if (path == null) return;
+      final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
+      if (files == null || files.isEmpty) return;
+      final path = files.single.xFile.path;
       setState(() {
         _busy = true;
         _log = '';
@@ -103,11 +103,11 @@ class _DriverSetupDialogState extends State<_DriverSetupDialog> {
       await _refresh();
       if (!mounted) return;
       setState(() => _busy = false);
-      FlutterToastr.show(
-        err == null ? l.kernelDriverInstallOk : '${l.kernelDriverInstallFail}: $err',
-        context,
-        backgroundColor: err == null ? null : Colors.red,
-      );
+      if (err == null) {
+        FlutterToastr.show(l.kernelDriverInstallOk, context);
+      } else {
+        FlutterToastr.show('${l.kernelDriverInstallFail}: $err', context, backgroundColor: Colors.red);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _busy = false);

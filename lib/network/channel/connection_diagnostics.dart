@@ -18,11 +18,11 @@ import 'dart:convert';
 import 'package:proxypin/network/channel/connection_registry.dart';
 import 'package:proxypin/network/http/http.dart';
 
-enum DiagnosticLevel { info, warn, error }
+enum ConnDiagLevel { info, warn, error }
 
 /// 一条基于「连接登记表」推导出的自检结论。
 class DiagnosticIssue {
-  final DiagnosticLevel level;
+  final ConnDiagLevel level;
   final String title;
   final String detail;
   final String? connectionId;
@@ -60,9 +60,9 @@ class ConnectionDiagnosticsReport {
     required this.issues,
   });
 
-  int get errorCount => issues.where((i) => i.level == DiagnosticLevel.error).length;
-  int get warnCount => issues.where((i) => i.level == DiagnosticLevel.warn).length;
-  int get infoCount => issues.where((i) => i.level == DiagnosticLevel.info).length;
+  int get errorCount => issues.where((i) => i.level == ConnDiagLevel.error).length;
+  int get warnCount => issues.where((i) => i.level == ConnDiagLevel.warn).length;
+  int get infoCount => issues.where((i) => i.level == ConnDiagLevel.info).length;
 
   bool get healthy => errorCount == 0 && warnCount == 0;
 }
@@ -94,7 +94,7 @@ class ConnectionDiagnostics {
           withStream++;
           if (!isH2) {
             issues.add(DiagnosticIssue(
-              DiagnosticLevel.warn,
+              ConnDiagLevel.warn,
               '请求带 streamId 但协议不是 HTTP/2',
               '${r.method.name} ${r.uri} · streamId=${r.streamId} · proto=${r.protocolVersion}',
               connectionId: e.id,
@@ -102,7 +102,7 @@ class ConnectionDiagnostics {
           }
         } else if (isH2) {
           issues.add(DiagnosticIssue(
-            DiagnosticLevel.info,
+            ConnDiagLevel.info,
             'HTTP/2 请求未解析到 streamId',
             '${r.method.name} ${r.uri}（连接树里该请求不会显示 #streamId）',
             connectionId: e.id,
@@ -114,7 +114,7 @@ class ConnectionDiagnostics {
 
       if (e.requestCount > 0 && e.recent.isEmpty) {
         issues.add(DiagnosticIssue(
-          DiagnosticLevel.warn,
+          ConnDiagLevel.warn,
           '连接有请求计数，但最近请求列表为空',
           'requestCount=${e.requestCount}，recent=0（登记时序可能异常）',
           connectionId: e.id,
@@ -122,7 +122,7 @@ class ConnectionDiagnostics {
       }
       if (e.isHttp2 && !hasH2 && e.recent.isNotEmpty) {
         issues.add(DiagnosticIssue(
-          DiagnosticLevel.warn,
+          ConnDiagLevel.warn,
           '连接标记为 HTTP/2，但近期请求里没有 HTTP/2',
           '${e.clientAddress}（协议判定与请求实际协议不一致）',
           connectionId: e.id,
@@ -130,7 +130,7 @@ class ConnectionDiagnostics {
       }
       if (e.isSsl && e.requestCount > 0 && e.tlsTimeMs == null) {
         issues.add(DiagnosticIssue(
-          DiagnosticLevel.info,
+          ConnDiagLevel.info,
           'TLS 连接未采集到握手耗时',
           '${e.clientAddress}（若目标是明文转发或无 TLS 握手则不适用）',
           connectionId: e.id,
@@ -138,7 +138,7 @@ class ConnectionDiagnostics {
       }
       if (e.recent.length >= ConnectionRegistry.maxRecentPerConnection) {
         issues.add(DiagnosticIssue(
-          DiagnosticLevel.info,
+          ConnDiagLevel.info,
           '连接的最近请求已满（被裁剪）',
           '${e.clientAddress}：仅保留最近 ${ConnectionRegistry.maxRecentPerConnection} 条',
           connectionId: e.id,
@@ -148,21 +148,21 @@ class ConnectionDiagnostics {
 
     if (entries.length >= ConnectionRegistry.maxConnections) {
       issues.add(const DiagnosticIssue(
-        DiagnosticLevel.warn,
+        ConnDiagLevel.warn,
         '活动连接数达到上限',
         '老连接可能被淘汰，连接视图未必完整；可在压测后复位再看',
       ));
     }
     if (totalReq > 0 && withConn == 0) {
       issues.add(const DiagnosticIssue(
-        DiagnosticLevel.info,
+        ConnDiagLevel.info,
         '所有请求都未采集到连接耗时（connectTimeMs）',
         'HTTP/1.1 keep-alive 复用连接时，「连接」阶段可能为空，属正常',
       ));
     }
     if (tls > 0 && totalReq > 0 && withTls == 0) {
       issues.add(const DiagnosticIssue(
-        DiagnosticLevel.info,
+        ConnDiagLevel.info,
         '所有 TLS 请求都未采集到 TLS 握手耗时',
         '连接被复用时不会重新握手，属正常；若刚建立连接仍为空，需检查埋点',
       ));
