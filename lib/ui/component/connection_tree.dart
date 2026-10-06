@@ -18,6 +18,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/channel/connection_registry.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/utils/request_timing.dart';
+import 'package:proxypin/ui/component/connection_diagnostics_dialog.dart';
 
 /// 打开「连接」视图：列出当前活动连接，展开可看每个连接上的请求
 /// （HTTP/2 下按 streamId 呈现多路复用），以及到服务端的连接 / TLS 耗时。
@@ -71,6 +72,11 @@ class _ConnectionTreeDialogState extends State<_ConnectionTreeDialog> {
               ),
       ),
       actions: [
+        TextButton.icon(
+          onPressed: () => showConnectionDiagnostics(context),
+          icon: const Icon(Icons.fact_check_outlined, size: 18),
+          label: Text(l.connDiagTitle),
+        ),
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l.close)),
       ],
     );

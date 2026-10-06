@@ -112,9 +112,13 @@ typedef _SetParamDart = int Function(Pointer<Void> handle, int param, int value)
 typedef _ShutdownNative = Int32 Function(Pointer<Void> handle, Int32 how);
 typedef _ShutdownDart = int Function(Pointer<Void> handle, int how);
 
+typedef _HelperVersionNative = Uint32 Function();
+typedef _HelperVersionDart = int Function();
+
 /// WinDivert 动态库封装。加载失败（未安装）时 [tryLoad] 返回 null。
 class Windivert {
   final DynamicLibrary _lib;
+  _HelperVersionDart? _helperVersion;
 
   late final _OpenDart _open = _lib.lookupFunction<_OpenNative, _OpenDart>('WinDivertOpen');
   late final _RecvDart _recv = _lib.lookupFunction<_RecvNative, _RecvDart>('WinDivertRecv');
@@ -125,18 +129,65 @@ class Windivert {
   late final _SetParamDart _setParam = _lib.lookupFunction<_SetParamNative, _SetParamDart>('WinDivertSetParam');
   late final _ShutdownDart _shutdown = _lib.lookupFunction<_ShutdownNative, _ShutdownDart>('WinDivertShutdown');
 
-  Windivert._(this._lib);
+  Windivert._(this._lib) {
+    try {
+      _helperVersion = _lib.lookupFunction<_HelperVersionNative, _HelperVersionDart>('WinDivertHelperVersion');
+    } catch (_) {
+      _helperVersion = null;
+    }
+  }
 
-  static Windivert? tryLoad() {
+  /// 可能的 DLL 文件名（大小写两种写法都试）。
+  static const List<String> candidateDllNames = ['WinDivert.dll', 'windivert.dll'];
+
+  /// 最近一次成功加载的 DLL 路径（用于驱动状态展示）。
+  static String? lastLoadedPath;
+
+  /// 尝试加载 WinDivert。可先按 [searchDirs] 里的显式目录查找（例如 exe 同目录），
+  /// 再回退到系统搜索路径（裸文件名；Windows 默认会搜 exe 所在目录）。
+  static Windivert? tryLoad({List<String>? searchDirs}) {
     if (!Platform.isWindows) return null;
-    for (final name in ['WinDivert.dll', 'windivert.dll']) {
+    final candidates = <String>[];
+    if (searchDirs != null) {
+      for (final dir in searchDirs) {
+        if (dir.trim().isEmpty) continue;
+        for (final name in candidateDllNames) {
+          candidates.add(_joinPath(dir, name));
+        }
+      }
+    }
+    candidates.addAll(candidateDllNames);
+    for (final path in candidates) {
       try {
-        return Windivert._(DynamicLibrary.open(name));
+        final lib = DynamicLibrary.open(path);
+        lastLoadedPath = path;
+        return Windivert._(lib);
       } catch (_) {
-        // 尝试下一个名字
+        // 尝试下一个候选
       }
     }
     return null;
+  }
+
+  static String _joinPath(String dir, String name) {
+    if (dir.endsWith('\\') || dir.endsWith('/')) return '$dir$name';
+    return '$dir${Platform.pathSeparator}$name';
+  }
+
+  /// 运行期版本（来自 `WinDivertHelperVersion`：高 16 位主版本、低 16 位次版本）。
+  /// 取不到时返回 null。
+  String? version() {
+    final fn = _helperVersion;
+    if (fn == null) return null;
+    try {
+      final v = fn();
+      final major = (v >> 16) & 0xFFFF;
+      final minor = v & 0xFFFF;
+      if (major == 0 && minor == 0) return null;
+      return '$major.$minor';
+    } catch (_) {
+      return null;
+    }
   }
 
   /// 打开一个 WinDivert 句柄；失败返回 null。

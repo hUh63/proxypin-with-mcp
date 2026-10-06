@@ -22,6 +22,8 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/transparent/transparent_capture.dart';
 import 'package:proxypin/network/transparent/transparent_relay.dart';
+import 'package:proxypin/network/transparent/driver_manager.dart';
+import 'package:proxypin/ui/component/driver_setup_dialog.dart';
 
 /// 内核级免代理抓包（实验）。详见 docs/kernel_capture_windivert.md。
 void showKernelCaptureDialog(BuildContext context) {
@@ -39,10 +41,12 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
   final _capture = TransparentCapture.instance;
   StreamSubscription? _sub;
   bool _busy = false;
+  bool _driverReady = false;
 
   @override
   void initState() {
     super.initState();
+    _driverReady = WindivertDriver.inspect().ready;
     _sub = _capture.changes.listen((_) {
       if (mounted) setState(() {});
     });
@@ -138,7 +142,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
               const SizedBox(height: 14),
               _kv(l.kernelCaptureStatus, running ? l.kernelCaptureRunning : l.kernelCaptureStopped,
                   color: running ? Colors.green : Colors.grey),
-              _kv(l.kernelCaptureDriver, s.driverVersion ?? (isWindows ? '—' : l.kernelCaptureNotWindows)),
+              _driverRow(l, s.driverVersion, isWindows),
               _kv(l.kernelCaptureNat, '${_capture.natCount}'),
               _kv(l.kernelCaptureRelayed, '${TransparentRelay.instance.relayed}'),
               const SizedBox(height: 6),
@@ -170,4 +174,27 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
           ],
         ),
       );
+
+  /// 驱动行：状态点 + 版本/说明 + 「检测/安装驱动」入口。
+  Widget _driverRow(AppLocalizations l, String? version, bool isWindows) {
+    final ready = _driverReady;
+    final text = version ??
+        (isWindows ? (ready ? l.kernelDriverStatusOk : l.kernelDriverStatusMissing) : l.kernelCaptureNotWindows);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(ready ? Icons.check_circle : Icons.error_outline, size: 15, color: ready ? Colors.green : Colors.orange),
+          const SizedBox(width: 6),
+          Expanded(child: Text(l.kernelCaptureDriver, style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
+          Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          if (isWindows)
+            TextButton(
+              onPressed: () => showDriverSetupDialog(context),
+              child: Text(l.kernelCaptureDriverCheck),
+            ),
+        ],
+      ),
+    );
+  }
 }

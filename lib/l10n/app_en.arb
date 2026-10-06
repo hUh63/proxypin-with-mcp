@@ -4534,5 +4534,73 @@
         "type": "int"
       }
     }
-  }
+  },
+  "connDiagTitle": "Connection self-check",
+  "connDiagRun": "Re-run",
+  "connDiagCopy": "Copy report",
+  "connDiagExport": "Export JSON",
+  "connDiagCopied": "Report copied",
+  "connDiagExported": "Exported: {path}",
+  "@connDiagExported": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "connDiagFailed": "Export failed: {error}",
+  "@connDiagFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "connDiagTotalConn": "Active conns",
+  "connDiagTlsConn": "TLS conns",
+  "connDiagRequests": "Requests",
+  "connDiagCoverageStream": "streamId coverage",
+  "connDiagCoverageConnect": "Connect time coverage",
+  "connDiagCoverageTls": "TLS time coverage",
+  "connDiagHealthy": "No issues found; the connection tree and timings look healthy",
+  "connDiagIssues": "Issues: {errors} errors · {warns} warnings · {infos} notes",
+  "@connDiagIssues": {
+    "placeholders": {
+      "errors": {
+        "type": "int"
+      },
+      "warns": {
+        "type": "int"
+      },
+      "infos": {
+        "type": "int"
+      }
+    }
+  },
+  "kernelDriverTitle": "Kernel capture runtime",
+  "kernelDriverDetect": "Re-scan",
+  "kernelDriverDllLabel": "WinDivert.dll",
+  "kernelDriverSysLabel": "Driver (.sys)",
+  "kernelDriverVersionLabel": "Version",
+  "kernelDriverTargetLabel": "Target dir",
+  "kernelDriverSearched": "Searched directories",
+  "kernelDriverDownload": "Download & install",
+  "kernelDriverPickZip": "Install from local zip",
+  "kernelDriverOpenDir": "Open target dir",
+  "kernelDriverOpenRelease": "Official download page",
+  "kernelDriverDownloading": "Downloading…",
+  "kernelDriverInstallOk": "Installed; please restart the app",
+  "kernelDriverInstallFail": "Install failed",
+  "kernelDriverLog": "Log",
+  "kernelDriverStatusOk": "Ready",
+  "kernelDriverStatusMissing": "Missing",
+  "kernelCaptureDriverCheck": "Check / install driver",
+  "kernelNetfilterTitle": "Other kernel capture capabilities (read-only)",
+  "kernelNetfilterDriver": "NetFilter driver",
+  "kernelNetfilterService": "NetFilter service",
+  "kernelNfapi": "nfapi.dll",
+  "kernelNpcap": "Npcap",
+  "kernelDetected": "Detected",
+  "kernelNotDetected": "Not detected",
+  "kernelNetfilterNote": "NetFilter SDK is a commercial component; this repo does not bundle its runtime — read-only probe only."
 }
