@@ -10,6 +10,9 @@ import 'package:proxypin/ui/component/fuzzer_page.dart';
 import 'package:proxypin/ui/component/security_audit_page.dart';
 import 'package:proxypin/ui/toolbox/js_restore_page.dart';
 import 'package:proxypin/ui/component/quic_sessions_page.dart';
+import 'dart:io';
+
+import 'package:proxypin/ui/component/kernel_capture_dialog.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/ui/component/ai_analysis.dart';
@@ -388,6 +391,12 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.speed,
                       text: localizations.toolboxPerformance,
                       tooltip: localizations.toolboxPerformanceTip),
+                  if (Platform.isWindows)
+                    IconText(
+                        onTap: () => showKernelCaptureDialog(context),
+                        icon: Icons.shield_moon_outlined,
+                        text: localizations.toolboxKernelCapture,
+                        tooltip: localizations.kernelCaptureTitle),
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {

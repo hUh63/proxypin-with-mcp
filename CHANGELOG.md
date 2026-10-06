@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.25.00 (2026-10-06)
+
+### 内核级免代理抓包（Windows / WinDivert，实验性）
+
+- 新增**内核级透明抓包**：在 Windows WFP 层直接截获出站 TCP（80/443），把目标地址改写成
+  本地代理，从而抓到**那些不认系统代理的应用**（原理同 Fiddler/Charles 的抓取非代理感知程序）。
+- 采用 **WinDivert**（官方已签名驱动），**无需自签**；不再走"自研 WFP 驱动"路线（那需要 EV
+  代码签名 + WDK，本仓库不具备条件）。
+- 架构：单句柄 + 组合过滤规则（出网 80/443 + 回程 loopback），后台独立 isolate 跑抓包/改写；
+  SYN 建 NAT 表 `(clientIp:port) → 原始目的`，回程把 src 改回；`TransparentRelay` 接住连接后用
+  `CONNECT host:port` 交给**既有 MITM 代理**并双向 pipe，不重复实现 TLS 解密与脚本。
+- 跳过自身进程流量，避免回环；关闭/退出时清理驱动与 NAT 表；与系统代理互斥。
+- 入口：工具箱 → Runtime → **内核级抓包**（仅 Windows 显示），对话框含状态、统计与**显式风险提示**。
+- **如实说明（未验证）**：本功能在 Linux 构建环境下开发，仅纯 Dart 的报文解析/改写/校验和通过了
+  本地单元测试，WinDivert FFI 按官方头文件编写，CI 五平台编译通过；**未在真实 Windows 真机做端到端
+  验证**。使用前需：以**管理员**身份运行 + 放置 `WinDivert.dll` / `WinDivert64.sys`。详见
+  `docs/kernel_capture_windivert.md`。
+
+
 ## v1.24.99 (2026-10-05)
 
 ### 内置 HTML 渲染预览
