@@ -33,6 +33,9 @@ class TransparentCaptureStats {
   int unmatched = 0;
   int totalPackets = 0;
   String? driverVersion;
+
+  /// 最后一次错误信息（供界面展示）
+  String? lastError;
 }
 
 enum TransparentCaptureStart {
