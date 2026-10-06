@@ -60,7 +60,33 @@ NetFilter SDK 与 WinDivert 解决同类问题，但它是**商业授权组件**
 - 服务：`sc query nfdriver` 的 `STATE`
 - 用户态库：`nfapi.dll` / `nfapi64.dll` 是否在候选目录
 
-探测结果在同一个「检测/安装驱动」面板的「其它内核抓包能力」区块展示。若要在数据面接入 NetFilter，需要用户自行取得 SDK 授权与运行时库——那超出本仓库的可分发范围。
+探测结果在同一个「检测/安装驱动」面板的「其它内核抓包能力」区块展示。
+
+### 3.1 运行时不能内置（授权）
+
+`nfapi.dll` / `nfdriver.sys` 是受版权保护的商业组件，"个人使用"同样需要**你自己持有授权**（官方提供试用版）。本仓库**不内置、不下载、不转发**它们，面板只做只读探测；若要使用，请自行把官方 SDK 里的运行库放到 exe 同目录。
+
+### 3.2 纯 Dart 对接不了（技术根因）
+
+即使你自备了 SDK，本仓库（Flutter + Dart）**仍然实现不了它的数据面**——Dart FFI 的回调模型与 NetFilter 的 API 模型不兼容：
+
+- NetFilter 的 `nf_init(driverName, handler)` 会**从它自己的线程**回调 `NF_EventHandler`，并在 `tcpConnectRequest` 里要求**同步**改写传入的 `NF_TCP_CONN_INFO`（改 `remoteAddress` / `filteringFlag`），改完驱动立即据此建连，指针在回调返回后即失效。
+- Dart FFI 只有两种原生回调：
+  - `NativeCallable.isolateLocal`：**只能在同一线程**调用，跨线程 = 未定义行为（通常直接崩）；
+  - `NativeCallable.listener`：可跨线程，但回调是**异步投递**到 isolate 的——等 Dart 代码跑起来，native 侧回调早已返回、`pConnInfo` 可能已失效。
+- 二者都满足不了"在 native 的线程上、同步读写它传进来的指针"。
+
+> 对比：WinDivert 之所以能行，是因为它给的是**主动轮询** `WinDivertRecv`，完全不依赖 native→Dart 回调。
+
+### 3.3 真要对接，只剩一条路：原生插件
+
+写一个 **Flutter Windows 原生插件**（platform channel + C/C++ 侧直接 `#include "nfapi.h"`），把 `NF_EventHandler` 回调与 `connInfo` 改写都留在原生侧，只把"事件摘要"经 method channel 抛给 Dart。条件：
+
+1. 你持有 NetFilter SDK 的**授权 + 头文件/库**；
+2. 一台装了 **Visual Studio + WDK** 的 Windows 构建机；
+3. 按 Flutter 插件模板（`windows/` + `CMakeLists.txt`）把 nfapi 链进去。
+
+本仓库（Linux CI、纯 Dart）不具备这些条件，故不提供该插件实现。
 
 ---
 

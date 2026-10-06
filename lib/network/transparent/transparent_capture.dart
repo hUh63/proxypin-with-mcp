@@ -20,9 +20,44 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:proxypin/network/transparent/dns.dart';
 import 'package:proxypin/network/transparent/inet.dart';
 import 'package:proxypin/network/transparent/process_lookup.dart';
 import 'package:proxypin/network/transparent/windivert.dart';
+
+/// 内核抓包的抓取范围配置。
+class TransparentCaptureConfig {
+  /// 要重定向到本地代理的 **TCP 目的端口**（不认系统代理的程序走这里）。
+  final List<int> tcpPorts;
+
+  /// 是否嗅探 UDP（只读：读上看一眼再原样放回，不改写地址）。
+  final bool captureUdp;
+
+  /// 要嗅探的 UDP 目的端口；含 53 时解析 DNS 查询名。
+  final List<int> udpPorts;
+
+  const TransparentCaptureConfig({
+    this.tcpPorts = const [80, 443],
+    this.captureUdp = false,
+    this.udpPorts = const [53],
+  });
+
+  Map<String, Object> toJson() => {
+        'tcpPorts': tcpPorts,
+        'captureUdp': captureUdp,
+        'udpPorts': udpPorts,
+      };
+}
+
+/// 一条被嗅探到的 DNS 查询。
+class DnsEvent {
+  final String name;
+  final String type;
+  final String dst;
+  final DateTime at;
+
+  DnsEvent(this.name, this.type, this.dst) : at = DateTime.now();
+}
 
 /// 内核级透明抓包的运行统计。
 class TransparentCaptureStats {
@@ -32,10 +67,15 @@ class TransparentCaptureStats {
   int skippedSelf = 0;
   int unmatched = 0;
   int totalPackets = 0;
+  int udpPackets = 0;
+  int dnsQueries = 0;
   String? driverVersion;
 
   /// 最后一次错误信息（供界面展示）
   String? lastError;
+
+  /// 最近嗅探到的 DNS 查询（有界）。
+  final List<DnsEvent> recentDns = [];
 }
 
 enum TransparentCaptureStart {
@@ -44,16 +84,19 @@ enum TransparentCaptureStart {
   noDriver,
   noPermission,
   alreadyRunning,
+  noTcpPorts,
   failed,
 }
 
 /// 内核级免代理抓包引擎（Windows，基于 WinDivert）。
 ///
 /// 工作原理（单句柄 + 双向改写，详见 docs/kernel_capture_windivert.md）：
-///  1. 用一条组合过滤规则抓「出网 TCP 80/443」与「本地代理回来的回程包」；
-///  2. 出网 SYN：记下 (客户端 ip:port) → 原始目的，再把目的改写成 `127.0.0.1:relayPort`；
+///  1. 用一条组合过滤规则抓「出网 TCP（可配置端口）」与「本地代理回来的回程包」，
+///     以及（可选）「出网 UDP（可配置端口）」；
+///  2. 出网 TCP SYN：记下 (客户端 ip:port) → 原始目的，再把目的改写成 `127.0.0.1:relayPort`；
 ///  3. 回程包（源端口 == relayPort）：把源改回原始目的地址；
-///  4. 其余报文：属于已映射连接的照改，否则原样放回。
+///  4. UDP：**只读嗅探**，解析 DNS 后原样放回（不做地址改写）；
+///  5. 其余报文：属于已映射连接的照改，否则原样放回。
 ///
 /// 被抓的连接落到 [relayPort] 后，由 `TransparentRelay` 用标准 CONNECT 交给既有 MITM 代理。
 ///
@@ -63,10 +106,15 @@ class TransparentCapture {
 
   TransparentCapture._();
 
+  static const int maxDnsEvents = 100;
+
   Isolate? _isolate;
   ReceivePort? _from;
   SendPort? _to;
   final stats = TransparentCaptureStats();
+
+  /// 当前（或上次）的抓取范围配置。
+  TransparentCaptureConfig config = const TransparentCaptureConfig();
 
   /// 客户端(ip:port) → 原始目的(ip, port)。中继器据此还原真实目标。
   final Map<int, List<int>> _nat = {};
@@ -81,7 +129,9 @@ class TransparentCapture {
 
   int get natCount => _nat.length;
 
-  Future<TransparentCaptureStart> start({required int relayPort}) async {
+  Future<TransparentCaptureStart> start({required int relayPort, TransparentCaptureConfig? config}) async {
+    if (config != null) this.config = config;
+    if (this.config.tcpPorts.isEmpty && !this.config.captureUdp) return TransparentCaptureStart.noTcpPorts;
     if (!Platform.isWindows) return TransparentCaptureStart.notWindows;
     if (isRunning) return TransparentCaptureStart.alreadyRunning;
 
@@ -100,6 +150,7 @@ class TransparentCapture {
         'send': ready.sendPort,
         'relayPort': relayPort,
         'selfPid': pid,
+        'config': this.config.toJson(),
       }, debugName: 'proxypin-transparent');
 
       final completer = Completer<TransparentCaptureStart>();
@@ -151,6 +202,15 @@ class TransparentCapture {
       case 'unmap':
         _nat.remove(msg['key'] as int);
         break;
+      case 'dns':
+        final name = msg['name'] as String?;
+        if (name != null) {
+          stats.dnsQueries++;
+          stats.recentDns.insert(0, DnsEvent(name, msg['qtype'] as String? ?? '', msg['dst'] as String? ?? ''));
+          if (stats.recentDns.length > maxDnsEvents) stats.recentDns.removeLast();
+          _changes.add(null);
+        }
+        break;
       case 'stats':
         stats.redirectedSyn = (msg['syn'] as int?) ?? stats.redirectedSyn;
         stats.redirectedPackets = (msg['redir'] as int?) ?? stats.redirectedPackets;
@@ -158,6 +218,8 @@ class TransparentCapture {
         stats.skippedSelf = (msg['self'] as int?) ?? stats.skippedSelf;
         stats.unmatched = (msg['unmatched'] as int?) ?? stats.unmatched;
         stats.totalPackets = (msg['total'] as int?) ?? stats.totalPackets;
+        stats.udpPackets = (msg['udp'] as int?) ?? stats.udpPackets;
+        stats.dnsQueries = (msg['dns'] as int?) ?? stats.dnsQueries;
         stats.driverVersion = msg['version'] as String?;
         _changes.add(null);
         break;
@@ -165,11 +227,16 @@ class TransparentCapture {
   }
 }
 
-/// isolate 入口：阻塞式收包 + 改写 + 放回。
+/// isolate 入口：阻塞式收包 + 改写（TCP）/ 嗅探（UDP） + 放回。
 void _entry(Map<String, Object> config) {
   final mainSend = config['send'] as SendPort;
   final relayPort = config['relayPort'] as int;
   final selfPid = config['selfPid'] as int;
+
+  final cfg = (config['config'] as Map?) ?? const {};
+  final tcpPorts = ((cfg['tcpPorts'] as List?) ?? const [80, 443]).cast<int>();
+  final captureUdp = cfg['captureUdp'] == true;
+  final udpPorts = ((cfg['udpPorts'] as List?) ?? const [53]).cast<int>();
 
   final control = ReceivePort();
   var running = true;
@@ -184,10 +251,15 @@ void _entry(Map<String, Object> config) {
     return;
   }
 
-  // 一条组合规则同时覆盖「出网 80/443」与「中继回程」两类报文
-  final filter = 'tcp and outbound and '
-      '((not loopback and (tcp.DstPort == 80 or tcp.DstPort == 443)) '
-      'or (loopback and tcp.SrcPort == $relayPort))';
+  // 组合规则：TCP 重定向（出网）+ 中继回程；可选 UDP 嗅探（出网）
+  final tcpPart = tcpPorts.isEmpty
+      ? '(loopback and tcp.SrcPort == $relayPort)'
+      : '((not loopback and (${tcpPorts.map((p) => 'tcp.DstPort == $p').join(' or ')})) '
+          'or (loopback and tcp.SrcPort == $relayPort))';
+  var filter = 'tcp and outbound and $tcpPart';
+  if (captureUdp && udpPorts.isNotEmpty) {
+    filter += ' or (udp and outbound and (${udpPorts.map((p) => 'udp.DstPort == $p').join(' or ')}))';
+  }
 
   final handle = windivert.open(filter);
   if (handle == null) {
@@ -203,7 +275,7 @@ void _entry(Map<String, Object> config) {
   final addr = malloc<WindivertAddress>();
   final nat = <int, List<int>>{};
 
-  var syn = 0, redir = 0, ret = 0, self = 0, unmatched = 0, total = 0;
+  var syn = 0, redir = 0, ret = 0, self = 0, unmatched = 0, total = 0, udp = 0, dnsCount = 0;
   var lastStats = DateTime.now();
 
   try {
@@ -211,13 +283,43 @@ void _entry(Map<String, Object> config) {
       final len = windivert.recv(handle, packetBuf, bufferSize, addr);
       if (len <= 0) {
         if (!running) break;
-        // 短暂错误（超时/队列空）：稍等再试
         sleep(const Duration(milliseconds: 5));
         continue;
       }
       total++;
-      final bytes = packetBuf.asTypedList(len);
-      final copy = Uint8List.fromList(bytes);
+      final copy = Uint8List.fromList(packetBuf.asTypedList(len));
+
+      // ---- UDP（只读嗅探） ----
+      if (copy.length >= 20 && copy[9] == Ipv4Udp.protoUdp) {
+        final u = Ipv4Udp.parse(copy);
+        if (u == null) {
+          windivert.send(handle, packetBuf, len, addr);
+          continue;
+        }
+        final owner = ProcessLookup.pidForUdp(_ipBytes(u.srcIp), u.srcPort);
+        if (owner == selfPid) {
+          self++;
+          windivert.send(handle, packetBuf, len, addr);
+          continue;
+        }
+        udp++;
+        if (u.dstPort == 53) {
+          final dnsMsg = Dns.parse(Uint8List.sublistView(copy, u.payloadOffset));
+          if (dnsMsg != null && !dnsMsg.isResponse) {
+            dnsCount++;
+            mainSend.send({
+              'type': 'dns',
+              'name': dnsMsg.name,
+              'qtype': dnsMsg.typeText,
+              'dst': '${u.dstIpText}:${u.dstPort}',
+            });
+          }
+        }
+        windivert.send(handle, packetBuf, len, addr); // 原样放回
+        continue;
+      }
+
+      // ---- TCP（改写重定向） ----
       final info = Ipv4Tcp.parse(copy);
       if (info == null) {
         windivert.send(handle, packetBuf, len, addr);
@@ -228,9 +330,7 @@ void _entry(Map<String, Object> config) {
 
       if (isLoopbackReturn) {
         // 回程：源是本地中继，改回原始目的地址
-        final clientIp = info.dstIp;
-        final clientPort = info.dstPort;
-        final orig = nat[Ipv4Tcp.natKey(clientIp, clientPort)];
+        final orig = nat[Ipv4Tcp.natKey(info.dstIp, info.dstPort)];
         if (orig != null) {
           Ipv4Tcp.rewriteSrc(copy, orig[0], orig[1]);
           windivert.send(handle, Windivert.allocCopy(copy), copy.length, addr);
@@ -286,6 +386,8 @@ void _entry(Map<String, Object> config) {
           'self': self,
           'unmatched': unmatched,
           'total': total,
+          'udp': udp,
+          'dns': dnsCount,
         });
       }
     }

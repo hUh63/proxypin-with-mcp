@@ -4409,5 +4409,13 @@
   "kernelNpcap": "Npcap",
   "kernelDetected": "已检测到",
   "kernelNotDetected": "未检测到",
-  "kernelNetfilterNote": "NetFilter SDK 为商业授权组件；本仓库不内置其运行时，此处仅做只读探测。"
+  "kernelNetfilterNote": "NetFilter SDK 为商业授权组件；本仓库不内置其运行时，此处仅做只读探测。",
+  "kernelCaptureScope": "抓取范围",
+  "kernelCaptureTcpPorts": "TCP 端口",
+  "kernelCaptureUdp": "UDP 嗅探（只读）",
+  "kernelCaptureUdpPorts": "UDP 端口",
+  "kernelCaptureUdpPackets": "UDP 报文",
+  "kernelCaptureDns": "DNS 查询",
+  "kernelCaptureRecentDns": "最近 DNS",
+  "kernelCaptureNoPorts": "请至少配置一个 TCP 端口，或开启 UDP 嗅探"
 }

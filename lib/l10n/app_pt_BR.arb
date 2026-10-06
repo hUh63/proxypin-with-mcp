@@ -386,5 +386,13 @@
   "kernelNpcap": "Npcap",
   "kernelDetected": "Detectado",
   "kernelNotDetected": "Não detectado",
-  "kernelNetfilterNote": "O NetFilter SDK é um componente comercial; este repositório não inclui seu runtime — apenas sondagem somente leitura."
+  "kernelNetfilterNote": "O NetFilter SDK é um componente comercial; este repositório não inclui seu runtime — apenas sondagem somente leitura.",
+  "kernelCaptureScope": "Escopo de captura",
+  "kernelCaptureTcpPorts": "Portas TCP",
+  "kernelCaptureUdp": "Sniff UDP (somente leitura)",
+  "kernelCaptureUdpPorts": "Portas UDP",
+  "kernelCaptureUdpPackets": "Pacotes UDP",
+  "kernelCaptureDns": "Consultas DNS",
+  "kernelCaptureRecentDns": "DNS recentes",
+  "kernelCaptureNoPorts": "Configure ao menos uma porta TCP ou ative o sniff UDP"
 }

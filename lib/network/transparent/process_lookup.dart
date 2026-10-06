@@ -19,30 +19,38 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
-typedef _GetExtTcpNative = Uint32 Function(
+typedef _GetExtNative = Uint32 Function(
     Pointer<Uint8> table, Pointer<Uint32> size, Int32 order, Uint32 af, Int32 tableClass, Uint32 reserved);
-typedef _GetExtTcpDart = int Function(
+typedef _GetExtDart = int Function(
     Pointer<Uint8> table, Pointer<Uint32> size, int order, int af, int tableClass, int reserved);
 
-/// 由「本地地址:端口」反查进程 PID（`GetExtendedTcpTable`，iphlpapi.dll）。
+/// 由「本地地址:端口」反查进程 PID（`GetExtendedTcpTable` / `GetExtendedUdpTable`，iphlpapi.dll）。
 ///
 /// WinDivert 的网络层报文**不带进程信息**，所以按进程区分流量要靠这一步回查：
-/// 用报文的源地址:端口去 TCP 连接表里找对应行，取 `dwOwningPid`。仅 Windows 可用。
+/// 用报文的源地址:端口去连接表里找对应行，取 `dwOwningPid`。仅 Windows 可用。
 class ProcessLookup {
   static const int _afInet = 2;
   static const int _tcpTableOwnerPidAll = 5;
+  static const int _udpTableOwnerPid = 1;
   static const int _errorInsufficientBuffer = 122;
-  static const int _rowSize = 24; // 6 个 DWORD
+  static const int _tcpRowSize = 24; // MIB_TCPROW_OWNER_PID：6 个 DWORD
+  static const int _udpRowSize = 12; // MIB_UDPROW_OWNER_PID：3 个 DWORD
 
   static DynamicLibrary? _lib;
-  static _GetExtTcpDart? _getExtTcp;
+  static _GetExtDart? _getExtTcp;
+  static _GetExtDart? _getExtUdp;
 
   static bool _ensureLoaded() {
     if (_getExtTcp != null) return true;
     if (!Platform.isWindows) return false;
     try {
       _lib ??= DynamicLibrary.open('iphlpapi.dll');
-      _getExtTcp = _lib!.lookupFunction<_GetExtTcpNative, _GetExtTcpDart>('GetExtendedTcpTable');
+      _getExtTcp = _lib!.lookupFunction<_GetExtNative, _GetExtDart>('GetExtendedTcpTable');
+      try {
+        _getExtUdp = _lib!.lookupFunction<_GetExtNative, _GetExtDart>('GetExtendedUdpTable');
+      } catch (_) {
+        _getExtUdp = null;
+      }
       return true;
     } catch (_) {
       return false;
@@ -50,41 +58,41 @@ class ProcessLookup {
   }
 
   /// [srcIp] 4 字节网络序；[srcPort] 主机序。查不到返回 0。
-  static int pidForTcp(Uint8List srcIp, int srcPort) {
-    if (!_ensureLoaded()) return 0;
-    var size = 0;
-    var ret = _getExtTcp!(Pointer<Uint8>.fromAddress(0), Pointer<Uint32>.fromAddress(0).cast(), 0, _afInet,
-        _tcpTableOwnerPidAll, 0);
-    // 先用一个真实 size 指针申请
+  static int pidForTcp(Uint8List srcIp, int srcPort) =>
+      _pidFor(_getExtTcp, _tcpTableOwnerPidAll, _tcpRowSize, srcIp, srcPort, addrOffset: 4, portOffset: 8, pidOffset: 20);
+
+  /// UDP 版：由本地地址:端口反查 PID。查不到返回 0。
+  static int pidForUdp(Uint8List localIp, int localPort) =>
+      _pidFor(_getExtUdp, _udpTableOwnerPid, _udpRowSize, localIp, localPort, addrOffset: 0, portOffset: 4, pidOffset: 8);
+
+  static int _pidFor(_GetExtDart? fn, int tableClass, int rowSize, Uint8List ip, int port,
+      {required int addrOffset, required int portOffset, required int pidOffset}) {
+    if (fn == null || !_ensureLoaded()) return 0;
     final sizePtr = malloc<Uint32>();
     try {
-      ret = _getExtTcp!(Pointer<Uint8>.fromAddress(0), sizePtr, 0, _afInet, _tcpTableOwnerPidAll, 0);
-      size = sizePtr.value;
+      var ret = fn(Pointer<Uint8>.fromAddress(0), sizePtr, 0, _afInet, tableClass, 0);
+      final size = sizePtr.value;
       if (ret != _errorInsufficientBuffer || size <= 4) return 0;
 
       final buffer = malloc<Uint8>(size);
       try {
-        ret = _getExtTcp!(buffer, sizePtr, 0, _afInet, _tcpTableOwnerPidAll, 0);
+        ret = fn(buffer, sizePtr, 0, _afInet, tableClass, 0);
         if (ret != 0) return 0;
 
         final bytes = buffer.asTypedList(size);
         final count = _u32(bytes, 0);
-        final maxRows = ((size - 4) / _rowSize).floor();
+        final maxRows = ((size - 4) / rowSize).floor();
         final rows = count < maxRows ? count : maxRows;
         for (var i = 0; i < rows; i++) {
-          final off = 4 + i * _rowSize;
-          // dwLocalAddr @ off+4, dwLocalPort @ off+8, dwOwningPid @ off+20
-          if (bytes[off + 4] != srcIp[0] ||
-              bytes[off + 5] != srcIp[1] ||
-              bytes[off + 6] != srcIp[2] ||
-              bytes[off + 7] != srcIp[3]) {
+          final off = 4 + i * rowSize;
+          final a = off + addrOffset;
+          if (bytes[a] != ip[0] || bytes[a + 1] != ip[1] || bytes[a + 2] != ip[2] || bytes[a + 3] != ip[3]) {
             continue;
           }
           // 端口在低 16 位、网络序（内存中为 [hi, lo]）
-          final port = (bytes[off + 8 + 1] << 8) | bytes[off + 8];
-          if (port == srcPort) {
-            return _u32(bytes, off + 20);
-          }
+          final p = off + portOffset;
+          final rowPort = (bytes[p + 1] << 8) | bytes[p];
+          if (rowPort == port) return _u32(bytes, off + pidOffset);
         }
         return 0;
       } finally {

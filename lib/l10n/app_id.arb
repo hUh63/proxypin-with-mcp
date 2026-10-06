@@ -2529,5 +2529,13 @@
   "kernelNpcap": "Npcap",
   "kernelDetected": "Terdeteksi",
   "kernelNotDetected": "Tidak terdeteksi",
-  "kernelNetfilterNote": "NetFilter SDK adalah komponen komersial; repositori ini tidak menyertakan runtime-nya — hanya pemindaian baca saja."
+  "kernelNetfilterNote": "NetFilter SDK adalah komponen komersial; repositori ini tidak menyertakan runtime-nya — hanya pemindaian baca saja.",
+  "kernelCaptureScope": "Cakupan penangkapan",
+  "kernelCaptureTcpPorts": "Port TCP",
+  "kernelCaptureUdp": "Sniff UDP (hanya baca)",
+  "kernelCaptureUdpPorts": "Port UDP",
+  "kernelCaptureUdpPackets": "Paket UDP",
+  "kernelCaptureDns": "Kueri DNS",
+  "kernelCaptureRecentDns": "DNS terbaru",
+  "kernelCaptureNoPorts": "Konfigurasikan minimal satu port TCP, atau aktifkan sniff UDP"
 }

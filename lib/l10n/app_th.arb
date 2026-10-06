@@ -2529,5 +2529,13 @@
   "kernelNpcap": "Npcap",
   "kernelDetected": "ตรวจพบ",
   "kernelNotDetected": "ไม่พบ",
-  "kernelNetfilterNote": "NetFilter SDK เป็นส่วนประกอบเชิงพาณิชย์ โครงการนี้ไม่ได้รวมรันไทม์ไว้ — เป็นการตรวจสอบแบบอ่านอย่างเดียวเท่านั้น"
+  "kernelNetfilterNote": "NetFilter SDK เป็นส่วนประกอบเชิงพาณิชย์ โครงการนี้ไม่ได้รวมรันไทม์ไว้ — เป็นการตรวจสอบแบบอ่านอย่างเดียวเท่านั้น",
+  "kernelCaptureScope": "ขอบเขตการดักจับ",
+  "kernelCaptureTcpPorts": "พอร์ต TCP",
+  "kernelCaptureUdp": "ดัก UDP (อ่านอย่างเดียว)",
+  "kernelCaptureUdpPorts": "พอร์ต UDP",
+  "kernelCaptureUdpPackets": "แพ็กเก็ต UDP",
+  "kernelCaptureDns": "คำขอ DNS",
+  "kernelCaptureRecentDns": "DNS ล่าสุด",
+  "kernelCaptureNoPorts": "กำหนดพอร์ต TCP อย่างน้อยหนึ่งพอร์ต หรือเปิดการดัก UDP"
 }

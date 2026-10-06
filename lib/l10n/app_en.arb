@@ -4602,5 +4602,13 @@
   "kernelNpcap": "Npcap",
   "kernelDetected": "Detected",
   "kernelNotDetected": "Not detected",
-  "kernelNetfilterNote": "NetFilter SDK is a commercial component; this repo does not bundle its runtime — read-only probe only."
+  "kernelNetfilterNote": "NetFilter SDK is a commercial component; this repo does not bundle its runtime — read-only probe only.",
+  "kernelCaptureScope": "Capture scope",
+  "kernelCaptureTcpPorts": "TCP ports",
+  "kernelCaptureUdp": "UDP sniff (read-only)",
+  "kernelCaptureUdpPorts": "UDP ports",
+  "kernelCaptureUdpPackets": "UDP packets",
+  "kernelCaptureDns": "DNS queries",
+  "kernelCaptureRecentDns": "Recent DNS",
+  "kernelCaptureNoPorts": "Configure at least one TCP port, or enable UDP sniffing"
 }

@@ -947,5 +947,13 @@
   "kernelNpcap": "Npcap",
   "kernelDetected": "已偵測到",
   "kernelNotDetected": "未偵測到",
-  "kernelNetfilterNote": "NetFilter SDK 為商業授權元件；本專案不內建其執行階段，此處僅做唯讀探測。"
+  "kernelNetfilterNote": "NetFilter SDK 為商業授權元件；本專案不內建其執行階段，此處僅做唯讀探測。",
+  "kernelCaptureScope": "擷取範圍",
+  "kernelCaptureTcpPorts": "TCP 連接埠",
+  "kernelCaptureUdp": "UDP 嗅探（唯讀）",
+  "kernelCaptureUdpPorts": "UDP 連接埠",
+  "kernelCaptureUdpPackets": "UDP 封包",
+  "kernelCaptureDns": "DNS 查詢",
+  "kernelCaptureRecentDns": "最近 DNS",
+  "kernelCaptureNoPorts": "請至少設定一個 TCP 連接埠，或開啟 UDP 嗅探"
 }

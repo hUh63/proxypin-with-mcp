@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.27.00 (2026-10-06)
+
+### 内核抓包：可配置端口 + UDP/DNS 嗅探
+
+- **TCP 抓取端口可配置**：不再写死 80/443，可在「内核级抓包」面板填写任意端口列表
+  （逗号分隔），配置随应用持久化。
+- **新增 UDP 嗅探（只读）**：可开关；对指定 UDP 端口（默认 53）把报文读上来解析后
+  **原样放回**，不改写地址。
+- **DNS 可视化**：命中 53 端口时解析 DNS 查询名与类型，面板显示「DNS 查询」计数与
+  **最近 DNS** 列表；新增纯 Dart 的 `lib/network/transparent/dns.dart`。
+- UDP 同样按进程跳过自身流量（`GetExtendedUdpTable`；`process_lookup.dart` 新增 `pidForUdp`）。
+- 过滤规则改为按配置动态组合：
+  `tcp and outbound and (…) [or (udp and outbound and (…))]`。
+
+### NetFilter SDK：明确技术边界（不改代码）
+
+- `docs/kernel_drivers.md` 补 §3.1–3.3：**运行时不能内置**（商业授权，需自备）；
+  **纯 Dart 无法对接**——NetFilter 要求 native 线程**同步**回调并同步改写传入的 `connInfo`，
+  而 Dart FFI 只有「同线程同步」（`isolateLocal`）或「跨线程异步」（`listener`）两种回调，
+  都无法满足「在 native 线程上同步读写它传进来的指针」；**真要对接只能写 Flutter Windows
+  原生插件**（platform channel + C/C++ 侧 nfapi）。面板的只读探测保持不变。
+
 ## v1.26.00 (2026-10-06)
 
 ### 内核抓包：驱动自动检测 + 一键放置 + 三条路线对照

@@ -152,6 +152,48 @@ class Ipv4Tcp {
   }
 }
 
+/// IPv4 + UDP 的最小解析（纯 Dart）。
+///
+/// UDP 是无连接的，透明抓取时只做「读上看一眼、再原样放回」，不改写地址；
+/// 这里复用 [PacketInfo] 承载字段（`tcpOffset` 即 UDP 头偏移）。
+class Ipv4Udp {
+  static const int protoUdp = 17;
+
+  /// 解析一条 IPv4/UDP 报文；不是 IPv4/UDP 返回 null。
+  static PacketInfo? parse(Uint8List packet) {
+    if (packet.length < 20) return null;
+    if ((packet[0] >> 4) != 4) return null;
+    final ihl = (packet[0] & 0x0F) * 4;
+    if (ihl < 20 || packet.length < ihl + 8) return null;
+    if (packet[9] != protoUdp) return null;
+
+    final totalLength = (packet[2] << 8) | packet[3];
+    final frag = (packet[6] << 8) | packet[7];
+    // 忽略分片
+    if ((frag & 0x1FFF) != 0) return null;
+
+    final srcIp = (packet[12] << 24) | (packet[13] << 16) | (packet[14] << 8) | packet[15];
+    final dstIp = (packet[16] << 24) | (packet[17] << 16) | (packet[18] << 8) | packet[19];
+
+    final udp = ihl;
+    final srcPort = (packet[udp] << 8) | packet[udp + 1];
+    final dstPort = (packet[udp + 2] << 8) | packet[udp + 3];
+
+    return PacketInfo(
+      packet: packet,
+      ipHeaderLength: ihl,
+      tcpOffset: udp,
+      payloadOffset: udp + 8,
+      declaredLength: totalLength,
+      srcIp: srcIp,
+      dstIp: dstIp,
+      srcPort: srcPort,
+      dstPort: dstPort,
+      flags: 0,
+    );
+  }
+}
+
 class PacketInfo {
   final Uint8List packet;
   final int ipHeaderLength;

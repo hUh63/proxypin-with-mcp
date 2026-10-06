@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/network/transparent/driver_manager.dart';
 import 'package:proxypin/network/transparent/transparent_capture.dart';
 import 'package:proxypin/network/transparent/transparent_relay.dart';
-import 'package:proxypin/network/transparent/driver_manager.dart';
 import 'package:proxypin/ui/component/driver_setup_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 内核级免代理抓包（实验）。详见 docs/kernel_capture_windivert.md。
 void showKernelCaptureDialog(BuildContext context) {
@@ -38,15 +40,21 @@ class _KernelCaptureDialog extends StatefulWidget {
 }
 
 class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
+  static const String _prefsKey = 'kernel_capture_config_v1';
+
   final _capture = TransparentCapture.instance;
+  final _tcpPortsCtrl = TextEditingController(text: '80,443');
+  final _udpPortsCtrl = TextEditingController(text: '53');
   StreamSubscription? _sub;
   bool _busy = false;
   bool _driverReady = false;
+  bool _captureUdp = false;
 
   @override
   void initState() {
     super.initState();
     _driverReady = WindivertDriver.inspect().ready;
+    _loadConfig();
     _sub = _capture.changes.listen((_) {
       if (mounted) setState(() {});
     });
@@ -55,7 +63,42 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
   @override
   void dispose() {
     _sub?.cancel();
+    _tcpPortsCtrl.dispose();
+    _udpPortsCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_prefsKey);
+      if (raw == null) return;
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      if (!mounted) return;
+      setState(() {
+        _tcpPortsCtrl.text = ((m['tcpPorts'] as List?)?.join(',') ?? '80,443');
+        _udpPortsCtrl.text = ((m['udpPorts'] as List?)?.join(',') ?? '53');
+        _captureUdp = m['captureUdp'] == true;
+      });
+    } catch (_) {
+      // 配置损坏则用默认
+    }
+  }
+
+  Future<void> _saveConfig(TransparentCaptureConfig cfg) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefsKey, jsonEncode(cfg.toJson()));
+    } catch (_) {}
+  }
+
+  static List<int> _parsePorts(String text) {
+    final out = <int>[];
+    for (final p in text.split(RegExp(r'[,，\s]+'))) {
+      final v = int.tryParse(p.trim());
+      if (v != null && v > 0 && v <= 65535 && !out.contains(v)) out.add(v);
+    }
+    return out;
   }
 
   Future<void> _start() async {
@@ -65,10 +108,16 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
       FlutterToastr.show(l.kernelCaptureNeedServer, context, backgroundColor: Colors.orange);
       return;
     }
+    final cfg = TransparentCaptureConfig(
+      tcpPorts: _parsePorts(_tcpPortsCtrl.text),
+      captureUdp: _captureUdp,
+      udpPorts: _parsePorts(_udpPortsCtrl.text),
+    );
     setState(() => _busy = true);
     try {
+      await _saveConfig(cfg);
       final relayPort = await TransparentRelay.instance.start(proxyPort: server.port);
-      final result = await _capture.start(relayPort: relayPort);
+      final result = await _capture.start(relayPort: relayPort, config: cfg);
       if (!mounted) return;
       switch (result) {
         case TransparentCaptureStart.ok:
@@ -82,6 +131,9 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
           break;
         case TransparentCaptureStart.noPermission:
           FlutterToastr.show(l.kernelCaptureNeedAdmin, context, backgroundColor: Colors.red);
+          break;
+        case TransparentCaptureStart.noTcpPorts:
+          FlutterToastr.show(l.kernelCaptureNoPorts, context, backgroundColor: Colors.orange);
           break;
         case TransparentCaptureStart.alreadyRunning:
           break;
@@ -116,7 +168,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
       title: Text(l.kernelCaptureTitle),
       contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       content: SizedBox(
-        width: 560,
+        width: 580,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,6 +202,78 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
                 l.kernelCaptureStats(s.redirectedSyn, s.returnedPackets, s.skippedSelf),
                 style: TextStyle(fontSize: 12, color: Colors.grey[700]),
               ),
+              _kv(l.kernelCaptureUdpPackets, '${s.udpPackets}'),
+              _kv(l.kernelCaptureDns, '${s.dnsQueries}'),
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 0.4),
+              const SizedBox(height: 8),
+              Text(l.kernelCaptureScope, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 96,
+                    child: Text(l.kernelCaptureTcpPorts, style: const TextStyle(fontSize: 12.5)),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _tcpPortsCtrl,
+                      enabled: !running,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        hintText: '80,443',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(l.kernelCaptureUdp, style: const TextStyle(fontSize: 12.5)),
+                value: _captureUdp,
+                onChanged: running ? null : (v) => setState(() => _captureUdp = v),
+              ),
+              if (_captureUdp)
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: Text(l.kernelCaptureUdpPorts, style: const TextStyle(fontSize: 12.5)),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _udpPortsCtrl,
+                        enabled: !running,
+                        style: const TextStyle(fontSize: 13),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          hintText: '53',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              if (s.recentDns.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                const Divider(height: 1, thickness: 0.4),
+                const SizedBox(height: 8),
+                Text(l.kernelCaptureRecentDns, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                ...s.recentDns.take(12).map((d) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 1),
+                      child: Text(
+                        '${d.type}  ${d.name}  →  ${d.dst}',
+                        style: TextStyle(fontSize: 11.5, color: Colors.grey[800]),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )),
+              ],
               const SizedBox(height: 8),
             ],
           ),
