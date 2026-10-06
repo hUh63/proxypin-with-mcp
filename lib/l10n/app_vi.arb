@@ -2537,5 +2537,8 @@
   "kernelCaptureUdpPackets": "Gói UDP",
   "kernelCaptureDns": "Truy vấn DNS",
   "kernelCaptureRecentDns": "DNS gần đây",
-  "kernelCaptureNoPorts": "Cấu hình ít nhất một cổng TCP, hoặc bật bắt UDP"
+  "kernelCaptureNoPorts": "Cấu hình ít nhất một cổng TCP, hoặc bật bắt UDP",
+  "kernelCaptureDnsRewrite": "Quy tắc viết lại DNS",
+  "kernelCaptureDnsRewritten": "DNS đã viết lại",
+  "kernelNetfilterBridge": "Cầu native NetFilter"
 }

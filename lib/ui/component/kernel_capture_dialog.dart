@@ -45,6 +45,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
   final _capture = TransparentCapture.instance;
   final _tcpPortsCtrl = TextEditingController(text: '80,443');
   final _udpPortsCtrl = TextEditingController(text: '53');
+  final _dnsRulesCtrl = TextEditingController();
   StreamSubscription? _sub;
   bool _busy = false;
   bool _driverReady = false;
@@ -65,6 +66,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
     _sub?.cancel();
     _tcpPortsCtrl.dispose();
     _udpPortsCtrl.dispose();
+    _dnsRulesCtrl.dispose();
     super.dispose();
   }
 
@@ -79,6 +81,10 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
         _tcpPortsCtrl.text = ((m['tcpPorts'] as List?)?.join(',') ?? '80,443');
         _udpPortsCtrl.text = ((m['udpPorts'] as List?)?.join(',') ?? '53');
         _captureUdp = m['captureUdp'] == true;
+        final rw = m['dnsRewrite'];
+        if (rw is Map) {
+          _dnsRulesCtrl.text = rw.entries.map((e) => '${e.key}=${e.value}').join('\n');
+        }
       });
     } catch (_) {
       // 配置损坏则用默认
@@ -101,6 +107,21 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
     return out;
   }
 
+  /// 每行 `域名=IP`；`#` 开头为注释；键可为 `*.example.com`。
+  static Map<String, String> _parseDnsRules(String text) {
+    final map = <String, String>{};
+    for (final line in text.split('\n')) {
+      final t = line.trim();
+      if (t.isEmpty || t.startsWith('#')) continue;
+      final i = t.indexOf('=');
+      if (i <= 0) continue;
+      final k = t.substring(0, i).trim().toLowerCase();
+      final v = t.substring(i + 1).trim();
+      if (k.isNotEmpty && v.isNotEmpty) map[k] = v;
+    }
+    return map;
+  }
+
   Future<void> _start() async {
     final l = AppLocalizations.of(context)!;
     final server = ProxyServer.current;
@@ -112,6 +133,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
       tcpPorts: _parsePorts(_tcpPortsCtrl.text),
       captureUdp: _captureUdp,
       udpPorts: _parsePorts(_udpPortsCtrl.text),
+      dnsRewrite: _parseDnsRules(_dnsRulesCtrl.text),
     );
     setState(() => _busy = true);
     try {
@@ -204,6 +226,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
               ),
               _kv(l.kernelCaptureUdpPackets, '${s.udpPackets}'),
               _kv(l.kernelCaptureDns, '${s.dnsQueries}'),
+              _kv(l.kernelCaptureDnsRewritten, '${s.dnsRewritten}'),
               const SizedBox(height: 10),
               const Divider(height: 1, thickness: 0.4),
               const SizedBox(height: 8),
@@ -259,6 +282,26 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
                     ),
                   ],
                 ),
+              if (_captureUdp) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(l.kernelCaptureDnsRewrite, style: const TextStyle(fontSize: 12.5)),
+                ),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _dnsRulesCtrl,
+                  enabled: !running,
+                  maxLines: 4,
+                  style: const TextStyle(fontSize: 12.5),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'example.com=1.2.3.4\n*.corp.local=10.0.0.1',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  ),
+                ),
+              ],
               if (s.recentDns.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 const Divider(height: 1, thickness: 0.4),
@@ -268,8 +311,8 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
                 ...s.recentDns.take(12).map((d) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 1),
                       child: Text(
-                        '${d.type}  ${d.name}  →  ${d.dst}',
-                        style: TextStyle(fontSize: 11.5, color: Colors.grey[800]),
+                        '${d.rewritten ? '✓ ' : ''}${d.type}  ${d.name}  →  ${d.dst}',
+                        style: TextStyle(fontSize: 11.5, color: d.rewritten ? Colors.green[800] : Colors.grey[800]),
                         overflow: TextOverflow.ellipsis,
                       ),
                     )),

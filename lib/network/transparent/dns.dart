@@ -113,4 +113,53 @@ class Dns {
         return 'TYPE$t';
     }
   }
+
+  /// 由 [query] 查询报文构造一个响应：命中 [a]（IPv4，4 字节）或 [aaaa]（IPv6，16 字节）
+  /// 时带上 A/AAAA 答案；否则返回 NOERROR 空答案响应。解析失败返回 null。
+  ///
+  /// 用于「DNS 本地改写」：命中规则时丢弃原查询、注入本响应。
+  static Uint8List? buildResponse(Uint8List query, {List<int>? a, List<int>? aaaa, int ttl = 60}) {
+    final msg = parse(query);
+    if (msg == null || msg.isResponse) return null;
+
+    // question 段结束位置
+    var off = 12;
+    var guard = 0;
+    while (off < query.length && guard++ < 128) {
+      final len = query[off];
+      if (len == 0) {
+        off++;
+        break;
+      }
+      if ((len & 0xC0) != 0) return null;
+      off += 1 + len;
+    }
+    final qEnd = off + 4;
+    if (qEnd > query.length) return null;
+
+    List<int>? rdata;
+    if (msg.qtype == typeA && a != null && a.length == 4) {
+      rdata = a;
+    } else if (msg.qtype == typeAAAA && aaaa != null && aaaa.length == 16) {
+      rdata = aaaa;
+    }
+
+    final b = BytesBuilder();
+    b.add([query[0], query[1]]); // txid
+    b.add([0x81, 0x80]); // QR=1, RD=1, RA=1, RCODE=0
+    b.add([0x00, 0x01]); // QDCOUNT
+    b.add([0x00, rdata != null ? 0x01 : 0x00]); // ANCOUNT
+    b.add([0x00, 0x00]); // NSCOUNT
+    b.add([0x00, 0x00]); // ARCOUNT
+    b.add(query.sublist(12, qEnd)); // 原 question
+    if (rdata != null) {
+      b.add([0xC0, 0x0C]); // 名字指针 → offset 12
+      b.add([(msg.qtype >> 8) & 0xFF, msg.qtype & 0xFF]);
+      b.add([0x00, 0x01]); // class IN
+      b.add([(ttl >> 24) & 0xFF, (ttl >> 16) & 0xFF, (ttl >> 8) & 0xFF, ttl & 0xFF]);
+      b.add([0x00, rdata.length]);
+      b.add(rdata);
+    }
+    return b.toBytes();
+  }
 }

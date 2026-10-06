@@ -108,10 +108,7 @@ class Ipv4Tcp {
   /// NAT 映射键：以「客户端源地址:端口」标识一条连接。
   static int natKey(int srcIp, int srcPort) => (srcIp & 0xFFFFFFFF) ^ ((srcPort & 0xFFFF) << 20);
 
-  // ---------- helpers ----------
-
-  static int _readU32(Uint8List b, int o) =>
-      (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
+  static int _readU32(Uint8List b, int o) => (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
 
   static void _writeU32(Uint8List b, int o, int v) {
     b[o] = (v >> 24) & 0xFF;
@@ -119,43 +116,13 @@ class Ipv4Tcp {
     b[o + 2] = (v >> 8) & 0xFF;
     b[o + 3] = v & 0xFF;
   }
-
-  static int _checksum(Uint8List data, int offset, int length) {
-    var sum = 0;
-    var i = offset;
-    final end = offset + length;
-    while (i + 1 < end) {
-      sum += (data[i] << 8) | data[i + 1];
-      i += 2;
-    }
-    if (i < end) sum += data[i] << 8;
-    return _fold16(sum);
-  }
-
-  static int _checksumPartial(Uint8List data, int offset, int length) {
-    var sum = 0;
-    var i = offset;
-    final end = offset + length;
-    while (i + 1 < end) {
-      sum += (data[i] << 8) | data[i + 1];
-      i += 2;
-    }
-    if (i < end) sum += data[i] << 8;
-    return sum;
-  }
-
-  static int _fold16(int sum) {
-    while (sum > 0xFFFF) {
-      sum = (sum & 0xFFFF) + (sum >> 16);
-    }
-    return (~sum) & 0xFFFF;
-  }
 }
 
-/// IPv4 + UDP 的最小解析（纯 Dart）。
+/// IPv4 + UDP 的最小解析/构造（纯 Dart）。
 ///
-/// UDP 是无连接的，透明抓取时只做「读上看一眼、再原样放回」，不改写地址；
-/// 这里复用 [PacketInfo] 承载字段（`tcpOffset` 即 UDP 头偏移）。
+/// UDP 无连接：读写模式下用它做 **DNS 改写**——命中规则时丢弃原查询、构造一条
+/// 「服务器→客户端」的伪响应注入；未命中则原样放行。复用 [PacketInfo] 承载字段
+/// （`tcpOffset` 即 UDP 头偏移）。
 class Ipv4Udp {
   static const int protoUdp = 17;
 
@@ -169,7 +136,6 @@ class Ipv4Udp {
 
     final totalLength = (packet[2] << 8) | packet[3];
     final frag = (packet[6] << 8) | packet[7];
-    // 忽略分片
     if ((frag & 0x1FFF) != 0) return null;
 
     final srcIp = (packet[12] << 24) | (packet[13] << 16) | (packet[14] << 8) | packet[15];
@@ -191,6 +157,58 @@ class Ipv4Udp {
       dstPort: dstPort,
       flags: 0,
     );
+  }
+
+  /// 用 [query]（客户端→服务器）的 IP/UDP 头为模板，构造「服务器→客户端」的回包，
+  /// 载荷替换为 [payload]，并重算校验和。
+  static Uint8List buildReply(Uint8List query, Uint8List payload) {
+    final ihl = (query[0] & 0x0F) * 4;
+    final u = ihl;
+    final total = u + 8 + payload.length;
+    final out = Uint8List(total);
+    out.setRange(0, ihl, query); // IP 头（含 TTL / DF）
+    out.setRange(12, 16, query, 16); // src = 原 dst（服务器）
+    out.setRange(16, 20, query, 12); // dst = 原 src（客户端）
+    out[2] = (total >> 8) & 0xFF;
+    out[3] = total & 0xFF;
+    // UDP 头：交换端口
+    out[u] = query[u + 2];
+    out[u + 1] = query[u + 3];
+    out[u + 2] = query[u];
+    out[u + 3] = query[u + 1];
+    final udpLen = 8 + payload.length;
+    out[u + 4] = (udpLen >> 8) & 0xFF;
+    out[u + 5] = udpLen & 0xFF;
+    out[u + 6] = 0;
+    out[u + 7] = 0;
+    out.setRange(u + 8, total, payload);
+    recomputeChecksums(out);
+    return out;
+  }
+
+  /// 重算 IPv4 头校验和与 UDP 校验和（就地）。
+  static void recomputeChecksums(Uint8List packet) {
+    final ihl = (packet[0] & 0x0F) * 4;
+    packet[10] = 0;
+    packet[11] = 0;
+    final ipSum = _checksum(packet, 0, ihl);
+    packet[10] = (ipSum >> 8) & 0xFF;
+    packet[11] = ipSum & 0xFF;
+
+    final u = ihl;
+    final udpLen = packet.length - u;
+    if (udpLen <= 0) return;
+    packet[u + 6] = 0;
+    packet[u + 7] = 0;
+    var sum = 0;
+    sum += _checksumPartial(packet, 12, 8);
+    sum += protoUdp;
+    sum += udpLen;
+    sum += _checksumPartial(packet, u, udpLen);
+    var s = _fold16(sum);
+    if (s == 0) s = 0xFFFF; // 计算结果为 0 时用 0xFFFF（IPv4 UDP：0 表示“不校验”）
+    packet[u + 6] = (s >> 8) & 0xFF;
+    packet[u + 7] = s & 0xFF;
   }
 }
 
@@ -242,4 +260,37 @@ class PacketInfo {
     }
     return v;
   }
+}
+
+// ---------- 文件级校验和工具（TCP / UDP 共用） ----------
+
+int _checksum(Uint8List data, int offset, int length) {
+  var sum = 0;
+  var i = offset;
+  final end = offset + length;
+  while (i + 1 < end) {
+    sum += (data[i] << 8) | data[i + 1];
+    i += 2;
+  }
+  if (i < end) sum += data[i] << 8;
+  return _fold16(sum);
+}
+
+int _checksumPartial(Uint8List data, int offset, int length) {
+  var sum = 0;
+  var i = offset;
+  final end = offset + length;
+  while (i + 1 < end) {
+    sum += (data[i] << 8) | data[i + 1];
+    i += 2;
+  }
+  if (i < end) sum += data[i] << 8;
+  return sum;
+}
+
+int _fold16(int sum) {
+  while (sum > 0xFFFF) {
+    sum = (sum & 0xFFFF) + (sum >> 16);
+  }
+  return (~sum) & 0xFFFF;
 }

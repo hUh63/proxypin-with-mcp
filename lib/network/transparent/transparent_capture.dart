@@ -36,16 +36,22 @@ class TransparentCaptureConfig {
   /// 要嗅探的 UDP 目的端口；含 53 时解析 DNS 查询名。
   final List<int> udpPorts;
 
+  /// DNS 本地改写规则：域名 → IPv4 地址。键可为通配 `*.example.com`（匹配其子域）。
+  /// 命中时丢弃原查询并注入伪响应（仅对 A 查询生效）。
+  final Map<String, String> dnsRewrite;
+
   const TransparentCaptureConfig({
     this.tcpPorts = const [80, 443],
     this.captureUdp = false,
     this.udpPorts = const [53],
+    this.dnsRewrite = const {},
   });
 
   Map<String, Object> toJson() => {
         'tcpPorts': tcpPorts,
         'captureUdp': captureUdp,
         'udpPorts': udpPorts,
+        'dnsRewrite': dnsRewrite,
       };
 }
 
@@ -54,9 +60,10 @@ class DnsEvent {
   final String name;
   final String type;
   final String dst;
+  final bool rewritten;
   final DateTime at;
 
-  DnsEvent(this.name, this.type, this.dst) : at = DateTime.now();
+  DnsEvent(this.name, this.type, this.dst, {this.rewritten = false}) : at = DateTime.now();
 }
 
 /// 内核级透明抓包的运行统计。
@@ -69,6 +76,7 @@ class TransparentCaptureStats {
   int totalPackets = 0;
   int udpPackets = 0;
   int dnsQueries = 0;
+  int dnsRewritten = 0;
   String? driverVersion;
 
   /// 最后一次错误信息（供界面展示）
@@ -206,7 +214,8 @@ class TransparentCapture {
         final name = msg['name'] as String?;
         if (name != null) {
           stats.dnsQueries++;
-          stats.recentDns.insert(0, DnsEvent(name, msg['qtype'] as String? ?? '', msg['dst'] as String? ?? ''));
+          stats.recentDns.insert(0,
+              DnsEvent(name, msg['qtype'] as String? ?? '', msg['dst'] as String? ?? '', rewritten: msg['rewritten'] == true));
           if (stats.recentDns.length > maxDnsEvents) stats.recentDns.removeLast();
           _changes.add(null);
         }
@@ -220,6 +229,7 @@ class TransparentCapture {
         stats.totalPackets = (msg['total'] as int?) ?? stats.totalPackets;
         stats.udpPackets = (msg['udp'] as int?) ?? stats.udpPackets;
         stats.dnsQueries = (msg['dns'] as int?) ?? stats.dnsQueries;
+        stats.dnsRewritten = (msg['dnsrw'] as int?) ?? stats.dnsRewritten;
         stats.driverVersion = msg['version'] as String?;
         _changes.add(null);
         break;
@@ -237,6 +247,13 @@ void _entry(Map<String, Object> config) {
   final tcpPorts = ((cfg['tcpPorts'] as List?) ?? const [80, 443]).cast<int>();
   final captureUdp = cfg['captureUdp'] == true;
   final udpPorts = ((cfg['udpPorts'] as List?) ?? const [53]).cast<int>();
+  final dnsRewrite = <String, String>{};
+  final rawRules = cfg['dnsRewrite'];
+  if (rawRules is Map) {
+    rawRules.forEach((k, v) {
+      if (k is String && v is String && v.isNotEmpty) dnsRewrite[k.toLowerCase()] = v;
+    });
+  }
 
   final control = ReceivePort();
   var running = true;
@@ -275,7 +292,7 @@ void _entry(Map<String, Object> config) {
   final addr = malloc<WindivertAddress>();
   final nat = <int, List<int>>{};
 
-  var syn = 0, redir = 0, ret = 0, self = 0, unmatched = 0, total = 0, udp = 0, dnsCount = 0;
+  var syn = 0, redir = 0, ret = 0, self = 0, unmatched = 0, total = 0, udp = 0, dnsCount = 0, dnsRewritten = 0;
   var lastStats = DateTime.now();
 
   try {
@@ -303,19 +320,36 @@ void _entry(Map<String, Object> config) {
           continue;
         }
         udp++;
+        var injected = false;
         if (u.dstPort == 53) {
-          final dnsMsg = Dns.parse(Uint8List.sublistView(copy, u.payloadOffset));
+          final payload = Uint8List.sublistView(copy, u.payloadOffset);
+          final dnsMsg = Dns.parse(payload);
           if (dnsMsg != null && !dnsMsg.isResponse) {
             dnsCount++;
+            var rewritten = false;
+            if (dnsRewrite.isNotEmpty) {
+              final ipv4 = _matchRewrite(dnsRewrite, dnsMsg.name);
+              if (ipv4 != null) {
+                final resp = Dns.buildResponse(payload, a: ipv4);
+                if (resp != null) {
+                  final reply = Ipv4Udp.buildReply(copy, resp);
+                  windivert.send(handle, Windivert.allocCopy(reply), reply.length, addr);
+                  dnsRewritten++;
+                  rewritten = true;
+                  injected = true;
+                }
+              }
+            }
             mainSend.send({
               'type': 'dns',
               'name': dnsMsg.name,
               'qtype': dnsMsg.typeText,
               'dst': '${u.dstIpText}:${u.dstPort}',
+              'rewritten': rewritten,
             });
           }
         }
-        windivert.send(handle, packetBuf, len, addr); // 原样放回
+        if (!injected) windivert.send(handle, packetBuf, len, addr); // 未改写才原样放回
         continue;
       }
 
@@ -388,6 +422,7 @@ void _entry(Map<String, Object> config) {
           'total': total,
           'udp': udp,
           'dns': dnsCount,
+          'dnsrw': dnsRewritten,
         });
       }
     }
@@ -402,6 +437,33 @@ void _entry(Map<String, Object> config) {
     malloc.free(addr);
     control.close();
   }
+}
+
+/// 在改写规则里匹配域名（精确优先，其次 `*.suffix`），命中返回 IPv4 字节；否则 null。
+List<int>? _matchRewrite(Map<String, String> rules, String name) {
+  final lower = name.toLowerCase();
+  String? value = rules[lower];
+  if (value == null) {
+    for (final e in rules.entries) {
+      if (e.key.startsWith('*.')) {
+        final suffix = e.key.substring(1); // .example.com
+        if (lower.endsWith(suffix) && lower.length > suffix.length) {
+          value = e.value;
+          break;
+        }
+      }
+    }
+  }
+  if (value == null) return null;
+  final parts = value.split('.');
+  if (parts.length != 4) return null;
+  final bytes = <int>[];
+  for (final p in parts) {
+    final v = int.tryParse(p);
+    if (v == null || v < 0 || v > 255) return null;
+    bytes.add(v);
+  }
+  return bytes;
 }
 
 Uint8List _ipBytes(int ip) => Uint8List.fromList([(ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF]);

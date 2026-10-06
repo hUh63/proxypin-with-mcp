@@ -2537,5 +2537,8 @@
   "kernelCaptureUdpPackets": "แพ็กเก็ต UDP",
   "kernelCaptureDns": "คำขอ DNS",
   "kernelCaptureRecentDns": "DNS ล่าสุด",
-  "kernelCaptureNoPorts": "กำหนดพอร์ต TCP อย่างน้อยหนึ่งพอร์ต หรือเปิดการดัก UDP"
+  "kernelCaptureNoPorts": "กำหนดพอร์ต TCP อย่างน้อยหนึ่งพอร์ต หรือเปิดการดัก UDP",
+  "kernelCaptureDnsRewrite": "กฎเขียนใหม่ DNS",
+  "kernelCaptureDnsRewritten": "DNS ที่เขียนใหม่",
+  "kernelNetfilterBridge": "บริดจ์เนทีฟ NetFilter"
 }

@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/transparent/driver_manager.dart';
+import 'package:proxypin/network/transparent/netfilter_bridge.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 打开「内核抓包运行库」设置面板：检测 WinDivert 运行库、一键放置、
@@ -207,6 +208,7 @@ class _DriverSetupDialogState extends State<_DriverSetupDialog> {
                 _detectRow(l.kernelNetfilterService, _kds!.netfilterServiceFound, _kds!.netfilterServiceState),
                 _detectRow(l.kernelNfapi, _kds!.nfapiFound, null),
                 _detectRow(l.kernelNpcap, _kds!.npcapFound, _kds!.npcapPath),
+                _detectRow(l.kernelNetfilterBridge, NetfilterBridge.locate() != null, NetfilterBridge.locate()),
                 const SizedBox(height: 6),
                 Text(l.kernelNetfilterNote, style: TextStyle(fontSize: 11, color: Colors.grey[700])),
               ] else

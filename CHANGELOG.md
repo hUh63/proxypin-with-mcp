@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.28.00 (2026-10-06)
+
+### 内核抓包：UDP 从只读升级为读写（DNS 本地改写）
+
+- **UDP 现在能读写**：新增「DNS 改写规则」（每行 `域名=IP`，支持 `*.example.com` 通配）。
+  命中的 A 查询会被**丢弃原包并注入一条伪响应**（`inet.dart` 新增 `Ipv4Udp.buildReply`、
+  `dns.dart` 新增 `buildResponse`）；未命中则原样放行。
+- 面板新增「DNS 改写」计数，最近 DNS 列表给命中项打勾（✓）。
+
+### NetFilter SDK：原生桥（可选，自备运行时）
+
+- 新增 `native/netfilter_bridge/`（C++ / CMake）：把 `NF_EventHandler` 回调与
+  `NF_TCP_CONN_INFO` 改写留在原生侧，导出 `nfb_start / nfb_add_tcp_rule /
+  nfb_lookup_original / nfb_get_counters` 一组 C ABI；`lib/network/transparent/
+  netfilter_bridge.dart` 用 FFI 加载调用。
+- 驱动面板新增「NetFilter 原生桥」探测项。
+- **如实说明**：桥需你自备 NetFilter SDK 的 `nfapi.h` / `nfapi.lib` 与运行库，本仓库
+  不包含、不下载、不分发；且**未在本仓库编译 / 验证**（本环境无 Windows 工具链与 SDK）。
+
 ## v1.27.00 (2026-10-06)
 
 ### 内核抓包：可配置端口 + UDP/DNS 嗅探

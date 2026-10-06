@@ -2537,5 +2537,8 @@
   "kernelCaptureUdpPackets": "Paket UDP",
   "kernelCaptureDns": "Kueri DNS",
   "kernelCaptureRecentDns": "DNS terbaru",
-  "kernelCaptureNoPorts": "Konfigurasikan minimal satu port TCP, atau aktifkan sniff UDP"
+  "kernelCaptureNoPorts": "Konfigurasikan minimal satu port TCP, atau aktifkan sniff UDP",
+  "kernelCaptureDnsRewrite": "Aturan penulisan ulang DNS",
+  "kernelCaptureDnsRewritten": "DNS ditulis ulang",
+  "kernelNetfilterBridge": "Jembatan native NetFilter"
 }

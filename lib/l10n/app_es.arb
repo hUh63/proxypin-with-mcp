@@ -2537,5 +2537,8 @@
   "kernelCaptureUdpPackets": "Paquetes UDP",
   "kernelCaptureDns": "Consultas DNS",
   "kernelCaptureRecentDns": "DNS recientes",
-  "kernelCaptureNoPorts": "Configura al menos un puerto TCP o activa el sniff UDP"
+  "kernelCaptureNoPorts": "Configura al menos un puerto TCP o activa el sniff UDP",
+  "kernelCaptureDnsRewrite": "Reglas de reescritura DNS",
+  "kernelCaptureDnsRewritten": "DNS reescrito",
+  "kernelNetfilterBridge": "Puente nativo NetFilter"
 }
