@@ -86,7 +86,22 @@ class FloatingBallService : Service() {
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        // 服务重建（进程被杀后台重启等）时从 Flutter 偏好恢复样式，避免回落到默认色/透明度
+        restorePrefs()
         startForeground()
+    }
+
+    /** 从 Flutter shared_preferences 恢复样式与贴边设置（仅作初值，后续由 intent 覆盖） */
+    private fun restorePrefs() {
+        try {
+            val sp = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val all = sp.all
+            (all["flutter.floatingBallColor"] as? Number)?.let { ballColor = it.toInt() }
+            (all["flutter.floatingBallAlpha"] as? Number)?.let { ballAlpha = it.toInt() }
+            (all["flutter.floatingBallAutoDock"] as? Boolean)?.let { autoDock = it }
+        } catch (e: Exception) {
+            Log.w(TAG, "restorePrefs failed", e)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -94,9 +109,11 @@ class FloatingBallService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        autoDock = intent?.getBooleanExtra("autoDock", true) ?: true
-        ballColor = intent?.getIntExtra("color", 0xFF6750A4.toInt()) ?: 0xFF6750A4.toInt()
-        ballAlpha = intent?.getIntExtra("alpha", 255) ?: 255
+        // 缺省用「当前值」而不是硬编码默认：服务已运行时，只带部分参数的 start
+        // （例如只切「自动贴边」开关）不会把颜色/透明度重置回默认。
+        autoDock = intent?.getBooleanExtra("autoDock", autoDock) ?: autoDock
+        ballColor = intent?.getIntExtra("color", ballColor) ?: ballColor
+        ballAlpha = intent?.getIntExtra("alpha", ballAlpha) ?: ballAlpha
 
         if (!Settings.canDrawOverlays(this)) {
             Log.w(TAG, "no overlay permission")

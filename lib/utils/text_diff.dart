@@ -433,3 +433,59 @@ DiffStats diffStats(List<DiffBlock> blocks) {
   }
   return DiffStats(added: added, deleted: deleted, modified: modified);
 }
+
+/// 对齐行的类型（用于「并排对齐视图」）。
+enum DiffRowType { equal, modified, added, deleted }
+
+/// 「并排对齐视图」的一行：左右各一格，缺失侧为 null（对应空白占位）。
+class DiffRow {
+  final DiffRowType type;
+  final int? leftLine; // 1-based
+  final String? leftText;
+  final int? rightLine; // 1-based
+  final String? rightText;
+
+  const DiffRow(this.type, this.leftLine, this.leftText, this.rightLine, this.rightText);
+}
+
+/// 把两段文本转成**逐行对齐**的行列表：equal 同行；一段删除 + 一段新增按行配对成
+/// modified，多出来的行分别作为 deleted / added。用来渲染左右行号对齐的并排视图，
+/// 解决「各显示自己行号、多段差异看不出对应关系」的问题。
+List<DiffRow> alignedDiffRows(String left, String right) {
+  final diffs = diffLines(left, right);
+  final rows = <DiffRow>[];
+  var i = 0;
+  while (i < diffs.length) {
+    final d = diffs[i];
+    if (d.type == LineDiffType.equal) {
+      rows.add(DiffRow(DiffRowType.equal, d.leftLine, d.text, d.rightLine, d.text));
+      i++;
+      continue;
+    }
+    final dels = <LineDiff>[];
+    final ins = <LineDiff>[];
+    while (i < diffs.length && diffs[i].type == LineDiffType.delete) {
+      dels.add(diffs[i]);
+      i++;
+    }
+    while (i < diffs.length && diffs[i].type == LineDiffType.insert) {
+      ins.add(diffs[i]);
+      i++;
+    }
+    if (dels.isEmpty && ins.isEmpty) {
+      i++;
+      continue;
+    }
+    final paired = dels.length < ins.length ? dels.length : ins.length;
+    for (var k = 0; k < paired; k++) {
+      rows.add(DiffRow(DiffRowType.modified, dels[k].leftLine, dels[k].text, ins[k].rightLine, ins[k].text));
+    }
+    for (var k = paired; k < dels.length; k++) {
+      rows.add(DiffRow(DiffRowType.deleted, dels[k].leftLine, dels[k].text, null, null));
+    }
+    for (var k = paired; k < ins.length; k++) {
+      rows.add(DiffRow(DiffRowType.added, null, null, ins[k].rightLine, ins[k].text));
+    }
+  }
+  return rows;
+}

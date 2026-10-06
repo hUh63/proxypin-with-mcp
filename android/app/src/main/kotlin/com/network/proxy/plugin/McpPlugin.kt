@@ -116,10 +116,11 @@ class McpPlugin : FlutterPlugin {
         when (call.method) {
             "start" -> {
                 try {
-                    intent.putExtra("autoDock", call.argument<Boolean>("autoDock") ?: true)
+                    call.argument<Boolean>("autoDock")?.let { intent.putExtra("autoDock", it) }
+                    // 仅在调用方显式提供颜色/透明度时才下发，避免「只切开关」把球重置为默认样式。
                     // 注意：Dart int 超出 Int 范围时（如 ARGB 颜色值）会解码为 Long，必须按 Number 取值再转 Int
-                    intent.putExtra("color", (call.argument<Any?>("color") as? Number)?.toInt() ?: 0xFF6750A4.toInt())
-                    intent.putExtra("alpha", (call.argument<Any?>("alpha") as? Number)?.toInt() ?: 230)
+                    (call.argument<Any?>("color") as? Number)?.let { intent.putExtra("color", it.toInt()) }
+                    (call.argument<Any?>("alpha") as? Number)?.let { intent.putExtra("alpha", it.toInt()) }
                     intent.putExtra("running", call.argument<Boolean>("running") ?: false)
                     ctx.startForegroundService(intent)
                 } catch (e: Exception) {

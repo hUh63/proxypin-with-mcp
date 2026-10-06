@@ -60,6 +60,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   late final UndoRedoController _rightUndo;
 
   bool _wrap = true;
+
+  /// 对齐并排视图（逐行对齐、差异上底色），用于快速看清多段差异的对应关系。
+  bool _aligned = false;
   String? _summary;
 
   /// 差异块（用于导航、分类与整块替换）。
@@ -600,13 +603,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
           ]),
           const Divider(height: 1, thickness: 0.3),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // 800 是经验阈值：再窄左右两个编辑器单独宽度不够，堆叠更舒服。
-                final wide = constraints.maxWidth >= 800;
-                return wide ? _wideLayout() : _narrowLayout();
-              },
-            ),
+            child: _aligned
+                ? _alignedView()
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      // 800 是经验阈值：再窄左右两个编辑器单独宽度不够，堆叠更舒服。
+                      final wide = constraints.maxWidth >= 800;
+                      return wide ? _wideLayout() : _narrowLayout();
+                    },
+                  ),
           ),
           if (_summary != null)
             Container(
@@ -675,6 +680,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
             localizations.wordWrap,
             () => setState(() => _wrap = !_wrap),
             tint: _wrap ? color : null,
+          ),
+          _iconBtn(
+            Icons.view_column_outlined,
+            localizations.diffAlignedView,
+            () => setState(() => _aligned = !_aligned),
+            tint: _aligned ? color : null,
           ),
         ],
       ),
@@ -767,5 +778,73 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ),
       ),
     ]);
+  }
+
+  /// 对齐并排视图：逐行对齐左右（缺失侧留空），差异行上底色。
+  /// 解决窄屏 / 行数不等时「各显示自己行号、多段差异看不出对应关系」的问题。
+  Widget _alignedView() {
+    final rows = alignedDiffRows(_left.text, _right.text);
+    if (rows.isEmpty) {
+      return Center(
+        child: Text(localizations.diffNoDifference, style: TextStyle(color: Colors.grey[600])),
+      );
+    }
+    final isDark = Theme.brightnessOf(context) == Brightness.dark;
+    Color? bgOf(DiffRowType t) {
+      switch (t) {
+        case DiffRowType.added:
+          return Colors.green.withValues(alpha: isDark ? 0.22 : 0.15);
+        case DiffRowType.deleted:
+          return Colors.red.withValues(alpha: isDark ? 0.22 : 0.15);
+        case DiffRowType.modified:
+          return Colors.orange.withValues(alpha: isDark ? 0.22 : 0.15);
+        case DiffRowType.equal:
+          return null;
+      }
+    }
+
+    return Scrollbar(
+      child: ListView.builder(
+        itemCount: rows.length,
+        itemBuilder: (_, i) {
+          final r = rows[i];
+          final bg = bgOf(r.type);
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _alignedCell(r.leftLine, r.leftText, bg)),
+                const VerticalDivider(width: 1, thickness: 0.2),
+                Expanded(child: _alignedCell(r.rightLine, r.rightText, bg)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _alignedCell(int? line, String? text, Color? bg) {
+    return Container(
+      color: bg,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 38,
+            child: Text(line?.toString() ?? '',
+                textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text ?? '',
+              style: const TextStyle(fontSize: 13, fontFamily: 'monospace', height: 1.25),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

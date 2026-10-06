@@ -2540,5 +2540,7 @@
   "kernelCaptureNoPorts": "Cấu hình ít nhất một cổng TCP, hoặc bật bắt UDP",
   "kernelCaptureDnsRewrite": "Quy tắc viết lại DNS",
   "kernelCaptureDnsRewritten": "DNS đã viết lại",
-  "kernelNetfilterBridge": "Cầu native NetFilter"
+  "kernelNetfilterBridge": "Cầu native NetFilter",
+  "diffAlignedView": "Chế độ căn hàng",
+  "diffNoDifference": "Không có khác biệt"
 }

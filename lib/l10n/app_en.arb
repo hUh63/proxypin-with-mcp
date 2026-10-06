@@ -4613,5 +4613,7 @@
   "kernelCaptureNoPorts": "Configure at least one TCP port, or enable UDP sniffing",
   "kernelCaptureDnsRewrite": "DNS rewrite rules",
   "kernelCaptureDnsRewritten": "DNS rewritten",
-  "kernelNetfilterBridge": "NetFilter native bridge"
+  "kernelNetfilterBridge": "NetFilter native bridge",
+  "diffAlignedView": "Aligned view",
+  "diffNoDifference": "No differences"
 }

@@ -2540,5 +2540,7 @@
   "kernelCaptureNoPorts": "Konfigurasikan minimal satu port TCP, atau aktifkan sniff UDP",
   "kernelCaptureDnsRewrite": "Aturan penulisan ulang DNS",
   "kernelCaptureDnsRewritten": "DNS ditulis ulang",
-  "kernelNetfilterBridge": "Jembatan native NetFilter"
+  "kernelNetfilterBridge": "Jembatan native NetFilter",
+  "diffAlignedView": "Tampilan sejajar",
+  "diffNoDifference": "Tidak ada perbedaan"
 }

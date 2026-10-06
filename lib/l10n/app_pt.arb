@@ -2541,5 +2541,7 @@
   "kernelCaptureNoPorts": "Configure ao menos uma porta TCP ou ative o sniff UDP",
   "kernelCaptureDnsRewrite": "Regras de reescrita DNS",
   "kernelCaptureDnsRewritten": "DNS reescrito",
-  "kernelNetfilterBridge": "Ponte nativa NetFilter"
+  "kernelNetfilterBridge": "Ponte nativa NetFilter",
+  "diffAlignedView": "Visualização alinhada",
+  "diffNoDifference": "Sem diferenças"
 }

@@ -958,5 +958,7 @@
   "kernelCaptureNoPorts": "請至少設定一個 TCP 連接埠，或開啟 UDP 嗅探",
   "kernelCaptureDnsRewrite": "DNS 改寫規則",
   "kernelCaptureDnsRewritten": "DNS 改寫",
-  "kernelNetfilterBridge": "NetFilter 原生橋"
+  "kernelNetfilterBridge": "NetFilter 原生橋",
+  "diffAlignedView": "對照視圖",
+  "diffNoDifference": "無差異"
 }

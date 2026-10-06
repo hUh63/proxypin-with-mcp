@@ -4420,5 +4420,7 @@
   "kernelCaptureNoPorts": "请至少配置一个 TCP 端口，或开启 UDP 嗅探",
   "kernelCaptureDnsRewrite": "DNS 改写规则",
   "kernelCaptureDnsRewritten": "DNS 改写",
-  "kernelNetfilterBridge": "NetFilter 原生桥"
+  "kernelNetfilterBridge": "NetFilter 原生桥",
+  "diffAlignedView": "对比视图",
+  "diffNoDifference": "无差异"
 }

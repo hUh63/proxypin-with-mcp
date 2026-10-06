@@ -130,25 +130,30 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     });
   }
 
-  Future<void> _saveFloatingBallConfig({bool showFeedback = false}) async {
+  /// [style] 为 true 时才写回颜色/透明度（改样式）；切开关时不要写，
+  /// 否则会把「原生面板改过、但本页字段尚未刷新」的颜色覆盖回旧值。
+  Future<void> _saveFloatingBallConfig({bool showFeedback = false, bool style = false}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('floatingBallEnabled', floatingBallEnabled);
     await prefs.setBool('floatingBallAutoDock', floatingBallAutoDock);
-    await prefs.setInt('floatingBallColor', floatingBallColor);
-    await prefs.setInt('floatingBallAlpha', floatingBallAlpha);
-    _updateFloatingBall(showFeedback: showFeedback);
+    if (style) {
+      await prefs.setInt('floatingBallColor', floatingBallColor);
+      await prefs.setInt('floatingBallAlpha', floatingBallAlpha);
+    }
+    _updateFloatingBall(showFeedback: showFeedback, style: style);
   }
 
   /// 通知原生悬浮球服务（启用/更新/关闭）
-  Future<void> _updateFloatingBall({bool showFeedback = false}) async {
+  Future<void> _updateFloatingBall({bool showFeedback = false, bool style = false}) async {
     if (!Platform.isAndroid) return;
     final loc = AppLocalizations.of(context)!;
     try {
       final result = await _floatingChannel.invokeMethod(floatingBallEnabled ? 'start' : 'stop', {
         'autoDock': floatingBallAutoDock,
-        'color': floatingBallColor,
-        'alpha': floatingBallAlpha,
         'running': McpServer().isRunning,
+        // 仅改样式时才下发颜色/透明度，切开关时留空 → 原生保留当前样式（不复位）
+        if (style) 'color': floatingBallColor,
+        if (style) 'alpha': floatingBallAlpha,
       });
       if (!mounted) return;
       // 缺少悬浮窗权限：原生已跳转系统设置页，这里给出明确提示
@@ -290,7 +295,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
         floatingBallColor = color.value;
         floatingBallAlpha = alpha;
       });
-      await _saveFloatingBallConfig();
+      await _saveFloatingBallConfig(style: true);
     }
   }
 
