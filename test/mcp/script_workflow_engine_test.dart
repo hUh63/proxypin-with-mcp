@@ -1,343 +1,208 @@
 /*
  * 脚本工作流引擎单元测试
- * 测试覆盖：顺序执行、并行执行、依赖管理、循环依赖检测、重试机制
+ *
+ * 对齐当前 ScriptWorkflowEngine 的真实 API：
+ *   registerWorkflow / unregisterWorkflow / getWorkflow / getWorkflows
+ *   enableWorkflow / disableWorkflow / setExecutor / executeWorkflow / getExecutionHistory
+ * （旧版本曾使用 WorkflowDefinition / createWorkflow / listWorkflows / ScriptType 等已不存在的类型与方法，
+ *   本文件已重写为与实现一致。）
+ *
+ * 覆盖：注册与检索、循环依赖拒绝、拓扑顺序、并行执行、失败重试、依赖失败跳过、变量替换、执行历史。
  */
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proxypin/network/mcp/script_workflow_engine.dart';
 
+ScriptWorkflow buildWorkflow(String id, List<WorkflowNode> nodes, {bool enabled = true}) =>
+    ScriptWorkflow(id: id, name: 'wf-$id', nodes: nodes, enabled: enabled);
+
+WorkflowNode node(
+  String id, {
+  List<String> deps = const [],
+  int maxRetries = 0,
+  Duration retryDelay = const Duration(milliseconds: 1),
+  String content = '',
+  Map<String, dynamic> parameters = const {},
+}) =>
+    WorkflowNode(
+      id: id,
+      scriptId: id,
+      scriptContent: content,
+      scriptType: 'javascript',
+      dependencies: deps,
+      maxRetries: maxRetries,
+      retryDelay: retryDelay,
+      parameters: parameters,
+    );
+
 void main() {
   late ScriptWorkflowEngine engine;
 
-  setUp(() async {
+  setUp(() {
+    // engine 是单例，测试间清空已注册的工作流，避免相互污染。
     engine = ScriptWorkflowEngine();
+    for (final wf in engine.getWorkflows()) {
+      engine.unregisterWorkflow(wf.id);
+    }
+    engine.setExecutor(
+      (scriptId, scriptContent, scriptType, parameters, timeout) async => scriptId,
+    );
   });
 
-  tearDown(() async {
-    await engine.dispose();
-  });
+  group('工作流注册与检索', () {
+    test('注册后可检索，注销后消失', () {
+      engine.registerWorkflow(buildWorkflow('wf_1', [node('n1')]));
+      expect(engine.getWorkflows().length, 1);
+      expect(engine.getWorkflow('wf_1')?.name, 'wf-wf_1');
 
-  group('工作流基本操作', () {
-    test('创建工作流', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_1',
-        name: '测试工作流',
-        description: '用于测试的工作流',
-        nodes: [],
-      );
-
-      await engine.createWorkflow(workflow);
-      final workflows = engine.listWorkflows();
-      
-      expect(workflows.length, 1);
-      expect(workflows.first.name, '测试工作流');
+      engine.unregisterWorkflow('wf_1');
+      expect(engine.getWorkflow('wf_1'), isNull);
+      expect(engine.getWorkflows(), isEmpty);
     });
 
-    test('更新工作流', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_2',
-        name: '原始工作流',
-        nodes: [],
-      );
+    test('启用 / 禁用切换', () {
+      engine.registerWorkflow(buildWorkflow('wf_2', [node('n1')]));
+      engine.disableWorkflow('wf_2');
+      expect(engine.getWorkflow('wf_2')?.enabled, false);
 
-      await engine.createWorkflow(workflow);
-      
-      final updated = workflow.copyWith(
-        name: '更新后的工作流',
-        enabled: false,
-      );
-      
-      await engine.updateWorkflow(updated);
-      final wf = engine.getWorkflow('wf_2');
-      
-      expect(wf?.name, '更新后的工作流');
-      expect(wf?.enabled, false);
-    });
-
-    test('删除工作流', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_3',
-        name: '待删除工作流',
-        nodes: [],
-      );
-
-      await engine.createWorkflow(workflow);
-      expect(engine.listWorkflows().length, 1);
-      
-      await engine.deleteWorkflow('wf_3');
-      expect(engine.listWorkflows().length, 0);
+      engine.enableWorkflow('wf_2');
+      expect(engine.getWorkflow('wf_2')?.enabled, true);
     });
   });
 
-  group('节点管理', () {
-    test('添加节点', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_4',
-        name: '节点测试',
-        nodes: [
-          WorkflowNode(
-            id: 'node_1',
-            name: '节点 1',
-            scriptType: ScriptType.javascript,
-            script: 'console.log("Hello");',
-          ),
-        ],
-      );
-
-      await engine.createWorkflow(workflow);
-      final wf = engine.getWorkflow('wf_4');
-      
-      expect(wf?.nodes.length, 1);
-      expect(wf?.nodes.first.name, '节点 1');
+  group('工作流结构', () {
+    test('无依赖时 validate 通过，entryNodes 覆盖全部节点', () {
+      final wf = buildWorkflow('wf_3', [node('a'), node('b')]);
+      expect(wf.validate(), true);
+      expect(wf.entryNodes.map((n) => n.id).toSet(), {'a', 'b'});
     });
 
-    test('添加多个节点', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_5',
-        name: '多节点测试',
-        nodes: [
-          WorkflowNode(id: 'node_1', name: '节点 1', scriptType: ScriptType.javascript, script: ''),
-          WorkflowNode(id: 'node_2', name: '节点 2', scriptType: ScriptType.dart, script: ''),
-          WorkflowNode(id: 'node_3', name: '节点 3', scriptType: ScriptType.shell, script: ''),
-        ],
-      );
-
-      await engine.createWorkflow(workflow);
-      final wf = engine.getWorkflow('wf_5');
-      
-      expect(wf?.nodes.length, 3);
+    test('getSuccessors 返回直接后继', () {
+      final wf = buildWorkflow('wf_4', [
+        node('a'),
+        node('b', deps: ['a']),
+        node('c', deps: ['a']),
+      ]);
+      expect(wf.getSuccessors('a').map((n) => n.id).toSet(), {'b', 'c'});
     });
 
-    test('删除节点', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_6',
-        name: '删除节点测试',
-        nodes: [
-          WorkflowNode(id: 'node_1', name: '节点 1', scriptType: ScriptType.javascript, script: ''),
-          WorkflowNode(id: 'node_2', name: '节点 2', scriptType: ScriptType.javascript, script: ''),
-        ],
-      );
-
-      await engine.createWorkflow(workflow);
-      await engine.removeNode('wf_6', 'node_1');
-      
-      final wf = engine.getWorkflow('wf_6');
-      expect(wf?.nodes.length, 1);
-      expect(wf?.nodes.first.id, 'node_2');
-    });
-  });
-
-  group('依赖管理', () {
-    test('设置节点依赖', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_7',
-        name: '依赖测试',
-        nodes: [
-          WorkflowNode(id: 'node_1', name: '节点 1', scriptType: ScriptType.javascript, script: ''),
-          WorkflowNode(id: 'node_2', name: '节点 2', scriptType: ScriptType.javascript, script: '', dependencies: ['node_1']),
-        ],
-      );
-
-      await engine.createWorkflow(workflow);
-      final wf = engine.getWorkflow('wf_7');
-      
-      expect(wf?.nodes[1].dependencies, ['node_1']);
-    });
-
-    test('循环依赖检测', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_8',
-        name: '循环依赖测试',
-        nodes: [
-          WorkflowNode(id: 'node_a', name: '节点 A', scriptType: ScriptType.javascript, script: '', dependencies: ['node_b']),
-          WorkflowNode(id: 'node_b', name: '节点 B', scriptType: ScriptType.javascript, script: '', dependencies: ['node_a']),
-        ],
-      );
-
-      // 应该检测到循环依赖
-      expect(() => engine.createWorkflow(workflow), throwsA(isA<CircularDependencyException>()));
-    });
-
-    test('复杂依赖链', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_9',
-        name: '复杂依赖',
-        nodes: [
-          WorkflowNode(id: 'n1', name: '节点 1', scriptType: ScriptType.javascript, script: ''),
-          WorkflowNode(id: 'n2', name: '节点 2', scriptType: ScriptType.javascript, script: '', dependencies: ['n1']),
-          WorkflowNode(id: 'n3', name: '节点 3', scriptType: ScriptType.javascript, script: '', dependencies: ['n1', 'n2']),
-        ],
-      );
-
-      await engine.createWorkflow(workflow);
-      
-      // 验证拓扑排序
-      final sorted = engine.topologicalSort(workflow);
-      expect(sorted.length, 3);
-      // n1 应该在 n2 和 n3 之前
-      expect(sorted.indexOf('n1'), lessThan(sorted.indexOf('n2')));
-      expect(sorted.indexOf('n1'), lessThan(sorted.indexOf('n3')));
-      expect(sorted.indexOf('n2'), lessThan(sorted.indexOf('n3')));
+    test('循环依赖：validate 返回 false，注册被拒（ArgumentError）', () {
+      final wf = buildWorkflow('wf_5', [node('a', deps: ['b']), node('b', deps: ['a'])]);
+      expect(wf.validate(), false);
+      expect(() => engine.registerWorkflow(wf), throwsA(isA<ArgumentError>()));
     });
   });
 
   group('工作流执行', () {
-    test('顺序执行工作流', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_10',
-        name: '顺序执行',
-        nodes: [
-          WorkflowNode(id: 'step_1', name: '步骤 1', scriptType: ScriptType.javascript, script: 'console.log(1);'),
-          WorkflowNode(id: 'step_2', name: '步骤 2', scriptType: ScriptType.javascript, script: 'console.log(2);', dependencies: ['step_1']),
-          WorkflowNode(id: 'step_3', name: '步骤 3', scriptType: ScriptType.javascript, script: 'console.log(3);', dependencies: ['step_2']),
-        ],
-      );
+    test('依赖链按拓扑顺序执行', () async {
+      final order = <String>[];
+      engine.setExecutor((scriptId, scriptContent, scriptType, parameters, timeout) async {
+        order.add(scriptId);
+        return scriptId;
+      });
+      engine.registerWorkflow(buildWorkflow('wf_6', [
+        node('step_1'),
+        node('step_2', deps: ['step_1']),
+        node('step_3', deps: ['step_2']),
+      ]));
 
-      await engine.createWorkflow(workflow);
-      final result = await engine.executeWorkflow('wf_10');
-      
-      expect(result.success, true);
-      expect(result.nodeResults.length, 3);
+      final ctx = await engine.executeWorkflow('wf_6');
+      expect(ctx.successCount, 3);
+      expect(order, ['step_1', 'step_2', 'step_3']);
+      expect(ctx.isCompleted, true);
     });
 
-    test('并行执行工作流', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_11',
-        name: '并行执行',
-        nodes: [
-          WorkflowNode(id: 'parallel_1', name: '并行 1', scriptType: ScriptType.javascript, script: ''),
-          WorkflowNode(id: 'parallel_2', name: '并行 2', scriptType: ScriptType.javascript, script: ''),
-          WorkflowNode(id: 'parallel_3', name: '并行 3', scriptType: ScriptType.javascript, script: ''),
-        ],
-      );
+    test('无依赖节点并行执行（总耗时远小于串行累加）', () async {
+      engine.setExecutor((scriptId, scriptContent, scriptType, parameters, timeout) async {
+        await Future.delayed(const Duration(milliseconds: 200));
+        return scriptId;
+      });
+      engine.registerWorkflow(buildWorkflow('wf_7', [node('p1'), node('p2'), node('p3')]));
 
-      await engine.createWorkflow(workflow);
-      final result = await engine.executeWorkflow('wf_11', parallel: true);
-      
-      expect(result.success, true);
+      final sw = Stopwatch()..start();
+      final ctx = await engine.executeWorkflow('wf_7');
+      sw.stop();
+
+      expect(ctx.successCount, 3);
+      // 三个 200ms 无依赖节点：引擎用 Future.wait 并行执行，总耗时 ≈ 200ms；
+      // 若退化为串行则 ≥ 600ms。取 500ms 作阈值，兼顾调度余量与区分度。
+      expect(sw.elapsedMilliseconds, lessThan(500));
     });
 
-    test('执行不存在的作流', () async {
-      final result = await engine.executeWorkflow('non_existent_workflow');
-      expect(result.success, false);
-      expect(result.error, contains('不存在'));
-    });
-  });
+    test('失败节点按 maxRetries 重试后成功', () async {
+      var attempts = 0;
+      engine.setExecutor((scriptId, scriptContent, scriptType, parameters, timeout) async {
+        attempts++;
+        if (attempts < 3) throw StateError('boom');
+        return scriptId;
+      });
+      engine.registerWorkflow(buildWorkflow('wf_8', [node('n1', maxRetries: 2)]));
 
-  group('变量替换', () {
-    test('基本变量替换', () async {
-      final script = 'const url = "{{baseUrl}}/api"; console.log(url);';
-      final variables = {'baseUrl': 'https://example.com'};
-      
-      final replaced = engine.replaceVariables(script, variables);
-      
-      expect(replaced, contains('https://example.com'));
-      expect(replaced, isNot(contains('{{baseUrl}}')));
+      final ctx = await engine.executeWorkflow('wf_8');
+      expect(attempts, 3); // 首次 + 2 次重试
+      expect(ctx.successCount, 1);
+      expect(ctx.nodeResults['n1']?.isSuccess, true);
     });
 
-    test('多变量替换', () async {
-      final script = '{{method}} {{url}} {{headers}}';
-      final variables = {
-        'method': 'GET',
-        'url': 'https://api.example.com',
-        'headers': 'Content-Type: application/json',
-      };
-      
-      final replaced = engine.replaceVariables(script, variables);
-      
-      expect(replaced, contains('GET'));
-      expect(replaced, contains('https://api.example.com'));
-      expect(replaced, contains('Content-Type'));
+    test('依赖节点失败时下游被跳过', () async {
+      engine.setExecutor((scriptId, scriptContent, scriptType, parameters, timeout) async {
+        if (scriptId == 'bad') throw StateError('fail');
+        return scriptId;
+      });
+      engine.registerWorkflow(buildWorkflow('wf_9', [
+        node('bad'),
+        node('good', deps: ['bad']),
+      ]));
+
+      final ctx = await engine.executeWorkflow('wf_9');
+      expect(ctx.nodeResults['bad']?.isFailed, true);
+      expect(ctx.nodeResults['good']?.status, ScriptExecutionStatus.skipped);
+      expect(ctx.failedCount, 1);
     });
 
-    test('不存在的变量保持原样', () async {
-      final script = '{{existing}} {{non_existing}}';
-      final variables = {'existing': 'value'};
-      
-      final replaced = engine.replaceVariables(script, variables);
-      
-      expect(replaced, contains('value'));
-      expect(replaced, contains('{{non_existing}}'));
+    test('变量在脚本内容与参数中被替换', () async {
+      String? seenContent;
+      Map<String, dynamic>? seenParams;
+      engine.setExecutor((scriptId, scriptContent, scriptType, parameters, timeout) async {
+        seenContent = scriptContent;
+        seenParams = parameters;
+        return scriptId;
+      });
+      engine.registerWorkflow(buildWorkflow('wf_10', [
+        node('n1', content: 'GET {{baseUrl}}/api', parameters: {'token': '{{token}}'}),
+      ]));
+
+      await engine.executeWorkflow('wf_10', variables: {
+        'baseUrl': 'https://example.com',
+        'token': 'T-1',
+      });
+      expect(seenContent, 'GET https://example.com/api');
+      expect(seenParams?['token'], 'T-1');
+    });
+
+    test('执行已禁用的工作流抛 StateError', () async {
+      engine.registerWorkflow(buildWorkflow('wf_11', [node('n1')]));
+      engine.disableWorkflow('wf_11');
+      await expectLater(engine.executeWorkflow('wf_11'), throwsA(isA<StateError>()));
+    });
+
+    test('执行不存在的工作流抛 ArgumentError', () async {
+      await expectLater(engine.executeWorkflow('nope'), throwsA(isA<ArgumentError>()));
     });
   });
 
   group('执行历史', () {
-    test('记录执行历史', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_12',
-        name: '历史测试',
-        nodes: [
-          WorkflowNode(id: 'n1', name: '节点 1', scriptType: ScriptType.javascript, script: ''),
-        ],
-      );
-
-      await engine.createWorkflow(workflow);
+    test('执行后写入历史，可按条数取最近记录', () async {
+      engine.registerWorkflow(buildWorkflow('wf_12', [node('n1')]));
       await engine.executeWorkflow('wf_12');
-      
-      final history = engine.getExecutionHistory('wf_12');
-      expect(history.length, greaterThan(0));
-    });
+      await engine.executeWorkflow('wf_12');
 
-    test('获取执行统计', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_13',
-        name: '统计测试',
-        nodes: [
-          WorkflowNode(id: 'n1', name: '节点 1', scriptType: ScriptType.javascript, script: ''),
-        ],
-      );
+      final all = engine.getExecutionHistory();
+      expect(all.length, greaterThanOrEqualTo(2));
+      expect(all.last.isCompleted, true);
 
-      await engine.createWorkflow(workflow);
-      await engine.executeWorkflow('wf_13');
-      await engine.executeWorkflow('wf_13');
-      
-      final stats = engine.getExecutionStats('wf_13');
-      expect(stats.totalExecutions, 2);
-    });
-  });
-
-  group('工作流验证', () {
-    test('验证空节点列表', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_14',
-        name: '空节点',
-        nodes: [], // 无节点
-      );
-
-      await engine.createWorkflow(workflow);
-      final wf = engine.getWorkflow('wf_14');
-      expect(wf?.nodes.length, 0);
-    });
-
-    test('验证重复节点 ID', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_15',
-        name: '重复 ID',
-        nodes: [
-          WorkflowNode(id: 'dup', name: '节点 1', scriptType: ScriptType.javascript, script: ''),
-          WorkflowNode(id: 'dup', name: '节点 2', scriptType: ScriptType.javascript, script: ''), // 重复 ID
-        ],
-      );
-
-      // 应该验证失败或自动去重
-      expect(() => engine.createWorkflow(workflow), throwsA(isA<ValidationException>()));
-    });
-
-    test('验证依赖不存在的节点', () async {
-      final workflow = WorkflowDefinition(
-        id: 'wf_16',
-        name: '无效依赖',
-        nodes: [
-          WorkflowNode(id: 'n1', name: '节点 1', scriptType: ScriptType.javascript, script: '', dependencies: ['non_existent']),
-        ],
-      );
-
-      // 应该验证失败
-      expect(() => engine.createWorkflow(workflow), throwsA(isA<ValidationException>()));
+      final recent = engine.getExecutionHistory(limit: 1);
+      expect(recent.length, 1);
     });
   });
 }
-
-/// 自定义异常类用于测试
-class CircularDependencyException implements Exception {}
-class ValidationException implements Exception {}

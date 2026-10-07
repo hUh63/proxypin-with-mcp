@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.33.00 (2026-10-08)
+
+### 修复：脚本工作流引擎的单元测试已过期（无法编译）
+
+- `test/mcp/script_workflow_engine_test.dart` 仍在用早已不存在的 `WorkflowDefinition` /
+  `createWorkflow` / `listWorkflows` / `ScriptType` / `ValidationException` 等类型与 API（CI 不跑 test，
+  所以一直没有暴露）。已按**当前实现**重写：`registerWorkflow` / `unregisterWorkflow` / `getWorkflow(s)` /
+  `enableWorkflow` / `disableWorkflow` / `setExecutor` / `executeWorkflow` / `getExecutionHistory`，
+  用例覆盖拓扑顺序、并行执行、`maxRetries` 重试、依赖失败跳过、`{{变量}}` 替换与执行历史。
+- 顺带核对：`test/mcp` 下另外两个测试文件未使用过期 API。
+
+### 清理：删除被整文件注释的死文件
+
+- `lib/ui/mobile/setting/video_player.dart` 全部内容都被注释掉、且全库无任何引用，已删除。
+
+### 补译：es / id / pt / th / vi 各补 76 条文案
+
+- 五种语言此前各缺 76 条未翻译文案（正则帮助、快捷插入管理、文本对比、文本编辑器），现已补齐；
+  除 `pt_BR` / `zh_Hant` 两个 overlay 文件外，**所有语言键集与 en 完全一致（各 2466 条）**。
+
 ## v1.32.00 (2026-10-07)
 
 ### 工作流执行改走 DAG 引擎（并行 / 重试 / 依赖）
