@@ -19,6 +19,9 @@ import 'package:proxypin/ui/mobile/setting/mcp_automation.dart';
 class McpConnectionPage extends StatefulWidget {
   const McpConnectionPage({super.key});
 
+  /// 悬浮球面板（原生）改了配置时递增，通知页面**立即**同步（不必等切回前台）。
+  static final ValueNotifier<int> floatingBallExternalRevision = ValueNotifier<int>(0);
+
   @override
   State<McpConnectionPage> createState() => _McpConnectionPageState();
 }
@@ -38,9 +41,6 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   bool _mcpAutoStart = false;
   // 工具启用状态（工具名 -> 是否启用）
   Map<String, bool> _toolsEnabled = {};
-
-  /// 悬浮球面板（原生）改了配置时递增，通知本页**立即**同步（不必等切回前台）。
-  static final ValueNotifier<int> floatingBallExternalRevision = ValueNotifier<int>(0);
 
   @override
   void initState() {
