@@ -350,18 +350,19 @@ class _FavoritesActions extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // IconButton(
-                //   tooltip: '${localizations.export} HAR',
-                //   padding: const EdgeInsets.symmetric(horizontal: 6),
-                //   constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-                //   icon: const Icon(Icons.upload, size: 18),
-                //   onPressed: () async {
-                //     final path = await FilePicker.platform.saveFile(fileName: 'favorites.har');
-                //     if (path == null) return;
-                //     await FavoriteStorage.exportToHarFile(path, title: localizations.favorites);
-                //     FlutterToastr.show(localizations.exportSuccess, context);
-                //   },
-                // ),
+                IconButton(
+                  tooltip: '${localizations.export} HAR',
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                  icon: const Icon(Icons.upload, size: 18),
+                  onPressed: () async {
+                    final path = await Platforms.saveFileAdaptive(fileName: 'favorites.har');
+                    if (path == null) return;
+                    await FavoriteStorage.exportToHarFile(path, title: localizations.favorites);
+                    if (context.mounted) CustomToast.success(localizations.exportSuccess).show(context);
+                    onChanged();
+                  },
+                ),
                 IconButton(
                   tooltip: localizations.export,
                   padding: const EdgeInsets.symmetric(horizontal: 6),

@@ -11,6 +11,7 @@ import 'package:proxypin/network/mcp/mcp_event_automation.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
 import 'package:proxypin/network/mcp/mcp_scheduler.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
+import 'package:proxypin/network/mcp/script_workflow_engine.dart';
 import 'package:proxypin/network/util/cron_expression.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
@@ -2313,8 +2314,54 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     }
   }
 
-  /// 工作流节点拓扑执行（UI 无关，供 play 按钮与定时任务执行器复用）
+  /// 工作流节点执行（UI 无关，供 play 按钮与定时任务执行器复用）。
+  ///
+  /// 优先交给 [ScriptWorkflowEngine]：它做 DAG 拓扑排序、**并行执行就绪节点**、
+  /// 依赖失败跳过、节点级重试（maxRetries/retryDelay）与变量解析，并记录执行历史。
+  /// 之前这里是一份简化的顺序实现，白白浪费了引擎的这些能力。
+  /// 引擎不可用时（代理未启动导致执行器未接线 / 循环依赖 / 其它异常）回退到内置顺序执行。
   Future<void> _executeWorkflowNodes(Map<String, dynamic> workflow) async {
+    final nodes = (workflow['nodes'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    if (nodes.isEmpty) return;
+
+    final wfId = workflow['id']?.toString() ??
+        workflow['name']?.toString() ??
+        'wf_${DateTime.now().millisecondsSinceEpoch}';
+    final engine = ScriptWorkflowEngine.instance;
+    try {
+      if (engine.getWorkflow(wfId) == null) {
+        engine.registerWorkflow(ScriptWorkflow(
+          id: wfId,
+          name: workflow['name']?.toString() ?? wfId,
+          description: workflow['description']?.toString() ?? '',
+          nodes: nodes
+              .map((n) => WorkflowNode(
+                    id: n['id']?.toString() ?? '',
+                    scriptId: n['scriptId']?.toString() ?? n['name']?.toString() ?? '',
+                    scriptContent: '',
+                    scriptType: n['scriptType']?.toString() ?? 'javascript',
+                    dependencies: (n['dependencies'] as List?)?.cast<String>() ?? const [],
+                    maxRetries: (n['maxRetries'] as num?)?.toInt() ?? 0,
+                    continueOnError: n['continueOnError'] == true,
+                  ))
+              .where((n) => n.id.isNotEmpty)
+              .toList(),
+        ));
+      }
+      final ctx = await engine.executeWorkflow(wfId);
+      logger.i('▶ 工作流引擎执行完成 $wfId: 成功 ${ctx.successCount}/${nodes.length}');
+      return;
+    } catch (e) {
+      logger.w('工作流引擎不可用，回退内置顺序执行: $e');
+    } finally {
+      engine.unregisterWorkflow(wfId);
+    }
+
+    await _executeWorkflowNodesFallback(workflow);
+  }
+
+  /// 内置顺序执行（回退路径）：按依赖顺序逐个运行脚本，无并行/重试。
+  Future<void> _executeWorkflowNodesFallback(Map<String, dynamic> workflow) async {
     final nodes = (workflow['nodes'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     // 拓扑排序
     final ordered = <Map<String, dynamic>>[];

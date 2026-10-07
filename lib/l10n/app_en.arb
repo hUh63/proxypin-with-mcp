@@ -17,7 +17,6 @@
   "externalProxy": "External Proxy",
   "username": "Username",
   "password": "Password",
-  "proxySetting": "Proxy Setting",
   "setAs": "Set as ",
   "systemProxy": "System Proxy",
   "enabledHTTP2": "Enable HTTP2",
@@ -105,7 +104,6 @@
   "click": "Click",
   "loadRemoteScript": "load remote script",
   "replace": "Replace",
-  "clickEdit": "Click Edit",
   "refresh": "Refresh",
   "selectFile": "Select file",
   "match": "Match",
@@ -129,7 +127,6 @@
   "enterMatchData": "Enter the data to be matched",
   "modifyRequestHeader": "Modify Header",
   "headerName": "Header Name",
-  "headerValue": "Header Value",
   "deleteHeaderConfirm": "Do you want to delete the request header?",
   "sequence": "All Requests",
   "domainList": "Domain List",
@@ -211,7 +208,6 @@
   "exportCaP12": "Export Root Certificate(.p12)",
   "importCaP12": "Import Root Certificate(.p12)",
   "trustCa": "Trust Certificate",
-  "profileDownload": "Profile Download",
   "exportCA": "Export Root Certificate",
   "exportPrivateKey": "Export Private Key",
   "install": "Install",
@@ -250,7 +246,6 @@
   "remoteConnected": "Connected {os}, traffic will be forwarded to {os}",
   "remoteConnectForward": "Remote connection, forwarding requests to other terminals",
   "connectSuccess": "Connect successful",
-  "connectedRemote": "Connected to remote",
   "connected": "Connected",
   "notConnected": "Not connected",
   "disconnect": "Disconnect",
@@ -294,8 +289,6 @@
   "scrollEnd": "Scroll to End",
   "logger": "Log",
   "material3": "Material 3 is the latest version of Google’s open-source design system",
-  "iosVpnBackgroundAudio": "After turning on packet capture, exit to the background. In order to maintain the main UI thread for network communication, a silent audio playback will be enabled to keep the main thread running. Otherwise, it will only run in the background for 30 seconds. Do you agree to play audio in the background after turning on packet capture?",
-  "markRead": "Mark as read",
   "autoRead": "Auto read",
   "highlight": "Highlight",
   "blue": "Blue",
@@ -319,17 +312,6 @@
   "diffOriginal": "Original",
   "diffChanged": "Changed",
   "diffIdentical": "Two texts are identical",
-  "diffSummary": "+{added} −{removed}",
-  "@diffSummary": {
-    "placeholders": {
-      "added": {
-        "type": "int"
-      },
-      "removed": {
-        "type": "int"
-      }
-    }
-  },
   "text": "Text",
   "format": "Format",
   "compact": "Compact",
@@ -379,7 +361,6 @@
   "requestCrypto": "Request Crypto",
   "cryptoDecoded": "Decoded",
   "cryptoDecodeToggle": "Decrypt",
-  "optional": "Optional",
   "cryptoRuleField": "Field Name",
   "cryptoIvPrefixLabel": "IV Prefix",
   "cryptoIvPrefixTooltip": "Use the first N bytes of the response body as IV",
@@ -410,32 +391,8 @@
   "mcpPortInvalid": "Invalid port (1-65535)",
   "mcpPortUnchanged": "Port unchanged",
   "mcpPortApplied": "Port applied: {port}",
-  "mcpServerError": "MCP Server Error",
-  "mcpServerStarting": "MCP Server starting…",
-  "mcpServerStarted": "MCP Server started",
-  "mcpServerStopped": "MCP Server stopped",
-  "mcpConnectionSuccess": "Connection successful",
-  "mcpConnectionFailed": "Connection failed",
-  "mcpAuthRequired": "Authorization required",
   "mcpAuthGranted": "Authorized",
-  "mcpAuthDenied": "Authorization denied",
-  "shizukuNotRunning": "Shizuku not running",
-  "dhizukuNotRunning": "Dhizuku not running",
-  "rootAuthFailed": "Root authorization failed",
   "accessibilityEnabled": "Accessibility enabled",
-  "accessibilityDisabled": "Accessibility disabled",
-  "mcpTaskNameRequired": "Please enter task name",
-  "mcpTaskAdded": "Scheduled task added",
-  "mcpTaskCancelled": "Task cancelled",
-  "mcpTaskRunning": "Task running",
-  "mcpTaskCompleted": "Task completed",
-  "mcpTaskFailed": "Task failed",
-  "mcpNoTasks": "No tasks",
-  "mcpDeleteTaskConfirm": "Delete this task?",
-  "mcpImportSuccess": "Import successful",
-  "mcpImportFailed": "Import failed",
-  "mcpExportSuccess": "Export successful",
-  "mcpExportFailed": "Export failed",
   "desktopMcpConnection": "MCP Connection",
   "desktopMcpAutomation": "MCP Automation",
   "desktopBackupManagement": "Backup Management",
@@ -445,21 +402,8 @@
   "mcpServiceEnabledNotRunning": "Enabled (not running)",
   "mcpServiceDisabled": "Disabled",
   "mcpAutoStartDescribe": "Automatically run MCP service when app starts (enabled by default)",
-  "scheduledTasksTab": "Scheduled Tasks",
-  "eventListenersTab": "Event Listeners",
-  "ruleEngineTab": "Rule Engine",
-  "noScheduledTasks": "No scheduled tasks",
-  "noEventListeners": "No event listeners",
   "noRules": "No rules",
-  "dailyRepeat": "Daily",
-  "oneTimeTask": "One-time",
   "lastExecutedAt": "Last: {time}",
-  "callbacksRegistered": "{count} callbacks registered",
-  "eventTypesDescription": "Event Type Description",
-  "captureStartEvent": "Capture Start",
-  "captureStopEvent": "Capture Stop",
-  "requestReceivedEvent": "Request Received",
-  "responseReceivedEvent": "Response Received",
   "noBackupFiles": "No backup files",
   "autoBackupToUserDir": "Configuration automatically backs up to user directory",
   "openBackupFolder": "Open Backup Folder",
@@ -524,13 +468,10 @@
   "sortAsc": "Ascending ↑",
   "sortDesc": "Descending ↓",
   "grantCameraPermission": "Please grant camera permission",
-  "quickFilter": "Quick filter",
   "noMessageBody": "This request has no message body",
   "dataType": "Type",
   "wsInterceptor": "WebSocket Interception",
   "wsInterceptorDesc": "Pause, edit and resume WebSocket messages with rules",
-  "scriptWorkflow": "Script Workflows",
-  "scriptWorkflowDesc": "Compose and manage multi-step script workflows",
   "mcpAutomationTasks": "MCP Scheduled Tasks",
   "mcpAutomationTasksDesc": "Schedule and manage automated MCP tasks",
   "wsInterceptRules": "WebSocket Interception Rules",
@@ -558,7 +499,6 @@
   "wsGlobalDisabledHint": "Global interception is disabled; enable it to see paused messages",
   "wsMessageResumed": "Message resumed",
   "wsMessageAborted": "Message aborted",
-  "wsAbortByUser": "Manually aborted by user",
   "wsPausedInfo": "{opcode} • Paused {seconds}s • {preview}",
   "@wsPausedInfo": {
     "placeholders": {
@@ -659,121 +599,15 @@
     }
   },
   "none": "None",
-  "scriptWorkflowManager": "Script Workflow Manager",
-  "useTutorial": "Tutorial",
-  "newWorkflow": "New Workflow",
-  "runSelectedWorkflow": "Run Selected Workflow",
-  "workflowList": "Workflow List",
-  "noWorkflows": "No workflows yet. Tap + in the top right to create one",
-  "workflowNodesSummary": "{nodes} nodes | {successes} succeeded",
-  "@workflowNodesSummary": {
-    "placeholders": {
-      "nodes": {
-        "type": "int"
-      },
-      "successes": {
-        "type": "int"
-      }
-    }
-  },
-  "selectWorkflowHint": "Select a workflow to view its details",
-  "workflowDescription": "Description: {desc}",
-  "@workflowDescription": {
-    "placeholders": {
-      "desc": {
-        "type": "String"
-      }
-    }
-  },
-  "nodeCount": "Nodes",
   "successRate": "Success Rate",
-  "workflowNodes": "Workflow Nodes",
-  "nodeInfo": "Type: {type} | Timeout: {timeout}s | Retry: {retry} times",
-  "@nodeInfo": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      },
-      "timeout": {
-        "type": "int"
-      },
-      "retry": {
-        "type": "int"
-      }
-    }
-  },
   "moveUp": "Move Up",
   "moveDown": "Move Down",
-  "scriptContentLabel": "Script:",
-  "dependenciesLabel": "Dependencies:",
-  "variablesLabel": "Variables:",
-  "recentExecutions": "Recent Executions",
-  "addNode": "Add Node",
-  "executing": "Running...",
   "executeWorkflow": "Run Workflow",
-  "executionSummary": "Duration: {duration}ms | Success: {success}/{total}",
-  "@executionSummary": {
-    "placeholders": {
-      "duration": {
-        "type": "int"
-      },
-      "success": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "createWorkflow": "Create Workflow",
-  "workflowName": "Workflow Name",
-  "workflowNameHint": "e.g. Auto login flow",
   "create": "Create",
-  "createSuccess": "Created successfully",
-  "editWorkflow": "Edit Workflow",
-  "deleteWorkflowConfirm": "Delete workflow \"{name}\"?",
-  "@deleteWorkflowConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "workflowCopy": "{name} (Copy)",
-  "@workflowCopy": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "copySuccess": "Copied successfully",
-  "nodeName": "Node Name",
-  "nodeNameHint": "e.g. Run login script",
   "scriptContent": "Script Content",
-  "scriptHint": "Enter a JavaScript or Dart script",
-  "timeoutSecondsLabel": "Timeout (seconds)",
   "second": "Second",
   "retryCountLabel": "Retry Count",
-  "retryDelayLabel": "Retry Delay (seconds)",
-  "nodeDefaultName": "Node {index}",
-  "@nodeDefaultName": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      }
-    }
-  },
-  "editNode": "Edit Node",
-  "deleteNodeConfirm": "Delete node \"{name}\"?",
-  "@deleteNodeConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "executeSuccess": "Executed successfully",
   "durationMs": "Duration: {ms}ms",
   "@durationMs": {
     "placeholders": {
@@ -782,10 +616,6 @@
       }
     }
   },
-  "executeFailed": "Execution failed",
-  "unknownError": "Unknown error",
-  "executeException": "Execution error",
-  "errorDetails": "Error Details",
   "showAllItems": "Show all ({count})",
   "@showAllItems": {
     "placeholders": {
@@ -948,7 +778,6 @@
   "fuzzerExportFailed": "Export failed:",
   "fuzzerTemplate": "Template",
   "fuzzerNoTemplate": "No captured requests available",
-  "fuzzerTarget": "Inject into",
   "fuzzerTargetQuery": "URL query param",
   "fuzzerTargetHeader": "Request header",
   "fuzzerTargetJson": "JSON body field",
@@ -975,7 +804,6 @@
   "mcpServiceDescribe": "Starts a local HTTP server for Model Context Protocol (MCP) communication with AI tools such as Claude.",
   "mcpEnable": "Enable MCP Server",
   "mcpPort": "Port",
-  "mcpAdvanced": "Advanced settings",
   "mcpConfig": "MCP Configuration",
   "mcpRedact": "Redact sensitive data before sending to AI",
   "mcpRedactDescribe": "Automatically redact sensitive information before it is sent to AI tools.",
@@ -990,28 +818,9 @@
   "mcpAboutTitle": "About MCP Integration",
   "mcpAboutText": "MCP (Model Context Protocol) lets AI assistants like Claude interact with ProxyPin. AI can read captured HTTP traffic, create debugging rules (Map Local, Map Remote, Breakpoints), and help analyze network issues.",
   "mcpLearnMore": "Learn more about MCP",
-  "mcpSkills": "Skills",
-  "mcpSkillsTitle": "MCP Skills",
-  "mcpSkillsReadonly": "Read-only traffic tools",
-  "mcpSkillsRules": "Rules, replay & environment tools",
-  "mcpEndpoint": "MCP Endpoint",
   "mcpAccessToken": "Access Token",
-  "mcpLanGuide": "Keep this phone and your computer on the same Wi-Fi, then run one of the commands below in your computer's terminal, or paste the configuration into your AI client's MCP settings.",
-  "mcpLanTokenNote": "The token authorizes full access to the MCP tools. Tap the refresh button next to the token to revoke it and issue a new one.",
-  "mcpOtherClients": "Other AI clients",
-  "mcpOtherClientsHint": "Universal Streamable HTTP config for Cursor, Cline, Gemini CLI, Cherry Studio, VS Code Copilot and other MCP clients. Paste the URL and Bearer token, or the full JSON, into the client's MCP settings.",
-  "mcpOneClick": "One-click setup on your computer",
-  "mcpOneClickHint": "Copy the matching command and run it on the computer: Terminal for macOS/Linux, PowerShell for Windows. It auto-detects installed AI clients (Claude Code, Codex, Cursor, Gemini CLI) and configures them over Wi-Fi.",
-  "mcpRegenerateToken": "Reset token",
   "mcpStatusRunning": "Running",
   "mcpStatusStopped": "Stopped",
-  "mcpClientLabel": "AI client",
-  "mcpTransportLabel": "Transport",
-  "mcpCommandLabel": "Connect command",
-  "mcpClientsIntl": "International",
-  "mcpClientsDomestic": "Chinese",
-  "mcpTransportStdio": "stdio",
-  "mcpTransportHttp": "HTTP",
   "mcpHintTerminal": "Copy and run in your terminal.",
   "mcpHintJson": "Paste into your client's MCP settings.",
   "mcpHintCopilot": "Paste into VS Code settings.json → mcp.servers.",
@@ -1020,7 +829,6 @@
   "mcpHintDoubao": "MarsCode IDE → Settings → MCP → Add (STDIO type).",
   "mcpSetup": "Auto setup",
   "mcpStartChat": "Start chat",
-  "mcpOpenTerminal": "Run in terminal",
   "mcpSetupDone": "Configured. Restart your AI client to apply.",
   "mcpSetupFail": "Setup failed: ",
   "mcpCliMissing": "CLI {cli} not found on PATH. Use \"Run in terminal\" instead.",
@@ -1028,7 +836,6 @@
   "mcpCopy": "Copy",
   "mcpCopied": "Copied",
   "mcpStartFailed": "MCP service failed to start",
-  "mcpPrivacyHint": "Only listens on 127.0.0.1 (this machine). Data leaves the app only when an AI client explicitly requests it via a tool.",
   "securityAiTitle": "AI Analysis of Audit Results",
   "securityAiNotConfigured": "AI service not configured. Go to Settings → MCP Connection → AI Analysis, and fill in the endpoint and API key.",
   "securityAiRawFallback": "Raw AI reply (couldn't be parsed into structured advice; shown as-is)",
@@ -4236,7 +4043,6 @@
   },
   "wsClearMessages": "Clear messages",
   "wsJumpLatest": "Jump to latest messages",
-  "jsonTreeTab": "Tree",
   "editorPlainText": "Plain Text",
   "jwtHeader": "Header",
   "jwtPayload": "Payload",
@@ -4345,8 +4151,6 @@
   "diffAdded": "Added",
   "diffDeleted": "Deleted",
   "diffModified": "Modified",
-  "diffReplaceLeftToRight": "Copy left → right (overwrite)",
-  "diffReplaceRightToLeft": "Copy right → left (overwrite)",
   "diffSummaryDetail": "{added} added, {deleted} deleted, {modified} modified",
   "@diffSummaryDetail": {
     "placeholders": {
@@ -4395,7 +4199,6 @@
       }
     }
   },
-  "editorTooManySpecial": "Too many invisible characters; only the first 3000 are highlighted",
   "editorSmoothMode": "Smooth mode",
   "editorSmoothAutoEnabled": "Text is very long; smooth mode has been enabled automatically",
   "editorSelectToLine": "Select lines",
