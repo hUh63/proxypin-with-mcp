@@ -122,6 +122,8 @@ void main(List<String> args) async {
         if (m['alpha'] is int) {
           await prefs.setInt('floatingBallAlpha', m['alpha'] as int);
         }
+        // 通知 MCP 设置页立即同步（如悬浮球面板「关闭悬浮球」后开关马上变灰）
+        McpConnectionPage.floatingBallExternalRevision.value++;
       } catch (_) {}
     }
   });

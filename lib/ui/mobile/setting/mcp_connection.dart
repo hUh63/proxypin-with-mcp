@@ -39,6 +39,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   // 工具启用状态（工具名 -> 是否启用）
   Map<String, bool> _toolsEnabled = {};
 
+  /// 悬浮球面板（原生）改了配置时递增，通知本页**立即**同步（不必等切回前台）。
+  static final ValueNotifier<int> floatingBallExternalRevision = ValueNotifier<int>(0);
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +49,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     _portController = TextEditingController(text: '9010');
     // 注册状态变化回调，实现实时更新
     McpServer().onStatusChanged = _onMcpStatusChanged;
+    McpConnectionPage.floatingBallExternalRevision.addListener(_onFloatingBallExternal);
     _loadInfo();
   }
 
@@ -54,8 +58,14 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     WidgetsBinding.instance.removeObserver(this);
     // 清除回调，避免页面销毁后仍被调用
     McpServer().onStatusChanged = null;
+    McpConnectionPage.floatingBallExternalRevision.removeListener(_onFloatingBallExternal);
     _portController.dispose();
     super.dispose();
+  }
+
+  /// 原生悬浮球面板改了配置 → 立即从偏好同步（否则要等 App 切回前台才更新）
+  void _onFloatingBallExternal() {
+    if (mounted) _syncFloatingBallFromPrefs();
   }
 
   /// 监听应用生命周期变化（用于检测从系统设置返回）

@@ -399,5 +399,7 @@
   "kernelCaptureDnsRewritten": "DNS reescrito",
   "kernelNetfilterBridge": "Ponte nativa NetFilter",
   "diffAlignedView": "Visualização alinhada",
-  "diffNoDifference": "Sem diferenças"
+  "diffNoDifference": "Sem diferenças",
+  "kernelCaptureBlockQuic": "Bloquear QUIC (UDP/443)",
+  "kernelCaptureQuicBlocked": "QUIC bloqueado"
 }

@@ -4422,5 +4422,7 @@
   "kernelCaptureDnsRewritten": "DNS 改写",
   "kernelNetfilterBridge": "NetFilter 原生桥",
   "diffAlignedView": "对比视图",
-  "diffNoDifference": "无差异"
+  "diffNoDifference": "无差异",
+  "kernelCaptureBlockQuic": "阻断 QUIC（UDP/443）",
+  "kernelCaptureQuicBlocked": "QUIC 已阻断"
 }

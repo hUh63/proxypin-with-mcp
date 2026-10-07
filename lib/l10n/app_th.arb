@@ -2542,5 +2542,7 @@
   "kernelCaptureDnsRewritten": "DNS ที่เขียนใหม่",
   "kernelNetfilterBridge": "บริดจ์เนทีฟ NetFilter",
   "diffAlignedView": "มุมมองจัดแนว",
-  "diffNoDifference": "ไม่มีความต่าง"
+  "diffNoDifference": "ไม่มีความต่าง",
+  "kernelCaptureBlockQuic": "บล็อก QUIC (UDP/443)",
+  "kernelCaptureQuicBlocked": "บล็อก QUIC แล้ว"
 }

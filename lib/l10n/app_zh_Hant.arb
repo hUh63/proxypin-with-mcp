@@ -960,5 +960,7 @@
   "kernelCaptureDnsRewritten": "DNS 改寫",
   "kernelNetfilterBridge": "NetFilter 原生橋",
   "diffAlignedView": "對照視圖",
-  "diffNoDifference": "無差異"
+  "diffNoDifference": "無差異",
+  "kernelCaptureBlockQuic": "阻斷 QUIC（UDP/443）",
+  "kernelCaptureQuicBlocked": "QUIC 已阻斷"
 }

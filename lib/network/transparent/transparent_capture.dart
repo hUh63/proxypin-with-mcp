@@ -41,11 +41,15 @@ class TransparentCaptureConfig {
   /// 命中时丢弃原查询并注入伪响应（仅对 A 查询生效）。
   final Map<String, String> dnsRewrite;
 
+  /// 阻断 QUIC：丢弃出网 UDP/443，逼客户端回落 TCP（从而能被代理抓到完整请求）。
+  final bool blockQuic;
+
   const TransparentCaptureConfig({
     this.tcpPorts = const [80, 443],
     this.captureUdp = false,
     this.udpPorts = const [53, 443],
     this.dnsRewrite = const {},
+    this.blockQuic = false,
   });
 
   Map<String, Object> toJson() => {
@@ -53,6 +57,7 @@ class TransparentCaptureConfig {
         'captureUdp': captureUdp,
         'udpPorts': udpPorts,
         'dnsRewrite': dnsRewrite,
+        'blockQuic': blockQuic,
       };
 }
 
@@ -78,6 +83,7 @@ class TransparentCaptureStats {
   int udpPackets = 0;
   int dnsQueries = 0;
   int dnsRewritten = 0;
+  int quicBlocked = 0;
   String? driverVersion;
 
   /// 最后一次错误信息（供界面展示）
@@ -240,6 +246,7 @@ class TransparentCapture {
         stats.udpPackets = (msg['udp'] as int?) ?? stats.udpPackets;
         stats.dnsQueries = (msg['dns'] as int?) ?? stats.dnsQueries;
         stats.dnsRewritten = (msg['dnsrw'] as int?) ?? stats.dnsRewritten;
+        stats.quicBlocked = (msg['quicb'] as int?) ?? stats.quicBlocked;
         stats.driverVersion = msg['version'] as String?;
         _changes.add(null);
         break;
@@ -257,6 +264,7 @@ void _entry(Map<String, Object> config) {
   final tcpPorts = ((cfg['tcpPorts'] as List?) ?? const [80, 443]).cast<int>();
   final captureUdp = cfg['captureUdp'] == true;
   final udpPorts = ((cfg['udpPorts'] as List?) ?? const [53]).cast<int>();
+  final blockQuic = cfg['blockQuic'] == true;
   final dnsRewrite = <String, String>{};
   final rawRules = cfg['dnsRewrite'];
   if (rawRules is Map) {
@@ -302,7 +310,7 @@ void _entry(Map<String, Object> config) {
   final addr = malloc<WindivertAddress>();
   final nat = <int, List<int>>{};
 
-  var syn = 0, redir = 0, ret = 0, self = 0, unmatched = 0, total = 0, udp = 0, dnsCount = 0, dnsRewritten = 0;
+  var syn = 0, redir = 0, ret = 0, self = 0, unmatched = 0, total = 0, udp = 0, dnsCount = 0, dnsRewritten = 0, quicBlocked = 0;
   var lastStats = DateTime.now();
 
   try {
@@ -359,17 +367,24 @@ void _entry(Map<String, Object> config) {
             });
           }
         }
-        // QUIC（UDP/443）：把长头包（Initial/Handshake/0-RTT，首字节高位为 1）转发给
-        // 主 isolate 的 QuicProbe 做元数据解析，使 QUIC 会话页在内核抓包路径也能用。
-        // 只转长头包（握手类），控制跨 isolate 传输量；短头数据包不转。
-        if (u.dstPort == 443 && copy.length > u.payloadOffset && (copy[u.payloadOffset] & 0x80) != 0) {
-          mainSend.send({
-            'type': 'quic',
-            'data': Uint8List.fromList(Uint8List.sublistView(copy, u.payloadOffset)),
-            'remote': u.dstIpText,
-          });
+        // QUIC（UDP/443）：长头包（Initial/Handshake/0-RTT，首字节高位为 1）转给主 isolate
+        // 的 QuicProbe 做元数据解析（桌面也能看 QUIC）；开启阻断时**不放回**该包，
+        // 迫使客户端回落 TCP —— 这才是「阻断 QUIC」的落点。只转长头包以控制开销。
+        var droppedQuic = false;
+        if (u.dstPort == 443) {
+          if (copy.length > u.payloadOffset && (copy[u.payloadOffset] & 0x80) != 0) {
+            mainSend.send({
+              'type': 'quic',
+              'data': Uint8List.fromList(Uint8List.sublistView(copy, u.payloadOffset)),
+              'remote': u.dstIpText,
+            });
+          }
+          if (blockQuic) {
+            quicBlocked++;
+            droppedQuic = true; // WinDivert 已拦截，不 send 即丢弃
+          }
         }
-        if (!injected) windivert.send(handle, packetBuf, len, addr); // 未改写才原样放回
+        if (!injected && !droppedQuic) windivert.send(handle, packetBuf, len, addr);
         continue;
       }
 
@@ -443,6 +458,7 @@ void _entry(Map<String, Object> config) {
           'udp': udp,
           'dns': dnsCount,
           'dnsrw': dnsRewritten,
+          'quicb': quicBlocked,
         });
       }
     }

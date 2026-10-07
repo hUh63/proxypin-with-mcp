@@ -2542,5 +2542,7 @@
   "kernelCaptureDnsRewritten": "DNS đã viết lại",
   "kernelNetfilterBridge": "Cầu native NetFilter",
   "diffAlignedView": "Chế độ căn hàng",
-  "diffNoDifference": "Không có khác biệt"
+  "diffNoDifference": "Không có khác biệt",
+  "kernelCaptureBlockQuic": "Chặn QUIC (UDP/443)",
+  "kernelCaptureQuicBlocked": "Đã chặn QUIC"
 }

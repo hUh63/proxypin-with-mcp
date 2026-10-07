@@ -2542,5 +2542,7 @@
   "kernelCaptureDnsRewritten": "DNS ditulis ulang",
   "kernelNetfilterBridge": "Jembatan native NetFilter",
   "diffAlignedView": "Tampilan sejajar",
-  "diffNoDifference": "Tidak ada perbedaan"
+  "diffNoDifference": "Tidak ada perbedaan",
+  "kernelCaptureBlockQuic": "Blokir QUIC (UDP/443)",
+  "kernelCaptureQuicBlocked": "QUIC diblokir"
 }

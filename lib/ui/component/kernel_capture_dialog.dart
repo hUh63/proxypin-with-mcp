@@ -50,6 +50,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
   bool _busy = false;
   bool _driverReady = false;
   bool _captureUdp = false;
+  bool _blockQuic = false;
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
         _tcpPortsCtrl.text = ((m['tcpPorts'] as List?)?.join(',') ?? '80,443');
         _udpPortsCtrl.text = ((m['udpPorts'] as List?)?.join(',') ?? '53,443');
         _captureUdp = m['captureUdp'] == true;
+        _blockQuic = m['blockQuic'] == true;
         final rw = m['dnsRewrite'];
         if (rw is Map) {
           _dnsRulesCtrl.text = rw.entries.map((e) => '${e.key}=${e.value}').join('\n');
@@ -134,6 +136,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
       captureUdp: _captureUdp,
       udpPorts: _parsePorts(_udpPortsCtrl.text),
       dnsRewrite: _parseDnsRules(_dnsRulesCtrl.text),
+      blockQuic: _blockQuic,
     );
     setState(() => _busy = true);
     try {
@@ -227,6 +230,7 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
               _kv(l.kernelCaptureUdpPackets, '${s.udpPackets}'),
               _kv(l.kernelCaptureDns, '${s.dnsQueries}'),
               _kv(l.kernelCaptureDnsRewritten, '${s.dnsRewritten}'),
+              _kv(l.kernelCaptureQuicBlocked, '${s.quicBlocked}'),
               const SizedBox(height: 10),
               const Divider(height: 1, thickness: 0.4),
               const SizedBox(height: 8),
@@ -302,6 +306,13 @@ class _KernelCaptureDialogState extends State<_KernelCaptureDialog> {
                   ),
                 ),
               ],
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(l.kernelCaptureBlockQuic, style: const TextStyle(fontSize: 12.5)),
+                value: _blockQuic,
+                onChanged: running ? null : (v) => setState(() => _blockQuic = v),
+              ),
               if (s.recentDns.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 const Divider(height: 1, thickness: 0.4),
