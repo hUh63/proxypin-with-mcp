@@ -421,7 +421,9 @@ class FloatingBallService : Service() {
         }
     }
 
-    /** 贴边开关开启：3 秒后收纳（藏入边缘 2/3 只露 1/3，透明度降低） */
+    /** 贴边开关开启：3 秒后收纳（藏入边缘 2/3 只露 1/3）。
+     *  注意：收纳**只改变位置**，不改动透明度——否则切换「自动贴边」开关时，
+     *  球会在 45% 与 100% 之间跳变，用户会认为"设定的透明度被改了"。 */
     private fun scheduleRetract() {
         cancelDock()
         if (!autoDock) return
@@ -438,7 +440,8 @@ class FloatingBallService : Service() {
         params.x = if (center < screen / 2) screen - sizePx / 3 else -(2 * sizePx / 3)
         ballView?.let {
             it.docked = true
-            it.alpha = (ballAlpha.coerceIn(30, 255) / 255f) * 0.45f
+            // 透明度始终等于用户设定值（幂等赋值，防止任何残留状态）
+            it.alpha = ballAlpha.coerceIn(30, 255) / 255f
             try {
                 windowManager.updateViewLayout(it, params)
             } catch (_: Exception) {}
