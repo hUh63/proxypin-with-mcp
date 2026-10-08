@@ -153,17 +153,27 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     _updateFloatingBall(showFeedback: showFeedback, style: style);
   }
 
-  /// 通知原生悬浮球服务（启用/更新/关闭）
+  /// 通知原生悬浮球服务（启用/更新/关闭）。
+  ///
+  /// 颜色/透明度**每次都下发**，并且取值以偏好（floatingBallColor / floatingBallAlpha）
+  /// 为唯一真源——偏好由「设置页改样式」和「原生面板改样式」两条路径共同维护，代表当前
+  /// 生效样式；而本页字段可能尚未刷新。
+  ///
+  /// 之前切开关时不下发样式、完全依赖原生「内存字段缺省保留」，一旦任一侧值漂移
+  /// （页面字段旧、原生内存被重置等）就会把透明度打回默认。改为下发幂等真值后，
+  /// 任何路径的 start 都只会把样式写成它本该有的值。
   Future<void> _updateFloatingBall({bool showFeedback = false, bool style = false}) async {
     if (!Platform.isAndroid) return;
     final loc = AppLocalizations.of(context)!;
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final effectiveColor = prefs.getInt('floatingBallColor') ?? floatingBallColor;
+      final effectiveAlpha = prefs.getInt('floatingBallAlpha') ?? floatingBallAlpha;
       final result = await _floatingChannel.invokeMethod(floatingBallEnabled ? 'start' : 'stop', {
         'autoDock': floatingBallAutoDock,
         'running': McpServer().isRunning,
-        // 仅改样式时才下发颜色/透明度，切开关时留空 → 原生保留当前样式（不复位）
-        if (style) 'color': floatingBallColor,
-        if (style) 'alpha': floatingBallAlpha,
+        'color': effectiveColor,
+        'alpha': effectiveAlpha,
       });
       if (!mounted) return;
       // 缺少悬浮窗权限：原生已跳转系统设置页，这里给出明确提示
@@ -200,6 +210,10 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   /// 悬浮球样式自定义：预置颜色 + 取色器 + 透明度 + 实时预览
   Future<void> _showFloatingBallStyleDialog() async {
     final loc = AppLocalizations.of(context)!;
+    // 打开前先与偏好（样式真源）对齐：页面字段可能落后于「悬浮球面板改过的样式」，
+    // 若拿旧值当对话框初值，用户一确认就会把透明度写回旧值（表现出来就是"被重置"）。
+    await _syncFloatingBallFromPrefs();
+    if (!mounted) return;
     var color = Color(floatingBallColor);
     var alpha = floatingBallAlpha;
     final presets = <String, Color>{

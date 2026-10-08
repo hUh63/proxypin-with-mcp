@@ -109,11 +109,15 @@ class FloatingBallService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        // 缺省用「当前值」而不是硬编码默认：服务已运行时，只带部分参数的 start
-        // （例如只切「自动贴边」开关）不会把颜色/透明度重置回默认。
+        // 样式真源 = Flutter 偏好（设置页与悬浮球面板改样式时都会写回），
+        // 先按偏好刷新一次内存值，再让本次 intent 的显式参数覆盖它。
+        // 这样即使内存字段因任何原因漂移（服务重建、早期默认值等），
+        // 「只切开关」的 start 也只会保持样式，绝不会把颜色/透明度打回默认。
+        restorePrefs()
         autoDock = intent?.getBooleanExtra("autoDock", autoDock) ?: autoDock
         ballColor = intent?.getIntExtra("color", ballColor) ?: ballColor
         ballAlpha = intent?.getIntExtra("alpha", ballAlpha) ?: ballAlpha
+        Log.i(TAG, "onStartCommand autoDock=$autoDock color=${Integer.toHexString(ballColor)} alpha=$ballAlpha extras=${intent?.extras}")
 
         if (!Settings.canDrawOverlays(this)) {
             Log.w(TAG, "no overlay permission")
@@ -125,6 +129,14 @@ class FloatingBallService : Service() {
             createBall()
         } else {
             refreshBallStyle()
+        }
+        // 「自动贴边」变化立即生效：此前只有悬浮球面板内切换才会调度，
+        // 在 MCP 设置页切开关要等到下一次触摸才生效（开关看起来像没反应）。
+        if (autoDock) {
+            scheduleRetract()
+        } else {
+            cancelDock()
+            wakeFromDock() // 若正处收纳态则还原位置与透明度
         }
         return START_STICKY
     }
