@@ -187,7 +187,7 @@
   "historyEmptyName": "名称不能为空",
   "historyRecordTitle": "{name} 记录数 {length}",
   "historySubtitle": "记录数 {requestLength}  文件 {size}",
-  "historyUnSave": "当前会话记录未保存",
+  "historyUnSave": "当前记录还没保存",
   "historyDeleteConfirm": "是否删除该历史记录？",
   "requestEdit": "请求编辑",
   "encode": "编码",
@@ -203,9 +203,9 @@
   "downloadRootCa": "下载根证书",
   "downloadRootCaNote": "注意：如果您将默认浏览器设置为 Safari 以外的浏览器，请单击此行复制并粘贴 Safari 浏览器的链接",
   "generateCA": "重新生成根证书",
-  "generateCADescribe": "您确定要生成新的根证书吗? 如果确认，\n则需要重新安装并信任新的证书",
+  "generateCADescribe": "确定要生成一张新的根证书吗？\n换了新证书后，手机上要重新装一次、重新信任，不然 HTTPS 抓不到。",
   "resetDefaultCA": "重置默认根证书",
-  "resetDefaultCADescribe": "确定要重置为默认根证书吗? ProxyPin默认\n根证书对所有用户都是相同的.",
+  "resetDefaultCADescribe": "确定换回默认根证书吗？\n默认证书所有人用的都一样，等于没有私密性——别人也能解开你的流量，建议生成自己专属的。",
   "exportCaP12": "导出根证书 (.p12)",
   "importCaP12": "导入根证书 (.p12)",
   "trustCa": "信任证书",
@@ -216,7 +216,7 @@
   "trustCaDescribe": "信任证书 设置 > 通用 > 关于本机 > 证书信任设置",
   "androidRoot": "系统证书 (ROOT设备)",
   "androidRootMagisk": "Magisk模块: \n安卓ROOT设备可以使用Magisk ProxyPinCA系统证书模块, 安装完重启手机后 在系统证书查看是否有ProxyPinCA证书，如果有说明证书安装成功。",
-  "androidRootRename": "模块不生效可以根据网上教程安装系统根证书, 根证书命名成 {name}",
+  "androidRootRename": "模块没生效？可以按网上的教程手动装系统证书，证书文件要命名成 {name}",
   "androidUserCA": "用户证书",
   "androidUserCATips": "提示：Android7+ 很多软件不会信任用户证书",
   "androidRootCADownload": "下载系统根证书(.0)",
@@ -417,7 +417,7 @@
   "wsTrafficSubtitleNotRunning": "已开启，但抓包未运行：启动抓包后自动监听 ws://127.0.0.1:{port}",
   "wsTrafficSubtitleOff": "开启后，外部工具 / AI 可通过 WebSocket 实时订阅抓包流量（默认端口 {port}），开关即时生效",
   "wsTrafficHistory": "允许订阅端查询历史",
-  "wsTrafficHistoryDesc": "客户端可通过 list_histories / get_history 读取历史会话",
+  "wsTrafficHistoryDesc": "外部工具 / AI 可以用 list_histories、get_history 读取历史抓包记录",
   "wsTrafficPort": "订阅端口",
   "wsTrafficPortListening": "当前监听 {port}，点击修改（将立刻重启监听）",
   "wsTrafficPortCurrent": "当前端口 {port}，点击修改",
@@ -457,7 +457,7 @@
   "winTakeoverAdmin": "WinHTTP 部分需要管理员权限",
   "winTakeoverSandboxieOn": "检测到 Sandboxie",
   "winTakeoverSandboxieOff": "未检测到 Sandboxie",
-  "winTakeoverTunNote": "完整 TUN（内核级）接管未在本版启用；自带网络栈的应用（如 Sandboxie 内的微信）仍需 TUN。",
+  "winTakeoverTunNote": "本版还没做「全局接管」（TUN）。像 Sandboxie 里的微信这种自带网络的程序，目前仍然抓不到。",
   "mcpAllowLan": "允许局域网访问",
   "mcpAllowLanDesc": "关闭：仅监听 127.0.0.1（更安全）；开启：监听所有网卡且无鉴权，请谨慎使用",
   "compareNeedTwo": "请选择两条请求进行对比",
@@ -575,7 +575,7 @@
   "diagHintCa": "若 HTTPS 无法解密，请在设备上安装并完全信任根 CA 证书。",
   "diagHintFirewall": "若手机连不上，请在系统防火墙中放行本应用。",
   "diagHintMcp": "MCP 默认仅监听本机回环；手机应连接 HTTP 代理端口，而非 MCP 端口。",
-  "exportCsv": "导出 CSV（脱敏）",
+  "exportCsv": "导出 CSV（自动打码）",
   "scenario": "场景",
   "scenarioHint": "新建或选择已有场景",
   "mockScenario": "Mock 场景",
@@ -588,7 +588,7 @@
   "mockScenarioClearConfirm": "把该场景下的规则移出分组？（规则本身不会被删除）",
   "mockScenarioRename": "重命名场景",
   "mockScenarioRenameHint": "新的场景名",
-  "exportJson": "导出 JSON（脱敏）",
+  "exportJson": "导出 JSON（自动打码）",
   "mockScenarioSoloTip": "只启用该场景，其余规则全部停用",
   "capturePlan": "采集方案",
   "capturePlanNew": "新建方案",
@@ -663,8 +663,8 @@
   "toolboxLogTip": "日志查看与过滤",
   "toolboxPerformance": "性能监控",
   "toolboxPerformanceTip": "性能监控仪表盘",
-  "toolboxApiEndpoints": "API 端点",
-  "toolboxApiEndpointsTip": "从抓包数据提取 API 端点",
+  "toolboxApiEndpoints": "接口列表",
+  "toolboxApiEndpointsTip": "从抓到的请求里汇总出接口清单",
   "toolboxQuic": "QUIC 连接",
   "toolboxQuicTip": "QUIC/HTTP3 连接元数据（SNI/版本/统计）",
   "toolboxSendQueue": "发送队列",
@@ -702,8 +702,8 @@
   "jsRestoreBeautify": "格式化",
   "fuzzer": "手动 Fuzz",
   "fuzzerTips": "填入你想尝试的取值，工具会逐条替换进请求发送，并把响应摆出来供你比对。不内置载荷字典，也不自动判定结果。",
-  "fuzzerInjection": "注入项",
-  "fuzzerAddInjection": "添加注入项",
+  "fuzzerInjection": "测试项",
+  "fuzzerAddInjection": "添加测试项",
   "fuzzerCombinations": "组合数",
   "fuzzerTooManyCases": "组合数过多，已按上限截断",
   "fuzzerExport": "导出结果",
@@ -740,8 +740,8 @@
   "mcpEnable": "启用 MCP 服务器",
   "mcpPort": "端口",
   "mcpConfig": "MCP 配置",
-  "mcpRedact": "在发送给 AI 之前脱敏敏感数据",
-  "mcpRedactDescribe": "在发送到 AI 工具前自动脱敏敏感信息。",
+  "mcpRedact": "发给 AI 前先自动打码敏感信息",
+  "mcpRedactDescribe": "发给 AI 之前，自动把密码、令牌这类敏感信息打码。",
   "mcpHintRun": "在终端中运行此命令，将 ProxyPin MCP 添加到 {client}。",
   "@mcpHintRun": {
     "placeholders": {
@@ -818,7 +818,7 @@
   },
   "wafNeedAuth": "请先勾选「已获得测试授权」",
   "wafNeedUrl": "填一个目标 URL",
-  "wafNeedPlaceholder": "至少要在一处放 {mark} 标记注入位置",
+  "wafNeedPlaceholder": "至少要选一个地方写上 {mark}，告诉工具把测试内容放在哪",
   "@wafNeedPlaceholder": {
     "placeholders": {
       "mark": {
@@ -844,7 +844,7 @@
   "wafPickNameHint": "点一下 WAF 名字即可套用推荐组合",
   "wafStep2Title": "② 输入载荷并选择变异方式",
   "wafStep3Title": "③ 主动探测（会真的发请求）",
-  "wafStep3Hint": "在你想注入的位置写 {mark}（URL / 头 / 体都行）。先发一条原始载荷作基线，再逐条发上面勾选的技术，比对响应判断哪条没被拦。",
+  "wafStep3Hint": "在想测试的位置写上 {mark}（网址、请求头、请求体都行）。先发一条普通请求当基准，再一条条发上面勾好的手法，看哪条的响应不一样——没被拦的那条就是突破口。",
   "@wafStep3Hint": {
     "placeholders": {
       "mark": {
@@ -905,7 +905,7 @@
   "guideMarkCopied": "标记语法已复制",
   "guideCopySyntax": "复制语法",
   "guideMarkReset": "已恢复默认标记",
-  "guideRenderError": "渲染异常（已降级为纯文本）：{error}",
+  "guideRenderError": "文档显示出错，已自动改用纯文本显示：{error}",
   "@guideRenderError": {
     "placeholders": {
       "error": {
@@ -1029,8 +1029,8 @@
   "aiPickAttachment": "选择要附加的信息",
   "aiAttachRequests": "抓包请求",
   "aiAttachRequestsSub": "从最近 30 条中多选",
-  "aiAttachEndpoints": "API 端点清单",
-  "aiAttachEndpointsSub": "自动提取全部端点与统计",
+  "aiAttachEndpoints": "接口清单",
+  "aiAttachEndpointsSub": "自动提取全部接口与统计",
   "aiAttachText": "自定义文本",
   "aiAttachTextSub": "粘贴任意内容作为上下文",
   "aiNoRequests": "暂无抓包请求",
@@ -1063,7 +1063,7 @@
   "aiInputAgent": "提问（Agent 模式：AI 可自动查数据）",
   "aiInputPlain": "输入问题",
   "aiEmptyTitle": "与 AI 对话分析抓包数据",
-  "aiEmptyHint1": "点击右上角 📎 附加多条请求 / 端点清单 / 文本",
+  "aiEmptyHint1": "点右上角 📎 可以把多条请求、接口清单或一段文字一起发给它",
   "aiEmptyHint2": "开启 🤖 Agent 模式可让 AI 自动调用 ProxyPin 功能",
   "aiToolCalled": "已调用工具 {name}",
   "@aiToolCalled": {
@@ -1115,7 +1115,7 @@
   "aiConfigSaved": "AI 配置已保存",
   "quicTitle": "QUIC 连接",
   "quicKeylogTooltip": "导入密钥日志（SSLKEYLOGFILE）后即可解密 1-RTT 流数据",
-  "quicCopySessionsTooltip": "复制会话列表（制表符分隔，可直接贴进表格）",
+  "quicCopySessionsTooltip": "复制连接列表（可直接粘贴到表格里）",
   "quicNoSni": "(无SNI)",
   "quicPacketsBytes": "{packets}包 / {bytes}",
   "@quicPacketsBytes": {
@@ -1136,7 +1136,7 @@
       }
     }
   },
-  "quicCopiedSessions": "已复制 {count} 条会话记录",
+  "quicCopiedSessions": "已复制 {count} 条连接记录",
   "@quicCopiedSessions": {
     "placeholders": {
       "count": {
@@ -1146,7 +1146,7 @@
   },
   "quicRefreshTooltip": "刷新（等待新的 QUIC 包到达）",
   "quicClearRecords": "清空记录",
-  "quicClearConfirm": "清空全部 QUIC 连接记录？已记录的会话与密钥日志不会恢复。",
+  "quicClearConfirm": "要清空所有 QUIC 连接记录吗？清掉之后就找不回来了。",
   "quicBannerNoKeylog": "仅展示 QUIC 连接级元数据（哪些域名在走 QUIC、连接统计）。HTTP/3 内容受 TLS 1.3 加密，默认无法解为明文；点右上角「钥匙」导入密钥日志（SSLKEYLOGFILE）后，命中的连接会自动解密 1-RTT 流数据；或开启「拦截 QUIC」强制定向 TCP 抓取完整请求。",
   "quicBannerKeylogLoaded": "已导入 {keys} 条密钥（覆盖 {connections} 个连接）。命中连接自动解密 1-RTT（仅客户端方向；HEADERS 按 QPACK 解码，含动态表）。未命中的连接请开启「拦截 QUIC」回落 TCP 抓取。",
   "@quicBannerKeylogLoaded": {
@@ -1355,22 +1355,22 @@
   "pinningRefreshEnv": "刷新环境",
   "pinningAndroidOnly": "仅 Android 支持",
   "pinningViewLog": "查看注入日志",
-  "pinningNotice": "仅在你拥有的设备上、对你**有授权**的目标应用使用（自己的应用，或已获书面授权的应用）。\n绕过证书固定属于对目标进程的运行时干预，未经授权使用可能违反对方协议或法律。\n本工具不内置任何第三方二进制（frida-server / Xposed 模块都不带）。",
+  "pinningNotice": "请只用在你自己的设备、以及你有权测试的应用上（自己的 App，或对方书面同意过的）。\n绕过证书固定属于对 App 运行过程的干预，没获得授权就用，可能违法或违反对方协议。\n本工具不带任何第三方程序（frida-server、Xposed 模块都不含）。",
   "pinningEnvTitle": "环境检测",
   "pinningChecking": "检测中…",
-  "pinningReady": "可以注入：设备端已具备 frida 工具",
-  "pinningNotReady": "还不能注入。需要：① root 已授权；② 设备上有 frida-inject（推荐，可脱离电脑）或 frida CLI。\n没有也行——脚本照样能生成，你把它拿到电脑上用 frida -U -f <包名> -l 脚本 注入。",
+  "pinningReady": "可以注入：手机上已经装好 frida 了",
+  "pinningNotReady": "还差一点：① 先给 root 授权；② 手机上要有 frida-inject（推荐，不用连电脑）或 frida 命令行。\n没有也能用——脚本照样能生成，你拿到电脑上执行 frida -U -f <包名> -l 脚本 就能注入。",
   "pinningStep1Title": "① 生成并部署 hook 脚本",
   "pinningStep1Hint": "覆盖常见实现：Conscrypt TrustManagerImpl、SSLContext.init、OkHttp CertificatePinner、HostnameVerifier。",
   "pinningDeploy": "部署到设备",
   "pinningScriptCopied": "脚本已复制",
   "pinningCopyScript": "复制脚本",
-  "pinningStep2Title": "② 注入到目标应用",
+  "pinningStep2Title": "② 把脚本注入到目标 App",
   "pinningPackageHint": "包名（如 com.example.app）",
-  "pinningSpawn": "启动时注入（应对「启动即校验」）",
-  "pinningAttach": "注入",
+  "pinningSpawn": "App 一启动就注入（对付「一打开就检查证书」的应用）",
+  "pinningAttach": "开始注入",
   "pinningOtherOptions": "还有别的办法吗？",
-  "pinningOtherHint": "· 先确认不是「证书没装好」：抓包自检里第 2 层才是证书固定，第 1 层装系统证书就能解决（见证书页）。\n· 有 Magisk/LSPosed 的设备，用现成的 pinning 绕过模块更省事，与本工具是并列关系。\n· Flutter 应用用 Dart 自己的根证书列表，不读系统 CA，需要专门处理。",
+  "pinningOtherHint": "· 先排除「证书没装好」：自检里第 1 层是证书、第 2 层才是证书固定；装好系统证书，第 1 层就过了（见证书页）。\n· 装了 Magisk / LSPosed 的，直接找现成的过检测模块更省事，跟本工具二选一即可。\n· Flutter 应用认的是 Dart 自己的证书列表，不看系统证书，要单独处理。",
   "cloudServerSaved": "服务端地址已保存",
   "cloudNeedCredentials": "请填写用户名和密码",
   "cloudAuthFailed": "失败：{error}",
@@ -1450,20 +1450,20 @@
   },
   "cloudInvite": "邀请",
   "sslP12FileEmpty": "读取到的文件为空，请重新选择 .p12 文件",
-  "sslAutoInstallHint": "自动安装（需 Root；以 Magisk 模块方式写入，重启生效）\n现代 Android 的 /system 与 /apex 都是只读的，所以不再直接拷贝，而是落成模块由开机时挂载",
+  "sslAutoInstallHint": "自动安装（需要 Root；装成 Magisk 模块，重启后生效）\n新系统里 /system、/apex 都是只读的，写不进去，只能做成模块让手机开机时挂载。",
   "sslAutoInstallToSystem": "一键自动安装到系统",
   "sslRemoveSystemCA": "移除系统证书",
-  "sslRemoveSystemCAConfirm": "会删除写入系统信任库（Magisk 模块）的证书，之后 HTTPS 抓包会失败。确定移除？",
+  "sslRemoveSystemCAConfirm": "会删掉之前装进系统的证书（Magisk 模块），删完之后 HTTPS 就抓不到了。确定移除？",
   "sslRemoveInstalledSystemCA": "移除已安装的系统证书",
   "sslNoModuleManager": "没有 Magisk / KernelSU / APatch？",
-  "sslRuntimeMountDesc": "用 root 直接把证书挂进系统信任库：运行时挂载，重启后失效，但完全可逆、不必重启设备。适合有 root 却没有模块管理器的机器。",
-  "sslMountToTrustStore": "Root 直挂到系统信任库",
+  "sslRuntimeMountDesc": "有 root 但没装 Magisk？点下面一键把证书装进系统，App 就会认它了。重启手机会失效，随时能一键卸掉、不留残留，也不用重启手机。",
+  "sslMountToTrustStore": "一键装进系统（需 Root）",
   "sslUnmountRuntimeCA": "卸载直挂",
-  "sslUnmountRuntimeCAConfirm": "会卸载运行时挂载的系统证书，之后 HTTPS 抓包会失败。确定卸载？",
-  "sslRestartZygote": "重启 zygote（让已启动的应用立刻生效）",
-  "sslAndroid13MountHint": "Android 13: 将证书挂载到 '/system/etc/security/cacerts' 目录",
-  "sslAndroid14MountHint": "Android 14: 将证书挂载到 '/apex/com.android.conscrypt/cacerts' 目录",
-  "sslAndroidCaInstallNote": "注意: 安装时要选【CA 证书】，选成【VPN 和应用证书】不会被应用信任；Android 14+ 的 CA 目录在 APEX 里，只把文件拷进去不一定生效，一般需要模块做 bind mount",
+  "sslUnmountRuntimeCAConfirm": "会卸掉临时装进系统的证书，卸完之后 HTTPS 就抓不到了。确定卸载？",
+  "sslRestartZygote": "立即生效（会短暂重启所有 App）",
+  "sslAndroid13MountHint": "Android 13：证书会装到 /system/etc/security/cacerts",
+  "sslAndroid14MountHint": "Android 14：证书会装到 /apex/com.android.conscrypt/cacerts",
+  "sslAndroidCaInstallNote": "注意：手动装证书时一定要选【CA 证书】，选成【VPN 和应用证书】应用不会认。Android 14 以上系统位置特殊，手动复制常常不生效——用下面的「一键装进系统」最稳。",
   "sslNoModuleDirMsg": "未检测到 Magisk / KernelSU / APatch（无 /data/adb/modules）：请先下载证书，再用模块方式手动安装",
   "sslInstallFailedRoot": "安装失败（{output}），请确认已授予 root 权限",
   "@sslInstallFailedRoot": {
@@ -1473,7 +1473,7 @@
       }
     }
   },
-  "sslModuleInstalled": "已以模块形式安装，重启手机后生效（Android 14+ 会自动并入 APEX 的 CA 目录）",
+  "sslModuleInstalled": "已装好模块，重启手机后生效（Android 14 以上会自动装到正确位置）",
   "sslAutoInstallFailedRoot": "自动安装失败：{error}，请确认已授予 root 权限",
   "@sslAutoInstallFailedRoot": {
     "placeholders": {
@@ -1492,9 +1492,9 @@
       }
     }
   },
-  "sslMountingGrantRoot": "正在挂载，请在弹出的授权框里允许 root",
-  "sslMountedTrustStore": "已挂进系统信任库（重启后失效）。重启目标应用即可生效，或点下方「重启 zygote」",
-  "sslMountFailed": "挂载失败：{message}",
+  "sslMountingGrantRoot": "正在安装，请在弹窗里点「允许」给 root 权限",
+  "sslMountedTrustStore": "已装进系统（重启手机后失效）。把要抓的那个 App 重启一下就能生效，或点下面「立即生效」。",
+  "sslMountFailed": "安装失败：{message}",
   "@sslMountFailed": {
     "placeholders": {
       "message": {
@@ -1502,7 +1502,7 @@
       }
     }
   },
-  "sslUnmountedRestored": "已卸载直挂，系统信任库恢复原状",
+  "sslUnmountedRestored": "已卸载，系统证书恢复原样。",
   "sslUnmountFailed": "卸载失败：{message}",
   "@sslUnmountFailed": {
     "placeholders": {
@@ -1511,7 +1511,7 @@
       }
     }
   },
-  "sslZygoteRestarted": "已通知 zygote 重启，所有应用会短暂重启",
+  "sslZygoteRestarted": "已让所有 App 重新加载，手机会闪一下，属正常。",
   "sslZygoteRestartFailed": "重启失败：{message}",
   "@sslZygoteRestartFailed": {
     "placeholders": {
@@ -1521,7 +1521,7 @@
     }
   },
   "sslCertNotInstalled": "证书未安装",
-  "sslTapInstallRootCA": "点击“安装根证书”进行安装",
+  "sslTapInstallRootCA": "点下面的「安装根证书」就能装",
   "sslCertNotTrusted": "证书未信任",
   "sslCertInstalledTrusted": "证书已安装并信任",
   "sslGuide": "指引",
@@ -1885,7 +1885,7 @@
   "mcpConnTokenAuthDisabled": "已关闭：同一网络内任何设备都可读取抓包内容！",
   "mcpConnKeepAlive": "后台保活",
   "mcpConnKeepAliveDesc": "把本应用加入电池优化白名单并解除后台限制，降低抓包与 MCP 服务被系统杀掉的可能（需 Shizuku / root / Dhizuku 之一）",
-  "mcpConnStrictValidation": "参数强校验",
+  "mcpConnStrictValidation": "严格校验参数",
   "mcpConnStrictValidationDesc": "按工具声明的 inputSchema 校验参数，尽早提示调用错误（立即生效）",
   "mcpConnTokenNotGenerated": "未生成（开启局域网访问后自动生成）",
   "mcpConnTokenCopied": "令牌已复制",
@@ -1924,7 +1924,7 @@
   "mcpConnHealthCheck": "Health Check（健康检查）",
   "mcpConnHealthCheckUrlCopied": "已复制 Health Check URL",
   "mcpConnFloatingBall": "悬浮球",
-  "mcpConnFloatingBallDesc": "桌面悬浮球显示 MCP 运行状态，点击弹出快捷面板；前台服务可提升应用保活能力",
+  "mcpConnFloatingBallDesc": "悬浮球显示 MCP 是否在跑，点一下弹出快捷面板；前台服务能让后台更不容易被杀。",
   "mcpConnFloatingBallColorDesc": "颜色 #{hex} · 透明度 {percent}%",
   "@mcpConnFloatingBallColorDesc": {
     "placeholders": {
@@ -1985,7 +1985,7 @@
   "mcpConnOverlayGranted": "已授权\"显示在其他应用上层\"",
   "mcpConnOverlayNotGranted": "未授权——点击前往系统设置开启，否则悬浮球无法显示",
   "mcpConnEnableFloatingBall": "启用悬浮球",
-  "mcpConnFloatingBallEnabledDesc": "悬浮窗展示 MCP 状态，提升保活能力",
+  "mcpConnFloatingBallEnabledDesc": "用悬浮球显示 MCP 状态，后台更不容易被杀",
   "mcpConnFloatingBallPermissionRequired": "请先完成上方悬浮球权限授权",
   "mcpConnAutoDock": "3 秒无操作自动贴边",
   "mcpConnAutoDockDesc": "悬浮球自动吸附屏幕边缘，避免遮挡",
@@ -2040,7 +2040,7 @@
   "mcpConnToolGetStatistics": "获取抓包统计信息",
   "mcpConnToolCompareRequests": "对比两个请求的差异",
   "mcpConnToolFindSimilarRequests": "查找与指定请求相似的请求",
-  "mcpConnToolExtractApiEndpoints": "从抓包记录中提取 API 端点聚合信息",
+  "mcpConnToolExtractApiEndpoints": "从抓到的请求里汇总出接口清单（地址、参数等）",
   "mcpConnToolFindSensitiveData": "搜索请求中的敏感数据（密码、密钥、手机号、身份证等）",
   "mcpConnToolGetCookieInfo": "分析域名的 Cookie（值、HttpOnly、Secure、过期时间）",
   "mcpConnToolGetDomainSummary": "统计域名的流量摘要（方法、状态码、平均耗时、错误数）",
@@ -2071,8 +2071,8 @@
   "mcpConnToolOpenAccessibilitySettings": "打开系统无障碍设置页",
   "mcpConnToolShell": "执行 Shell 命令（支持 Root/Shizuku/Dhizuku 模式）",
   "auditPlaintextHttpTitle": "明文 HTTP 传输敏感信息",
-  "auditPlaintextHttpDetailUrl": "该请求通过 http:// 明文发送，且 URL 查询串中包含密码 / 令牌等敏感字段，中间人可直接读取。",
-  "auditPlaintextHttpDetailBody": "该请求通过 http:// 明文发送，且请求体中包含密码 / 令牌等敏感字段，中间人可直接读取。",
+  "auditPlaintextHttpDetailUrl": "这条请求用 http:// 明文发出，网址参数里还带着密码、令牌，路上谁都能看到。",
+  "auditPlaintextHttpDetailBody": "这条请求用 http:// 明文发出，请求体里还带着密码、令牌，路上谁都能看到。",
   "auditPlaintextHttpSuggestion": "改用 HTTPS；确需 HTTP 时避免在 URL 与请求体中直接承载凭据。",
   "auditPlaintextBodyTitle": "明文 HTTP 传输请求体",
   "auditPlaintextBodyDetail": "该请求使用 http:// 且带请求体，内容在链路上完全明文。",
@@ -2102,9 +2102,9 @@
       }
     }
   },
-  "auditCookieFlagSuggestion": "为会话 Cookie 补全 Secure、HttpOnly，并按需设置 SameSite=Lax/Strict。",
+  "auditCookieFlagSuggestion": "给登录用的 Cookie 加上 Secure、HttpOnly 标记，再按需要设置 SameSite（Lax 或 Strict）。",
   "auditMissingHeadersTitle": "HTML 响应缺少安全头",
-  "auditMissingHeadersDetail": "缺少 {missing}，浏览器侧的内容嗅探与脚本注入缺少额外约束。",
+  "auditMissingHeadersDetail": "响应里少了 {missing}，浏览器更容易猜错内容类型、或被塞进脚本。建议补上。",
   "@auditMissingHeadersDetail": {
     "placeholders": {
       "missing": {
@@ -2148,7 +2148,7 @@
       }
     }
   },
-  "auditPiiSuggestion": "对个人数据做脱敏或按最小必要原则返回，并遵守数据合规要求。",
+  "auditPiiSuggestion": "接口返回的个人信息建议打码，只给必要的字段，并遵守相关法规。",
   "auditErrorTitle": "错误响应泄露内部信息",
   "auditErrorDetail": "响应中出现调试 / 堆栈特征（{trace}），可能暴露框架、路径或数据库结构。",
   "@auditErrorDetail": {
@@ -2171,8 +2171,8 @@
   "auditHttp10Title": "使用过时的 HTTP/1.0",
   "auditHttp10Detail": "该连接使用 HTTP/1.0，连接复用与缓存策略较落后。",
   "auditHttp10Suggestion": "升级到 HTTP/1.1 或 HTTP/2。",
-  "auditSqlTitle": "疑似 SQL 注入痕迹（数据库报错回显）",
-  "auditSqlDetail": "响应中出现了 {signature} 的数据库错误特征，说明该接口把 SQL 错误直接回显给了调用方；若这条错误由客户端可控参数触发，则存在 SQL 注入风险。",
+  "auditSqlTitle": "疑似 SQL 注入（把数据库报错暴露出来了）",
+  "auditSqlDetail": "响应里出现了 {signature} 这种数据库报错内容，说明接口把数据库错误直接吐给了调用方。如果这个错误能被客户端传参触发，就存在 SQL 注入风险。",
   "@auditSqlDetail": {
     "placeholders": {
       "signature": {
@@ -2228,11 +2228,11 @@
   "diagSummaryOk": "抓包链路基本就绪",
   "diagSummaryIssues": "检测到会影响抓包的问题，见 items 中的 error 项",
   "diagSuggestStartProxy": "先启动抓包服务（调用 start_proxy 工具，或让用户在界面上点「开始抓包」）",
-  "diagSuggestInstallCert": "安装并信任根证书：HTTPS 未信任时会成片出现握手失败（列表里的感叹号包）",
+  "diagSuggestInstallCert": "先安装并信任根证书：证书没装好时，HTTPS 会一片连接失败（列表里带感叹号的请求）",
   "diagSuggestSystemProxy": "系统代理没有指向本应用：让用户在「偏好设置」打开系统代理，或确认是否被其它代理工具接管",
-  "diagSuggestPinning": "存在疑似证书固定的域名：这类应用需要在设备上做运行时干预才能解密，常见做法是靠 hook 框架（如 LSPosed 配合 TrustMeAlready 这类模块）。请注意这属于对目标应用的干预，只应在你自己的设备、且在你拥有授权的范围内使用",
-  "diagSuggestNoTraffic": "当前没有新流量：先在被抓的应用/浏览器里发起一次请求，再让 AI 读取会话列表",
-  "diagSuggestChecklist": "若以上都正常仍抓不到，按这几类排查：① 目标走 QUIC/HTTP3（手机开「拦截 QUIC」、浏览器关 QUIC）；② Flutter 应用（Dart 自带根证书列表，不读系统 CA）；③ 应用启用了证书固定（SSL Pinning）—— 若上方出现「SSL 证书固定（疑似）」项即命中；④ Windows 上自带网络栈的进程（需「Windows 接管增强」或 TUN 类工具）；⑤ Mac App Store 沙箱应用（需 Network Extension/TUN，本仓未签名构建无法接管）",
+  "diagSuggestPinning": "有些域名像是开了证书固定：这类 App 要在手机上干预它的运行过程才能解密，常见做法是用 LSPosed 这类框架配 TrustMeAlready 之类的模块。请务必只用在你自己的设备、以及你有权测试的应用上。",
+  "diagSuggestNoTraffic": "现在还没有新流量：先打开要抓的 App 或浏览器随便点一下，再让 AI 去读记录。",
+  "diagSuggestChecklist": "上面都正常还是抓不到？按这几条对号入座：\n① 对方走的是 QUIC / HTTP3 —— 手机请开「拦截 QUIC」，浏览器请关掉 QUIC；\n② 是 Flutter 应用 —— 它只认自己那套证书，装了系统证书也没用；\n③ App 开了证书固定 —— 看上方有没有「SSL 证书固定（疑似）」，有就是它；\n④ Windows 上自带网络的程序 —— 需要开「Windows 接管增强」，或用 TUN 类工具；\n⑤ Mac App Store 沙箱应用 —— 需要 Network Extension / TUN，本仓库的未签名版本接管不了。",
   "diagItemProxyService": "代理服务",
   "diagProxyListening": "正在监听 127.0.0.1:{port}",
   "@diagProxyListening": {
@@ -2272,13 +2272,13 @@
   },
   "diagItemTrafficEntry": "流量入口",
   "diagMobileVpnEntry": "移动端由 VPN 通道接管 IP 层流量（无需系统代理）",
-  "diagCaInSystemStore": "已在系统信任库中",
+  "diagCaInSystemStore": "已装进系统证书里",
   "diagCaUserStore": "只在「用户证书库」：Android 7 起应用默认不信任用户证书，所以会出现“证书装了但 HTTPS 抓不到或报错”。要全应用生效需 root 装进系统证书目录（Android 14+ 是 /apex/com.android.conscrypt/cacerts），或给目标 App 配 network_security_config",
   "diagCaInstalledUnknown": "已安装（未能区分系统库/用户库）",
-  "diagCaMissingAndroid": "未检测到根证书：去「HTTPS 证书 → 安装根证书」按引导安装；安装时请选「CA 证书」而不是「VPN 和应用证书」",
-  "diagCaMissingDesktop": "未检测到根证书，HTTPS 会握手失败（列表里表现为成片的感叹号包）",
+  "diagCaMissingAndroid": "没检测到根证书：去「HTTPS 证书 → 安装根证书」按提示装一遍。装的时候记得选【CA 证书】，别选【VPN 和应用证书】。",
+  "diagCaMissingDesktop": "没检测到根证书，HTTPS 会一片连接失败（列表里带感叹号的请求）",
   "diagItemCaRoot": "CA 根证书",
-  "diagCaDesktopHint": "桌面端请在「证书」页确认根证书已装入系统受信任根",
+  "diagCaDesktopHint": "电脑上请到「证书」页确认根证书已经装进系统的「受信任的根证书」里",
   "diagReadFailed": "读取失败：{error}",
   "@diagReadFailed": {
     "placeholders": {
@@ -2288,7 +2288,7 @@
     }
   },
   "diagItemSslPinning": "SSL 证书固定（疑似）",
-  "diagSslPinningDetail": "CA 证书已就绪，但有 {count} 个域名只建立了 TLS 隧道、内容始终读不到：{sample}。这通常意味着对方启用了证书固定（SSL Pinning），或自带根证书列表不读系统 CA。注意这类应用并不是\"没网络\"——它拒绝了本工具的证书，所以主动断开了连接。",
+  "diagSslPinningDetail": "CA 证书没问题，但有 {count} 个域名只连上了加密通道、内容读不到：{sample}。一般是因为对方开了证书固定，或者 App 自带证书列表、不看系统的。注意这类 App 不是没网——它是认出证书不对，主动把连接断了。",
   "@diagSslPinningDetail": {
     "placeholders": {
       "count": {
@@ -2405,9 +2405,9 @@
   "diagPageCauseQuicTitle": "走 QUIC / HTTP3 的目标",
   "diagPageCauseQuicDesc": "手机端开「拦截 QUIC」让应用回落 TCP；桌面浏览器可在 chrome://flags 里关闭 QUIC 后重试",
   "diagPageCauseFlutterTitle": "Flutter 应用",
-  "diagPageCauseFlutterDesc": "Dart 自带一份根证书列表，不读系统 CA —— 装了证书也抓不到 HTTPS。需在应用侧信任，或改抓其网络库调用",
-  "diagPageCausePinningTitle": "启用了证书固定（SSL Pinning）的应用",
-  "diagPageCausePinningDesc": "应用内置了证书指纹，MITM 会被拒绝，表现为成片的握手失败（感叹号包）",
+  "diagPageCauseFlutterDesc": "Dart（Flutter）自带一份证书列表，不看系统证书——所以装了证书也抓不到它的 HTTPS。要么在 App 内部信任，要么改抓它的网络库。",
+  "diagPageCausePinningTitle": "开了证书固定（SSL Pinning）的应用",
+  "diagPageCausePinningDesc": "App 里写死了证书指纹，中间人证书会被拒绝，表现就是一片连接失败（带感叹号）。",
   "diagPageCauseWinStackTitle": "Windows 上自带网络栈的进程",
   "diagPageCauseWinStackDesc": "系统代理管不到它们。用「偏好设置 → Windows 接管增强」，仍不行则把 ProxyPin 挂到支持 TUN 的工具下",
   "diagPageCauseMasTitle": "Mac App Store 上架的应用",
@@ -2453,9 +2453,9 @@
   "prefMtls": "双向认证 (mTLS)",
   "prefMtlsChainLabel": "客户端证书链 (PEM)",
   "prefMtlsKeyLabel": "客户端私钥 (PEM，未加密)",
-  "prefMtlsHint": "证书链包含 -----BEGIN CERTIFICATE-----，私钥包含 -----BEGIN PRIVATE KEY-----（不支持加密私钥）。配置后对新建立的 HTTPS 连接生效。",
+  "prefMtlsHint": "证书链文件里要有 -----BEGIN CERTIFICATE-----，私钥文件里要有 -----BEGIN PRIVATE KEY-----（加密过的私钥不支持）。设置后，之后新建的 HTTPS 连接生效。",
   "prefMtlsSelectBoth": "请先选择证书链与私钥文件",
-  "prefMtlsChainInvalid": "证书链文件格式不正确（需要 PEM）",
+  "prefMtlsChainInvalid": "证书链文件格式不对，需要 PEM 格式",
   "prefMtlsKeyInvalid": "私钥文件格式不正确（需要未加密 PEM）",
   "prefMtlsLoadFailed": "证书加载失败，请检查文件内容",
   "prefMtlsEnabled": "mTLS 已启用",
@@ -3069,7 +3069,7 @@
     }
   },
   "fuzzDictTitle": "Fuzz 字典",
-  "fuzzDictTips": "点一个字典即可把它填进当前注入项。工具不预置攻击载荷库 —— 内置的只是边界值 / 类型异常串，其余的你自己填、导入或用脚本算。",
+  "fuzzDictTips": "点一个字典就能填进当前测试项。工具里不预置攻击载荷，自带的只是边界值和异常格式的字符串，其余请自己填、导入或用脚本生成。",
   "fuzzDictNoCustom": "还没有自定义字典",
   "fuzzDictImportFile": "从文件导入",
   "fuzzDictNEntries": "{count} 条",
@@ -3105,7 +3105,7 @@
   "fuzzDictScriptLabel": "脚本（可选，JS；把数组赋给 result）",
   "fuzzDictTestRun": "试跑",
   "fuzzDictScriptNote": "脚本的产物会和上面的取值合并去重",
-  "apiEpTitle": "API 端点 ({count})",
+  "apiEpTitle": "接口列表（{count}）",
   "@apiEpTitle": {
     "placeholders": {
       "count": {
@@ -3113,8 +3113,8 @@
       }
     }
   },
-  "apiEpSearchHint": "搜索端点...",
-  "apiEpTotalEndpoints": "总端点",
+  "apiEpSearchHint": "搜索接口...",
+  "apiEpTotalEndpoints": "接口总数",
   "apiEpResourceGroups": "资源组",
   "apiEpTotalRequests": "总请求",
   "apiEpPathCalls": "{path} · {count} 次请求",
@@ -3139,7 +3139,7 @@
       }
     }
   },
-  "apiEpNoMatch": "没有找到匹配的端点",
+  "apiEpNoMatch": "没有找到匹配的接口",
   "apiEpGroupView": "分组视图",
   "apiEpListView": "列表视图",
   "apiEpGroupByDomain": "按域名分组",
@@ -3272,7 +3272,7 @@
   "toolboxNavLogView": "日志查看",
   "toolboxNavWaf": "WAF 变异",
   "toolboxNavWafTip": "载荷等价写法变异 + WAF 特征比对 + 主动探测（探测会真发请求，需授权）",
-  "toolboxNavPinningTip": "证书固定绕过辅助：检测 frida 环境 · 生成/部署 hook 脚本 · 一键注入",
+  "toolboxNavPinningTip": "过证书固定辅助：检查手机有没有 frida · 生成并部署 hook 脚本 · 一键注入",
   "toolboxNavWorkspaceTip": "按项目/环境分开管理抓包（标准 HAR 存储）· 可接自定义服务端做共享/备份",
   "toolboxNavCloudTip": "账号 · 工作区云端托管 · 多人实时协同（自部署服务端）",
   "toolboxNavAiTip": "AI 对话分析抓包数据（支持 Agent 模式）",
@@ -3373,8 +3373,8 @@
     }
   },
   "pcCertMacTrustHint": "安装完双击选择“始终信任此证书”。 如安装打开失败，请导出证书拖拽到系统证书里",
-  "pcCertWinTrustHint": "选择“受信任的根证书颁发机构”",
-  "pcCertLinuxGuide": "安装证书到本系统，以Ubuntu为例 下载证书：\n先把证书复制到 /usr/local/share/ca-certificates/，然后执行 update-ca-certificates 即可。\n其他系统请网上搜索安装根证书",
+  "pcCertWinTrustHint": "请选「受信任的根证书颁发机构」",
+  "pcCertLinuxGuide": "装到本机系统（以 Ubuntu 为例）：先把下载的证书复制到 /usr/local/share/ca-certificates/，再执行 sudo update-ca-certificates 就装好了。\n其他系统请自行搜索「安装根证书」的方法。",
   "pcCertFirefoxHint": "提示：FireFox有自己的信任证书库，所以要手动在设置中导入需要导入的证书。",
   "pcCertTrustTitle": "通过安装并信任 ProxyPin CA",
   "pcCertTrustDesc": "ProxyPin 可以动态解密 HTTPS 流量以展示原始请求/响应。",
@@ -3703,7 +3703,7 @@
   "securityVerifHsts": "HSTS —— 让浏览器以后只用 HTTPS 访问",
   "securityVerifCsp": "CSP —— 限制页面能加载执行哪些资源",
   "securityVerifNoSniff": "禁止浏览器自行猜测 Content-Type",
-  "securityVerifFrame": "防止页面被别的站点嵌套（点击劫持）",
+  "securityVerifFrame": "别让别的网站把你的页面套进它的框架里（防点击劫持）",
   "securityVerifReferrer": "控制 Referer 带出去多少信息",
   "mcpSchedMon": "一",
   "mcpSchedTue": "二",
@@ -3811,7 +3811,7 @@
   "capturePlanTplMobileStepConnectTitle": "确认手机已连上代理",
   "capturePlanTplMobileStepConnectDesc": "把手机 Wi-Fi 代理指向本机局域网地址与抓包端口，确认能看到其他 App 的请求。",
   "capturePlanTplMobileStepCaTitle": "信任根证书",
-  "capturePlanTplMobileStepCaDesc": "在手机上安装并完全信任 ProxyPin 根证书，否则 HTTPS 正文只能看到密文。",
+  "capturePlanTplMobileStepCaDesc": "在手机上装好 ProxyPin 根证书并完全信任它，不然 HTTPS 内容只能看到密文。",
   "capturePlanTplMobileStepTargetTitle": "只留目标 App",
   "capturePlanTplMobileStepTargetDesc": "关闭其他应用的后台活动，或用「应用筛选」只保留目标 App，减少无关请求干扰。",
   "capturePlanTplMobileStepReproduceTitle": "复现并核对",
@@ -3824,7 +3824,7 @@
   "capturePlanTplApiStepCollectTitle": "走完整个功能流程",
   "capturePlanTplApiStepCollectDesc": "在客户端里把目标功能的每个步骤都操作一遍，确保接口尽量抓全。",
   "capturePlanTplApiStepCatalogTitle": "导出接口清单",
-  "capturePlanTplApiStepCatalogDesc": "打开「API 端点」工具，从抓包数据提取端点，可导出 OpenAPI / Postman / JSON。",
+  "capturePlanTplApiStepCatalogDesc": "打开「接口列表」工具，把抓到的接口汇总出来，可以导出成 OpenAPI / Postman / JSON。",
   "fuzzerBodyTruncated": "[响应过大，仅保留前 {kb} KB]",
   "@fuzzerBodyTruncated": {
     "placeholders": {
@@ -4023,7 +4023,7 @@
   "signParamsHint": "这些参数随版本变化，请按目标 App 版本调整。",
   "toolboxDevice": "设备指纹",
   "deviceModel": "机型",
-  "deviceHint": "选择机型后点击「生成」，合成一份自洽的设备指纹。",
+  "deviceHint": "先选机型，再点「生成」，就会造出一份前后一致的设备信息。",
   "appUpdateSourceLbl": "来源",
   "appUpdateSourceUpstream": "上游 ProxyPin",
   "appUpdateSourceFork": "本分支（proxypin-with-mcp）",
@@ -4048,7 +4048,7 @@
   "capturePlanTplDouyinWebStepSignDesc": "抖音 Web 接口带 a_bogus / X-Bogus 参数，可用工具箱「字节签名 → Web 签名」计算，或用内置脚本模板自动补。",
   "signMedusaHint": "多维环境 Protobuf 动态挑战签名（Android）。URL 必填，查询串会自动解析进 protobuf。",
   "signMedusaDevice": "设备上下文 JSON（可选）",
-  "signMedusaSalt": "lanusk / 会话盐（可选）",
+  "signMedusaSalt": "lanusk / 会话盐值（可不填）",
   "signTtHint": "TTEncrypt v5 载荷加密（device_register 等），密文以 746305100000 开头，内部先做 gzip。",
   "signTtPlain": "明文（加密）",
   "signTtCipher": "密文 Hex（解密）",
