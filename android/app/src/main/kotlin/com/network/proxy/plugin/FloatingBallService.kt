@@ -67,6 +67,7 @@ class FloatingBallService : Service() {
     private var ballColor = 0xFF6750A4.toInt()
     private var ballAlpha = 255
     private var autoDock = true
+    private var lastAutoDock: Boolean? = null
 
     private val handler = Handler(Looper.getMainLooper())
     private var dockRunnable: Runnable? = null
@@ -125,8 +126,15 @@ class FloatingBallService : Service() {
             return START_NOT_STICKY
         }
 
+        val autoDockChanged = lastAutoDock != null && lastAutoDock != autoDock
+        lastAutoDock = autoDock
+
         if (ballView == null) {
             createBall()
+        } else if (autoDockChanged) {
+            // 开关切换时直接重建球视图（沿用原位置）。用户实测「关闭悬浮球再打开」能恢复正常，
+            // 说明异常来自「复用同一个视图实例」时的渲染状态；重建是已验证有效的修正方式。
+            recreateBallKeepingPosition()
         } else {
             refreshBallStyle()
         }
@@ -249,6 +257,22 @@ class FloatingBallService : Service() {
         val v = ballView ?: return
         v.setStyle(ballColor, ballAlpha)
         Log.i(TAG, "applyStyle color=${Integer.toHexString(ballColor)} alpha=$ballAlpha viewAlpha=${v.alpha}")
+    }
+
+    /** 重建球视图：移除旧的、重新创建，并让球回到屏内边缘。
+     *
+     *  用户实测「关掉悬浮球再打开」能恢复正常 —— 说明异常来自**复用同一个视图实例**
+     *  时的渲染状态（也可能叠加残留的越界位置）。这里直接走那条已验证有效的路径：
+     *  重建视图 + `dockToEdge()`（把球放回屏内边缘），而不是保留旧位置。 */
+    private fun recreateBallKeepingPosition() {
+        try {
+            ballView?.let { windowManager.removeView(it) }
+        } catch (_: Exception) {}
+        ballView = null
+        ballParams = null
+        createBall() // 内部：addView + dockToEdge（回屏内边缘）+（autoDock 时）scheduleRetract
+        refreshBallStyle()
+        Log.i(TAG, "recreateBall x=${ballParams?.x} alpha=$ballAlpha")
     }
 
     /** 将配置写回 Flutter shared_preferences，保证设置页与悬浮球面板状态一致 */
