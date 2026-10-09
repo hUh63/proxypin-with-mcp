@@ -607,7 +607,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
             ],
           ),
           const Divider(height: 1, thickness: 0.3),
-          _snippetBar(),
           Expanded(
             child: _aligned
                 ? _alignedView()
@@ -633,6 +632,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   ),
               ]),
             ),
+          _snippetBar(),
         ]),
       ),
     );

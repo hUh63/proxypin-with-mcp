@@ -226,7 +226,6 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
     final body = Column(children: [
       Align(alignment: Alignment.centerRight, child: _toolbar()),
       const Divider(height: 1, thickness: 0.3),
-      _snippetBar(),
       TabBar(
         controller: _tabs,
         isScrollable: false,
@@ -251,6 +250,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
           ),
         ),
       ),
+      _snippetBar(),
     ]);
 
     if (widget.windowId != null && Platform.isWindows) {

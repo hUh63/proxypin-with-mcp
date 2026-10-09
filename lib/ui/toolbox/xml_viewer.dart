@@ -183,8 +183,8 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
       body: Column(children: [
         Align(alignment: Alignment.centerRight, child: _toolbar()),
         const Divider(height: 1, thickness: 0.3),
-        _snippetBar(),
         Expanded(child: _textView()),
+        _snippetBar(),
       ]),
     );
   }

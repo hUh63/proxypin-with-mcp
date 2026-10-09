@@ -243,8 +243,12 @@ class FloatingBallService : Service() {
         scheduleRetract()
     }
 
+    /** 样式的唯一出口：把当前颜色 / 透明度应用到球视图。
+     *  位置变化（贴边 / 收纳 / 唤醒）不再自行改动透明度，一律回到这里重申。 */
     private fun refreshBallStyle() {
-        ballView?.setStyle(ballColor, ballAlpha)
+        val v = ballView ?: return
+        v.setStyle(ballColor, ballAlpha)
+        Log.i(TAG, "applyStyle color=${Integer.toHexString(ballColor)} alpha=$ballAlpha viewAlpha=${v.alpha}")
     }
 
     /** 将配置写回 Flutter shared_preferences，保证设置页与悬浮球面板状态一致 */
@@ -285,7 +289,7 @@ class FloatingBallService : Service() {
         }
 
         val title = TextView(this).apply {
-            text = "悬浮球"
+            text = "悬浮球 · 透明度 ${ballAlpha * 100 / 255}%"
             setTextColor(Color.argb(190, 255, 255, 255))
             textSize = 10f
             letterSpacing = 0.08f
@@ -414,10 +418,11 @@ class FloatingBallService : Service() {
         params.x = if (center < screen / 2) screen - sizePx - 8 else 8
         ballView?.let {
             it.docked = false
-            it.alpha = ballAlpha.coerceIn(30, 255) / 255f
             try {
                 windowManager.updateViewLayout(it, params)
             } catch (_: Exception) {}
+            // 位置变化后重申样式：透明度只由 refreshBallStyle 决定
+            refreshBallStyle()
         }
     }
 
@@ -440,11 +445,11 @@ class FloatingBallService : Service() {
         params.x = if (center < screen / 2) screen - sizePx / 3 else -(2 * sizePx / 3)
         ballView?.let {
             it.docked = true
-            // 透明度始终等于用户设定值（幂等赋值，防止任何残留状态）
-            it.alpha = ballAlpha.coerceIn(30, 255) / 255f
             try {
                 windowManager.updateViewLayout(it, params)
             } catch (_: Exception) {}
+            // 位置变化后重申样式：透明度只由 refreshBallStyle 决定
+            refreshBallStyle()
         }
     }
 
@@ -453,7 +458,6 @@ class FloatingBallService : Service() {
         val view = ballView ?: return
         if (!view.docked) return
         view.docked = false
-        view.alpha = ballAlpha.coerceIn(30, 255) / 255f
         val params = ballParams ?: return
         val dm = resources.displayMetrics
         val sizePx = ballSizePx()
@@ -461,6 +465,8 @@ class FloatingBallService : Service() {
         try {
             windowManager.updateViewLayout(view, params)
         } catch (_: Exception) {}
+        // 位置变化后重申样式：透明度只由 refreshBallStyle 决定
+        refreshBallStyle()
     }
 
     private fun cancelDock() {

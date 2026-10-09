@@ -115,6 +115,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   Future<void> _loadFloatingBallConfig() async {
     _overlayPermissionGranted = await _queryOverlayPermission();
     final prefs = await SharedPreferences.getInstance();
+    // native 服务 / 悬浮球面板会直接写 FlutterSharedPreferences，Dart 的内存缓存
+    // 不会自动失效——必须 reload，否则会读到过期样式。
+    await prefs.reload();
     if (!mounted) return;
     setState(() {
       // 启用默认关闭（首次/未配置时），用户开启后记住选择
@@ -131,6 +134,9 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   /// 从偏好同步悬浮球状态（应用切回前台时调用，保持与悬浮球面板"关闭悬浮球"操作一致）
   Future<void> _syncFloatingBallFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
+    // native 直接写 FlutterSharedPreferences，Dart 缓存不会自动失效——
+    // 不 reload 就会把「面板刚改过的样式」用旧值覆盖回去。
+    await prefs.reload();
     if (!mounted) return;
     setState(() {
       floatingBallEnabled = prefs.getBool('floatingBallEnabled') ?? false;
@@ -167,6 +173,8 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     final loc = AppLocalizations.of(context)!;
     try {
       final prefs = await SharedPreferences.getInstance();
+      // 以磁盘上的最新值为准（native 面板可能刚改过）
+      await prefs.reload();
       final effectiveColor = prefs.getInt('floatingBallColor') ?? floatingBallColor;
       final effectiveAlpha = prefs.getInt('floatingBallAlpha') ?? floatingBallAlpha;
       final result = await _floatingChannel.invokeMethod(floatingBallEnabled ? 'start' : 'stop', {

@@ -126,16 +126,10 @@ class _SnippetBarState extends State<SnippetBar> {
       );
     }
 
+    // 展开态：条目在上、操作行在下 —— 因为输入行位于页面底部，这样展开时是往上生长。
     return Padding(
       padding: const EdgeInsets.only(left: 8, right: 6, top: 2, bottom: 2),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text(localizations.editorInsertSymbol, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-          const Spacer(),
-          _iconBtn(Icons.unfold_less, localizations.snippetCollapse, () => setState(() => _expanded = false)),
-          _iconBtn(Icons.tune, localizations.editorManage, _manage),
-        ]),
-        const SizedBox(height: 2),
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 170),
           child: SingleChildScrollView(
@@ -144,6 +138,13 @@ class _SnippetBarState extends State<SnippetBar> {
                 : Wrap(spacing: 6, runSpacing: 6, children: _items.map(_chip).toList()),
           ),
         ),
+        const SizedBox(height: 2),
+        Row(children: [
+          Text(localizations.editorInsertSymbol, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          const Spacer(),
+          _iconBtn(Icons.unfold_less, localizations.snippetCollapse, () => setState(() => _expanded = false)),
+          _iconBtn(Icons.tune, localizations.editorManage, _manage),
+        ]),
       ]),
     );
   }

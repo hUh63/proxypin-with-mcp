@@ -882,8 +882,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         body: Column(children: [
           _toolbar(),
           const Divider(height: 1, thickness: 0.3),
-          _snippetBar(),
           Expanded(child: _textView()),
+          _snippetBar(),
         ]),
       ),
     );
