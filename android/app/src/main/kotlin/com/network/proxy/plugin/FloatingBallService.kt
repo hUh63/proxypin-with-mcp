@@ -289,7 +289,8 @@ class FloatingBallService : Service() {
         }
 
         val title = TextView(this).apply {
-            text = "悬浮球 · 透明度 ${ballAlpha * 100 / 255}%"
+            val hex = String.format("#%06X", ballColor and 0xFFFFFF)
+            text = "悬浮球 · 透明度 ${ballAlpha * 100 / 255}% · $hex"
             setTextColor(Color.argb(190, 255, 255, 255))
             textSize = 10f
             letterSpacing = 0.08f
@@ -453,18 +454,28 @@ class FloatingBallService : Service() {
         }
     }
 
-    /** 触碰/唤起时从收纳状态恢复：位置拉回屏内、透明度还原 */
+    /** 从收纳 / 任何"越界"状态把球拉回屏内（透明度不变）。
+     *
+     *  注意：这里**不再依赖 `docked` 标志**——收纳位置（x 越界）本身就是唯一判据。
+     *  之前用 `if (!view.docked) return` 早退，一旦标志与实际位置不一致（例如
+     *  retract 与 cancel 的时序交错），球就会卡在"只露一小块"的收纳位，
+     *  用户看上去就是"球变暗 / 变小了"。 */
     private fun wakeFromDock() {
         val view = ballView ?: return
-        if (!view.docked) return
-        view.docked = false
         val params = ballParams ?: return
         val dm = resources.displayMetrics
         val sizePx = ballSizePx()
-        params.x = if (params.x < 0) 8 else (dm.widthPixels - sizePx - 8).coerceAtLeast(8)
+        val minX = 8
+        val maxX = (dm.widthPixels - sizePx - 8).coerceAtLeast(minX)
+        val targetX = params.x.coerceIn(minX, maxX)
+        val outOfScreen = params.x < minX || params.x > maxX
+        if (!view.docked && !outOfScreen) return // 既非收纳态、位置也在屏内：无需处理
+        view.docked = false
+        params.x = targetX
         try {
             windowManager.updateViewLayout(view, params)
         } catch (_: Exception) {}
+        Log.i(TAG, "wakeFromDock x=${params.x} (was outOfScreen=$outOfScreen)")
         // 位置变化后重申样式：透明度只由 refreshBallStyle 决定
         refreshBallStyle()
     }
