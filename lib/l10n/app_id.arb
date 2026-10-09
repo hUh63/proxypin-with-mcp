@@ -2507,5 +2507,9 @@
   "diffKeep": "Simpan",
   "editorSmoothKeepIme": "Pertahankan saran IME dalam mode lancar",
   "editorMinifyAggressive": "Perkecil agresif (ganti nama / buang kode mati)",
-  "editorMinifyAggressiveUnsupported": "Sintaks di luar subset yang didukung kompiler bawaan; dilewati"
+  "editorMinifyAggressiveUnsupported": "Sintaks di luar subset yang didukung kompiler bawaan; dilewati",
+  "diffIgnoreCase": "Abaikan kapital",
+  "diffIgnoreWhitespace": "Abaikan spasi",
+  "snippetExpand": "Perluas",
+  "snippetCollapse": "Ciutkan"
 }

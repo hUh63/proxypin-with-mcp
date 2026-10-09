@@ -872,5 +872,9 @@
   "diffAlignedView": "對照視圖",
   "diffNoDifference": "無差異",
   "kernelCaptureBlockQuic": "阻斷 QUIC（UDP/443）",
-  "kernelCaptureQuicBlocked": "QUIC 已阻斷"
+  "kernelCaptureQuicBlocked": "QUIC 已阻斷",
+  "diffIgnoreCase": "忽略大小寫",
+  "diffIgnoreWhitespace": "忽略空白",
+  "snippetExpand": "展開",
+  "snippetCollapse": "收合"
 }

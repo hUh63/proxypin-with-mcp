@@ -401,5 +401,9 @@
   "diffAlignedView": "Visualização alinhada",
   "diffNoDifference": "Sem diferenças",
   "kernelCaptureBlockQuic": "Bloquear QUIC (UDP/443)",
-  "kernelCaptureQuicBlocked": "QUIC bloqueado"
+  "kernelCaptureQuicBlocked": "QUIC bloqueado",
+  "diffIgnoreCase": "Ignorar maiúsculas",
+  "diffIgnoreWhitespace": "Ignorar espaços",
+  "snippetExpand": "Expandir",
+  "snippetCollapse": "Recolher"
 }

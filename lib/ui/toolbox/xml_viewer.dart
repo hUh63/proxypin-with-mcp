@@ -29,7 +29,9 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/ui/component/invisible_char_highlighter.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
+import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
+import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:xml/xml.dart';
@@ -181,6 +183,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
       body: Column(children: [
         Align(alignment: Alignment.centerRight, child: _toolbar()),
         const Divider(height: 1, thickness: 0.3),
+        _snippetBar(),
         Expanded(child: _textView()),
       ]),
     );
@@ -248,6 +251,30 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
       icon: Icon(icon, size: 17, color: tint),
       visualDensity: VisualDensity.compact,
     );
+  }
+
+  /// 可滑动 / 可展开的快捷输入行。
+  Widget _snippetBar() {
+    return SnippetBar(
+      scope: 'xml',
+      defaults: ToolSnippetDefaults.xml,
+      onInsert: _insertSnippet,
+    );
+  }
+
+  /// 在当前光标处插入片段。
+  void _insertSnippet(String insert) {
+    final c = _controller;
+    final text = c.text;
+    final sel = c.selection;
+    if (sel.isValid && !sel.isCollapsed) {
+      c.text = text.replaceRange(sel.start, sel.end, insert);
+      c.selection = TextSelection.collapsed(offset: sel.start + insert.length);
+    } else {
+      final offset = sel.isValid ? sel.start : text.length;
+      c.text = text.replaceRange(offset, offset, insert);
+      c.selection = TextSelection.collapsed(offset: offset + insert.length);
+    }
   }
 
   Widget _textView() {

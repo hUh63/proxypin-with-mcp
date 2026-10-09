@@ -2507,5 +2507,9 @@
   "diffKeep": "Giữ",
   "editorSmoothKeepIme": "Giữ gợi ý IME ở chế độ mượt",
   "editorMinifyAggressive": "Nén mạnh (đổi tên / bỏ mã chết)",
-  "editorMinifyAggressiveUnsupported": "Cú pháp vượt quá tập con mà trình biên dịch tích hợp hỗ trợ; đã bỏ qua"
+  "editorMinifyAggressiveUnsupported": "Cú pháp vượt quá tập con mà trình biên dịch tích hợp hỗ trợ; đã bỏ qua",
+  "diffIgnoreCase": "Bỏ qua chữ hoa/thường",
+  "diffIgnoreWhitespace": "Bỏ qua khoảng trắng",
+  "snippetExpand": "Mở rộng",
+  "snippetCollapse": "Thu gọn"
 }

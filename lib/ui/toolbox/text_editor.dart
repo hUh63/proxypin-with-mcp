@@ -31,7 +31,7 @@ import 'package:re_highlight/styles/atom-one-light.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
-import 'package:proxypin/ui/component/snippet_manager.dart';
+import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/code_minifier.dart';
 import 'package:proxypin/utils/js_compiler.dart';
 import 'package:proxypin/utils/css_formatter.dart';
@@ -142,8 +142,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
   _RetainMode _retainMode = _RetainMode.never;
   _Newline _newline = _Newline.lf;
 
-  List<ToolSnippet> _snippets = ToolSnippetDefaults.editor;
-
   String _lastText = '';
   bool _confirmingExit = false;
 
@@ -192,7 +190,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final raw = await SharedPreferencesAsync().getInt(_kPrefRetainMode);
     final nl = await SharedPreferencesAsync().getString(_kPrefNewline);
     final keepIme = await SharedPreferencesAsync().getBool(_kPrefSmoothKeepIme);
-    final snippets = await ToolSnippetStore.load('editor');
     if (!mounted) return;
     setState(() {
       if (raw != null && raw >= 0 && raw < _RetainMode.values.length) {
@@ -202,7 +199,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _newline = _Newline.values.firstWhere((e) => e.name == nl, orElse: () => _Newline.lf);
       }
       if (keepIme != null) _smoothKeepIme = keepIme;
-      if (snippets != null) _snippets = snippets;
     });
   }
 
@@ -464,68 +460,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
-  Future<void> _showSnippetPicker() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => SafeArea(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 420),
-            child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(localizations.editorInsertSymbol, style: const TextStyle(fontWeight: FontWeight.w600)),
-                const Spacer(),
-                TextButton.icon(
-                  icon: const Icon(Icons.tune, size: 18),
-                  label: Text(localizations.editorManage),
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    await _manageSnippets();
-                  },
-                ),
-              ]),
-              const SizedBox(height: 6),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: _snippets
-                        .map((s) => ActionChip(
-                              label: Text(s.label, style: const TextStyle(fontSize: 14)),
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () {
-                                _insertAtCursor(s.insert);
-                                setSheet(() {});
-                              },
-                            ))
-                        .toList(),
-                  ),
-                ),
-              ),
-            ]),
-          ),
-          ),
-        ),
-      ),
+  /// 可滑动 / 可展开的快捷输入行。
+  Widget _snippetBar() {
+    return SnippetBar(
+      scope: 'editor',
+      defaults: ToolSnippetDefaults.editor,
+      onInsert: (text) => _insertAtCursor(text),
     );
   }
 
-  Future<void> _manageSnippets() async {
-    final result = await showDialog<List<ToolSnippet>>(
-      context: context,
-      builder: (_) => SnippetManagerDialog(
-        scope: 'editor',
-        items: _snippets,
-        defaults: ToolSnippetDefaults.editor,
-      ),
-    );
-    if (result == null) return;
-    setState(() => _snippets = result);
-    await ToolSnippetStore.save('editor', result);
-  }
 
   /// 行号栏长按选行：第一次长按记录起始行，第二次长按选中两行之间的文本。
   void _onGutterLineLongPress(int line) {
@@ -939,6 +882,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         body: Column(children: [
           _toolbar(),
           const Divider(height: 1, thickness: 0.3),
+          _snippetBar(),
           Expanded(child: _textView()),
         ]),
       ),
@@ -1129,7 +1073,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _iconBtn(Icons.save_outlined, localizations.save, _download),
             _iconBtn(Icons.undo, localizations.editorUndo, _doc?.undoController.canUndo == true ? _undo : null),
             _iconBtn(Icons.redo, localizations.editorRedo, _doc?.undoController.canRedo == true ? _redo : null),
-            _iconBtn(Icons.emoji_symbols_outlined, localizations.editorInsertSymbol, _showSnippetPicker),
             _iconBtn(Icons.search, localizations.search, _doc?.findController.toggleActive),
             _iconBtn(Icons.auto_fix_high, localizations.format, _canFormat ? _format : null),
             _iconBtn(Icons.code, localizations.editorToggleComment, _toggleComment),

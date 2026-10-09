@@ -152,7 +152,44 @@ class ToolSnippetDefaults {
     ToolSnippet('零宽空格', '\u200b'),
     ToolSnippet('全角空格', '\u3000'),
   ];
+
+  /// JSON 查看页：结构符号 / 字面量 / 转义。
+  static const List<ToolSnippet> json = [
+    ToolSnippet('{ }', '{}'),
+    ToolSnippet('[ ]', '[]'),
+    ToolSnippet('"key"', '"key"'),
+    ToolSnippet('"value"', '"value"'),
+    ToolSnippet(':', ': '),
+    ToolSnippet(',', ','),
+    ToolSnippet('null', 'null'),
+    ToolSnippet('true', 'true'),
+    ToolSnippet('false', 'false'),
+    ToolSnippet('0', '0'),
+    ToolSnippet(r'\"', r'\"'),
+    ToolSnippet(r'\\', r'\\'),
+    ToolSnippet(r'\n', r'\n'),
+    ToolSnippet(r'\t', r'\t'),
+    ToolSnippet(r'\u', r'\u'),
+  ];
+
+  /// XML 查看页：标签 / 属性 / 注释 / CDATA / 实体。
+  static const List<ToolSnippet> xml = [
+    ToolSnippet('<tag>', '<tag>'),
+    ToolSnippet('</tag>', '</tag>'),
+    ToolSnippet('<tag/>', '<tag/>'),
+    ToolSnippet('<tag></tag>', '<tag></tag>'),
+    ToolSnippet('=""', '=""'),
+    ToolSnippet('<!-- -->', '<!-- -->'),
+    ToolSnippet('<![CDATA[]]>', '<![CDATA[]]>'),
+    ToolSnippet('<?xml?>', '<?xml version="1.0" encoding="UTF-8"?>'),
+    ToolSnippet('&lt;', '&lt;'),
+    ToolSnippet('&gt;', '&gt;'),
+    ToolSnippet('&amp;', '&amp;'),
+    ToolSnippet('&quot;', '&quot;'),
+    ToolSnippet('&apos;', '&apos;'),
+  ];
 }
+
 
 /// 「快捷插入」条目的持久化存储。
 ///

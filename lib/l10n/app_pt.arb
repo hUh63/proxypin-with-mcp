@@ -2508,5 +2508,9 @@
   "diffKeep": "Manter",
   "editorSmoothKeepIme": "Manter sugestões do IME no modo suave",
   "editorMinifyAggressive": "Minificação agressiva (renomear / remover código morto)",
-  "editorMinifyAggressiveUnsupported": "A sintaxe está além do subconjunto suportado pelo compilador integrado; ignorado"
+  "editorMinifyAggressiveUnsupported": "A sintaxe está além do subconjunto suportado pelo compilador integrado; ignorado",
+  "diffIgnoreCase": "Ignorar maiúsculas",
+  "diffIgnoreWhitespace": "Ignorar espaços",
+  "snippetExpand": "Expandir",
+  "snippetCollapse": "Recolher"
 }

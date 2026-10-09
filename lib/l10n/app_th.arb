@@ -2507,5 +2507,9 @@
   "diffKeep": "เก็บไว้",
   "editorSmoothKeepIme": "คงคำแนะนำ IME ไว้ในโหมดลื่นไหล",
   "editorMinifyAggressive": "ย่อโค้ดแบบเข้ม (เปลี่ยนชื่อ / ตัดโค้ดที่ไม่ได้ใช้)",
-  "editorMinifyAggressiveUnsupported": "ไวยากรณ์อยู่นอกเหนือชุดย่อยที่คอมไพเลอร์ในตัวรองรับ จึงข้าม"
+  "editorMinifyAggressiveUnsupported": "ไวยากรณ์อยู่นอกเหนือชุดย่อยที่คอมไพเลอร์ในตัวรองรับ จึงข้าม",
+  "diffIgnoreCase": "ไม่สนตัวพิมพ์เล็กใหญ่",
+  "diffIgnoreWhitespace": "ไม่สนช่องว่าง",
+  "snippetExpand": "ขยาย",
+  "snippetCollapse": "ย่อ"
 }

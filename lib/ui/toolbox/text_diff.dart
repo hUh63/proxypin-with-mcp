@@ -29,7 +29,9 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
+import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/text_diff.dart';
+import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 文本对比工具
@@ -60,6 +62,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   late final UndoRedoController _rightUndo;
 
   bool _wrap = true;
+
+  /// 忽略大小写 / 忽略空白：比较时归一化，显示仍是原文。
+  bool _ignoreCase = false;
+  bool _ignoreWhitespace = false;
 
   /// 对齐并排视图（逐行对齐、差异上底色），用于快速看清多段差异的对应关系。
   bool _aligned = false;
@@ -223,8 +229,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _leftSnapshot = _left.text;
     _rightSnapshot = _right.text;
 
-    final diffs = diffLines(_left.text, _right.text);
-    final blocks = buildDiffBlocks(diffs);
+    final diffs = diffLines(_left.text, _right.text,
+        ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
+    final blocks = buildDiffBlocks(diffs, ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
     final stats = diffStats(blocks);
 
     final addBg = Colors.green.withValues(alpha: 0.16);
@@ -239,10 +246,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final rightHL = <SearchHighlight>[];
 
     for (final b in blocks) {
-      final paired = b.pairedCount;
       for (var i = 0; i < b.leftLines.length; i++) {
         final ln = b.leftLines[i];
-        final isMod = b.isModify && i < paired;
+        final isMod = b.rightLocalOfLeft(i) != null;
         leftDecos.add(LineDecoration(
           id: 'ld-$ln',
           startLine: ln,
@@ -260,7 +266,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       }
       for (var j = 0; j < b.rightLines.length; j++) {
         final ln = b.rightLines[j];
-        final isMod = b.isModify && j < paired;
+        final isMod = b.leftLocalOfRight(j) != null;
         rightDecos.add(LineDecoration(
           id: 'rd-$ln',
           startLine: ln,
@@ -278,9 +284,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
       }
 
       // 配对行做字符级高亮。
-      for (var i = 0; i < paired; i++) {
-        final ll = b.leftLines[i];
-        final rl = b.rightLines[i];
+      for (final pair in b.pairs) {
+        final ll = b.leftLines[pair.left];
+        final rl = b.rightLines[pair.right];
         final cd = diffChars(_left.getLineText(ll), _right.getLineText(rl));
         final lo = _left.getLineStartOffset(ll);
         final ro = _right.getLineStartOffset(rl);
@@ -592,16 +598,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 ),
               ),
         body: Column(children: [
-          Row(children: [
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: _legend(),
-              ),
-            ),
-            _toolbar(),
-          ]),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _legend(),
+              const SizedBox(width: 4),
+              Expanded(child: Align(alignment: Alignment.topRight, child: _toolbar())),
+            ],
+          ),
           const Divider(height: 1, thickness: 0.3),
+          _snippetBar(),
           Expanded(
             child: _aligned
                 ? _alignedView()
@@ -632,26 +638,26 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
-  /// 左上角图例：紧凑说明三种差异配色。
+  /// 左上角图例：三行「颜色 + 文本」的小号示例，固定显示（不横向滑动）。
   Widget _legend() {
     Widget item(Color c, String label) {
       return Padding(
-        padding: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.only(bottom: 1),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(color: c.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(1.5)),
           ),
-          const SizedBox(width: 3),
-          Text(label, style: const TextStyle(fontSize: 11, height: 1.0)),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 9.5, height: 1.05)),
         ]),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      child: Row(children: [
+      padding: const EdgeInsets.only(left: 8, top: 3, bottom: 3),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         item(Colors.green, localizations.diffAdded),
         item(Colors.orange, localizations.diffModified),
         item(Colors.red, localizations.diffDeleted),
@@ -674,6 +680,24 @@ class _TextDiffPageState extends State<TextDiffPage> {
           _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
           _iconBtn(Icons.keyboard_arrow_down, localizations.diffNext, hasDiff ? () => _navigate(1) : null),
           _iconBtn(Icons.compare_arrows, localizations.compare, _onTextChange),
+          _iconBtn(
+            Icons.text_format,
+            localizations.diffIgnoreCase,
+            () {
+              setState(() => _ignoreCase = !_ignoreCase);
+              _compare();
+            },
+            tint: _ignoreCase ? color : null,
+          ),
+          _iconBtn(
+            Icons.space_bar,
+            localizations.diffIgnoreWhitespace,
+            () {
+              setState(() => _ignoreWhitespace = !_ignoreWhitespace);
+              _compare();
+            },
+            tint: _ignoreWhitespace ? color : null,
+          ),
           _iconBtn(Icons.delete_outline, localizations.clear, _clearAll),
           _iconBtn(
             Icons.wrap_text,
@@ -699,6 +723,30 @@ class _TextDiffPageState extends State<TextDiffPage> {
       icon: Icon(icon, size: 17, color: onTap == null ? Colors.grey : tint),
       visualDensity: VisualDensity.compact,
     );
+  }
+
+  /// 可滑动 / 可展开的快捷输入行（插入到最近触摸的一侧）。
+  Widget _snippetBar() {
+    return SnippetBar(
+      scope: 'diff',
+      defaults: ToolSnippetDefaults.editor,
+      onInsert: _insertSnippet,
+    );
+  }
+
+  void _insertSnippet(String insert) {
+    final c = _leftActive ? _left : _right;
+    final text = c.text;
+    final sel = c.selection;
+    if (sel.isValid && !sel.isCollapsed) {
+      c.text = text.replaceRange(sel.start, sel.end, insert);
+      c.selection = TextSelection.collapsed(offset: sel.start + insert.length);
+    } else {
+      final offset = sel.isValid ? sel.start : text.length;
+      c.text = text.replaceRange(offset, offset, insert);
+      c.selection = TextSelection.collapsed(offset: offset + insert.length);
+    }
+    _onTextChange();
   }
 
   Widget _wideLayout() {
@@ -728,10 +776,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
           }
         : baseTheme;
 
-    // 字符级差异：左边删除（深红底），右边新增（深绿底）。
+    // 字符级差异：左边删除（红底白字加粗），右边新增（绿底白字加粗），更醒目。
     final charStyle = isLeft
-        ? const TextStyle(backgroundColor: Color(0xCCE53935)) // 深红
-        : const TextStyle(backgroundColor: Color(0xCC43A047)); // 深绿
+        ? const TextStyle(backgroundColor: Color(0xF2C62828), color: Colors.white, fontWeight: FontWeight.w600)
+        : const TextStyle(backgroundColor: Color(0xF22E7D32), color: Colors.white, fontWeight: FontWeight.w600);
     final matchStyle = MatchHighlightStyle(currentMatchStyle: charStyle, otherMatchStyle: charStyle);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -783,7 +831,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐并排视图：逐行对齐左右（缺失侧留空），差异行上底色。
   /// 解决窄屏 / 行数不等时「各显示自己行号、多段差异看不出对应关系」的问题。
   Widget _alignedView() {
-    final rows = alignedDiffRows(_left.text, _right.text);
+    final rows = alignedDiffRows(_left.text, _right.text,
+        ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
     if (rows.isEmpty) {
       return Center(
         child: Text(localizations.diffNoDifference, style: TextStyle(color: Colors.grey[600])),

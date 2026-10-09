@@ -26,13 +26,23 @@
 //   4. 用这些锚点把段切短，递归对比每个子段；
 //   5. 找不到锚点的小段退化成"双指针 + 短窗前瞻"。
 //
-// 直觉解释：锚点是两边都"独一无二"的行（比如某条独特的日志、某个唯一的标识符），
-// 拿它们当对齐点，公共的样板行（空行、`}`、`)`）因为出现多次不会成为锚点，
-// 自然不会让无关行被错配。
+// 行配对（块内的删除行 ↔ 新增行）不再"按位置硬配"，而是按**内容相似度**做
+// 加权 LCS 配对：只有足够像的两行才算「修改」，否则拆成「删除 + 新增」。
+// 这样 `1111` 不会配到 `222`（相似度 0）上，而是配到更像的 `11` 上。
+//
+// 比较时可选忽略大小写 / 忽略空白（用归一化的 key 比较，显示仍是原文）。
 
 /// 前瞻窗口：基线段（无锚点）里发现错位时往前找几行。
 /// Patience 切完之后段通常不长，4 已经够用；调大对工程不敏感。
 const int _lookahead = 4;
+
+/// 行配对的相似度阈值（千分比）：两行字符 LCS 占比达到 50% 才认为「同一行的改写」。
+const int _pairSimilarity = 500;
+
+/// 配对 DP 的规模上限：块太大时退化为按位置配对，避免 O(m²n²) 卡顿。
+const int _pairMaxCells = 20000;
+
+final RegExp _whiteSpace = RegExp(r'\s+');
 
 enum LineDiffType { equal, insert, delete }
 
@@ -49,26 +59,38 @@ class LineDiff {
   const LineDiff(this.type, this.text, {this.leftLine, this.rightLine});
 }
 
+/// 归一化 key：仅用于「是否相同」的比较，不改变显示文本。
+String _normKey(String s, bool ignoreCase, bool ignoreWhitespace) {
+  var k = s;
+  if (ignoreWhitespace) k = k.replaceAll(_whiteSpace, '');
+  if (ignoreCase) k = k.toLowerCase();
+  return k;
+}
+
 /// 计算两段文本的行级差异，按出现顺序返回。
-List<LineDiff> diffLines(String left, String right) {
+List<LineDiff> diffLines(String left, String right,
+    {bool ignoreCase = false, bool ignoreWhitespace = false}) {
   // 用 split('\n') 而不是 LineSplitter：保留尾部空行的差异（"a\n" vs "a"）
   final a = left.split('\n');
   final b = right.split('\n');
+  final aK = a.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
+  final bK = b.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
   final out = <LineDiff>[];
-  _diffRange(a, b, 0, a.length, 0, b.length, out);
+  _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
   return out;
 }
 
-void _diffRange(List<String> a, List<String> b, int aLo, int aHi, int bLo, int bHi, List<LineDiff> out) {
+void _diffRange(List<String> a, List<String> aK, List<String> b, List<String> bK, int aLo, int aHi, int bLo,
+    int bHi, List<LineDiff> out) {
   // 1. 公共前缀
-  while (aLo < aHi && bLo < bHi && a[aLo] == b[bLo]) {
+  while (aLo < aHi && bLo < bHi && aK[aLo] == bK[bLo]) {
     out.add(LineDiff(LineDiffType.equal, a[aLo], leftLine: aLo + 1, rightLine: bLo + 1));
     aLo++;
     bLo++;
   }
   // 2. 公共后缀（先记长度，最后 emit）
   var suffix = 0;
-  while (aLo < aHi - suffix && bLo < bHi - suffix && a[aHi - 1 - suffix] == b[bHi - 1 - suffix]) {
+  while (aLo < aHi - suffix && bLo < bHi - suffix && aK[aHi - 1 - suffix] == bK[bHi - 1 - suffix]) {
     suffix++;
   }
   final aEnd = aHi - suffix;
@@ -76,13 +98,13 @@ void _diffRange(List<String> a, List<String> b, int aLo, int aHi, int bLo, int b
 
   // 3. 中间段：找锚点切分
   if (aLo < aEnd || bLo < bEnd) {
-    final anchors = _findAnchors(a, aLo, aEnd, b, bLo, bEnd);
+    final anchors = _findAnchors(aK, aLo, aEnd, bK, bLo, bEnd);
     if (anchors.isEmpty) {
-      _lookaheadDiff(a, b, aLo, aEnd, bLo, bEnd, out);
+      _lookaheadDiff(a, aK, b, bK, aLo, aEnd, bLo, bEnd, out);
     } else {
       var prevA = aLo, prevB = bLo;
       for (final anchor in anchors) {
-        _diffRange(a, b, prevA, anchor.aIdx, prevB, anchor.bIdx, out);
+        _diffRange(a, aK, b, bK, prevA, anchor.aIdx, prevB, anchor.bIdx, out);
         out.add(LineDiff(
           LineDiffType.equal,
           a[anchor.aIdx],
@@ -92,7 +114,7 @@ void _diffRange(List<String> a, List<String> b, int aLo, int aHi, int bLo, int b
         prevA = anchor.aIdx + 1;
         prevB = anchor.bIdx + 1;
       }
-      _diffRange(a, b, prevA, aEnd, prevB, bEnd, out);
+      _diffRange(a, aK, b, bK, prevA, aEnd, prevB, bEnd, out);
     }
   }
 
@@ -115,12 +137,12 @@ class _Anchor {
 
 /// 在 [aLo,aHi) × [bLo,bHi) 内找"两边各自唯一且都出现"的行，作为对齐锚点。
 /// 返回的锚点已按 a-index 升序排列，且对应的 b-index 也单调递增（LIS 保证）。
-List<_Anchor> _findAnchors(List<String> a, int aLo, int aHi, List<String> b, int bLo, int bHi) {
+List<_Anchor> _findAnchors(List<String> aK, int aLo, int aHi, List<String> bK, int bLo, int bHi) {
   // 统计每行出现次数 + 第一次出现的下标
   final aCount = <String, int>{};
   final aIdx = <String, int>{};
   for (var i = aLo; i < aHi; i++) {
-    final s = a[i];
+    final s = aK[i];
     final c = aCount[s];
     if (c == null) {
       aCount[s] = 1;
@@ -132,7 +154,7 @@ List<_Anchor> _findAnchors(List<String> a, int aLo, int aHi, List<String> b, int
   final bCount = <String, int>{};
   final bIdx = <String, int>{};
   for (var i = bLo; i < bHi; i++) {
-    final s = b[i];
+    final s = bK[i];
     final c = bCount[s];
     if (c == null) {
       bCount[s] = 1;
@@ -195,11 +217,11 @@ List<_Anchor> _longestIncreasingSubsequence(List<_Anchor> sortedByA) {
 
 /// 段内没有锚点时的兜底：双指针 + 短窗前瞻。
 /// 不等时在 [_lookahead]² 个候选 (di, dj) 里找最近匹配点；找不到就当作"同行修改"。
-void _lookaheadDiff(
-    List<String> a, List<String> b, int aLo, int aHi, int bLo, int bHi, List<LineDiff> out) {
+void _lookaheadDiff(List<String> a, List<String> aK, List<String> b, List<String> bK, int aLo, int aHi, int bLo,
+    int bHi, List<LineDiff> out) {
   var i = aLo, j = bLo;
   while (i < aHi && j < bHi) {
-    if (a[i] == b[j]) {
+    if (aK[i] == bK[j]) {
       out.add(LineDiff(LineDiffType.equal, a[i], leftLine: i + 1, rightLine: j + 1));
       i++;
       j++;
@@ -213,7 +235,7 @@ void _lookaheadDiff(
         final ii = i + di;
         final jj = j + dj;
         if (ii >= aHi || jj >= bHi) continue;
-        if (a[ii] == b[jj]) {
+        if (aK[ii] == bK[jj]) {
           bestDi = di;
           bestDj = dj;
           bestSum = sum;
@@ -245,6 +267,89 @@ void _lookaheadDiff(
     out.add(LineDiff(LineDiffType.insert, b[j], rightLine: j + 1));
     j++;
   }
+}
+
+// ---------- 行配对（按相似度） ----------
+
+/// 两行的相似度（千分比，0..1000）：字符级 LCS 长度占较长行长度的比例。
+int _similarityScore(String l, String r) {
+  if (l == r) return 1000;
+  final a = l.codeUnits;
+  final b = r.codeUnits;
+  final m = a.length;
+  final n = b.length;
+  if (m == 0 || n == 0) return 0;
+  var prev = List<int>.filled(n + 1, 0);
+  for (var i = 1; i <= m; i++) {
+    final cur = List<int>.filled(n + 1, 0);
+    final ai = a[i - 1];
+    for (var j = 1; j <= n; j++) {
+      if (ai == b[j - 1]) {
+        cur[j] = prev[j - 1] + 1;
+      } else {
+        cur[j] = cur[j - 1] > prev[j] ? cur[j - 1] : prev[j];
+      }
+    }
+    prev = cur;
+  }
+  final lcs = prev[n];
+  final denom = m > n ? m : n;
+  return (lcs * 1000) ~/ denom;
+}
+
+/// 在一段「删除行 × 新增行」之间做**相似度加权 LCS 配对**：
+/// 保序（不交叉），只把相似度 ≥ [_pairSimilarity] 的行配成「修改」。
+List<({int left, int right})> _pairLines(
+    List<String> leftTexts, List<String> rightTexts, bool ignoreCase, bool ignoreWhitespace) {
+  final m = leftTexts.length;
+  final n = rightTexts.length;
+  if (m == 0 || n == 0) return const <({int left, int right})>[];
+
+  // 大块退化为按位置配对，避免 O(m²n²) 卡顿。
+  if (m * n > _pairMaxCells) {
+    final cnt = m < n ? m : n;
+    return [for (var k = 0; k < cnt; k++) (left: k, right: k)];
+  }
+
+  final lk = leftTexts.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
+  final rk = rightTexts.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
+
+  final sim = List.generate(m, (_) => List<int>.filled(n, 0));
+  for (var i = 0; i < m; i++) {
+    for (var j = 0; j < n; j++) {
+      sim[i][j] = _similarityScore(lk[i], rk[j]);
+    }
+  }
+
+  // dp[i][j] = 前 i 个删除行 / 前 j 个新增行能得到的最大相似度总和
+  final dp = List.generate(m + 1, (_) => List<int>.filled(n + 1, 0));
+  for (var i = 1; i <= m; i++) {
+    for (var j = 1; j <= n; j++) {
+      var best = dp[i - 1][j] > dp[i][j - 1] ? dp[i - 1][j] : dp[i][j - 1];
+      final s = sim[i - 1][j - 1];
+      if (s >= _pairSimilarity) {
+        final diag = dp[i - 1][j - 1] + s;
+        if (diag > best) best = diag;
+      }
+      dp[i][j] = best;
+    }
+  }
+
+  final pairs = <({int left, int right})>[];
+  var i = m, j = n;
+  while (i > 0 && j > 0) {
+    final s = sim[i - 1][j - 1];
+    if (s >= _pairSimilarity && dp[i][j] == dp[i - 1][j - 1] + s) {
+      pairs.add((left: i - 1, right: j - 1));
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+  return pairs.reversed.toList();
 }
 
 /// 字符级差异：标记"两条配对的差异行"中各自被改动的字符范围。
@@ -347,41 +452,70 @@ class DiffBlock {
   /// 被新增行的 0-based 行号（按出现顺序）。
   final List<int> rightLines;
 
+  /// 相似度配对结果：**在本块 [leftLines] / [rightLines] 里的下标**。
+  /// 只有它非空，块才算「修改」块；未出现在配对里的行分别算纯删除 / 纯新增。
+  final List<({int left, int right})> pairs;
+
   const DiffBlock({
     required this.leftStart,
     required this.rightStart,
     required this.leftLines,
     required this.rightLines,
+    this.pairs = const <({int left, int right})>[],
   });
 
-  /// 同时含删除与新增行 —— 视为「修改」块。
-  bool get isModify => leftLines.isNotEmpty && rightLines.isNotEmpty;
+  /// 存在相似度配对的行 —— 视为「修改」块。
+  bool get isModify => pairs.isNotEmpty;
 
-  /// 左右配对（同行修改）的行数：取删除行与新增行的较小值。
-  int get pairedCount => leftLines.length < rightLines.length ? leftLines.length : rightLines.length;
+  /// 左右配对（同行修改）的行数。
+  int get pairedCount => pairs.length;
+
+  /// 本块第 [i] 个删除行（[leftLines] 下标）配对到的新增行下标；未配对返回 null。
+  int? rightLocalOfLeft(int i) {
+    for (final p in pairs) {
+      if (p.left == i) return p.right;
+    }
+    return null;
+  }
+
+  /// 本块第 [j] 个新增行（[rightLines] 下标）配对到的删除行下标；未配对返回 null。
+  int? leftLocalOfRight(int j) {
+    for (final p in pairs) {
+      if (p.right == j) return p.left;
+    }
+    return null;
+  }
 }
 
-/// 把 [diffLines] 的结果按「连续的差异行」聚合为一个个 [DiffBlock]。
+/// 把 [diffLines] 的结果按「连续的差异行」聚合为一个个 [DiffBlock]，并对每个
+/// 块内做相似度配对（[ignoreCase] / [ignoreWhitespace] 一起参与配对判定）。
 /// 这是 UI 侧「新增 / 修改 / 删除」分类与上一处 / 下一处导航的唯一真源。
-List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs) {
+List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
+    {bool ignoreCase = false, bool ignoreWhitespace = false}) {
   final blocks = <DiffBlock>[];
   List<int>? leftLines;
   List<int>? rightLines;
+  List<String>? leftTexts;
+  List<String>? rightTexts;
   int? leftStart;
   int? rightStart;
   var li = 0, ri = 0;
 
   void flush() {
     if (leftLines != null) {
+      final pairs = _pairLines(leftTexts ?? const [], rightTexts ?? const [], ignoreCase, ignoreWhitespace);
       blocks.add(DiffBlock(
         leftStart: leftStart!,
         rightStart: rightStart!,
         leftLines: leftLines!,
         rightLines: rightLines!,
+        pairs: pairs,
       ));
     }
     leftLines = null;
     rightLines = null;
+    leftTexts = null;
+    rightTexts = null;
     leftStart = null;
     rightStart = null;
   }
@@ -395,16 +529,22 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs) {
       case LineDiffType.delete:
         leftLines ??= <int>[];
         rightLines ??= <int>[];
+        leftTexts ??= <String>[];
+        rightTexts ??= <String>[];
         leftStart ??= li;
         rightStart ??= ri;
         leftLines!.add(li);
+        leftTexts!.add(d.text);
         li++;
       case LineDiffType.insert:
         leftLines ??= <int>[];
         rightLines ??= <int>[];
+        leftTexts ??= <String>[];
+        rightTexts ??= <String>[];
         leftStart ??= li;
         rightStart ??= ri;
         rightLines!.add(ri);
+        rightTexts!.add(d.text);
         ri++;
     }
   }
@@ -412,7 +552,7 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs) {
   return blocks;
 }
 
-/// 对比统计：新增 / 删除 / 修改（修改 = 一个块里被配对的行数）。
+/// 对比统计：新增 / 删除 / 修改（修改 = 块内相似度配对成功的行数）。
 class DiffStats {
   final int added;
   final int deleted;
@@ -448,11 +588,12 @@ class DiffRow {
   const DiffRow(this.type, this.leftLine, this.leftText, this.rightLine, this.rightText);
 }
 
-/// 把两段文本转成**逐行对齐**的行列表：equal 同行；一段删除 + 一段新增按行配对成
-/// modified，多出来的行分别作为 deleted / added。用来渲染左右行号对齐的并排视图，
-/// 解决「各显示自己行号、多段差异看不出对应关系」的问题。
-List<DiffRow> alignedDiffRows(String left, String right) {
-  final diffs = diffLines(left, right);
+/// 把两段文本转成**逐行对齐**的行列表：equal 同行；一段删除 + 一段新增按**相似度**
+/// 配对成 modified，没配上的行分别作为 deleted / added。用来渲染左右行号对齐的
+/// 并排视图，解决「各显示自己行号、多段差异看不出对应关系」的问题。
+List<DiffRow> alignedDiffRows(String left, String right,
+    {bool ignoreCase = false, bool ignoreWhitespace = false}) {
+  final diffs = diffLines(left, right, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {
@@ -476,14 +617,25 @@ List<DiffRow> alignedDiffRows(String left, String right) {
       i++;
       continue;
     }
-    final paired = dels.length < ins.length ? dels.length : ins.length;
-    for (var k = 0; k < paired; k++) {
-      rows.add(DiffRow(DiffRowType.modified, dels[k].leftLine, dels[k].text, ins[k].rightLine, ins[k].text));
+    final pairs = _pairLines(
+      dels.map((e) => e.text).toList(),
+      ins.map((e) => e.text).toList(),
+      ignoreCase,
+      ignoreWhitespace,
+    );
+    // 按左行顺序输出：配对的算 modified，没配上的算 deleted；右侧未配对的算 added。
+    final leftToRight = <int, int>{for (final p in pairs) p.left: p.right};
+    final pairedRight = <int>{for (final p in pairs) p.right};
+    for (var k = 0; k < dels.length; k++) {
+      final r = leftToRight[k];
+      if (r != null) {
+        rows.add(DiffRow(DiffRowType.modified, dels[k].leftLine, dels[k].text, ins[r].rightLine, ins[r].text));
+      } else {
+        rows.add(DiffRow(DiffRowType.deleted, dels[k].leftLine, dels[k].text, null, null));
+      }
     }
-    for (var k = paired; k < dels.length; k++) {
-      rows.add(DiffRow(DiffRowType.deleted, dels[k].leftLine, dels[k].text, null, null));
-    }
-    for (var k = paired; k < ins.length; k++) {
+    for (var k = 0; k < ins.length; k++) {
+      if (pairedRight.contains(k)) continue;
       rows.add(DiffRow(DiffRowType.added, null, null, ins[k].rightLine, ins[k].text));
     }
   }

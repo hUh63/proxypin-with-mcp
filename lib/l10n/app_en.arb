@@ -4420,5 +4420,9 @@
   "diffAlignedView": "Aligned view",
   "diffNoDifference": "No differences",
   "kernelCaptureBlockQuic": "Block QUIC (UDP/443)",
-  "kernelCaptureQuicBlocked": "QUIC blocked"
+  "kernelCaptureQuicBlocked": "QUIC blocked",
+  "diffIgnoreCase": "Ignore case",
+  "diffIgnoreWhitespace": "Ignore whitespace",
+  "snippetExpand": "Expand",
+  "snippetCollapse": "Collapse"
 }
