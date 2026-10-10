@@ -115,7 +115,7 @@ class ToolSnippetDefaults {
     ToolSnippet('连续空行', r'(\r?\n){2,}'),
     ToolSnippet('重复单词', r'\b(\w+)\s+\1\b'),
     ToolSnippet('驼峰转下划线', '([a-z0-9])([A-Z])'),
-    ToolSnippet('匹配整行', '^.*$'),
+    ToolSnippet('匹配整行', r'^.*$'),
   ];
 
   /// 文本编辑页：常用符号 / 全角标点 / 数学与特殊符号 / 制表符与空白。
@@ -220,7 +220,7 @@ class ToolSnippetDefaults {
     ToolSnippet('€', '€'),
     ToolSnippet('£', '£'),
     ToolSnippet('¥', '¥'),
-    ToolSnippet('$', '$'),
+    ToolSnippet(r'$', r'$'),
     ToolSnippet('¢', '¢'),
     ToolSnippet('₩', '₩'),
     ToolSnippet('₹', '₹'),
@@ -695,8 +695,8 @@ class ToolSnippetDefaults {
     ToolSnippet(r'$( )', r'$( )'),
     ToolSnippet(r'${}', r'${}'),
     ToolSnippet(r'${1:-}', r'${1:-}'),
-    ToolSnippet('$1', '$1'),
-    ToolSnippet('$@', '$@'),
+    ToolSnippet(r'$1', r'$1'),
+    ToolSnippet(r'$@', r'$@'),
     ToolSnippet(r'$?', r'$?'),
     ToolSnippet('if [ ]', 'if [  ]; then\n\nfi'),
     ToolSnippet('if [[ ]]', 'if [[  ]]; then\n\nfi'),
