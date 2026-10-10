@@ -37,6 +37,7 @@ import 'package:proxypin/utils/js_compiler.dart';
 import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
+import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/utils/text_special_chars.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
@@ -859,6 +860,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final isNewWindows = widget.windowId != null && Platform.isWindows;
     final doc = _doc;
     final title = doc == null ? localizations.textEditor : '${doc.name}${_dirty ? ' •' : ''}';
+    // 本地补全的额外候选跟随当前文档语言（幂等赋值，不触发重建）
+    if (doc != null && !_smooth) {
+      doc.controller.extraSuggestions = CodeKeywords.forLanguage(doc.langLabel);
+    }
 
     return PopScope(
       canPop: !(_retainMode == _RetainMode.ask && _hasUnretained),
@@ -1304,7 +1309,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
           language: _smooth ? null : _lang.mode,
           enableGuideLines: false,
           enableFolding: !_smooth,
-          enableLocalSuggestions: false,
+          // 本地代码补全（文档词 + 语言关键字）：光标上方弹出候选，选中才插入。
+          // 流畅模式关闭，换取超长文本下的流畅度。
+          enableLocalSuggestions: !_smooth,
           enableKeyboardSuggestions: !_smooth || _smoothKeepIme,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),

@@ -816,6 +816,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
               undoController: isLeft ? _leftUndo : _rightUndo,
               lineWrap: _wrap,
               enableGuideLines: false,
+              enableLocalSuggestions: true,
               editorTheme: editorTheme,
               textStyle: const TextStyle(fontSize: 14.5),
               matchHighlightStyle: matchStyle,

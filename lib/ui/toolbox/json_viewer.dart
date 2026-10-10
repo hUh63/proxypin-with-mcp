@@ -35,6 +35,7 @@ import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
+import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -73,6 +74,8 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
   void initState() {
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
+    // 本地代码补全的额外候选（JSON 关键字）
+    _controller.extraSuggestions = CodeKeywords.json;
     _tabs = TabController(length: 2, vsync: this);
 
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -379,6 +382,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
           lineWrap: _wrap,
           language: HighlightLanguages.getLanguage(ContentType.json),
           enableGuideLines: false,
+          enableLocalSuggestions: true,
           invisibleChars: _invisible.style,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
