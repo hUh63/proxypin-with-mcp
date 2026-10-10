@@ -1,5 +1,72 @@
 # Changelog
 
+## v1.45.00 (2026-10-11)
+
+### 快捷插入符号与智能预测整体扩充
+
+**快捷输入行（文本编辑页，跟随所选语言切换）**
+
+- **Python** 18 → 70 条：补齐 `async def`、`try/except/finally`、`with`、`match/case`、`yield`、
+  装饰器（`@property` / `@staticmethod` / `@classmethod`）、`__init__`，以及
+  `print` / `len` / `range` / `enumerate` / `zip` / `sorted` / `map` / `filter` / `isinstance` /
+  `super` 等常用内建，和 `f""` / `r""` / `*args` / `**kwargs` / `->`。
+- **Java**：补齐 `interface` / `enum` / `record` / `try-catch` / `for` / `switch` / `List<>` /
+  `Map<>` / `ArrayList` / `HashMap` / `Optional` / `Stream` / `@Override` / `@Test` /
+  `String.format` / `Integer.parseInt`。
+- **Go**：补齐 `func main` / `struct` / `interface` / `map` / `for range` / `switch` / `select` /
+  `defer` / `go func` / `make` / `append` / `fmt.*` / `errors.New` / `json.*` / `context` / `sync`。
+- **Dart**：补齐 `main` / `mixin` / `factory` / `get` / `set` / `Future<>` / `Stream<>` /
+  `try-catch` / `async*` / `yield` / `??` / `??=` / `?.` / `..` / `@override`。
+- **Bash**：补齐 `#!/bin/bash` / `set -euo pipefail` / `if [[ ]]` / `for (( ))` / `while read` /
+  `case-esac` / `trap` / `grep -rn` / `sed -i` / `awk` / `find -name` / `xargs` / `curl -sSL` /
+  `tar` / `chmod`。
+- **SQL**：补齐 `JOIN` 系列 / `UNION ALL` / `CREATE TABLE` / `ALTER` / `CASE WHEN` / `IS NULL` /
+  `LIKE` / `IN` / `BETWEEN` / `EXISTS` / 聚合函数 / 主外键与字段类型。
+- **CSS**：补齐 `:root` / `::before` / `@keyframes` / `@font-face` / `@supports` /
+  `display: flex|grid` / `position` / `grid-template-columns` / `transition` / `box-shadow` /
+  `calc()` / `rgba()`。
+- **JS / TS**：补齐 `const/let`、`async ()=>`、`for...of`、`switch`、`setTimeout`、
+  `querySelector`、`addEventListener`、`JSON.*`、`Object.*` 与数组 / Promise 链式方法；
+  TS 另加 `import type` / `satisfies` / `keyof` / `infer` / `Partial<>` / `Record<>` /
+  `Pick<>` / `Omit<>`。
+- **XML / HTML**：补齐 `<?xml?>` / `<!DOCTYPE>` / `<!-- -->` / `<![CDATA[]]>` / 常用标签骨架
+  （`<a>` / `<img>` / `<input>` / `<table>` / `<script>`）/ 常见属性与实体转义。
+- **HTTP**：补齐请求行 / 状态行 / `Content-Type`（json、form）/ `Authorization: Bearer` /
+  `Set-Cookie` / `Accept-Encoding` / `Cache-Control` / 代理头。
+- **JSON**：补齐 `"key": ` / 对象数组骨架 / 转义（`\"` / `\\` / `\n` / `\t` / `\uXXXX`）。
+- **通用符号**：新增 ↔ ⇄ ⟶ ↩ 等箭头，∫ ∂ ∇ ≡ ∈ ∪ ∩ ∀ ∃ 等数学符号，— – … • ※ № 等标点，
+  ■ □ ▲ ▼ ▶ 等方框，✔ ✘ ☑ ☐ 等勾选，① ② ㈠ Ⅰ Ⅴ 等圈号罗马数字，♠ ♥ ♪ ☀ 等符号，
+  以及 ℃ ‰ µ Ω Å 与更多全角标点。
+
+**智能预测**
+
+- **关键字表大幅扩充**：Python（内建函数 + 魔术方法 + 字符串 / 列表 / 字典方法）、
+  Java（集合类型 + 流操作）、Go（标准库包 + 内建）、Dart（Flutter 常用类型 + 集合方法）、
+  JavaScript / TypeScript（内置对象 + 数组 / Promise 链式方法 + 工具类型）、Bash（常用命令）、
+  SQL（完整关键字 + 函数 + 类型）。
+- **Vue / React 组件属性**：HTML 属性位置现在会补 Vue 指令与简写（`v-if` / `v-for` /
+  `v-model` / `:key` / `:class` / `@click`…）与 React 属性（`className` / `htmlFor` /
+  `onClick` / `onChange` / `dangerouslySetInnerHTML`…）。
+- **Markdown**：新增分支 —— 围栏代码块的语言名、内嵌 HTML 的标签与属性。
+- **Tailwind**：HTML 的 `class="…"` 内、CSS 的 `@apply ` 之后给常用类名。
+- **SVG 属性**：光标在 SVG 元素内部时优先补 `viewBox` / `d` / `fill` / `stroke` / `points` /
+  `xlink:href`。
+- **grid 取值细化**：`grid-template-*` / `grid-auto-*` / `grid-column|row|area` /
+  `justify-items|self` / `place-*`。
+- **HTTP**：行首给请求方法，其余位置给常见请求 / 响应头。
+- **通用语言**：`obj.` 之后补文档里出现过的成员名；`new` / `extends` / `implements` 之后补
+  文档里的类型名。
+
+**正则常用模式（快捷输入行 → 正则页）**
+
+新增 21 条：邮箱、URL、IPv4、手机号、日期、时间、中文、整数、小数、十六进制颜色、身份证、
+邮编、用户名、强密码、HTML 标签、双引号内容、首尾空白、连续空行、重复单词、驼峰转下划线、
+匹配整行。
+
+**Markdown 表格模板（快捷输入行 → Markdown）**
+
+新增「表格 2 列 / 3 列 / 3 列居中」骨架、代码块、提示块、目录项、脚注、折叠块。
+
 ## v1.44.00 (2026-10-10)
 
 ### 智能预测继续扩充 · 共用符号库可以编辑和删除了

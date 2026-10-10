@@ -78,6 +78,8 @@ class SmartSuggestions {
         return _css(documentText, linePrefix, prefix);
       case 'HTTP':
         return _http(documentText, linePrefix, prefix);
+      case 'Markdown':
+        return _markdown(documentText, linePrefix, prefix);
       default:
         return _generic(documentText, linePrefix, prefix, language ?? '');
     }
@@ -138,14 +140,48 @@ class SmartSuggestions {
           RegExp(r'^<\s*([A-Za-z_][\w:.-]*)').firstMatch(inTagText)?.group(1) ?? '';
       // SVG 元素优先给 SVG 专用属性（viewBox / d / fill / stroke ...）。
       if (_svgTags.contains(tagName.toLowerCase())) {
-        return _dedupe([..._xmlAttrs(tail), ..._svgAttrs, ..._commonAttrs], prefix);
+        return _dedupe([
+          ..._xmlAttrs(tail),
+          ..._svgAttrs,
+          ..._vueAttrs,
+          ..._reactAttrs,
+          ..._commonAttrs,
+        ], prefix);
       }
-      return _dedupe([..._xmlAttrs(tail), ..._commonAttrs], prefix);
+      return _dedupe([
+        ..._xmlAttrs(tail),
+        ..._vueAttrs,
+        ..._reactAttrs,
+        ..._commonAttrs,
+      ], prefix);
     }
     return _dedupe([..._xmlTags(tail), ..._commonTags], prefix);
   }
 
   static final RegExp _htmlClassRe = RegExp(r'''class\s*=\s*["'][^"']*$''');
+
+  /// Vue 指令 / 常用属性（`v-*`、`:` 简写、`@` 简写）。
+  static const List<String> _vueAttrs = [
+    'v-if', 'v-else', 'v-else-if', 'v-for', 'v-show', 'v-model', 'v-model.lazy',
+    'v-model.number', 'v-model.trim', 'v-bind', 'v-on', 'v-once', 'v-pre', 'v-cloak',
+    'v-html', 'v-text', 'v-slot', 'is', 'ref', 'key', 'slot', 'slot-scope', 'name',
+    'components', 'props', 'emits', 'setup', 'data', 'methods', 'computed', 'watch',
+    'directives', 'transition', 'keep-alive',
+    ':key', ':class', ':style', ':src', ':href', ':disabled', ':value', ':id', ':type',
+    '@click', '@input', '@change', '@submit', '@keyup', '@keydown', '@focus', '@blur',
+    '@mouseenter', '@mouseleave',
+  ];
+
+  /// React / JSX 常用属性。
+  static const List<String> _reactAttrs = [
+    'className', 'htmlFor', 'key', 'ref', 'style', 'children', 'dangerouslySetInnerHTML',
+    'onClick', 'onChange', 'onInput', 'onSubmit', 'onFocus', 'onBlur', 'onKeyDown',
+    'onKeyUp', 'onKeyPress', 'onMouseEnter', 'onMouseLeave', 'onDoubleClick', 'onScroll',
+    'value', 'defaultValue', 'checked', 'defaultChecked', 'disabled', 'readOnly',
+    'required', 'autoFocus', 'autoComplete', 'placeholder', 'type', 'name', 'id', 'src',
+    'href', 'alt', 'width', 'height', 'target', 'rel', 'role', 'data-testid',
+    'aria-label', 'aria-hidden', 'suppressContentEditableWarning',
+  ];
 
   /// SVG 元素用的标签名。
   static const Set<String> _svgTags = {
@@ -490,6 +526,31 @@ class SmartSuggestions {
       if (out.length > 200) break;
     }
     return out;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Markdown
+  // ---------------------------------------------------------------------------
+
+  static const List<String> _mdLanguages = [
+    'javascript', 'typescript', 'jsx', 'tsx', 'json', 'html', 'xml', 'css', 'scss', 'less',
+    'yaml', 'toml', 'ini', 'markdown', 'bash', 'shell', 'sh', 'zsh', 'powershell', 'python',
+    'java', 'kotlin', 'scala', 'go', 'rust', 'c', 'cpp', 'csharp', 'php', 'ruby', 'swift',
+    'dart', 'sql', 'graphql', 'dockerfile', 'diff', 'text', 'plaintext',
+  ];
+
+  static List<String> _markdown(String doc, String linePrefix, String prefix) {
+    final trimmed = linePrefix.trimRight();
+    // 围栏代码块后面是在写语言名：```js
+    if (RegExp(r'^\s*(`{3,}|~{3,})\s*[\w+#.-]*$').hasMatch(trimmed)) {
+      return _dedupe(_mdLanguages, prefix);
+    }
+    // 内嵌 HTML：`<` 之后交给 HTML 那套规则（标签名 / 属性 / class）。
+    final lt = trimmed.lastIndexOf('<');
+    if (lt >= 0 && lt > trimmed.lastIndexOf('>')) {
+      return _xml(doc, linePrefix, prefix);
+    }
+    return const [];
   }
 
   // ---------------------------------------------------------------------------
