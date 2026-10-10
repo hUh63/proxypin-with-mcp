@@ -2506,6 +2506,7 @@
   "diffExitKeepBody": "Kedua teks akan disimpan dan dipulihkan lain kali.",
   "diffKeep": "Simpan",
   "editorSmoothKeepIme": "Pertahankan saran IME dalam mode lancar",
+  "smartCompletion": "Prediksi cerdas",
   "editorMinifyAggressive": "Perkecil agresif (ganti nama / buang kode mati)",
   "editorMinifyAggressiveUnsupported": "Sintaks di luar subset yang didukung kompiler bawaan; dilewati",
   "diffIgnoreCase": "Abaikan kapital",

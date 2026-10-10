@@ -2506,6 +2506,7 @@
   "diffExitKeepBody": "ข้อความทั้งสองจะถูกบันทึกและกู้คืนในครั้งถัดไป",
   "diffKeep": "เก็บไว้",
   "editorSmoothKeepIme": "คงคำแนะนำ IME ไว้ในโหมดลื่นไหล",
+  "smartCompletion": "การคาดการณ์อัจฉริยะ",
   "editorMinifyAggressive": "ย่อโค้ดแบบเข้ม (เปลี่ยนชื่อ / ตัดโค้ดที่ไม่ได้ใช้)",
   "editorMinifyAggressiveUnsupported": "ไวยากรณ์อยู่นอกเหนือชุดย่อยที่คอมไพเลอร์ในตัวรองรับ จึงข้าม",
   "diffIgnoreCase": "ไม่สนตัวพิมพ์เล็กใหญ่",

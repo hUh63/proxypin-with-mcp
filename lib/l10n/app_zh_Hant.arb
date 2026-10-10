@@ -877,5 +877,6 @@
   "diffIgnoreWhitespace": "忽略空白",
   "snippetExpand": "展開",
   "snippetCollapse": "收合",
-  "snippetCustomLibrary": "共用符號庫"
+  "snippetCustomLibrary": "共用符號庫",
+  "smartCompletion": "智慧預測"
 }

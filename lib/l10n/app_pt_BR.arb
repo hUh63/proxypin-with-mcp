@@ -406,5 +406,6 @@
   "diffIgnoreWhitespace": "Ignorar espaços",
   "snippetExpand": "Expandir",
   "snippetCollapse": "Recolher",
-  "snippetCustomLibrary": "Símbolos compartilhados"
+  "snippetCustomLibrary": "Símbolos compartilhados",
+  "smartCompletion": "Previsão inteligente"
 }

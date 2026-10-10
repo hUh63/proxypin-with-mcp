@@ -2506,6 +2506,7 @@
   "diffExitKeepBody": "Ambos textos se guardarán y se restaurarán la próxima vez.",
   "diffKeep": "Conservar",
   "editorSmoothKeepIme": "Mantener las sugerencias del IME en modo fluido",
+  "smartCompletion": "Predicción inteligente",
   "editorMinifyAggressive": "Minificación agresiva (renombrar / eliminar código muerto)",
   "editorMinifyAggressiveUnsupported": "La sintaxis supera el subconjunto admitido por el compilador integrado; omitido",
   "diffIgnoreCase": "Ignorar mayúsculas",

@@ -2506,6 +2506,7 @@
   "diffExitKeepBody": "Cả hai văn bản sẽ được lưu và khôi phục lần sau.",
   "diffKeep": "Giữ",
   "editorSmoothKeepIme": "Giữ gợi ý IME ở chế độ mượt",
+  "smartCompletion": "Dự đoán thông minh",
   "editorMinifyAggressive": "Nén mạnh (đổi tên / bỏ mã chết)",
   "editorMinifyAggressiveUnsupported": "Cú pháp vượt quá tập con mà trình biên dịch tích hợp hỗ trợ; đã bỏ qua",
   "diffIgnoreCase": "Bỏ qua chữ hoa/thường",

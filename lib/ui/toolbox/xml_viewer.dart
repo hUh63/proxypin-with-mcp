@@ -33,6 +33,8 @@ import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/smart_completion.dart';
+import 'package:proxypin/utils/smart_suggestions.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:xml/xml.dart';
@@ -64,12 +66,32 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
+  /// 开关变化时重建候选来源（文档词之外的部分）。
+  void _onSmartChanged() {
+    if (mounted) setState(_applySmart);
+  }
+
+  void _applySmart() {
+    final on = SmartCompletion.enabled.value;
+    _controller.extraSuggestions = on ? CodeKeywords.xml : const <String>[];
+    _controller.contextSuggestionProvider = on
+        ? (ctx) => SmartSuggestions.suggest(
+              language: 'XML / HTML',
+              documentText: ctx.documentText,
+              linePrefix: ctx.linePrefix,
+              prefix: ctx.prefix,
+            )
+        : null;
+  }
+
   @override
   void initState() {
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
-    // 本地代码补全的额外候选（XML 关键字）
-    _controller.extraSuggestions = CodeKeywords.xml;
+    // 智能预测：文档词 + 语言关键字 + 按光标上下文 / 代码格式推断的候选。
+    SmartCompletion.load();
+    SmartCompletion.enabled.addListener(_onSmartChanged);
+    _applySmart();
 
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
@@ -78,6 +100,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
 
   @override
   void dispose() {
+    SmartCompletion.enabled.removeListener(_onSmartChanged);
     _controller.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
@@ -227,8 +250,10 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
         setState(() {
           if (value == 'ascii') {
             _invisible.setAscii(!_invisible.showAscii);
-          } else {
+          } else if (value == 'unicode') {
             _invisible.setUnicode(!_invisible.showUnicode);
+          } else if (value == 'smart') {
+            SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
           }
         });
       },
@@ -242,6 +267,12 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
           value: 'unicode',
           checked: _invisible.showUnicode,
           child: Text(localizations.editorShowUnicodeSpecial),
+        ),
+        const PopupMenuDivider(),
+        CheckedPopupMenuItem(
+          value: 'smart',
+          checked: SmartCompletion.enabled.value,
+          child: Text(localizations.smartCompletion),
         ),
       ],
     );
@@ -298,12 +329,12 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
         child: CodeForge(
           // CodeForge 的 lineWrap 是 late final，切换换行靠新 key 重建；
           // controller 在 State 里复用，文本不会丢。
-          key: ValueKey('xml-editor-wrap-$_wrap'),
+          key: ValueKey('xml-editor-wrap-$_wrap-${SmartCompletion.enabled.value}'),
           controller: _controller,
           lineWrap: _wrap,
           language: HighlightLanguages.getLanguage(ContentType.xml),
           enableGuideLines: false,
-          enableLocalSuggestions: true,
+          enableLocalSuggestions: SmartCompletion.enabled.value,
           invisibleChars: _invisible.style,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),

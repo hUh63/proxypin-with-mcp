@@ -38,6 +38,8 @@ import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/smart_completion.dart';
+import 'package:proxypin/utils/smart_suggestions.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/utils/text_special_chars.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
@@ -160,6 +162,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void initState() {
     super.initState();
     _loadPrefs();
+    SmartCompletion.load();
+    SmartCompletion.enabled.addListener(_onSmartCompletionChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
@@ -168,12 +172,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   @override
   void dispose() {
+    SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     }
     super.dispose();
+  }
+
+  void _onSmartCompletionChanged() {
+    if (mounted) setState(() {});
   }
 
   bool _onKeyEvent(KeyEvent event) {
@@ -860,9 +869,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final isNewWindows = widget.windowId != null && Platform.isWindows;
     final doc = _doc;
     final title = doc == null ? localizations.textEditor : '${doc.name}${_dirty ? ' •' : ''}';
-    // 本地补全的额外候选跟随当前文档语言（幂等赋值，不触发重建）
-    if (doc != null && !_smooth) {
-      doc.controller.extraSuggestions = CodeKeywords.forLanguage(doc.langLabel);
+    // 智能预测：文档词 + 语言关键字 + 按光标上下文 / 代码格式推断的候选。
+    // 幂等赋值，不触发重建。
+    if (doc != null) {
+      final smart = SmartCompletion.enabled.value && !_smooth;
+      doc.controller.extraSuggestions =
+          smart ? CodeKeywords.forLanguage(doc.langLabel) : const <String>[];
+      doc.controller.contextSuggestionProvider = smart
+          ? (ctx) => SmartSuggestions.suggest(
+                language: doc.langLabel,
+                documentText: ctx.documentText,
+                linePrefix: ctx.linePrefix,
+                prefix: ctx.prefix,
+              )
+          : null;
     }
 
     return PopScope(
@@ -1113,6 +1133,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             setState(() => _smooth = !_smooth);
           case 'smoothKeepIme':
             _setSmoothKeepIme(!_smoothKeepIme);
+          case 'smart':
+            SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
           case 'selectLine':
             _selectToLine();
           case 'replaceLine':
@@ -1149,6 +1171,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
           value: 'smoothKeepIme',
           checked: _smoothKeepIme,
           child: Text(localizations.editorSmoothKeepIme),
+        ),
+        CheckedPopupMenuItem(
+          value: 'smart',
+          checked: SmartCompletion.enabled.value,
+          child: Text(localizations.smartCompletion),
         ),
         PopupMenuItem(value: 'selectLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
@@ -1299,7 +1326,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         child: CodeForge(
           // CodeForge 的 language / lineWrap 是 late final，切换得新 key 重建；
           // controller / findController / undoController 在文档对象持有，重建不丢数据。
-          key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme'),
+          key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme-${SmartCompletion.enabled.value}'),
           controller: controller,
           findController: _doc!.findController,
           undoController: _doc!.undoController,
@@ -1311,7 +1338,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           enableFolding: !_smooth,
           // 本地代码补全（文档词 + 语言关键字）：光标上方弹出候选，选中才插入。
           // 流畅模式关闭，换取超长文本下的流畅度。
-          enableLocalSuggestions: !_smooth,
+          enableLocalSuggestions: SmartCompletion.enabled.value && !_smooth,
           enableKeyboardSuggestions: !_smooth || _smoothKeepIme,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),

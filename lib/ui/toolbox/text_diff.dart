@@ -32,6 +32,7 @@ import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/text_diff.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
+import 'package:proxypin/utils/smart_completion.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 文本对比工具
@@ -95,6 +96,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   @override
   void initState() {
+    SmartCompletion.load();
+    SmartCompletion.enabled.addListener(_onSmartChanged);
     super.initState();
     _left = CodeForgeController()..text = widget.initialLeft ?? '';
     _right = CodeForgeController()..text = widget.initialRight ?? '';
@@ -115,8 +118,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _restoreIfNeeded();
   }
 
+  void _onSmartChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    SmartCompletion.enabled.removeListener(_onSmartChanged);
     _persistTimer?.cancel();
     _longPressTimer?.cancel();
     _left.removeListener(_onLeftChanged);
@@ -811,12 +819,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
             child: CodeForge(
               // CodeForge 的 lineWrap 是 late final，切换得新 key 重建；
               // controller / undoController 在 State 持有，重建不丢文本与撤销栈。
-              key: ValueKey('diff-$title-$_wrap'),
+              key: ValueKey('diff-$title-$_wrap-${SmartCompletion.enabled.value}'),
               controller: controller,
               undoController: isLeft ? _leftUndo : _rightUndo,
               lineWrap: _wrap,
               enableGuideLines: false,
-              enableLocalSuggestions: true,
+              enableLocalSuggestions: SmartCompletion.enabled.value,
               editorTheme: editorTheme,
               textStyle: const TextStyle(fontSize: 14.5),
               matchHighlightStyle: matchStyle,

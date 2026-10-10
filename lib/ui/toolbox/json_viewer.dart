@@ -36,6 +36,8 @@ import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/smart_completion.dart';
+import 'package:proxypin/utils/smart_suggestions.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -70,12 +72,32 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
+  /// 开关变化时重建候选来源（文档词之外的部分）。
+  void _onSmartChanged() {
+    if (mounted) setState(_applySmart);
+  }
+
+  void _applySmart() {
+    final on = SmartCompletion.enabled.value;
+    _controller.extraSuggestions = on ? CodeKeywords.json : const <String>[];
+    _controller.contextSuggestionProvider = on
+        ? (ctx) => SmartSuggestions.suggest(
+              language: 'JSON',
+              documentText: ctx.documentText,
+              linePrefix: ctx.linePrefix,
+              prefix: ctx.prefix,
+            )
+        : null;
+  }
+
   @override
   void initState() {
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
-    // 本地代码补全的额外候选（JSON 关键字）
-    _controller.extraSuggestions = CodeKeywords.json;
+    // 智能预测：文档词 + 语言关键字 + 按光标上下文 / 代码格式推断的候选。
+    SmartCompletion.load();
+    SmartCompletion.enabled.addListener(_onSmartChanged);
+    _applySmart();
     _tabs = TabController(length: 2, vsync: this);
 
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -90,6 +112,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
 
   @override
   void dispose() {
+    SmartCompletion.enabled.removeListener(_onSmartChanged);
     _controller.dispose();
     _tabs.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -309,8 +332,10 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
         setState(() {
           if (value == 'ascii') {
             _invisible.setAscii(!_invisible.showAscii);
-          } else {
+          } else if (value == 'unicode') {
             _invisible.setUnicode(!_invisible.showUnicode);
+          } else if (value == 'smart') {
+            SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
           }
         });
       },
@@ -324,6 +349,12 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
           value: 'unicode',
           checked: _invisible.showUnicode,
           child: Text(localizations.editorShowUnicodeSpecial),
+        ),
+        const PopupMenuDivider(),
+        CheckedPopupMenuItem(
+          value: 'smart',
+          checked: SmartCompletion.enabled.value,
+          child: Text(localizations.smartCompletion),
         ),
       ],
     );
@@ -378,11 +409,12 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
       child: Container(
         decoration: BoxDecoration(border: Border.all(color: Colors.black12)),
         child: CodeForge(
+          key: ValueKey('json-editor-${SmartCompletion.enabled.value}-$_wrap'),
           controller: _controller,
           lineWrap: _wrap,
           language: HighlightLanguages.getLanguage(ContentType.json),
           enableGuideLines: false,
-          enableLocalSuggestions: true,
+          enableLocalSuggestions: SmartCompletion.enabled.value,
           invisibleChars: _invisible.style,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
