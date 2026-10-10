@@ -562,5 +562,34 @@ class ToolSnippetStore {
     if (out.length != cur.length) await saveCustom(out);
     return out;
   }
+
+  /// 从共用库里删掉某条（按插入文本定位），返回剩余库。
+  static Future<List<ToolSnippet>> removeCustom(String insert) async {
+    final cur = await loadCustom();
+    final out = cur.where((e) => e.insert != insert).toList();
+    if (out.length != cur.length) await saveCustom(out);
+    return out;
+  }
+
+  /// 修改共用库里的某条（[oldInsert] 定位；插入文本也可以一起改），返回新库。
+  static Future<List<ToolSnippet>> updateCustom(
+      String oldInsert, ToolSnippet updated) async {
+    final cur = await loadCustom();
+    var changed = false;
+    final out = <ToolSnippet>[];
+    for (final e in cur) {
+      if (e.insert == oldInsert) {
+        out.add(updated);
+        changed = true;
+      } else {
+        out.add(e);
+      }
+    }
+    if (changed) await saveCustom(out);
+    return out;
+  }
+
+  /// 清空共用库。
+  static Future<void> clearCustom() => saveCustom(const []);
 }
 

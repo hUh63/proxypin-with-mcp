@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.44.00 (2026-10-10)
+
+### 智能预测继续扩充 · 共用符号库可以编辑和删除了
+
+**补全**
+
+- **Tailwind**：HTML 里在 `class="…"` 内、CSS 里在 `@apply ` 之后，会给出常用 Tailwind
+  类名（布局 / 间距 / 文字 / 颜色 / 边框 / 圆角 / 效果，约 200 个）。
+- **SVG 属性**：光标落在 SVG 元素（`svg` / `path` / `circle` / `rect` / `g` / `text` /
+  `linearGradient`…）内部时，优先补 `viewBox` / `d` / `fill` / `stroke` / `stroke-width` /
+  `points` / `transform` / `xlink:href` / `preserveAspectRatio` 等 SVG 专用属性。
+- **grid 取值细化**：`grid-template-columns` / `-rows` / `-areas`、`grid-auto-flow` /
+  `grid-auto-*`、`grid-column` / `-row` / `-area`、`justify-items` / `-self`、
+  `place-items` / `-content` / `-self` 都给了常用取值（如 `repeat(12, minmax(0, 1fr))`、
+  `span 2`、`1 / -1`）。
+- **HTTP**：行首给请求方法（`GET` / `POST`…），其它位置给常见请求 / 响应头
+  （`Content-Type` / `Authorization` / `Cache-Control` / `Access-Control-Allow-Origin`…），
+  并兜底文档里已经出现过的头名。
+- **通用语言**：`obj.` 之后优先补文档里出现过的**成员名**；`new` / `extends` / `implements`
+  之后优先补文档里的**大驼峰类型名**。
+- HTML 常用标签 / 属性表继续扩充。
+
+**共用符号库（快捷输入行 → 管理）**
+
+- 条目右侧多了 **×** → 直接从共用库删掉这一条；
+- **长按**条目 → 编辑这条共用符号（标题和内容都能改）；
+- 标题行右侧多了 **清空**，一键清掉整个共用库；
+- 删 / 改 / 清空之后，其它页面的快捷输入行会同步刷新。
+
 ## v1.43.00 (2026-10-10)
 
 ### 智能预测：补上 CSS，HTML 常用标签 / 属性也补全了

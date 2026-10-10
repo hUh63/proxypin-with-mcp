@@ -93,15 +93,20 @@ class _SnippetBarState extends State<SnippetBar> {
         customLibrary: _customLibrary,
       ),
     );
-    if (result == null || !mounted) return;
+    if (!mounted) return;
+    // 对话框里可能增删改过共用库，统一重载一次。
+    final lib = await ToolSnippetStore.loadCustom();
+    if (!mounted) return;
+    setState(() => _customLibrary = lib);
+    if (result == null) return;
     setState(() => _items = result);
     await ToolSnippetStore.save(widget.scope, result);
     // 本次新增的条目 → 追加进全局共用库，其他页面即可一键取用。
     final known = <String>{for (final e in before) e.insert};
     final added = result.where((e) => !known.contains(e.insert)).toList();
     if (added.isNotEmpty) {
-      final lib = await ToolSnippetStore.appendCustom(added);
-      if (mounted) setState(() => _customLibrary = lib);
+      final updated = await ToolSnippetStore.appendCustom(added);
+      if (mounted) setState(() => _customLibrary = updated);
     }
   }
 

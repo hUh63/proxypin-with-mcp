@@ -57,6 +57,7 @@ class _RowCtl {
 
 class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
   late List<_RowCtl> _rows;
+  late List<ToolSnippet> _library;
   final ScrollController _scroll = ScrollController();
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
@@ -65,6 +66,7 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
   void initState() {
     super.initState();
     _rows = widget.items.map((e) => _RowCtl(e.label, e.insert)).toList();
+    _library = [...widget.customLibrary];
   }
 
   @override
@@ -89,6 +91,76 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
     if (_rows.any((r) => r.insert.text == s.insert)) return;
     _rows.add(_RowCtl(s.label, s.insert));
     setState(() {});
+  }
+
+  Future<void> _removeFromLibrary(ToolSnippet s) async {
+    final lib = await ToolSnippetStore.removeCustom(s.insert);
+    if (!mounted) return;
+    setState(() => _library = lib);
+  }
+
+  Future<void> _clearLibrary() async {
+    await ToolSnippetStore.clearCustom();
+    if (!mounted) return;
+    setState(() => _library = const []);
+  }
+
+  /// 长按共用库条目 → 编辑（标题 + 内容都能改）。
+  Future<void> _editLibraryItem(ToolSnippet s) async {
+    final labelCtl = TextEditingController(text: s.label);
+    final insertCtl = TextEditingController(text: s.insert);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.edit),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: labelCtl,
+            decoration: InputDecoration(
+              isDense: true,
+              labelText: localizations.snippetManagerLabel,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: insertCtl,
+            decoration: InputDecoration(
+              isDense: true,
+              labelText: localizations.snippetManagerInsert,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    if (ok != true) {
+      labelCtl.dispose();
+      insertCtl.dispose();
+      return;
+    }
+    final insert = insertCtl.text;
+    final label = labelCtl.text.trim();
+    labelCtl.dispose();
+    insertCtl.dispose();
+    if (!mounted || insert.isEmpty) return;
+    final lib = await ToolSnippetStore.updateCustom(
+        s.insert, ToolSnippet(label.isEmpty ? insert : label, insert));
+    if (!mounted) return;
+    // 本页列表里若也有这条，一并改掉，免得再点一次又回到旧值。
+    for (final r in _rows) {
+      if (r.insert.text == s.insert) {
+        r.label.text = label.isEmpty ? insert : label;
+        r.insert.text = insert;
+      }
+    }
+    setState(() => _library = lib);
   }
 
   void _resetToDefaults() {
@@ -150,13 +222,24 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
               label: Text(localizations.snippetManagerReset),
             ),
           ]),
-          if (widget.customLibrary.isNotEmpty) ...[
+          if (_library.isNotEmpty) ...[
             const Divider(height: 18),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(localizations.snippetCustomLibrary,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            ),
+            Row(children: [
+              Expanded(
+                child: Text(localizations.snippetCustomLibrary,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ),
+              // 清空整个共用库。
+              InkWell(
+                onTap: _clearLibrary,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(localizations.clear,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                ),
+              ),
+            ]),
             const SizedBox(height: 6),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 110),
@@ -166,13 +249,20 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
                   child: Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: widget.customLibrary
-                        .map((s) => InputChip(
-                              label: Text(s.label,
-                                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              onPressed: () => _addFromLibrary(s),
+                    children: _library
+                        .map((s) => GestureDetector(
+                              // 长按 → 编辑这条共用符号。
+                              onLongPress: () => _editLibraryItem(s),
+                              child: InputChip(
+                                label: Text(s.label,
+                                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                onPressed: () => _addFromLibrary(s),
+                                // 右侧 × → 从共用库里删掉。
+                                onDeleted: () => _removeFromLibrary(s),
+                                deleteIcon: const Icon(Icons.close, size: 14),
+                              ),
                             ))
                         .toList(),
                   ),
