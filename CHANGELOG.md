@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.43.00 (2026-10-10)
+
+### 智能预测：补上 CSS，HTML 常用标签 / 属性也补全了
+
+- **CSS（新增分支）**
+  - 写属性值时会顺着接下去：`display: ` → `flex` / `grid` / `none`…，`position: ` →
+    `absolute` / `relative` / `sticky`，`justify-content: ` → `space-between`…，
+    `color: ` 会给常用色（写成不带 `#` 的 `fff` / `000`，正好接在你已敲的字符后面）；
+    覆盖约 66 个常见属性，属性没有内置取值时再兜底文档里用过的值。
+  - 属性名位置 → 补文档里用过的属性名 + 常用属性名（约 100 个）。
+  - 选择器位置 → 顺手把 HTML 标签名也补上（`div` / `span`…）。
+  - `@` 之后 → 补 `@media` / `@import` / `@keyframes` / `@font-face` / `@supports` 等 at-rule。
+- **HTML / XML**：常用标签表扩到完整的 HTML5 常用集（`header` / `nav` / `main` / `section` /
+  `article` / `aside` / `footer` / `details` / `summary` / `dialog` / `canvas` / `svg` /
+  `video` / `audio`…）；常用属性表同步扩充（`required` / `selected` / `readonly` / `min` /
+  `max` / `step` / `pattern` / `alt` / `role` / `srcset` / `loading`…）。
+
 ## v1.42.00 (2026-10-10)
 
 ### 智能预测：补全看得懂「上下文 + 代码格式」，并加了总开关

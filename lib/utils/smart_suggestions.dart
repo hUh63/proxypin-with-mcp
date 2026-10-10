@@ -74,6 +74,8 @@ class SmartSuggestions {
         return _xml(documentText, linePrefix, prefix);
       case 'YAML':
         return _yaml(documentText, prefix);
+      case 'CSS':
+        return _css(documentText, linePrefix, prefix);
       default:
         return _generic(linePrefix, prefix, language ?? '');
     }
@@ -131,14 +133,30 @@ class SmartSuggestions {
     return _dedupe([..._xmlTags(tail), ..._commonTags], prefix);
   }
 
+  /// HTML5 常用标签，用于 `<` 之后没什么可参考时的兜底。
   static const List<String> _commonTags = [
-    'div', 'span', 'p', 'a', 'img', 'ul', 'li', 'table', 'tr', 'td', 'input', 'button',
-    'item', 'value', 'name', 'entry', 'id', 'type', 'label', 'header', 'body', 'section',
+    'html', 'head', 'body', 'title', 'meta', 'link', 'script', 'style', 'base', 'noscript',
+    'div', 'span', 'p', 'a', 'img', 'br', 'hr', 'strong', 'em', 'b', 'i', 'u', 's', 'small',
+    'sub', 'sup', 'mark', 'code', 'pre', 'kbd', 'samp', 'var', 'q', 'blockquote', 'cite',
+    'abbr', 'address', 'time', 'wbr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+    'caption', 'colgroup', 'col', 'form', 'input', 'textarea', 'button', 'select', 'option',
+    'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output', 'progress', 'meter',
+    'header', 'nav', 'main', 'section', 'article', 'aside', 'footer', 'figure', 'figcaption',
+    'details', 'summary', 'dialog', 'template', 'canvas', 'svg', 'video', 'audio', 'source',
+    'track', 'iframe', 'embed', 'object', 'param', 'picture', 'map', 'area',
+    'item', 'value', 'name', 'entry', 'id', 'type', 'label',
   ];
 
+  /// 常见属性名，用于标签内部的兜底。
   static const List<String> _commonAttrs = [
     'id', 'name', 'class', 'type', 'value', 'href', 'src', 'title', 'style', 'width',
-    'height', 'target', 'rel', 'placeholder', 'disabled', 'checked', 'xmlns', 'version',
+    'height', 'target', 'rel', 'placeholder', 'disabled', 'checked', 'selected', 'readonly',
+    'required', 'autofocus', 'multiple', 'min', 'max', 'step', 'pattern', 'for', 'action',
+    'method', 'alt', 'role', 'tabindex', 'lang', 'dir', 'charset', 'srcset', 'loading',
+    'decoding', 'poster', 'controls', 'loop', 'muted', 'preload', 'crossorigin', 'integrity',
+    'download', 'hreflang', 'contenteditable', 'draggable', 'hidden', 'colspan', 'rowspan',
+    'xmlns', 'version',
   ];
 
   static final RegExp _xmlTagRe = RegExp(r'<\s*/?\s*([A-Za-z_][\w:.-]*)');
@@ -200,6 +218,171 @@ class SmartSuggestions {
       if (out.length > 400) break;
     }
     return _dedupe(out, prefix);
+  }
+
+  // ---------------------------------------------------------------------------
+  // CSS
+  // ---------------------------------------------------------------------------
+
+  static List<String> _css(String doc, String linePrefix, String prefix) {
+    final tail = _tail(doc);
+    final trimmed = linePrefix.trimRight();
+
+    // at-rule：正在敲 `@media` 这类开头。
+    final at = trimmed.lastIndexOf('@');
+    if (at >= 0 && !RegExp(r'[\s;{)]').hasMatch(trimmed.substring(at))) {
+      return _dedupe(_cssAtRules, prefix);
+    }
+
+    final openCount = '{'.allMatches(trimmed).length;
+    final closeCount = '}'.allMatches(trimmed).length;
+    final inBlock = openCount > closeCount;
+    var segStart = trimmed.lastIndexOf('{');
+    final afterBrace = trimmed.lastIndexOf('}');
+    if (afterBrace > segStart) segStart = afterBrace;
+    final afterSemi = trimmed.lastIndexOf(';');
+    if (afterSemi > segStart) segStart = afterSemi;
+    final segment = trimmed.substring(segStart + 1);
+
+    final declaration =
+        RegExp(r'^\s*([A-Za-z][\w-]*)\s*:\s*(.*)$').firstMatch(segment);
+    if (inBlock && declaration != null) {
+      // 值位置：`display: |` —— 补这个属性的常用取值，再兜底文档里用过的值。
+      final prop = declaration.group(1)!.toLowerCase();
+      return _dedupe([...?_cssValues[prop], ..._cssDocValues(tail)], prefix);
+    }
+
+    // 属性名位置；选择器位置顺带把标签名也补上（`div.xxx` 这类写法）。
+    final props = _dedupe([..._cssDocProps(tail), ..._cssCommonProps], prefix);
+    if (inBlock) return props;
+    return _dedupe([...props, ..._commonTags], prefix);
+  }
+
+  static const List<String> _cssAtRules = [
+    '@media', '@import', '@keyframes', '@font-face', '@supports', '@charset', '@page',
+    '@layer', '@container', '@namespace',
+  ];
+
+  /// 常用属性名（选择器 / 声明块里都会用到）。
+  static const List<String> _cssCommonProps = [
+    'display', 'position', 'top', 'right', 'bottom', 'left', 'float', 'clear', 'z-index',
+    'overflow', 'overflow-x', 'overflow-y', 'width', 'height', 'min-width', 'min-height',
+    'max-width', 'max-height', 'margin', 'margin-top', 'margin-right', 'margin-bottom',
+    'margin-left', 'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+    'border', 'border-width', 'border-style', 'border-color', 'border-radius', 'border-top',
+    'border-bottom', 'outline', 'box-shadow', 'box-sizing', 'background', 'background-color',
+    'background-image', 'background-position', 'background-repeat', 'background-size',
+    'background-clip', 'color', 'opacity', 'visibility', 'content', 'cursor', 'pointer-events',
+    'user-select', 'resize', 'font', 'font-family', 'font-size', 'font-weight', 'font-style',
+    'line-height', 'letter-spacing', 'text-align', 'text-decoration', 'text-transform',
+    'text-indent', 'text-overflow', 'text-shadow', 'white-space', 'word-break', 'word-wrap',
+    'overflow-wrap', 'word-spacing', 'vertical-align', 'list-style', 'list-style-type',
+    'direction', 'writing-mode', 'filter', 'mix-blend-mode', 'flex', 'flex-direction',
+    'flex-wrap', 'flex-grow', 'flex-shrink', 'flex-basis', 'justify-content', 'align-items',
+    'align-content', 'align-self', 'order', 'gap', 'row-gap', 'column-gap', 'grid',
+    'grid-template-columns', 'grid-template-rows', 'grid-column', 'grid-row', 'grid-area',
+    'place-items', 'place-content', 'transition', 'transition-duration', 'transition-property',
+    'transform', 'transform-origin', 'animation', 'animation-name', 'animation-duration',
+  ];
+
+  /// 「属性 -> 常用取值」。含空格/百分号的值也可以，插入时会替换正在输入的那个词。
+  static const Map<String, List<String>> _cssValues = {
+    'display': ['block', 'inline', 'inline-block', 'flex', 'inline-flex', 'grid', 'none', 'contents', 'table'],
+    'position': ['static', 'relative', 'absolute', 'fixed', 'sticky'],
+    'float': ['none', 'left', 'right'],
+    'clear': ['none', 'left', 'right', 'both'],
+    'overflow': ['visible', 'hidden', 'scroll', 'auto', 'clip'],
+    'overflow-x': ['visible', 'hidden', 'scroll', 'auto'],
+    'overflow-y': ['visible', 'hidden', 'scroll', 'auto'],
+    'visibility': ['visible', 'hidden', 'collapse'],
+    'box-sizing': ['content-box', 'border-box'],
+    'cursor': ['auto', 'default', 'pointer', 'text', 'move', 'grab', 'grabbing', 'not-allowed', 'help', 'wait', 'crosshair'],
+    'pointer-events': ['none', 'auto'],
+    'user-select': ['none', 'text', 'all', 'auto'],
+    'resize': ['none', 'both', 'horizontal', 'vertical'],
+    'width': ['auto', '100%', '100vw', 'fit-content', 'min-content', 'max-content'],
+    'height': ['auto', '100%', '100vh'],
+    'min-width': ['0', '100%'],
+    'max-width': ['none', '100%', '960px', '1200px'],
+    'margin': ['0', 'auto'],
+    'padding': ['0'],
+    'gap': ['0', '8px', '16px'],
+    'row-gap': ['0', '8px', '16px'],
+    'column-gap': ['0', '8px', '16px'],
+    'border-style': ['none', 'solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset'],
+    'border-radius': ['0', '4px', '8px', '50%'],
+    'opacity': ['0', '0.5', '1'],
+    'z-index': ['0', '1', '10', '100'],
+    'color': ['000', 'fff', 'red', 'blue', 'green', 'currentColor', 'inherit', 'transparent'],
+    'background': ['none', 'transparent', 'fff', '000'],
+    'background-color': ['transparent', 'fff', '000'],
+    'background-repeat': ['no-repeat', 'repeat', 'repeat-x', 'repeat-y'],
+    'background-position': ['center', 'top', 'bottom', 'left', 'right'],
+    'background-size': ['cover', 'contain', 'auto'],
+    'flex': ['1', 'auto', 'none', '1 0 auto'],
+    'flex-direction': ['row', 'row-reverse', 'column', 'column-reverse'],
+    'flex-wrap': ['nowrap', 'wrap', 'wrap-reverse'],
+    'justify-content': ['flex-start', 'flex-end', 'center', 'space-between', 'space-around', 'space-evenly'],
+    'align-items': ['stretch', 'flex-start', 'flex-end', 'center', 'baseline'],
+    'align-content': ['stretch', 'flex-start', 'flex-end', 'center', 'space-between', 'space-around'],
+    'align-self': ['auto', 'stretch', 'flex-start', 'flex-end', 'center', 'baseline'],
+    'order': ['0', '1', '2', '-1'],
+    'grid-template-columns': ['repeat(auto-fit, minmax(200px, 1fr))', '1fr 1fr', 'none'],
+    'font-family': ['serif', 'sans-serif', 'monospace', 'cursive', 'system-ui'],
+    'font-weight': ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '700', '800', '900'],
+    'font-style': ['normal', 'italic', 'oblique'],
+    'line-height': ['normal', '1', '1.5', '2'],
+    'letter-spacing': ['normal', '0.5px', '1px'],
+    'text-align': ['left', 'right', 'center', 'justify', 'start', 'end'],
+    'text-decoration': ['none', 'underline', 'line-through', 'overline'],
+    'text-transform': ['none', 'uppercase', 'lowercase', 'capitalize'],
+    'text-overflow': ['clip', 'ellipsis'],
+    'white-space': ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'break-spaces'],
+    'word-break': ['normal', 'break-all', 'keep-all'],
+    'vertical-align': ['baseline', 'top', 'middle', 'bottom', 'sub', 'super', 'text-top', 'text-bottom'],
+    'list-style': ['none', 'disc', 'circle', 'square', 'decimal'],
+    'list-style-type': ['none', 'disc', 'circle', 'square', 'decimal', 'lower-alpha', 'upper-roman'],
+    'direction': ['ltr', 'rtl'],
+    'writing-mode': ['horizontal-tb', 'vertical-rl', 'vertical-lr'],
+    'transition': ['none', 'all 0.3s', 'all 0.3s ease', 'all 0.2s ease-in-out'],
+    'transition-duration': ['0.2s', '0.3s', '1s'],
+    'transform': ['none', 'scale(1)', 'translateX(0)', 'rotate(0deg)'],
+    'transform-origin': ['center', 'top', 'bottom', 'left', 'right'],
+    'animation': ['none'],
+    'mix-blend-mode': ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten'],
+    'filter': ['none', 'blur(2px)', 'brightness(1)', 'grayscale(1)', 'opacity(0.5)'],
+  };
+
+  /// 伪类 / 伪元素：提取文档属性名时要排除，避免把 `a:hover` 里的 `a` 当属性。
+  static const Set<String> _cssPseudo = {
+    'hover', 'focus', 'focus-within', 'focus-visible', 'active', 'visited', 'link', 'any-link',
+    'first-child', 'last-child', 'only-child', 'nth-child', 'nth-of-type', 'first-of-type',
+    'last-of-type', 'only-of-type', 'not', 'is', 'where', 'has', 'empty', 'target', 'root',
+    'before', 'after', 'placeholder', 'checked', 'disabled', 'enabled', 'required', 'valid',
+    'invalid', 'read-only', 'read-write', 'selection', 'marker', 'backdrop', 'file-selector-button',
+  };
+
+  static final RegExp _cssPropRe = RegExp(r'([A-Za-z][\w-]{2,})\s*:');
+  static final RegExp _cssValueRe = RegExp(r':\s*([A-Za-z][\w-]*)');
+
+  static List<String> _cssDocProps(String doc) {
+    final out = <String>[];
+    for (final m in _cssPropRe.allMatches(doc)) {
+      final prop = m.group(1)!.toLowerCase();
+      if (_cssPseudo.contains(prop)) continue;
+      out.add(prop);
+      if (out.length > 300) break;
+    }
+    return out;
+  }
+
+  static List<String> _cssDocValues(String doc) {
+    final out = <String>[];
+    for (final m in _cssValueRe.allMatches(doc)) {
+      out.add(m.group(1)!);
+      if (out.length > 200) break;
+    }
+    return out;
   }
 
   // ---------------------------------------------------------------------------
