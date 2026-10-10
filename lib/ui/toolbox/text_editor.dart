@@ -460,11 +460,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
-  /// 可滑动 / 可展开的快捷输入行。
+  /// 可滑动 / 可展开的快捷输入行；随当前文档的语言切换常用符号。
   Widget _snippetBar() {
+    final label = _doc?.langLabel ?? 'Plain Text';
     return SnippetBar(
-      scope: 'editor',
-      defaults: ToolSnippetDefaults.editor,
+      scope: editorSnippetScope(label),
+      defaults: ToolSnippetDefaults.forLanguage(label),
       onInsert: (text) => _insertAtCursor(text),
     );
   }

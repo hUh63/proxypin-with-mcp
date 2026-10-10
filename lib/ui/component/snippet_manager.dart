@@ -26,11 +26,15 @@ class SnippetManagerDialog extends StatefulWidget {
   final List<ToolSnippet> items;
   final List<ToolSnippet> defaults;
 
+  /// 全局「共用符号库」：其他页面新增过的自定义条目，点一下即可加到本页。
+  final List<ToolSnippet> customLibrary;
+
   const SnippetManagerDialog({
     super.key,
     required this.scope,
     required this.items,
     required this.defaults,
+    this.customLibrary = const [],
   });
 
   @override
@@ -78,6 +82,13 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
     });
+  }
+
+  /// 把共用库里的条目加进本页（按插入文本去重）。
+  void _addFromLibrary(ToolSnippet s) {
+    if (_rows.any((r) => r.insert.text == s.insert)) return;
+    _rows.add(_RowCtl(s.label, s.insert));
+    setState(() {});
   }
 
   void _resetToDefaults() {
@@ -139,6 +150,36 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
               label: Text(localizations.snippetManagerReset),
             ),
           ]),
+          if (widget.customLibrary.isNotEmpty) ...[
+            const Divider(height: 18),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(localizations.snippetCustomLibrary,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ),
+            const SizedBox(height: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 110),
+              child: SingleChildScrollView(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: widget.customLibrary
+                        .map((s) => InputChip(
+                              label: Text(s.label,
+                                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              onPressed: () => _addFromLibrary(s),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ]),
       ),
       actions: [

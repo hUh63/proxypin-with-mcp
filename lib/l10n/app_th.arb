@@ -2511,5 +2511,6 @@
   "diffIgnoreCase": "ไม่สนตัวพิมพ์เล็กใหญ่",
   "diffIgnoreWhitespace": "ไม่สนช่องว่าง",
   "snippetExpand": "ขยาย",
-  "snippetCollapse": "ย่อ"
+  "snippetCollapse": "ย่อ",
+  "snippetCustomLibrary": "สัญลักษณ์ที่ใช้ร่วมกัน"
 }

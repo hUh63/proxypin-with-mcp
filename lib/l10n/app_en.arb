@@ -4424,5 +4424,6 @@
   "diffIgnoreCase": "Ignore case",
   "diffIgnoreWhitespace": "Ignore whitespace",
   "snippetExpand": "Expand",
-  "snippetCollapse": "Collapse"
+  "snippetCollapse": "Collapse",
+  "snippetCustomLibrary": "Shared symbols"
 }

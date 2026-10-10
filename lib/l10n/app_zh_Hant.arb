@@ -876,5 +876,6 @@
   "diffIgnoreCase": "忽略大小寫",
   "diffIgnoreWhitespace": "忽略空白",
   "snippetExpand": "展開",
-  "snippetCollapse": "收合"
+  "snippetCollapse": "收合",
+  "snippetCustomLibrary": "共用符號庫"
 }

@@ -405,5 +405,6 @@
   "diffIgnoreCase": "Ignorar maiúsculas",
   "diffIgnoreWhitespace": "Ignorar espaços",
   "snippetExpand": "Expandir",
-  "snippetCollapse": "Recolher"
+  "snippetCollapse": "Recolher",
+  "snippetCustomLibrary": "Símbolos compartilhados"
 }

@@ -188,13 +188,319 @@ class ToolSnippetDefaults {
     ToolSnippet('&quot;', '&quot;'),
     ToolSnippet('&apos;', '&apos;'),
   ];
+
+  /// HTTP 报文：方法 / 常见请求头 / 行结束符。
+  static const List<ToolSnippet> http = [
+    ToolSnippet('GET ', 'GET '),
+    ToolSnippet('POST ', 'POST '),
+    ToolSnippet('PUT ', 'PUT '),
+    ToolSnippet('DELETE ', 'DELETE '),
+    ToolSnippet('PATCH ', 'PATCH '),
+    ToolSnippet('HEAD ', 'HEAD '),
+    ToolSnippet('OPTIONS ', 'OPTIONS '),
+    ToolSnippet('Host: ', 'Host: '),
+    ToolSnippet('Content-Type: ', 'Content-Type: '),
+    ToolSnippet('Authorization: ', 'Authorization: '),
+    ToolSnippet('Cookie: ', 'Cookie: '),
+    ToolSnippet('Accept: ', 'Accept: '),
+    ToolSnippet('User-Agent: ', 'User-Agent: '),
+    ToolSnippet(r'\r\n', r'\r\n'),
+  ];
+
+  /// JavaScript 常用符号 / 片段。
+  static const List<ToolSnippet> javascript = [
+    ToolSnippet('{ }', '{}'),
+    ToolSnippet('[ ]', '[]'),
+    ToolSnippet('( )', '()'),
+    ToolSnippet('=>', '=>'),
+    ToolSnippet(';', ';'),
+    ToolSnippet(',', ', '),
+    ToolSnippet('.', '.'),
+    ToolSnippet(': ', ': '),
+    ToolSnippet('===', '==='),
+    ToolSnippet('!==', '!=='),
+    ToolSnippet('&&', '&&'),
+    ToolSnippet('||', '||'),
+    ToolSnippet('??', '??'),
+    ToolSnippet('?.', '?.'),
+    ToolSnippet('function ', 'function '),
+    ToolSnippet('return ', 'return '),
+    ToolSnippet('async ', 'async '),
+    ToolSnippet('await ', 'await '),
+    ToolSnippet('console.log()', 'console.log()'),
+    ToolSnippet('JSON.parse()', 'JSON.parse()'),
+    ToolSnippet('JSON.stringify()', 'JSON.stringify()'),
+    ToolSnippet(r'`${}`', r'`${}`'),
+  ];
+
+  /// TypeScript 常用符号 / 片段。
+  static const List<ToolSnippet> typescript = [
+    ToolSnippet('interface ', 'interface '),
+    ToolSnippet('type ', 'type '),
+    ToolSnippet('enum ', 'enum '),
+    ToolSnippet('export ', 'export '),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('readonly ', 'readonly '),
+    ToolSnippet('string', 'string'),
+    ToolSnippet('number', 'number'),
+    ToolSnippet('boolean', 'boolean'),
+    ToolSnippet('void', 'void'),
+    ToolSnippet('any', 'any'),
+    ToolSnippet('(): ', '(): '),
+    ToolSnippet('?: ', '?: '),
+    ToolSnippet('<>', '<>'),
+    ToolSnippet('as ', 'as '),
+    ToolSnippet('{ }', '{}'),
+    ToolSnippet('[ ]', '[]'),
+    ToolSnippet('( )', '()'),
+    ToolSnippet('=>', '=>'),
+    ToolSnippet(';', ';'),
+    ToolSnippet('return ', 'return '),
+    ToolSnippet('console.log()', 'console.log()'),
+  ];
+
+  /// CSS 常用属性 / 语法。
+  static const List<ToolSnippet> css = [
+    ToolSnippet('{ }', '{}'),
+    ToolSnippet(': ', ': '),
+    ToolSnippet(';', ';'),
+    ToolSnippet('.class', '.class'),
+    ToolSnippet('#id', '#id'),
+    ToolSnippet('/* */', '/*  */'),
+    ToolSnippet('@media', '@media '),
+    ToolSnippet('@import', '@import '),
+    ToolSnippet('!important', ' !important'),
+    ToolSnippet('px', 'px'),
+    ToolSnippet('rem', 'rem'),
+    ToolSnippet('%', '%'),
+    ToolSnippet('display:', 'display: '),
+    ToolSnippet('position:', 'position: '),
+    ToolSnippet('margin:', 'margin: '),
+    ToolSnippet('padding:', 'padding: '),
+    ToolSnippet('color:', 'color: '),
+    ToolSnippet('background:', 'background: '),
+    ToolSnippet('flex', 'display: flex;'),
+    ToolSnippet('var(--)', 'var(--)'),
+  ];
+
+  /// SQL 常用关键字。
+  static const List<ToolSnippet> sql = [
+    ToolSnippet('SELECT ', 'SELECT '),
+    ToolSnippet('FROM ', 'FROM '),
+    ToolSnippet('WHERE ', 'WHERE '),
+    ToolSnippet('JOIN ', 'JOIN '),
+    ToolSnippet('LEFT JOIN ', 'LEFT JOIN '),
+    ToolSnippet('INNER JOIN ', 'INNER JOIN '),
+    ToolSnippet('ON ', 'ON '),
+    ToolSnippet('GROUP BY ', 'GROUP BY '),
+    ToolSnippet('ORDER BY ', 'ORDER BY '),
+    ToolSnippet('LIMIT ', 'LIMIT '),
+    ToolSnippet('INSERT INTO ', 'INSERT INTO '),
+    ToolSnippet('VALUES ', 'VALUES '),
+    ToolSnippet('UPDATE ', 'UPDATE '),
+    ToolSnippet('SET ', 'SET '),
+    ToolSnippet('DELETE FROM ', 'DELETE FROM '),
+    ToolSnippet('COUNT(*)', 'COUNT(*)'),
+    ToolSnippet(' AS ', ' AS '),
+    ToolSnippet(' AND ', ' AND '),
+    ToolSnippet(' OR ', ' OR '),
+    ToolSnippet('NULL', 'NULL'),
+    ToolSnippet(';', ';'),
+  ];
+
+  /// YAML 常用结构。
+  static const List<ToolSnippet> yaml = [
+    ToolSnippet('key: ', 'key: '),
+    ToolSnippet('- ', '- '),
+    ToolSnippet('- key: ', '- key: '),
+    ToolSnippet('# ', '# '),
+    ToolSnippet('---', '---'),
+    ToolSnippet('|', '|'),
+    ToolSnippet('>', '>'),
+    ToolSnippet('[]', '[]'),
+    ToolSnippet('{}', '{}'),
+    ToolSnippet('true', 'true'),
+    ToolSnippet('false', 'false'),
+    ToolSnippet('null', 'null'),
+  ];
+
+  /// Markdown 常用语法。
+  static const List<ToolSnippet> markdown = [
+    ToolSnippet('# ', '# '),
+    ToolSnippet('## ', '## '),
+    ToolSnippet('### ', '### '),
+    ToolSnippet('**bold**', '**bold**'),
+    ToolSnippet('*italic*', '*italic*'),
+    ToolSnippet('~~del~~', '~~del~~'),
+    ToolSnippet('[text](url)', '[text](url)'),
+    ToolSnippet('![alt](url)', '![alt](url)'),
+    ToolSnippet('`code`', '`code`'),
+    ToolSnippet('```', '```'),
+    ToolSnippet('> ', '> '),
+    ToolSnippet('- ', '- '),
+    ToolSnippet('1. ', '1. '),
+    ToolSnippet('- [ ] ', '- [ ] '),
+    ToolSnippet('| a | b |', '| a | b |\n|---|---|\n|  |  |'),
+    ToolSnippet('---', '---'),
+  ];
+
+  /// Bash / Shell 常用语法。
+  static const List<ToolSnippet> bash = [
+    ToolSnippet('#!/bin/bash', '#!/bin/bash'),
+    ToolSnippet(r'$', r'$'),
+    ToolSnippet(' | ', ' | '),
+    ToolSnippet(' > ', ' > '),
+    ToolSnippet(' >> ', ' >> '),
+    ToolSnippet(' && ', ' && '),
+    ToolSnippet(' || ', ' || '),
+    ToolSnippet(';', ';'),
+    ToolSnippet(r'$( )', r'$( )'),
+    ToolSnippet(r'${}', r'${}'),
+    ToolSnippet('if', 'if [ ]; then\n\nfi'),
+    ToolSnippet('for', 'for x in ; do\n\n done'),
+    ToolSnippet('echo ', 'echo '),
+    ToolSnippet('cd ', 'cd '),
+    ToolSnippet('ls ', 'ls '),
+    ToolSnippet('grep ', 'grep '),
+    ToolSnippet('sed ', 'sed '),
+    ToolSnippet('awk ', 'awk '),
+    ToolSnippet('curl ', 'curl '),
+    ToolSnippet('chmod +x ', 'chmod +x '),
+  ];
+
+  /// Python 常用语法。
+  static const List<ToolSnippet> python = [
+    ToolSnippet('def ', 'def '),
+    ToolSnippet('class ', 'class '),
+    ToolSnippet('return ', 'return '),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('from ', 'from '),
+    ToolSnippet('if __name__', 'if __name__ == "__main__":'),
+    ToolSnippet('print()', 'print()'),
+    ToolSnippet('lambda ', 'lambda '),
+    ToolSnippet('self', 'self'),
+    ToolSnippet('None', 'None'),
+    ToolSnippet('True', 'True'),
+    ToolSnippet('False', 'False'),
+    ToolSnippet('[]', '[]'),
+    ToolSnippet('{}', '{}'),
+    ToolSnippet('()', '()'),
+    ToolSnippet(':', ':'),
+    ToolSnippet('f""', 'f""'),
+    ToolSnippet('@', '@'),
+  ];
+
+  /// Java 常用语法。
+  static const List<ToolSnippet> java = [
+    ToolSnippet('public class ', 'public class '),
+    ToolSnippet('main()', 'public static void main(String[] args) {}'),
+    ToolSnippet('private ', 'private '),
+    ToolSnippet('public ', 'public '),
+    ToolSnippet('static ', 'static '),
+    ToolSnippet('void ', 'void '),
+    ToolSnippet('new ', 'new '),
+    ToolSnippet('return ', 'return '),
+    ToolSnippet('System.out.println()', 'System.out.println()'),
+    ToolSnippet('String', 'String'),
+    ToolSnippet('int', 'int'),
+    ToolSnippet('boolean', 'boolean'),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('@Override', '@Override'),
+    ToolSnippet('extends ', 'extends '),
+    ToolSnippet('implements ', 'implements '),
+    ToolSnippet('{ }', '{}'),
+    ToolSnippet(';', ';'),
+  ];
+
+  /// Go 常用语法。
+  static const List<ToolSnippet> go = [
+    ToolSnippet('package ', 'package '),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('func ', 'func '),
+    ToolSnippet('return ', 'return '),
+    ToolSnippet('if err != nil', 'if err != nil {\n\treturn\n}'),
+    ToolSnippet('for ', 'for '),
+    ToolSnippet(':=', ':='),
+    ToolSnippet('var ', 'var '),
+    ToolSnippet('struct ', 'type  struct {\n\n}'),
+    ToolSnippet('interface ', 'type  interface {\n\n}'),
+    ToolSnippet('error', 'error'),
+    ToolSnippet('nil', 'nil'),
+    ToolSnippet('defer ', 'defer '),
+    ToolSnippet('go ', 'go '),
+    ToolSnippet('chan ', 'chan '),
+    ToolSnippet('fmt.Println()', 'fmt.Println()'),
+  ];
+
+  /// Dart 常用语法。
+  static const List<ToolSnippet> dart = [
+    ToolSnippet('class ', 'class '),
+    ToolSnippet('void ', 'void '),
+    ToolSnippet('final ', 'final '),
+    ToolSnippet('var ', 'var '),
+    ToolSnippet('const ', 'const '),
+    ToolSnippet('late ', 'late '),
+    ToolSnippet('required ', 'required '),
+    ToolSnippet('return ', 'return '),
+    ToolSnippet('Future', 'Future'),
+    ToolSnippet('async ', 'async '),
+    ToolSnippet('await ', 'await '),
+    ToolSnippet('@override', '@override'),
+    ToolSnippet('=>', '=>'),
+    ToolSnippet('{ }', '{}'),
+    ToolSnippet('[ ]', '[]'),
+    ToolSnippet('( )', '()'),
+    ToolSnippet(';', ';'),
+    ToolSnippet(': ', ': '),
+  ];
+
+  /// 按文本编辑页的语言标签选出对应的常用符号集。
+  static List<ToolSnippet> forLanguage(String langLabel) {
+    switch (langLabel) {
+      case 'HTTP':
+        return http;
+      case 'JSON':
+        return json;
+      case 'XML / HTML':
+        return xml;
+      case 'JavaScript':
+        return javascript;
+      case 'TypeScript':
+        return typescript;
+      case 'CSS':
+        return css;
+      case 'SQL':
+        return sql;
+      case 'YAML':
+        return yaml;
+      case 'Markdown':
+        return markdown;
+      case 'Bash':
+        return bash;
+      case 'Python':
+        return python;
+      case 'Java':
+        return java;
+      case 'Go':
+        return go;
+      case 'Dart':
+        return dart;
+      default:
+        return editor;
+    }
+  }
 }
+
 
 
 /// 「快捷插入」条目的持久化存储。
 ///
 /// 约定：未自定义（键不存在或为空串）时返回 null，调用方回退到内置默认；
 /// 用户清空后写入 `[]`，表示"确实不要任何条目"。
+/// 文本编辑页按语言生成持久化 scope：每种格式各自记住自己的自定义条目。
+String editorSnippetScope(String langLabel) =>
+    'editor_${langLabel.replaceAll(RegExp('[^A-Za-z0-9]'), '_').toLowerCase()}';
+
 class ToolSnippetStore {
   ToolSnippetStore._();
 
@@ -222,4 +528,39 @@ class ToolSnippetStore {
   static Future<void> reset(String scope) async {
     await SharedPreferencesAsync().setString(_key(scope), '');
   }
+
+  /// 全局「共用符号库」存储键：任意页面新增过的自定义条目都进这里，跨页共享。
+  static const String customKey = 'tool_snippets_custom_v1';
+
+  /// 读取共用符号库。
+  static Future<List<ToolSnippet>> loadCustom() async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(customKey);
+      if (raw == null || raw.isEmpty) return const [];
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      return decoded.map(ToolSnippet.fromJson).whereType<ToolSnippet>().toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static Future<void> saveCustom(List<ToolSnippet> items) async {
+    await SharedPreferencesAsync().setString(customKey, jsonEncode(items.map((e) => e.toJson()).toList()));
+  }
+
+  /// 追加进共用符号库（按插入文本去重），返回追加后的完整库。
+  static Future<List<ToolSnippet>> appendCustom(Iterable<ToolSnippet> items) async {
+    final cur = await loadCustom();
+    final seen = <String>{for (final e in cur) e.insert};
+    final out = <ToolSnippet>[...cur];
+    for (final e in items) {
+      if (e.insert.isEmpty || seen.contains(e.insert)) continue;
+      seen.add(e.insert);
+      out.add(e);
+    }
+    if (out.length != cur.length) await saveCustom(out);
+    return out;
+  }
 }
+

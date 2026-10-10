@@ -51,6 +51,7 @@ class SnippetBar extends StatefulWidget {
 
 class _SnippetBarState extends State<SnippetBar> {
   late List<ToolSnippet> _items = widget.defaults;
+  List<ToolSnippet> _customLibrary = const [];
   bool _expanded = false;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
@@ -61,24 +62,47 @@ class _SnippetBarState extends State<SnippetBar> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(SnippetBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 文本编辑页切换语言时 scope 会变，需重新载入该格式的条目与默认。
+    if (oldWidget.scope != widget.scope) {
+      setState(() => _items = widget.defaults);
+      _load();
+    }
+  }
+
   Future<void> _load() async {
     final saved = await ToolSnippetStore.load(widget.scope);
-    if (!mounted || saved == null) return;
-    setState(() => _items = saved);
+    final lib = await ToolSnippetStore.loadCustom();
+    if (!mounted) return;
+    setState(() {
+      if (saved != null) _items = saved;
+      _customLibrary = lib;
+    });
   }
 
   Future<void> _manage() async {
+    final before = _items;
     final result = await showDialog<List<ToolSnippet>>(
       context: context,
       builder: (_) => SnippetManagerDialog(
         scope: widget.scope,
         items: _items,
         defaults: widget.defaults,
+        customLibrary: _customLibrary,
       ),
     );
     if (result == null || !mounted) return;
     setState(() => _items = result);
     await ToolSnippetStore.save(widget.scope, result);
+    // 本次新增的条目 → 追加进全局共用库，其他页面即可一键取用。
+    final known = <String>{for (final e in before) e.insert};
+    final added = result.where((e) => !known.contains(e.insert)).toList();
+    if (added.isNotEmpty) {
+      final lib = await ToolSnippetStore.appendCustom(added);
+      if (mounted) setState(() => _customLibrary = lib);
+    }
   }
 
   Widget _chip(ToolSnippet s) {

@@ -2511,5 +2511,6 @@
   "diffIgnoreCase": "Abaikan kapital",
   "diffIgnoreWhitespace": "Abaikan spasi",
   "snippetExpand": "Perluas",
-  "snippetCollapse": "Ciutkan"
+  "snippetCollapse": "Ciutkan",
+  "snippetCustomLibrary": "Simbol bersama"
 }

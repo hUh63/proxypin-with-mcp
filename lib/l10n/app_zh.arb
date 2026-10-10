@@ -4312,5 +4312,6 @@
   "diffIgnoreCase": "忽略大小写",
   "diffIgnoreWhitespace": "忽略空白",
   "snippetExpand": "展开",
-  "snippetCollapse": "收起"
+  "snippetCollapse": "收起",
+  "snippetCustomLibrary": "共用符号库"
 }
