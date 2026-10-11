@@ -2588,5 +2588,6 @@
   "editorFileChanged": "El archivo cambió en disco",
   "editorExitConfirmAgainTitle": "Confirmar de nuevo",
   "editorExitConfirmAgainBody": "¿Seguro que quieres salir del editor?",
-  "editorMenuManage": "Administrar"
+  "editorMenuManage": "Administrar",
+  "editorFormatUnsupported": "Este lenguaje no admite formateo"
 }

@@ -954,5 +954,6 @@
   "editorFileChanged": "檔案已被其它程式修改",
   "editorExitConfirmAgainTitle": "再次確認",
   "editorExitConfirmAgainBody": "確定要結束編輯器嗎？",
-  "editorMenuManage": "管理"
+  "editorMenuManage": "管理",
+  "editorFormatUnsupported": "目前語言暫不支援格式化"
 }

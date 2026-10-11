@@ -2588,5 +2588,6 @@
   "editorFileChanged": "Tệp đã thay đổi trên đĩa",
   "editorExitConfirmAgainTitle": "Xác nhận lại",
   "editorExitConfirmAgainBody": "Bạn chắc chắn muốn thoát trình soạn thảo?",
-  "editorMenuManage": "Quản lý"
+  "editorMenuManage": "Quản lý",
+  "editorFormatUnsupported": "Ngôn ngữ này chưa hỗ trợ định dạng"
 }

@@ -4389,5 +4389,6 @@
   "editorFileChanged": "文件已被其它程序修改",
   "editorExitConfirmAgainTitle": "再次确认",
   "editorExitConfirmAgainBody": "确定要退出编辑器吗？",
-  "editorMenuManage": "管理"
+  "editorMenuManage": "管理",
+  "editorFormatUnsupported": "当前语言暂不支持格式化"
 }

@@ -2588,5 +2588,6 @@
   "editorFileChanged": "Berkas berubah di disk",
   "editorExitConfirmAgainTitle": "Konfirmasi lagi",
   "editorExitConfirmAgainBody": "Yakin ingin keluar dari editor?",
-  "editorMenuManage": "Kelola"
+  "editorMenuManage": "Kelola",
+  "editorFormatUnsupported": "Bahasa ini tidak mendukung pemformatan"
 }

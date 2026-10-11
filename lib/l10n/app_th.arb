@@ -2588,5 +2588,6 @@
   "editorFileChanged": "ไฟล์ถูกแก้ไขบนดิสก์",
   "editorExitConfirmAgainTitle": "ยืนยันอีกครั้ง",
   "editorExitConfirmAgainBody": "แน่ใจหรือว่าจะออกจากตัวแก้ไข?",
-  "editorMenuManage": "จัดการ"
+  "editorMenuManage": "จัดการ",
+  "editorFormatUnsupported": "ภาษานี้ไม่รองรับการจัดรูปแบบ"
 }

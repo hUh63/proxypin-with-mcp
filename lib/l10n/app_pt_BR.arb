@@ -483,5 +483,6 @@
   "editorFileChanged": "O arquivo mudou no disco",
   "editorExitConfirmAgainTitle": "Confirmar novamente",
   "editorExitConfirmAgainBody": "Tem certeza de que deseja sair do editor?",
-  "editorMenuManage": "Gerenciar"
+  "editorMenuManage": "Gerenciar",
+  "editorFormatUnsupported": "Esta linguagem não suporta formatação"
 }

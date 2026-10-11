@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.53.00 (2026-10-11)
+
+### 语法切换后 补全 / 符号条 / 注释 / 格式化 全语言适配
+
+上一版把语法列表扩到 190+ 种，但按语言分派的四项能力仍只认原来那 14 个语言名，
+切到 Kotlin / Rust / Swift 等语言后等于「什么都没有」。本版补齐：
+
+- 新增**语言族元数据层** `lib/utils/lang_meta.dart`：把 194 种语言按注释语法
+  归到 10 个族（c / hash / sql / xml / lisp / percent / vb / batch / fortran /
+  none），并定义族级的行注释、块注释与格式化器类型。
+- **切换注释**：行注释按族取（`//` `#` `--` `;` `%` `'` `REM` `!`），块注释支持
+  `/* */` 与 `<!-- -->`，不再只认那几种语言。
+- **格式化**：JSON / XML / CSS / JS 走专属格式化器；其余 C 风格语言走新增的
+  **通用大括号缩进重排**（只改每行前导空白，正文逐字保留，字符串与注释里的
+  括号不参与计数）；缩进敏感语言（Python / YAML / Markdown 等）不重排并给出提示。
+- **智能补全**：`CodeKeywords` 增加族通用关键字表与 20+ 种语言专属表，
+  全部语言都有候选。
+- **符号条**：`ToolSnippetDefaults` 同样增加族通用符号集与 20+ 种语言专属符号集
+  （Kotlin / Rust / Swift / PHP / Ruby / C / C++ / C# / Lua / R / Scala / Perl /
+  PowerShell / Haskell / Objective-C / Elixir / Clojure / LaTeX / Nix / Zig / GraphQL）。
+
 ## v1.52.00 (2026-10-11)
 
 ### Big5-HKSCS 改为纯 Dart 实现

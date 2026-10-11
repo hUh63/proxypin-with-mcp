@@ -38,6 +38,7 @@ import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/lang_meta.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
 import 'package:proxypin/ui/toolbox/text_editor_settings.dart';
 import 'package:proxypin/ui/toolbox/text_editor_menus.dart';
@@ -74,11 +75,13 @@ class TextEditorPage extends StatefulWidget {
 }
 
 /// 下拉里的语言项：显示名 + re_highlight Mode；Plain Text 用 null mode。
+/// [key] 是 re_highlight 的小写语言标识，用于查语言族（注释 / 格式化 / 补全）。
 class _LangOption {
   final String label;
   final Mode? mode;
+  final String key;
 
-  const _LangOption(this.label, this.mode);
+  const _LangOption(this.label, this.mode, [this.key = '']);
 }
 
 /// 少数语言的展示名与内核给的 name 不同，这里做覆盖。
@@ -97,7 +100,7 @@ List<_LangOption> _buildLangs() {
   for (final e in entries) {
     if (e.key == 'plaintext') continue;
     final label = _kLangLabelOverride[e.key] ?? e.value.name ?? e.key;
-    out.add(_LangOption(label, e.value));
+    out.add(_LangOption(label, e.value, e.key));
   }
   return out;
 }
@@ -882,7 +885,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final label = _doc?.langLabel ?? 'Plain Text';
     return SnippetBar(
       scope: editorSnippetScope(label),
-      defaults: ToolSnippetDefaults.forLanguage(label),
+      defaults: ToolSnippetDefaults.forLanguage(label, _lang.key),
       onInsert: (text) => _insertAtCursor(text),
     );
   }
@@ -994,28 +997,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _toast(localizations.editorReplacedLine);
   }
 
-  String? _lineCommentToken() {
-    switch (_doc?.langLabel) {
-      case 'JavaScript':
-      case 'TypeScript':
-      case 'Java':
-      case 'Go':
-      case 'Dart':
-      case 'CSS':
-        return '//';
-      case 'Python':
-      case 'Bash':
-      case 'YAML':
-        return '#';
-      case 'SQL':
-        return '--';
-      default:
-        return null;
-    }
-  }
+  /// 行注释前缀（按语言族；覆盖全部语言）。
+  String? _lineCommentToken() =>
+      lineCommentOf(key: _lang.key, label: _lang.label);
 
-  bool get _isBlockCommentLang =>
-      _doc?.langLabel == 'XML / HTML' || _doc?.langLabel == 'Markdown';
+  /// 块注释定界符（按语言族）。
+  (String, String)? get _blockComment =>
+      blockCommentOf(key: _lang.key, label: _lang.label);
 
   void _toggleComment() {
     final controller = _controller;
@@ -1031,23 +1019,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final lines = block.split('\n');
 
     final token = _lineCommentToken();
-    if (token == null && !_isBlockCommentLang) {
+    final block = _blockComment;
+    if (token == null && block == null) {
       _toast(localizations.editorCommentUnsupported);
       return;
     }
 
     String result;
-    if (_isBlockCommentLang && token == null) {
-      final allWrapped = lines.every((l) => l.trim().isEmpty || (l.trimLeft().startsWith('<!--') && l.trimRight().endsWith('-->')));
+    if (block != null && token == null) {
+      final open = block.$1;
+      final close = block.$2;
+      final allWrapped = lines.every((l) =>
+          l.trim().isEmpty ||
+          (l.trimLeft().startsWith(open) && l.trimRight().endsWith(close)));
       result = lines
           .map((l) {
             if (l.trim().isEmpty) return l;
             final indent = l.substring(0, l.length - l.trimLeft().length);
             final body = l.trim();
             if (allWrapped) {
-              return indent + body.replaceFirst('<!--', '').replaceFirst(RegExp(r'-->\s*$'), '');
+              return indent +
+                  body.replaceFirst(open, '').replaceFirst(RegExp('\\s*${RegExp.escape(close)}\\$'), '');
             }
-            return '$indent<!-- $body -->';
+            return '$indent$open $body $close';
           })
           .join('\n');
     } else {
@@ -1185,12 +1179,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.text = '';
   }
 
-  /// 是否支持格式化：JSON / XML / HTML / CSS / JavaScript。
-  bool get _canFormat =>
-      _lang.label == 'JSON' ||
-      _lang.label == 'XML / HTML' ||
-      _lang.label == 'CSS' ||
-      _lang.label == 'JavaScript';
+  /// 当前语言用哪种格式化器（全部语言都有归属，只是不一定有专属格式化器）。
+  FormatKind get _formatKind =>
+      formatKindOf(key: _lang.key, label: _lang.label);
+
+  bool get _canFormat => _formatKind != FormatKind.none;
 
   /// 按当前语言格式化。失败时通过 toast 显示原因，不修改原文。
   Future<void> _format() async {
@@ -1198,31 +1191,37 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (controller == null) return;
     final text = controller.text;
     if (text.trim().isEmpty) return;
-    switch (_lang.label) {
-      case 'JSON':
+    switch (_formatKind) {
+      case FormatKind.json:
         try {
           final pretty = JSON.pretty(text);
           if (pretty != text) controller.text = pretty;
         } catch (e) {
           _toast('${localizations.fail}: $e');
         }
-      case 'XML / HTML':
+      case FormatKind.xml:
         try {
           final pretty = XmlDocument.parse(text).toXmlString(pretty: true, indent: '  ');
           if (pretty != text) controller.text = pretty;
         } on XmlException catch (e) {
           _toast('${localizations.fail}: ${e.message}');
         }
-      case 'CSS':
+      case FormatKind.css:
         final pretty = CSS.pretty(text);
         if (pretty != text) controller.text = pretty;
-      case 'JavaScript':
+      case FormatKind.js:
         try {
           final pretty = await JsDeobfuscator.beautify(text);
           if (pretty != text) controller.text = pretty;
         } catch (e) {
           _toast('${localizations.fail}: $e');
         }
+      case FormatKind.brace:
+        // 通用大括号缩进重排：只改每行前导空白，正文逐字保留。
+        final pretty = reindentBraces(text, tabSize: _prefs.tabSize, useTabs: _prefs.useTabs);
+        if (pretty != text) controller.text = pretty;
+      case FormatKind.none:
+        _toast(localizations.editorFormatUnsupported);
     }
   }
 
@@ -1283,7 +1282,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (doc != null) {
       final smart = SmartCompletion.enabled.value && !_smooth;
       doc.controller.extraSuggestions =
-          smart ? CodeKeywords.forLanguage(doc.langLabel) : const <String>[];
+          smart ? CodeKeywords.forLanguage(doc.langLabel, _lang.key) : const <String>[];
       doc.controller.contextSuggestionProvider = smart
           ? (ctx) => SmartSuggestions.suggest(
                 language: doc.langLabel,

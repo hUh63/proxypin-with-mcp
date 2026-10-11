@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import 'package:proxypin/utils/lang_meta.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -864,8 +866,823 @@ class ToolSnippetDefaults {
     ToolSnippet(': ', ': '),
   ];
 
-  /// 按文本编辑页的语言标签选出对应的常用符号集。
-  static List<ToolSnippet> forLanguage(String langLabel) {
+  // ------------------------------------------------------------ 语言族通用符号
+  //
+  // 未单独定义符号条的语言按「族」回退，保证 190+ 种语言都有可用的快捷符号。
+
+  static final List<ToolSnippet> cFamily = [
+    ToolSnippet('{ }', '{  }'),
+    ToolSnippet('( )', '( )'),
+    ToolSnippet('[ ]', '[ ]'),
+    ToolSnippet(';', ';'),
+    ToolSnippet('//', '// '),
+    ToolSnippet('/* */', '/*  */'),
+    ToolSnippet('=', ' = '),
+    ToolSnippet('==', ' == '),
+    ToolSnippet('!=', ' != '),
+    ToolSnippet('<=', ' <= '),
+    ToolSnippet('>=', ' >= '),
+    ToolSnippet('&&', ' && '),
+    ToolSnippet('||', ' || '),
+    ToolSnippet('->', '-> '),
+    ToolSnippet('=>', ' => '),
+    ToolSnippet('++', '++'),
+    ToolSnippet('--', '--'),
+    ToolSnippet('+=', ' += '),
+    ToolSnippet('-=', ' -= '),
+    ToolSnippet('::', '::'),
+    ToolSnippet('"', '"'),
+    ToolSnippet("'", "'"),
+    ToolSnippet('#include', '#include '),
+    ToolSnippet('#define', '#define '),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('for', 'for (int i = 0; i < n; i++) {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('class', 'class  {\n  \n}'),
+    ToolSnippet('public', 'public '),
+    ToolSnippet('static', 'static '),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('new', 'new '),
+    ToolSnippet('try/catch', 'try {\n  \n} catch (e) {\n  \n}'),
+  ];
+
+  static final List<ToolSnippet> hashFamily = [
+    ToolSnippet('# ', '# '),
+    ToolSnippet('#!', '#!/usr/bin/env sh'),
+    ToolSnippet('= ', ' = '),
+    ToolSnippet('== ', ' == '),
+    ToolSnippet('!= ', ' != '),
+    ToolSnippet('( )', '( )'),
+    ToolSnippet('[ ]', '[ ]'),
+    ToolSnippet('{ }', '{ }'),
+    ToolSnippet(':', ': '),
+    ToolSnippet(', ', ', '),
+    ToolSnippet('.', '.'),
+    ToolSnippet('"', '"'),
+    ToolSnippet("'", "'"),
+    ToolSnippet('\\', '\\'),
+    ToolSnippet('@', '@'),
+    ToolSnippet('%', '%'),
+    ToolSnippet('&', '&'),
+    ToolSnippet('|', '|'),
+    ToolSnippet('> ', '> '),
+    ToolSnippet('>> ', '>> '),
+    ToolSnippet('+ ', ' + '),
+    ToolSnippet('- ', ' - '),
+    ToolSnippet('* ', ' * '),
+    ToolSnippet('/ ', ' / '),
+    ToolSnippet('def', 'def (){\n  \n}'),
+    ToolSnippet('class', 'class :\n  def __init__(self):\n    pass'),
+    ToolSnippet('if', 'if :\n  '),
+    ToolSnippet('elif', 'elif :\n  '),
+    ToolSnippet('else', 'else:\n  '),
+    ToolSnippet('for', 'for  in :\n  '),
+    ToolSnippet('while', 'while :\n  '),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('import', 'import '),
+    ToolSnippet('from', 'from  import '),
+    ToolSnippet('with', 'with  as :\n  '),
+    ToolSnippet('try/except', 'try:\n  \nexcept  as e:\n  '),
+    ToolSnippet('lambda', 'lambda : '),
+    ToolSnippet('None', 'None'),
+    ToolSnippet('True', 'True'),
+    ToolSnippet('False', 'False'),
+  ];
+
+  static final List<ToolSnippet> sqlFamily = [
+    ToolSnippet('SELECT', 'SELECT  FROM '),
+    ToolSnippet('FROM', 'FROM '),
+    ToolSnippet('WHERE', 'WHERE '),
+    ToolSnippet('INSERT INTO', 'INSERT INTO  () VALUES ()'),
+    ToolSnippet('UPDATE', 'UPDATE  SET '),
+    ToolSnippet('SET', 'SET  = '),
+    ToolSnippet('DELETE FROM', 'DELETE FROM  WHERE '),
+    ToolSnippet('CREATE TABLE', 'CREATE TABLE  (\n  \n)'),
+    ToolSnippet('DROP TABLE', 'DROP TABLE '),
+    ToolSnippet('ALTER TABLE', 'ALTER TABLE  ADD '),
+    ToolSnippet('JOIN', 'JOIN  ON '),
+    ToolSnippet('LEFT JOIN', 'LEFT JOIN  ON '),
+    ToolSnippet('GROUP BY', 'GROUP BY '),
+    ToolSnippet('ORDER BY', 'ORDER BY '),
+    ToolSnippet('HAVING', 'HAVING '),
+    ToolSnippet('LIMIT', 'LIMIT '),
+    ToolSnippet('UNION', 'UNION '),
+    ToolSnippet('AS', ' AS '),
+    ToolSnippet('AND', ' AND '),
+    ToolSnippet('OR', ' OR '),
+    ToolSnippet('NOT', 'NOT '),
+    ToolSnippet('IN', ' IN ()'),
+    ToolSnippet('LIKE', " LIKE '%'"),
+    ToolSnippet('IS NULL', 'IS NULL'),
+    ToolSnippet('COUNT(*)', 'COUNT(*)'),
+    ToolSnippet('SUM()', 'SUM()'),
+    ToolSnippet('AVG()', 'AVG()'),
+    ToolSnippet('MIN()', 'MIN()'),
+    ToolSnippet('MAX()', 'MAX()'),
+    ToolSnippet('( )', '( )'),
+    ToolSnippet(', ', ', '),
+    ToolSnippet(';', ';'),
+  ];
+
+  static final List<ToolSnippet> lispFamily = [
+    ToolSnippet('( )', '( )'),
+    ToolSnippet('[ ]', '[ ]'),
+    ToolSnippet("'", "'"),
+    ToolSnippet(';', '; '),
+    ToolSnippet('"', '"'),
+    ToolSnippet('defun', '(defun  ()\n  )'),
+    ToolSnippet('let', '(let (()))'),
+    ToolSnippet('if', '(if  \n  )'),
+    ToolSnippet('cond', '(cond\n  ()\n  (t ))'),
+    ToolSnippet('lambda', '(lambda () )'),
+    ToolSnippet('setq', '(setq  )'),
+    ToolSnippet('nil', 'nil'),
+    ToolSnippet('t', 't'),
+  ];
+
+  static final List<ToolSnippet> percentFamily = [
+    ToolSnippet('% ', '% '),
+    ToolSnippet('{ }', '{ }'),
+    ToolSnippet('( )', '( )'),
+    ToolSnippet('[ ]', '[ ]'),
+    ToolSnippet(';', ';'),
+    ToolSnippet('= ', ' = '),
+    ToolSnippet("'", "'"),
+    ToolSnippet('if ', 'if \n  \nend'),
+    ToolSnippet('else ', 'else\n  '),
+    ToolSnippet('for ', 'for  = 1:\n  \nend'),
+    ToolSnippet('while ', 'while \n  \nend'),
+    ToolSnippet('function ', 'function \n  \nend'),
+    ToolSnippet('return ', 'return '),
+    ToolSnippet('try ', 'try\n  \ncatch\n  \nend'),
+    ToolSnippet('disp(', 'disp()'),
+  ];
+
+  static final List<ToolSnippet> vbFamily = [
+    ToolSnippet("'", "'"),
+    ToolSnippet('"', '"'),
+    ToolSnippet('( )', '( )'),
+    ToolSnippet('=', ' = '),
+    ToolSnippet('<>', ' <> '),
+    ToolSnippet('<=', ' <= '),
+    ToolSnippet('>=', ' >= '),
+    ToolSnippet('And', ' And '),
+    ToolSnippet('Or', ' Or '),
+    ToolSnippet('Not', 'Not '),
+    ToolSnippet('Mod', ' Mod '),
+    ToolSnippet('Dim', 'Dim  As '),
+    ToolSnippet('Sub', 'Sub ()\n\nEnd Sub'),
+    ToolSnippet('Function', 'Function ()\n\nEnd Function'),
+    ToolSnippet('If', 'If  Then\n\nEnd If'),
+    ToolSnippet('If/Else', 'If  Then\n\nElse\n\nEnd If'),
+    ToolSnippet('For', 'For  =  To \n\nNext'),
+    ToolSnippet('While', 'While \n\nEnd While'),
+    ToolSnippet('Do', 'Do While \n\nLoop'),
+    ToolSnippet('Select', 'Select Case \n  Case \nEnd Select'),
+    ToolSnippet('Try', 'Try\n\nCatch ex As Exception\n\nEnd Try'),
+    ToolSnippet('Class', 'Class \n\nEnd Class'),
+    ToolSnippet('Public', 'Public '),
+    ToolSnippet('Private', 'Private '),
+    ToolSnippet('New', 'New '),
+    ToolSnippet('Nothing', 'Nothing'),
+    ToolSnippet('True', 'True'),
+    ToolSnippet('False', 'False'),
+  ];
+
+  static final List<ToolSnippet> batchFamily = [
+    ToolSnippet('%1', '%1'),
+    ToolSnippet('%2', '%2'),
+    ToolSnippet('%*', '%*'),
+    ToolSnippet('@echo off', '@echo off'),
+    ToolSnippet('if', 'if  (\n  \n)'),
+    ToolSnippet('if/else', 'if  (\n  \n) else (\n  \n)'),
+    ToolSnippet('goto', 'goto :eof'),
+    ToolSnippet('call', 'call '),
+    ToolSnippet('set', 'set  ='),
+    ToolSnippet('for', 'for %%i in () do (\n  \n)'),
+    ToolSnippet('exit', 'exit /b 0'),
+    ToolSnippet('rem', 'rem '),
+    ToolSnippet('echo', 'echo '),
+    ToolSnippet('pause', 'pause'),
+    ToolSnippet('errorlevel', 'if errorlevel 1 (\n  \n)'),
+  ];
+
+  static final List<ToolSnippet> fortranFamily = [
+    ToolSnippet('( )', '( )'),
+    ToolSnippet(',', ', '),
+    ToolSnippet('=', ' = '),
+    ToolSnippet('::', ' :: '),
+    ToolSnippet('.true.', '.true.'),
+    ToolSnippet('.false.', '.false.'),
+    ToolSnippet('if', 'if () then\n  \nend if'),
+    ToolSnippet('if/else', 'if () then\n  \nelse\n  \nend if'),
+    ToolSnippet('do', 'do i = 1, n\n  \nend do'),
+    ToolSnippet('do while', 'do while ()\n  \nend do'),
+    ToolSnippet('program', 'program \n  \nend program'),
+    ToolSnippet('subroutine', 'subroutine ()\n  \nend subroutine'),
+    ToolSnippet('function', 'function ()\n  \nend function'),
+    ToolSnippet('implicit none', 'implicit none'),
+    ToolSnippet('print', 'print *, '),
+    ToolSnippet('write', 'write(*,*) '),
+  ];
+
+  // ------------------------------------------------------------ 语言专属符号集
+
+  static final List<ToolSnippet> kotlin = [
+    ToolSnippet('fun ', 'fun  {\n  \n}'),
+    ToolSnippet('val ', 'val  = '),
+    ToolSnippet('var ', 'var  = '),
+    ToolSnippet('class ', 'class  {\n  \n}'),
+    ToolSnippet('data class ', 'data class ()'),
+    ToolSnippet('object ', 'object  {\n  \n}'),
+    ToolSnippet('interface ', 'interface  {\n  \n}'),
+    ToolSnippet('when', 'when () {\n  else -> \n}'),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('for', 'for (i in  until ) {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('?.', '?.'),
+    ToolSnippet('?:', ' ?: '),
+    ToolSnippet('->', ' -> '),
+    ToolSnippet('::', '::'),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('package ', 'package '),
+    ToolSnippet('suspend fun ', 'suspend fun  {\n  \n}'),
+    ToolSnippet('lateinit var ', 'lateinit var '),
+    ToolSnippet('{ }', '{  }'),
+    ToolSnippet('( )', '( )'),
+  ];
+
+  static final List<ToolSnippet> rust = [
+    ToolSnippet('fn ', 'fn  {\n  \n}'),
+    ToolSnippet('pub fn ', 'pub fn  {\n  \n}'),
+    ToolSnippet('let ', 'let  = '),
+    ToolSnippet('let mut ', 'let mut  = '),
+    ToolSnippet('struct ', 'struct  {\n  \n}'),
+    ToolSnippet('enum ', 'enum  {\n  \n}'),
+    ToolSnippet('impl ', 'impl  {\n  \n}'),
+    ToolSnippet('trait ', 'trait  {\n  \n}'),
+    ToolSnippet('match', 'match  {\n  _ => ,\n}'),
+    ToolSnippet('if', 'if  {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('for', 'for  in  {\n  \n}'),
+    ToolSnippet('while', 'while  {\n  \n}'),
+    ToolSnippet('loop', 'loop {\n  \n}'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('->', ' -> '),
+    ToolSnippet('::', '::'),
+    ToolSnippet('=> ', ' => '),
+    ToolSnippet('&mut ', '&mut '),
+    ToolSnippet('println!', 'println!("");'),
+    ToolSnippet('Some(', 'Some()'),
+    ToolSnippet('None', 'None'),
+    ToolSnippet('Ok(', 'Ok()'),
+    ToolSnippet('Err(', 'Err()'),
+    ToolSnippet('use ', 'use '),
+    ToolSnippet('mod ', 'mod '),
+    ToolSnippet('async ', 'async '),
+    ToolSnippet('await', 'await'),
+    ToolSnippet('?;', '?;'),
+  ];
+
+  static final List<ToolSnippet> swift = [
+    ToolSnippet('func ', 'func () {\n  \n}'),
+    ToolSnippet('var ', 'var  = '),
+    ToolSnippet('let ', 'let  = '),
+    ToolSnippet('class ', 'class  {\n  \n}'),
+    ToolSnippet('struct ', 'struct  {\n  \n}'),
+    ToolSnippet('enum ', 'enum  {\n  \n}'),
+    ToolSnippet('protocol ', 'protocol  {\n  \n}'),
+    ToolSnippet('extension ', 'extension  {\n  \n}'),
+    ToolSnippet('guard ', 'guard  else { return }'),
+    ToolSnippet('if', 'if  {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('switch', 'switch  {\ncase :\n  \n}'),
+    ToolSnippet('for', 'for  in  {\n  \n}'),
+    ToolSnippet('while', 'while  {\n  \n}'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('try ', 'try '),
+    ToolSnippet('catch ', 'catch {\n  \n}'),
+    ToolSnippet('self.', 'self.'),
+    ToolSnippet('init()', 'init() {\n  \n}'),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('?.', '?.'),
+    ToolSnippet('??', ' ?? '),
+    ToolSnippet('-> Void', ' -> Void'),
+    ToolSnippet('{ }', '{  }'),
+    ToolSnippet('( )', '( )'),
+  ];
+
+  static final List<ToolSnippet> php = [
+    ToolSnippet('<?php', '<?php\n\n'),
+    ToolSnippet('function ', 'function () {\n  \n}'),
+    ToolSnippet('class ', 'class  {\n  \n}'),
+    ToolSnippet('public ', 'public function () {\n  \n}'),
+    ToolSnippet('private ', 'private '),
+    ToolSnippet('protected ', 'protected '),
+    ToolSnippet('static ', 'static '),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('elseif', 'elseif () {\n  \n}'),
+    ToolSnippet('foreach', 'foreach ( as $k => $v) {\n  \n}'),
+    ToolSnippet('for', 'for ($i = 0; $i < ; $i++) {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('echo', 'echo '),
+    ToolSnippet('print_r(', 'print_r()'),
+    ToolSnippet('var_dump(', 'var_dump()'),
+    ToolSnippet('new ', 'new '),
+    ToolSnippet('=> ', ' => '),
+    ToolSnippet('->', '->'),
+    ToolSnippet('::', '::'),
+    ToolSnippet('$', '$'),
+    ToolSnippet('array(', 'array()'),
+    ToolSnippet('isset(', 'isset()'),
+    ToolSnippet('null', 'null'),
+  ];
+
+  static final List<ToolSnippet> ruby = [
+    ToolSnippet('def ', 'def \n  \nend'),
+    ToolSnippet('end', 'end'),
+    ToolSnippet('class ', 'class \n  \nend'),
+    ToolSnippet('module ', 'module \n  \nend'),
+    ToolSnippet('if', 'if \n  \nend'),
+    ToolSnippet('elsif', 'elsif \n  '),
+    ToolSnippet('else', 'else\n  '),
+    ToolSnippet('unless', 'unless \n  \nend'),
+    ToolSnippet('while', 'while \n  \nend'),
+    ToolSnippet('each', 'each do |x|\n  \nend'),
+    ToolSnippet('do', 'do |x|\n  \nend'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('puts', 'puts '),
+    ToolSnippet('print', 'print '),
+    ToolSnippet('require ', 'require '),
+    ToolSnippet('attr_accessor ', 'attr_accessor :'),
+    ToolSnippet('nil', 'nil'),
+    ToolSnippet('begin/rescue', 'begin\n  \nrescue => e\n  \nend'),
+    ToolSnippet('#{ }', '#{}'),
+    ToolSnippet('=> ', ' => '),
+  ];
+
+  static final List<ToolSnippet> c = [
+    ToolSnippet('#include <stdio.h>', '#include <stdio.h>'),
+    ToolSnippet('main()', 'int main() {\n  \n  return 0;\n}'),
+    ToolSnippet('printf(', 'printf("");'),
+    ToolSnippet('scanf(', 'scanf("", );'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('for', 'for (int i = 0; i < ; i++) {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('do-while', 'do {\n  \n} while ();'),
+    ToolSnippet('switch', 'switch () {\n  case :\n    break;\n  default:\n    break;\n}'),
+    ToolSnippet('struct ', 'struct  {\n  \n};'),
+    ToolSnippet('typedef ', 'typedef  ;'),
+    ToolSnippet('sizeof(', 'sizeof()'),
+    ToolSnippet('malloc(', 'malloc()'),
+    ToolSnippet('free(', 'free();'),
+    ToolSnippet('NULL', 'NULL'),
+    ToolSnippet('->', '->'),
+    ToolSnippet('/* */', '/*  */'),
+    ToolSnippet('// ', '// '),
+    ToolSnippet('{ }', '{  }'),
+    ToolSnippet('( )', '( )'),
+  ];
+
+  static final List<ToolSnippet> cpp = [
+    ToolSnippet('#include <iostream>', '#include <iostream>'),
+    ToolSnippet('using namespace std;', 'using namespace std;'),
+    ToolSnippet('main()', 'int main() {\n  \n  return 0;\n}'),
+    ToolSnippet('std::cout', 'std::cout << "" << std::endl;'),
+    ToolSnippet('std::cin', 'std::cin >> ;'),
+    ToolSnippet('class ', 'class  {\npublic:\n  \n};'),
+    ToolSnippet('public:', 'public:'),
+    ToolSnippet('private:', 'private:'),
+    ToolSnippet('virtual ', 'virtual  = 0;'),
+    ToolSnippet('template<', 'template <typename T>'),
+    ToolSnippet('auto ', 'auto  = '),
+    ToolSnippet('new ', 'new '),
+    ToolSnippet('delete ', 'delete '),
+    ToolSnippet('nullptr', 'nullptr'),
+    ToolSnippet('try/catch', 'try {\n  \n} catch (const std::exception& e) {\n  \n}'),
+    ToolSnippet('->', ' -> '),
+    ToolSnippet('::', '::'),
+    ToolSnippet('std::vector<', 'std::vector<>'),
+    ToolSnippet('std::string', 'std::string'),
+    ToolSnippet('std::map<', 'std::map<, >'),
+    ToolSnippet('{ }', '{  }'),
+    ToolSnippet('( )', '( )'),
+  ];
+
+  static final List<ToolSnippet> csharp = [
+    ToolSnippet('using System;', 'using System;'),
+    ToolSnippet('namespace ', 'namespace \n{\n  \n}'),
+    ToolSnippet('class ', 'class \n{\n  \n}'),
+    ToolSnippet('public ', 'public '),
+    ToolSnippet('private ', 'private '),
+    ToolSnippet('protected ', 'protected '),
+    ToolSnippet('static ', 'static '),
+    ToolSnippet('void ', 'void () \n{\n  \n}'),
+    ToolSnippet('var ', 'var  = '),
+    ToolSnippet('new ', 'new '),
+    ToolSnippet('if', 'if ()\n{\n  \n}'),
+    ToolSnippet('else', 'else\n{\n  \n}'),
+    ToolSnippet('foreach', 'foreach (var item in )\n{\n  \n}'),
+    ToolSnippet('for', 'for (int i = 0; i < ; i++)\n{\n  \n}'),
+    ToolSnippet('while', 'while ()\n{\n  \n}'),
+    ToolSnippet('switch', 'switch ()\n{\n  case :\n    break;\n  default:\n    break;\n}'),
+    ToolSnippet('try/catch', 'try\n{\n  \n}\ncatch (Exception ex)\n{\n  \n}'),
+    ToolSnippet('Console.WriteLine(', 'Console.WriteLine();'),
+    ToolSnippet('async ', 'async Task  () \n{\n  \n}'),
+    ToolSnippet('await ', 'await '),
+    ToolSnippet('=>', ' => '),
+    ToolSnippet('?.', '?.'),
+    ToolSnippet('??', ' ?? '),
+    ToolSnippet('{ }', '{  }'),
+  ];
+
+  static final List<ToolSnippet> lua = [
+    ToolSnippet('local ', 'local  = '),
+    ToolSnippet('function ', 'function ()\n  \nend'),
+    ToolSnippet('if', 'if  then\n  \nend'),
+    ToolSnippet('if/else', 'if  then\n  \nelse\n  \nend'),
+    ToolSnippet('elseif', 'elseif  then\n  '),
+    ToolSnippet('for', 'for i = 1,  do\n  \nend'),
+    ToolSnippet('for in', 'for k, v in pairs() do\n  \nend'),
+    ToolSnippet('while', 'while  do\n  \nend'),
+    ToolSnippet('repeat', 'repeat\n  \nuntil '),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('print(', 'print()'),
+    ToolSnippet('table.insert(', 'table.insert()'),
+    ToolSnippet('ipairs(', 'ipairs()'),
+    ToolSnippet('pairs(', 'pairs()'),
+    ToolSnippet('require(', 'require("")'),
+    ToolSnippet('nil', 'nil'),
+    ToolSnippet('and ', ' and '),
+    ToolSnippet('or ', ' or '),
+    ToolSnippet('not ', 'not '),
+  ];
+
+  static final List<ToolSnippet> r = [
+    ToolSnippet('<- ', ' <- '),
+    ToolSnippet('function(x)', 'function(x) {\n  \n}'),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('for', 'for (i in ) {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('return(', 'return()'),
+    ToolSnippet('print(', 'print()'),
+    ToolSnippet('library(', 'library()'),
+    ToolSnippet('c(', 'c()'),
+    ToolSnippet('list(', 'list()'),
+    ToolSnippet('data.frame(', 'data.frame()'),
+    ToolSnippet('matrix(', 'matrix()'),
+    ToolSnippet('TRUE', 'TRUE'),
+    ToolSnippet('FALSE', 'FALSE'),
+    ToolSnippet('NULL', 'NULL'),
+    ToolSnippet('NA', 'NA'),
+    ToolSnippet('%>%', '%>%'),
+    ToolSnippet('$', '$'),
+  ];
+
+  static final List<ToolSnippet> scala = [
+    ToolSnippet('def ', 'def  = {\n  \n}'),
+    ToolSnippet('val ', 'val  = '),
+    ToolSnippet('var ', 'var  = '),
+    ToolSnippet('class ', 'class  {\n  \n}'),
+    ToolSnippet('object ', 'object  {\n  \n}'),
+    ToolSnippet('trait ', 'trait  {\n  \n}'),
+    ToolSnippet('case class ', 'case class ()'),
+    ToolSnippet('match', 'match {\n  case  => \n}'),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('for', 'for ( <- ) {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('package ', 'package '),
+    ToolSnippet('new ', 'new '),
+    ToolSnippet('extends ', 'extends '),
+    ToolSnippet('with ', ' with '),
+    ToolSnippet('=> ', ' => '),
+    ToolSnippet('->', ' -> '),
+    ToolSnippet('println(', 'println()'),
+    ToolSnippet('Some(', 'Some()'),
+    ToolSnippet('None', 'None'),
+    ToolSnippet('List(', 'List()'),
+    ToolSnippet('Map(', 'Map()'),
+  ];
+
+  static final List<ToolSnippet> perl = [
+    ToolSnippet('use strict;', 'use strict;\nuse warnings;'),
+    ToolSnippet('my ', 'my $ = '),
+    ToolSnippet('sub ', 'sub  {\n  \n}'),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('elsif', 'elsif () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('unless', 'unless () {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('foreach', 'foreach my $item (@) {\n  \n}'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('print', 'print '),
+    ToolSnippet('say', 'say '),
+    ToolSnippet('die', 'die "";'),
+    ToolSnippet('chomp(', 'chomp()'),
+    ToolSnippet('split(', 'split(//, )'),
+    ToolSnippet('join(', 'join(, )'),
+    ToolSnippet('=> ', ' => '),
+    ToolSnippet('->', '->'),
+    ToolSnippet('undef', 'undef'),
+  ];
+
+  static final List<ToolSnippet> powershell = [
+    ToolSnippet('function ', 'function  {\n  param()\n  \n}'),
+    ToolSnippet('param(', 'param(\n  [Parameter(Mandatory=$true)]\n  $,\n)'),
+    ToolSnippet('Write-Host ', 'Write-Host ""'),
+    ToolSnippet('Write-Output ', 'Write-Output '),
+    ToolSnippet('Get-ChildItem ', 'Get-ChildItem -Path '),
+    ToolSnippet('Get-Item ', 'Get-Item '),
+    ToolSnippet('New-Item ', 'New-Item -ItemType File -Path '),
+    ToolSnippet('Remove-Item ', 'Remove-Item -Recurse -Force '),
+    ToolSnippet('Test-Path ', 'Test-Path '),
+    ToolSnippet('Select-Object ', 'Select-Object '),
+    ToolSnippet('Where-Object ', 'Where-Object { $_ -eq  }'),
+    ToolSnippet('ForEach-Object ', 'ForEach-Object { $_ }'),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('elseif', 'elseif () {\n  \n}'),
+    ToolSnippet('foreach', 'foreach ($item in ) {\n  \n}'),
+    ToolSnippet('switch', 'switch () {\n  default { }\n}'),
+    ToolSnippet('try/catch', 'try {\n  \n} catch {\n  \n}'),
+    ToolSnippet('$env:', '$env:PATH'),
+    ToolSnippet('$_', '$_'),
+    ToolSnippet('|', ' | '),
+    ToolSnippet('$true', '$true'),
+    ToolSnippet('$false', '$false'),
+    ToolSnippet('$null', '$null'),
+  ];
+
+  static final List<ToolSnippet> haskell = [
+    ToolSnippet('module', 'module  where'),
+    ToolSnippet('import ', 'import '),
+    ToolSnippet('data ', 'data  = '),
+    ToolSnippet('type ', 'type  = '),
+    ToolSnippet('class ', 'class  where'),
+    ToolSnippet('instance ', 'instance  where'),
+    ToolSnippet('where', 'where\n  '),
+    ToolSnippet('let/in', 'let  in '),
+    ToolSnippet('if', 'if  then  else '),
+    ToolSnippet('case', 'case  of\n  _ -> '),
+    ToolSnippet('do', 'do\n  \n'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('map ', 'map ()'),
+    ToolSnippet('filter ', 'filter ()'),
+    ToolSnippet('foldl ', 'foldl () 0'),
+    ToolSnippet('foldr ', 'foldr () 0'),
+    ToolSnippet('putStrLn ', 'putStrLn ""'),
+    ToolSnippet('print ', 'print '),
+    ToolSnippet('->', ' -> '),
+    ToolSnippet('<-', ' <- '),
+    ToolSnippet('::', ' :: '),
+    ToolSnippet('=>', ' => '),
+    ToolSnippet('Just ', 'Just '),
+    ToolSnippet('Nothing', 'Nothing'),
+    ToolSnippet('True', 'True'),
+    ToolSnippet('False', 'False'),
+  ];
+
+  static final List<ToolSnippet> objectiveC = [
+    ToolSnippet('#import', '#import <Foundation/Foundation.h>'),
+    ToolSnippet('@interface', '@interface  : NSObject\n\n@end'),
+    ToolSnippet('@implementation', '@implementation \n\n@end'),
+    ToolSnippet('@property', '@property (nonatomic, strong)  *;'),
+    ToolSnippet('@synthesize', '@synthesize ;'),
+    ToolSnippet('self.', 'self.'),
+    ToolSnippet('nil', 'nil'),
+    ToolSnippet('YES', 'YES'),
+    ToolSnippet('NO', 'NO'),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('for', 'for (int i = 0; i < ; i++) {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('return', 'return '),
+    ToolSnippet('alloc/init', '[[ alloc] init]'),
+    ToolSnippet('NSLog', 'NSLog(@"%@", );'),
+    ToolSnippet('@"', '@""'),
+    ToolSnippet('block', '^( ) {\n  \n};'),
+  ];
+
+  static final List<ToolSnippet> elixir = [
+    ToolSnippet('defmodule', 'defmodule  do\n  \nend'),
+    ToolSnippet('def ', 'def  do\n  \nend'),
+    ToolSnippet('defp ', 'defp  do\n  \nend'),
+    ToolSnippet('if', 'if  do\n  \nend'),
+    ToolSnippet('else', 'else\n  '),
+    ToolSnippet('unless', 'unless  do\n  \nend'),
+    ToolSnippet('case', 'case  do\n  _ -> \nend'),
+    ToolSnippet('cond', 'cond do\n  true -> \nend'),
+    ToolSnippet('with', 'with {:ok, x} <-  do\n  \nend'),
+    ToolSnippet('for', 'for x <-  do\n  \nend'),
+    ToolSnippet('Enum.map(', 'Enum.map(, fn x -> x end)'),
+    ToolSnippet('Enum.filter(', 'Enum.filter(, fn x -> x end)'),
+    ToolSnippet('IO.puts(', 'IO.puts()'),
+    ToolSnippet('IO.inspect(', 'IO.inspect()'),
+    ToolSnippet('|>', ' |> '),
+    ToolSnippet('->', ' -> '),
+    ToolSnippet('true', 'true'),
+    ToolSnippet('false', 'false'),
+    ToolSnippet('nil', 'nil'),
+    ToolSnippet('defstruct ', 'defstruct []'),
+  ];
+
+  static final List<ToolSnippet> clojure = [
+    ToolSnippet('def', '(def  )'),
+    ToolSnippet('defn', '(defn  []\n  )'),
+    ToolSnippet('let', '(let []\n  )'),
+    ToolSnippet('if', '(if  \n  )'),
+    ToolSnippet('when', '(when  \n  )'),
+    ToolSnippet('cond', '(cond\n  :else )'),
+    ToolSnippet('case', '(case \n  )'),
+    ToolSnippet('do', '(do\n  )'),
+    ToolSnippet('loop', '(loop []\n  (recur))'),
+    ToolSnippet('ns', '(ns  (:require []))'),
+    ToolSnippet('require', '(require [])'),
+    ToolSnippet('map', '(map  )'),
+    ToolSnippet('filter', '(filter  )'),
+    ToolSnippet('reduce', '(reduce  )'),
+    ToolSnippet('println', '(println )'),
+    ToolSnippet('assoc', '(assoc  )'),
+    ToolSnippet('conj', '(conj  )'),
+    ToolSnippet('atom', '(atom )'),
+    ToolSnippet('nil', 'nil'),
+  ];
+
+  static final List<ToolSnippet> latex = [
+    ToolSnippet('document', '\\documentclass{article}\n\\usepackage{}\n\n\\begin{document}\n\n\n\\end{document}'),
+    ToolSnippet('usepackage', '\\usepackage{}'),
+    ToolSnippet('section', '\\section{}'),
+    ToolSnippet('subsection', '\\subsection{}'),
+    ToolSnippet('textbf', '\\textbf{}'),
+    ToolSnippet('textit', '\\textit{}'),
+    ToolSnippet('emph', '\\emph{}'),
+    ToolSnippet('label', '\\label{}'),
+    ToolSnippet('ref', '\\ref{}'),
+    ToolSnippet('cite', '\\cite{}'),
+    ToolSnippet('itemize', '\\begin{itemize}\n  \\item \n\\end{itemize}'),
+    ToolSnippet('enumerate', '\\begin{enumerate}\n  \\item \n\\end{enumerate}'),
+    ToolSnippet('figure', '\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.8\\textwidth]{}\n  \\caption{}\n\\end{figure}'),
+    ToolSnippet('tabular', '\\begin{tabular}{|c|c|}\n\\hline\n & \\\\\n\\hline\n\\end{tabular}'),
+    ToolSnippet('frac', '\\frac{}{}'),
+    ToolSnippet('sqrt', '\\sqrt{}'),
+    ToolSnippet('sum', '\\sum_{}^{}'),
+    ToolSnippet('int', '\\int_{}^{}'),
+    ToolSnippet('left/right', '\\left( \\right)'),
+    ToolSnippet('alpha', '\\alpha'),
+    ToolSnippet('beta', '\\beta'),
+    ToolSnippet('lambda', '\\lambda'),
+    ToolSnippet('newline', '\\\\'),
+  ];
+
+  static final List<ToolSnippet> nix = [
+    ToolSnippet('let/in', 'let\n  x = ;\nin x'),
+    ToolSnippet('with', 'with ; '),
+    ToolSnippet('rec', 'rec { }'),
+    ToolSnippet('import', 'import '),
+    ToolSnippet('inherit', 'inherit ;'),
+    ToolSnippet('if/then/else', 'if  then  else '),
+    ToolSnippet('attrset', '{ }'),
+    ToolSnippet('list', '[ ]'),
+    ToolSnippet('builtins.', 'builtins.'),
+    ToolSnippet('pkgs.', 'pkgs.'),
+    ToolSnippet('lib.', 'lib.'),
+    ToolSnippet('mkDerivation', 'stdenv.mkDerivation {\n  pname = "";\n  version = "";\n  src = ;\n}'),
+    ToolSnippet('mkIf', 'lib.mkIf  '),
+    ToolSnippet('mkOption', 'lib.mkOption {\n  type = types.;\n  default = ;\n}'),
+    ToolSnippet('mkEnableOption', 'lib.mkEnableOption ""'),
+    ToolSnippet('types.', 'types.'),
+    ToolSnippet('config.', 'config.'),
+    ToolSnippet('options.', 'options.'),
+    ToolSnippet('imports', 'imports = [ ]'),
+    ToolSnippet('map', 'map () '),
+    ToolSnippet('filter', 'filter () '),
+    ToolSnippet('attrValues', 'attrValues '),
+    ToolSnippet('toString', 'toString '),
+    ToolSnippet('concatStringsSep', 'concatStringsSep "" '),
+  ];
+
+  static final List<ToolSnippet> zig = [
+    ToolSnippet('const ', 'const  = ;'),
+    ToolSnippet('var ', 'var  = ;'),
+    ToolSnippet('fn ', 'fn () void {\n  \n}'),
+    ToolSnippet('pub fn ', 'pub fn () void {\n  \n}'),
+    ToolSnippet('pub const ', 'pub const  = ;'),
+    ToolSnippet('struct', 'struct {\n  \n}'),
+    ToolSnippet('enum', 'enum {\n  \n}'),
+    ToolSnippet('union', 'union {\n  \n}'),
+    ToolSnippet('test', 'test "" {\n  \n}'),
+    ToolSnippet('if', 'if () {\n  \n}'),
+    ToolSnippet('else', 'else {\n  \n}'),
+    ToolSnippet('while', 'while () {\n  \n}'),
+    ToolSnippet('for', 'for () |item| {\n  \n}'),
+    ToolSnippet('switch', 'switch () {\n  else => {},\n}'),
+    ToolSnippet('return', 'return ;'),
+    ToolSnippet('defer', 'defer '),
+    ToolSnippet('errdefer', 'errdefer '),
+    ToolSnippet('try ', 'try '),
+    ToolSnippet('catch ', 'catch '),
+    ToolSnippet('orelse ', 'orelse '),
+    ToolSnippet('unreachable', 'unreachable'),
+    ToolSnippet('null', 'null'),
+    ToolSnippet('undefined', 'undefined'),
+    ToolSnippet('@import', '@import("std")'),
+    ToolSnippet('std.debug.print', 'std.debug.print("{}\\n", .{});'),
+    ToolSnippet('comptime ', 'comptime '),
+  ];
+
+  static final List<ToolSnippet> graphql = [
+    ToolSnippet('query', 'query  {\n  \n}'),
+    ToolSnippet('mutation', 'mutation  {\n  \n}'),
+    ToolSnippet('fragment', 'fragment  on  {\n  \n}'),
+    ToolSnippet('type', 'type  {\n  \n}'),
+    ToolSnippet('input', 'input  {\n  \n}'),
+    ToolSnippet('enum', 'enum  {\n  \n}'),
+    ToolSnippet('interface', 'interface  {\n  \n}'),
+    ToolSnippet('union', 'union  =  | '),
+    ToolSnippet('scalar', 'scalar '),
+    ToolSnippet('extend', 'extend type  {\n  \n}'),
+    ToolSnippet('directive', 'directive @ on FIELD_DEFINITION'),
+    ToolSnippet('{ }', '{  }'),
+    ToolSnippet('( )', '( )'),
+    ToolSnippet('[ ]', '[ ]'),
+    ToolSnippet('!', '!'),
+    ToolSnippet(':', ': '),
+    ToolSnippet('Int', 'Int'),
+    ToolSnippet('Float', 'Float'),
+    ToolSnippet('String', 'String'),
+    ToolSnippet('Boolean', 'Boolean'),
+    ToolSnippet('ID', 'ID'),
+  ];
+
+  static const Map<String, List<ToolSnippet>> _byKey = {
+    'kotlin': kotlin,
+    'rust': rust,
+    'swift': swift,
+    'php': php,
+    'ruby': ruby,
+    'c': c,
+    'cpp': cpp,
+    'csharp': csharp,
+    'lua': lua,
+    'r': r,
+    'scala': scala,
+    'perl': perl,
+    'powershell': powershell,
+    'haskell': haskell,
+    'objectivec': objectiveC,
+    'elixir': elixir,
+    'clojure': clojure,
+    'latex': latex,
+    'nix': nix,
+    'zig': zig,
+    'graphql': graphql,
+  };
+
+  static List<ToolSnippet> _familySnippets(String label, String? key) {
+    final family = langFamilyOf(key: key, label: label);
+    switch (family) {
+      case LangFamily.c:
+        return cFamily;
+      case LangFamily.hash:
+        return hashFamily;
+      case LangFamily.sql:
+        return sqlFamily;
+      case LangFamily.xml:
+        return xml;
+      case LangFamily.lisp:
+        return lispFamily;
+      case LangFamily.percent:
+        return percentFamily;
+      case LangFamily.vb:
+        return vbFamily;
+      case LangFamily.batch:
+        return batchFamily;
+      case LangFamily.fortran:
+        return fortranFamily;
+      case LangFamily.none:
+        return editor;
+    }
+  }
+
+  /// 按文本编辑页的语言选出对应的常用符号集。
+  ///
+  /// [langLabel] 是展示名，[key] 是 re_highlight 的小写标识（更准确）。
+  /// 顺序：语言专属 -> 语言族通用 -> 通用编辑符号。
+  static List<ToolSnippet> forLanguage(String langLabel, [String key = '']) {
+    final exact = _byKey[key];
+    if (exact != null) return exact;
+
     switch (langLabel) {
       case 'HTTP':
         return http;
@@ -895,111 +1712,9 @@ class ToolSnippetDefaults {
         return go;
       case 'Dart':
         return dart;
-      default:
+      case 'Plain Text':
         return editor;
     }
+    return _familySnippets(langLabel, key.isEmpty ? null : key);
   }
 }
-
-
-
-/// 「快捷插入」条目的持久化存储。
-///
-/// 约定：未自定义（键不存在或为空串）时返回 null，调用方回退到内置默认；
-/// 用户清空后写入 `[]`，表示"确实不要任何条目"。
-/// 文本编辑页按语言生成持久化 scope：每种格式各自记住自己的自定义条目。
-String editorSnippetScope(String langLabel) =>
-    'editor_${langLabel.replaceAll(RegExp('[^A-Za-z0-9]'), '_').toLowerCase()}';
-
-class ToolSnippetStore {
-  ToolSnippetStore._();
-
-  static String _key(String scope) => 'tool_snippets_v1_$scope';
-
-  /// 返回用户自定义列表；未自定义过返回 null。
-  static Future<List<ToolSnippet>?> load(String scope) async {
-    try {
-      final raw = await SharedPreferencesAsync().getString(_key(scope));
-      if (raw == null || raw.isEmpty) return null;
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return null;
-      return decoded.map(ToolSnippet.fromJson).whereType<ToolSnippet>().toList();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static Future<void> save(String scope, List<ToolSnippet> items) async {
-    await SharedPreferencesAsync()
-        .setString(_key(scope), jsonEncode(items.map((e) => e.toJson()).toList()));
-  }
-
-  /// 恢复内置默认（写入空串，下次 load 返回 null）。
-  static Future<void> reset(String scope) async {
-    await SharedPreferencesAsync().setString(_key(scope), '');
-  }
-
-  /// 全局「共用符号库」存储键：任意页面新增过的自定义条目都进这里，跨页共享。
-  static const String customKey = 'tool_snippets_custom_v1';
-
-  /// 读取共用符号库。
-  static Future<List<ToolSnippet>> loadCustom() async {
-    try {
-      final raw = await SharedPreferencesAsync().getString(customKey);
-      if (raw == null || raw.isEmpty) return const [];
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return const [];
-      return decoded.map(ToolSnippet.fromJson).whereType<ToolSnippet>().toList();
-    } catch (_) {
-      return const [];
-    }
-  }
-
-  static Future<void> saveCustom(List<ToolSnippet> items) async {
-    await SharedPreferencesAsync().setString(customKey, jsonEncode(items.map((e) => e.toJson()).toList()));
-  }
-
-  /// 追加进共用符号库（按插入文本去重），返回追加后的完整库。
-  static Future<List<ToolSnippet>> appendCustom(Iterable<ToolSnippet> items) async {
-    final cur = await loadCustom();
-    final seen = <String>{for (final e in cur) e.insert};
-    final out = <ToolSnippet>[...cur];
-    for (final e in items) {
-      if (e.insert.isEmpty || seen.contains(e.insert)) continue;
-      seen.add(e.insert);
-      out.add(e);
-    }
-    if (out.length != cur.length) await saveCustom(out);
-    return out;
-  }
-
-  /// 从共用库里删掉某条（按插入文本定位），返回剩余库。
-  static Future<List<ToolSnippet>> removeCustom(String insert) async {
-    final cur = await loadCustom();
-    final out = cur.where((e) => e.insert != insert).toList();
-    if (out.length != cur.length) await saveCustom(out);
-    return out;
-  }
-
-  /// 修改共用库里的某条（[oldInsert] 定位；插入文本也可以一起改），返回新库。
-  static Future<List<ToolSnippet>> updateCustom(
-      String oldInsert, ToolSnippet updated) async {
-    final cur = await loadCustom();
-    var changed = false;
-    final out = <ToolSnippet>[];
-    for (final e in cur) {
-      if (e.insert == oldInsert) {
-        out.add(updated);
-        changed = true;
-      } else {
-        out.add(e);
-      }
-    }
-    if (changed) await saveCustom(out);
-    return out;
-  }
-
-  /// 清空共用库。
-  static Future<void> clearCustom() => saveCustom(const []);
-}
-

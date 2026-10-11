@@ -4501,5 +4501,6 @@
   "editorFileChanged": "File changed on disk",
   "editorExitConfirmAgainTitle": "Confirm again",
   "editorExitConfirmAgainBody": "Are you sure you want to exit the editor?",
-  "editorMenuManage": "Manage"
+  "editorMenuManage": "Manage",
+  "editorFormatUnsupported": "Formatting is not supported for this language"
 }
