@@ -1992,7 +1992,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           invisibleChars: _invisibleCharsStyle,
           autoIndent: _prefs.autoIndent,
           enterSuggestion: _prefs.enterSuggestion,
-          suggestionStyle: SuggestionStyle(maxHeight: _prefs.suggestionMaxHeight),
+          suggestionMaxHeight: _prefs.suggestionMaxHeight,
           customContextMenuItems: _floatMenuItems(),
           onGutterLineLongPress: _handleGutterLongPress,
         ),

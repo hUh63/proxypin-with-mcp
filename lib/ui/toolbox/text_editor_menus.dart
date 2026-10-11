@@ -71,7 +71,8 @@ class EditorEncoding {
     if (isUtf32Le) return _encodeU32(text, true);
     if (isUtf32Be) return _encodeU32(text, false);
     try {
-      return codec?.encode(text) ?? utf8.encode(text);
+      final c = codec;
+      return c == null ? utf8.encode(text) : Uint8List.fromList(c.encode(text));
     } catch (_) {
       return utf8.encode(text);
     }
