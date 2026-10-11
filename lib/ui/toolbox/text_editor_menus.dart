@@ -18,7 +18,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:charset/charset.dart' as charset;
 import 'package:charset_converter/charset_converter.dart';
-import 'package:enough_convert/enough_convert.dart' as ec;
+import 'package:proxypin/utils/big5_codec.dart';
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -370,18 +370,10 @@ List<EditorEncoding> _buildEncodings() {
       out.add(EditorEncoding(n, null, n));
       continue;
     }
-    if (n == 'Big5') {
-      // enough_convert 提供纯 Dart 的 Big5 表。
-      out.add(EditorEncoding(n, const ec.Big5Codec(allowInvalid: true), 'Big5'));
-      continue;
-    }
-    if (n == 'Big5-HKSCS') {
-      // 没有纯 Dart 的 HKSCS 扩展表：原生优先，失败时退到标准 Big5。
-      out.add(EditorEncoding(
-        n,
-        const ec.Big5Codec(allowInvalid: true),
-        'Big5-HKSCS',
-      ));
+    if (n == 'Big5' || n == 'Big5-HKSCS') {
+      // WHATWG 索引表自带 HKSCS 扩展，Big5 与 Big5-HKSCS 共用同一实现，
+      // 纯 Dart、全平台一致，不再依赖原生。
+      out.add(EditorEncoding(n, Big5HkscsCodec(n)));
       continue;
     }
     out.add(EditorEncoding(n, charset.Charset.getByName(n), n));

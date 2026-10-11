@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.52.00 (2026-10-11)
+
+### Big5-HKSCS 改为纯 Dart 实现
+
+- 内置 WHATWG Encoding Standard 的 Big5 索引表（`lib/utils/big5_table.dart`，
+  含标准 Big5 与 HKSCS 扩展共 18590 个字符），并实现完整的解码 / 编码算法
+  （`lib/utils/big5_codec.dart`，含 4 个「一个指针产出两个码点」的特例）。
+- **Big5 与 Big5-HKSCS 现在都不再依赖平台原生 ICU**，Android / iOS / macOS /
+  Windows / Linux / Web 表现完全一致，也不会再出现「原生不支持就退化成乱码」。
+- 移除 `enough_convert` 依赖（其 Big5 表不含 HKSCS 扩展，已被更完整的实现取代）。
+
 ## v1.51.00 (2026-10-11)
 
 ### 编码补齐到完整清单 + 修复搜索面板在窄屏溢出
