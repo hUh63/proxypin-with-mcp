@@ -886,5 +886,11 @@
   "findCaseSensitive": "區分大小寫",
   "findWholeWord": "全字相符",
   "findRegex": "使用正規表達式",
+  "findHistory": "歷史記錄",
+  "findFavorites": "收藏",
+  "findFavoriteCurrent": "收藏目前搜尋字",
+  "findUnfavoriteCurrent": "取消收藏目前搜尋字",
+  "findClearHistory": "清空歷史",
+  "findEmptyHistory": "還沒有歷史記錄",
   "smartCompletion": "智慧預測"
 }

@@ -2521,5 +2521,11 @@
   "findReplaceAll": "Ganti semua",
   "findCaseSensitive": "Bedakan huruf besar/kecil",
   "findWholeWord": "Kata utuh",
-  "findRegex": "Gunakan ekspresi reguler"
+  "findRegex": "Gunakan ekspresi reguler",
+  "findHistory": "Riwayat",
+  "findFavorites": "Favorit",
+  "findFavoriteCurrent": "Favoritkan saat ini",
+  "findUnfavoriteCurrent": "Hapus dari favorit",
+  "findClearHistory": "Hapus riwayat",
+  "findEmptyHistory": "Belum ada riwayat"
 }

@@ -18,16 +18,19 @@ import 'package:code_forge/code_forge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/utils/find_history.dart';
 
 /// 编辑器底部的「查找 / 替换」面板。
 ///
 /// 它和「快捷输入行」上下相邻：符号条在上，本面板在符号条**下方**（都贴在页面底部）。
 ///
-/// 两种状态：
-/// * **收起**（默认）—— 只有一行「查找 + 输入框 + 展开箭头」以及上一处 / 下一处 / 关闭；
-/// * **展开**（点箭头）—— 追加「搜索结果 + 匹配选项」「替换行」和
-///   「上一个 / 下一个 / 替换 / 全部替换」按钮行。
-class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
+/// 两种状态（点查找框右侧的箭头切换）：
+/// * **收起**（默认）—— 查找行 + 匹配开关（`Aa` / `W` / `.*`）+ 操作行
+///   （上一个 / 下一个 / 替换 / 全部替换 / 关闭）；
+/// * **展开** —— 额外显示「搜索结果计数」和「替换输入框」。
+///
+/// 查找框右侧的 ▼ 是**历史记录**：随时可以取用历史查找词，也能把常用词收藏起来。
+class FindPanelView extends StatefulWidget implements PreferredSizeWidget {
   final FindController controller;
 
   const FindPanelView({super.key, required this.controller});
@@ -36,16 +39,46 @@ class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
   /// 在我们自己放进页面底部 Column 的用法里，这个值不影响布局。
   @override
   Size get preferredSize => controller.isActive
-      ? Size(double.infinity, controller.isReplaceMode ? 120 : 76)
+      ? Size(double.infinity, controller.isReplaceMode ? 150 : 108)
       : const Size(double.infinity, 0);
 
-  AppLocalizations _loc(BuildContext context) => AppLocalizations.of(context)!;
+  @override
+  State<FindPanelView> createState() => _FindPanelViewState();
+}
+
+class _FindPanelViewState extends State<FindPanelView> {
+  List<String> _favorites = const [];
+  List<String> _history = const [];
+
+  FindController get controller => widget.controller;
+
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    final favorites = await FindHistory.loadFavorites();
+    final history = await FindHistory.loadHistory();
+    if (!mounted) return;
+    setState(() {
+      _favorites = favorites;
+      _history = history;
+    });
+  }
+
+  bool get _isCurrentFavorite =>
+      _favorites.contains(controller.findInputController.text.trim());
 
   @override
   Widget build(BuildContext context) {
     if (!controller.isActive) return const SizedBox.shrink();
 
     final scheme = Theme.of(context).colorScheme;
+    final expanded = controller.isReplaceMode;
     return Container(
       decoration: BoxDecoration(
         color: scheme.surface,
@@ -67,9 +100,10 @@ class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (controller.isReplaceMode) _resultRow(context),
+            if (expanded) _resultRow(context),
             _findRow(context),
-            if (controller.isReplaceMode) _replaceRow(context),
+            if (expanded) _replaceRow(context),
+            if (!expanded) _optionRow(context),
             _actionRow(context),
           ],
         ),
@@ -79,50 +113,71 @@ class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
 
   // ------------------------------------------------------------------ 行
 
-  /// 搜索结果计数 + 匹配选项开关。
+  /// 展开态：搜索结果计数 + 匹配选项。
   Widget _resultRow(BuildContext context) {
-    final loc = _loc(context);
     final count = controller.matchCount;
     return Row(
       children: [
         Text(
-          '${loc.findResults}: $count',
+          '${localizations.findResults}: $count',
           style: TextStyle(
             fontSize: 12,
             color: count == 0 ? Colors.grey : Colors.orange,
           ),
         ),
         const Spacer(),
-        _toggle(context, 'Aa', controller.caseSensitive, controller.toggleCaseSensitive,
-            loc.findCaseSensitive),
-        _toggle(context, 'W', controller.matchWholeWord, controller.toggleMatchWholeWord,
-            loc.findWholeWord),
-        _toggle(context, '.*', controller.isRegex, controller.toggleRegex, loc.findRegex),
+        ..._options(context),
       ],
     );
   }
 
+  /// 收起态：匹配选项单独一行（展开态里它在结果行右侧）。
+  Widget _optionRow(BuildContext context) {
+    return Row(children: [const Spacer(), ..._options(context)]);
+  }
+
+  List<Widget> _options(BuildContext context) => [
+        _toggle(context, 'Aa', controller.caseSensitive, controller.toggleCaseSensitive,
+            localizations.findCaseSensitive),
+        _toggle(context, 'W', controller.matchWholeWord, controller.toggleMatchWholeWord,
+            localizations.findWholeWord),
+        _toggle(context, '.*', controller.isRegex, controller.toggleRegex, localizations.findRegex),
+      ];
+
   Widget _findRow(BuildContext context) {
-    final loc = _loc(context);
     return Row(
       children: [
-        Text(loc.search, style: const TextStyle(fontSize: 12)),
+        Text(localizations.search, style: const TextStyle(fontSize: 12)),
         const SizedBox(width: 8),
         Expanded(
           child: _input(
             controller.findInputController,
             controller.findInputFocusNode,
+            onSubmit: (value) async {
+              await FindHistory.record(value);
+              await _reload();
+              controller.next();
+            },
           ),
+        ),
+        // 历史记录 / 收藏
+        IconButton(
+          icon: const Icon(Icons.history, size: 18),
+          tooltip: localizations.findHistory,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+          onPressed: _showHistory,
         ),
         IconButton(
           icon: Icon(
             controller.isReplaceMode ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
             size: 20,
           ),
-          tooltip: loc.replace,
+          tooltip: localizations.replace,
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 30),
+          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
           onPressed: controller.toggleReplaceMode,
         ),
       ],
@@ -130,10 +185,9 @@ class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _replaceRow(BuildContext context) {
-    final loc = _loc(context);
     return Row(
       children: [
-        Text(loc.replace, style: const TextStyle(fontSize: 12)),
+        Text(localizations.replace, style: const TextStyle(fontSize: 12)),
         const SizedBox(width: 8),
         Expanded(
           child: _input(
@@ -145,25 +199,114 @@ class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
         ),
-        const SizedBox(width: 32),
+        const SizedBox(width: 60),
       ],
     );
   }
 
   Widget _actionRow(BuildContext context) {
-    final loc = _loc(context);
     final none = controller.matchCount == 0;
     return Row(
       children: [
-        _textButton(loc.findPrevious, none ? null : controller.previous),
-        _textButton(loc.findNext, none ? null : controller.next),
-        if (controller.isReplaceMode) ...[
-          _textButton(loc.replace, none ? null : controller.replace),
-          _textButton(loc.findReplaceAll, none ? null : controller.replaceAll),
-        ],
+        _textButton(localizations.findPrevious, none ? null : controller.previous),
+        _textButton(localizations.findNext, none ? null : controller.next),
+        _textButton(localizations.replace, none ? null : controller.replace),
+        _textButton(localizations.findReplaceAll, none ? null : controller.replaceAll),
         const Spacer(),
-        _textButton(loc.close, controller.toggleActive),
+        _textButton(localizations.close, controller.toggleActive),
       ],
+    );
+  }
+
+  // -------------------------------------------------------- 历史记录 / 收藏
+
+  Future<void> _showHistory() async {
+    final box = context.findRenderObject() as RenderBox?;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final anchor = box != null && box.hasSize ? box.localToGlobal(Offset.zero) : Offset.zero;
+    final favorites = _favorites;
+    final history = _history.where((e) => !favorites.contains(e)).toList();
+
+    final items = <PopupMenuEntry<String>>[];
+    if (favorites.isNotEmpty) {
+      items.add(_header(localizations.findFavorites));
+      for (final f in favorites) {
+        items.add(_entry('fav:$f', f, starred: true));
+      }
+      if (history.isNotEmpty) items.add(const PopupMenuDivider());
+    }
+    if (history.isNotEmpty) {
+      if (favorites.isNotEmpty) items.add(_header(localizations.findHistory));
+      for (final h in history) {
+        items.add(_entry('his:$h', h, starred: false));
+      }
+    }
+    if (favorites.isEmpty && history.isEmpty) {
+      items.add(_header(localizations.findEmptyHistory));
+    }
+    items.add(const PopupMenuDivider());
+    items.add(PopupMenuItem<String>(
+      value: 'favorite',
+      height: 38,
+      child: Text(_isCurrentFavorite ? localizations.findUnfavoriteCurrent : localizations.findFavoriteCurrent),
+    ));
+    if (history.isNotEmpty) {
+      items.add(PopupMenuItem<String>(
+        value: 'clear',
+        height: 38,
+        child: Text(localizations.findClearHistory),
+      ));
+    }
+
+    final chosen = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(anchor, anchor + const Offset(1, 1)),
+        Offset.zero & (overlay?.size ?? MediaQuery.of(context).size),
+      ),
+      items: items,
+    );
+    if (chosen == null) return;
+
+    if (chosen.startsWith('fav:') || chosen.startsWith('his:')) {
+      final value = chosen.substring(4);
+      controller.findInputController.text = value;
+      controller.findInputFocusNode.requestFocus();
+      return;
+    }
+    if (chosen == 'favorite') {
+      await FindHistory.toggleFavorite(controller.findInputController.text);
+      await _reload();
+      return;
+    }
+    if (chosen == 'clear') {
+      await FindHistory.clearHistory();
+      await _reload();
+    }
+  }
+
+  PopupMenuEntry<String> _header(String text) {
+    return PopupMenuItem<String>(
+      enabled: false,
+      height: 30,
+      child: Text(text, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+    );
+  }
+
+  PopupMenuEntry<String> _entry(String value, String label, {required bool starred}) {
+    return PopupMenuItem<String>(
+      value: value,
+      height: 36,
+      child: Row(
+        children: [
+          Icon(starred ? Icons.star : Icons.history,
+              size: 15, color: starred ? Colors.amber : Colors.grey),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -221,7 +364,7 @@ class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
       onPressed: onTap,
       style: TextButton.styleFrom(
         minimumSize: const Size(0, 28),
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
       ),

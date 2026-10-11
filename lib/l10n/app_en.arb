@@ -4434,5 +4434,11 @@
   "findReplaceAll": "Replace all",
   "findCaseSensitive": "Match case",
   "findWholeWord": "Match whole word",
-  "findRegex": "Use regular expression"
+  "findRegex": "Use regular expression",
+  "findHistory": "History",
+  "findFavorites": "Favorites",
+  "findFavoriteCurrent": "Favorite current",
+  "findUnfavoriteCurrent": "Remove current from favorites",
+  "findClearHistory": "Clear history",
+  "findEmptyHistory": "No history yet"
 }

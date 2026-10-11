@@ -2522,5 +2522,11 @@
   "findReplaceAll": "Substituir tudo",
   "findCaseSensitive": "Diferenciar maiúsculas",
   "findWholeWord": "Palavra inteira",
-  "findRegex": "Usar expressão regular"
+  "findRegex": "Usar expressão regular",
+  "findHistory": "Histórico",
+  "findFavorites": "Favoritos",
+  "findFavoriteCurrent": "Favoritar atual",
+  "findUnfavoriteCurrent": "Remover atual dos favoritos",
+  "findClearHistory": "Limpar histórico",
+  "findEmptyHistory": "Sem histórico"
 }

@@ -2521,5 +2521,11 @@
   "findReplaceAll": "แทนที่ทั้งหมด",
   "findCaseSensitive": "ตรงตามตัวพิมพ์",
   "findWholeWord": "ทั้งคำ",
-  "findRegex": "ใช้นิพจน์ปกติ"
+  "findRegex": "ใช้นิพจน์ปกติ",
+  "findHistory": "ประวัติ",
+  "findFavorites": "รายการโปรด",
+  "findFavoriteCurrent": "เพิ่มคำปัจจุบันในรายการโปรด",
+  "findUnfavoriteCurrent": "ลบคำปัจจุบันออกจากรายการโปรด",
+  "findClearHistory": "ล้างประวัติ",
+  "findEmptyHistory": "ยังไม่มีประวัติ"
 }

@@ -21,7 +21,9 @@ import 'package:proxypin/utils/tool_snippets.dart';
 
 /// 页面底部的「快捷输入行」。
 ///
-/// 顶部是一条**拖动柄**（小横线）：点一下或上下拖动即可展开 / 收起符号面板。
+/// 顶部是一条**拖动柄**（小横线）：点一下切换，或者直接上下拖动 ——
+/// 拖动过程中面板高度**跟着手指走**，松手后按位置吸附到展开 / 收起并带过渡动画。
+///
 /// * **收起**（默认）—— 一行符号，横向滑动浏览；
 /// * **展开** —— 顶部是分类标签（当前语言符号 / 共用符号库），下面是成排的符号网格。
 ///
@@ -53,12 +55,21 @@ class SnippetBar extends StatefulWidget {
 }
 
 class _SnippetBarState extends State<SnippetBar> {
+  /// 展开面板的最大高度。
+  static const double _maxExtent = 236;
+
+  /// 超过这个比例就吸附成「展开」。
+  static const double _snapRatio = 0.35;
+
   late List<ToolSnippet> _items = widget.defaults;
   List<ToolSnippet> _customLibrary = const [];
-  bool _expanded = false;
 
   /// 展开面板里的当前分类：false = 本页（当前语言）符号，true = 共用符号库。
   bool _showLibrary = false;
+
+  /// 当前展开高度（0 = 收起）。拖动时实时变化，松手后动画吸附。
+  double _extent = 0;
+  bool _dragging = false;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -119,22 +130,36 @@ class _SnippetBarState extends State<SnippetBar> {
     }
   }
 
+  void _toggle() {
+    setState(() => _extent = _extent > 0 ? 0 : _maxExtent);
+  }
+
   // ---------------------------------------------------------------- 拖动柄
 
-  /// 顶部小横线：点一下切换，上拖展开、下拖收起。
+  /// 顶部小横线：点一下切换，上下拖动时面板高度跟手，松手吸附。
   Widget _dragHandle() {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => setState(() => _expanded = !_expanded),
+      onTap: _toggle,
+      onVerticalDragStart: (_) {
+        _dragging = true;
+      },
       onVerticalDragUpdate: (details) {
-        if (details.delta.dy < -3 && !_expanded) {
-          setState(() => _expanded = true);
-        } else if (details.delta.dy > 3 && _expanded) {
-          setState(() => _expanded = false);
-        }
+        setState(() {
+          _extent = (_extent - details.delta.dy).clamp(0, _maxExtent);
+        });
+      },
+      onVerticalDragEnd: (_) {
+        _dragging = false;
+        final open = _extent > _maxExtent * _snapRatio;
+        setState(() => _extent = open ? _maxExtent : 0);
+      },
+      onVerticalDragCancel: () {
+        _dragging = false;
+        setState(() => _extent = _extent > _maxExtent * _snapRatio ? _maxExtent : 0);
       },
       child: SizedBox(
-        height: 12,
+        height: 14,
         width: double.infinity,
         child: Center(
           child: Container(
@@ -152,7 +177,7 @@ class _SnippetBarState extends State<SnippetBar> {
 
   // ------------------------------------------------------------------ 收起
 
-  Widget _collapsed() {
+  Widget _collapsedRow() {
     return SizedBox(
       height: 36,
       child: Padding(
@@ -180,50 +205,48 @@ class _SnippetBarState extends State<SnippetBar> {
 
   Widget _expandedView() {
     final list = _showLibrary ? _customLibrary : _items;
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 4, bottom: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _tab(localizations.editorInsertSymbol, !_showLibrary, () {
-                setState(() => _showLibrary = false);
-              }),
-              const SizedBox(width: 4),
-              _tab(localizations.snippetCustomLibrary, _showLibrary, () {
-                setState(() => _showLibrary = true);
-              }),
-              const Spacer(),
-              _iconBtn(Icons.tune, localizations.editorManage, _manage),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 210),
-            child: SingleChildScrollView(
+    return SizedBox(
+      height: _maxExtent - 2,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 8, right: 4, bottom: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _tab(localizations.editorInsertSymbol, !_showLibrary, () {
+                  setState(() => _showLibrary = false);
+                }),
+                const SizedBox(width: 4),
+                _tab(localizations.snippetCustomLibrary, _showLibrary, () {
+                  setState(() => _showLibrary = true);
+                }),
+                const Spacer(),
+                _iconBtn(Icons.tune, localizations.editorManage, _manage),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Expanded(
               child: list.isEmpty
-                  ? SizedBox(
-                      height: 34,
-                      width: double.infinity,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          _showLibrary
-                              ? localizations.snippetCustomLibraryEmpty
-                              : localizations.snippetManagerEmpty,
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
+                  ? Align(
+                      alignment: Alignment.topLeft,
+                      child: Text(
+                        _showLibrary
+                            ? localizations.snippetCustomLibraryEmpty
+                            : localizations.snippetManagerEmpty,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     )
-                  : Wrap(
-                      spacing: 2,
-                      runSpacing: 2,
-                      children: list.map(_cell).toList(),
+                  : SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 2,
+                        runSpacing: 2,
+                        children: list.map(_cell).toList(),
+                      ),
                     ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -293,7 +316,24 @@ class _SnippetBarState extends State<SnippetBar> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _dragHandle(),
-        if (_expanded) _expandedView() else _collapsed(),
+        // 展开的面板：高度带动画（拖动时 0 时长 → 跟手；松手 200ms 吸附）。
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: _extent),
+          duration: _dragging ? Duration.zero : const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          builder: (_, height, __) => SizedBox(
+            height: height,
+            child: ClipRect(
+              child: OverflowBox(
+                alignment: Alignment.topCenter,
+                minHeight: 0,
+                maxHeight: _maxExtent,
+                child: _expandedView(),
+              ),
+            ),
+          ),
+        ),
+        _collapsedRow(),
       ],
     );
   }

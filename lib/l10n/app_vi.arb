@@ -2521,5 +2521,11 @@
   "findReplaceAll": "Thay thế tất cả",
   "findCaseSensitive": "Phân biệt hoa thường",
   "findWholeWord": "Toàn bộ từ",
-  "findRegex": "Dùng biểu thức chính quy"
+  "findRegex": "Dùng biểu thức chính quy",
+  "findHistory": "Lịch sử",
+  "findFavorites": "Yêu thích",
+  "findFavoriteCurrent": "Yêu thích từ hiện tại",
+  "findUnfavoriteCurrent": "Bỏ yêu thích từ hiện tại",
+  "findClearHistory": "Xóa lịch sử",
+  "findEmptyHistory": "Chưa có lịch sử"
 }
