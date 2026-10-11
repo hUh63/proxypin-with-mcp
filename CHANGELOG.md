@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.54.01 (2026-10-12)
+
+### 智能补全：关键字 / 标准库表大幅扩充，并修掉两处按语言分派时的偏差
+
+有反馈「C 下输入 `scan` 出不来 `scanf`、C# 下候选串味」。复查确认：补全表普遍
+偏薄（只收了基础关键字，缺常用标准库 API），而且与语法高亮 / 符号条不同步。
+
+- **关键字表大幅扩充（约 +2300 条）**：C 补齐 stdio / string / math / stdlib 全套
+  （`scanf` `fgets` `fopen` `strtol` `qsort` …）；C++ 补 STL（`vector` `map`
+  `sort` `shared_ptr` …）；C# 补 `Console` `WriteLine` 与 LINQ 一族；Java 补
+  `System` `Stream` `Collectors` 等；Python / JavaScript / TypeScript / Go /
+  Dart / Kotlin / Rust / Swift / PHP / Ruby / Lua / R / Scala / Perl /
+  PowerShell / Haskell / Objective-C / Elixir / Clojure / Nix / Zig / LaTeX
+  同样按各自标准库补齐；SQL 补函数与窗口函数；CSS 补到 147 个属性；
+  XML 补 HTML5 标签全量；YAML / GraphQL 补到可用。
+- **修 `SmartSuggestions` 漏传 key**：上下文候选分支（`obj.` 后的成员、`new`
+  之后的大驼峰类型名等）此前只按展示名查表，现在与 `extraSuggestions` 一样传
+  re_highlight 的 key，两条路径不会再给出不一致的候选。
+- **`CodeKeywords` 的 key 表补齐常用语言**（json / xml / html / css / js / ts /
+  java / python / go / dart / bash / sql / yaml / toml / scss / less …），key
+  优先命中，不再依赖展示名恰好等于内置语言名——自定义语法借用 `json` 高亮时
+  也能拿到补全。
+- **语言列表去重**：内核语言表里若存在同名条目，此前「按 label 找语言」会永远
+  命中第一条，表现为切到该语言后高亮 / 补全没变化；现在自动追加 key 后缀，
+  保证一一对应。
+
 ## v1.54.00 (2026-10-11)
 
 ### 语法文件管理：自定义语法 + 配置导入 / 导出

@@ -39,6 +39,7 @@ class CodeKeywords {
     'indexOf', 'sort', 'reverse', 'keys', 'values', 'entries', 'assign', 'freeze', 'parse',
     'stringify', 'then', 'catch', 'finally', 'resolve', 'reject', 'all', 'race', 'toString',
     'valueOf', 'hasOwnProperty', 'trim', 'replace', 'match', 'test', 'exec', 'toFixed', 'addEventListener',
+      'log', 'error', 'warn', 'info', 'debug', 'trace', 'table', 'time', 'group', 'navigator', 'location', 'history', 'screen', 'create', 'seal', 'isFrozen', 'fromEntries', 'defineProperty', 'getPrototypeOf', 'isArray', 'reduceRight', 'findLast', 'lastIndexOf', 'flat', 'flatMap', 'fill', 'copyWithin', 'at', 'toUpperCase', 'toLowerCase', 'trimStart', 'trimEnd', 'replaceAll', 'matchAll', 'search', 'charAt', 'charCodeAt', 'codePointAt', 'padStart', 'padEnd', 'startsWith', 'endsWith', 'repeat', 'substr', 'substring', 'floor', 'ceil', 'round', 'trunc', 'abs', 'max', 'min', 'random', 'pow', 'sqrt', 'cbrt', 'log2', 'log10', 'exp', 'sign', 'hypot', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'isInteger', 'isSafeInteger', 'EPSILON', 'MAX_SAFE_INTEGER', 'toPrecision', 'toExponential', 'allSettled', 'any', 'Response', 'Request', 'Headers', 'URL', 'URLSearchParams', 'AbortController', 'AbortSignal', 'now', 'getTime', 'toISOString', 'toLocaleDateString', 'getFullYear', 'getMonth', 'getDate', 'getHours', 'getMinutes', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError', 'EvalError', 'URIError', 'setImmediate', 'queueMicrotask', 'querySelector', 'querySelectorAll', 'removeEventListener', 'dispatchEvent', 'createElement', 'createTextNode', 'appendChild', 'removeChild', 'insertBefore', 'replaceChild', 'innerHTML', 'textContent', 'innerText', 'classList', 'style', 'setAttribute', 'getAttribute', 'removeAttribute', 'localStorage', 'sessionStorage', 'indexedDB', 'crypto', 'performance', 'constructor', 'Buffer', '__dirname', '__filename', 'global', 'module.exports', 'debugger', 'with',
   ];
 
   static const List<String> typescript = [
@@ -53,6 +54,7 @@ class CodeKeywords {
     'ReturnType', 'Parameters', 'Awaited', 'InstanceType', 'Promise', 'Array', 'Map', 'Set',
     'Date', 'RegExp', 'Error', 'JSON', 'Math', 'Object', 'console', 'length', 'push', 'map',
     'filter', 'reduce', 'forEach', 'includes', 'keys', 'values', 'entries', 'toString',
+      'ReadonlyArray', 'ConstructorParameters', 'ThisType', 'PromiseLike', 'Iterable', 'Iterator', 'AsyncIterable', 'AsyncIterator', 'Generator', 'AsyncGenerator', 'Function', 'WeakMap', 'WeakSet', 'Symbol', 'BigInt', 'DeepPartial',
   ];
 
   static const List<String> dart = [
@@ -71,6 +73,7 @@ class CodeKeywords {
     'print', 'toString', 'length', 'isEmpty', 'isNotEmpty', 'add', 'remove', 'contains',
     'map', 'where', 'forEach', 'reduce', 'fold', 'firstWhere', 'any', 'every', 'toList', 'toSet',
     'keys', 'values', 'entries', 'containsKey', 'containsValue', 'indexOf', 'sublist', 'join',
+      'main', 'yield2', 'then', 'catchError', 'whenComplete', 'timeout', 'Completer', 'Null', 'never', 'Record', 'defer', 'Random', 'Timer', 'Stopwatch', 'HttpClient', 'HttpClientRequest', 'HttpClientResponse', 'jsonDecode', 'jsonEncode', 'utf8', 'utf16', 'base64', 'build', 'setState', 'initState', 'dispose', 'IconButton', 'TextButton', 'ElevatedButton', 'OutlinedButton', 'AppBar', 'ListView', 'GridView', 'Stack', 'Positioned', 'Flexible', 'SizedBox', 'ListTile', 'Divider', 'Card', 'Chip', 'Checkbox', 'Switch', 'Slider', 'ProgressIndicator', 'Theme', 'Colors', 'EdgeInsets', 'TextStyle', 'BoxDecoration', 'BorderRadius', 'BorderDecoration', 'Alignment', 'MainAxisAlignment', 'CrossAxisAlignment', 'TextEditingController', 'FocusNode', 'ScrollController', 'AnimationController', 'Animation', 'Tween', 'Curve', 'red', 'green', 'blue', 'grey', 'black', 'white', 'transparent', 'FutureBuilder', 'StreamBuilder', 'ValueListenableBuilder',
   ];
 
   static const List<String> python = [
@@ -88,6 +91,7 @@ class CodeKeywords {
     'remove', 'pop', 'clear', 'copy', 'keys', 'values', 'items', 'get', 'update', 'update',
     'add', 'discard', 'union', 'intersection', 'difference', 'split', 'join', 'strip', 'replace',
     'lower', 'upper', 'title', 'startswith', 'endswith', 'find', 'index', 'count', 'sort',
+      'eval', 'exec', 'compile', 'complex', 'memoryview', 'object', 'reverse', 'setdefault', 'popitem', 'symmetric_difference', 'issubset', 'issuperset', 'rsplit', 'splitlines', 'lstrip', 'rstrip', 'rfind', 'capitalize', 'swapcase', 'zfill', 'center', 'ljust', 'rjust', 'encode', 'decode', 'isdigit', 'isalpha', 'isalnum', 'isspace', 'isupper', 'islower', 'Exception', 'BaseException', 'ValueError', 'TypeError', 'KeyError', 'IndexError', 'AttributeError', 'ImportError', 'ModuleNotFoundError', 'RuntimeError', 'StopIteration', 'FileNotFoundError', 'ZeroDivisionError', 'OSError', 'NotImplementedError', 'AssertionError', 'OverflowError', 'RecursionError', 'PermissionError', 'ConnectionError', 'TimeoutError', 'UnicodeDecodeError', 'os', 'sys', 'json', 're', 'time', 'datetime', 'math', 'random', 'collections', 'itertools', 'functools', 'pathlib', 'typing', 'logging', 'threading', 'subprocess', 'argparse', 'csv', 'hashlib', 'base64', 'urllib', 'socket', 'sqlite3', 'unittest', 'dataclasses', 'asyncio', 'dataclass', 'NamedTuple', 'Enum', 'deque', 'Counter', 'defaultdict', 'OrderedDict',
   ];
 
   static const List<String> java = [
@@ -105,6 +109,7 @@ class CodeKeywords {
     'Collections', 'Objects', 'Math', 'Thread', 'Runnable', 'Override', 'Deprecated',
     'length', 'size', 'isEmpty', 'contains', 'add', 'remove', 'get', 'put', 'forEach', 'stream',
     'filter', 'map', 'collect', 'toList', 'toString', 'equals', 'hashCode', 'getClass', 'parseInt',
+      'out', 'err', 'println', 'print', 'printf', 'format', 'StringJoiner', 'CharSequence', 'Number', 'StrictMath', 'Class', 'Vector', 'LinkedHashMap', 'Hashtable', 'ConcurrentHashMap', 'Properties', 'TreeSet', 'LinkedHashSet', 'Queue', 'Deque', 'ArrayDeque', 'PriorityQueue', 'Iterator', 'ListIterator', 'Collection', 'Iterable', 'Comparable', 'Comparator', 'OptionalInt', 'IntStream', 'LongStream', 'Collectors', 'Function', 'BiFunction', 'Consumer', 'Supplier', 'Predicate', 'UnaryOperator', 'BinaryOperator', 'Callable', 'ExecutorService', 'Executors', 'Future', 'CompletableFuture', 'AtomicInteger', 'AtomicLong', 'AtomicBoolean', 'FileNotFoundException', 'IllegalStateException', 'IndexOutOfBoundsException', 'NumberFormatException', 'ClassCastException', 'UnsupportedOperationException', 'InterruptedException', 'File', 'Files', 'Path', 'Paths', 'Scanner', 'Random', 'UUID', 'LocalDate', 'LocalTime', 'LocalDateTime', 'Instant', 'Duration', 'Period', 'DateTimeFormatter', 'ZoneId', 'ZonedDateTime', 'BigInteger', 'BigDecimal', 'ThreadLocal', 'ClassLoader', 'Method', 'Field', 'clone', 'notify', 'wait', 'values', 'valueOf', 'parseLong', 'parseDouble', 'parseFloat', 'join', 'split', 'replace', 'replaceAll', 'matches', 'startsWith', 'endsWith', 'indexOf', 'lastIndexOf', 'substring', 'charAt', 'isBlank', 'trim', 'strip', 'toUpperCase', 'toLowerCase', 'toCharArray', 'getBytes', 'compareTo', 'equalsIgnoreCase', 'repeat', 'concat', 'intern', 'set', 'containsKey', 'containsValue', 'keySet', 'entrySet', 'clear', 'sort', 'binarySearch', 'asList', 'reduce', 'count', 'findFirst', 'findAny', 'anyMatch', 'allMatch', 'noneMatch', 'sorted', 'distinct', 'limit', 'skip', 'flatMap',
   ];
 
   static const List<String> go = [
@@ -118,6 +123,7 @@ class CodeKeywords {
     'fmt', 'log', 'os', 'io', 'time', 'strings', 'strconv', 'errors', 'context', 'sync', 'json',
     'http', 'bytes', 'bufio', 'sort', 'math', 'regexp', 'reflect', 'runtime', 'testing', 'url',
     'Printf', 'Println', 'Sprintf', 'Errorf', 'New', 'Marshal', 'Unmarshal', 'FormatInt', 'Atoi',
+      'Print', 'Sprint', 'Sprintln', 'Fprintln', 'Fprintf', 'Scanln', 'Scanf', 'Sscan', 'Args', 'Exit', 'Getenv', 'Setenv', 'Open', 'Create', 'ReadFile', 'WriteFile', 'Mkdir', 'Remove', 'Rename', 'Stat', 'Environ', 'Reader', 'Writer', 'Copy', 'CopyN', 'ReadAll', 'WriteString', 'LimitReader', 'TeeReader', 'MultiWriter', 'Contains', 'HasPrefix', 'HasSuffix', 'Index', 'IndexByte', 'LastIndex', 'Join', 'Split', 'SplitN', 'Replace', 'ReplaceAll', 'TrimSpace', 'TrimPrefix', 'TrimSuffix', 'ToLower', 'ToUpper', 'Repeat', 'Fields', 'Builder', 'NewReader', 'NewReplacer', 'Itoa', 'ParseInt', 'ParseUint', 'ParseFloat', 'FormatFloat', 'Quote', 'Unquote', 'Is', 'As', 'Unwrap', 'Now', 'Since', 'Sleep', 'Until', 'Duration', 'Unix', 'Format', 'Parse', 'Add', 'Sub', 'Truncate', 'After', 'Before', 'Sqrt', 'Pow', 'Abs', 'Max', 'Min', 'Mod', 'Floor', 'Ceil', 'Round', 'Trunc', 'Inf', 'NaN', 'Pi', 'MaxInt64', 'MinInt64', 'Ints', 'Float64s', 'Strings', 'Slice', 'Search', 'IntsAreSorted', 'StringsAreSorted', 'Mutex', 'RWMutex', 'WaitGroup', 'Once', 'Map', 'Pool', 'Cond', 'Background', 'TODO', 'WithCancel', 'WithTimeout', 'WithDeadline', 'WithValue', 'atomic', 'AddInt64', 'LoadInt64', 'StoreInt64', 'CompareAndSwapInt64', 'NewWriter', 'Scanner', 'NewScanner', 'ReadString', 'NewBuffer', 'Buffer', 'Equal', 'encoding', 'NewEncoder', 'NewDecoder', 'net', 'HandleFunc', 'Handle', 'ListenAndServe', 'Get', 'Post', 'Client', 'Server', 'Request', 'Response', 'Query', 'Path', 'Compile', 'MustCompile', 'MatchString', 'FindString', 'FindAllString', 'ReplaceAllString', 'Fatal', 'Fatalf', 'Panic',
   ];
 
   static const List<String> sql = [
@@ -132,6 +138,7 @@ class CodeKeywords {
     'PRIMARY', 'KEY', 'FOREIGN', 'REFERENCES', 'UNIQUE', 'DEFAULT', 'CHECK', 'CONSTRAINT',
     'AUTO_INCREMENT', 'INT', 'INTEGER', 'VARCHAR', 'CHAR', 'TEXT', 'DATE', 'DATETIME',
     'TIMESTAMP', 'DECIMAL', 'FLOAT', 'DOUBLE', 'BOOLEAN', 'BLOB',
+      'TRUNCATE', 'ROUND', 'ABS', 'CEIL', 'FLOOR', 'CONCAT', 'SUBSTRING', 'TRIM', 'UPPER', 'LOWER', 'LENGTH', 'REPLACE', 'NOW', 'DATEADD', 'DATEDIFF', 'DATE_FORMAT', 'EXTRACT', 'SERIAL', 'IDENTITY', 'int', 'varchar', 'char', 'text', 'date', 'datetime', 'timestamp', 'decimal', 'numeric', 'boolean', 'blob',
   ];
 
   static const List<String> css = [
@@ -139,6 +146,7 @@ class CodeKeywords {
     'left', 'right', 'bottom', 'width', 'height', 'font', 'size', 'flex', 'grid', 'align',
     'justify', 'transition', 'transform', 'opacity', 'content', 'cursor', 'overflow',
     'visibility', 'radius', 'weight', 'important', 'media', 'import',
+      'background-color', 'background-image', 'background-size', 'background-position', 'background-repeat', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'border-top', 'border-radius', 'border-color', 'border-width', 'border-style', 'z-index', 'float', 'clear', 'min-width', 'max-width', 'min-height', 'max-height', 'font-size', 'font-family', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'word-spacing', 'text-align', 'text-decoration', 'text-transform', 'text-shadow', 'text-overflow', 'white-space', 'word-break', 'word-wrap', 'flex-direction', 'flex-wrap', 'flex-grow', 'flex-shrink', 'flex-basis', 'justify-content', 'align-items', 'align-content', 'align-self', 'gap', 'row-gap', 'column-gap', 'order', 'grid-template-columns', 'grid-template-rows', 'grid-template-areas', 'grid-column', 'grid-row', 'grid-area', 'grid-gap', 'place-items', 'place-content', 'place-self', 'overflow-x', 'overflow-y', 'pointer-events', 'user-select', 'box-shadow', 'box-sizing', 'transition-duration', 'transition-property', 'transition-timing-function', 'transform-origin', 'animation', 'animation-name', 'animation-duration', 'animation-delay', 'animation-iteration-count', 'keyframes', 'outline', 'outline-offset', 'object-fit', 'object-position', 'filter', 'backdrop-filter', 'list-style', 'list-style-type', 'list-style-position', 'vertical-align', 'table-layout', 'border-collapse', 'resize', 'appearance', 'will-change', 'aspect-ratio', 'inset', 'clip-path', 'mask', 'block', 'inline', 'inline-block', 'none', 'absolute', 'relative', 'fixed', 'sticky', 'center', 'space-between', 'space-around', 'space-evenly', 'baseline', 'stretch', 'auto', 'inherit', 'initial', 'unset',
   ];
 
   static const List<String> bash = [
@@ -153,13 +161,16 @@ class CodeKeywords {
     'date', 'whoami', 'id', 'env', 'sudo', 'which', 'whereis', 'hostname', 'uname', 'uptime',
     'history', 'man', 'tee', 'diff', 'patch', 'basename', 'dirname', 'realpath', 'mktemp',
     'apt', 'yum', 'docker', 'git', 'make', 'nohup', 'sync',
+      'unalias', 'npm', 'node', 'python', 'pip',
   ];
 
-  static const List<String> yaml = ['true', 'false', 'null', 'yes', 'no'];
+  static const List<String> yaml = ['true', 'false', 'null', 'yes', 'no'    'on', 'off', 'apiVersion', 'kind', 'metadata', 'spec', 'name', 'namespace', 'labels', 'annotations', 'image', 'ports', 'env', 'volumeMounts', 'volumes', 'replicas', 'selector', 'template', 'containers', 'version', 'dependencies', 'scripts', 'jobs', 'steps',
+  ];
 
   static const List<String> json = ['true', 'false', 'null'];
 
-  static const List<String> xml = ['xml', 'version', 'encoding', 'lang', 'xmlns'];
+  static const List<String> xml = ['xml', 'version', 'encoding', 'lang', 'xmlns'    'html', 'head', 'body', 'title', 'meta', 'link', 'script', 'style', 'base', 'div', 'span', 'p', 'a', 'img', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col', 'form', 'input', 'button', 'select', 'option', 'optgroup', 'textarea', 'label', 'fieldset', 'legend', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br', 'hr', 'header', 'footer', 'nav', 'main', 'section', 'article', 'aside', 'video', 'audio', 'source', 'track', 'canvas', 'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'g', 'defs', 'use', 'symbol', 'iframe', 'embed', 'object', 'param', 'strong', 'em', 'b', 'i', 'u', 's', 'small', 'sub', 'sup', 'mark', 'time', 'code', 'pre', 'blockquote', 'cite', 'q', 'abbr', 'address', 'template', 'slot', 'picture', 'figure', 'figcaption', 'details', 'summary', 'dialog',
+  ];
 
   static const List<String> http = [
     'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'Host', 'Content-Type',
@@ -270,6 +281,7 @@ class CodeKeywords {
     'try', 'catch', 'finally', 'throw', 'is', 'as', 'in', 'out', 'by', 'lazy',
     'lateinit', 'companion', 'this', 'super', 'it', 'null', 'true', 'false',
     'import', 'package', 'typealias', 'where', 'vararg', 'crossinline', 'noinline',
+      'println', 'print', 'final', 'async', 'launch', 'runBlocking', 'withContext', 'coroutineScope', 'listOf', 'mutableListOf', 'mapOf', 'mutableMapOf', 'setOf', 'mutableSetOf', 'arrayOf', 'emptyList', 'Int', 'Long', 'Double', 'Float', 'Boolean', 'Char', 'String', 'Byte', 'Short', 'Unit', 'Any', 'Nothing', 'Array', 'List', 'MutableList', 'Map', 'MutableMap', 'Set', 'MutableSet', 'Pair', 'Triple', 'let', 'run', 'apply', 'also', 'with', 'takeIf', 'takeUnless', 'repeat', 'map', 'filter', 'forEach', 'reduce', 'fold', 'sorted', 'sortedBy', 'reversed', 'distinct', 'first', 'firstOrNull', 'last', 'lastOrNull', 'find', 'single', 'count', 'sum', 'sumOf', 'maxOrNull', 'minOrNull', 'any', 'all', 'none', 'zip', 'joinToString', 'joinTo', 'associateWith', 'groupBy', 'partition', 'flatMap', 'toString', 'equals', 'hashCode', 'copy', 'component1', 'invoke', 'operator', 'infix', 'throws',
   ];
 
   static const List<String> rust = [
@@ -280,6 +292,7 @@ class CodeKeywords {
     'box', 'Some', 'None', 'Ok', 'Err', 'true', 'false', 'String', 'Vec',
     'Option', 'Result', 'Box', 'Rc', 'Arc', 'RefCell', 'Mutex', 'println!',
     'print!', 'format!', 'vec!', 'derive', 'macro_rules', 'unsafe',
+      'Self', 'str', 'bool', 'char', 'u8', 'u16', 'u32', 'u64', 'u128', 'usize', 'i8', 'i16', 'i32', 'i64', 'i128', 'isize', 'f32', 'f64', 'Cell', 'RwLock', 'Cow', 'println', 'print', 'format', 'vec', 'eprintln', 'eprint', 'write', 'writeln', 'unwrap', 'expect', 'clone', 'into', 'from', 'to_string', 'len', 'push', 'pop', 'iter', 'into_iter', 'map', 'filter', 'collect', 'fold', 'for_each', 'find', 'any', 'all', 'count', 'sum', 'min', 'max', 'unwrap_or', 'unwrap_or_else', 'unwrap_or_default', 'ok', 'err', 'is_some', 'is_none', 'is_ok', 'is_err', 'HashMap', 'HashSet', 'BTreeMap', 'BTreeSet', 'VecDeque', 'BinaryHeap', 'Iterator', 'IntoIterator', 'Extend', 'From', 'Into', 'TryFrom', 'TryInto', 'Default', 'Clone', 'Copy', 'Debug', 'Display', 'PartialEq', 'Eq', 'Hash',
   ];
 
   static const List<String> swift = [
@@ -292,6 +305,7 @@ class CodeKeywords {
     'unowned', 'mutating', 'nonmutating', 'convenience', 'required', 'override',
     'import', 'nil', 'true', 'false', 'self', 'super', 'some', 'any', 'await',
     'async', 'actor',
+      'Self', 'Int', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt', 'Double', 'Float', 'Bool', 'String', 'Character', 'Array', 'Dictionary', 'Set', 'Optional', 'Any', 'AnyObject', 'print', 'dump', 'map', 'filter', 'reduce', 'forEach', 'sorted', 'compactMap', 'flatMap', 'append', 'insert', 'remove', 'removeAll', 'contains', 'first', 'last', 'count', 'isEmpty', 'indices', 'firstIndex', 'lastIndex', 'min', 'max', 'sum', 'Task', 'escaping', 'autoclosure', 'inout', 'Codable', 'Encodable', 'Decodable', 'Equatable', 'Hashable', 'Comparable', 'Identifiable',
   ];
 
   static const List<String> php = [
@@ -304,6 +318,7 @@ class CodeKeywords {
     'unset', 'empty', 'list', 'array', 'true', 'false', 'null', 'this',
     'parent', 'self', 'instanceof', 'extends', 'implements', 'yield', 'fn',
     'match', 'readonly', 'enum', 'declare', 'strict_types',
+      'print_r', 'var_dump', 'count', 'strlen', 'implode', 'explode', 'in_array', 'array_push', 'array_pop', 'array_shift', 'array_unshift', 'array_map', 'array_filter', 'array_reduce', 'array_merge', 'array_merge_recursive', 'array_keys', 'array_values', 'array_slice', 'array_splice', 'array_search', 'array_key_exists', 'array_flip', 'array_unique', 'array_sum', 'array_column', 'sort', 'rsort', 'asort', 'arsort', 'ksort', 'krsort', 'usort', 'uasort', 'uksort', 'shuffle', 'json_encode', 'json_decode', 'serialize', 'unserialize', 'urlencode', 'urldecode', 'htmlspecialchars', 'htmlspecialchars_decode', 'strip_tags', 'nl2br', 'trim', 'ltrim', 'rtrim', 'str_replace', 'str_ireplace', 'str_repeat', 'substr', 'substr_count', 'strpos', 'stripos', 'strrpos', 'strstr', 'stristr', 'strtolower', 'strtoupper', 'ucfirst', 'lcfirst', 'ucwords', 'str_pad', 'str_split', 'strrev', 'sprintf', 'printf', 'vsprintf', 'number_format', 'wordwrap', 'htmlentities', 'addslashes', 'stripslashes', 'preg_match', 'preg_match_all', 'preg_replace', 'preg_replace_callback', 'preg_split', 'preg_quote', 'file_get_contents', 'file_put_contents', 'fopen', 'fclose', 'fgets', 'fputs', 'fwrite', 'file', 'readfile', 'unlink', 'mkdir', 'rmdir', 'is_file', 'is_dir', 'file_exists', 'realpath', 'basename', 'dirname', 'pathinfo', 'scandir', 'glob', 'die', 'exit', 'Exception', 'Error', 'TypeError', 'ValueError', 'ArithmeticError', 'PDO', 'PDOStatement', 'PDOException', 'mysqli', 'Closure', 'ArrayAccess', 'Iterator', 'Countable', 'Serializable', 'Generator', 'IteratorAggregate', 'int', 'string', 'float', 'bool', 'void', 'mixed', 'object', 'callable', 'iterable',
   ];
 
   static const List<String> ruby = [
@@ -314,6 +329,7 @@ class CodeKeywords {
     'attr_reader', 'attr_writer', 'module_function', 'private', 'public',
     'protected', 'self', 'super', 'nil', 'true', 'false', 'and', 'or', 'not',
     'then', 'case', 'when', 'puts', 'print', 'p', 'new', 'each', 'map', 'select',
+      'pp', 'gets', 'load', 'prepend', 'attr', 'defined?', 'loop', 'catch', 'throw', 'each_with_index', 'each_with_object', 'each_slice', 'each_cons', 'reject', 'reduce', 'inject', 'find', 'detect', 'collect', 'sort', 'sort_by', 'sort_by!', 'min', 'max', 'min_by', 'max_by', 'sum', 'count', 'any', 'all', 'none', 'one', 'first', 'last', 'take', 'drop', 'take_while', 'drop_while', 'group_by', 'partition', 'flat_map', 'zip', 'push', 'pop', 'shift', 'unshift', 'length', 'size', 'empty?', 'include?', 'index', 'rindex', 'join', 'split', 'strip', 'chomp', 'chop', 'upcase', 'downcase', 'capitalize', 'swapcase', 'reverse', 'chars', 'bytes', 'lines', 'to_s', 'to_i', 'to_f', 'to_a', 'to_h', 'to_sym', 'to_str', 'inspect', 'respond_to?', 'send', 'public_send', 'freeze', 'frozen?', 'initialize', 'is_a?', 'kind_of?', 'instance_of?', 'equal?', 'eql?', 'nil?', 'String', 'Integer', 'Float', 'Array', 'Hash', 'Symbol', 'Proc', 'Struct', 'Module', 'Class', 'Object', 'Comparable', 'Enumerable', 'StringIO', 'File', 'Dir', 'IO', 'Time', 'Date', 'DateTime', 'select_all', 'find_by', 'where', 'order', 'limit', 'pluck',
   ];
 
   static const List<String> c = [
@@ -324,6 +340,7 @@ class CodeKeywords {
     'void', 'volatile', 'while', 'NULL', 'bool', 'true', 'false', 'printf',
     'malloc', 'free', 'memcpy', 'strlen', 'include', 'define', 'ifdef',
     'ifndef', 'endif', 'pragma', 'typedef', 'wchar_t', 'size_t',
+      'scanf', 'sscanf', 'fscanf', 'gets', 'fgets', 'puts', 'fputs', 'fopen', 'fclose', 'fprintf', 'sprintf', 'snprintf', 'vprintf', 'vfprintf', 'fread', 'fwrite', 'fseek', 'ftell', 'rewind', 'feof', 'fgetc', 'fputc', 'getchar', 'putchar', 'perror', 'exit', 'atexit', 'atoi', 'atol', 'atoll', 'atof', 'strtol', 'strtoul', 'strtod', 'strtoll', 'strtoull', 'strcmp', 'strncmp', 'strcasecmp', 'strcpy', 'strncpy', 'strcat', 'strncat', 'strstr', 'strchr', 'strrchr', 'strtok', 'strdup', 'memset', 'memmove', 'memcmp', 'memchr', 'calloc', 'realloc', 'qsort', 'bsearch', 'abs', 'labs', 'llabs', 'fabs', 'sqrt', 'cbrt', 'pow', 'exp', 'exp2', 'log', 'log2', 'log10', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'ceil', 'floor', 'round', 'trunc', 'nearbyint', 'fmod', 'remainder', 'hypot', 'fmin', 'fmax', 'rand', 'srand', 'time', 'clock', 'difftime', 'mktime', 'localtime', 'gmtime', 'strftime', 'FILE', 'EOF', 'ptrdiff_t', 'ssize_t', 'off_t', 'time_t', 'clock_t', 'int8_t', 'int16_t', 'int32_t', 'int64_t', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t', 'intptr_t', 'uintptr_t', 'va_list', 'va_start', 'va_arg', 'va_end', 'offsetof', 'stdin', 'stdout', 'stderr', 'SEEK_SET', 'SEEK_CUR', 'SEEK_END', 'EXIT_SUCCESS', 'EXIT_FAILURE', 'RAND_MAX', 'BUFSIZ', 'assert', 'static_assert', 'main', 'argc', 'argv', 'intmax_t', '_Bool', '_Atomic',
   ];
 
   static const List<String> cpp = [
@@ -338,6 +355,7 @@ class CodeKeywords {
     'typename', 'union', 'unsigned', 'using', 'virtual', 'void', 'volatile',
     'while', 'std', 'string', 'vector', 'map', 'cout', 'cin', 'endl', 'unique_ptr',
     'shared_ptr', 'const_cast', 'static_assert', 'concept', 'requires',
+      'cerr', 'clog', 'flush', 'hex', 'dec', 'oct', 'setw', 'setprecision', 'fixed', 'scientific', 'wstring', 'u16string', 'u32string', 'string_view', 'list', 'forward_list', 'deque', 'array', 'set', 'multiset', 'multimap', 'unordered_map', 'unordered_set', 'unordered_multimap', 'unordered_multiset', 'stack', 'queue', 'priority_queue', 'pair', 'tuple', 'optional', 'variant', 'any', 'bitset', 'span', 'function', 'bind', 'ref', 'cref', 'mem_fn', 'invoke', 'weak_ptr', 'make_shared', 'make_unique', 'allocate_shared', 'move', 'forward', 'swap', 'exchange', 'get', 'getline', 'begin', 'end', 'cbegin', 'cend', 'rbegin', 'rend', 'crbegin', 'crend', 'size', 'empty', 'data', 'front', 'back', 'at', 'push_back', 'pop_back', 'push_front', 'pop_front', 'emplace', 'emplace_back', 'emplace_front', 'insert', 'erase', 'clear', 'find', 'count', 'contains', 'reserve', 'resize', 'shrink_to_fit', 'capacity', 'sort', 'stable_sort', 'partial_sort', 'nth_element', 'reverse', 'rotate', 'unique', 'lower_bound', 'upper_bound', 'equal_range', 'binary_search', 'next_permutation', 'prev_permutation', 'fill', 'fill_n', 'copy', 'copy_if', 'copy_n', 'transform', 'accumulate', 'reduce', 'iota', 'generate', 'for_each', 'min', 'max', 'min_element', 'max_element', 'clamp', 'distance', 'advance', 'next', 'prev', 'to_string', 'stoi', 'stol', 'stoul', 'stoll', 'stof', 'stod', 'stold', 'initializer_list', 'allocator', 'iterator', 'const_iterator', 'reverse_iterator', 'enable_if', 'is_same', 'is_integral', 'is_floating_point', 'remove_reference', 'remove_const', 'add_const', 'consteval', 'constinit', 'co_await', 'co_return', 'co_yield', 'final', 'thread_local',
   ];
 
   static const List<String> csharp = [
@@ -352,6 +370,7 @@ class CodeKeywords {
     'this', 'throw', 'true', 'try', 'typeof', 'uint', 'ulong', 'unchecked',
     'unsafe', 'ushort', 'using', 'virtual', 'void', 'volatile', 'while', 'var',
     'async', 'await', 'yield', 'record', 'init', 'required', 'nameof', 'when',
+      'Console', 'WriteLine', 'Write', 'ReadLine', 'Read', 'WriteAllText', 'ReadAllText', 'ReadAllLines', 'AppendAllText', 'System', 'Collections', 'Generic', 'Linq', 'Text', 'Threading', 'Tasks', 'IO', 'Net', 'Http', 'Diagnostics', 'Globalization', 'List', 'Dictionary', 'HashSet', 'SortedSet', 'SortedDictionary', 'Queue', 'Stack', 'LinkedList', 'KeyValuePair', 'IEnumerable', 'IEnumerator', 'ICollection', 'IList', 'IDictionary', 'IQueryable', 'IComparable', 'IEquatable', 'IDisposable', 'IAsyncEnumerable', 'IObservable', 'ISet', 'ILookup', 'Array', 'Tuple', 'ValueTuple', 'Nullable', 'Guid', 'DateTime', 'TimeSpan', 'DateTimeOffset', 'Random', 'Math', 'Convert', 'Environment', 'GC', 'Buffer', 'Path', 'File', 'Directory', 'Stream', 'FileStream', 'MemoryStream', 'StreamReader', 'StreamWriter', 'StringBuilder', 'String', 'Object', 'Exception', 'ArgumentException', 'ArgumentNullException', 'ArgumentOutOfRangeException', 'InvalidOperationException', 'NotImplementedException', 'NullReferenceException', 'IndexOutOfRangeException', 'KeyNotFoundException', 'FormatException', 'IOException', 'TaskCanceledException', 'ToString', 'Equals', 'GetHashCode', 'GetType', 'MemberwiseClone', 'Dispose', 'Format', 'Join', 'IsNullOrEmpty', 'IsNullOrWhiteSpace', 'Concat', 'Compare', 'Substring', 'IndexOf', 'LastIndexOf', 'Contains', 'StartsWith', 'EndsWith', 'Replace', 'Split', 'Trim', 'TrimStart', 'TrimEnd', 'ToUpper', 'ToLower', 'PadLeft', 'PadRight', 'Insert', 'Remove', 'TrimEnds', 'ToCharArray', 'Select', 'SelectMany', 'Where', 'OrderBy', 'OrderByDescending', 'ThenBy', 'ThenByDescending', 'GroupBy', 'First', 'FirstOrDefault', 'Single', 'SingleOrDefault', 'Last', 'LastOrDefault', 'ElementAt', 'ElementAtOrDefault', 'Any', 'All', 'Count', 'LongCount', 'Sum', 'Average', 'Min', 'Max', 'ToList', 'ToArray', 'ToDictionary', 'ToHashSet', 'ToLookup', 'Skip', 'SkipWhile', 'Take', 'TakeWhile', 'Distinct', 'Zip', 'Aggregate', 'SequenceEqual', 'Union', 'Intersect', 'Except', 'Range', 'Repeat', 'Empty', 'Task', 'ValueTask', 'Run', 'Wait', 'WaitAll', 'WaitAny', 'WhenAll', 'WhenAny', 'Delay', 'FromResult', 'ContinueWith', 'Result', 'dynamic', 'Func', 'Action', 'Predicate', 'partial', 'get', 'set', 'value',
   ];
 
   static const List<String> lua = [
@@ -361,6 +380,7 @@ class CodeKeywords {
     'tostring', 'tonumber', 'table', 'string', 'math', 'io', 'os', 'self',
     'setmetatable', 'getmetatable', 'rawget', 'rawset', 'select', 'pcall',
     'xpcall', 'error', 'assert', 'next', 'unpack',
+      'rawequal', 'rawlen', 'module', 'string.format', 'string.sub', 'string.len', 'string.rep', 'string.find', 'string.gsub', 'string.gmatch', 'string.match', 'string.upper', 'string.lower', 'string.byte', 'string.char', 'string.reverse', 'string.split', 'table.insert', 'table.remove', 'table.concat', 'table.sort', 'table.unpack', 'table.pack', 'table.move', 'table.getn', 'math.floor', 'math.ceil', 'math.abs', 'math.max', 'math.min', 'math.sqrt', 'math.random', 'math.huge', 'math.pi', 'math.sin', 'math.cos', 'math.tan', 'math.log', 'math.exp', 'math.fmod', 'math.modf', 'io.open', 'io.read', 'io.write', 'io.lines', 'io.close', 'io.stdout', 'io.stderr', 'os.time', 'os.date', 'os.clock', 'os.getenv', 'os.exit', 'os.remove', 'os.rename', 'coroutine.create', 'coroutine.resume', 'coroutine.yield', 'coroutine.status', 'coroutine.wrap', 'utf8.char', 'utf8.len', 'utf8.codepoint', 'utf8.offset',
   ];
 
   static const List<String> r = [
@@ -371,6 +391,7 @@ class CodeKeywords {
     'sapply', 'lapply', 'apply', 'tapply', 'subset', 'merge', 'summary',
     'mean', 'median', 'sd', 'var', 'sum', 'min', 'max', 'seq', 'rep', 'which',
     'is.na', 'as.numeric', 'as.character', 'as.factor', 'read.csv', 'write.csv',
+      'paste0', 'sprintf', 'format', 'invisible', 'array', 'numeric', 'integer', 'character', 'logical', 'complex', 'dim', 'nrow', 'ncol', 'head', 'tail', 'str', 'is.null', 'as.integer', 'as.double', 'as.logical', 'vapply', 'mapply', 'Map', 'Reduce', 'Filter', 'Find', 'prod', 'range', 'quantile', 'cumsum', 'diff', 'seq_along', 'seq_len', 'rev', 'sort', 'order', 'rank', 'unique', 'duplicated', 'match', 'rbind', 'cbind', 'aggregate', 'transform', 'within', 'lm', 'glm', 'predict', 'plot', 'hist', 'boxplot', 'pairs', 'setwd', 'getwd', 'read.table', 'write.table', 'save', 'load', 'dplyr', 'tidyr', 'stringr', 'forcats', 'purrr', 'readr', 'tibble', 'ggplot2', 'theme_minimal', 'theme_bw', 'theme_classic', 'labs', 'facet_wrap', 'facet_grid', 'geom_point', 'geom_line', 'geom_bar', 'geom_col', 'geom_histogram', 'geom_boxplot', 'aes', 'group_by', 'summarise', 'summarize', 'mutate', 'filter_arrange',
   ];
 
   static const List<String> scala = [
@@ -380,6 +401,7 @@ class CodeKeywords {
     'protected', 'return', 'sealed', 'super', 'this', 'throw', 'trait', 'try',
     'true', 'type', 'val', 'var', 'while', 'with', 'yield', 'given', 'using',
     'enum', 'export', 'extension', 'then', 'inline', 'transparent', 'println',
+      'print', 'printf', 'require', 'assert', 'List', 'Seq', 'Vector', 'Array', 'ArrayBuffer', 'Map', 'Set', 'ListBuffer', 'Option', 'Some', 'None', 'Either', 'Left', 'Right', 'Try', 'Success', 'Failure', 'map', 'flatMap', 'filter', 'foreach', 'fold', 'foldLeft', 'foldRight', 'reduce', 'reduceLeft', 'collect', 'sorted', 'sortBy', 'sortWith', 'head', 'headOption', 'tail', 'init', 'last', 'lastOption', 'take', 'drop', 'takeWhile', 'dropWhile', 'span', 'partition', 'groupBy', 'zip', 'zipWithIndex', 'mkString', 'toList', 'toSet', 'toMap', 'toSeq', 'reverse', 'distinct', 'contains', 'exists', 'forall', 'find', 'count', 'sum', 'product', 'min', 'max', 'length', 'size', 'isEmpty', 'nonEmpty', 'Int', 'Long', 'Double', 'Float', 'Boolean', 'Char', 'String', 'Unit', 'Any', 'AnyRef', 'Nothing', 'Null', 'Future', 'Await', 'ExecutionContext', 'Promise', 'StringBuilder',
   ];
 
   static const List<String> perl = [
@@ -389,6 +411,7 @@ class CodeKeywords {
     'join', 'map', 'grep', 'sort', 'keys', 'values', 'each', 'push', 'pop',
     'shift', 'unshift', 'splice', 'scalar', 'ref', 'bless', 'new', 'and', 'or',
     'not', 'defined', 'exists', 'delete', 'undef', 'qw', 'strict', 'warnings',
+      'printf', 'sprintf', 'length', 'substr', 'index', 'rindex', 'uc', 'lc', 'ucfirst', 'lcfirst', 'reverse', 'open', 'close', 'read', 'write', 'chdir', 'mkdir', 'unlink', 'rename', 'eval', 'STDIN', 'STDOUT', 'STDERR',
   ];
 
   static const List<String> powershell = [
@@ -400,6 +423,7 @@ class CodeKeywords {
     'Write-Host', 'Write-Output', 'Read-Host', 'Select-Object', 'Where-Object',
     'ForEach-Object', 'Sort-Object', 'Measure-Object', 'Test-Path', 'Join-Path',
     'Import-Module', 'Get-Command', 'Get-Help', 'true', 'false', 'null',
+      'Write-Error', 'Write-Warning', 'Write-Verbose', 'Write-Debug', 'Get-Content', 'Set-Content', 'Add-Content', 'Clear-Content', 'Get-Process', 'Get-Service', 'Get-Member', 'Get-Date', 'Get-Location', 'Set-Location', 'New-Object', 'Copy-Item', 'Move-Item', 'Rename-Item', 'Split-Path', 'Resolve-Path', 'Get-ItemProperty', 'Set-ItemProperty', 'Group-Object', 'Compare-Object', 'ConvertTo-Json', 'ConvertFrom-Json', 'ConvertTo-Csv', 'ConvertFrom-Csv', 'ConvertTo-Html', 'Select-String', 'Out-File', 'Out-Null', 'Out-String', 'Out-Host', 'Start-Process', 'Stop-Process', 'Start-Service', 'Stop-Service', 'Restart-Service', 'Invoke-WebRequest', 'Invoke-RestMethod', 'Invoke-Expression', 'Invoke-Command', 'Export-Module', 'Remove-Module', 'Import-Csv', 'Export-Csv', 'PSCustomObject', 'ErrorActionPreference', 'VerbosePreference',
   ];
 
   static const List<String> haskell = [
@@ -410,6 +434,7 @@ class CodeKeywords {
     'Either', 'Just', 'Nothing', 'Left', 'Right', 'True', 'False', 'map',
     'filter', 'foldl', 'foldr', 'mapM', 'return', 'pure', 'fmap', 'show', 'read',
     'putStrLn', 'print', 'error', 'undefined',
+      'putStr', 'getLine', 'getContents', 'interact', 'readFile', 'writeFile', 'appendFile', 'foldl1', 'foldr1', 'zipWith', 'zip', 'unzip', 'scanl', 'scanr', 'head', 'tail', 'init', 'last', 'length', 'null', 'reverse', 'concat', 'concatMap', 'take', 'drop', 'takeWhile', 'dropWhile', 'elem', 'notElem', 'lookup', 'lines', 'words', 'unlines', 'unwords', 'IO', 'Ordering', 'mapM_', 'forM', 'forM_', 'sequence', 'sequence_', 'when', 'unless', 'forever', 'fromIntegral', 'realToFrac', 'floor', 'ceiling', 'round', 'truncate', 'min', 'max', 'abs', 'sum', 'product', 'minimum', 'maximum', 'any', 'all', 'and', 'or',
   ];
 
   static const List<String> objectiveC = [
@@ -421,6 +446,7 @@ class CodeKeywords {
     'inline', 'sizeof', 'interface', 'implementation', 'protocol', 'property',
     'synthesize', 'dynamic', 'nonatomic', 'strong', 'weak', 'copy', 'retain',
     'assign', 'readonly', 'readwrite', 'instancetype', 'IBAction', 'IBOutlet',
+      'NSLog', 'NSString', 'NSArray', 'NSMutableArray', 'NSDictionary', 'NSMutableDictionary', 'NSSet', 'NSMutableSet', 'NSNumber', 'NSData', 'NSObject', 'CGRect', 'CGPoint', 'CGSize', 'alloc', 'init', 'new', 'mutableCopy', 'description', 'length', 'count', 'objectAtIndex', 'objectForKey', 'setObject', 'forKey', 'addObject', 'removeObject', 'stringWithFormat', 'stringWithContentsOfFile', 'componentsSeparatedByString', 'substringToIndex', 'substringFromIndex', 'stringByAppendingString', 'intValue', 'floatValue', 'doubleValue', 'boolValue', 'autoreleasepool', 'end', 'try', 'catch', 'finally', 'throw', 'UIView', 'UIViewController', 'UILabel', 'UIButton', 'UIImage', 'UIColor', 'UITableView', 'UICollectionView', 'dispatch_async', 'dispatch_sync', 'dispatch_get_main_queue',
   ];
 
   static const List<String> elixir = [
@@ -431,6 +457,7 @@ class CodeKeywords {
     'true', 'false', 'nil', 'and', 'or', 'not', 'in', 'Enum', 'Map', 'List',
     'String', 'Integer', 'Float', 'IO', 'Agent', 'GenServer', 'Supervisor',
     'Task', 'Kernel', 'self', 'puts', 'inspect',
+      'else', 'map', 'filter', 'reduce', 'each', 'sum', 'min', 'max', 'count', 'sort', 'sort_by', 'group_by', 'into', 'chunk_every', 'Stream', 'take', 'drop', 'first', 'last', 'length', 'flatten', 'zip', 'unzip', 'delete', 'insert_at', 'replace_at', 'get', 'put', 'has_key', 'keys', 'values', 'merge', 'update', 'new', 'upcase', 'downcase', 'trim', 'split', 'replace', 'slice', 'contains', 'starts_with', 'ends_with', 'to_integer', 'to_float', 'parse', 'to_string', 'digits', 'write', 'gets', 'hd', 'tl', 'is_atom', 'is_binary', 'is_list', 'is_map', 'is_nil', 'async', 'await',
   ];
 
   static const List<String> clojure = [
@@ -441,6 +468,7 @@ class CodeKeywords {
     'ns', 'require', 'import', 'use', 'refer', 'true', 'false', 'nil', 'and',
     'or', 'not', 'map', 'filter', 'reduce', 'apply', 'conj', 'assoc', 'get',
     'str', 'println', 'atom', 'swap!', 'reset!', 'deref',
+      'defstruct', 'partial', 'comp', 'juxt', 'complement', 'constantly', 'identity', 'first', 'rest', 'next', 'last', 'butlast', 'nth', 'count', 'empty', 'seq', 'cons', 'dissoc', 'get-in', 'assoc-in', 'update', 'update-in', 'merge', 'merge-with', 'keys', 'vals', 'into', 'concat', 'mapcat', 'interpose', 'flatten', 'distinct', 'sort', 'sort-by', 'reverse', 'range', 'repeat', 'repeatedly', 'iterate', 'take', 'drop', 'take-while', 'drop-while', 'partition', 'group-by', 'subs', 'print', 'prn', 'pr-str', 'format', 'read-string', 'add-watch', 'as',
   ];
 
   static const List<String> latex = [
@@ -453,6 +481,7 @@ class CodeKeywords {
     'url', 'frac', 'sqrt', 'sum', 'int', 'lim', 'left', 'right', 'alpha',
     'beta', 'gamma', 'delta', 'lambda', 'mu', 'sigma', 'omega', 'newline',
     'linebreak', 'pagebreak', 'hspace', 'vspace', 'quad', 'qquad', 'textwidth',
+      'textrm', 'textsf', 'prod', 'log', 'ln', 'sin', 'cos', 'tan', 'newpage', 'hline', 'hfill', 'times', 'cdot', 'div', 'pm', 'mp', 'epsilon', 'theta', 'pi', 'phi', 'mathbf', 'mathrm', 'mathcal', 'mathbb', 'vec', 'tiny', 'small', 'footnotesize', 'normalsize', 'large', 'Large', 'huge', 'Huge',
   ];
 
   static const List<String> nix = [
@@ -463,6 +492,7 @@ class CodeKeywords {
     'writeShellScript', 'runCommand', 'optional', 'optionals', 'map', 'filter',
     'foldl', 'attrNames', 'attrValues', 'mapAttrs', 'genAttrs', 'listToAttrs',
     'toString', 'toJSON', 'fromJSON', 'concatStringsSep', 'concatMapStringsSep',
+      'readFile', 'writeFile', 'readDir', 'readFileType', 'foldl1', 'genList', 'abort', 'throw', 'derivation', 'fetchTarball', 'fetchGit',
   ];
 
   static const List<String> zig = [
@@ -473,25 +503,47 @@ class CodeKeywords {
     'union', 'opaque', 'error', 'anytype', 'anyerror', 'void', 'noreturn',
     'type', 'anyframe', 'asm', 'align', 'allowzero', 'volatile', 'nosuspend',
     'suspend', 'resume', 'async', 'await', 'and', 'or', 'std', 'unreachable',
+      'intCast', 'bitCast', 'floatCast', 'ptrCast', 'alignCast', 'enumFromInt', 'ArrayList', 'HashMap', 'StringHashMap', 'AutoHashMap', 'ArrayHashMap', 'i8', 'i16', 'i32', 'i64', 'i128', 'u8', 'u16', 'u32', 'u64', 'u128', 'usize', 'isize', 'f16', 'f32', 'f64', 'f80', 'bool',
   ];
 
   /// 语言 key -> 专属关键字表。
   static const Map<String, List<String>> _byKey = {
-    'javascript': javascript,
-    'typescript': typescript,
-    'dart': dart,
-    'python': python,
-    'java': java,
-    'go': go,
-    'sql': sql,
+    // 常用内置语言：key 优先命中，避免依赖 Mode.name 恰好等于展示名。
+    'json': json,
+    'xml': xml,
+    'html': xml,
+    'xhtml': xml,
+    'svg': xml,
+    'vue': xml,
+    'svelte': xml,
     'css': css,
     'scss': css,
     'less': css,
+    'sass': css,
+    'stylus': css,
+    'javascript': javascript,
+    'typescript': typescript,
+    'coffeescript': javascript,
+    'java': java,
+    'groovy': java,
+    'python': python,
+    'go': go,
+    'golang': go,
+    'dart': dart,
     'bash': bash,
+    'sh': bash,
     'shell': bash,
+    'zsh': bash,
+    'sql': sql,
     'yaml': yaml,
-    'json': json,
-    'xml': xml,
+    'toml': yaml,
+    'properties': bash,
+    'dockerfile': bash,
+    'makefile': bash,
+    'cmake': bash,
+    'nginx': bash,
+    'plaintext': const <String>[],
+    'text': const <String>[],
     'http': http,
     'markdown': markdown_,
     'kotlin': kotlin,

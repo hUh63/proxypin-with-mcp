@@ -66,6 +66,7 @@ class SmartSuggestions {
     required String documentText,
     required String linePrefix,
     required String prefix,
+    String key = '',
   }) {
     switch (language ?? '') {
       case 'JSON':
@@ -81,7 +82,7 @@ class SmartSuggestions {
       case 'Markdown':
         return _markdown(documentText, linePrefix, prefix);
       default:
-        return _generic(documentText, linePrefix, prefix, language ?? '');
+        return _generic(documentText, linePrefix, prefix, language ?? '', key);
     }
   }
 
@@ -604,8 +605,8 @@ class SmartSuggestions {
   static final RegExp _typeRe = RegExp(r'\b([A-Z][A-Za-z0-9_$]{2,})');
 
   static List<String> _generic(
-      String doc, String linePrefix, String prefix, String language) {
-    final words = CodeKeywords.forLanguage(language);
+      String doc, String linePrefix, String prefix, String language, String key) {
+    final words = CodeKeywords.forLanguage(language, key);
     final tail = _tail(doc);
     final trimmed = linePrefix.trimRight();
     // `obj.` 之后：补文档里出现过的成员名。

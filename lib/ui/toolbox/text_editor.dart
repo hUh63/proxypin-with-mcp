@@ -102,11 +102,19 @@ final List<_LangOption> _builtinLangs = _buildLangs();
 
 List<_LangOption> _buildLangs() {
   final out = <_LangOption>[const _LangOption('Plain Text', null)];
+  final used = <String>{'Plain Text'};
   final entries = builtinAllLanguages.entries.toList()
     ..sort((a, b) => a.key.compareTo(b.key));
   for (final e in entries) {
     if (e.key == 'plaintext') continue;
-    final label = _kLangLabelOverride[e.key] ?? e.value.name ?? e.key;
+    final base = _kLangLabelOverride[e.key] ?? e.value.name ?? e.key;
+    // 内核语言表里偶有同名条目，label 重复会让「按 label 找语言」永远命中第一条，
+    // 表现为切到该语言后高亮 / 补全没变化。这里追加 key 保证唯一。
+    var label = base;
+    if (!used.add(label)) {
+      label = '$base (${e.key})';
+      used.add(label);
+    }
     out.add(_LangOption(label, e.value, e.key));
   }
   return out;
@@ -1334,6 +1342,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       doc.controller.contextSuggestionProvider = smart
           ? (ctx) => SmartSuggestions.suggest(
                 language: doc.langLabel,
+                key: _lang.key,
                 documentText: ctx.documentText,
                 linePrefix: ctx.linePrefix,
                 prefix: ctx.prefix,

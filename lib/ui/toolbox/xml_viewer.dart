@@ -79,6 +79,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
     _controller.contextSuggestionProvider = on
         ? (ctx) => SmartSuggestions.suggest(
               language: 'XML / HTML',
+              key: 'xml',
               documentText: ctx.documentText,
               linePrefix: ctx.linePrefix,
               prefix: ctx.prefix,

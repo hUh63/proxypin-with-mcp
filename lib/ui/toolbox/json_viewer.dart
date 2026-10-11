@@ -84,6 +84,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
     _controller.contextSuggestionProvider = on
         ? (ctx) => SmartSuggestions.suggest(
               language: 'JSON',
+              key: 'json',
               documentText: ctx.documentText,
               linePrefix: ctx.linePrefix,
               prefix: ctx.prefix,
