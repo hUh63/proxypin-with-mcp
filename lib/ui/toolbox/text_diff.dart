@@ -32,6 +32,7 @@ import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/text_diff.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
+import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/smart_completion.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,6 +62,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   late final CodeForgeController _right;
   late final UndoRedoController _leftUndo;
   late final UndoRedoController _rightUndo;
+  late final FindController _findLeft;
+  late final FindController _findRight;
 
   bool _wrap = true;
 
@@ -105,6 +108,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _rightUndo = UndoRedoController();
     _left.setUndoController(_leftUndo);
     _right.setUndoController(_rightUndo);
+    _findLeft = FindController(_left);
+    _findRight = FindController(_right);
 
     _left.addListener(_onLeftChanged);
     _right.addListener(_onRightChanged);
@@ -131,6 +136,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _right.removeListener(_onRightChanged);
     _leftUndo.removeListener(_onUndoChanged);
     _rightUndo.removeListener(_onUndoChanged);
+    _findLeft.dispose();
+    _findRight.dispose();
     _left.dispose();
     _right.dispose();
     _leftUndo.dispose();
@@ -641,6 +648,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
               ]),
             ),
           _snippetBar(),
+          FindPanelView(controller: _leftActive ? _findLeft : _findRight),
         ]),
       ),
     );
@@ -683,6 +691,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         spacing: 0,
         runSpacing: 0,
         children: [
+          _iconBtn(Icons.search, localizations.search,
+              (_leftActive ? _findLeft : _findRight).toggleActive),
           _iconBtn(Icons.undo, localizations.editorUndo, activeUndo.canUndo ? _undo : null),
           _iconBtn(Icons.redo, localizations.editorRedo, activeUndo.canRedo ? _redo : null),
           _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
@@ -828,7 +838,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
               editorTheme: editorTheme,
               textStyle: const TextStyle(fontSize: 14.5),
               matchHighlightStyle: matchStyle,
-              finderBuilder: (c, controller) => FindPanelView(controller: controller),
+              findController: isLeft ? _findLeft : _findRight,
               selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
             ),
           ),

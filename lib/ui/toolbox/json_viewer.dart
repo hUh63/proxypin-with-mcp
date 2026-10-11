@@ -55,6 +55,7 @@ class JsonViewerPage extends StatefulWidget {
 
 class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProviderStateMixin {
   late final CodeForgeController _controller;
+  late final FindController _find;
   late final TabController _tabs;
 
   dynamic _parsed;
@@ -94,6 +95,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
   void initState() {
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
+    _find = FindController(_controller);
     // 智能预测：文档词 + 语言关键字 + 按光标上下文 / 代码格式推断的候选。
     SmartCompletion.load();
     SmartCompletion.enabled.addListener(_onSmartChanged);
@@ -113,6 +115,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
+    _find.dispose();
     _controller.dispose();
     _tabs.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -277,6 +280,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
         ),
       ),
       _snippetBar(),
+      FindPanelView(controller: _find),
     ]);
 
     if (widget.windowId != null && Platform.isWindows) {
@@ -314,6 +318,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
             () => setState(() => _wrap = !_wrap),
             tint: _wrap ? color : null,
           ),
+          _iconBtn(Icons.search, localizations.search, _find.toggleActive),
           _iconBtn(Icons.copy, localizations.copy, _copy),
           _iconBtn(Icons.delete_outline, localizations.clear, _clear),
           _iconBtn(Icons.file_download_outlined, localizations.download, _download),
@@ -418,7 +423,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
           invisibleChars: _invisible.style,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
-          finderBuilder: (c, controller) => FindPanelView(controller: controller),
+          findController: _find,
           selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
         ),
       ),

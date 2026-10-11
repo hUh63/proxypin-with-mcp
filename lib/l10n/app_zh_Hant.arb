@@ -878,5 +878,13 @@
   "snippetExpand": "展開",
   "snippetCollapse": "收合",
   "snippetCustomLibrary": "共用符號庫",
+  "snippetCustomLibraryEmpty": "共用符號庫還是空的",
+  "findResults": "搜尋結果",
+  "findPrevious": "上一個",
+  "findNext": "下一個",
+  "findReplaceAll": "全部取代",
+  "findCaseSensitive": "區分大小寫",
+  "findWholeWord": "全字相符",
+  "findRegex": "使用正規表達式",
   "smartCompletion": "智慧預測"
 }

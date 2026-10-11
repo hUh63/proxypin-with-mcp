@@ -2513,5 +2513,13 @@
   "diffIgnoreWhitespace": "Abaikan spasi",
   "snippetExpand": "Perluas",
   "snippetCollapse": "Ciutkan",
-  "snippetCustomLibrary": "Simbol bersama"
+  "snippetCustomLibrary": "Simbol bersama",
+  "snippetCustomLibraryEmpty": "Simbol bersama kosong",
+  "findResults": "Hasil",
+  "findPrevious": "Sebelumnya",
+  "findNext": "Berikutnya",
+  "findReplaceAll": "Ganti semua",
+  "findCaseSensitive": "Bedakan huruf besar/kecil",
+  "findWholeWord": "Kata utuh",
+  "findRegex": "Gunakan ekspresi reguler"
 }

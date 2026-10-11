@@ -2513,5 +2513,13 @@
   "diffIgnoreWhitespace": "Bỏ qua khoảng trắng",
   "snippetExpand": "Mở rộng",
   "snippetCollapse": "Thu gọn",
-  "snippetCustomLibrary": "Ký hiệu dùng chung"
+  "snippetCustomLibrary": "Ký hiệu dùng chung",
+  "snippetCustomLibraryEmpty": "Thư viện ký hiệu dùng chung trống",
+  "findResults": "Kết quả",
+  "findPrevious": "Trước",
+  "findNext": "Tiếp",
+  "findReplaceAll": "Thay thế tất cả",
+  "findCaseSensitive": "Phân biệt hoa thường",
+  "findWholeWord": "Toàn bộ từ",
+  "findRegex": "Dùng biểu thức chính quy"
 }

@@ -2513,5 +2513,13 @@
   "diffIgnoreWhitespace": "ไม่สนช่องว่าง",
   "snippetExpand": "ขยาย",
   "snippetCollapse": "ย่อ",
-  "snippetCustomLibrary": "สัญลักษณ์ที่ใช้ร่วมกัน"
+  "snippetCustomLibrary": "สัญลักษณ์ที่ใช้ร่วมกัน",
+  "snippetCustomLibraryEmpty": "สัญลักษณ์ที่ใช้ร่วมกันว่างเปล่า",
+  "findResults": "ผลลัพธ์",
+  "findPrevious": "ก่อนหน้า",
+  "findNext": "ถัดไป",
+  "findReplaceAll": "แทนที่ทั้งหมด",
+  "findCaseSensitive": "ตรงตามตัวพิมพ์",
+  "findWholeWord": "ทั้งคำ",
+  "findRegex": "ใช้นิพจน์ปกติ"
 }

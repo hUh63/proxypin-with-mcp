@@ -4426,5 +4426,13 @@
   "diffIgnoreWhitespace": "Ignore whitespace",
   "snippetExpand": "Expand",
   "snippetCollapse": "Collapse",
-  "snippetCustomLibrary": "Shared symbols"
+  "snippetCustomLibrary": "Shared symbols",
+  "snippetCustomLibraryEmpty": "Shared symbols is empty",
+  "findResults": "Results",
+  "findPrevious": "Previous",
+  "findNext": "Next",
+  "findReplaceAll": "Replace all",
+  "findCaseSensitive": "Match case",
+  "findWholeWord": "Match whole word",
+  "findRegex": "Use regular expression"
 }

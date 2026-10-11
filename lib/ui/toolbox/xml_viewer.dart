@@ -29,6 +29,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/ui/component/invisible_char_highlighter.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
+import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
@@ -56,6 +57,7 @@ class XmlViewerPage extends StatefulWidget {
 
 class _XmlViewerPageState extends State<XmlViewerPage> {
   late final CodeForgeController _controller;
+  late final FindController _find;
 
   /// 编辑器自动换行；CodeForge 的 lineWrap 是 late final，切换需要靠新的 key 重建组件，
   /// controller 在本 State 持有，重建不会丢文本与撤销栈。
@@ -88,6 +90,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
   void initState() {
     super.initState();
     _controller = CodeForgeController()..text = widget.initialText ?? '';
+    _find = FindController(_controller);
     // 智能预测：文档词 + 语言关键字 + 按光标上下文 / 代码格式推断的候选。
     SmartCompletion.load();
     SmartCompletion.enabled.addListener(_onSmartChanged);
@@ -101,6 +104,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
+    _find.dispose();
     _controller.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
@@ -211,6 +215,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
         const Divider(height: 1, thickness: 0.3),
         Expanded(child: _textView()),
         _snippetBar(),
+        FindPanelView(controller: _find),
       ]),
     );
   }
@@ -233,6 +238,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
             () => setState(() => _wrap = !_wrap),
             tint: _wrap ? color : null,
           ),
+          _iconBtn(Icons.search, localizations.search, _find.toggleActive),
           _iconBtn(Icons.copy, localizations.copy, _copy),
           _iconBtn(Icons.file_download_outlined, localizations.download, _download),
           _invisibleMenu(),
@@ -338,7 +344,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
           invisibleChars: _invisible.style,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
-          finderBuilder: (c, controller) => FindPanelView(controller: controller),
+          findController: _find,
           selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
         ),
       ),

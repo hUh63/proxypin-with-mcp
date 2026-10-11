@@ -19,11 +19,14 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/snippet_manager.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 
-/// 可滑动 + 可展开的「快捷输入行」。
+/// 页面底部的「快捷输入行」。
 ///
-/// - 收起：单行，横向滑动浏览；点「展开」变为多行铺开（限高可滚）。
-/// - 右侧「管理」打开 [SnippetManagerDialog]，增删改后按 [scope] 持久化。
-/// - 条目数据沿用 [ToolSnippetStore]，与旧版单页插入完全兼容。
+/// 两态：
+/// * **收起**（默认）—— 一行符号，横向滑动浏览；**向上拖动**或点右侧箭头即可展开；
+/// * **展开** —— 顶部是分类标签（当前语言符号 / 共用符号库），下面是成排的符号网格。
+///
+/// 条目数据沿用 [ToolSnippetStore]：本页列表按 [scope] 持久化，其它页面保存过的
+/// 自定义条目都会进「共用符号库」，这里可以直接取用。
 class SnippetBar extends StatefulWidget {
   /// 持久化作用域（如 'editor' / 'json' / 'xml' / 'diff' / 'regexp'）。
   final String scope;
@@ -54,6 +57,9 @@ class _SnippetBarState extends State<SnippetBar> {
   List<ToolSnippet> _customLibrary = const [];
   bool _expanded = false;
 
+  /// 展开面板里的当前分类：false = 本页（当前语言）符号，true = 共用符号库。
+  bool _showLibrary = false;
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -67,7 +73,10 @@ class _SnippetBarState extends State<SnippetBar> {
     super.didUpdateWidget(oldWidget);
     // 文本编辑页切换语言时 scope 会变，需重新载入该格式的条目与默认。
     if (oldWidget.scope != widget.scope) {
-      setState(() => _items = widget.defaults);
+      setState(() {
+        _items = widget.defaults;
+        _showLibrary = false;
+      });
       _load();
     }
   }
@@ -110,12 +119,142 @@ class _SnippetBarState extends State<SnippetBar> {
     }
   }
 
-  Widget _chip(ToolSnippet s) {
-    return ActionChip(
-      label: Text(s.label, style: widget.labelStyle),
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      onPressed: () => widget.onInsert(s.insert),
+  // ------------------------------------------------------------------ 收起
+
+  Widget _collapsed() {
+    return SizedBox(
+      height: 38,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        // 往上拖 = 展开符号面板。
+        onVerticalDragUpdate: (details) {
+          if (details.delta.dy < -6) setState(() => _expanded = true);
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(left: 8, right: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: _items.isEmpty
+                    ? const SizedBox.shrink()
+                    : ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _items.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 2),
+                        itemBuilder: (_, i) => Center(child: _cell(_items[i])),
+                      ),
+              ),
+              _iconBtn(Icons.unfold_more, localizations.snippetExpand, () {
+                setState(() => _expanded = true);
+              }),
+              _iconBtn(Icons.tune, localizations.editorManage, _manage),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------ 展开
+
+  Widget _expandedView() {
+    final list = _showLibrary ? _customLibrary : _items;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, right: 4, top: 2, bottom: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _tab(localizations.editorInsertSymbol, !_showLibrary, () {
+                setState(() => _showLibrary = false);
+              }),
+              const SizedBox(width: 4),
+              _tab(localizations.snippetCustomLibrary, _showLibrary, () {
+                setState(() => _showLibrary = true);
+              }),
+              const Spacer(),
+              _iconBtn(Icons.unfold_less, localizations.snippetCollapse, () {
+                setState(() => _expanded = false);
+              }),
+              _iconBtn(Icons.tune, localizations.editorManage, _manage),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 210),
+            child: SingleChildScrollView(
+              child: list.isEmpty
+                  ? SizedBox(
+                      height: 34,
+                      width: double.infinity,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _showLibrary
+                              ? localizations.snippetCustomLibraryEmpty
+                              : localizations.snippetManagerEmpty,
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ),
+                    )
+                  : Wrap(
+                      spacing: 2,
+                      runSpacing: 2,
+                      children: list.map(_cell).toList(),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------- 部件
+
+  /// 分类标签（选中态用主题色 + 下划线）。
+  Widget _tab(String label, bool selected, VoidCallback onTap) {
+    final color = selected ? Theme.of(context).colorScheme.primary : Colors.grey;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: color, width: selected ? 2 : 0),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: color,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 一个符号格：纯文字、无边框，方便成排排列。
+  Widget _cell(ToolSnippet s) {
+    return InkWell(
+      onTap: () => widget.onInsert(s.insert),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        width: 46,
+        height: 32,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Text(
+          s.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: widget.labelStyle,
+        ),
+      ),
     );
   }
 
@@ -132,49 +271,6 @@ class _SnippetBarState extends State<SnippetBar> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_expanded) {
-      return SizedBox(
-        height: 40,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 8, right: 6, top: 2, bottom: 2),
-          child: Row(children: [
-            Expanded(
-              child: _items.isEmpty
-                  ? const SizedBox.shrink()
-                  : ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _items.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemBuilder: (_, i) => Center(child: _chip(_items[i])),
-                    ),
-            ),
-            _iconBtn(Icons.unfold_more, localizations.snippetExpand, () => setState(() => _expanded = true)),
-            _iconBtn(Icons.tune, localizations.editorManage, _manage),
-          ]),
-        ),
-      );
-    }
-
-    // 展开态：条目在上、操作行在下 —— 因为输入行位于页面底部，这样展开时是往上生长。
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 6, top: 2, bottom: 2),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 170),
-          child: SingleChildScrollView(
-            child: _items.isEmpty
-                ? const SizedBox(height: 4, width: double.infinity)
-                : Wrap(spacing: 6, runSpacing: 6, children: _items.map(_chip).toList()),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(children: [
-          Text(localizations.editorInsertSymbol, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-          const Spacer(),
-          _iconBtn(Icons.unfold_less, localizations.snippetCollapse, () => setState(() => _expanded = false)),
-          _iconBtn(Icons.tune, localizations.editorManage, _manage),
-        ]),
-      ]),
-    );
+    return _expanded ? _expandedView() : _collapsed();
   }
 }

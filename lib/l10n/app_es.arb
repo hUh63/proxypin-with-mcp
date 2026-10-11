@@ -2513,5 +2513,13 @@
   "diffIgnoreWhitespace": "Ignorar espacios",
   "snippetExpand": "Expandir",
   "snippetCollapse": "Contraer",
-  "snippetCustomLibrary": "Símbolos compartidos"
+  "snippetCustomLibrary": "Símbolos compartidos",
+  "snippetCustomLibraryEmpty": "Símbolos compartidos vacío",
+  "findResults": "Resultados",
+  "findPrevious": "Anterior",
+  "findNext": "Siguiente",
+  "findReplaceAll": "Reemplazar todo",
+  "findCaseSensitive": "Distinguir mayúsculas",
+  "findWholeWord": "Palabra completa",
+  "findRegex": "Usar expresión regular"
 }

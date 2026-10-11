@@ -1,271 +1,213 @@
-import 'dart:io';
+/*
+ * Copyright 2026 Hongen Wang All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import 'package:code_forge/code_forge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proxypin/l10n/app_localizations.dart';
 
-const EdgeInsetsGeometry _kFindMargin = EdgeInsets.only(right: 10);
-const double _kFindPanelWidth = 360;
-final double _kFindPanelHeight = (Platform.isIOS || Platform.isAndroid) ? 52 : 32;
-final double _kReplacePanelHeight = _kFindPanelHeight * 2;
-const double _kFindIconSize = 16;
-const double _kFindIconWidth = 26;
-const double _kFindIconHeight = 26;
-const double _kFindInputFontSize = 13;
-const double _kFindResultFontSize = 12;
-
+/// 编辑器底部的「查找 / 替换」面板。
+///
+/// 它和「快捷输入行」上下相邻：符号条在上，本面板在符号条**下方**（都贴在页面底部）。
+///
+/// 两种状态：
+/// * **收起**（默认）—— 只有一行「查找 + 输入框 + 展开箭头」以及上一处 / 下一处 / 关闭；
+/// * **展开**（点箭头）—— 追加「搜索结果 + 匹配选项」「替换行」和
+///   「上一个 / 下一个 / 替换 / 全部替换」按钮行。
 class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
   final FindController controller;
 
   const FindPanelView({super.key, required this.controller});
 
+  /// 给「仍被 CodeForge 当作 slot 使用」的场景（如 JS 运行页、重写页）一个合理高度；
+  /// 在我们自己放进页面底部 Column 的用法里，这个值不影响布局。
   @override
-  Size get preferredSize => Size(
-        double.infinity,
-        !controller.isActive
-            ? 0
-            : (controller.isReplaceMode ? _kReplacePanelHeight : _kFindPanelHeight + 2) + _kFindMargin.vertical,
-      );
+  Size get preferredSize => controller.isActive
+      ? Size(double.infinity, controller.isReplaceMode ? 120 : 76)
+      : const Size(double.infinity, 0);
+
+  AppLocalizations _loc(BuildContext context) => AppLocalizations.of(context)!;
 
   @override
   Widget build(BuildContext context) {
-    if (!controller.isActive) {
-      return const SizedBox.shrink();
-    }
+    if (!controller.isActive) return const SizedBox.shrink();
 
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      margin: _kFindMargin,
-      alignment: Alignment.topRight,
-      height: preferredSize.height,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Focus(
-          canRequestFocus: false,
-          onKeyEvent: (n, e) {
-            if (e.logicalKey == LogicalKeyboardKey.escape) {
-              controller.isActive = false;
-              return KeyEventResult.handled;
-            }
-            if (e.logicalKey == LogicalKeyboardKey.tab &&
-                controller.isReplaceMode &&
-                controller.findInputFocusNode.hasFocus) {
-              controller.replaceInputFocusNode.requestFocus();
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          },
-          child: Container(
-            width: _kFindPanelWidth,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    controller.isReplaceMode ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
-                  ),
-                  style: IconButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(
-                    maxWidth: 20,
-                    minHeight: preferredSize.height,
-                    maxHeight: preferredSize.height,
-                  ),
-                  tooltip: 'Toggle Replace',
-                  onPressed: () {
-                    controller.toggleReplaceMode();
-                    // if (controller.isReplaceMode) {
-                    //   controller.replaceInputFocusNode.requestFocus();
-                    // }
-                  },
-                ),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildFindRow(context),
-                      if (controller.isReplaceMode) _buildReplaceRow(context),
-                      if (!controller.isReplaceMode) const SizedBox(height: 2),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).dividerColor, width: 0.6),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(10, 2, 10, 4),
+      child: Focus(
+        canRequestFocus: false,
+        onKeyEvent: (node, event) {
+          if (event.logicalKey == LogicalKeyboardKey.escape) {
+            controller.isActive = false;
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (controller.isReplaceMode) _resultRow(context),
+            _findRow(context),
+            if (controller.isReplaceMode) _replaceRow(context),
+            _actionRow(context),
+          ],
         ),
       ),
     );
   }
 
-  // ---------------- FIND ROW ----------------
+  // ------------------------------------------------------------------ 行
 
-  Widget _buildFindRow(BuildContext context) {
+  /// 搜索结果计数 + 匹配选项开关。
+  Widget _resultRow(BuildContext context) {
+    final loc = _loc(context);
+    final count = controller.matchCount;
     return Row(
       children: [
-        SizedBox(
-          width: _kFindPanelWidth / 1.75,
-          height: _kFindPanelHeight,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              _buildTextField(
-                focusNode: controller.findInputFocusNode,
-                controller: controller.findInputController,
-                iconsWidth: _kFindIconWidth * 1.5,
-                padding: EdgeInsets.only(left: 3, right: 5, top: 4, bottom: 2),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _buildCheckText(
-                    context: context,
-                    text: 'Aa',
-                    checked: controller.caseSensitive,
-                    onPressed: controller.toggleCaseSensitive,
-                  ),
-                  _buildCheckText(
-                    context: context,
-                    text: 'W',
-                    checked: controller.matchWholeWord,
-                    onPressed: controller.toggleMatchWholeWord,
-                  ),
-                  _buildCheckText(
-                    context: context,
-                    text: '.*',
-                    checked: controller.isRegex,
-                    onPressed: controller.toggleRegex,
-                  ),
-                ],
-              ),
-            ],
+        Text(
+          '${loc.findResults}: $count',
+          style: TextStyle(
+            fontSize: 12,
+            color: count == 0 ? Colors.grey : Colors.orange,
           ),
         ),
-        _buildResultText(),
+        const Spacer(),
+        _toggle(context, 'Aa', controller.caseSensitive, controller.toggleCaseSensitive,
+            loc.findCaseSensitive),
+        _toggle(context, 'W', controller.matchWholeWord, controller.toggleMatchWholeWord,
+            loc.findWholeWord),
+        _toggle(context, '.*', controller.isRegex, controller.toggleRegex, loc.findRegex),
+      ],
+    );
+  }
+
+  Widget _findRow(BuildContext context) {
+    final loc = _loc(context);
+    return Row(
+      children: [
+        Text(loc.search, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 8),
         Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildIconButton(
-                icon: Icons.arrow_upward,
-                tooltip: 'Previous',
-                onPressed: controller.matchCount == 0 ? null : controller.previous,
-              ),
-              _buildIconButton(
-                icon: Icons.arrow_downward,
-                tooltip: 'Next',
-                onPressed: controller.matchCount == 0 ? null : controller.next,
-              ),
-              _buildIconButton(
-                icon: Icons.close,
-                tooltip: 'Close',
-                onPressed: controller.toggleActive,
-              ),
-              const SizedBox(width: 6),
-            ],
+          child: _input(
+            controller.findInputController,
+            controller.findInputFocusNode,
           ),
+        ),
+        IconButton(
+          icon: Icon(
+            controller.isReplaceMode ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+            size: 20,
+          ),
+          tooltip: loc.replace,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 30),
+          onPressed: controller.toggleReplaceMode,
         ),
       ],
     );
   }
 
-  // ---------------- REPLACE ROW ----------------
-
-  Widget _buildReplaceRow(BuildContext context) {
+  Widget _replaceRow(BuildContext context) {
+    final loc = _loc(context);
     return Row(
       children: [
-        SizedBox(
-          width: _kFindPanelWidth / 1.75,
-          height: _kFindPanelHeight,
-          child: _buildTextField(
-            focusNode: controller.replaceInputFocusNode,
-            controller: controller.replaceInputController,
-            padding: EdgeInsets.only(left: 3, right: 5, top: 2, bottom: 4),
+        Text(loc.replace, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _input(
+            controller.replaceInputController,
+            controller.replaceInputFocusNode,
             onSubmit: (_) {
               controller.replace();
               controller.replaceInputFocusNode.requestFocus();
             },
           ),
         ),
-        _buildIconButton(
-          icon: Icons.done,
-          tooltip: 'Replace',
-          onPressed: controller.matchCount == 0 ? null : controller.replace,
-        ),
-        _buildIconButton(
-          icon: Icons.done_all,
-          tooltip: 'Replace All',
-          onPressed: controller.matchCount == 0 ? null : controller.replaceAll,
-        ),
+        const SizedBox(width: 32),
       ],
     );
   }
 
-  // ---------------- WIDGETS ----------------
+  Widget _actionRow(BuildContext context) {
+    final loc = _loc(context);
+    final none = controller.matchCount == 0;
+    return Row(
+      children: [
+        _textButton(loc.findPrevious, none ? null : controller.previous),
+        _textButton(loc.findNext, none ? null : controller.next),
+        if (controller.isReplaceMode) ...[
+          _textButton(loc.replace, none ? null : controller.replace),
+          _textButton(loc.findReplaceAll, none ? null : controller.replaceAll),
+        ],
+        const Spacer(),
+        _textButton(loc.close, controller.toggleActive),
+      ],
+    );
+  }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    double iconsWidth = 0,
-    EdgeInsets padding = EdgeInsets.zero,
+  // ------------------------------------------------------------- 小部件
+
+  Widget _input(
+    TextEditingController textController,
+    FocusNode focusNode, {
     ValueChanged<String>? onSubmit,
   }) {
-    return Padding(
-      padding: padding,
-      child: TextField(
-        controller: controller,
-        maxLines: 1,
-        focusNode: focusNode,
-        autofocus: false,
-        style: const TextStyle(fontSize: _kFindInputFontSize),
-        onSubmitted: onSubmit,
-        decoration: InputDecoration(
-          filled: true,
-          contentPadding: EdgeInsetsGeometry.fromLTRB(4, 5, iconsWidth, 5),
-          enabledBorder: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
-            borderSide: BorderSide(
-              width: 0.5,
-              color: Color.fromARGB(255, 92, 92, 92),
-            ),
-          ),
-          focusedBorder: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
-            borderSide: BorderSide(
-              width: 0.7,
-              color: Color.fromARGB(255, 188, 188, 188),
-            ),
-          ),
-        ),
+    return TextField(
+      controller: textController,
+      focusNode: focusNode,
+      maxLines: 1,
+      style: const TextStyle(fontSize: 13),
+      onSubmitted: onSubmit ?? (_) => controller.next(),
+      decoration: const InputDecoration(
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(vertical: 6),
+        border: UnderlineInputBorder(),
       ),
     );
   }
 
-  Widget _buildCheckText({
-    required BuildContext context,
-    required String text,
-    required bool checked,
-    required VoidCallback onPressed,
-  }) {
-    final Color selectedColor = Theme.of(context).colorScheme.primary;
-
-    return GestureDetector(
-      onTap: onPressed,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: SizedBox(
-          width: _kFindIconWidth * 0.75,
+  Widget _toggle(
+    BuildContext context,
+    String text,
+    bool checked,
+    VoidCallback onPressed,
+    String tooltip,
+  ) {
+    final color = checked ? Theme.of(context).colorScheme.primary : Colors.grey;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           child: Text(
             text,
             style: TextStyle(
-              fontSize: _kFindInputFontSize,
-              color: checked ? selectedColor : Colors.grey,
+              fontSize: 12,
+              color: color,
               fontWeight: checked ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -274,29 +216,16 @@ class FindPanelView extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildIconButton({
-    required IconData icon,
-    VoidCallback? onPressed,
-    String? tooltip,
-  }) {
-    return IconButton(
-      onPressed: onPressed,
-      tooltip: tooltip,
-      style: IconButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+  Widget _textButton(String label, VoidCallback? onTap) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(0, 28),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
       ),
-      padding: EdgeInsetsGeometry.symmetric(horizontal: 4, vertical: 4),
-      icon: Icon(icon, size: _kFindIconSize),
-      constraints: const BoxConstraints(
-        maxWidth: _kFindIconWidth,
-        maxHeight: _kFindIconHeight,
-      ),
+      child: Text(label, style: const TextStyle(fontSize: 13)),
     );
-  }
-
-  Widget _buildResultText() {
-    final text = controller.matchCount == 0 ? 'none' : '${controller.currentMatchIndex + 1}/${controller.matchCount}';
-
-    return Text(text, style: const TextStyle(fontSize: _kFindResultFontSize));
   }
 }

@@ -910,6 +910,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           const Divider(height: 1, thickness: 0.3),
           Expanded(child: _textView()),
           _snippetBar(),
+          if (doc != null) FindPanelView(controller: doc.findController),
         ]),
       ),
     );
@@ -1342,7 +1343,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
           enableKeyboardSuggestions: !_smooth || _smoothKeepIme,
           editorTheme: editorTheme,
           textStyle: const TextStyle(fontSize: 13),
-          finderBuilder: (c, controller) => FindPanelView(controller: controller),
           selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
           invisibleChars: _invisibleCharsStyle,
           onGutterLineLongPress: _handleGutterLongPress,

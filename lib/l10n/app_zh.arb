@@ -4314,5 +4314,13 @@
   "diffIgnoreWhitespace": "忽略空白",
   "snippetExpand": "展开",
   "snippetCollapse": "收起",
-  "snippetCustomLibrary": "共用符号库"
+  "snippetCustomLibrary": "共用符号库",
+  "snippetCustomLibraryEmpty": "共用符号库还是空的",
+  "findResults": "搜索结果",
+  "findPrevious": "上一个",
+  "findNext": "下一个",
+  "findReplaceAll": "全部替换",
+  "findCaseSensitive": "区分大小写",
+  "findWholeWord": "全字匹配",
+  "findRegex": "使用正则表达式"
 }

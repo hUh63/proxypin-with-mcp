@@ -407,5 +407,13 @@
   "snippetExpand": "Expandir",
   "snippetCollapse": "Recolher",
   "snippetCustomLibrary": "Símbolos compartilhados",
+  "snippetCustomLibraryEmpty": "Símbolos compartilhados vazio",
+  "findResults": "Resultados",
+  "findPrevious": "Anterior",
+  "findNext": "Próximo",
+  "findReplaceAll": "Substituir tudo",
+  "findCaseSensitive": "Diferenciar maiúsculas",
+  "findWholeWord": "Palavra inteira",
+  "findRegex": "Usar expressão regular",
   "smartCompletion": "Previsão inteligente"
 }
