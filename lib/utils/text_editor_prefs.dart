@@ -65,6 +65,36 @@ class TextEditorPrefs {
   /// 长按浮动菜单里显示的项 id。为空表示默认（全不显示自定义项）。
   final List<String> floatMenu;
 
+  /// 隐藏单独出现的空格（只标记连续空格 / 制表符 / 控制字符）。
+  final bool hideSingleSpace;
+
+  /// 软换行时在断行处显示小箭头。
+  final bool softWrapArrow;
+
+  /// 回车接受当前高亮候选（仅桌面 / 外接键盘）。
+  final bool enterSuggestion;
+
+  /// 补全候选窗口的最大高度。
+  final double suggestionMaxHeight;
+
+  /// 是否显示底部的快捷功能栏（快捷输入行）。
+  final bool shortcutBar;
+
+  /// 打开文件后检测它是否被其它程序修改 / 删除。
+  final bool checkFileModified;
+
+  /// 退出前再确认一次。
+  final bool confirmExitTwice;
+
+  /// 新建文件时沿用当前排版偏好（字号 / 行距等）。
+  final bool newFileKeepPrefs;
+
+  /// 自动分页大小（字符数）。0 表示不分页。
+  final int autoPageSize;
+
+  /// 上次使用的文件编码名。
+  final String encodingName;
+
   const TextEditorPrefs({
     this.fontSize = 13,
     this.lineHeight = 1.0,
@@ -80,6 +110,16 @@ class TextEditorPrefs {
     this.enabledLangs = const <String>[],
     this.hiddenMenu = const <String>[],
     this.floatMenu = const <String>[],
+    this.hideSingleSpace = false,
+    this.softWrapArrow = false,
+    this.enterSuggestion = false,
+    this.suggestionMaxHeight = 400,
+    this.shortcutBar = true,
+    this.checkFileModified = false,
+    this.confirmExitTwice = false,
+    this.newFileKeepPrefs = true,
+    this.autoPageSize = 0,
+    this.encodingName = 'UTF-8',
   });
 
   TextEditorPrefs copyWith({
@@ -97,6 +137,16 @@ class TextEditorPrefs {
     List<String>? enabledLangs,
     List<String>? hiddenMenu,
     List<String>? floatMenu,
+    bool? hideSingleSpace,
+    bool? softWrapArrow,
+    bool? enterSuggestion,
+    double? suggestionMaxHeight,
+    bool? shortcutBar,
+    bool? checkFileModified,
+    bool? confirmExitTwice,
+    bool? newFileKeepPrefs,
+    int? autoPageSize,
+    String? encodingName,
   }) {
     return TextEditorPrefs(
       fontSize: fontSize ?? this.fontSize,
@@ -113,6 +163,16 @@ class TextEditorPrefs {
       enabledLangs: enabledLangs ?? this.enabledLangs,
       hiddenMenu: hiddenMenu ?? this.hiddenMenu,
       floatMenu: floatMenu ?? this.floatMenu,
+      hideSingleSpace: hideSingleSpace ?? this.hideSingleSpace,
+      softWrapArrow: softWrapArrow ?? this.softWrapArrow,
+      enterSuggestion: enterSuggestion ?? this.enterSuggestion,
+      suggestionMaxHeight: suggestionMaxHeight ?? this.suggestionMaxHeight,
+      shortcutBar: shortcutBar ?? this.shortcutBar,
+      checkFileModified: checkFileModified ?? this.checkFileModified,
+      confirmExitTwice: confirmExitTwice ?? this.confirmExitTwice,
+      newFileKeepPrefs: newFileKeepPrefs ?? this.newFileKeepPrefs,
+      autoPageSize: autoPageSize ?? this.autoPageSize,
+      encodingName: encodingName ?? this.encodingName,
     );
   }
 
@@ -131,6 +191,16 @@ class TextEditorPrefs {
         'enabledLangs': enabledLangs,
         'hiddenMenu': hiddenMenu,
         'floatMenu': floatMenu,
+        'hideSingleSpace': hideSingleSpace,
+        'softWrapArrow': softWrapArrow,
+        'enterSuggestion': enterSuggestion,
+        'suggestionMaxHeight': suggestionMaxHeight,
+        'shortcutBar': shortcutBar,
+        'checkFileModified': checkFileModified,
+        'confirmExitTwice': confirmExitTwice,
+        'newFileKeepPrefs': newFileKeepPrefs,
+        'autoPageSize': autoPageSize,
+        'encodingName': encodingName,
       };
 
   static List<String> _strList(dynamic v) {
@@ -154,6 +224,17 @@ class TextEditorPrefs {
       enabledLangs: _strList(json['enabledLangs']),
       hiddenMenu: _strList(json['hiddenMenu']),
       floatMenu: _strList(json['floatMenu']),
+      hideSingleSpace: json['hideSingleSpace'] as bool? ?? false,
+      softWrapArrow: json['softWrapArrow'] as bool? ?? false,
+      enterSuggestion: json['enterSuggestion'] as bool? ?? false,
+      suggestionMaxHeight:
+          (json['suggestionMaxHeight'] as num?)?.toDouble() ?? 400,
+      shortcutBar: json['shortcutBar'] as bool? ?? true,
+      checkFileModified: json['checkFileModified'] as bool? ?? false,
+      confirmExitTwice: json['confirmExitTwice'] as bool? ?? false,
+      newFileKeepPrefs: json['newFileKeepPrefs'] as bool? ?? true,
+      autoPageSize: (json['autoPageSize'] as num?)?.toInt() ?? 0,
+      encodingName: json['encodingName'] as String? ?? 'UTF-8',
     );
   }
 }

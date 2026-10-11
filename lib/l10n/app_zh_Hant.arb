@@ -938,5 +938,21 @@
   "editorAutoIndent": "自動縮排",
   "editorReset": "還原預設",
   "editorSettingsGesture": "手勢與顯示",
-  "editorSettingsMenu": "選單與語法"
+  "editorSettingsMenu": "選單與語法",
+  "editorHideSingleSpace": "隱藏單個空格",
+  "editorSoftWrapArrow": "顯示自動換行箭頭",
+  "editorSettingsComplete": "補全與鍵盤",
+  "editorEnterSuggestion": "回車套用補全",
+  "editorSuggestionHeight": "補全視窗最大高度",
+  "editorSettingsBehavior": "行為",
+  "editorShortcutBar": "快捷功能列",
+  "editorCheckFileModified": "偵測檔案是否被修改 / 刪除",
+  "editorConfirmExitTwice": "退出前雙次確認",
+  "editorNewFileKeepPrefs": "新檔案保留偏好",
+  "editorAutoPageSize": "自動分頁大小",
+  "editorFileMissing": "檔案已被刪除",
+  "editorFileChanged": "檔案已被其它程式修改",
+  "editorExitConfirmAgainTitle": "再次確認",
+  "editorExitConfirmAgainBody": "確定要結束編輯器嗎？",
+  "editorMenuManage": "管理"
 }

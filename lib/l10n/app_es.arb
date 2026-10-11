@@ -2572,5 +2572,21 @@
   "editorAutoIndent": "Sangría automática",
   "editorReset": "Restablecer",
   "editorSettingsGesture": "Gestos y pantalla",
-  "editorSettingsMenu": "Menús y sintaxis"
+  "editorSettingsMenu": "Menús y sintaxis",
+  "editorHideSingleSpace": "Ocultar espacio único",
+  "editorSoftWrapArrow": "Flecha de ajuste",
+  "editorSettingsComplete": "Autocompletado y teclado",
+  "editorEnterSuggestion": "Enter aplica la sugerencia",
+  "editorSuggestionHeight": "Altura máxima de sugerencias",
+  "editorSettingsBehavior": "Comportamiento",
+  "editorShortcutBar": "Barra de atajos",
+  "editorCheckFileModified": "Detectar cambios del archivo",
+  "editorConfirmExitTwice": "Doble confirmación al salir",
+  "editorNewFileKeepPrefs": "Nuevo archivo conserva preferencias",
+  "editorAutoPageSize": "Tamaño de página automático",
+  "editorFileMissing": "El archivo fue eliminado",
+  "editorFileChanged": "El archivo cambió en disco",
+  "editorExitConfirmAgainTitle": "Confirmar de nuevo",
+  "editorExitConfirmAgainBody": "¿Seguro que quieres salir del editor?",
+  "editorMenuManage": "Administrar"
 }

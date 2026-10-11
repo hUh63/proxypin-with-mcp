@@ -2572,5 +2572,21 @@
   "editorAutoIndent": "Thụt lề tự động",
   "editorReset": "Đặt lại",
   "editorSettingsGesture": "Cử chỉ và hiển thị",
-  "editorSettingsMenu": "Menu và cú pháp"
+  "editorSettingsMenu": "Menu và cú pháp",
+  "editorHideSingleSpace": "Ẩn dấu cách đơn",
+  "editorSoftWrapArrow": "Mũi tên xuống dòng",
+  "editorSettingsComplete": "Gợi ý và bàn phím",
+  "editorEnterSuggestion": "Enter áp dụng gợi ý",
+  "editorSuggestionHeight": "Chiều cao gợi ý tối đa",
+  "editorSettingsBehavior": "Hành vi",
+  "editorShortcutBar": "Thanh phím tắt",
+  "editorCheckFileModified": "Phát hiện thay đổi tệp",
+  "editorConfirmExitTwice": "Xác nhận hai lần khi thoát",
+  "editorNewFileKeepPrefs": "Tệp mới giữ tùy chọn",
+  "editorAutoPageSize": "Kích thước phân trang tự động",
+  "editorFileMissing": "Tệp đã bị xóa",
+  "editorFileChanged": "Tệp đã thay đổi trên đĩa",
+  "editorExitConfirmAgainTitle": "Xác nhận lại",
+  "editorExitConfirmAgainBody": "Bạn chắc chắn muốn thoát trình soạn thảo?",
+  "editorMenuManage": "Quản lý"
 }

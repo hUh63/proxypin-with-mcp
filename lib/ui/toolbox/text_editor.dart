@@ -47,20 +47,7 @@ import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/utils/text_special_chars.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/ui/toolbox/text_editor_docs.dart';
-import 'package:re_highlight/languages/bash.dart';
-import 'package:re_highlight/languages/css.dart';
-import 'package:re_highlight/languages/dart.dart';
-import 'package:re_highlight/languages/go.dart';
-import 'package:re_highlight/languages/http.dart';
-import 'package:re_highlight/languages/java.dart';
-import 'package:re_highlight/languages/javascript.dart';
-import 'package:re_highlight/languages/json.dart';
-import 'package:re_highlight/languages/markdown.dart';
-import 'package:re_highlight/languages/python.dart';
-import 'package:re_highlight/languages/sql.dart';
-import 'package:re_highlight/languages/typescript.dart';
-import 'package:re_highlight/languages/xml.dart';
-import 'package:re_highlight/languages/yaml.dart';
+import 'package:re_highlight/languages/all.dart';
 import 'package:re_highlight/re_highlight.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
@@ -94,23 +81,26 @@ class _LangOption {
   const _LangOption(this.label, this.mode);
 }
 
-final List<_LangOption> _langs = [
-  _LangOption('Plain Text', null),
-  _LangOption('HTTP', langHttp),
-  _LangOption('JSON', langJson),
-  _LangOption('XML / HTML', langXml),
-  _LangOption('JavaScript', langJavascript),
-  _LangOption('TypeScript', langTypescript),
-  _LangOption('CSS', langCss),
-  _LangOption('SQL', langSql),
-  _LangOption('YAML', langYaml),
-  _LangOption('Markdown', langMarkdown),
-  _LangOption('Bash', langBash),
-  _LangOption('Python', langPython),
-  _LangOption('Java', langJava),
-  _LangOption('Go', langGo),
-  _LangOption('Dart', langDart),
-];
+/// 少数语言的展示名与内核给的 name 不同，这里做覆盖。
+const Map<String, String> _kLangLabelOverride = {
+  'xml': 'XML / HTML',
+  'plaintext': 'Plain Text',
+};
+
+/// 全部可高亮的语言（来自 re_highlight 内置语言表，约 190 种）。
+final List<_LangOption> _langs = _buildLangs();
+
+List<_LangOption> _buildLangs() {
+  final out = <_LangOption>[const _LangOption('Plain Text', null)];
+  final entries = builtinAllLanguages.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+  for (final e in entries) {
+    if (e.key == 'plaintext') continue;
+    final label = _kLangLabelOverride[e.key] ?? e.value.name ?? e.key;
+    out.add(_LangOption(label, e.value));
+  }
+  return out;
+}
 
 /// 新文件的保留偏好。
 enum _RetainMode { ask, always, never }
@@ -156,8 +146,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Timer? _navTimer;
   bool _suppressNav = false;
 
-  // 读写磁盘文件时使用的编码。
-  EditorEncoding _encoding = EditorEncoding.utf8;
+  // 读写磁盘文件时使用的编码（跟随全局偏好）。
+  EditorEncoding get _encoding => kEncodings.firstWhere(
+        (e) => e.name == _prefs.encodingName,
+        orElse: () => defaultEncoding,
+      );
+
+  // 文件外部改动 / 删除检测。
+  Timer? _fileWatchTimer;
+  int? _lastFileMtime;
+  bool _fileMissing = false;
 
   // 双指缩放。
   final Map<int, Offset> _pointers = <int, Offset>{};
@@ -175,8 +173,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   CodeForgeController? get _controller => _doc?.controller;
 
-  InvisibleCharsStyle get _invisibleCharsStyle =>
-      InvisibleCharsStyle(ascii: _showAscii, unicode: _showUnicode);
+  InvisibleCharsStyle get _invisibleCharsStyle => InvisibleCharsStyle(
+        ascii: _showAscii,
+        unicode: _showUnicode,
+        hideSingleSpace: _prefs.hideSingleSpace,
+        softWrapArrow: _prefs.softWrapArrow,
+      );
 
   TextEditorPrefs get _prefs => TextEditorPrefsStore.notifier.value;
 
@@ -200,6 +202,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   @override
   void dispose() {
     _navTimer?.cancel();
+    _fileWatchTimer?.cancel();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
@@ -216,6 +219,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   void _onEditorPrefsChanged() {
     if (mounted) setState(() {});
+    _restartFileWatch();
   }
 
   bool _onKeyEvent(KeyEvent event) {
@@ -291,6 +295,47 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     doc.controller.addListener(_onControllerChanged);
     doc.undoController.addListener(_onUndoChanged);
+    _restartFileWatch();
+  }
+
+  // ---------- 外部改动 / 删除检测 ----------
+
+  void _restartFileWatch() {
+    _fileWatchTimer?.cancel();
+    _lastFileMtime = null;
+    _fileMissing = false;
+    if (!_prefs.checkFileModified) return;
+    _fileWatchTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _checkFileState(),
+    );
+  }
+
+  Future<void> _checkFileState() async {
+    final doc = _doc;
+    final path = doc?.path;
+    if (doc == null || path == null || path.isEmpty || !mounted) return;
+    final file = File(path);
+    try {
+      if (!await file.exists()) {
+        if (!_fileMissing && mounted) {
+          _fileMissing = true;
+          _toast(localizations.editorFileMissing);
+        }
+        return;
+      }
+      final mtime = (await file.stat()).modified.millisecondsSinceEpoch;
+      if (_lastFileMtime == null) {
+        _lastFileMtime = mtime;
+        return;
+      }
+      if (mtime != _lastFileMtime) {
+        _lastFileMtime = mtime;
+        if (mounted) _toast(localizations.editorFileChanged);
+      }
+    } catch (_) {
+      // 忽略瞬时错误（文件正在被写入等）。
+    }
   }
 
   void _onUndoChanged() {
@@ -494,8 +539,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       final bytes = await File(path).readAsBytes();
       final text = encoding.decode(bytes);
       if (!mounted) return;
+      TextEditorPrefsStore.update(
+          TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name));
       setState(() {
-        _encoding = encoding;
         doc.text = text;
         _lastText = text;
         _dirty = false;
@@ -522,7 +568,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         text = text.replaceAll('\r\n', '\n');
     }
     final bytes = encoding.encode(text);
-    setState(() => _encoding = encoding);
+    TextEditorPrefsStore.update(
+        TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name));
 
     final path = doc.path;
     if (path != null && path.isNotEmpty) {
@@ -602,7 +649,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _newFile() {
-    final doc = _docs.create(name: localizations.editorUntitled);
+    final current = _doc;
+    final keep = _prefs.newFileKeepPrefs && current != null;
+    final doc = _docs.create(
+      name: localizations.editorUntitled,
+      langLabel: keep ? current.langLabel : 'Plain Text',
+    );
     _activate(doc);
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).pop();
@@ -673,6 +725,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ],
       ),
     );
+    // 二次确认（可关）。
+    if (keep != null && _prefs.confirmExitTwice && mounted) {
+      final again = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(localizations.editorExitConfirmAgainTitle),
+          content: Text(localizations.editorExitConfirmAgainBody),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+          ],
+        ),
+      );
+      if (again != true) {
+        _confirmingExit = false;
+        return;
+      }
+    }
     _confirmingExit = false;
     if (!mounted) return;
     // Navigator.pop 不会再次触发 PopScope（只有 maybePop / 系统返回会），无递归风险。
@@ -1022,7 +1092,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       final doc = _docs.create(name: name, text: content, path: path, langLabel: _detectLanguage(path) ?? 'Plain Text');
       doc.newline = content.contains('\r\n') ? '\r\n' : (content.contains('\r') ? '\r' : '\n');
       _activate(doc);
-      if (content.length > _kSmoothThreshold && !_smooth) {
+      final pageLimit =
+          _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
+      if (content.length > pageLimit && !_smooth) {
         setState(() => _smooth = true);
         _toast(localizations.editorSmoothAutoEnabled);
       }
@@ -1255,7 +1327,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ),
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
-          _snippetBar(),
+          if (_prefs.shortcutBar) _snippetBar(),
           if (doc != null)
             AnimatedBuilder(
               animation: doc.findController,
@@ -1661,17 +1733,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<void> _showSyntaxMenu() async {
     final doc = _doc;
     if (doc == null) return;
-    final size = MediaQuery.of(context).size;
-    final chosen = await showMenu<String>(
+    final chosen = await showDialog<String>(
       context: context,
-      position: RelativeRect.fromLTRB(size.width - 170, kToolbarHeight + 40, 20, 0),
-      items: _visibleLangs
-          .map((lang) => CheckedPopupMenuItem<String>(
-                value: lang.label,
-                checked: lang.label == doc.langLabel,
-                child: Text(lang.label),
-              ))
-          .toList(),
+      builder: (_) => SyntaxPickerDialog(
+        items: _visibleLangs.map((l) => (l.label, l.mode as Object?)).toList(),
+        current: doc.langLabel,
+      ),
     );
     if (chosen == null || !mounted) return;
     setState(() => doc.langLabel = chosen);
@@ -1924,6 +1991,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
           invisibleChars: _invisibleCharsStyle,
           autoIndent: _prefs.autoIndent,
+          enterSuggestion: _prefs.enterSuggestion,
+          suggestionStyle: SuggestionStyle(maxHeight: _prefs.suggestionMaxHeight),
           customContextMenuItems: _floatMenuItems(),
           onGutterLineLongPress: _handleGutterLongPress,
         ),

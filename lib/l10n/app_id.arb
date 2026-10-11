@@ -2572,5 +2572,21 @@
   "editorAutoIndent": "Inden otomatis",
   "editorReset": "Atur ulang",
   "editorSettingsGesture": "Gestur & tampilan",
-  "editorSettingsMenu": "Menu & sintaks"
+  "editorSettingsMenu": "Menu & sintaks",
+  "editorHideSingleSpace": "Sembunyikan spasi tunggal",
+  "editorSoftWrapArrow": "Panah pembungkusan",
+  "editorSettingsComplete": "Pelengkapan & papan tombol",
+  "editorEnterSuggestion": "Enter menerapkan saran",
+  "editorSuggestionHeight": "Tinggi maksimum saran",
+  "editorSettingsBehavior": "Perilaku",
+  "editorShortcutBar": "Bilah pintasan",
+  "editorCheckFileModified": "Deteksi perubahan berkas",
+  "editorConfirmExitTwice": "Konfirmasi ganda saat keluar",
+  "editorNewFileKeepPrefs": "Berkas baru simpan preferensi",
+  "editorAutoPageSize": "Ukuran halaman otomatis",
+  "editorFileMissing": "Berkas telah dihapus",
+  "editorFileChanged": "Berkas berubah di disk",
+  "editorExitConfirmAgainTitle": "Konfirmasi lagi",
+  "editorExitConfirmAgainBody": "Yakin ingin keluar dari editor?",
+  "editorMenuManage": "Kelola"
 }

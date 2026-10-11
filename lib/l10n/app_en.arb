@@ -4485,5 +4485,21 @@
   "editorAutoIndent": "Auto indent",
   "editorReset": "Reset",
   "editorSettingsGesture": "Gestures & display",
-  "editorSettingsMenu": "Menus & syntax"
+  "editorSettingsMenu": "Menus & syntax",
+  "editorHideSingleSpace": "Hide single space",
+  "editorSoftWrapArrow": "Wrap arrow",
+  "editorSettingsComplete": "Completion & keyboard",
+  "editorEnterSuggestion": "Enter applies suggestion",
+  "editorSuggestionHeight": "Max suggestion height",
+  "editorSettingsBehavior": "Behavior",
+  "editorShortcutBar": "Shortcut bar",
+  "editorCheckFileModified": "Detect file changes",
+  "editorConfirmExitTwice": "Double confirm on exit",
+  "editorNewFileKeepPrefs": "New file keeps prefs",
+  "editorAutoPageSize": "Auto page size",
+  "editorFileMissing": "File was deleted",
+  "editorFileChanged": "File changed on disk",
+  "editorExitConfirmAgainTitle": "Confirm again",
+  "editorExitConfirmAgainBody": "Are you sure you want to exit the editor?",
+  "editorMenuManage": "Manage"
 }

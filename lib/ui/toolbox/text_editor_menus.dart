@@ -16,63 +16,68 @@
 
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:charset/charset.dart' as charset;
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
 
-/// 以字节形式读写文件时支持的编码。
-enum EditorEncoding { utf8, utf8Bom, latin1, utf16le, utf16be }
+/// 编辑器读写文件时可选的一种编码。
+///
+/// 展示名与常见编辑器（如 MT 管理器）保持一致；实际转换优先走内置实现
+/// （UTF-8 / UTF-16 / UTF-32），其余交给 `charset` 包。
+class EditorEncoding {
+  final String name;
+  final Encoding? codec;
 
-extension EditorEncodingX on EditorEncoding {
-  String get label {
-    switch (this) {
-      case EditorEncoding.utf8:
-        return 'UTF-8';
-      case EditorEncoding.utf8Bom:
-        return 'UTF-8 (BOM)';
-      case EditorEncoding.latin1:
-        return 'ISO-8859-1 (Latin-1)';
-      case EditorEncoding.utf16le:
-        return 'UTF-16 LE';
-      case EditorEncoding.utf16be:
-        return 'UTF-16 BE';
-    }
-  }
+  const EditorEncoding(this.name, this.codec);
 
-  /// 字节 -> 文本。
+  bool get isUtf8 => name == 'UTF-8';
+  bool get isUtf8Bom => name == 'UTF-8-BOM';
+  bool get isUtf16Le => name == 'UTF-16LE';
+  bool get isUtf16Be => name == 'UTF-16BE';
+  bool get isUtf32Le => name == 'UTF-32LE';
+  bool get isUtf32Be => name == 'UTF-32BE';
+
   String decode(List<int> bytes) {
-    switch (this) {
-      case EditorEncoding.utf8:
-      case EditorEncoding.utf8Bom:
-        return utf8.decode(bytes, allowMalformed: true);
-      case EditorEncoding.latin1:
-        return latin1.decode(bytes, allowInvalid: true);
-      case EditorEncoding.utf16le:
-        return _decodeUtf16(bytes, true);
-      case EditorEncoding.utf16be:
-        return _decodeUtf16(bytes, false);
+    if (isUtf8) return utf8.decode(bytes, allowMalformed: true);
+    if (isUtf8Bom) {
+      final b = (bytes.length >= 3 &&
+              bytes[0] == 0xEF &&
+              bytes[1] == 0xBB &&
+              bytes[2] == 0xBF)
+          ? bytes.sublist(3)
+          : bytes;
+      return utf8.decode(b, allowMalformed: true);
+    }
+    if (isUtf16Le) return _decodeU16(bytes, true);
+    if (isUtf16Be) return _decodeU16(bytes, false);
+    if (isUtf32Le) return _decodeU32(bytes, true);
+    if (isUtf32Be) return _decodeU32(bytes, false);
+    try {
+      return codec?.decode(bytes) ?? latin1.decode(bytes, allowInvalid: true);
+    } catch (_) {
+      return latin1.decode(bytes, allowInvalid: true);
     }
   }
 
-  /// 文本 -> 字节。
   Uint8List encode(String text) {
-    switch (this) {
-      case EditorEncoding.utf8:
-        return utf8.encode(text);
-      case EditorEncoding.utf8Bom:
-        return Uint8List.fromList(<int>[0xEF, 0xBB, 0xBF, ...utf8.encode(text)]);
-      case EditorEncoding.latin1:
-        // 宽容处理：超出 Latin-1 的码位按低 8 位截断，避免抛错。
-        return Uint8List.fromList(text.codeUnits.map((c) => c & 0xFF).toList());
-      case EditorEncoding.utf16le:
-        return _encodeUtf16(text, true);
-      case EditorEncoding.utf16be:
-        return _encodeUtf16(text, false);
+    if (isUtf8) return utf8.encode(text);
+    if (isUtf8Bom) {
+      return Uint8List.fromList(<int>[0xEF, 0xBB, 0xBF, ...utf8.encode(text)]);
+    }
+    if (isUtf16Le) return _encodeU16(text, true);
+    if (isUtf16Be) return _encodeU16(text, false);
+    if (isUtf32Le) return _encodeU32(text, true);
+    if (isUtf32Be) return _encodeU32(text, false);
+    try {
+      return codec?.encode(text) ?? utf8.encode(text);
+    } catch (_) {
+      return utf8.encode(text);
     }
   }
 
-  static String _decodeUtf16(List<int> bytes, bool littleEndian) {
+  static String _decodeU16(List<int> bytes, bool little) {
     var start = 0;
     if (bytes.length >= 2) {
       final a = bytes[0];
@@ -81,22 +86,19 @@ extension EditorEncodingX on EditorEncoding {
     }
     final units = <int>[];
     for (var i = start; i + 1 < bytes.length; i += 2) {
-      units.add(littleEndian ? bytes[i] | (bytes[i + 1] << 8) : (bytes[i] << 8) | bytes[i + 1]);
+      units.add(little
+          ? bytes[i] | (bytes[i + 1] << 8)
+          : (bytes[i] << 8) | bytes[i + 1]);
     }
     return String.fromCharCodes(units);
   }
 
-  static Uint8List _encodeUtf16(String text, bool littleEndian) {
+  static Uint8List _encodeU16(String text, bool little) {
     final out = BytesBuilder();
-    if (littleEndian) {
-      out.addByte(0xFF);
-      out.addByte(0xFE);
-    } else {
-      out.addByte(0xFE);
-      out.addByte(0xFF);
-    }
+    out.addByte(little ? 0xFF : 0xFE);
+    out.addByte(little ? 0xFE : 0xFF);
     for (final u in text.codeUnits) {
-      if (littleEndian) {
+      if (little) {
         out.addByte(u & 0xFF);
         out.addByte((u >> 8) & 0xFF);
       } else {
@@ -106,33 +108,279 @@ extension EditorEncodingX on EditorEncoding {
     }
     return out.toBytes();
   }
+
+  static String _decodeU32(List<int> bytes, bool little) {
+    var start = 0;
+    if (bytes.length >= 4) {
+      if (little && bytes[0] == 0xFF && bytes[1] == 0xFE) {
+        start = 4;
+      } else if (!little && bytes[0] == 0x00 && bytes[1] == 0x00 &&
+          bytes[2] == 0xFE && bytes[3] == 0xFF) {
+        start = 4;
+      }
+    }
+    final out = <int>[];
+    for (var i = start; i + 3 < bytes.length; i += 4) {
+      final cp = little
+          ? bytes[i] | (bytes[i + 1] << 8) | (bytes[i + 2] << 16) | (bytes[i + 3] << 24)
+          : (bytes[i] << 24) | (bytes[i + 1] << 16) | (bytes[i + 2] << 8) | bytes[i + 3];
+      out.add(cp & 0x10FFFF);
+    }
+    return String.fromCharCodes(out);
+  }
+
+  static Uint8List _encodeU32(String text, bool little) {
+    final out = BytesBuilder();
+    if (little) {
+      out.add(<int>[0xFF, 0xFE, 0x00, 0x00]);
+    } else {
+      out.add(<int>[0x00, 0x00, 0xFE, 0xFF]);
+    }
+    for (final cp in text.runes) {
+      if (little) {
+        out.addByte(cp & 0xFF);
+        out.addByte((cp >> 8) & 0xFF);
+        out.addByte((cp >> 16) & 0xFF);
+        out.addByte((cp >> 24) & 0xFF);
+      } else {
+        out.addByte((cp >> 24) & 0xFF);
+        out.addByte((cp >> 16) & 0xFF);
+        out.addByte((cp >> 8) & 0xFF);
+        out.addByte(cp & 0xFF);
+      }
+    }
+    return out.toBytes();
+  }
 }
 
-/// 弹出编码选择框。[current] 是当前编码，用于打勾。
-Future<EditorEncoding?> showEncodingPicker(BuildContext context, EditorEncoding current,
-    {required String title}) {
-  final loc = AppLocalizations.of(context)!;
+/// 编码列表顺序（与常见编辑器一致）。`charset` 不支持的会自动跳过。
+const List<String> _kEncodingNames = <String>[
+  'UTF-8', 'UTF-8-BOM', 'UTF-16BE', 'UTF-16LE', 'UTF-32BE', 'UTF-32LE',
+  'GB2312', 'GB18030', 'GBK', 'Big5', 'Big5-HKSCS', 'CESU-8',
+  'EUC-JP', 'EUC-KR', 'IBM866', 'IBM850', 'ISO-2022-JP', 'ISO-2022-KR',
+  'ISO-8859-1', 'ISO-8859-2', 'ISO-8859-3', 'ISO-8859-4', 'ISO-8859-5',
+  'ISO-8859-6', 'ISO-8859-7', 'ISO-8859-8', 'ISO-8859-9', 'ISO-8859-10',
+  'ISO-8859-11', 'ISO-8859-13', 'ISO-8859-14', 'ISO-8859-15',
+  'KOI8-R', 'KOI8-U', 'ShiftJIS',
+  'Windows-1250', 'Windows-1251', 'Windows-1252', 'Windows-1253',
+  'Windows-1254', 'Windows-1255', 'Windows-1256', 'Windows-1257',
+  'Windows-1258',
+];
+
+/// 全部可用编码（无法解析的已剔除）。
+final List<EditorEncoding> kEncodings = _buildEncodings();
+
+List<EditorEncoding> _buildEncodings() {
+  final out = <EditorEncoding>[];
+  for (final n in _kEncodingNames) {
+    if (n == 'UTF-8' ||
+        n == 'UTF-8-BOM' ||
+        n.startsWith('UTF-16') ||
+        n.startsWith('UTF-32')) {
+      out.add(EditorEncoding(n, null));
+      continue;
+    }
+    final c = charset.Charset.getByName(n);
+    if (c != null) out.add(EditorEncoding(n, c));
+  }
+  return out;
+}
+
+/// 默认编码（列表第一项）。
+EditorEncoding get defaultEncoding =>
+    kEncodings.isNotEmpty ? kEncodings.first : const EditorEncoding('UTF-8', null);
+
+/// 弹出编码选择框（长列表 + 关闭按钮，风格与常见编辑器一致）。
+Future<EditorEncoding?> showEncodingPicker(
+  BuildContext context,
+  EditorEncoding current, {
+  required String title,
+}) {
   return showDialog<EditorEncoding>(
     context: context,
-    builder: (ctx) => SimpleDialog(
-      title: Text(title),
-      children: EditorEncoding.values
-          .map<Widget>((e) => ListTile(
-                dense: true,
-                title: Text(e.label),
-                trailing: e == current ? const Icon(Icons.check, size: 18) : null,
-                onTap: () => Navigator.pop(ctx, e),
-              ))
-          .toList()
-        ..add(
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
-            child: Text(loc.editorEncodingHint,
-                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
-          ),
-        ),
-    ),
+    builder: (ctx) => _EncodingDialog(title: title, current: current),
   );
+}
+
+class _EncodingDialog extends StatefulWidget {
+  const _EncodingDialog({required this.title, required this.current});
+
+  final String title;
+  final EditorEncoding current;
+
+  @override
+  State<_EncodingDialog> createState() => _EncodingDialogState();
+}
+
+class _EncodingDialogState extends State<_EncodingDialog> {
+  final TextEditingController _filter = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _filter.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final list = _query.isEmpty
+        ? kEncodings
+        : kEncodings
+            .where((e) => e.name.toLowerCase().contains(_query.toLowerCase()))
+            .toList();
+    return AlertDialog(
+      title: Text(widget.title),
+      contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+      content: SizedBox(
+        width: 340,
+        height: 420,
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: TextField(
+              controller: _filter,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 18),
+                hintText: loc.search,
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: list.length,
+              itemBuilder: (context, i) {
+                final e = list[i];
+                final selected = e.name == widget.current.name;
+                return ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  leading: Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 18,
+                    color: selected ? Theme.of(context).colorScheme.primary : null,
+                  ),
+                  title: Text(e.name, style: const TextStyle(fontSize: 13.5)),
+                  onTap: () => Navigator.pop(context, e),
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(loc.close),
+        ),
+      ],
+    );
+  }
+}
+
+/// 「语法」选择对话框：列出现有语言，可按名称筛选，并提供「管理」入口。
+class SyntaxPickerDialog extends StatefulWidget {
+  const SyntaxPickerDialog({
+    super.key,
+    required this.items,
+    required this.current,
+  });
+
+  /// (label, mode) 列表，label 即实际写入文档的语法名。
+  final List<(String, Object?)> items;
+  final String current;
+
+  @override
+  State<SyntaxPickerDialog> createState() => _SyntaxPickerDialogState();
+}
+
+class _SyntaxPickerDialogState extends State<SyntaxPickerDialog> {
+  final TextEditingController _filter = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _filter.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final q = _query.toLowerCase();
+    final list = _query.isEmpty
+        ? widget.items
+        : widget.items.where((e) => e.$1.toLowerCase().contains(q)).toList();
+    return AlertDialog(
+      title: Text(loc.editorMoreSyntax),
+      contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+      content: SizedBox(
+        width: 340,
+        height: 440,
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: TextField(
+              controller: _filter,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 18),
+                hintText: loc.search,
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: list.length,
+              itemBuilder: (context, i) {
+                final e = list[i];
+                final selected = e.$1 == widget.current;
+                return ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  leading: Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 18,
+                    color: selected ? Theme.of(context).colorScheme.primary : null,
+                  ),
+                  title: Text(e.$1, style: const TextStyle(fontSize: 13.5)),
+                  onTap: () => Navigator.pop(context, e.$1),
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () async {
+            final langs = widget.items.map((e) => e.$1).toList();
+            await showDialog<void>(
+              context: context,
+              builder: (_) => LanguageManagerDialog(allLangs: langs),
+            );
+          },
+          child: Text(loc.editorMenuManage),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(loc.close),
+        ),
+      ],
+    );
+  }
 }
 
 /// 一个可在「工具菜单」里显隐的菜单项。

@@ -4373,5 +4373,21 @@
   "editorAutoIndent": "自动缩进",
   "editorReset": "恢复默认",
   "editorSettingsGesture": "手势与显示",
-  "editorSettingsMenu": "菜单与语法"
+  "editorSettingsMenu": "菜单与语法",
+  "editorHideSingleSpace": "隐藏单个空格",
+  "editorSoftWrapArrow": "显示自动换行箭头",
+  "editorSettingsComplete": "补全与键盘",
+  "editorEnterSuggestion": "回车应用补全",
+  "editorSuggestionHeight": "补全窗口最大高度",
+  "editorSettingsBehavior": "行为",
+  "editorShortcutBar": "快捷功能栏",
+  "editorCheckFileModified": "检测文件是否被修改 / 删除",
+  "editorConfirmExitTwice": "退出前双次确认",
+  "editorNewFileKeepPrefs": "新文件保留偏好",
+  "editorAutoPageSize": "自动分页大小",
+  "editorFileMissing": "文件已被删除",
+  "editorFileChanged": "文件已被其它程序修改",
+  "editorExitConfirmAgainTitle": "再次确认",
+  "editorExitConfirmAgainBody": "确定要退出编辑器吗？",
+  "editorMenuManage": "管理"
 }
