@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.51.00 (2026-10-11)
+
+### 编码补齐到完整清单 + 修复搜索面板在窄屏溢出
+
+**编码**
+
+- 补齐 Big5、Big5-HKSCS、CESU-8、ISO-2022-JP、ISO-2022-KR、KOI8-R、KOI8-U。
+- 编码解析改为**四级回退**，任何平台都有解：
+  1. 内置实现（UTF-8/-BOM、UTF-16、UTF-32、CESU-8、ISO-2022-JP/KR）；
+  2. 纯 Dart codec（`enough_convert` 的 Big5、`charset` 的 GBK / EUC / ShiftJIS / ISO-8859 / Windows-125x）；
+  3. 平台原生 ICU（`charset_converter`，覆盖 Android / iOS / macOS / Windows / Linux）；
+  4. Latin-1 容错解码兜底。
+- ISO-2022-JP / KR 用自实现的转义序列解析（借助已有 EUC 码表），不依赖大表，
+  因此在 iOS / 桌面同样可用；Big5-HKSCS 优先走原生，失败时退到标准 Big5。
+
+**修复**
+
+- 查找面板在窄屏（手机）上按钮溢出，导致「关闭」被挤出屏幕 —— 改为 `Wrap`
+  自动换行，并收紧按钮内边距。
+
 ## v1.50.00 (2026-10-11)
 
 ### 文本编辑器：补齐设置图里的全部开关 + 完整编码 / 语法列表

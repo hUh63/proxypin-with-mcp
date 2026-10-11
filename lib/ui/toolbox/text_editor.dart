@@ -537,7 +537,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     try {
       final bytes = await File(path).readAsBytes();
-      final text = encoding.decode(bytes);
+      final text = await encoding.decode(bytes);
       if (!mounted) return;
       TextEditorPrefsStore.update(
           TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name));
@@ -567,7 +567,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       case _Newline.lf:
         text = text.replaceAll('\r\n', '\n');
     }
-    final bytes = encoding.encode(text);
+    final bytes = await encoding.encode(text);
     TextEditorPrefsStore.update(
         TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name));
 

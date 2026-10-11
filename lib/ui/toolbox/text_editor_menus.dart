@@ -17,6 +17,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:charset/charset.dart' as charset;
+import 'package:charset_converter/charset_converter.dart';
+import 'package:enough_convert/enough_convert.dart' as ec;
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -24,13 +26,22 @@ import 'package:proxypin/utils/text_editor_prefs.dart';
 
 /// 编辑器读写文件时可选的一种编码。
 ///
-/// 展示名与常见编辑器（如 MT 管理器）保持一致；实际转换优先走内置实现
-/// （UTF-8 / UTF-16 / UTF-32），其余交给 `charset` 包。
+/// 解码 / 编码按下面的顺序逐级回退，保证任何平台上都不会「无解」：
+/// 1. 内置实现（UTF-8 / UTF-16 / UTF-32 / CESU-8 / ISO-2022-JP·KR）；
+/// 2. 纯 Dart codec（`enough_convert` 的 Big5、`charset` 的 GBK / EUC / ShiftJIS /
+///    ISO-8859 / Windows-125x 等）；
+/// 3. 平台原生 ICU（`charset_converter`）；
+/// 4. 最后以 Latin-1 容错解码，至少不抛异常。
 class EditorEncoding {
   final String name;
+
+  /// 纯 Dart codec，可能为 null。
   final Encoding? codec;
 
-  const EditorEncoding(this.name, this.codec);
+  /// 交给平台原生转换器时使用的名字；null 表示不走原生。
+  final String? nativeName;
+
+  const EditorEncoding(this.name, this.codec, [this.nativeName]);
 
   bool get isUtf8 => name == 'UTF-8';
   bool get isUtf8Bom => name == 'UTF-8-BOM';
@@ -38,8 +49,23 @@ class EditorEncoding {
   bool get isUtf16Be => name == 'UTF-16BE';
   bool get isUtf32Le => name == 'UTF-32LE';
   bool get isUtf32Be => name == 'UTF-32BE';
+  bool get isCesu8 => name == 'CESU-8';
+  bool get isIso2022Jp => name == 'ISO-2022-JP';
+  bool get isIso2022Kr => name == 'ISO-2022-KR';
 
-  String decode(List<int> bytes) {
+  /// 该编码在当前平台是否走原生实现（用于界面提示）。
+  bool get usesNative => !isUtf8 &&
+      !isUtf8Bom &&
+      !isUtf16Le &&
+      !isUtf16Be &&
+      !isUtf32Le &&
+      !isUtf32Be &&
+      !isCesu8 &&
+      !isIso2022Jp &&
+      !isIso2022Kr &&
+      codec == null;
+
+  Future<String> decode(List<int> bytes) async {
     if (isUtf8) return utf8.decode(bytes, allowMalformed: true);
     if (isUtf8Bom) {
       final b = (bytes.length >= 3 &&
@@ -54,14 +80,30 @@ class EditorEncoding {
     if (isUtf16Be) return _decodeU16(bytes, false);
     if (isUtf32Le) return _decodeU32(bytes, true);
     if (isUtf32Be) return _decodeU32(bytes, false);
-    try {
-      return codec?.decode(bytes) ?? latin1.decode(bytes, allowInvalid: true);
-    } catch (_) {
-      return latin1.decode(bytes, allowInvalid: true);
+    if (isCesu8) return _decodeCesu8(bytes);
+    if (isIso2022Jp) return _decodeIso2022(bytes, charset.eucJp);
+    if (isIso2022Kr) return _decodeIso2022(bytes, charset.eucKr);
+
+    final c = codec;
+    if (c != null) {
+      try {
+        return c.decode(bytes);
+      } catch (_) {
+        // 继续尝试原生。
+      }
     }
+    final n = nativeName;
+    if (n != null) {
+      try {
+        return await CharsetConverter.decode(n, Uint8List.fromList(bytes));
+      } catch (_) {
+        // 继续兜底。
+      }
+    }
+    return latin1.decode(bytes, allowInvalid: true);
   }
 
-  Uint8List encode(String text) {
+  Future<Uint8List> encode(String text) async {
     if (isUtf8) return utf8.encode(text);
     if (isUtf8Bom) {
       return Uint8List.fromList(<int>[0xEF, 0xBB, 0xBF, ...utf8.encode(text)]);
@@ -70,13 +112,30 @@ class EditorEncoding {
     if (isUtf16Be) return _encodeU16(text, false);
     if (isUtf32Le) return _encodeU32(text, true);
     if (isUtf32Be) return _encodeU32(text, false);
-    try {
-      final c = codec;
-      return c == null ? utf8.encode(text) : Uint8List.fromList(c.encode(text));
-    } catch (_) {
-      return utf8.encode(text);
+    if (isCesu8) return _encodeCesu8(text);
+    if (isIso2022Jp) return _encodeIso2022(text, charset.eucJp, kr: false);
+    if (isIso2022Kr) return _encodeIso2022(text, charset.eucKr, kr: true);
+
+    final c = codec;
+    if (c != null) {
+      try {
+        return Uint8List.fromList(c.encode(text));
+      } catch (_) {
+        // 继续尝试原生。
+      }
     }
+    final n = nativeName;
+    if (n != null) {
+      try {
+        return await CharsetConverter.encode(n, text);
+      } catch (_) {
+        // 继续兜底。
+      }
+    }
+    return utf8.encode(text);
   }
+
+  // ------------------------------------------------------------ 内置实现
 
   static String _decodeU16(List<int> bytes, bool little) {
     var start = 0;
@@ -115,8 +174,11 @@ class EditorEncoding {
     if (bytes.length >= 4) {
       if (little && bytes[0] == 0xFF && bytes[1] == 0xFE) {
         start = 4;
-      } else if (!little && bytes[0] == 0x00 && bytes[1] == 0x00 &&
-          bytes[2] == 0xFE && bytes[3] == 0xFF) {
+      } else if (!little &&
+          bytes[0] == 0x00 &&
+          bytes[1] == 0x00 &&
+          bytes[2] == 0xFE &&
+          bytes[3] == 0xFF) {
         start = 4;
       }
     }
@@ -152,9 +214,129 @@ class EditorEncoding {
     }
     return out.toBytes();
   }
+
+  /// CESU-8：把每个 UTF-16 code unit 单独按 3 字节以内的 UTF-8 形式编码，
+  /// 代理对因此会变成两个 3 字节序列（而不是标准 UTF-8 的 4 字节）。
+  static String _decodeCesu8(List<int> bytes) {
+    final out = <int>[];
+    var i = 0;
+    while (i < bytes.length) {
+      final c = bytes[i];
+      if (c < 0x80) {
+        out.add(c);
+        i += 1;
+      } else if (c < 0xE0 && i + 1 < bytes.length) {
+        out.add(((c & 0x1F) << 6) | (bytes[i + 1] & 0x3F));
+        i += 2;
+      } else if (i + 2 < bytes.length) {
+        out.add(((c & 0x0F) << 12) |
+            ((bytes[i + 1] & 0x3F) << 6) |
+            (bytes[i + 2] & 0x3F));
+        i += 3;
+      } else {
+        break;
+      }
+    }
+    return String.fromCharCodes(out);
+  }
+
+  static Uint8List _encodeCesu8(String text) {
+    final out = BytesBuilder();
+    for (final u in text.codeUnits) {
+      if (u < 0x80) {
+        out.addByte(u);
+      } else if (u < 0x800) {
+        out.addByte(0xC0 | (u >> 6));
+        out.addByte(0x80 | (u & 0x3F));
+      } else {
+        out.addByte(0xE0 | (u >> 12));
+        out.addByte(0x80 | ((u >> 6) & 0x3F));
+        out.addByte(0x80 | (u & 0x3F));
+      }
+    }
+    return out.toBytes();
+  }
+
+  /// ISO-2022-JP / KR 解码：把转义序列切换出来的双字节区（JIS X 0208 / KS X 1001）
+  /// 还原成 EUC 字节（每字节 +0x80），ASCII 区原样保留，最后交给 EUC 解码器。
+  /// 这样不依赖任何大表，也就能在全平台工作。
+  static String _decodeIso2022(List<int> bytes, Encoding euc) {
+    final out = <int>[];
+    var i = 0;
+    var doubleByte = false;
+    while (i < bytes.length) {
+      final b = bytes[i];
+      if (b == 0x1B && i + 1 < bytes.length) {
+        final b1 = bytes[i + 1];
+        if (b1 == 0x24) {
+          // ESC $ ( ... ) : 进入双字节区
+          if (i + 3 < bytes.length && bytes[i + 2] == 0x29) {
+            i += 4;
+          } else {
+            i += 3;
+          }
+          doubleByte = true;
+          continue;
+        }
+        if (b1 == 0x28) {
+          // ESC ( B / J / I : 回到单字节区
+          i += 3;
+          doubleByte = false;
+          continue;
+        }
+        i += 2;
+        continue;
+      }
+      if (doubleByte && b >= 0x21 && i + 1 < bytes.length && bytes[i + 1] >= 0x21) {
+        out.add(b | 0x80);
+        out.add(bytes[i + 1] | 0x80);
+        i += 2;
+        continue;
+      }
+      out.add(b);
+      i += 1;
+    }
+    try {
+      return euc.decode(out);
+    } catch (_) {
+      return latin1.decode(out, allowInvalid: true);
+    }
+  }
+
+  static Uint8List _encodeIso2022(String text, Encoding euc, {required bool kr}) {
+    final eucBytes = euc.encode(text);
+    final out = BytesBuilder();
+    if (kr) out.add(<int>[0x1B, 0x24, 0x29, 0x43]);
+    var doubleByte = false;
+    for (var i = 0; i < eucBytes.length; i++) {
+      final b = eucBytes[i];
+      if (b < 0x80) {
+        if (doubleByte) {
+          out.add(<int>[0x1B, 0x28, 0x42]);
+          doubleByte = false;
+        }
+        out.addByte(b);
+      } else if (b >= 0xA1) {
+        if (!doubleByte) {
+          out.add(<int>[0x1B, 0x24, 0x42]);
+          doubleByte = true;
+        }
+        out.addByte(b & 0x7F);
+      } else {
+        // 0x80-0xA0（半角假名等）在 ISO-2022 里没有直接对应，用空格占位。
+        if (doubleByte) {
+          out.add(<int>[0x1B, 0x28, 0x42]);
+          doubleByte = false;
+        }
+        out.addByte(0x20);
+      }
+    }
+    if (doubleByte) out.add(<int>[0x1B, 0x28, 0x42]);
+    return out.toBytes();
+  }
 }
 
-/// 编码列表顺序（与常见编辑器一致）。`charset` 不支持的会自动跳过。
+/// 编码列表顺序（与常见编辑器一致）。
 const List<String> _kEncodingNames = <String>[
   'UTF-8', 'UTF-8-BOM', 'UTF-16BE', 'UTF-16LE', 'UTF-32BE', 'UTF-32LE',
   'GB2312', 'GB18030', 'GBK', 'Big5', 'Big5-HKSCS', 'CESU-8',
@@ -168,21 +350,41 @@ const List<String> _kEncodingNames = <String>[
   'Windows-1258',
 ];
 
-/// 全部可用编码（无法解析的已剔除）。
+/// 全部可用编码。
 final List<EditorEncoding> kEncodings = _buildEncodings();
+
+/// 有内置实现的编码。
+bool _isBuiltinEncoding(String n) =>
+    n == 'UTF-8' ||
+    n == 'UTF-8-BOM' ||
+    n == 'CESU-8' ||
+    n == 'ISO-2022-JP' ||
+    n == 'ISO-2022-KR' ||
+    n.startsWith('UTF-16') ||
+    n.startsWith('UTF-32');
 
 List<EditorEncoding> _buildEncodings() {
   final out = <EditorEncoding>[];
   for (final n in _kEncodingNames) {
-    if (n == 'UTF-8' ||
-        n == 'UTF-8-BOM' ||
-        n.startsWith('UTF-16') ||
-        n.startsWith('UTF-32')) {
-      out.add(EditorEncoding(n, null));
+    if (_isBuiltinEncoding(n)) {
+      out.add(EditorEncoding(n, null, n));
       continue;
     }
-    final c = charset.Charset.getByName(n);
-    if (c != null) out.add(EditorEncoding(n, c));
+    if (n == 'Big5') {
+      // enough_convert 提供纯 Dart 的 Big5 表。
+      out.add(EditorEncoding(n, const ec.Big5Codec(allowInvalid: true), 'Big5'));
+      continue;
+    }
+    if (n == 'Big5-HKSCS') {
+      // 没有纯 Dart 的 HKSCS 扩展表：原生优先，失败时退到标准 Big5。
+      out.add(EditorEncoding(
+        n,
+        const ec.Big5Codec(allowInvalid: true),
+        'Big5-HKSCS',
+      ));
+      continue;
+    }
+    out.add(EditorEncoding(n, charset.Charset.getByName(n), n));
   }
   return out;
 }

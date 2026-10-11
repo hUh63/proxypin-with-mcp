@@ -116,7 +116,10 @@ class _FindPanelViewState extends State<FindPanelView> {
   /// 展开态：搜索结果计数 + 匹配选项。
   Widget _resultRow(BuildContext context) {
     final count = controller.matchCount;
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 0,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
           '${localizations.findResults}: $count',
@@ -125,7 +128,6 @@ class _FindPanelViewState extends State<FindPanelView> {
             color: count == 0 ? Colors.grey : Colors.orange,
           ),
         ),
-        const Spacer(),
         ..._options(context),
       ],
     );
@@ -133,7 +135,11 @@ class _FindPanelViewState extends State<FindPanelView> {
 
   /// 收起态：匹配选项单独一行（展开态里它在结果行右侧）。
   Widget _optionRow(BuildContext context) {
-    return Row(children: [const Spacer(), ..._options(context)]);
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: _options(context),
+    );
   }
 
   List<Widget> _options(BuildContext context) => [
@@ -206,13 +212,16 @@ class _FindPanelViewState extends State<FindPanelView> {
 
   Widget _actionRow(BuildContext context) {
     final none = controller.matchCount == 0;
-    return Row(
+    // 用 Wrap：窄屏（手机）放不下时自动换行，不会把“关闭”挤出屏幕。
+    return Wrap(
+      spacing: 2,
+      runSpacing: 0,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _textButton(localizations.findPrevious, none ? null : controller.previous),
         _textButton(localizations.findNext, none ? null : controller.next),
         _textButton(localizations.replace, none ? null : controller.replace),
         _textButton(localizations.findReplaceAll, none ? null : controller.replaceAll),
-        const Spacer(),
         _textButton(localizations.close, controller.toggleActive),
       ],
     );
@@ -364,7 +373,7 @@ class _FindPanelViewState extends State<FindPanelView> {
       onPressed: onTap,
       style: TextButton.styleFrom(
         minimumSize: const Size(0, 28),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
       ),
