@@ -38,6 +38,8 @@ import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/text_editor_prefs.dart';
+import 'package:proxypin/ui/toolbox/text_editor_settings.dart';
 import 'package:proxypin/utils/smart_completion.dart';
 import 'package:proxypin/utils/smart_suggestions.dart';
 import 'package:proxypin/utils/platform.dart';
@@ -140,6 +142,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 流畅模式是否保留输入法候选建议。默认 true（不牺牲输入法）；
   /// 关掉后流畅模式会同时禁用输入法建议，换取超长文本下的更高流畅度。
   bool _smoothKeepIme = true;
+  bool _readOnly = false;
   bool _showAscii = false;
   bool _showUnicode = false;
   bool _dirty = false;
@@ -158,6 +161,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   InvisibleCharsStyle get _invisibleCharsStyle =>
       InvisibleCharsStyle(ascii: _showAscii, unicode: _showUnicode);
 
+  TextEditorPrefs get _prefs => TextEditorPrefsStore.notifier.value;
+
   _LangOption get _lang =>
       _langs.firstWhere((l) => l.label == (_doc?.langLabel ?? 'Plain Text'), orElse: () => _langs.first);
 
@@ -167,6 +172,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _loadPrefs();
     SmartCompletion.load();
     SmartCompletion.enabled.addListener(_onSmartCompletionChanged);
+    TextEditorPrefsStore.load();
+    TextEditorPrefsStore.notifier.addListener(_onEditorPrefsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
     if (Platforms.isDesktop() && widget.windowId != null) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
@@ -176,6 +183,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
+    TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -185,6 +193,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _onSmartCompletionChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onEditorPrefsChanged() {
     if (mounted) setState(() {});
   }
 
@@ -1146,33 +1158,85 @@ class _TextEditorPageState extends State<TextEditorPage> {
       tooltip: localizations.editorMore,
       onSelected: (value) {
         switch (value) {
+          case 'file':
+            _showFileMenu();
+          case 'search':
+            _toggleFind();
+          case 'syntax':
+            _showSyntaxMenu();
+          case 'gotoLine':
+            _selectToLine();
+          case 'wrap':
+            setState(() => _wrap = !_wrap);
+          case 'readOnly':
+            setState(() => _readOnly = !_readOnly);
+          case 'smooth':
+            setState(() => _smooth = !_smooth);
+          case 'smart':
+            SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
+          case 'smoothKeepIme':
+            _setSmoothKeepIme(!_smoothKeepIme);
           case 'ascii':
             _setShowAscii(!_showAscii);
           case 'unicode':
             _setShowUnicode(!_showUnicode);
           case 'report':
             _showSpecialReport();
-          case 'smooth':
-            setState(() => _smooth = !_smooth);
-          case 'smoothKeepIme':
-            _setSmoothKeepIme(!_smoothKeepIme);
-          case 'smart':
-            SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
-          case 'selectLine':
-            _selectToLine();
           case 'replaceLine':
             _replaceCurrentLine();
           case 'minify':
             _minify();
           case 'minifyAggressive':
             _minifyAggressive();
-          case 'retainMode':
-            _pickRetainMode();
           case 'newline':
             _pickNewline();
+          case 'retainMode':
+            _pickRetainMode();
+          case 'settings':
+            _openSettings();
+          case 'close':
+            final doc = _doc;
+            if (doc != null) _closeDoc(doc);
         }
       },
       itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'file',
+          child: _menuRow(localizations.editorMoreFile, Icons.arrow_right),
+        ),
+        PopupMenuItem(value: 'search', child: Text(localizations.search)),
+        PopupMenuItem(
+          value: 'syntax',
+          child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right),
+        ),
+        PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
+        const PopupMenuDivider(),
+        CheckedPopupMenuItem(
+          value: 'wrap',
+          checked: _wrap,
+          child: Text(localizations.wordWrap),
+        ),
+        CheckedPopupMenuItem(
+          value: 'readOnly',
+          checked: _readOnly,
+          child: Text(localizations.editorReadOnly),
+        ),
+        CheckedPopupMenuItem(
+          value: 'smooth',
+          checked: _smooth,
+          child: Text(localizations.editorSmoothMode),
+        ),
+        CheckedPopupMenuItem(
+          value: 'smart',
+          checked: SmartCompletion.enabled.value,
+          child: Text(localizations.smartCompletion),
+        ),
+        CheckedPopupMenuItem(
+          value: 'smoothKeepIme',
+          checked: _smoothKeepIme,
+          child: Text(localizations.editorSmoothKeepIme),
+        ),
+        const PopupMenuDivider(),
         CheckedPopupMenuItem(
           value: 'ascii',
           checked: _showAscii,
@@ -1184,23 +1248,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
           child: Text(localizations.editorShowUnicodeSpecial),
         ),
         PopupMenuItem(value: 'report', child: Text(localizations.editorSpecialReport)),
-        const PopupMenuDivider(),
-        CheckedPopupMenuItem(
-          value: 'smooth',
-          checked: _smooth,
-          child: Text(localizations.editorSmoothMode),
-        ),
-        CheckedPopupMenuItem(
-          value: 'smoothKeepIme',
-          checked: _smoothKeepIme,
-          child: Text(localizations.editorSmoothKeepIme),
-        ),
-        CheckedPopupMenuItem(
-          value: 'smart',
-          checked: SmartCompletion.enabled.value,
-          child: Text(localizations.smartCompletion),
-        ),
-        PopupMenuItem(value: 'selectLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
         PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
         PopupMenuItem(value: 'minifyAggressive', child: Text(localizations.editorMinifyAggressive)),
@@ -1213,7 +1260,144 @@ class _TextEditorPageState extends State<TextEditorPage> {
           value: 'retainMode',
           child: Text('${localizations.editorRetainPref}: ${_retainModeLabel()}'),
         ),
+        const PopupMenuDivider(),
+        PopupMenuItem(value: 'settings', child: Text(localizations.editorSettings)),
+        PopupMenuItem(value: 'close', child: Text(localizations.editorCloseFile)),
       ],
+    );
+  }
+
+  /// 菜单里带右侧箭头的行（表示还有下一级）。
+  Widget _menuRow(String text, IconData trailing) {
+    return Row(
+      children: [
+        Expanded(child: Text(text)),
+        Icon(trailing, size: 18),
+      ],
+    );
+  }
+
+  /// 「文件」子菜单：另存为 / 重新加载 / 换行符 / 统计。
+  Future<void> _showFileMenu() async {
+    final size = MediaQuery.of(context).size;
+    final chosen = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(size.width - 150, kToolbarHeight + 40, 20, 0),
+      items: [
+        PopupMenuItem(value: 'saveAs', child: Text(localizations.editorSaveAs)),
+        PopupMenuItem(value: 'reload', child: Text(localizations.editorReloadFile)),
+        PopupMenuItem(
+          value: 'newline',
+          child: Text('${localizations.editorNewline}: ${_newlineLabel()}'),
+        ),
+        PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
+      ],
+    );
+    switch (chosen) {
+      case 'saveAs':
+        await _download();
+      case 'reload':
+        await _reloadFile();
+      case 'newline':
+        await _pickNewline();
+      case 'stats':
+        _showStats();
+    }
+  }
+
+  /// 「语法」子菜单：直接选当前文档的语言（也就是语法高亮）。
+  Future<void> _showSyntaxMenu() async {
+    final doc = _doc;
+    if (doc == null) return;
+    final size = MediaQuery.of(context).size;
+    final chosen = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(size.width - 170, kToolbarHeight + 40, 20, 0),
+      items: _langs
+          .map((lang) => CheckedPopupMenuItem<String>(
+                value: lang.label,
+                checked: lang.label == doc.langLabel,
+                child: Text(lang.label),
+              ))
+          .toList(),
+    );
+    if (chosen == null || !mounted) return;
+    setState(() => doc.langLabel = chosen);
+  }
+
+  /// 从磁盘重新读一遍当前文件。
+  Future<void> _reloadFile() async {
+    final doc = _doc;
+    final path = doc?.path;
+    if (doc == null) return;
+    if (path == null || path.isEmpty) {
+      _toast(localizations.editorNoFilePath);
+      return;
+    }
+    try {
+      final text = await File(path).readAsString();
+      if (!mounted) return;
+      setState(() {
+        doc.text = text;
+        _lastText = text;
+        _dirty = false;
+      });
+      _toast(localizations.editorReloadSuccess);
+    } catch (e) {
+      _toast('$e');
+    }
+  }
+
+  /// 文本统计。
+  void _showStats() {
+    final doc = _doc;
+    if (doc == null) return;
+    final text = doc.text;
+    final lines = text.isEmpty ? 0 : '\n'.allMatches(text).length + 1;
+    final chars = text.length;
+    final words = RegExp(r'\S+').allMatches(text).length;
+    final bytes = utf8.encode(text).length;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorStats),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _statRow(localizations.editorLines, '$lines'),
+            _statRow(localizations.editorChars, '$chars'),
+            _statRow(localizations.editorWords, '$words'),
+            _statRow(localizations.editorBytes, '$bytes'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(localizations.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  /// 打开编辑器设置页。
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TextEditorSettingsPage()),
     );
   }
 
@@ -1349,22 +1533,30 @@ class _TextEditorPageState extends State<TextEditorPage> {
         child: CodeForge(
           // CodeForge 的 language / lineWrap 是 late final，切换得新 key 重建；
           // controller / findController / undoController 在文档对象持有，重建不丢数据。
-          key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme-${SmartCompletion.enabled.value}'),
+          key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme-'
+              '${SmartCompletion.enabled.value}-${_prefs.fontSize}-${_prefs.lineHeight}-${_prefs.showGutter}-'
+              '${_prefs.gutterDivider}-${_prefs.guideLines}-${_prefs.enableFolding}-${_prefs.tabSize}-'
+              '${_prefs.useTabs}-$_readOnly'),
           controller: controller,
           findController: _doc!.findController,
           undoController: _doc!.undoController,
           // 流畅模式：关高亮 / 折叠 / 自动换行，换取超长文本下的流畅度。
           // 输入法候选建议是否一并关闭，由「保留输入法」开关决定（默认保留，不牺牲输入法）。
           lineWrap: _wrap && !_smooth,
+          readOnly: _readOnly,
           language: _smooth ? null : _lang.mode,
-          enableGuideLines: false,
-          enableFolding: !_smooth,
+          enableGuideLines: _prefs.guideLines,
+          enableGutter: _prefs.showGutter,
+          enableGutterDivider: _prefs.gutterDivider,
+          tabSize: _prefs.tabSize,
+          useSpaceAsTab: !_prefs.useTabs,
+          enableFolding: !_smooth && _prefs.enableFolding,
           // 本地代码补全（文档词 + 语言关键字）：光标上方弹出候选，选中才插入。
           // 流畅模式关闭，换取超长文本下的流畅度。
           enableLocalSuggestions: SmartCompletion.enabled.value && !_smooth,
           enableKeyboardSuggestions: !_smooth || _smoothKeepIme,
           editorTheme: editorTheme,
-          textStyle: const TextStyle(fontSize: 13),
+          textStyle: TextStyle(fontSize: _prefs.fontSize, height: _prefs.lineHeight),
           selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
           invisibleChars: _invisibleCharsStyle,
           onGutterLineLongPress: _handleGutterLongPress,
