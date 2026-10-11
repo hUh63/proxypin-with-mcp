@@ -134,6 +134,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool _wrap = true;
   bool _smooth = false;
 
+  /// 没有文档时给 AnimatedBuilder 用的空监听源。
+  static final ChangeNotifier _noFind = ChangeNotifier();
+
   /// 流畅模式是否保留输入法候选建议。默认 true（不牺牲输入法）；
   /// 关掉后流畅模式会同时禁用输入法建议，换取超长文本下的更高流畅度。
   bool _smoothKeepIme = true;
@@ -1113,7 +1116,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _iconBtn(Icons.undo, localizations.editorUndo, _doc?.undoController.canUndo == true ? _undo : null),
             _iconBtn(Icons.redo, localizations.editorRedo, _doc?.undoController.canRedo == true ? _redo : null),
             AnimatedBuilder(
-              animation: _doc?.findController,
+              animation: _doc?.findController ?? _noFind,
               builder: (_, __) => _iconBtn(
                   Icons.search,
                   localizations.search,
