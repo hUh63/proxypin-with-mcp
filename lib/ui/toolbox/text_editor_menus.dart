@@ -15,6 +15,7 @@
  */
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -55,15 +56,15 @@ extension EditorEncodingX on EditorEncoding {
   }
 
   /// 文本 -> 字节。
-  List<int> encode(String text) {
+  Uint8List encode(String text) {
     switch (this) {
       case EditorEncoding.utf8:
         return utf8.encode(text);
       case EditorEncoding.utf8Bom:
-        return <int>[0xEF, 0xBB, 0xBF, ...utf8.encode(text)];
+        return Uint8List.fromList(<int>[0xEF, 0xBB, 0xBF, ...utf8.encode(text)]);
       case EditorEncoding.latin1:
         // 宽容处理：超出 Latin-1 的码位按低 8 位截断，避免抛错。
-        return text.codeUnits.map((c) => c & 0xFF).toList();
+        return Uint8List.fromList(text.codeUnits.map((c) => c & 0xFF).toList());
       case EditorEncoding.utf16le:
         return _encodeUtf16(text, true);
       case EditorEncoding.utf16be:
@@ -85,25 +86,25 @@ extension EditorEncodingX on EditorEncoding {
     return String.fromCharCodes(units);
   }
 
-  static List<int> _encodeUtf16(String text, bool littleEndian) {
-    final out = <int>[];
+  static Uint8List _encodeUtf16(String text, bool littleEndian) {
+    final out = BytesBuilder();
     if (littleEndian) {
-      out.add(0xFF);
-      out.add(0xFE);
+      out.addByte(0xFF);
+      out.addByte(0xFE);
     } else {
-      out.add(0xFE);
-      out.add(0xFF);
+      out.addByte(0xFE);
+      out.addByte(0xFF);
     }
     for (final u in text.codeUnits) {
       if (littleEndian) {
-        out.add(u & 0xFF);
-        out.add((u >> 8) & 0xFF);
+        out.addByte(u & 0xFF);
+        out.addByte((u >> 8) & 0xFF);
       } else {
-        out.add((u >> 8) & 0xFF);
-        out.add(u & 0xFF);
+        out.addByte((u >> 8) & 0xFF);
+        out.addByte(u & 0xFF);
       }
     }
-    return out;
+    return out.toBytes();
   }
 }
 
@@ -116,7 +117,7 @@ Future<EditorEncoding?> showEncodingPicker(BuildContext context, EditorEncoding 
     builder: (ctx) => SimpleDialog(
       title: Text(title),
       children: EditorEncoding.values
-          .map((e) => ListTile(
+          .map<Widget>((e) => ListTile(
                 dense: true,
                 title: Text(e.label),
                 trailing: e == current ? const Icon(Icons.check, size: 18) : null,
