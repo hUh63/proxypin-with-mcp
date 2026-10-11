@@ -46,9 +46,22 @@ class FindPanelView extends StatefulWidget implements PreferredSizeWidget {
   State<FindPanelView> createState() => _FindPanelViewState();
 }
 
-class _FindPanelViewState extends State<FindPanelView> {
+class _FindPanelViewState extends State<FindPanelView> with SingleTickerProviderStateMixin {
   List<String> _favorites = const [];
   List<String> _history = const [];
+
+  /// 面板「长出来 / 收回去」的过渡（约 170ms，够了，不拖沓）。
+  late final AnimationController _anim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 170),
+    reverseDuration: const Duration(milliseconds: 130),
+  );
+
+  late final CurvedAnimation _curve = CurvedAnimation(
+    parent: _anim,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
 
   FindController get controller => widget.controller;
 
@@ -58,6 +71,58 @@ class _FindPanelViewState extends State<FindPanelView> {
   void initState() {
     super.initState();
     _reload();
+    widget.controller.addListener(_syncAnim);
+    _syncAnim();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncAnim);
+    _curve.dispose();
+    _anim.dispose();
+    super.dispose();
+  }
+
+  /// 跟随 controller 的激活状态驱动展开 / 收起动画。
+  void _syncAnim() {
+    if (widget.controller.isActive) {
+      if (_anim.status == AnimationStatus.dismissed || _anim.status == AnimationStatus.reverse) {
+        _anim.forward();
+      }
+    } else if (_anim.status != AnimationStatus.dismissed) {
+      _anim.reverse();
+    }
+  }
+
+  /// 展开中的内容增长（如点 ▼ 展开替换行）也走同一套缓动。
+  Widget _animatedBody(BuildContext context) {
+    final body = _panel(context);
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: body,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _syncAnim();
+    final active = widget.controller.isActive;
+    // 收起动画播完就彻底移除，不留空位。
+    if (!active && _anim.status == AnimationStatus.dismissed) {
+      return const SizedBox(width: double.infinity);
+    }
+    return SizeTransition(
+      sizeFactor: _curve,
+      axisAlignment: -1,
+      child: FadeTransition(
+        opacity: _curve,
+        child: active || _anim.status != AnimationStatus.dismissed
+            ? _animatedBody(context)
+            : const SizedBox(width: double.infinity),
+      ),
+    );
   }
 
   Future<void> _reload() async {
@@ -73,10 +138,8 @@ class _FindPanelViewState extends State<FindPanelView> {
   bool get _isCurrentFavorite =>
       _favorites.contains(controller.findInputController.text.trim());
 
-  @override
-  Widget build(BuildContext context) {
-    if (!controller.isActive) return const SizedBox.shrink();
-
+  /// 面板本体（行布局）。显隐 / 高度动画由外面的 [build] 负责。
+  Widget _panel(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final expanded = controller.isReplaceMode;
     return Container(
