@@ -40,6 +40,7 @@ import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
 import 'package:proxypin/ui/toolbox/text_editor_settings.dart';
+import 'package:proxypin/ui/toolbox/text_editor_menus.dart';
 import 'package:proxypin/utils/smart_completion.dart';
 import 'package:proxypin/utils/smart_suggestions.dart';
 import 'package:proxypin/utils/platform.dart';
@@ -148,6 +149,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool _dirty = false;
   int? _gutterAnchorLine;
 
+  // 光标导航历史（「上一处 / 下一处位置」）。
+  final List<int> _navStack = <int>[];
+  int _navIndex = -1;
+  int _lastNavOffset = -1;
+  Timer? _navTimer;
+  bool _suppressNav = false;
+
+  // 读写磁盘文件时使用的编码。
+  EditorEncoding _encoding = EditorEncoding.utf8;
+
+  // 双指缩放。
+  final Map<int, Offset> _pointers = <int, Offset>{};
+  double? _pinchBaseDistance;
+  double _pinchStartFontSize = 13;
+  int _lastPinchSize = 13;
+
   _RetainMode _retainMode = _RetainMode.never;
   _Newline _newline = _Newline.lf;
 
@@ -182,6 +199,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   @override
   void dispose() {
+    _navTimer?.cancel();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
@@ -284,6 +302,302 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (text != _lastText) {
       _lastText = text;
       if (!_dirty) setState(() => _dirty = true);
+    }
+
+    // 光标移动防抖后记录位置，供「上一处 / 下一处位置」使用。
+    final controller = _doc?.controller;
+    if (controller != null) {
+      final off = controller.selection.baseOffset;
+      if (off >= 0 && off != _lastNavOffset) {
+        _lastNavOffset = off;
+        _navTimer?.cancel();
+        _navTimer = Timer(const Duration(milliseconds: 700), () => _pushNav(off));
+      }
+      if (_prefs.magnifier && mounted) setState(() {});
+    }
+  }
+
+  // ---------- 光标导航历史 ----------
+
+  void _pushNav(int offset) {
+    if (_suppressNav) return;
+    if (_navIndex >= 0 && _navIndex < _navStack.length && _navStack[_navIndex] == offset) return;
+    if (_navIndex + 1 < _navStack.length) {
+      _navStack.removeRange(_navIndex + 1, _navStack.length);
+    }
+    _navStack.add(offset);
+    if (_navStack.length > 100) _navStack.removeAt(0);
+    _navIndex = _navStack.length - 1;
+    if (mounted) setState(() {});
+  }
+
+  void _navBack() {
+    if (_navIndex <= 0) return;
+    _navIndex--;
+    _jumpNav();
+  }
+
+  void _navForward() {
+    if (_navIndex >= _navStack.length - 1) return;
+    _navIndex++;
+    _jumpNav();
+  }
+
+  void _jumpNav() {
+    final controller = _controller;
+    if (controller == null || _navIndex < 0 || _navIndex >= _navStack.length) return;
+    final offset = _navStack[_navIndex];
+    _suppressNav = true;
+    _jumpToOffset(offset);
+    _suppressNav = false;
+    setState(() {});
+  }
+
+  // ---------- 剪贴板（供长按浮动菜单用） ----------
+
+  void _cut() {
+    final controller = _controller;
+    if (controller == null) return;
+    final sel = controller.selection;
+    if (!sel.isValid || sel.isCollapsed) return;
+    final text = controller.text;
+    final selected = text.substring(sel.start, sel.end);
+    Clipboard.setData(ClipboardData(text: selected));
+    controller.text = text.replaceRange(sel.start, sel.end, '');
+    controller.selection = TextSelection.collapsed(offset: sel.start);
+  }
+
+  Future<void> _paste() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final clip = data?.text ?? '';
+    if (clip.isEmpty) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (sel.isValid && !sel.isCollapsed) {
+      controller.text = text.replaceRange(sel.start, sel.end, clip);
+      controller.selection = TextSelection.collapsed(offset: sel.start + clip.length);
+    } else {
+      final offset = sel.isValid ? sel.start : text.length;
+      controller.text = text.replaceRange(offset, offset, clip);
+      controller.selection = TextSelection.collapsed(offset: offset + clip.length);
+    }
+  }
+
+  void _selectAll() {
+    final controller = _controller;
+    if (controller == null) return;
+    controller.selection = TextSelection(baseOffset: 0, extentOffset: controller.text.length);
+  }
+
+  // ---------- 双指缩放 ----------
+
+  bool _zoomEnabled = false;
+
+  void _onPointerDown(PointerDownEvent e) {
+    _zoomEnabled = _prefs.pinchZoom;
+    _pointers[e.pointer] = e.position;
+    if (_pointers.length == 2) {
+      _pinchBaseDistance = _pointerDistance();
+      _pinchStartFontSize = _prefs.fontSize;
+      _lastPinchSize = _prefs.fontSize.round();
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent e) {
+    if (!_pointers.containsKey(e.pointer)) return;
+    _pointers[e.pointer] = e.position;
+    if (!_zoomEnabled || _pointers.length != 2 || _pinchBaseDistance == null) return;
+    final base = _pinchBaseDistance!;
+    if (base <= 0) return;
+    final ratio = _pointerDistance() / base;
+    final next = (_pinchStartFontSize * ratio).clamp(10.0, 40.0);
+    final rounded = next.round();
+    if (rounded != _lastPinchSize) {
+      _lastPinchSize = rounded;
+      // 缩放过程只改内存里的字号（不落盘），松手时统一保存。
+      TextEditorPrefsStore.notifier.value =
+          TextEditorPrefsStore.notifier.value.copyWith(fontSize: rounded.toDouble());
+    }
+  }
+
+  void _onPointerUp(PointerEvent e) {
+    _pointers.remove(e.pointer);
+    if (_pointers.length < 2) {
+      if (_pinchBaseDistance != null) {
+        // 缩放结束，落盘一次。
+        TextEditorPrefsStore.update(TextEditorPrefsStore.notifier.value).ignore();
+      }
+      _pinchBaseDistance = null;
+    }
+  }
+
+  double _pointerDistance() {
+    final list = _pointers.values.toList();
+    if (list.length < 2) return 0;
+    return (list[0] - list[1]).distance;
+  }
+
+  // ---------- 放大镜 ----------
+
+  /// 底部显示当前行的放大视图（跟随光标）。
+  Widget _magnifierBar(EditorDocument doc) {
+    final text = doc.text;
+    final controller = doc.controller;
+    final raw = controller.selection.isValid ? controller.selection.baseOffset : 0;
+    final safe = raw.clamp(0, text.length);
+    final start = safe > 0 ? text.lastIndexOf('\n', safe - 1) + 1 : 0;
+    var end = text.indexOf('\n', safe);
+    if (end < 0) end = text.length;
+    final line = text.substring(start, end);
+    final size = _prefs.fontSize;
+    return Container(
+      height: size * 3.4,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(top: BorderSide(color: Colors.black12)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            line.isEmpty ? ' ' : line,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: size * 1.8,
+              height: 1.1,
+              fontFamily: 'monospace',
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------- 编码 ----------
+
+  /// 用指定编码重新读一遍当前文件。
+  Future<void> _reloadWithEncoding(EditorEncoding encoding) async {
+    final doc = _doc;
+    final path = doc?.path;
+    if (doc == null) return;
+    if (path == null || path.isEmpty) {
+      _toast(localizations.editorNoFilePath);
+      return;
+    }
+    try {
+      final bytes = await File(path).readAsBytes();
+      final text = encoding.decode(bytes);
+      if (!mounted) return;
+      setState(() {
+        _encoding = encoding;
+        doc.text = text;
+        _lastText = text;
+        _dirty = false;
+      });
+      _toast(localizations.editorReloadSuccess);
+    } catch (e) {
+      _toast('$e');
+    }
+  }
+
+  /// 用指定编码把当前文本写回磁盘（有路径直接覆盖，否则另存）。
+  Future<void> _saveWithEncoding(EditorEncoding encoding) async {
+    final controller = _controller;
+    final doc = _doc;
+    if (controller == null || doc == null) return;
+
+    var text = controller.text;
+    switch (_newline) {
+      case _Newline.crlf:
+        text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
+      case _Newline.cr:
+        text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r');
+      case _Newline.lf:
+        text = text.replaceAll('\r\n', '\n');
+    }
+    final bytes = encoding.encode(text);
+    setState(() => _encoding = encoding);
+
+    final path = doc.path;
+    if (path != null && path.isNotEmpty) {
+      try {
+        await File(path).writeAsBytes(bytes);
+        if (!mounted) return;
+        setState(() => _dirty = false);
+        _toast(localizations.saveSuccess);
+        return;
+      } catch (e) {
+        _toast('$e');
+        return;
+      }
+    }
+
+    // 没有路径：走「另存为」。
+    if (Platforms.isMobile()) {
+      final file = XFile.fromData(bytes, mimeType: 'text/plain');
+      RenderBox? box;
+      if (await Platforms.isIpad() && mounted) {
+        box = context.findRenderObject() as RenderBox?;
+      }
+      await SharePlus.instance.share(ShareParams(
+          files: [file], fileNameOverrides: [doc.name], sharePositionOrigin: box?.paintBounds));
+      if (mounted) setState(() => _dirty = false);
+      return;
+    }
+    final saved = await FilePicker.saveFile(fileName: doc.name, bytes: bytes);
+    if (saved == null) return;
+    if (mounted) {
+      setState(() => _dirty = false);
+      _toast(localizations.saveSuccess);
+    }
+  }
+
+  // ---------- 长按浮动菜单 ----------
+
+  List<CustomContextMenu> _floatMenuItems() {
+    final show = _prefs.floatMenu.toSet();
+    if (show.isEmpty) return const <CustomContextMenu>[];
+    final loc = localizations;
+    final items = <CustomContextMenu>[];
+    for (final item in kFloatMenuItems) {
+      if (!show.contains(item.id)) continue;
+      items.add(CustomContextMenu(
+        label: item.label(loc),
+        description: '',
+        onPress: () => _runFloatAction(item.id),
+      ));
+    }
+    return items;
+  }
+
+  void _runFloatAction(String id) {
+    switch (id) {
+      case 'copy':
+        _copy();
+      case 'cut':
+        _cut();
+      case 'paste':
+        _paste();
+      case 'selectAll':
+        _selectAll();
+      case 'comment':
+        _toggleComment();
+      case 'format':
+        _format();
+      case 'minify':
+        _minify();
+      case 'find':
+        _toggleFind();
+      case 'special':
+        _showSpecialReport();
+      case 'replaceLine':
+        _replaceCurrentLine();
     }
   }
 
@@ -931,7 +1245,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
         body: Column(children: [
           _toolbar(),
           const Divider(height: 1, thickness: 0.3),
-          Expanded(child: _textView()),
+          Expanded(
+            child: Listener(
+              onPointerDown: _onPointerDown,
+              onPointerMove: _onPointerMove,
+              onPointerUp: _onPointerUp,
+              onPointerCancel: _onPointerUp,
+              child: _textView(),
+            ),
+          ),
+          if (doc != null && _prefs.magnifier) _magnifierBar(doc),
           _snippetBar(),
           if (doc != null)
             AnimatedBuilder(
@@ -1166,6 +1489,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _showSyntaxMenu();
           case 'gotoLine':
             _selectToLine();
+          case 'navBack':
+            _navBack();
+          case 'navForward':
+            _navForward();
           case 'wrap':
             setState(() => _wrap = !_wrap);
           case 'readOnly':
@@ -1199,7 +1526,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
             if (doc != null) _closeDoc(doc);
         }
       },
-      itemBuilder: (context) => [
+      itemBuilder: (context) {
+        final hidden = _prefs.hiddenMenu.toSet();
+        return <PopupMenuEntry<String>>[
         PopupMenuItem(
           value: 'file',
           child: _menuRow(localizations.editorMoreFile, Icons.arrow_right),
@@ -1210,6 +1539,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
           child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right),
         ),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
+        PopupMenuItem(
+          value: 'navBack',
+          enabled: _navIndex > 0,
+          child: Text(localizations.editorNavBack, style: TextStyle(
+              color: _navIndex > 0 ? null : Theme.of(context).disabledColor)),
+        ),
+        PopupMenuItem(
+          value: 'navForward',
+          enabled: _navIndex < _navStack.length - 1,
+          child: Text(localizations.editorNavForward, style: TextStyle(
+              color: _navIndex < _navStack.length - 1 ? null : Theme.of(context).disabledColor)),
+        ),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(
           value: 'wrap',
@@ -1263,7 +1604,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         const PopupMenuDivider(),
         PopupMenuItem(value: 'settings', child: Text(localizations.editorSettings)),
         PopupMenuItem(value: 'close', child: Text(localizations.editorCloseFile)),
-      ],
+        ]
+            .where((e) => e is! PopupMenuItem<String> || !hidden.contains(e.value))
+            .toList();
+      },
     );
   }
 
@@ -1286,6 +1630,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       items: [
         PopupMenuItem(value: 'saveAs', child: Text(localizations.editorSaveAs)),
         PopupMenuItem(value: 'reload', child: Text(localizations.editorReloadFile)),
+        PopupMenuItem(value: 'encodingReload', child: Text(localizations.editorEncodingReload)),
+        PopupMenuItem(value: 'encodingSave', child: Text(localizations.editorEncodingSave)),
         PopupMenuItem(
           value: 'newline',
           child: Text('${localizations.editorNewline}: ${_newlineLabel()}'),
@@ -1298,6 +1644,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         await _download();
       case 'reload':
         await _reloadFile();
+      case 'encodingReload':
+        final enc1 = await showEncodingPicker(context, _encoding, title: localizations.editorEncoding);
+        if (enc1 != null) await _reloadWithEncoding(enc1);
+      case 'encodingSave':
+        final enc2 = await showEncodingPicker(context, _encoding, title: localizations.editorEncoding);
+        if (enc2 != null) await _saveWithEncoding(enc2);
       case 'newline':
         await _pickNewline();
       case 'stats':
@@ -1313,7 +1665,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final chosen = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(size.width - 170, kToolbarHeight + 40, 20, 0),
-      items: _langs
+      items: _visibleLangs
           .map((lang) => CheckedPopupMenuItem<String>(
                 value: lang.label,
                 checked: lang.label == doc.langLabel,
@@ -1397,8 +1749,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 打开编辑器设置页。
   void _openSettings() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const TextEditorSettingsPage()),
+      MaterialPageRoute(
+        builder: (_) => TextEditorSettingsPage(
+          allLangs: _langs.map((l) => l.label).toList(),
+        ),
+      ),
     );
+  }
+
+  /// 「语法」菜单里可见的语言（受「语法文件管理」的勾选控制）。
+  List<_LangOption> get _visibleLangs {
+    final enabled = _prefs.enabledLangs;
+    if (enabled.isEmpty) return _langs;
+    final list = _langs.where((l) => enabled.contains(l.label)).toList();
+    return list.isEmpty ? _langs : list;
   }
 
   void _setSmoothKeepIme(bool value) {
@@ -1559,6 +1923,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           textStyle: TextStyle(fontSize: _prefs.fontSize, height: _prefs.lineHeight),
           selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
           invisibleChars: _invisibleCharsStyle,
+          autoIndent: _prefs.autoIndent,
+          customContextMenuItems: _floatMenuItems(),
           onGutterLineLongPress: _handleGutterLongPress,
         ),
       ),

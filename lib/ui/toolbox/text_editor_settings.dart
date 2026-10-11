@@ -17,12 +17,16 @@
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
+import 'package:proxypin/ui/toolbox/text_editor_menus.dart';
 
 /// 文本编辑器的「设置」页：字体与排版 / 辅助显示 / 缩进与折叠。
 ///
 /// 改动即时生效并全局保存（[TextEditorPrefsStore]）。
 class TextEditorSettingsPage extends StatefulWidget {
-  const TextEditorSettingsPage({super.key});
+  const TextEditorSettingsPage({super.key, this.allLangs = const <String>[]});
+
+  /// 内核支持的全部语言 label，用于「语法文件管理」。
+  final List<String> allLangs;
 
   @override
   State<TextEditorSettingsPage> createState() => _TextEditorSettingsPageState();
@@ -110,6 +114,58 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 title: localizations.editorEnableFolding,
                 value: prefs.enableFolding,
                 onChanged: (v) => _apply(prefs.copyWith(enableFolding: v)),
+              ),
+              _switchTile(
+                icon: Icons.subdirectory_arrow_right,
+                title: localizations.editorAutoIndent,
+                value: prefs.autoIndent,
+                onChanged: (v) => _apply(prefs.copyWith(autoIndent: v)),
+              ),
+              const Divider(height: 16),
+              _groupTitle(localizations.editorSettingsGesture),
+              _switchTile(
+                icon: Icons.pinch,
+                title: localizations.editorPinchZoom,
+                value: prefs.pinchZoom,
+                onChanged: (v) => _apply(prefs.copyWith(pinchZoom: v)),
+              ),
+              _switchTile(
+                icon: Icons.zoom_in,
+                title: localizations.editorMagnifier,
+                value: prefs.magnifier,
+                onChanged: (v) => _apply(prefs.copyWith(magnifier: v)),
+              ),
+              const Divider(height: 16),
+              _groupTitle(localizations.editorSettingsMenu),
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.tune, size: 20),
+                title: Text(localizations.editorEditToolMenu, style: const TextStyle(fontSize: 13.5)),
+                trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const EditorMenuManagerDialog(),
+                ),
+              ),
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.touch_app, size: 20),
+                title: Text(localizations.editorEditFloatMenu, style: const TextStyle(fontSize: 13.5)),
+                trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const FloatMenuManagerDialog(),
+                ),
+              ),
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.category_outlined, size: 20),
+                title: Text(localizations.editorSyntaxManager, style: const TextStyle(fontSize: 13.5)),
+                trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => LanguageManagerDialog(allLangs: widget.allLangs),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),

@@ -47,6 +47,24 @@ class TextEditorPrefs {
   /// 一个制表符等于几个空格。
   final int tabSize;
 
+  /// 回车时是否延续当前行的缩进（内核开关）。
+  final bool autoIndent;
+
+  /// 双指捏合缩放编辑器字号。
+  final bool pinchZoom;
+
+  /// 启用放大镜（底部显示当前行的放大视图）。
+  final bool magnifier;
+
+  /// 「语法」子菜单里启用的语言（label 列表）。为空表示全部启用。
+  final List<String> enabledLangs;
+
+  /// 「更多」菜单里隐藏的菜单项 id。
+  final List<String> hiddenMenu;
+
+  /// 长按浮动菜单里显示的项 id。为空表示默认（全不显示自定义项）。
+  final List<String> floatMenu;
+
   const TextEditorPrefs({
     this.fontSize = 13,
     this.lineHeight = 1.0,
@@ -56,6 +74,12 @@ class TextEditorPrefs {
     this.enableFolding = true,
     this.useTabs = false,
     this.tabSize = 4,
+    this.autoIndent = true,
+    this.pinchZoom = true,
+    this.magnifier = false,
+    this.enabledLangs = const <String>[],
+    this.hiddenMenu = const <String>[],
+    this.floatMenu = const <String>[],
   });
 
   TextEditorPrefs copyWith({
@@ -67,6 +91,12 @@ class TextEditorPrefs {
     bool? enableFolding,
     bool? useTabs,
     int? tabSize,
+    bool? autoIndent,
+    bool? pinchZoom,
+    bool? magnifier,
+    List<String>? enabledLangs,
+    List<String>? hiddenMenu,
+    List<String>? floatMenu,
   }) {
     return TextEditorPrefs(
       fontSize: fontSize ?? this.fontSize,
@@ -77,6 +107,12 @@ class TextEditorPrefs {
       enableFolding: enableFolding ?? this.enableFolding,
       useTabs: useTabs ?? this.useTabs,
       tabSize: tabSize ?? this.tabSize,
+      autoIndent: autoIndent ?? this.autoIndent,
+      pinchZoom: pinchZoom ?? this.pinchZoom,
+      magnifier: magnifier ?? this.magnifier,
+      enabledLangs: enabledLangs ?? this.enabledLangs,
+      hiddenMenu: hiddenMenu ?? this.hiddenMenu,
+      floatMenu: floatMenu ?? this.floatMenu,
     );
   }
 
@@ -89,7 +125,18 @@ class TextEditorPrefs {
         'enableFolding': enableFolding,
         'useTabs': useTabs,
         'tabSize': tabSize,
+        'autoIndent': autoIndent,
+        'pinchZoom': pinchZoom,
+        'magnifier': magnifier,
+        'enabledLangs': enabledLangs,
+        'hiddenMenu': hiddenMenu,
+        'floatMenu': floatMenu,
       };
+
+  static List<String> _strList(dynamic v) {
+    if (v is List) return v.whereType<String>().toList();
+    return const <String>[];
+  }
 
   static TextEditorPrefs fromJson(Map<String, dynamic> json) {
     return TextEditorPrefs(
@@ -101,6 +148,12 @@ class TextEditorPrefs {
       enableFolding: json['enableFolding'] as bool? ?? true,
       useTabs: json['useTabs'] as bool? ?? false,
       tabSize: (json['tabSize'] as num?)?.toInt() ?? 4,
+      autoIndent: json['autoIndent'] as bool? ?? true,
+      pinchZoom: json['pinchZoom'] as bool? ?? true,
+      magnifier: json['magnifier'] as bool? ?? false,
+      enabledLangs: _strList(json['enabledLangs']),
+      hiddenMenu: _strList(json['hiddenMenu']),
+      floatMenu: _strList(json['floatMenu']),
     );
   }
 }
