@@ -93,8 +93,8 @@ const Map<String, LangFamily> _familyByKey = {
   'swift': LangFamily.c, 'taggerscript': LangFamily.c, 'thrift': LangFamily.c,
   'tp': LangFamily.c, 'typescript': LangFamily.c, 'vala': LangFamily.c,
   'verilog': LangFamily.c, 'wren': LangFamily.c, 'xl': LangFamily.c,
-  'xquery': LangFamily.c, 'zephir': LangFamily.c, 'hy': LangFamily.c,
-  'julia': LangFamily.c,
+  'xquery': LangFamily.c, 'zephir': LangFamily.c,
+  'julia': LangFamily.hash,
 
   // ---- hash 家族 ----
   'apache': LangFamily.hash, 'awk': LangFamily.hash, 'bash': LangFamily.hash,
@@ -138,6 +138,7 @@ const Map<String, LangFamily> _familyByKey = {
   'mipsasm': LangFamily.lisp, 'nsis': LangFamily.lisp,
   'purebasic': LangFamily.lisp, 'scheme': LangFamily.lisp,
   'wasm': LangFamily.lisp, 'x86asm': LangFamily.lisp,
+  'hy': LangFamily.lisp,
 
   // ---- percent / 其它 ----
   'erlang': LangFamily.percent, 'erlang-repl': LangFamily.percent,

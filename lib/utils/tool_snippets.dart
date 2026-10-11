@@ -93,7 +93,7 @@ class ToolSnippetDefaults {
     // 替换引用
     ToolSnippet(r'$0', r'$0'),
     ToolSnippet(r'$1', r'$1'),
-    ToolSnippet(r'\$', r'\$'),
+    ToolSnippet(r'$', r'$'),
     ToolSnippet(r'\n', r'\n'),
     ToolSnippet(r'\t', r'\t'),
     // 常用模式
@@ -1186,8 +1186,8 @@ class ToolSnippetDefaults {
     ToolSnippet('if', 'if () {\n  \n}'),
     ToolSnippet('else', 'else {\n  \n}'),
     ToolSnippet('elseif', 'elseif () {\n  \n}'),
-    ToolSnippet('foreach', 'foreach ( as $k => $v) {\n  \n}'),
-    ToolSnippet('for', 'for ($i = 0; $i < ; $i++) {\n  \n}'),
+    ToolSnippet('foreach', 'foreach ( as \$k => \$v) {\n  \n}'),
+    ToolSnippet('for', 'for (\$i = 0; \$i < ; \$i++) {\n  \n}'),
     ToolSnippet('while', 'while () {\n  \n}'),
     ToolSnippet('return', 'return '),
     ToolSnippet('echo', 'echo '),
@@ -1197,7 +1197,7 @@ class ToolSnippetDefaults {
     ToolSnippet('=> ', ' => '),
     ToolSnippet('->', '->'),
     ToolSnippet('::', '::'),
-    ToolSnippet('$', '$'),
+    ToolSnippet('\$', '\$'),
     ToolSnippet('array(', 'array()'),
     ToolSnippet('isset(', 'isset()'),
     ToolSnippet('null', 'null'),
@@ -1344,7 +1344,7 @@ class ToolSnippetDefaults {
     ToolSnippet('NULL', 'NULL'),
     ToolSnippet('NA', 'NA'),
     ToolSnippet('%>%', '%>%'),
-    ToolSnippet('$', '$'),
+    ToolSnippet('\$', '\$'),
   ];
 
   static final List<ToolSnippet> scala = [
@@ -1377,14 +1377,14 @@ class ToolSnippetDefaults {
 
   static final List<ToolSnippet> perl = [
     ToolSnippet('use strict;', 'use strict;\nuse warnings;'),
-    ToolSnippet('my ', 'my $ = '),
+    ToolSnippet('my ', 'my \$ = '),
     ToolSnippet('sub ', 'sub  {\n  \n}'),
     ToolSnippet('if', 'if () {\n  \n}'),
     ToolSnippet('elsif', 'elsif () {\n  \n}'),
     ToolSnippet('else', 'else {\n  \n}'),
     ToolSnippet('unless', 'unless () {\n  \n}'),
     ToolSnippet('while', 'while () {\n  \n}'),
-    ToolSnippet('foreach', 'foreach my $item (@) {\n  \n}'),
+    ToolSnippet('foreach', 'foreach my \$item (@) {\n  \n}'),
     ToolSnippet('return', 'return '),
     ToolSnippet('print', 'print '),
     ToolSnippet('say', 'say '),
@@ -1399,7 +1399,7 @@ class ToolSnippetDefaults {
 
   static final List<ToolSnippet> powershell = [
     ToolSnippet('function ', 'function  {\n  param()\n  \n}'),
-    ToolSnippet('param(', 'param(\n  [Parameter(Mandatory=$true)]\n  $,\n)'),
+    ToolSnippet('param(', 'param(\n  [Parameter(Mandatory=\$true)]\n  \$,\n)'),
     ToolSnippet('Write-Host ', 'Write-Host ""'),
     ToolSnippet('Write-Output ', 'Write-Output '),
     ToolSnippet('Get-ChildItem ', 'Get-ChildItem -Path '),
@@ -1408,20 +1408,20 @@ class ToolSnippetDefaults {
     ToolSnippet('Remove-Item ', 'Remove-Item -Recurse -Force '),
     ToolSnippet('Test-Path ', 'Test-Path '),
     ToolSnippet('Select-Object ', 'Select-Object '),
-    ToolSnippet('Where-Object ', 'Where-Object { $_ -eq  }'),
-    ToolSnippet('ForEach-Object ', 'ForEach-Object { $_ }'),
+    ToolSnippet('Where-Object ', 'Where-Object { \$_ -eq  }'),
+    ToolSnippet('ForEach-Object ', 'ForEach-Object { \$_ }'),
     ToolSnippet('if', 'if () {\n  \n}'),
     ToolSnippet('else', 'else {\n  \n}'),
     ToolSnippet('elseif', 'elseif () {\n  \n}'),
-    ToolSnippet('foreach', 'foreach ($item in ) {\n  \n}'),
+    ToolSnippet('foreach', 'foreach (\$item in ) {\n  \n}'),
     ToolSnippet('switch', 'switch () {\n  default { }\n}'),
     ToolSnippet('try/catch', 'try {\n  \n} catch {\n  \n}'),
-    ToolSnippet('$env:', '$env:PATH'),
-    ToolSnippet('$_', '$_'),
+    ToolSnippet('\$env:', '\$env:PATH'),
+    ToolSnippet('\$_', '\$_'),
     ToolSnippet('|', ' | '),
-    ToolSnippet('$true', '$true'),
-    ToolSnippet('$false', '$false'),
-    ToolSnippet('$null', '$null'),
+    ToolSnippet('\$true', '\$true'),
+    ToolSnippet('\$false', '\$false'),
+    ToolSnippet('\$null', '\$null'),
   ];
 
   static final List<ToolSnippet> haskell = [
@@ -1625,7 +1625,7 @@ class ToolSnippetDefaults {
     ToolSnippet('ID', 'ID'),
   ];
 
-  static const Map<String, List<ToolSnippet>> _byKey = {
+  static final Map<String, List<ToolSnippet>> _byKey = {
     'kotlin': kotlin,
     'rust': rust,
     'swift': swift,
@@ -1718,3 +1718,105 @@ class ToolSnippetDefaults {
     return _familySnippets(langLabel, key.isEmpty ? null : key);
   }
 }
+
+
+/// 「快捷插入」条目的持久化存储。
+///
+/// 约定：未自定义（键不存在或为空串）时返回 null，调用方回退到内置默认；
+/// 用户清空后写入 `[]`，表示"确实不要任何条目"。
+/// 文本编辑页按语言生成持久化 scope：每种格式各自记住自己的自定义条目。
+String editorSnippetScope(String langLabel) =>
+    'editor_${langLabel.replaceAll(RegExp('[^A-Za-z0-9]'), '_').toLowerCase()}';
+
+class ToolSnippetStore {
+  ToolSnippetStore._();
+
+  static String _key(String scope) => 'tool_snippets_v1_$scope';
+
+  /// 返回用户自定义列表；未自定义过返回 null。
+  static Future<List<ToolSnippet>?> load(String scope) async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(_key(scope));
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return null;
+      return decoded.map(ToolSnippet.fromJson).whereType<ToolSnippet>().toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> save(String scope, List<ToolSnippet> items) async {
+    await SharedPreferencesAsync()
+        .setString(_key(scope), jsonEncode(items.map((e) => e.toJson()).toList()));
+  }
+
+  /// 恢复内置默认（写入空串，下次 load 返回 null）。
+  static Future<void> reset(String scope) async {
+    await SharedPreferencesAsync().setString(_key(scope), '');
+  }
+
+  /// 全局「共用符号库」存储键：任意页面新增过的自定义条目都进这里，跨页共享。
+  static const String customKey = 'tool_snippets_custom_v1';
+
+  /// 读取共用符号库。
+  static Future<List<ToolSnippet>> loadCustom() async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(customKey);
+      if (raw == null || raw.isEmpty) return const [];
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      return decoded.map(ToolSnippet.fromJson).whereType<ToolSnippet>().toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static Future<void> saveCustom(List<ToolSnippet> items) async {
+    await SharedPreferencesAsync().setString(customKey, jsonEncode(items.map((e) => e.toJson()).toList()));
+  }
+
+  /// 追加进共用符号库（按插入文本去重），返回追加后的完整库。
+  static Future<List<ToolSnippet>> appendCustom(Iterable<ToolSnippet> items) async {
+    final cur = await loadCustom();
+    final seen = <String>{for (final e in cur) e.insert};
+    final out = <ToolSnippet>[...cur];
+    for (final e in items) {
+      if (e.insert.isEmpty || seen.contains(e.insert)) continue;
+      seen.add(e.insert);
+      out.add(e);
+    }
+    if (out.length != cur.length) await saveCustom(out);
+    return out;
+  }
+
+  /// 从共用库里删掉某条（按插入文本定位），返回剩余库。
+  static Future<List<ToolSnippet>> removeCustom(String insert) async {
+    final cur = await loadCustom();
+    final out = cur.where((e) => e.insert != insert).toList();
+    if (out.length != cur.length) await saveCustom(out);
+    return out;
+  }
+
+  /// 修改共用库里的某条（[oldInsert] 定位；插入文本也可以一起改），返回新库。
+  static Future<List<ToolSnippet>> updateCustom(
+      String oldInsert, ToolSnippet updated) async {
+    final cur = await loadCustom();
+    var changed = false;
+    final out = <ToolSnippet>[];
+    for (final e in cur) {
+      if (e.insert == oldInsert) {
+        out.add(updated);
+        changed = true;
+      } else {
+        out.add(e);
+      }
+    }
+    if (changed) await saveCustom(out);
+    return out;
+  }
+
+  /// 清空共用库。
+  static Future<void> clearCustom() => saveCustom(const []);
+}
+

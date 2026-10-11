@@ -1019,16 +1019,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final lines = block.split('\n');
 
     final token = _lineCommentToken();
-    final block = _blockComment;
-    if (token == null && block == null) {
+    final blockMark = _blockComment;
+    if (token == null && blockMark == null) {
       _toast(localizations.editorCommentUnsupported);
       return;
     }
 
     String result;
-    if (block != null && token == null) {
-      final open = block.$1;
-      final close = block.$2;
+    if (blockMark != null && token == null) {
+      final open = blockMark.$1;
+      final close = blockMark.$2;
       final allWrapped = lines.every((l) =>
           l.trim().isEmpty ||
           (l.trimLeft().startsWith(open) && l.trimRight().endsWith(close)));
@@ -1039,7 +1039,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             final body = l.trim();
             if (allWrapped) {
               return indent +
-                  body.replaceFirst(open, '').replaceFirst(RegExp('\\s*${RegExp.escape(close)}\\$'), '');
+                  body.replaceFirst(open, '').replaceFirst(RegExp(r'\s*' + RegExp.escape(close) + r'$'), '');
             }
             return '$indent$open $body $close';
           })
