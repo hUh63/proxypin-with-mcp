@@ -215,7 +215,10 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
         const Divider(height: 1, thickness: 0.3),
         Expanded(child: _textView()),
         _snippetBar(),
-        FindPanelView(controller: _find),
+        AnimatedBuilder(
+          animation: _find,
+          builder: (_, __) => FindPanelView(controller: _find),
+        ),
       ]),
     );
   }
@@ -238,7 +241,11 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
             () => setState(() => _wrap = !_wrap),
             tint: _wrap ? color : null,
           ),
-          _iconBtn(Icons.search, localizations.search, _find.toggleActive),
+          AnimatedBuilder(
+            animation: _find,
+            builder: (_, __) => _iconBtn(Icons.search, localizations.search, _toggleFind,
+                tint: _find.isActive ? color : null),
+          ),
           _iconBtn(Icons.copy, localizations.copy, _copy),
           _iconBtn(Icons.file_download_outlined, localizations.download, _download),
           _invisibleMenu(),
@@ -294,6 +301,12 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
   }
 
   /// 可滑动 / 可展开的快捷输入行。
+  /// 打开搜索时默认收起（不展开替换行）。
+  void _toggleFind() {
+    if (!_find.isActive) _find.isReplaceMode = false;
+    _find.toggleActive();
+  }
+
   Widget _snippetBar() {
     return SnippetBar(
       scope: 'xml',

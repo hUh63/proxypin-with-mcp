@@ -648,7 +648,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
               ]),
             ),
           _snippetBar(),
-          FindPanelView(controller: _leftActive ? _findLeft : _findRight),
+          AnimatedBuilder(
+            animation: Listenable.merge([_findLeft, _findRight]),
+            builder: (_, __) => FindPanelView(
+                controller: _leftActive ? _findLeft : _findRight),
+          ),
         ]),
       ),
     );
@@ -691,8 +695,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
         spacing: 0,
         runSpacing: 0,
         children: [
-          _iconBtn(Icons.search, localizations.search,
-              (_leftActive ? _findLeft : _findRight).toggleActive),
+          AnimatedBuilder(
+            animation: Listenable.merge([_findLeft, _findRight]),
+            builder: (_, __) {
+              final f = _leftActive ? _findLeft : _findRight;
+              return _iconBtn(Icons.search, localizations.search, () => _toggleFind(f),
+                  tint: f.isActive ? color : null);
+            },
+          ),
           _iconBtn(Icons.undo, localizations.editorUndo, activeUndo.canUndo ? _undo : null),
           _iconBtn(Icons.redo, localizations.editorRedo, activeUndo.canRedo ? _redo : null),
           _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
@@ -744,6 +754,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 可滑动 / 可展开的快捷输入行（插入到最近触摸的一侧）。
+  /// 打开搜索时默认收起（不展开替换行）。
+  void _toggleFind(FindController f) {
+    if (!f.isActive) f.isReplaceMode = false;
+    f.toggleActive();
+  }
+
   Widget _snippetBar() {
     return SnippetBar(
       scope: 'diff',

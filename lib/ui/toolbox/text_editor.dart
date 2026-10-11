@@ -470,6 +470,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 打开搜索时默认收起（不展开替换行）。
+  void _toggleFind() {
+    final find = _doc?.findController;
+    if (find == null) return;
+    if (!find.isActive) find.isReplaceMode = false;
+    find.toggleActive();
+  }
+
   /// 可滑动 / 可展开的快捷输入行；随当前文档的语言切换常用符号。
   Widget _snippetBar() {
     final label = _doc?.langLabel ?? 'Plain Text';
@@ -910,7 +918,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
           const Divider(height: 1, thickness: 0.3),
           Expanded(child: _textView()),
           _snippetBar(),
-          if (doc != null) FindPanelView(controller: doc.findController),
+          if (doc != null)
+            AnimatedBuilder(
+              animation: doc.findController,
+              builder: (_, __) => FindPanelView(controller: doc.findController),
+            ),
         ]),
       ),
     );
@@ -1100,7 +1112,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _iconBtn(Icons.save_outlined, localizations.save, _download),
             _iconBtn(Icons.undo, localizations.editorUndo, _doc?.undoController.canUndo == true ? _undo : null),
             _iconBtn(Icons.redo, localizations.editorRedo, _doc?.undoController.canRedo == true ? _redo : null),
-            _iconBtn(Icons.search, localizations.search, _doc?.findController.toggleActive),
+            AnimatedBuilder(
+              animation: _doc?.findController,
+              builder: (_, __) => _iconBtn(
+                  Icons.search,
+                  localizations.search,
+                  _toggleFind,
+                  tint: (_doc?.findController.isActive ?? false) ? color : null),
+            ),
             _iconBtn(Icons.auto_fix_high, localizations.format, _canFormat ? _format : null),
             _iconBtn(Icons.code, localizations.editorToggleComment, _toggleComment),
             _iconBtn(Icons.wrap_text, localizations.wordWrap, () => setState(() => _wrap = !_wrap),

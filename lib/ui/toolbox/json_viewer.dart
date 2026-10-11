@@ -280,7 +280,10 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
         ),
       ),
       _snippetBar(),
-      FindPanelView(controller: _find),
+      AnimatedBuilder(
+        animation: _find,
+        builder: (_, __) => FindPanelView(controller: _find),
+      ),
     ]);
 
     if (widget.windowId != null && Platform.isWindows) {
@@ -318,7 +321,11 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
             () => setState(() => _wrap = !_wrap),
             tint: _wrap ? color : null,
           ),
-          _iconBtn(Icons.search, localizations.search, _find.toggleActive),
+          AnimatedBuilder(
+            animation: _find,
+            builder: (_, __) => _iconBtn(Icons.search, localizations.search, _toggleFind,
+                tint: _find.isActive ? color : null),
+          ),
           _iconBtn(Icons.copy, localizations.copy, _copy),
           _iconBtn(Icons.delete_outline, localizations.clear, _clear),
           _iconBtn(Icons.file_download_outlined, localizations.download, _download),
@@ -375,6 +382,12 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
   }
 
   /// 可滑动 / 可展开的快捷输入行。
+  /// 打开搜索时默认收起（不展开替换行）。
+  void _toggleFind() {
+    if (!_find.isActive) _find.isReplaceMode = false;
+    _find.toggleActive();
+  }
+
   Widget _snippetBar() {
     return SnippetBar(
       scope: 'json',

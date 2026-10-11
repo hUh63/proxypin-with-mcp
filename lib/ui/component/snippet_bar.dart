@@ -21,8 +21,8 @@ import 'package:proxypin/utils/tool_snippets.dart';
 
 /// 页面底部的「快捷输入行」。
 ///
-/// 两态：
-/// * **收起**（默认）—— 一行符号，横向滑动浏览；**向上拖动**或点右侧箭头即可展开；
+/// 顶部是一条**拖动柄**（小横线）：点一下或上下拖动即可展开 / 收起符号面板。
+/// * **收起**（默认）—— 一行符号，横向滑动浏览；
 /// * **展开** —— 顶部是分类标签（当前语言符号 / 共用符号库），下面是成排的符号网格。
 ///
 /// 条目数据沿用 [ToolSnippetStore]：本页列表按 [scope] 持久化，其它页面保存过的
@@ -119,37 +119,58 @@ class _SnippetBarState extends State<SnippetBar> {
     }
   }
 
+  // ---------------------------------------------------------------- 拖动柄
+
+  /// 顶部小横线：点一下切换，上拖展开、下拖收起。
+  Widget _dragHandle() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _expanded = !_expanded),
+      onVerticalDragUpdate: (details) {
+        if (details.delta.dy < -3 && !_expanded) {
+          setState(() => _expanded = true);
+        } else if (details.delta.dy > 3 && _expanded) {
+          setState(() => _expanded = false);
+        }
+      },
+      child: SizedBox(
+        height: 12,
+        width: double.infinity,
+        child: Center(
+          child: Container(
+            width: 46,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ------------------------------------------------------------------ 收起
 
   Widget _collapsed() {
     return SizedBox(
-      height: 38,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        // 往上拖 = 展开符号面板。
-        onVerticalDragUpdate: (details) {
-          if (details.delta.dy < -6) setState(() => _expanded = true);
-        },
-        child: Padding(
-          padding: const EdgeInsets.only(left: 8, right: 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: _items.isEmpty
-                    ? const SizedBox.shrink()
-                    : ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _items.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 2),
-                        itemBuilder: (_, i) => Center(child: _cell(_items[i])),
-                      ),
-              ),
-              _iconBtn(Icons.unfold_more, localizations.snippetExpand, () {
-                setState(() => _expanded = true);
-              }),
-              _iconBtn(Icons.tune, localizations.editorManage, _manage),
-            ],
-          ),
+      height: 36,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 8, right: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: _items.isEmpty
+                  ? const SizedBox.shrink()
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _items.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 2),
+                      itemBuilder: (_, i) => Center(child: _cell(_items[i])),
+                    ),
+            ),
+            _iconBtn(Icons.tune, localizations.editorManage, _manage),
+          ],
         ),
       ),
     );
@@ -160,7 +181,7 @@ class _SnippetBarState extends State<SnippetBar> {
   Widget _expandedView() {
     final list = _showLibrary ? _customLibrary : _items;
     return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 4, top: 2, bottom: 2),
+      padding: const EdgeInsets.only(left: 8, right: 4, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -174,9 +195,6 @@ class _SnippetBarState extends State<SnippetBar> {
                 setState(() => _showLibrary = true);
               }),
               const Spacer(),
-              _iconBtn(Icons.unfold_less, localizations.snippetCollapse, () {
-                setState(() => _expanded = false);
-              }),
               _iconBtn(Icons.tune, localizations.editorManage, _manage),
             ],
           ),
@@ -244,7 +262,7 @@ class _SnippetBarState extends State<SnippetBar> {
       borderRadius: BorderRadius.circular(4),
       child: Container(
         width: 46,
-        height: 32,
+        height: 30,
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 2),
         child: Text(
@@ -271,6 +289,12 @@ class _SnippetBarState extends State<SnippetBar> {
 
   @override
   Widget build(BuildContext context) {
-    return _expanded ? _expandedView() : _collapsed();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _dragHandle(),
+        if (_expanded) _expandedView() else _collapsed(),
+      ],
+    );
   }
 }
