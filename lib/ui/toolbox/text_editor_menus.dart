@@ -15,6 +15,7 @@
  */
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:charset/charset.dart' as charset;
 import 'package:charset_converter/charset_converter.dart';
@@ -23,6 +24,13 @@ import 'package:proxypin/utils/big5_codec.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/utils/custom_lang.dart';
+import 'package:proxypin/utils/lang_meta.dart';
+import 'package:proxypin/utils/platform.dart';
+import 'package:re_highlight/languages/all.dart';
 
 /// 编辑器读写文件时可选的一种编码。
 ///
@@ -808,7 +816,9 @@ class _FloatMenuManagerDialogState extends State<FloatMenuManagerDialog> {
   }
 }
 
-/// 勾选要出现在「语法」菜单里的语言。[allLangs] 是内核支持的全部语言 label。
+/// 语法文件管理：勾选要出现在「语法」菜单里的语言、维护自定义语法、导入 / 导出配置。
+///
+/// [allLangs] 是内核支持的全部语言 label（内置语言）。
 class LanguageManagerDialog extends StatefulWidget {
   const LanguageManagerDialog({super.key, required this.allLangs});
 
@@ -818,67 +828,429 @@ class LanguageManagerDialog extends StatefulWidget {
   State<LanguageManagerDialog> createState() => _LanguageManagerDialogState();
 }
 
-class _LanguageManagerDialogState extends State<LanguageManagerDialog> {
+class _LanguageManagerDialogState extends State<LanguageManagerDialog> with SingleTickerProviderStateMixin {
+  late final TabController _tab = TabController(length: 2, vsync: this);
+  final TextEditingController _search = TextEditingController();
   late Set<String> _enabled;
+  List<CustomLang> _custom = const [];
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     final saved = TextEditorPrefsStore.notifier.value.enabledLangs;
     _enabled = saved.isEmpty ? widget.allLangs.toSet() : saved.toSet();
+    CustomLangStore.instance.then((store) {
+      if (mounted) setState(() => _custom = store.langs);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    _search.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final size = MediaQuery.of(context).size;
     return AlertDialog(
       title: Text(loc.editorSyntaxManager),
+      contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
       content: SizedBox(
-        width: 380,
-        height: 440,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(loc.editorLangManagerHint, style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
-            const SizedBox(height: 6),
-            Expanded(
-              child: ListView(
-                children: widget.allLangs
-                    .map((l) => CheckboxListTile(
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          value: _enabled.contains(l),
-                          title: Text(l, style: const TextStyle(fontSize: 13.5)),
-                          onChanged: (v) {
-                            setState(() {
-                              if (v == true) {
-                                _enabled.add(l);
-                              } else {
-                                _enabled.remove(l);
-                              }
-                            });
-                          },
-                        ))
-                    .toList(),
+        width: (size.width * 0.86).clamp(260.0, 400.0),
+        height: (size.height * 0.6).clamp(300.0, 440.0),
+        child: Column(children: [
+          TabBar(
+            controller: _tab,
+            tabs: [
+              Tab(text: loc.syntaxTabBuiltin),
+              Tab(text: '${loc.syntaxTabCustom} (${_custom.length})'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tab,
+              children: [_buildBuiltin(loc), _buildCustom(loc)],
+            ),
+          ),
+        ]),
+      ),
+      actionsOverflowButtonSpacing: 2,
+      actions: [
+        IconButton(
+          onPressed: _import,
+          icon: const Icon(Icons.file_open_outlined, size: 20),
+          tooltip: loc.syntaxImport,
+          visualDensity: VisualDensity.compact,
+        ),
+        IconButton(
+          onPressed: _export,
+          icon: const Icon(Icons.save_alt, size: 20),
+          tooltip: loc.syntaxExport,
+          visualDensity: VisualDensity.compact,
+        ),
+        TextButton(
+          onPressed: () => setState(() => _enabled = widget.allLangs.toSet()),
+          child: Text(loc.editorReset),
+        ),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.cancel)),
+        FilledButton(onPressed: _save, child: Text(loc.confirm)),
+      ],
+    );
+  }
+
+  /// 内置语言：勾选后才会出现在「语法」菜单里。
+  Widget _buildBuiltin(AppLocalizations loc) {
+    final q = _query.toLowerCase();
+    final list = q.isEmpty
+        ? widget.allLangs
+        : widget.allLangs.where((l) => l.toLowerCase().contains(q)).toList();
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+        child: TextField(
+          controller: _search,
+          decoration: InputDecoration(
+            isDense: true,
+            prefixIcon: const Icon(Icons.search, size: 18),
+            hintText: loc.search,
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          ),
+          onChanged: (v) => setState(() => _query = v),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(loc.editorLangManagerHint,
+              style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+        ),
+      ),
+      Expanded(
+        child: ListView(
+          children: list
+              .map((l) => CheckboxListTile(
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    value: _enabled.contains(l),
+                    title: Text(l, style: const TextStyle(fontSize: 13.5)),
+                    onChanged: (v) {
+                      setState(() {
+                        if (v == true) {
+                          _enabled.add(l);
+                        } else {
+                          _enabled.remove(l);
+                        }
+                      });
+                    },
+                  ))
+              .toList(),
+        ),
+      ),
+    ]);
+  }
+
+  /// 自定义语法：借用内置高亮 + 自定名字 / 注释风格。
+  Widget _buildCustom(AppLocalizations loc) {
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 8, 4),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: Text(loc.syntaxCustomHint,
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+          ),
+          TextButton.icon(
+            onPressed: () => _editCustom(null),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(loc.syntaxAdd),
+          ),
+        ]),
+      ),
+      Expanded(
+        child: _custom.isEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(loc.syntaxCustomEmpty,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                ),
+              )
+            : ListView(
+                children: _custom.map((c) {
+                  final base = c.baseKey.isEmpty ? loc.custLangBaseNone : langLabelOf(c.baseKey);
+                  final fam = c.family == null ? loc.custLangFamilyAuto : familyLabel(loc, c.family!);
+                  return ListTile(
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    title: Text(c.name, style: const TextStyle(fontSize: 13.5)),
+                    subtitle: Text('${loc.custLangBase}: $base · ${loc.custLangFamily}: $fam',
+                        style: const TextStyle(fontSize: 11)),
+                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                      IconButton(
+                        onPressed: () => _editCustom(c),
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        tooltip: loc.edit,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      IconButton(
+                        onPressed: () => _removeCustom(c),
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        tooltip: loc.delete,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ]),
+                  );
+                }).toList(),
+              ),
+      ),
+    ]);
+  }
+
+  Future<void> _save() async {
+    // 全部启用时存空列表（等价于默认）。
+    final list = _enabled.length == widget.allLangs.length ? <String>[] : _enabled.toList();
+    await TextEditorPrefsStore.update(
+        TextEditorPrefsStore.notifier.value.copyWith(enabledLangs: list));
+    if (context.mounted) Navigator.pop(context);
+  }
+
+  Future<void> _editCustom(CustomLang? existing) async {
+    final taken = <String>{
+      ...widget.allLangs,
+      ..._custom.map((c) => c.name),
+    }..remove(existing?.name);
+    final result = await showDialog<CustomLang>(
+      context: context,
+      builder: (_) => _CustomLangEditorDialog(existing: existing, takenNames: taken),
+    );
+    if (result == null) return;
+    final store = await CustomLangStore.instance;
+    if (existing == null) {
+      await store.add(result);
+    } else {
+      await store.update(existing.name, result);
+    }
+    if (mounted) setState(() => _custom = store.langs);
+  }
+
+  Future<void> _removeCustom(CustomLang lang) async {
+    final store = await CustomLangStore.instance;
+    await store.remove(lang.name);
+    if (mounted) setState(() => _custom = store.langs);
+  }
+
+  /// 导入语法配置：同名覆盖、新名追加，并同步文件里携带的语言显示勾选。
+  Future<void> _import() async {
+    final loc = AppLocalizations.of(context)!;
+    try {
+      final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+      if (picked == null || picked.isEmpty) return;
+      final text = await picked.single.xFile.readAsString();
+      final (langs, enabled) = CustomLangStore.parseExport(text);
+      if (langs.isEmpty && enabled == null) {
+        if (mounted) FlutterToastr.show(loc.syntaxImportEmpty, context, duration: 3);
+        return;
+      }
+      final store = await CustomLangStore.instance;
+      final (added, updated) = await store.merge(langs);
+      if (enabled != null) {
+        final list = enabled.length == widget.allLangs.length ? <String>[] : enabled;
+        await TextEditorPrefsStore.update(
+            TextEditorPrefsStore.notifier.value.copyWith(enabledLangs: list));
+      }
+      if (!mounted) return;
+      setState(() {
+        _custom = store.langs;
+        if (enabled != null) {
+          _enabled = enabled.isEmpty ? widget.allLangs.toSet() : enabled.toSet();
+        }
+      });
+      FlutterToastr.show(loc.syntaxImportDone('$added', '$updated'), context, duration: 3);
+    } catch (e, t) {
+      logger.e('导入语法配置失败', error: e, stackTrace: t);
+      if (mounted) FlutterToastr.show('${loc.syntaxImportFailed}: $e', context, duration: 3);
+    }
+  }
+
+  /// 导出自定义语法 + 语言显示勾选。
+  Future<void> _export() async {
+    final loc = AppLocalizations.of(context)!;
+    try {
+      final store = await CustomLangStore.instance;
+      final enabled = _enabled.length == widget.allLangs.length ? <String>[] : _enabled.toList();
+      final bytes = Uint8List.fromList(utf8.encode(store.buildExportPayload(enabled)));
+      const fileName = 'proxypin-syntax.json';
+      if (Platforms.isDesktop()) {
+        // 桌面端 file_picker 在部分平台不真正写入 bytes，沿用「只拿路径、自己写盘」的惯例。
+        final path = await Platforms.saveFileAdaptive(
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+        if (path == null) return;
+        await File(path).writeAsBytes(bytes);
+      } else {
+        final uri = await FilePicker.saveFile(
+          fileName: fileName,
+          bytes: bytes,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+        if (uri == null) return;
+      }
+      if (mounted) FlutterToastr.show(loc.syntaxExportDone, context, duration: 3);
+    } catch (e, t) {
+      logger.e('导出语法配置失败', error: e, stackTrace: t);
+      if (mounted) FlutterToastr.show('${loc.syntaxExportFailed}: $e', context, duration: 3);
+    }
+  }
+}
+
+/// 内置语言 key 的展示名（找不到就退回 key 本身）。
+String langLabelOf(String key) => builtinAllLanguages[key]?.name ?? key;
+
+/// 语言族的可读描述（技术串，跨语言通用，不做本地化）。
+String familyLabel(AppLocalizations loc, LangFamily family) {
+  switch (family) {
+    case LangFamily.c:
+      return '//  /* */  (C / Java / Go)';
+    case LangFamily.hash:
+      return '#  (Python / Shell / YAML)';
+    case LangFamily.sql:
+      return '--  (SQL / Haskell / Lua)';
+    case LangFamily.xml:
+      return '<!-- -->  (HTML / XML)';
+    case LangFamily.lisp:
+      return ';  (Lisp / asm / ini)';
+    case LangFamily.percent:
+      return '%  (Erlang / MATLAB / LaTeX)';
+    case LangFamily.vb:
+      return "'  (Visual Basic)";
+    case LangFamily.batch:
+      return 'REM  (Batch)';
+    case LangFamily.fortran:
+      return '!  (Fortran)';
+    case LangFamily.none:
+      return loc.custLangFamilyNone;
+  }
+}
+
+/// 新增 / 编辑一条自定义语法。
+class _CustomLangEditorDialog extends StatefulWidget {
+  const _CustomLangEditorDialog({this.existing, required this.takenNames});
+
+  final CustomLang? existing;
+
+  /// 已被内置语言或其它自定义语法占用的名字（不含正在编辑的这一条）。
+  final Set<String> takenNames;
+
+  @override
+  State<_CustomLangEditorDialog> createState() => _CustomLangEditorDialogState();
+}
+
+class _CustomLangEditorDialogState extends State<_CustomLangEditorDialog> {
+  late final TextEditingController _name = TextEditingController(text: widget.existing?.name ?? '');
+  late String _base = widget.existing?.baseKey ?? '';
+  late String _familyName = widget.existing?.family?.name ?? 'auto';
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final size = MediaQuery.of(context).size;
+    final bases = builtinAllLanguages.keys.toList()
+      ..sort((a, b) => langLabelOf(a).toLowerCase().compareTo(langLabelOf(b).toLowerCase()));
+    return AlertDialog(
+      title: Text(widget.existing == null ? loc.syntaxAdd : loc.syntaxEditLang),
+      content: SizedBox(
+        width: (size.width * 0.8).clamp(240.0, 360.0),
+        child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: _name,
+              autofocus: true,
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: loc.custLangName,
+                border: const OutlineInputBorder(),
               ),
             ),
-          ],
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _base,
+              isExpanded: true,
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: loc.custLangBase,
+                border: const OutlineInputBorder(),
+              ),
+              items: [
+                DropdownMenuItem(value: '', child: Text(loc.custLangBaseNone)),
+                ...bases.map((k) => DropdownMenuItem(
+                      value: k,
+                      child: Text('${langLabelOf(k)}  ·  $k', overflow: TextOverflow.ellipsis),
+                    )),
+              ],
+              onChanged: (v) => setState(() => _base = v ?? ''),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _familyName,
+              isExpanded: true,
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: loc.custLangFamily,
+                border: const OutlineInputBorder(),
+              ),
+              items: [
+                DropdownMenuItem(value: 'auto', child: Text(loc.custLangFamilyAuto)),
+                ...LangFamily.values.map((f) => DropdownMenuItem(
+                      value: f.name,
+                      child: Text(familyLabel(loc, f), overflow: TextOverflow.ellipsis),
+                    )),
+              ],
+              onChanged: (v) => setState(() => _familyName = v ?? 'auto'),
+            ),
+          ]),
         ),
       ),
       actions: [
-        TextButton(onPressed: () => setState(() => _enabled = widget.allLangs.toSet()), child: Text(loc.editorReset)),
         TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.cancel)),
-        FilledButton(
-          onPressed: () async {
-            // 全部启用时存空列表（等价于默认）。
-            final list = _enabled.length == widget.allLangs.length ? <String>[] : _enabled.toList();
-            await TextEditorPrefsStore.update(
-                TextEditorPrefsStore.notifier.value.copyWith(enabledLangs: list));
-            if (context.mounted) Navigator.pop(context);
-          },
-          child: Text(loc.confirm),
-        ),
+        FilledButton(onPressed: _submit, child: Text(loc.confirm)),
       ],
+    );
+  }
+
+  void _submit() {
+    final loc = AppLocalizations.of(context)!;
+    final name = _name.text.trim();
+    if (name.isEmpty) {
+      FlutterToastr.show(loc.custLangNameRequired, context, duration: 2);
+      return;
+    }
+    if (widget.takenNames.contains(name)) {
+      FlutterToastr.show('${loc.custLangNameTaken}: $name', context, duration: 2);
+      return;
+    }
+    Navigator.pop(
+      context,
+      CustomLang(
+        name: name,
+        baseKey: _base,
+        family: _familyName == 'auto' ? null : CustomLang.familyFromName(_familyName),
+      ),
     );
   }
 }

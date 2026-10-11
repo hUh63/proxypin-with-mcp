@@ -4476,6 +4476,37 @@
   "editorEncodingHint": "Reads and writes the file with the selected encoding. UTF-16 output includes a BOM.",
   "editorSyntaxManager": "Syntax manager",
   "editorLangManagerHint": "Choose which languages appear in the Syntax menu.",
+  "syntaxTabBuiltin": "Built-in",
+  "syntaxTabCustom": "Custom",
+  "syntaxCustomHint": "A custom syntax reuses a built-in highlighter; comment toggling and formatting follow the comment style you pick.",
+  "syntaxAdd": "Add syntax",
+  "syntaxEditLang": "Edit syntax",
+  "syntaxCustomEmpty": "No custom syntax yet. Tap \"Add syntax\" to give a built-in highlighter your own name.",
+  "custLangName": "Name",
+  "custLangBase": "Highlighter",
+  "custLangBaseNone": "None (plain text)",
+  "custLangFamily": "Comment style",
+  "custLangFamilyAuto": "Follow highlighter",
+  "custLangFamilyNone": "No comments",
+  "custLangNameRequired": "Please enter a name",
+  "custLangNameTaken": "Name already taken",
+  "syntaxImport": "Import",
+  "syntaxExport": "Export",
+  "syntaxImportDone": "Imported: {added} added, {updated} updated",
+  "@syntaxImportDone": {
+    "placeholders": {
+      "added": {
+        "type": "String"
+      },
+      "updated": {
+        "type": "String"
+      }
+    }
+  },
+  "syntaxImportFailed": "Import failed",
+  "syntaxExportDone": "Exported",
+  "syntaxExportFailed": "Export failed",
+  "syntaxImportEmpty": "No usable syntax entries in the file",
   "editorPinchZoom": "Pinch to zoom",
   "editorMagnifier": "Magnifier",
   "editorEditToolMenu": "Edit tool menu",

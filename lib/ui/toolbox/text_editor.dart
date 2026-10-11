@@ -38,6 +38,7 @@ import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/custom_lang.dart';
 import 'package:proxypin/utils/lang_meta.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
 import 'package:proxypin/ui/toolbox/text_editor_settings.dart';
@@ -81,7 +82,13 @@ class _LangOption {
   final Mode? mode;
   final String key;
 
-  const _LangOption(this.label, this.mode, [this.key = '']);
+  /// 显式指定的语言族（自定义语法用；内置语言为 null，按 [key] 查表）。
+  final LangFamily? family;
+
+  /// 是否是用户自定义语法。
+  final bool custom;
+
+  const _LangOption(this.label, this.mode, [this.key = '', this.family, this.custom = false]);
 }
 
 /// 少数语言的展示名与内核给的 name 不同，这里做覆盖。
@@ -90,8 +97,8 @@ const Map<String, String> _kLangLabelOverride = {
   'plaintext': 'Plain Text',
 };
 
-/// 全部可高亮的语言（来自 re_highlight 内置语言表，约 190 种）。
-final List<_LangOption> _langs = _buildLangs();
+/// 全部内置可高亮语言（来自 re_highlight 内置语言表，约 190 种）。
+final List<_LangOption> _builtinLangs = _buildLangs();
 
 List<_LangOption> _buildLangs() {
   final out = <_LangOption>[const _LangOption('Plain Text', null)];
@@ -101,6 +108,34 @@ List<_LangOption> _buildLangs() {
     if (e.key == 'plaintext') continue;
     final label = _kLangLabelOverride[e.key] ?? e.value.name ?? e.key;
     out.add(_LangOption(label, e.value, e.key));
+  }
+  return out;
+}
+
+/// 内置语言 + 用户自定义语法。自定义语法存在 [CustomLangStore] 里，内容变化时
+/// [CustomLangStore.revision] 自增，据此让缓存失效。
+List<_LangOption>? _allLangsCache;
+int _allLangsRev = -1;
+
+List<_LangOption> get _langs {
+  if (_allLangsCache == null || _allLangsRev != CustomLangStore.revision) {
+    _allLangsCache = [..._builtinLangs, ..._buildCustomLangs()];
+    _allLangsRev = CustomLangStore.revision;
+  }
+  return _allLangsCache!;
+}
+
+/// 把自定义语法映射成下拉项：套用其借用的内置高亮 Mode。
+List<_LangOption> _buildCustomLangs() {
+  final out = <_LangOption>[];
+  for (final lang in CustomLangStore.current) {
+    Mode? mode;
+    if (lang.baseKey.isNotEmpty) {
+      mode = builtinAllLanguages[lang.baseKey];
+      // 借用的高亮不存在（内核语言表变化）时跳过，避免留下无法高亮的死条目。
+      if (mode == null) continue;
+    }
+    out.add(_LangOption(lang.name, mode, lang.baseKey, lang.family, true));
   }
   return out;
 }
@@ -192,6 +227,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void initState() {
     super.initState();
     _loadPrefs();
+    // 自定义语法表是异步加载的，加载完刷新一次语言列表。
+    CustomLangStore.instance.then((_) {
+      if (mounted) setState(() {});
+    });
     SmartCompletion.load();
     SmartCompletion.enabled.addListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.load();
@@ -997,13 +1036,19 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _toast(localizations.editorReplacedLine);
   }
 
-  /// 行注释前缀（按语言族；覆盖全部语言）。
-  String? _lineCommentToken() =>
-      lineCommentOf(key: _lang.key, label: _lang.label);
+  /// 行注释前缀（自定义语法用显式族；其余按语言族查表）。
+  String? _lineCommentToken() {
+    final f = _lang.family;
+    if (f != null) return familyLineComment(f);
+    return lineCommentOf(key: _lang.key, label: _lang.label);
+  }
 
-  /// 块注释定界符（按语言族）。
-  (String, String)? get _blockComment =>
-      blockCommentOf(key: _lang.key, label: _lang.label);
+  /// 块注释定界符（自定义语法用显式族；其余按语言族查表）。
+  (String, String)? get _blockComment {
+    final f = _lang.family;
+    if (f != null) return familyBlockComment(f);
+    return blockCommentOf(key: _lang.key, label: _lang.label);
+  }
 
   void _toggleComment() {
     final controller = _controller;
@@ -1180,8 +1225,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 当前语言用哪种格式化器（全部语言都有归属，只是不一定有专属格式化器）。
-  FormatKind get _formatKind =>
-      formatKindOf(key: _lang.key, label: _lang.label);
+  FormatKind get _formatKind {
+    // 没借用任何高亮的自定义语法（纯文本）不做格式化，避免按名字瞎猜。
+    if (_lang.custom && _lang.key.isEmpty) return FormatKind.none;
+    return formatKindOf(key: _lang.key, label: _lang.label);
+  }
 
   bool get _canFormat => _formatKind != FormatKind.none;
 
@@ -1739,8 +1787,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
         current: doc.langLabel,
       ),
     );
-    if (chosen == null || !mounted) return;
-    setState(() => doc.langLabel = chosen);
+    if (!mounted) return;
+    // 「管理」里可能增删了自定义语法，统一刷新一次语言列表。
+    setState(() {
+      if (chosen != null) doc.langLabel = chosen;
+    });
   }
 
   /// 从磁盘重新读一遍当前文件。
@@ -1813,21 +1864,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 打开编辑器设置页。
-  void _openSettings() {
-    Navigator.of(context).push(
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TextEditorSettingsPage(
           allLangs: _langs.map((l) => l.label).toList(),
         ),
       ),
     );
+    // 设置页里的「语法文件管理」可能改了自定义语法。
+    if (mounted) setState(() {});
   }
 
   /// 「语法」菜单里可见的语言（受「语法文件管理」的勾选控制）。
   List<_LangOption> get _visibleLangs {
     final enabled = _prefs.enabledLangs;
     if (enabled.isEmpty) return _langs;
-    final list = _langs.where((l) => enabled.contains(l.label)).toList();
+    // 自定义语法由用户自己增删，不参与「显示勾选」的过滤。
+    final list = _langs.where((l) => l.custom || enabled.contains(l.label)).toList();
     return list.isEmpty ? _langs : list;
   }
 
