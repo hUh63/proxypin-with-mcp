@@ -1,298 +1,173 @@
 /*
- * MCP 自动化任务管理器单元测试
- * 测试覆盖：CRUD 操作、持久化存储、任务调度
+ * MCP 自动化任务单元测试（对齐当前 API 重写）
+ *
+ * 覆盖：任务模型的条件匹配（请求 / 响应）、序列化往返、copyWith、
+ * 以及管理器在未初始化态下的只读行为。
+ * 不触碰文件系统与网络，可在 CI 上稳定运行。
  */
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
-import 'package:proxypin/network/mcp/mcp_scheduler.dart';
+
+MCPAutomationTask _task({
+  String id = 't1',
+  AutomationTriggerType trigger = AutomationTriggerType.onRequest,
+  Map<String, dynamic> conditions = const {},
+  List<AutomationActionType> actions = const [AutomationActionType.sendNotification],
+  bool enabled = true,
+}) =>
+    MCPAutomationTask(
+      id: id,
+      name: 'task-$id',
+      description: 'desc',
+      triggerType: trigger,
+      actions: actions,
+      conditions: conditions,
+      enabled: enabled,
+    );
 
 void main() {
-  late McpAutomationManager manager;
-
-  setUp(() async {
-    manager = McpAutomationManager();
-    await manager.initialize();
-  });
-
-  tearDown(() async {
-    await manager.dispose();
-  });
-
-  group('MCP 自动化任务 CRUD 操作', () {
-    test('创建任务', () async {
-      final task = MCPAutomationTask(
-        id: 'test_task_1',
-        name: '测试任务',
-        enabled: true,
-        trigger: TriggerConfig(
-          type: TriggerType.cron,
-          cronExpression: '0 */5 * * * ?', // 每 5 分钟
-        ),
-        actions: [
-          ActionConfig(
-            type: ActionType.log,
-            params: {'message': 'Hello World'},
-          ),
-        ],
-      );
-
-      await manager.addTask(task);
-      final tasks = manager.getTasks();
-      
-      expect(tasks.length, 1);
-      expect(tasks.first.name, '测试任务');
-      expect(tasks.first.enabled, true);
+  group('MCPAutomationTask.matchesRequest', () {
+    test('触发类型不是 onRequest 时一律不匹配', () {
+      final task = _task(trigger: AutomationTriggerType.onProxyStart, conditions: const {});
+      expect(task.matchesRequest({'url': 'https://a.com/x', 'method': 'GET'}), isFalse);
     });
 
-    test('更新任务', () async {
-      final task = MCPAutomationTask(
-        id: 'test_task_2',
-        name: '原始任务',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [],
-      );
+    test('无条件时 onRequest 任务匹配任意请求', () {
+      expect(_task().matchesRequest({'url': 'https://a.com/x', 'method': 'GET'}), isTrue);
+    });
 
-      await manager.addTask(task);
-      
-      // 更新任务
-      final updatedTask = task.copyWith(
-        name: '更新后的任务',
+    test('urlPattern 按包含匹配', () {
+      final task = _task(conditions: {'urlPattern': '/api/'});
+      expect(task.matchesRequest({'url': 'https://a.com/api/user', 'method': 'GET'}), isTrue);
+      expect(task.matchesRequest({'url': 'https://a.com/web/user', 'method': 'GET'}), isFalse);
+    });
+
+    test('urlPattern 命中但请求缺 url 时不匹配', () {
+      final task = _task(conditions: {'urlPattern': '/api/'});
+      expect(task.matchesRequest({'method': 'GET'}), isFalse);
+    });
+
+    test('methods 白名单匹配', () {
+      final task = _task(conditions: {'methods': ['POST', 'PUT']});
+      expect(task.matchesRequest({'url': 'https://a.com/x', 'method': 'POST'}), isTrue);
+      expect(task.matchesRequest({'url': 'https://a.com/x', 'method': 'GET'}), isFalse);
+      expect(task.matchesRequest({'url': 'https://a.com/x'}), isFalse);
+    });
+
+    test('headers 必须全部精确相等', () {
+      final task = _task(conditions: {
+        'headers': {'X-Env': 'staging'}
+      });
+      expect(
+        task.matchesRequest({
+          'url': 'https://a.com/x',
+          'method': 'GET',
+          'headers': {'X-Env': 'staging', 'Other': '1'},
+        }),
+        isTrue,
+      );
+      expect(
+        task.matchesRequest({
+          'url': 'https://a.com/x',
+          'method': 'GET',
+          'headers': {'X-Env': 'prod'},
+        }),
+        isFalse,
+      );
+      expect(task.matchesRequest({'url': 'https://a.com/x', 'method': 'GET'}), isFalse);
+    });
+
+    test('多个条件之间是「与」关系', () {
+      final task = _task(conditions: {
+        'urlPattern': '/api/',
+        'methods': ['POST'],
+      });
+      expect(task.matchesRequest({'url': 'https://a.com/api/x', 'method': 'POST'}), isTrue);
+      expect(task.matchesRequest({'url': 'https://a.com/api/x', 'method': 'GET'}), isFalse);
+      expect(task.matchesRequest({'url': 'https://a.com/web/x', 'method': 'POST'}), isFalse);
+    });
+  });
+
+  group('MCPAutomationTask.matchesResponse', () {
+    test('触发类型不是 onResponse 时不匹配', () {
+      final task = _task(trigger: AutomationTriggerType.onRequest);
+      expect(task.matchesResponse({'status': 200}), isFalse);
+    });
+
+    test('statusCode 精确匹配', () {
+      final task = _task(
+        trigger: AutomationTriggerType.onResponse,
+        conditions: {'statusCode': 500},
+      );
+      expect(task.matchesResponse({'statusCode': 500}), isTrue);
+      expect(task.matchesResponse({'statusCode': 200}), isFalse);
+      expect(task.matchesResponse({}), isFalse);
+    });
+
+    test('urlPattern 对响应同样生效', () {
+      final task = _task(
+        trigger: AutomationTriggerType.onResponse,
+        conditions: {'urlPattern': '/api/'},
+      );
+      expect(task.matchesResponse({'url': 'https://a.com/api/x'}), isTrue);
+      expect(task.matchesResponse({'url': 'https://a.com/web/x'}), isFalse);
+    });
+  });
+
+  group('MCPAutomationTask 序列化', () {
+    test('toJson / fromJson 往返保持关键字段', () {
+      final original = _task(
+        id: 'round',
+        trigger: AutomationTriggerType.onResponse,
+        conditions: {
+          'statusCodes': [404]
+        },
+        actions: [AutomationActionType.exportData, AutomationActionType.callWebhook],
         enabled: false,
       );
-      
-      await manager.updateTask(updatedTask);
-      final tasks = manager.getTasks();
-      
-      expect(tasks.first.name, '更新后的任务');
-      expect(tasks.first.enabled, false);
+      final restored = MCPAutomationTask.fromJson(original.toJson());
+
+      expect(restored.id, 'round');
+      expect(restored.name, original.name);
+      expect(restored.triggerType, AutomationTriggerType.onResponse);
+      expect(restored.enabled, isFalse);
+      expect(restored.conditions['statusCodes'], [404]);
+      expect(restored.actions, [AutomationActionType.exportData, AutomationActionType.callWebhook]);
+      expect(restored.createdAt.toIso8601String(), original.createdAt.toIso8601String());
     });
 
-    test('删除任务', () async {
-      final task = MCPAutomationTask(
-        id: 'test_task_3',
-        name: '待删除任务',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [],
-      );
-
-      await manager.addTask(task);
-      expect(manager.getTasks().length, 1);
-      
-      await manager.deleteTask('test_task_3');
-      expect(manager.getTasks().length, 0);
-    });
-
-    test('启用/禁用任务', () async {
-      final task = MCPAutomationTask(
-        id: 'test_task_4',
-        name: '开关测试',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [],
-      );
-
-      await manager.addTask(task);
-      
-      await manager.toggleTask('test_task_4', false);
-      expect(manager.getTask('test_task_4')?.enabled, false);
-      
-      await manager.toggleTask('test_task_4', true);
-      expect(manager.getTask('test_task_4')?.enabled, true);
+    test('未知触发 / 动作类型回退到默认而不抛异常', () {
+      final json = _task().toJson()
+        ..['triggerType'] = 'not-a-trigger'
+        ..['actions'] = ['not-an-action'];
+      final restored = MCPAutomationTask.fromJson(json);
+      expect(restored.triggerType, AutomationTriggerType.manual);
+      expect(restored.actions, [AutomationActionType.runScript]);
     });
   });
 
-  group('触发器配置测试', () {
-    test('Cron 触发器', () async {
-      final task = MCPAutomationTask(
-        id: 'cron_task',
-        name: 'Cron 任务',
-        enabled: true,
-        trigger: TriggerConfig(
-          type: TriggerType.cron,
-          cronExpression: '0 0 12 * * ?', // 每天 12 点
-        ),
-        actions: [],
-      );
+  group('MCPAutomationTask.copyWith', () {
+    test('只改传入的字段，id 与创建时间保持不变', () {
+      final task = _task(id: 'c1');
+      final updated = task.copyWith(name: '新名字', enabled: false);
 
-      await manager.addTask(task);
-      expect(task.trigger.type, TriggerType.cron);
-      expect(task.trigger.cronExpression, '0 0 12 * * ?');
-    });
-
-    test('事件触发器', () async {
-      final task = MCPAutomationTask(
-        id: 'event_task',
-        name: '事件任务',
-        enabled: true,
-        trigger: TriggerConfig(
-          type: TriggerType.event,
-          eventName: 'proxy.started',
-        ),
-        actions: [],
-      );
-
-      await manager.addTask(task);
-      expect(task.trigger.type, TriggerType.event);
-      expect(task.trigger.eventName, 'proxy.started');
-    });
-
-    test('请求规则触发器', () async {
-      final task = MCPAutomationTask(
-        id: 'request_task',
-        name: '请求任务',
-        enabled: true,
-        trigger: TriggerConfig(
-          type: TriggerType.requestRule,
-          ruleId: 'rule_123',
-        ),
-        actions: [],
-      );
-
-      await manager.addTask(task);
-      expect(task.trigger.type, TriggerType.requestRule);
-      expect(task.trigger.ruleId, 'rule_123');
+      expect(updated.id, 'c1');
+      expect(updated.name, '新名字');
+      expect(updated.enabled, isFalse);
+      expect(updated.description, task.description);
+      expect(updated.createdAt, task.createdAt);
+      expect(updated.updatedAt.isBefore(task.updatedAt), isFalse);
     });
   });
 
-  group('动作配置测试', () {
-    test('修改请求动作', () async {
-      final task = MCPAutomationTask(
-        id: 'modify_req_task',
-        name: '修改请求',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [
-          ActionConfig(
-            type: ActionType.modifyRequest,
-            params: {
-              'headers': {'X-Custom-Header': 'value'},
-              'body': '{"test": true}',
-            },
-          ),
-        ],
-      );
-
-      await manager.addTask(task);
-      expect(task.actions.length, 1);
-      expect(task.actions.first.type, ActionType.modifyRequest);
-    });
-
-    test('执行脚本动作', () async {
-      final task = MCPAutomationTask(
-        id: 'script_task',
-        name: '执行脚本',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [
-          ActionConfig(
-            type: ActionType.runScript,
-            params: {
-              'language': 'javascript',
-              'script': 'console.log("Hello");',
-            },
-          ),
-        ],
-      );
-
-      await manager.addTask(task);
-      expect(task.actions.first.type, ActionType.runScript);
-      expect(task.actions.first.params['language'], 'javascript');
-    });
-
-    test('导出数据的', () async {
-      final task = MCPAutomationTask(
-        id: 'export_task',
-        name: '导出数据',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [
-          ActionConfig(
-            type: ActionType.exportData,
-            params: {
-              'format': 'har',
-              'path': '/sdcard/export.har',
-            },
-          ),
-        ],
-      );
-
-      await manager.addTask(task);
-      expect(task.actions.first.type, ActionType.exportData);
-      expect(task.actions.first.params['format'], 'har');
-    });
-  });
-
-  group('任务执行测试', () {
-    test('执行单个任务', () async {
-      final task = MCPAutomationTask(
-        id: 'execute_task',
-        name: '执行测试',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [
-          ActionConfig(type: ActionType.log, params: {'message': 'Test'}),
-        ],
-      );
-
-      await manager.addTask(task);
-      
-      // 手动执行任务
-      final result = await manager.executeTask('execute_task');
-      expect(result.success, true);
-    });
-
-    test('执行不存在的任务', () async {
-      final result = await manager.executeTask('non_existent_task');
-      expect(result.success, false);
-      expect(result.error, contains('不存在'));
-    });
-  });
-
-  group('任务验证', () {
-    test('任务 ID 唯一性', () async {
-      final task1 = MCPAutomationTask(
-        id: 'unique_task',
-        name: '任务 1',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [],
-      );
-
-      final task2 = MCPAutomationTask(
-        id: 'unique_task', // 重复 ID
-        name: '任务 2',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [],
-      );
-
-      await manager.addTask(task1);
-      
-      // 添加重复 ID 的任务应该失败或覆盖
-      await manager.addTask(task2);
-      final tasks = manager.getTasks();
-      
-      // 验证只有一个任务
-      expect(tasks.length, 1);
-      expect(tasks.first.name, '任务 2'); // 应该是更新后的
-    });
-
-    test('空动作列表任务', () async {
-      final task = MCPAutomationTask(
-        id: 'empty_actions_task',
-        name: '空动作任务',
-        enabled: true,
-        trigger: TriggerConfig(type: TriggerType.cron, cronExpression: '0 0 * * * ?'),
-        actions: [], // 无动作
-      );
-
-      await manager.addTask(task);
-      final tasks = manager.getTasks();
-      expect(tasks.length, 1);
-      expect(tasks.first.actions.length, 0);
+  group('MCPAutomationManager 只读行为', () {
+    test('未初始化时任务列表为空，导出为空数组', () async {
+      final manager = MCPAutomationManager();
+      expect(manager.tasks, isEmpty);
+      expect(manager.enabledTasks, isEmpty);
+      final exported = await manager.exportTasks();
+      expect(exported, '[]');
     });
   });
 }

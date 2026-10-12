@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.55.01 (2026-10-12)
+
+### 静态检查首轮结果：清理死代码与过期测试
+
+刚接入的 `flutter analyze` 一次报出 208 个 error，全部集中在「无人引用」的位置，
+生产代码零 error：
+
+- 删除死文件 `lib/network/scripts/script_templates.dart`（33 个 error）——
+  它引用了一整套已不存在的类型（`JSScriptTemplate` / `ScriptLanguage` /
+  `ScriptCategory`），且全库无任何引用，`flutter build` 因为不可达而从未编译它。
+- 删除 `test/mcp/mcp_flow_test.dart` 与 `test/mcp/mcp_http_setup_test.dart` ——
+  它们 import 的 `lib/mcp/protocol/mcp_server.dart`、`lib/mcp/transport/mcp_http_server.dart`
+  早已移除，测试自写下起就没跑过。
+- **重写** `test/mcp/mcp_rule_engine_test.dart` 与 `test/mcp/mcp_automation_manager_test.dart`，
+  对齐当前 API：条件求值（比较 / 包含 / 正则 / 列表 / 存在性 / 点号路径）、
+  JSON 往返、规则可用性与优先级排序、规则管理与评估（动作失败不中断后续规则、
+  执行历史上限）、任务的条件匹配与序列化往返。
+
 ## v1.55.00 (2026-10-12)
 
 ### CI 补上静态检查与单元测试
