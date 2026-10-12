@@ -2610,5 +2610,10 @@
   "editorExitConfirmAgainTitle": "Confirmar de nuevo",
   "editorExitConfirmAgainBody": "¿Seguro que quieres salir del editor?",
   "editorMenuManage": "Administrar",
-  "editorFormatUnsupported": "Este lenguaje no admite formateo"
+  "editorFormatUnsupported": "Este lenguaje no admite formateo",
+  "mcpAutoAddAction": "Anadir accion",
+  "mcpAutoRemoveAction": "Quitar esta accion",
+  "mcpAutoMultiActionHint": "Una tarea puede ejecutar varias acciones en orden; si una falla, las demas siguen.",
+  "mcpAutoActionIndex": "Accion {n}",
+  "mcpAutoActionsCount": "{n} acciones"
 }

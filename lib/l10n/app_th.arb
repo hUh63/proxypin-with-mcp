@@ -2610,5 +2610,10 @@
   "editorExitConfirmAgainTitle": "ยืนยันอีกครั้ง",
   "editorExitConfirmAgainBody": "แน่ใจหรือว่าจะออกจากตัวแก้ไข?",
   "editorMenuManage": "จัดการ",
-  "editorFormatUnsupported": "ภาษานี้ไม่รองรับการจัดรูปแบบ"
+  "editorFormatUnsupported": "ภาษานี้ไม่รองรับการจัดรูปแบบ",
+  "mcpAutoAddAction": "เพิ่มการทำงาน",
+  "mcpAutoRemoveAction": "ลบการทำงานนี้",
+  "mcpAutoMultiActionHint": "งานหนึ่งสามารถรันหลายการทำงานตามลำดับ ถ้าอันหนึ่งล้มเหลว อันที่เหลือยังทำงานต่อ",
+  "mcpAutoActionIndex": "การทำงาน {n}",
+  "mcpAutoActionsCount": "{n} การทำงาน"
 }

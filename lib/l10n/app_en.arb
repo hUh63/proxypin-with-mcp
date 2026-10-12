@@ -4533,5 +4533,24 @@
   "editorExitConfirmAgainTitle": "Confirm again",
   "editorExitConfirmAgainBody": "Are you sure you want to exit the editor?",
   "editorMenuManage": "Manage",
-  "editorFormatUnsupported": "Formatting is not supported for this language"
+  "editorFormatUnsupported": "Formatting is not supported for this language",
+  "mcpAutoAddAction": "Add action",
+  "mcpAutoRemoveAction": "Remove this action",
+  "mcpAutoMultiActionHint": "A task can run several actions in order; if one fails, the rest still run.",
+  "mcpAutoActionIndex": "Action {n}",
+  "@mcpAutoActionIndex": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpAutoActionsCount": "{n} actions",
+  "@mcpAutoActionsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

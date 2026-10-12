@@ -2610,5 +2610,10 @@
   "editorExitConfirmAgainTitle": "Konfirmasi lagi",
   "editorExitConfirmAgainBody": "Yakin ingin keluar dari editor?",
   "editorMenuManage": "Kelola",
-  "editorFormatUnsupported": "Bahasa ini tidak mendukung pemformatan"
+  "editorFormatUnsupported": "Bahasa ini tidak mendukung pemformatan",
+  "mcpAutoAddAction": "Tambah aksi",
+  "mcpAutoRemoveAction": "Hapus aksi ini",
+  "mcpAutoMultiActionHint": "Satu tugas bisa menjalankan beberapa aksi berurutan; jika satu gagal, sisanya tetap jalan.",
+  "mcpAutoActionIndex": "Aksi {n}",
+  "mcpAutoActionsCount": "{n} aksi"
 }

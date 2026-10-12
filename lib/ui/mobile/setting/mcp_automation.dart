@@ -551,7 +551,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
               '${task.repeatLabel(AppLocalizations.of(context)!)} • '
               '${isInterval ? AppLocalizations.of(context)!.mcpAutoNextPrefix : ''}${_formatTime(task.executeAt)}'
               '${task.lastExecuted != null ? AppLocalizations.of(context)!.mcpAutoLastRun(_formatTime(task.lastExecuted!)) : ''}'
-              '${task.repeatCount != null ? AppLocalizations.of(context)!.mcpAutoRanTimes(task.executedCount, task.repeatCount!) : ''}',
+              '${task.repeatCount != null ? AppLocalizations.of(context)!.mcpAutoRanTimes(task.executedCount, task.repeatCount!) : ''}'
+              '${task.actionList.length > 1 ? ' • ${AppLocalizations.of(context)!.mcpAutoActionsCount(task.actionList.length)}' : ''}',
               style: const TextStyle(fontSize: 12),
             ),
             trailing: IconButton(
@@ -579,12 +580,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     final intervalController = TextEditingController(text: '30');
     final cronController = TextEditingController();
     DateTime? cronPreview;
-    int actionType = 1; // 0 执行脚本 1 调用MCP工具 2 执行工作流 3 发送Webhook
-    // 子配置
-    String? selectedScript;
-    String? selectedTool;
-    String? selectedWorkflow;
-    final webhookUrlController = TextEditingController(text: 'https://');
+    // 动作列表：一个任务可以在到期时依次执行多个动作。
+    final actionDrafts = <_TaskActionDraft>[_TaskActionDraft()];
 
     List<String> scriptNames = [];
     List<String> toolNames = [];
@@ -603,6 +600,78 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     }
 
     await loadOptions();
+
+    /// 单个动作的编辑块（类型下拉 + 目标选择），按序号渲染多份。
+    Widget actionEditor(int index, StateSetter setDialogState) {
+      final draft = actionDrafts[index];
+      final loc = AppLocalizations.of(context)!;
+      return Container(
+        padding: const EdgeInsets.fromLTRB(8, 6, 6, 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Text(loc.mcpAutoActionIndex('${index + 1}'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              if (actionDrafts.length > 1)
+                IconButton(
+                  onPressed: () => setDialogState(() {
+                    actionDrafts.removeAt(index);
+                  }),
+                  icon: const Icon(Icons.remove_circle_outline, size: 18, color: Colors.red),
+                  tooltip: loc.mcpAutoRemoveAction,
+                  visualDensity: VisualDensity.compact,
+                ),
+            ]),
+            DropdownButtonFormField<int>(
+              key: ValueKey('task-action-type-${draft.id}'),
+              initialValue: draft.type,
+              isExpanded: true,
+              isDense: true,
+              decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+              items: [
+                DropdownMenuItem(
+                    value: 0, child: Text(loc.mcpAutoActionScript, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                DropdownMenuItem(
+                    value: 1, child: Text(loc.mcpAutoActionTool, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                DropdownMenuItem(
+                    value: 2, child: Text(loc.mcpAutoActionWorkflow, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+                DropdownMenuItem(
+                    value: 3, child: Text(loc.mcpAutoActionWebhook, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
+              ],
+              selectedItemBuilder: _selectedItems<int>(const [0, 1, 2, 3],
+                  (v) => [loc.mcpAutoActionScript, loc.mcpAutoActionTool, loc.mcpAutoActionWorkflow, loc.mcpAutoActionWebhook][v]),
+              onChanged: (v) => setDialogState(() => draft.type = v ?? 1),
+            ),
+            const SizedBox(height: 8),
+            if (draft.type == 0)
+              _optionDropdown(scriptNames, draft.script, loc.mcpAutoPickScript,
+                  (v) => setDialogState(() => draft.script = v),
+                  emptyHint: loc.mcpAutoNoScriptAddFirst),
+            if (draft.type == 1)
+              _optionDropdown(toolNames, draft.tool, loc.mcpAutoPickTool,
+                  (v) => setDialogState(() => draft.tool = v),
+                  emptyHint: _mcpRunning == true ? loc.mcpAutoNoTools : loc.mcpAutoToolsNeedStart),
+            if (draft.type == 2)
+              _optionDropdown(workflowNames, draft.workflow, loc.mcpAutoPickWorkflow,
+                  (v) => setDialogState(() => draft.workflow = v),
+                  emptyHint: loc.mcpAutoNoWorkflowAddFirst),
+            if (draft.type == 3)
+              TextFormField(
+                key: ValueKey('task-action-webhook-${draft.id}'),
+                initialValue: draft.webhookUrl,
+                decoration: const InputDecoration(labelText: 'Webhook URL', border: OutlineInputBorder()),
+                onChanged: (v) => draft.webhookUrl = v,
+              ),
+          ],
+        ),
+      );
+    }
 
     if (!context.mounted) return;
     showDialog(
@@ -839,65 +908,22 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     ),
                   ],
                   const Divider(),
-                  Text(AppLocalizations.of(context)!.mcpAutoTaskAction,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
-                    value: actionType,
-                    isExpanded: true,
-                    isDense: true,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
-                    items: [
-                      DropdownMenuItem(
-                          value: 0,
-                          child: Text(AppLocalizations.of(context)!.mcpAutoActionScript,
-                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(
-                          value: 1,
-                          child: Text(AppLocalizations.of(context)!.mcpAutoActionTool,
-                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(
-                          value: 2,
-                          child: Text(AppLocalizations.of(context)!.mcpAutoActionWorkflow,
-                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                      DropdownMenuItem(
-                          value: 3,
-                          child: Text(AppLocalizations.of(context)!.mcpAutoActionWebhook,
-                              maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false)),
-                    ],
-                    selectedItemBuilder: _selectedItems<int>(const [0, 1, 2, 3],
-                        (v) => [
-                              AppLocalizations.of(context)!.mcpAutoActionScript,
-                              AppLocalizations.of(context)!.mcpAutoActionTool,
-                              AppLocalizations.of(context)!.mcpAutoActionWorkflow,
-                              AppLocalizations.of(context)!.mcpAutoActionWebhook
-                            ][v]),
-                    onChanged: (v) => setDialogState(() => actionType = v ?? 1),
-                  ),
-                  const SizedBox(height: 8),
-                  if (actionType == 0)
-                    _optionDropdown(scriptNames, selectedScript,
-                        AppLocalizations.of(context)!.mcpAutoPickScript,
-                        (v) => setDialogState(() => selectedScript = v),
-                        emptyHint: AppLocalizations.of(context)!.mcpAutoNoScriptAddFirst),
-                  if (actionType == 1)
-                    _optionDropdown(toolNames, selectedTool,
-                        AppLocalizations.of(context)!.mcpAutoPickTool,
-                        (v) => setDialogState(() => selectedTool = v),
-                        emptyHint: _mcpRunning == true
-                            ? AppLocalizations.of(context)!.mcpAutoNoTools
-                            : AppLocalizations.of(context)!.mcpAutoToolsNeedStart),
-                  if (actionType == 2)
-                    _optionDropdown(workflowNames, selectedWorkflow,
-                        AppLocalizations.of(context)!.mcpAutoPickWorkflow,
-                        (v) => setDialogState(() => selectedWorkflow = v),
-                        emptyHint: AppLocalizations.of(context)!.mcpAutoNoWorkflowAddFirst),
-                  if (actionType == 3)
-                    TextField(
-                      controller: webhookUrlController,
-                      decoration: const InputDecoration(labelText: 'Webhook URL', border: OutlineInputBorder()),
+                  Row(children: [
+                    Text(AppLocalizations.of(context)!.mcpAutoTaskAction,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () => setDialogState(() => actionDrafts.add(_TaskActionDraft())),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(AppLocalizations.of(context)!.mcpAutoAddAction),
                     ),
-                ],
+                  ]),
+                  Text(AppLocalizations.of(context)!.mcpAutoMultiActionHint,
+                      style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                  for (var i = 0; i < actionDrafts.length; i++) ...[
+                    const SizedBox(height: 10),
+                    actionEditor(i, setDialogState),
+                  ],                ],
               ),
             ),
           ),
@@ -925,9 +951,21 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       duration: 2, backgroundColor: Colors.red);
                   return;
                 }
-                final descriptor = _buildTaskDescriptor(actionType, nameController.text,
-                    script: selectedScript, tool: selectedTool, workflow: selectedWorkflow, webhookUrl: webhookUrlController.text);
-                if (descriptor == null) {
+                final descriptors = <Map<String, dynamic>>[];
+                for (final draft in actionDrafts) {
+                  final descriptor = _buildTaskDescriptor(draft.type, nameController.text,
+                      script: draft.script,
+                      tool: draft.tool,
+                      workflow: draft.workflow,
+                      webhookUrl: draft.webhookUrl);
+                  if (descriptor == null) {
+                    FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskActionIncomplete, context,
+                        duration: 2, backgroundColor: Colors.red);
+                    return;
+                  }
+                  descriptors.add(descriptor);
+                }
+                if (descriptors.isEmpty) {
                   FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskActionIncomplete, context,
                       duration: 2, backgroundColor: Colors.red);
                   return;
@@ -950,7 +988,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 _scheduler.scheduleTask(
                   name: nameController.text,
                   executeAt: executeAt,
-                  actionDescriptor: descriptor,
+                  actions: descriptors,
                   repeatMode: repeatMode,
                   repeatCount: repeatCount,
                   intervalMinutes: repeatMode == 'interval' ? intervalMinutes : null,
@@ -2641,6 +2679,21 @@ class _ConditionRow {
 }
 
 /// 可编辑操作行
+/// 「定时任务」里的一条待添加动作（多动作编辑用）。
+class _TaskActionDraft {
+  static int _seq = 0;
+
+  /// 稳定 id：动作增删后仍能让 TextField 等有状态子件正确复用。
+  final int id = _seq++;
+
+  /// 0 执行脚本 / 1 调用 MCP 工具 / 2 执行工作流 / 3 发送 Webhook
+  int type = 1;
+  String? script;
+  String? tool;
+  String? workflow;
+  String webhookUrl = 'https://';
+}
+
 class _ActionRow {
   ActionType type;
   final TextEditingController targetController = TextEditingController();

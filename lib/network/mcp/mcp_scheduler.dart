@@ -54,6 +54,7 @@ class McpScheduler {
     required DateTime executeAt,
     VoidCallback? action,
     Map<String, dynamic>? actionDescriptor,
+    List<Map<String, dynamic>>? actions,
     bool repeatDaily = false,
     String repeatMode = 'none',
     int? repeatCount,
@@ -68,6 +69,7 @@ class McpScheduler {
       executeAt: executeAt,
       action: action,
       actionDescriptor: actionDescriptor,
+      actions: actions,
       repeatMode: mode,
       repeatCount: repeatCount,
       intervalMinutes: intervalMinutes,
@@ -75,7 +77,8 @@ class McpScheduler {
       cronExpression: cronExpression,
     );
     _tasks.add(task);
-    logger.i('添加定时任务：$name，执行时间：$executeAt，模式：$mode，次数：${repeatCount ?? '无限'}');
+    logger.i('添加定时任务：$name，动作数：${task.actionList.length}，执行时间：$executeAt，'
+        '模式：$mode，次数：${repeatCount ?? '无限'}');
 
     _startCheckTimer();
   }
@@ -164,17 +167,26 @@ class McpScheduler {
     _tasks.removeWhere((task) => task.isCancelled);
   }
 
-  /// 执行单个任务：优先闭包，否则用执行器跑动作描述
+  /// 执行单个任务：优先闭包，否则按顺序跑动作列表。
+  ///
+  /// 多动作时**逐个串行**执行，单个动作失败只记日志、不打断后面的动作 ——
+  /// 定时任务里「发通知 + 导出 + 调工具」这类组合不该因为第一步失败就整体停摆。
   Future<void> _runTask(ScheduledTask task) async {
     if (task.action != null) {
       task.action!();
       return;
     }
-    if (task.actionDescriptor != null) {
-      if (_executor != null) {
-        await _executor!(task.actionDescriptor!);
-      } else {
-        logger.w('任务 ${task.name} 有动作描述但未注册执行器，跳过');
+    final list = task.actionList;
+    if (list.isEmpty) return;
+    if (_executor == null) {
+      logger.w('任务 ${task.name} 有动作描述但未注册执行器，跳过');
+      return;
+    }
+    for (var i = 0; i < list.length; i++) {
+      try {
+        await _executor!(list[i]);
+      } catch (e, st) {
+        logger.e('任务 ${task.name} 的第 ${i + 1}/${list.length} 个动作执行失败', error: e, stackTrace: st);
       }
     }
   }
@@ -206,7 +218,7 @@ class McpScheduler {
     try {
       final file = await Paths.getPath('mcp_tasks.json');
       final data = _tasks
-          .where((t) => t.actionDescriptor != null && !t.isCancelled)
+          .where((t) => t.actionList.isNotEmpty && !t.isCancelled)
           .map((t) => t.toJson())
           .toList();
       await file.writeAsString(jsonEncode(data));
@@ -274,7 +286,10 @@ class ScheduledTask {
   final String name;
   DateTime executeAt;
   final VoidCallback? action; // 本会话闭包（不持久化）
-  final Map<String, dynamic>? actionDescriptor; // 可序列化动作描述
+  final Map<String, dynamic>? actionDescriptor; // 可序列化动作描述（单动作，旧字段）
+
+  /// 可序列化的动作列表：一次到期可依次执行多个动作。
+  final List<Map<String, dynamic>> actions;
 
   /// 重复方式：none 一次性 / daily 每天 / weekly 每周 / interval 固定间隔 / cron 表达式
   final String repeatMode;
@@ -303,6 +318,7 @@ class ScheduledTask {
     required this.executeAt,
     this.action,
     this.actionDescriptor,
+    List<Map<String, dynamic>>? actions,
     String repeatMode = 'none',
     this.repeatCount,
     this.intervalMinutes,
@@ -310,8 +326,15 @@ class ScheduledTask {
     this.lastExecuted,
     bool repeatDaily = false,
     this.cronExpression,
-  })  : repeatMode = (repeatMode == 'none' && repeatDaily) ? 'daily' : repeatMode,
+  })  : actions = actions ?? const [],
+        repeatMode = (repeatMode == 'none' && repeatDaily) ? 'daily' : repeatMode,
         weekdays = weekdays ?? const [];
+
+  /// 本次到期实际要执行的动作序列。
+  ///
+  /// 新格式优先用 [actions]；只有旧数据（仅带 `action` 字段）才回退成单元素列表。
+  List<Map<String, dynamic>> get actionList =>
+      actions.isNotEmpty ? actions : (actionDescriptor != null ? [actionDescriptor!] : const []);
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -323,6 +346,7 @@ class ScheduledTask {
         if (weekdays.isNotEmpty) 'weekdays': weekdays,
         if (cronExpression != null) 'cronExpression': cronExpression,
         'executedCount': executedCount,
+        if (actions.isNotEmpty) 'actions': actions,
         if (actionDescriptor != null) 'action': actionDescriptor,
         if (lastExecuted != null) 'lastExecuted': lastExecuted!.toIso8601String(),
       };
@@ -339,6 +363,10 @@ class ScheduledTask {
       name: json['name'] as String,
       executeAt: DateTime.parse(json['executeAt'] as String),
       actionDescriptor: json['action'] as Map<String, dynamic>?,
+      actions: (json['actions'] as List?)
+          ?.whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList(growable: false),
       repeatMode: mode,
       repeatCount: json['repeatCount'] is int ? json['repeatCount'] as int : null,
       intervalMinutes: json['intervalMinutes'] is int ? json['intervalMinutes'] as int : null,

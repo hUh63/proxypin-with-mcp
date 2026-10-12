@@ -976,5 +976,10 @@
   "editorExitConfirmAgainTitle": "再次確認",
   "editorExitConfirmAgainBody": "確定要結束編輯器嗎？",
   "editorMenuManage": "管理",
-  "editorFormatUnsupported": "目前語言暫不支援格式化"
+  "editorFormatUnsupported": "目前語言暫不支援格式化",
+  "mcpAutoAddAction": "新增動作",
+  "mcpAutoRemoveAction": "刪除該動作",
+  "mcpAutoMultiActionHint": "一個任務可以依序執行多個動作；某個動作失敗不會影響後面的動作。",
+  "mcpAutoActionIndex": "動作 {n}",
+  "mcpAutoActionsCount": "{n} 個動作"
 }

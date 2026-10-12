@@ -505,5 +505,10 @@
   "editorExitConfirmAgainTitle": "Confirmar novamente",
   "editorExitConfirmAgainBody": "Tem certeza de que deseja sair do editor?",
   "editorMenuManage": "Gerenciar",
-  "editorFormatUnsupported": "Esta linguagem não suporta formatação"
+  "editorFormatUnsupported": "Esta linguagem não suporta formatação",
+  "mcpAutoAddAction": "Adicionar acao",
+  "mcpAutoRemoveAction": "Remover esta acao",
+  "mcpAutoMultiActionHint": "Uma tarefa pode executar varias acoes em ordem; se uma falhar, as outras continuam.",
+  "mcpAutoActionIndex": "Acao {n}",
+  "mcpAutoActionsCount": "{n} acoes"
 }
