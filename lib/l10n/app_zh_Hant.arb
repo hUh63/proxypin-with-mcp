@@ -981,5 +981,3440 @@
   "mcpAutoRemoveAction": "刪除該動作",
   "mcpAutoMultiActionHint": "一個任務可以依序執行多個動作；某個動作失敗不會影響後面的動作。",
   "mcpAutoActionIndex": "動作 {n}",
-  "mcpAutoActionsCount": "{n} 個動作"
+  "mcpAutoActionsCount": "{n} 個動作",
+  "mcpService": "MCP Server",
+  "mcpServiceDescribe": "為 Model Context Protocol (MCP) 與 Claude 等 AI 工具通訊啟動本地 HTTP 伺服器。",
+  "mcpEnable": "啟用 MCP 伺服器",
+  "mcpPort": "埠",
+  "mcpConfig": "MCP 配置",
+  "mcpRedact": "發給 AI 前先自動打碼敏感資訊",
+  "mcpRedactDescribe": "發給 AI 之前，自動把密碼、令牌這類敏感資訊打碼。",
+  "mcpHintRun": "在終端中執行此命令，將 ProxyPin MCP 新增到 {client}。",
+  "mcpAboutTitle": "關於 MCP 整合",
+  "mcpAboutText": "MCP (Model Context Protocol) 允許像 Claude 這樣的 AI 助手與 ProxyPin 互動。AI 可以讀取捕獲的 HTTP 流量、建立除錯規則（Map Local、Map Remote、斷點），並幫助分析網路問題。",
+  "mcpLearnMore": "瞭解有關 MCP 的更多資訊",
+  "mcpAccessToken": "訪問令牌",
+  "mcpStatusRunning": "執行中",
+  "mcpStatusStopped": "已停止",
+  "mcpHintTerminal": "複製後在終端中執行即可。",
+  "mcpHintJson": "貼上到客戶端的 MCP 設定中。",
+  "mcpHintCopilot": "貼上到 VS Code 的 settings.json → mcp.servers。",
+  "mcpHintLingma": "開啟 通義靈碼 IDE → 頭像 → 個人設定 → MCP 服務 → 手工新增（STDIO 型別）。",
+  "mcpHintCherry": "Cherry Studio → 設定 → MCP 伺服器 → 新增。",
+  "mcpHintDoubao": "MarsCode IDE → 設定 → MCP → 新增（STDIO 型別）。",
+  "mcpSetup": "一鍵配置",
+  "mcpStartChat": "開始對話",
+  "mcpSetupDone": "已配置，重啟 AI 客戶端後生效。",
+  "mcpSetupFail": "配置失敗：",
+  "mcpCliMissing": "未在 PATH 中找到 {cli} 命令，請改用「開啟終端執行」。",
+  "mcpUnsupported": "該客戶端不支援一鍵配置，請手動配置。",
+  "mcpCopy": "複製",
+  "mcpCopied": "已複製",
+  "mcpStartFailed": "MCP 服務啟動失敗",
+  "securityAiTitle": "AI 分析自檢結果",
+  "securityAiNotConfigured": "尚未配置 AI 服務：請到「設定 → MCP Connection → AI 分析」填寫介面地址與 API Key",
+  "securityAiRawFallback": "AI 原始回覆（沒能解析成結構化建議，按原文展示）",
+  "securityAiCopied": "已複製 AI 分析",
+  "securityAiAnalyze": "開始分析",
+  "securityAiReanalyze": "重新分析",
+  "securityAiTopRisks": "最值得先處理的",
+  "securityAiFixes": "修復建議",
+  "securityAiActionsHeader": "建議調整 ProxyPin 設定（應用前會再確認一次）",
+  "securityAiApply": "應用",
+  "securityAiApplyTitle": "應用配置",
+  "securityAiApplied": "已應用",
+  "securityAiApplyUnsupported": "這項配置暫不支援自動修改",
+  "securityAiStateOn": "開啟",
+  "securityAiStateOff": "關閉",
+  "securityAiActionEnableSsl": "開啟 SSL 抓包",
+  "securityAiActionEnableSystemProxy": "開啟系統代理",
+  "securityAiActionAntiCache": "開啟防快取",
+  "securityAiActionMcpAllowLan": "MCP 允許區域網訪問",
+  "securityAiActionMcpAuth": "MCP 要求鑑權",
+  "securityAiApplyConfirm": "把「{key}」設為 {value}？\n\nAI 給的理由：{reason}",
+  "wafTitle": "WAF 載荷變異",
+  "wafLoadFirst": "先填一條載荷",
+  "wafPasteResponse": "把響應的頭或攔截頁片段貼進來",
+  "wafAppliedCombo": "已套用針對 {waf} 的組合",
+  "wafNeedAuth": "請先勾選「已獲得測試授權」",
+  "wafNeedUrl": "填一個目標 URL",
+  "wafNeedPlaceholder": "至少要選一個地方寫上 {mark}，告訴工具把測試內容放在哪",
+  "wafNoVariant": "當前選擇下沒有會產生變化的載荷，換個載荷或技術試試",
+  "wafDoneAll": "全部發完：共 {total} 條，疑似繞過 {bypass} 條",
+  "wafDisclaimer": "①② 只做本地字串變換，不發任何請求；③ 的「主動探測」會真的把請求發出去，所以必須先顯式勾選授權。\n請僅用於你擁有或已獲書面授權的目標——未經授權嘗試繞過他人系統的防護措施可能觸犯法律。探測為序列傳送、分批推進（預設每批 200 條），不做爆破與併發。",
+  "wafStep1Title": "① 認一下是什麼 WAF（可選）",
+  "wafStep1Hint": "把你已經抓到的響應頭或攔截頁片段貼進來，按特徵比對——不主動探測。",
+  "wafPickNameHint": "點一下 WAF 名字即可套用推薦組合",
+  "wafStep2Title": "② 輸入載荷並選擇變異方式",
+  "wafStep3Title": "③ 主動探測（會真的發請求）",
+  "wafStep3Hint": "在想測試的位置寫上 {mark}（網址、請求頭、請求體都行）。先發一條普通請求當基準，再一條條發上面勾好的手法，看哪條的響應不一樣——沒被攔的那條就是突破口。",
+  "wafWillProbe": "本次將探測（由 ①② 決定）：{names}",
+  "wafBatchHint": "每批最多 {max} 條；一批發完由你決定要不要繼續下一批，不會一口氣全發出去。",
+  "wafExtraHeaders": "額外請求頭（可選，一行一個）",
+  "wafAuthCheckbox": "我已獲得對該目標的測試授權",
+  "wafNextBatch": "繼續下一批（剩 {remaining}）",
+  "wafLimitsHard": "間隔下限 {min}ms、總量硬頂 {max} 條，這兩條不可突破 —— 再往下就不是「探測」而是對目標的流量衝擊了。",
+  "wafPayloadCopied": "已複製載荷",
+  "wafCopied": "已複製：{name}",
+  "guideTitle": "使用文件",
+  "guideMarkLegendTitle": "重點標記說明",
+  "guideMarkLegend": "文件中的重點使用多種標記方式呈現：\n\n• ==黃色高亮==：關鍵操作步驟\n• 粗體（主題色）：重要概念與入口\n• __實線下劃線__：需要特別注意的設定\n• ~橙色波浪線~：易錯點提醒\n• ~~刪除線~~：已廢棄或不推薦的做法\n• 等寬底色：命令、路徑、程式碼\n\n程式碼塊右下角提供「示例」（演示說明）與「複製」按鈕。",
+  "guideMarkSyntax": "重點標記語法：**粗體** ==高亮== __下劃線__ ~~刪除線~~ ~波浪線~ 程式碼；程式碼塊上方可加 <!--demo:說明--> 提供示例說明。",
+  "guideMarkCopied": "標記語法已複製",
+  "guideCopySyntax": "複製語法",
+  "guideMarkReset": "已恢復預設標記",
+  "guideRenderError": "文件顯示出錯，已自動改用純文字顯示：{error}",
+  "guideDemoTitle": "示例 · {heading}",
+  "guideDemoDefault": "這段程式碼/配置演示了「{heading}」章節的用法。將其填入對應功能頁即可復現效果。",
+  "guideGotIt": "知道了",
+  "guideDemo": "示例",
+  "guideCodeCopied": "程式碼已複製",
+  "guideLoadMore": "載入更多（已顯示 {visible} / {total} 段）",
+  "wafBatchDone": "本批完成，還剩 {remaining} 條未發",
+  "wafProbeError": "探測出錯：{error}",
+  "wafCompare": "比對",
+  "wafNotIdentified": "未識別",
+  "wafGenerate": "生成",
+  "wafClearSelection": "清空選擇",
+  "wafTargetUrl": "目標 URL",
+  "wafBodyOptional": "請求體（可選）",
+  "wafStartProbe": "開始探測",
+  "wafClearResults": "清空結果",
+  "wafAdvanced": "高階設定",
+  "wafAdvancedSummary": "間隔 {delay}ms · 超時 {timeout}s · 單次上限 {max} 條",
+  "wafInterval": "請求間隔",
+  "wafTimeout": "單條超時",
+  "wafMaxProbes": "單次上限",
+  "wafNRecords": "{count} 條",
+  "wafAll": "全部",
+  "wafResultMeta": "HTTP {status} · {bytes} 位元組 · {ms}ms",
+  "wafCopyPayload": "複製載荷",
+  "aiNewChat": "新對話",
+  "aiClearChatTitle": "清除當前對話",
+  "aiClearChatConfirm": "將清空當前對話的全部訊息，且不可恢復。",
+  "aiConversations": "對話列表",
+  "aiClearCurrent": "清除當前",
+  "aiNewConversation": "新建對話",
+  "aiNMessages": "{count} 條訊息",
+  "aiCloseAndClear": "關閉並清除該對話",
+  "aiDeleteChatTitle": "刪除對話",
+  "aiDeleteChatConfirm": "刪除後該對話的訊息無法恢復。",
+  "aiPickAttachment": "選擇要附加的資訊",
+  "aiAttachRequests": "抓包請求",
+  "aiAttachRequestsSub": "從最近 30 條中多選",
+  "aiAttachEndpoints": "介面清單",
+  "aiAttachEndpointsSub": "自動提取全部介面與統計",
+  "aiAttachText": "自定義文字",
+  "aiAttachTextSub": "貼上任意內容作為上下文",
+  "aiNoRequests": "暫無抓包請求",
+  "aiPickRequests": "選擇抓包請求（可多選）",
+  "aiStatus": "狀態碼 {code}",
+  "aiNoResponse": "未響應",
+  "aiAttachTextHint": "貼上任意內容作為 AI 的上下文",
+  "aiAnalyzeFailed": "分析失敗：{error}",
+  "aiTitle": "AI 分析",
+  "aiAgentOn": "Agent 模式已開啟，AI 可自動呼叫 ProxyPin 功能",
+  "aiAgentOff": "Agent 模式已關閉，僅接收手動訊息",
+  "aiAttachTooltip": "附加資訊（可多選）",
+  "aiConvTooltip": "對話列表（新建/切換/刪除/清除）",
+  "aiConfigTooltip": "AI 配置",
+  "aiThinking": "AI 正在思考…",
+  "aiInputAgent": "提問（Agent 模式：AI 可自動查資料）",
+  "aiInputPlain": "輸入問題",
+  "aiEmptyTitle": "與 AI 對話分析抓包資料",
+  "aiEmptyHint1": "點右上角 📎 可以把多條請求、介面清單或一段文字一起發給它",
+  "aiEmptyHint2": "開啟 🤖 Agent 模式可讓 AI 自動呼叫 ProxyPin 功能",
+  "aiToolCalled": "已呼叫工具 {name}",
+  "aiCopied": "已複製",
+  "aiConfigTitle": "AI 分析配置",
+  "aiEnable": "啟用 AI 分析",
+  "aiEnableSub": "OpenAI 相容介面，資料將傳送到你配置的服務",
+  "aiProvider": "服務商",
+  "aiCustomService": "自定義服務…",
+  "aiBaseUrl": "介面地址 (Base URL)",
+  "aiBaseUrlHelper": "自定義服務商，填 OpenAI 相容地址",
+  "aiModelLabel": "模型",
+  "aiAgentSection": "Agent 模式",
+  "aiAgentHint2": "開啟 🤖 後 AI 可自動呼叫 ProxyPin 工具查資料",
+  "aiMaxRounds": "最大工具輪數：{count}",
+  "aiAgentExtra": "Agent 附加指令",
+  "aiAgentExtraHint": "如：優先檢查安全風險；只看 POST 請求…",
+  "aiImportOk": "配置已匯入",
+  "aiImportFailed": "匯入失敗：{error}",
+  "aiImportFromFile": "從檔案匯入配置 (JSON)",
+  "aiJsonFormatHint": "JSON 格式：{example}",
+  "aiConfigSaved": "AI 配置已儲存",
+  "quicTitle": "QUIC 連線",
+  "quicKeylogTooltip": "匯入金鑰日誌（SSLKEYLOGFILE）後即可解密 1-RTT 流資料",
+  "quicCopySessionsTooltip": "複製連線列表（可直接貼上到表格裡）",
+  "quicNoSni": "(無SNI)",
+  "quicPacketsBytes": "{packets}包 / {bytes}",
+  "quicLastActivity": "最後活動 {time}",
+  "quicCopiedSessions": "已複製 {count} 條連線記錄",
+  "quicRefreshTooltip": "重新整理（等待新的 QUIC 包到達）",
+  "quicClearRecords": "清空記錄",
+  "quicClearConfirm": "要清空所有 QUIC 連線記錄嗎？清掉之後就找不回來了。",
+  "quicBannerNoKeylog": "僅展示 QUIC 連線級後設資料（哪些域名在走 QUIC、連線統計）。HTTP/3 內容受 TLS 1.3 加密，預設無法解為明文；點右上角「鑰匙」匯入金鑰日誌（SSLKEYLOGFILE）後，命中的連線會自動解密 1-RTT 流資料；或開啟「攔截 QUIC」強制定向 TCP 抓取完整請求。",
+  "quicBannerKeylogLoaded": "已匯入 {keys} 條金鑰（覆蓋 {connections} 個連線）。命中連線自動解密 1-RTT（僅客戶端方向；HEADERS 按 QPACK 解碼，含動態表）。未命中的連線請開啟「攔截 QUIC」回落 TCP 抓取。",
+  "quicNoSniUnresolved": "（未解出 SNI）",
+  "quicSessionSummary": "QUIC {version} · {remote} · 首見 {firstSeen} · 最後活動 {ago}",
+  "quicSessionIds": "連線 {dcid}… · {packets} 包 / {frames} 幀 · {bytes}{decrypted}",
+  "quicDecryptedSegments": " · 已解密 {count} 段",
+  "quicTimelineTitle": "最近 10 分鐘 QUIC 包量",
+  "quicTimelineNoData": "暫無資料",
+  "quicTimelineSummary": "共 {packets} 包 · {bytes} · {buckets} 段有流量",
+  "quicTenMinutesAgo": "10 分鐘前",
+  "quicPerCellTenSeconds": "每格 10 秒",
+  "quicNow": "現在",
+  "quicImportedNKeys": "已匯入 {keys} 條金鑰，覆蓋 {connections} 個連線",
+  "quicNoNewKeyEntries": "沒有解析到新的金鑰條目（請確認檔案是 NSS key log 格式）",
+  "quicImportFailed": "匯入失敗：{error}",
+  "quicDecryptedTitle": "{host} · 解密內容",
+  "quicDecryptedAbout": "共 {segments} 段（客戶端傳送方向，1-RTT）。HEADERS 為 QPACK 壓縮：靜態表與動態表引用均已解碼，動態表由本連線的「QPACK 編碼器流」按序還原{table}。",
+  "quicQpackTableUsed": "（已插入 {inserted} 條，當前存活 {live} 條）",
+  "quicQpackTableUnused": "（本連線未使用動態表）",
+  "quicHttp3Headers": "HTTP/3 頭部 · QPACK 已解碼 {count} 項",
+  "quicStatConnections": "連線",
+  "quicStatHosts": "域名",
+  "quicStatPackets": "包",
+  "quicStatTraffic": "流量",
+  "quicStatActive": "活躍",
+  "quicSecondsAgo": "{seconds} 秒前",
+  "quicMinutesAgo": "{minutes} 分鐘前",
+  "quicHoursAgo": "{hours} 小時前",
+  "quicEmptyTitle": "尚未捕獲到 QUIC 連線",
+  "quicEmptyDesc": "開啟 VPN 抓包後，目標應用使用 QUIC/HTTP3 時（如影片、部分社交與遊戲應用），會自動記錄其連線：域名(SNI)、QUIC 版本、連線 ID 與包/幀統計。",
+  "quicEmptyHint": "提示：多數應用預設走 TCP/HTTP2，若需看到 QUIC 記錄，可在偏好設定臨時關閉「攔截 QUIC」後重開抓包；業務明文仍需開啟「攔截 QUIC」回落 TCP 後抓取。",
+  "pinningDeployDone": "指令碼已部署到 {path}",
+  "pinningDeployFailed": "部署失敗：{reason}",
+  "pinningNeedPackage": "請填寫目標應用包名",
+  "pinningAttaching": "正在注入…",
+  "pinningAttached": "已注入：{result}",
+  "pinningAttachFailed": "注入失敗：{result}",
+  "pinningStopDone": "已停止注入",
+  "pinningStopFailed": "停止失敗",
+  "pinningTitle": "SSL Pinning 繞過輔助",
+  "pinningRefreshEnv": "重新整理環境",
+  "pinningAndroidOnly": "僅 Android 支援",
+  "pinningViewLog": "檢視注入日誌",
+  "pinningNotice": "請只用在你自己的裝置、以及你有權測試的應用上（自己的 App，或對方書面同意過的）。\n繞過證書固定屬於對 App 執行過程的干預，沒獲得授權就用，可能違法或違反對方協議。\n本工具不帶任何第三方程式（frida-server、Xposed 模組都不含）。",
+  "pinningEnvTitle": "環境檢測",
+  "pinningChecking": "檢測中…",
+  "pinningReady": "可以注入：手機上已經裝好 frida 了",
+  "pinningNotReady": "還差一點：① 先給 root 授權；② 手機上要有 frida-inject（推薦，不用連電腦）或 frida 命令列。\n沒有也能用——指令碼照樣能生成，你拿到電腦上執行 frida -U -f <包名> -l 指令碼 就能注入。",
+  "pinningStep1Title": "① 生成並部署 hook 指令碼",
+  "pinningStep1Hint": "覆蓋常見實現：Conscrypt TrustManagerImpl、SSLContext.init、OkHttp CertificatePinner、HostnameVerifier。",
+  "pinningDeploy": "部署到裝置",
+  "pinningScriptCopied": "指令碼已複製",
+  "pinningCopyScript": "複製指令碼",
+  "pinningStep2Title": "② 把指令碼注入到目標 App",
+  "pinningPackageHint": "包名（如 com.example.app）",
+  "pinningSpawn": "App 一啟動就注入（對付「一開啟就檢查證書」的應用）",
+  "pinningAttach": "開始注入",
+  "pinningOtherOptions": "還有別的辦法嗎？",
+  "pinningOtherHint": "· 先排除「證書沒裝好」：自檢裡第 1 層是證書、第 2 層才是證書固定；裝好系統證書，第 1 層就過了（見證書頁）。\n· 裝了 Magisk / LSPosed 的，直接找現成的過檢測模組更省事，跟本工具二選一即可。\n· Flutter 應用認的是 Dart 自己的證書列表，不看系統證書，要單獨處理。",
+  "cloudServerSaved": "服務端地址已儲存",
+  "cloudNeedCredentials": "請填寫使用者名稱和密碼",
+  "cloudAuthFailed": "失敗：{error}",
+  "cloudSignedIn": "已登入",
+  "cloudSignedOut": "已退出登入",
+  "cloudNoLocalWorkspace": "本地還沒有工作區",
+  "cloudPickWorkspace": "選擇要推送的工作區",
+  "cloudPushFailed": "推送失敗：{error}",
+  "cloudPushed": "已推送到雲端",
+  "cloudRemoteEmpty": "雲端這份是空的",
+  "cloudPulled": "已拉到本地（{count} 條）",
+  "cloudPullFailed": "拉取失敗：{error}",
+  "cloudDeleteConfirm": "刪除雲端的這份工作區副本？刪除後無法恢復。",
+  "cloudDeleted": "已刪除雲端副本",
+  "cloudRealtimeFailed": "實時連線失敗，檢查服務端與登入狀態",
+  "cloudTitle": "雲端協同",
+  "cloudServer": "服務端",
+  "cloudServerHint": "自己部署的服務端地址。文件裡有可直接執行的 Node 實現（含賬號與實時推送）。",
+  "cloudAccount": "賬號",
+  "cloudSignOut": "退出登入",
+  "cloudSignIn": "登入",
+  "cloudRegister": "註冊",
+  "cloudRealtime": "實時協同",
+  "cloudRealtimeOn": "已連線，別人的改動會實時推過來",
+  "cloudRealtimeOff": "未連線",
+  "cloudWorkspaces": "雲端工作區",
+  "cloudPushLocal": "把本地工作區推上去",
+  "cloudNoRemote": "雲端暫無工作區",
+  "cloudPull": "拉到本地",
+  "cloudDeleteRemote": "刪除雲端副本",
+  "cloudTeam": "團隊成員",
+  "cloudTapRefresh": "（點右上角重新整理檢視）",
+  "cloudInviteUser": "邀請使用者名稱",
+  "cloudInvited": "已邀請 {name}",
+  "cloudInviteFailed": "邀請失敗：{error}",
+  "cloudInvite": "邀請",
+  "sslP12FileEmpty": "讀取到的檔案為空，請重新選擇 .p12 檔案",
+  "sslAutoInstallHint": "自動安裝（需要 Root；裝成 Magisk 模組，重啟後生效）\n新系統裡 /system、/apex 都是隻讀的，寫不進去，只能做成模組讓手機開機時掛載。",
+  "sslAutoInstallToSystem": "一鍵自動安裝到系統",
+  "sslRemoveSystemCA": "移除系統證書",
+  "sslRemoveSystemCAConfirm": "會刪掉之前裝進系統的證書（Magisk 模組），刪完之後 HTTPS 就抓不到了。確定移除？",
+  "sslRemoveInstalledSystemCA": "移除已安裝的系統證書",
+  "sslNoModuleManager": "沒有 Magisk / KernelSU / APatch？",
+  "sslRuntimeMountDesc": "有 root 但沒裝 Magisk？點下面一鍵把證書裝進系統，App 就會認它了。重啟手機會失效，隨時能一鍵卸掉、不留殘留，也不用重啟手機。",
+  "sslMountToTrustStore": "一鍵裝進系統（需 Root）",
+  "sslUnmountRuntimeCA": "解除安裝直掛",
+  "sslUnmountRuntimeCAConfirm": "會卸掉臨時裝進系統的證書，卸完之後 HTTPS 就抓不到了。確定解除安裝？",
+  "sslRestartZygote": "立即生效（會短暫重啟所有 App）",
+  "sslAndroid13MountHint": "Android 13：證書會裝到 /system/etc/security/cacerts",
+  "sslAndroid14MountHint": "Android 14：證書會裝到 /apex/com.android.conscrypt/cacerts",
+  "sslAndroidCaInstallNote": "注意：手動裝證書時一定要選【CA 證書】，選成【VPN 和應用證書】應用不會認。Android 14 以上系統位置特殊，手動複製常常不生效——用下面的「一鍵裝進系統」最穩。",
+  "sslNoModuleDirMsg": "未檢測到 Magisk / KernelSU / APatch（無 /data/adb/modules）：請先下載證書，再用模組方式手動安裝",
+  "sslInstallFailedRoot": "安裝失敗（{output}），請確認已授予 root 許可權",
+  "sslModuleInstalled": "已裝好模組，重啟手機後生效（Android 14 以上會自動裝到正確位置）",
+  "sslAutoInstallFailedRoot": "自動安裝失敗：{error}，請確認已授予 root 許可權",
+  "sslRemovedReboot": "已移除，重啟手機後生效",
+  "sslRemoveFailedRoot": "移除失敗，請確認 root 授權",
+  "sslRemoveFailedError": "移除失敗：{error}",
+  "sslMountingGrantRoot": "正在安裝，請在彈窗裡點「允許」給 root 許可權",
+  "sslMountedTrustStore": "已裝進系統（重啟手機後失效）。把要抓的那個 App 重啟一下就能生效，或點下面「立即生效」。",
+  "sslMountFailed": "安裝失敗：{message}",
+  "sslUnmountedRestored": "已解除安裝，系統證書恢復原樣。",
+  "sslUnmountFailed": "解除安裝失敗：{message}",
+  "sslZygoteRestarted": "已讓所有 App 重新載入，手機會閃一下，屬正常。",
+  "sslZygoteRestartFailed": "重啟失敗：{message}",
+  "sslCertNotInstalled": "證書未安裝",
+  "sslTapInstallRootCA": "點下面的「安裝根證書」就能裝",
+  "sslCertNotTrusted": "證書未信任",
+  "sslCertInstalledTrusted": "證書已安裝並信任",
+  "sslGuide": "指引",
+  "mcpAutoTitle": "MCP 自動化",
+  "mcpAutoTutorial": "使用教程",
+  "mcpAutoRefresh": "重新整理",
+  "mcpAutoRefreshed": "已重新整理",
+  "mcpAutoCancel": "取消",
+  "mcpAutoSave": "儲存",
+  "mcpAutoConfirm": "確定",
+  "mcpAutoClose": "關閉",
+  "mcpAutoDelete": "刪除",
+  "mcpAutoEdit": "編輯",
+  "mcpAutoEnable": "啟用",
+  "mcpAutoEnabled": "已啟用",
+  "mcpAutoDisabled": "已禁用",
+  "mcpAutoName": "名稱",
+  "mcpAutoDescription": "描述",
+  "mcpAutoValue": "值",
+  "mcpAutoEmpty": "空",
+  "mcpAutoUnnamed": "未命名",
+  "mcpAutoCustom": "自定義",
+  "mcpAutoPriority": "優先順序",
+  "mcpAutoConditionType": "條件型別",
+  "mcpAutoTargetParams": "目標 / 引數(JSON)",
+  "mcpAutoTabTasks": "定時任務",
+  "mcpAutoTabEvents": "事件監聽",
+  "mcpAutoTabRules": "規則引擎",
+  "mcpAutoTabWorkflows": "工作流",
+  "mcpAutoStatusChecking": "檢測中…",
+  "mcpAutoStatusRunning": "執行中",
+  "mcpAutoStatusStopped": "已停止",
+  "mcpAutoTapToStop": "點選停止 MCP 自動化",
+  "mcpAutoTapToStart": "點選啟動 MCP 自動化",
+  "mcpAutoServiceStartFailed": "MCP 服務啟動失敗，請檢查設定中是否已啟用 MCP 服務",
+  "mcpAutoServiceStopped": "MCP 服務已停止",
+  "mcpAutoServiceStarted": "MCP 服務已啟動",
+  "mcpAutoServiceNotStarted": "MCP 服務未啟動，請先在連線頁啟動",
+  "mcpAutoEditRoot": "編輯 Root",
+  "mcpAutoAddRoot": "新增 Root",
+  "mcpAutoRootUriHint": "proxypin://workspace 或 file:///path/to/dir",
+  "mcpAutoRootUriRequired": "請輸入 Root URI",
+  "mcpAutoRootUpdated": "Root 已更新",
+  "mcpAutoRootAdded": "Root 已新增",
+  "mcpAutoRootDeleted": "Root 已刪除",
+  "mcpAutoNoRoots": "暫無 Roots",
+  "mcpAutoNoRootsHint": "點選右下角 + 新增 Root\n可新增 proxypin:// 或 file:// 資源根，自由編輯",
+  "mcpAutoDeleteRootConfirm": "刪除這個 Root 配置？",
+  "mcpAutoReading": "讀取 {name}…",
+  "mcpAutoReadFailed": "讀取失敗: {error}",
+  "mcpAutoScriptNotFound": "指令碼不存在: {name}",
+  "mcpAutoScriptExecuted": "指令碼已執行: {name}",
+  "mcpAutoScriptRunFailed": "指令碼執行失敗: {error}",
+  "mcpAutoNoTasks": "暫無定時任務",
+  "mcpAutoNoTasksHint": "點選右下角 + 新增新任務\n可同時選擇執行時間與執行內容",
+  "mcpAutoNextPrefix": "下次：",
+  "mcpAutoLastRun": " • 上次：{time}",
+  "mcpAutoRanTimes": " • 已執行 {count}/{total} 次",
+  "mcpAutoDeleteTaskConfirm": "取消並刪除這個定時任務？",
+  "mcpAutoAddTask": "新增定時任務",
+  "mcpAutoTaskName": "任務名稱",
+  "mcpAutoScheduleMode": "定時方式:",
+  "mcpAutoModeOnce": "一次性",
+  "mcpAutoModeDaily": "每天",
+  "mcpAutoModeWeekly": "每週",
+  "mcpAutoModeInterval": "間隔",
+  "mcpAutoCronLabel": "Cron 表示式",
+  "mcpAutoCronHint": "分 時 日 月 星期，如 0 9 * * 1-5",
+  "mcpAutoCronHelper": "支援 * , - / 萬用字元",
+  "mcpAutoCronRequired": "請輸入 Cron 表示式",
+  "mcpAutoCronInvalidHint": "表示式無效，請檢查",
+  "mcpAutoCronNextAt": "下次執行: {time}",
+  "mcpAutoCronPresetWorkday": "工作日9點",
+  "mcpAutoCronPresetEvery30": "每30分鐘",
+  "mcpAutoCronPresetMidnight": "每天零點",
+  "mcpAutoExecDateTime": "執行日期與時間:",
+  "mcpAutoExecTime": "執行時間:",
+  "mcpAutoPickDate": "選擇執行日期",
+  "mcpAutoRepeatOn": "重複於:",
+  "mcpAutoWeekdayMon": "週一",
+  "mcpAutoWeekdayTue": "週二",
+  "mcpAutoWeekdayWed": "週三",
+  "mcpAutoWeekdayThu": "週四",
+  "mcpAutoWeekdayFri": "週五",
+  "mcpAutoWeekdaySat": "週六",
+  "mcpAutoWeekdaySun": "週日",
+  "mcpAutoPickWeekday": "請至少選擇一個星期",
+  "mcpAutoIntervalMinutes": "間隔分鐘數",
+  "mcpAutoIntervalMinutesHelp": "如填 30，表示每 30 分鐘自動執行一次",
+  "mcpAutoRepeatCount": "重複次數",
+  "mcpAutoRepeatCountHelp": "如填 5，表示共執行 5 次後自動結束；留空 = 無限重複",
+  "mcpAutoTaskAction": "執行任務:",
+  "mcpAutoActionScript": "執行指令碼",
+  "mcpAutoActionTool": "呼叫 MCP 工具",
+  "mcpAutoActionWorkflow": "執行工作流",
+  "mcpAutoActionWebhook": "傳送 Webhook",
+  "mcpAutoPickScript": "選擇指令碼",
+  "mcpAutoNoScriptAddFirst": "暫無指令碼，先在指令碼頁新增",
+  "mcpAutoPickTool": "選擇 MCP 工具",
+  "mcpAutoNoTools": "暫無工具",
+  "mcpAutoToolsNeedStart": "MCP 未啟動，無法獲取工具",
+  "mcpAutoPickWorkflow": "選擇工作流",
+  "mcpAutoNoWorkflowAddFirst": "暫無工作流，先在工作流頁新增",
+  "mcpAutoTaskNameRequired": "請輸入任務名稱",
+  "mcpAutoIntervalInvalid": "請輸入有效的間隔分鐘數",
+  "mcpAutoCronInvalid": "Cron 表示式無效",
+  "mcpAutoTaskActionIncomplete": "請完善執行任務配置",
+  "mcpAutoTaskAdded": "定時任務已新增",
+  "mcpAutoTaskCancelled": "任務已取消",
+  "mcpAutoNoListeners": "暫無事件監聽器",
+  "mcpAutoNoListenersHint": "點選 + 註冊監聽器\n觸發時可執行日誌/任務",
+  "mcpAutoRemoveListenerConfirm": "移除這個事件監聽器？",
+  "mcpAutoEventTypesInfo": "事件型別說明",
+  "mcpAutoEventTypesBody": "• HTTP 請求事件：匹配 URL 正則觸發\n• 網路狀態事件：連線/斷開/wifi/弱網\n• 代理狀態事件：啟動/停止/暫停/恢復\n• 抓包閾值事件：抓包數達到閾值",
+  "mcpAutoAddListener": "新增事件監聽器",
+  "mcpAutoEventHttp": "HTTP 請求事件",
+  "mcpAutoEventNetwork": "網路狀態事件",
+  "mcpAutoEventProxy": "代理狀態事件",
+  "mcpAutoEventCapture": "抓包閾值事件",
+  "mcpAutoUrlRegex": "URL 正則",
+  "mcpAutoCaptureThreshold": "抓包數量閾值",
+  "mcpAutoDescHttp": "HTTP 請求: {pattern}",
+  "mcpAutoDescNetwork": "網路狀態: {status}",
+  "mcpAutoDescProxy": "代理狀態: {status}",
+  "mcpAutoDescCapture": "抓包閾值: {count}",
+  "mcpAutoListenerAdded": "監聽器已註冊",
+  "mcpAutoListenerRemoved": "監聽器已移除",
+  "mcpAutoNoRules": "暫無自動化規則",
+  "mcpAutoNoRulesHint": "點選 + 新增規則\n規則可根據條件自動執行操作",
+  "mcpAutoRuleSummary": "{conditions} 條件 • {actions} 操作 • {enabled}",
+  "mcpAutoDeleteRuleConfirm": "刪除這條規則？",
+  "mcpAutoConditionsInline": "條件:",
+  "mcpAutoActionsInline": "操作:",
+  "mcpAutoRuleEngineInfo": "規則引擎說明",
+  "mcpAutoRuleEngineInfoBody": "支援 14 種條件運算子與 8 種操作型別\n規則持久化到 mcp_rules.json，跨重啟保留",
+  "mcpAutoEditRule": "編輯規則",
+  "mcpAutoAddRule": "新增規則",
+  "mcpAutoRuleName": "規則名稱",
+  "mcpAutoSectionConditions": "條件",
+  "mcpAutoSectionActions": "操作",
+  "mcpAutoRuleNameRequired": "請輸入規則名稱",
+  "mcpAutoRuleUpdated": "規則已更新",
+  "mcpAutoRuleAdded": "規則已新增",
+  "mcpAutoRuleDeleted": "規則已刪除",
+  "mcpAutoShortProxy": "代理",
+  "mcpAutoShortNetwork": "網路",
+  "mcpAutoShortSystem": "系統",
+  "mcpAutoCondTypeHttp": "HTTP 請求",
+  "mcpAutoCondTypeProxy": "代理狀態",
+  "mcpAutoCondTypeNetwork": "網路狀態",
+  "mcpAutoCondTypeSystem": "系統狀態",
+  "mcpAutoOpContains": "包含",
+  "mcpAutoOpStartsWith": "始於",
+  "mcpAutoOpEndsWith": "終於",
+  "mcpAutoOpMatches": "匹配",
+  "mcpAutoOpInList": "在...中",
+  "mcpAutoOpNotInList": "不在...中",
+  "mcpAutoOpExists": "存在",
+  "mcpAutoOpNotExists": "不存在",
+  "mcpAutoActLog": "記錄",
+  "mcpAutoActNotify": "通知",
+  "mcpAutoActStopCapture": "停止抓包",
+  "mcpAutoActStartCapture": "開始抓包",
+  "mcpAutoActExportData": "匯出資料",
+  "mcpAutoFieldMethod": "方法",
+  "mcpAutoFieldStatusCode": "狀態碼",
+  "mcpAutoFieldDuration": "耗時(ms)",
+  "mcpAutoFieldHost": "域名",
+  "mcpAutoFieldPath": "路徑",
+  "mcpAutoFieldReqContentType": "請求 Content-Type",
+  "mcpAutoFieldRespContentType": "響應 Content-Type",
+  "mcpAutoFieldReqSize": "請求大小",
+  "mcpAutoFieldRespSize": "響應大小",
+  "mcpAutoFieldType": "型別",
+  "mcpAutoFieldTimestamp": "時間戳",
+  "mcpAutoFieldMemory": "記憶體使用(MB)",
+  "mcpAutoFieldCaptureCount": "抓包數量",
+  "mcpAutoFieldDisk": "磁碟使用(MB)",
+  "mcpAutoFieldCpu": "CPU 使用率(%)",
+  "mcpAutoStatusStarted": "已啟動",
+  "mcpAutoStatusPaused": "已暫停",
+  "mcpAutoStatusResumed": "已恢復",
+  "mcpAutoStatusConnected": "已連線",
+  "mcpAutoStatusDisconnected": "已斷開",
+  "mcpAutoStatusMobile": "移動資料",
+  "mcpAutoStatusWeak": "弱網",
+  "mcpAutoNoPrompts": "暫無 Prompts",
+  "mcpAutoTapInvokePrompt": "點選 + 呼叫 Prompt",
+  "mcpAutoPromptDescWithArgs": "{desc}\n引數: {params}",
+  "mcpAutoNoPromptAvailable": "暫無可用 Prompt",
+  "mcpAutoInvokePrompt": "呼叫 Prompt",
+  "mcpAutoPromptNoArgs": "該 Prompt 無需引數",
+  "mcpAutoRequiredArg": "請填寫必填引數: {name}",
+  "mcpAutoInvokingPrompt": "正在呼叫 Prompt…",
+  "mcpAutoInvoke": "呼叫",
+  "mcpAutoNoResult": "無返回內容",
+  "mcpAutoNoWorkflows": "暫無工作流",
+  "mcpAutoNoWorkflowsHint": "點選 + 建立工作流\n可編排多個指令碼節點順序執行",
+  "mcpAutoUnnamedWorkflow": "未命名工作流",
+  "mcpAutoNodesCount": "{count} 個節點",
+  "mcpAutoDeleteWorkflowConfirm": "刪除這個工作流？",
+  "mcpAutoWorkflowDeleted": "工作流已刪除",
+  "mcpAutoNoNodes": "無節點",
+  "mcpAutoDependsOn": "依賴: {deps}",
+  "mcpAutoNoDeps": "無依賴",
+  "mcpAutoEditWorkflow": "編輯工作流",
+  "mcpAutoAddWorkflow": "新增工作流",
+  "mcpAutoWorkflowName": "工作流名稱",
+  "mcpAutoNodes": "節點",
+  "mcpAutoTapAddNode": "點選 + 新增節點",
+  "mcpAutoTopoHint": "節點按依賴關係拓撲執行；依賴顯示為可點選的標籤。",
+  "mcpAutoWorkflowNameRequired": "請輸入工作流名稱",
+  "mcpAutoWorkflowUpdated": "工作流已更新",
+  "mcpAutoWorkflowAdded": "工作流已新增",
+  "mcpAutoWorkflowNoNodes": "工作流沒有節點",
+  "mcpAutoWorkflowStart": "開始執行工作流：{name}",
+  "mcpAutoWorkflowDone": "工作流執行完成",
+  "mcpConnSettingsTitle": "MCP 設定",
+  "mcpConnAutomationConfig": "自動化配置",
+  "mcpConnAllowLanHint": "開啟後同一網路內的裝置可連線本機 MCP 服務",
+  "mcpConnTokenAuth": "訪問令牌鑑權",
+  "mcpConnTokenAuthRequired": "要求 Bearer token（推薦）",
+  "mcpConnTokenAuthDisabled": "已關閉：同一網路內任何裝置都可讀取抓包內容！",
+  "mcpConnKeepAlive": "後臺保活",
+  "mcpConnKeepAliveDesc": "把本應用加入電池最佳化白名單並解除後臺限制，降低抓包與 MCP 服務被系統殺掉的可能（需 Shizuku / root / Dhizuku 之一）",
+  "mcpConnStrictValidation": "嚴格校驗引數",
+  "mcpConnStrictValidationDesc": "按工具宣告的 inputSchema 校驗引數，儘早提示呼叫錯誤（立即生效）",
+  "mcpConnTokenNotGenerated": "未生成（開啟區域網訪問後自動生成）",
+  "mcpConnTokenCopied": "令牌已複製",
+  "mcpConnRegenerateTokenTooltip": "重新生成（舊令牌立即失效）",
+  "mcpConnRegenerateTokenFailed": "重新生成令牌失敗：{error}",
+  "mcpConnClientCommands": "AI 客戶端接入命令",
+  "mcpConnClientCommandsSubtitle": "Claude Code / Codex / curl / 一鍵指令碼",
+  "mcpConnCurlSelfCheck": "curl 自檢",
+  "mcpConnOneClickConfigShell": "一鍵配置(shell)",
+  "mcpConnOneClickConfigPowershell": "一鍵配置(PowerShell)",
+  "mcpConnNeedLanAccessForToken": "（需先開啟區域網訪問以生成令牌）",
+  "mcpConnAutoStart": "自動啟動",
+  "mcpConnServicePort": "服務埠",
+  "mcpConnConnectionInfo": "連線資訊",
+  "mcpConnProtocolVersion": "MCP 協議版本：{version}（無狀態核心，相容舊版握手）",
+  "mcpConnDeviceIp": "裝置 IP",
+  "mcpConnDeviceIpCopied": "已複製裝置 IP",
+  "mcpConnApiUrl": "API URL（Streamable HTTP）",
+  "mcpConnApiUrlCopied": "已複製 API URL",
+  "mcpConnSseUrl": "SSE URL（舊版傳輸）",
+  "mcpConnSseUrlCopied": "已複製 SSE URL",
+  "mcpConnHealthCheck": "Health Check（健康檢查）",
+  "mcpConnHealthCheckUrlCopied": "已複製 Health Check URL",
+  "mcpConnFloatingBall": "懸浮球",
+  "mcpConnFloatingBallDesc": "懸浮球顯示 MCP 是否在跑，點一下彈出快捷面板；前臺服務能讓後臺更不容易被殺。",
+  "mcpConnFloatingBallColorDesc": "顏色 #{hex} · 透明度 {percent}%",
+  "mcpConnCustomFloatingBall": "自定義懸浮球",
+  "mcpConnPresetColors": "預置顏色",
+  "mcpConnPresetM3Purple": "M3 紫",
+  "mcpConnPresetDeepSeaBlue": "深海藍",
+  "mcpConnPresetEmeraldGreen": "翡翠綠",
+  "mcpConnPresetCoralOrange": "珊瑚橙",
+  "mcpConnPresetRoseRed": "玫瑰紅",
+  "mcpConnPresetGraphiteBlack": "石墨黑",
+  "mcpConnCustomColorRgb": "自定義顏色（RGB）",
+  "mcpConnOpacityPercent": "透明度 {percent}%",
+  "mcpConnConfirm": "確定",
+  "mcpConnFloatingBallPermission": "懸浮球許可權",
+  "mcpConnFloatingBallNeedOverlayPermission": "懸浮球需要\"顯示在其他應用上層\"許可權，已為你開啟系統設定，授權後回來重新開啟",
+  "mcpConnFloatingBallStartFailed": "懸浮球啟動失敗：{reason}",
+  "mcpConnFloatingBallStopFailed": "懸浮球停止失敗：{reason}",
+  "mcpConnUnknownReason": "未知原因",
+  "mcpConnFloatingBallStartedHint": "懸浮球已開啟；若螢幕上看不到，請檢查系統「顯示懸浮窗」與廠商「後臺彈出介面」許可權",
+  "mcpConnFloatingBallCallFailed": "懸浮球呼叫失敗：{error}",
+  "mcpConnOverlayGranted": "已授權\"顯示在其他應用上層\"",
+  "mcpConnOverlayNotGranted": "未授權——點選前往系統設定開啟，否則懸浮球無法顯示",
+  "mcpConnEnableFloatingBall": "啟用懸浮球",
+  "mcpConnFloatingBallEnabledDesc": "用懸浮球顯示 MCP 狀態，後臺更不容易被殺",
+  "mcpConnFloatingBallPermissionRequired": "請先完成上方懸浮球許可權授權",
+  "mcpConnAutoDock": "3 秒無操作自動貼邊",
+  "mcpConnAutoDockDesc": "懸浮球自動吸附螢幕邊緣，避免遮擋",
+  "mcpConnCustomFloatingBallStyle": "自定義懸浮球樣式",
+  "mcpConnAiConfigGuide": "AI 配置指南",
+  "mcpConnAiConfigGuideDesc": "將以下配置寫入 AI 客戶端的 MCP 配置檔案中，即可讓 Cursor / Windsurf / Claude Desktop / Cherry Studio 等支援 MCP 的 AI 工具讀取抓包資料並控制 ProxyPin。請確保手機與電腦處於同一區域網，且 MCP 服務已開啟。伺服器同時支援最新無狀態協議（2026-07-28）與舊版握手協議。",
+  "mcpConnAiConfigCopied": "已複製 AI 配置",
+  "mcpConnControlMode": "控制模式",
+  "mcpConnCurrentMode": "當前模式",
+  "mcpConnAccessibility": "無障礙",
+  "mcpConnAccessibilityService": "無障礙服務",
+  "mcpConnRootPermission": "Root 許可權",
+  "mcpConnAvailable": "可用",
+  "mcpConnUnavailable": "不可用",
+  "mcpConnNotGranted": "未授權",
+  "mcpConnNotEnabled": "未開啟",
+  "mcpConnOpenAccessibilitySettings": "開啟無障礙設定",
+  "mcpConnShizukuGranted": "Shizuku 已授權",
+  "mcpConnRequestShizuku": "請求 Shizuku 授權",
+  "mcpConnShizukuAuthIncomplete": "未完成授權：請確認 Shizuku 正在執行，併到 Shizuku 應用中選擇本應用授權；或在彈窗中選擇“允許”",
+  "mcpConnRootGranted": "Root 已授權",
+  "mcpConnRequestRoot": "請求 Root 授權",
+  "mcpConnRootAuthIncomplete": "授權未完成：請在 Magisk/KernelSU 彈窗中允許，或確認裝置已 Root",
+  "mcpConnDhizukuGranted": "Dhizuku 已授權",
+  "mcpConnRequestDhizuku": "請求 Dhizuku 授權",
+  "mcpConnDhizukuAuthIncomplete": "授權未完成：請確認已安裝 Dhizuku 並完成 Owner 啟用",
+  "mcpConnAvailableTools": "可用工具",
+  "mcpConnToolCount": "共 {count} 個",
+  "mcpConnDisabledToolsHint": "關閉的工具將從工具列表中隱藏，AI 無法呼叫。",
+  "mcpConnToolSetConfig": "修改 ProxyPin 配置（系統代理、SSL 抓包開關）",
+  "mcpConnToolExportHar": "將抓包記錄匯出為 HAR 檔案",
+  "mcpConnToolImportHar": "匯入 HAR 檔案到抓包記錄",
+  "mcpConnToolSearchRequests": "按 URL、方法、狀態碼、域名等條件搜尋請求",
+  "mcpConnToolGenerateCode": "根據請求生成程式碼（curl、Python、Go、JavaScript、Node.js）",
+  "mcpConnToolGetCurl": "生成請求對應的 cURL 命令",
+  "mcpConnToolGetRecentRequests": "獲取最近抓到的請求列表",
+  "mcpConnToolGetRequestDetails": "獲取指定請求的完整詳情（請求/響應頭與體、Cookie）",
+  "mcpConnToolStartProxy": "啟動代理服務",
+  "mcpConnToolStopProxy": "停止代理服務",
+  "mcpConnToolGetProxyStatus": "查詢代理服務執行狀態",
+  "mcpConnToolClearRequests": "清空抓包記錄",
+  "mcpConnToolReplayRequest": "重放指定請求",
+  "mcpConnToolUpdateScript": "更新注入頁面的 JS 指令碼",
+  "mcpConnToolGetScripts": "獲取已配置的 JS 指令碼列表",
+  "mcpConnToolGetStatistics": "獲取抓包統計資訊",
+  "mcpConnToolCompareRequests": "對比兩個請求的差異",
+  "mcpConnToolFindSimilarRequests": "查詢與指定請求相似的請求",
+  "mcpConnToolExtractApiEndpoints": "從抓到的請求裡彙總出介面清單（地址、引數等）",
+  "mcpConnToolFindSensitiveData": "搜尋請求中的敏感資料（密碼、金鑰、手機號、身份證等）",
+  "mcpConnToolGetCookieInfo": "分析域名的 Cookie（值、HttpOnly、Secure、過期時間）",
+  "mcpConnToolGetDomainSummary": "統計域名的流量摘要（方法、狀態碼、平均耗時、錯誤數）",
+  "mcpConnToolGetPendingIntercepts": "檢視斷點攔截佇列中待處理的請求/響應",
+  "mcpConnToolApproveIntercept": "放行斷點攔截（可修改請求後放行）",
+  "mcpConnToolRejectIntercept": "拒絕斷點攔截（中止請求或丟棄響應）",
+  "mcpConnToolToggleBreakpoint": "啟用或停用斷點攔截",
+  "mcpConnToolAddWeakNetworkRule": "新增弱網模擬規則（限速、延遲等）",
+  "mcpConnToolAddCustomNetworkProfile": "新增自定義網路檔位",
+  "mcpConnToolListWeakNetworkRules": "列出所有弱網規則",
+  "mcpConnToolRemoveWeakNetworkRule": "移除弱網規則",
+  "mcpConnToolToggleWeakNetwork": "啟用或停用弱網模擬",
+  "mcpConnToolListEnvironments": "列出所有環境",
+  "mcpConnToolSetEnvironmentVariable": "設定環境變數值",
+  "mcpConnToolCreateEnvironment": "建立新環境",
+  "mcpConnToolSetActiveEnvironment": "切換當前活動環境",
+  "mcpConnToolRemoveEnvironment": "刪除指定環境",
+  "mcpConnToolToggleEnvironmentVariables": "啟用或停用環境變數",
+  "mcpConnToolGetDeviceInfo": "獲取裝置資訊（型號、系統版本、Root 狀態）",
+  "mcpConnToolGetCurrentActivity": "獲取當前前臺 Activity",
+  "mcpConnToolDumpUi": "匯出當前介面的 UI 層級樹",
+  "mcpConnToolTapScreen": "模擬點選螢幕座標",
+  "mcpConnToolLongPress": "模擬長按螢幕座標",
+  "mcpConnToolSwipeScreen": "模擬滑動螢幕",
+  "mcpConnToolKeyEvent": "傳送按鍵事件（如返回鍵、音量鍵）",
+  "mcpConnToolInputText": "向當前輸入框輸入文字",
+  "mcpConnToolScreenshot": "擷取當前螢幕",
+  "mcpConnToolOpenAccessibilitySettings": "開啟系統無障礙設定頁",
+  "mcpConnToolShell": "執行 Shell 命令（支援 Root/Shizuku/Dhizuku 模式）",
+  "auditPlaintextHttpTitle": "明文 HTTP 傳輸敏感資訊",
+  "auditPlaintextHttpDetailUrl": "這條請求用 http:// 明文發出，網址引數裡還帶著密碼、令牌，路上誰都能看到。",
+  "auditPlaintextHttpDetailBody": "這條請求用 http:// 明文發出，請求體裡還帶著密碼、令牌，路上誰都能看到。",
+  "auditPlaintextHttpSuggestion": "改用 HTTPS；確需 HTTP 時避免在 URL 與請求體中直接承載憑據。",
+  "auditPlaintextBodyTitle": "明文 HTTP 傳輸請求體",
+  "auditPlaintextBodyDetail": "該請求使用 http:// 且帶請求體，內容在鏈路上完全明文。",
+  "auditPlaintextBodySuggestion": "對涉及登入、支付、隱私的介面強制 HTTPS。",
+  "auditUrlSecretTitle": "敏感引數出現在 URL 中",
+  "auditUrlSecretDetail": "查詢引數 {names} 疑似承載憑據 / 金鑰。URL 會被寫入瀏覽器歷史、代理與伺服器日誌。",
+  "auditUrlSecretSuggestion": "把敏感引數改放到請求體或請求頭（如 Authorization）。",
+  "auditPasswordBodyTitle": "請求體明文提交密碼",
+  "auditPasswordBodyDetail": "請求體中存在 password / pwd 等欄位且值為明文。",
+  "auditPasswordBodySuggestion": "確保鏈路全程 HTTPS，服務端避免把密碼回顯或寫入日誌。",
+  "auditCookieFlagTitle": "Cookie 缺少安全屬性",
+  "auditCookieFlagDetail": "Set-Cookie「{name}」缺少 {missing}，存在被指令碼讀取或明文傳輸的風險。",
+  "auditCookieFlagSuggestion": "給登入用的 Cookie 加上 Secure、HttpOnly 標記，再按需要設定 SameSite（Lax 或 Strict）。",
+  "auditMissingHeadersTitle": "HTML 響應缺少安全頭",
+  "auditMissingHeadersDetail": "響應裡少了 {missing}，瀏覽器更容易猜錯內容型別、或被塞進指令碼。建議補上。",
+  "auditMissingHeadersSuggestion": "按需補齊 nosniff、CSP 等安全響應頭。",
+  "auditFingerprintTitle": "響應暴露伺服器指紋",
+  "auditFingerprintDetail": "{header}: {value}，便於攻擊者針對性選擇已知漏洞。",
+  "auditFingerprintSuggestion": "在閘道器層隱藏或泛化版本資訊。",
+  "auditPrivateKeyTitle": "響應體疑似包含私鑰",
+  "auditPrivateKeyDetail": "響應內容中出現 PEM 私鑰標記，若為真實金鑰屬嚴重洩露。",
+  "auditPrivateKeySuggestion": "立即輪換該金鑰，確認服務端不會把私鑰下發到客戶端。",
+  "auditSecretTitle": "響應體明文返回敏感欄位",
+  "auditSecretDetail": "檢測到 {names} 等欄位以明文返回。",
+  "auditSecretSuggestion": "最小化返回欄位；金鑰類資訊不應下發到客戶端。",
+  "auditPiiTitle": "響應體包含個人敏感資訊",
+  "auditPiiDetail": "檢測到 {names} 欄位攜帶疑似身份證 / 手機號等個人資料。",
+  "auditPiiSuggestion": "介面返回的個人資訊建議打碼，只給必要的欄位，並遵守相關法規。",
+  "auditErrorTitle": "錯誤響應洩露內部資訊",
+  "auditErrorDetail": "響應中出現除錯 / 堆疊特徵（{trace}），可能暴露框架、路徑或資料庫結構。",
+  "auditErrorSuggestion": "生產環境關閉詳細報錯，統一返回通用錯誤資訊。",
+  "auditCorsTitle": "CORS 允許任意源且攜帶憑據",
+  "auditCorsDetail": "Access-Control-Allow-Origin 為 *，同時 Allow-Credentials 為 true，跨站讀取憑據的風險很高。",
+  "auditCorsSuggestion": "把允許源收斂為固定白名單，避免 * 與 Allow-Credentials 同時出現。",
+  "auditJwtNoneTitle": "JWT 使用 alg=none（未簽名）",
+  "auditJwtNoneDetail": "該令牌宣告演算法為 none，任何人可篡改載荷而無法被校驗。",
+  "auditJwtNoneSuggestion": "服務端強制校驗簽名演算法，拒絕 alg=none。",
+  "auditJwtExpiryTitle": "JWT 未設定過期時間",
+  "auditJwtExpiryDetail": "令牌載荷中缺少 exp 欄位，簽發後長期有效。",
+  "auditJwtExpirySuggestion": "為令牌設定合理的過期時間並支援重新整理。",
+  "auditHttp10Title": "使用過時的 HTTP/1.0",
+  "auditHttp10Detail": "該連線使用 HTTP/1.0，連線複用與快取策略較落後。",
+  "auditHttp10Suggestion": "升級到 HTTP/1.1 或 HTTP/2。",
+  "auditSqlTitle": "疑似 SQL 注入（把資料庫報錯暴露出來了）",
+  "auditSqlDetail": "響應裡出現了 {signature} 這種資料庫報錯內容，說明介面把資料庫錯誤直接吐給了呼叫方。如果這個錯誤能被客戶端傳參觸發，就存在 SQL 注入風險。",
+  "auditSqlSuggestion": "改用引數化查詢 / 預編譯語句，不要拼接 SQL；生產環境關閉資料庫詳細報錯，統一返回通用錯誤資訊。（本項為被動檢測，僅依據已抓流量的響應特徵，未傳送任何探測請求。）",
+  "auditXssTitle": "疑似 XSS 反射痕跡（HTML 響應未編碼回顯引數）",
+  "auditXssDetail": "響應把請求引數值原樣回顯在 HTML 中，未做 HTML 實體編碼，且回顯內容含 {meta} 等特殊字元；若該值可被攻擊者控制，瀏覽器可能把它解析成標籤或指令碼。",
+  "auditXssSuggestion": "按輸出上下文做編碼（HTML 實體編碼），頁面配合 CSP；不要把請求引數直接拼進 HTML。（本項為被動檢測，僅依據已抓流量的響應特徵，未傳送任何探測請求。）",
+  "auditCustomHitDetail": "命中自定義規則「{name}」（{describe}）。",
+  "auditCustomHitSuggestion": "請結合業務安全要求確認該內容是否應當出現。",
+  "auditSecretPrivateKey": "私鑰",
+  "auditPiiIdCard": "身份證號",
+  "auditPiiPhone": "手機號",
+  "auditRuleDescribe": "範圍：{target}；方式：{match}",
+  "auditTargetUrl": "請求 URL",
+  "auditTargetRequestHeader": "請求頭",
+  "auditTargetRequestBody": "請求體",
+  "auditTargetResponseHeader": "響應頭",
+  "auditTargetResponseBody": "響應體",
+  "auditTargetAny": "全部內容",
+  "auditMatchKeyword": "關鍵詞",
+  "auditMatchRegex": "正則",
+  "diagSummaryOk": "抓包鏈路基本就緒",
+  "diagSummaryIssues": "檢測到會影響抓包的問題，見 items 中的 error 項",
+  "diagSuggestStartProxy": "先啟動抓包服務（呼叫 start_proxy 工具，或讓使用者在介面上點「開始抓包」）",
+  "diagSuggestInstallCert": "先安裝並信任根證書：證書沒裝好時，HTTPS 會一片連線失敗（列表裡帶感嘆號的請求）",
+  "diagSuggestSystemProxy": "系統代理沒有指向本應用：讓使用者在「偏好設定」開啟系統代理，或確認是否被其它代理工具接管",
+  "diagSuggestPinning": "有些域名像是開了證書固定：這類 App 要在手機上干預它的執行過程才能解密，常見做法是用 LSPosed 這類框架配 TrustMeAlready 之類的模組。請務必只用在你自己的裝置、以及你有權測試的應用上。",
+  "diagSuggestNoTraffic": "現在還沒有新流量：先開啟要抓的 App 或瀏覽器隨便點一下，再讓 AI 去讀記錄。",
+  "diagSuggestChecklist": "上面都正常還是抓不到？按這幾條對號入座：\n① 對方走的是 QUIC / HTTP3 —— 手機請開「攔截 QUIC」，瀏覽器請關掉 QUIC；\n② 是 Flutter 應用 —— 它只認自己那套證書，裝了系統證書也沒用；\n③ App 開了證書固定 —— 看上方有沒有「SSL 證書固定（疑似）」，有就是它；\n④ Windows 上自帶網路的程式 —— 需要開「Windows 接管增強」，或用 TUN 類工具；\n⑤ Mac App Store 沙箱應用 —— 需要 Network Extension / TUN，本倉庫的未簽名版本接管不了。",
+  "diagItemProxyService": "代理服務",
+  "diagProxyListening": "正在監聽 127.0.0.1:{port}",
+  "diagProxyNotRunning": "未在執行，抓不到任何流量。先點「開始抓包」",
+  "diagItemSystemProxy": "系統代理",
+  "diagSystemProxyMatched": "已指向本應用 {host}:{port}",
+  "diagSystemProxyOff": "系統代理未開啟，應用流量不會經過本工具",
+  "diagSystemProxyMismatch": "指向 {host}:{port}，與本應用埠 {expected} 不一致（可能被其它代理工具接管，或上次異常退出殘留）",
+  "diagItemTrafficEntry": "流量入口",
+  "diagMobileVpnEntry": "移動端由 VPN 通道接管 IP 層流量（無需系統代理）",
+  "diagCaInSystemStore": "已裝進系統證書裡",
+  "diagCaUserStore": "只在「使用者證書庫」：Android 7 起應用預設不信任使用者證書，所以會出現“證書裝了但 HTTPS 抓不到或報錯”。要全應用生效需 root 裝進系統證書目錄（Android 14+ 是 /apex/com.android.conscrypt/cacerts），或給目標 App 配 network_security_config",
+  "diagCaInstalledUnknown": "已安裝（未能區分系統庫/使用者庫）",
+  "diagCaMissingAndroid": "沒檢測到根證書：去「HTTPS 證書 → 安裝根證書」按提示裝一遍。裝的時候記得選【CA 證書】，別選【VPN 和應用證書】。",
+  "diagCaMissingDesktop": "沒檢測到根證書，HTTPS 會一片連線失敗（列表裡帶感嘆號的請求）",
+  "diagItemCaRoot": "CA 根證書",
+  "diagCaDesktopHint": "電腦上請到「證書」頁確認根證書已經裝進系統的「受信任的根證書」裡",
+  "diagReadFailed": "讀取失敗：{error}",
+  "diagItemSslPinning": "SSL 證書固定（疑似）",
+  "diagSslPinningDetail": "CA 證書沒問題，但有 {count} 個域名只連上了加密通道、內容讀不到：{sample}。一般是因為對方開了證書固定，或者 App 自帶證書列表、不看系統的。注意這類 App 不是沒網——它是認出證書不對，主動把連線斷了。",
+  "diagItemWinTakeover": "Windows 增強接管",
+  "diagWinTakeoverOn": "已開啟：WinHTTP 服務、CLI 工具（curl/git/node）等也會走代理",
+  "diagWinTakeoverOff": "未開啟：自帶網路棧的應用、WinHTTP 服務與 CLI 工具可能抓不到。可在「偏好設定 → Windows 接管」開啟（WinHTTP 部分需要管理員許可權）",
+  "diagItemRecentTraffic": "最近流量",
+  "diagNoRequests": "本次會話還沒有抓到任何請求",
+  "diagTrafficFresh": "共 {count} 條，最新一條在 {ago} 秒前",
+  "diagTrafficStale": "共 {count} 條，最新一條在 {ago} 秒前（當前沒有新流量進來）",
+  "diagItemExtensionMemory": "擴充套件記憶體",
+  "diagExtMemUnavailable": "未取到（VPN 未啟動時讀不到擴充套件程序）",
+  "diagExtMemDetail": "當前 {rss} MB，峰值 {peak} MB，連線 {connections} 條，待發緩衝 {buffered} MB",
+  "diagExtMemNearLimit": "（已接近擴充套件記憶體上限，建議降低併發或縮小待發緩衝上限）",
+  "auditPageVerifyTooltip": "主動核驗（對已抓到的域名各發一次，核對安全響應頭）",
+  "auditPageNoVerifiableHosts": "抓包裡還沒有可核驗的域名",
+  "auditPageVerifyTitle": "主動核驗",
+  "auditPageVerifyIntro": "會對下面這些**已經在抓包裡出現過**的域名，各發一次 GET，只看安全響應頭：",
+  "auditPageVerifyScope": "共 {hosts} 個域名，序列傳送、每個之間隔 {delay}ms，上限 {max} 個。不掃埠、不投載荷。",
+  "auditPageVerifyAuthz": "只對你擁有或已獲授權的目標做這件事。",
+  "auditPageVerifyStart": "開始核驗",
+  "auditPageVerifyFailed": "核驗失敗：{error}",
+  "auditPageVerifyResultTitle": "主動核驗結果",
+  "auditPageVerifyResultIntro": "只核對了下面這幾個安全響應頭在不在。缺了不代表就有漏洞，但值得去核對一下服務端配置。",
+  "auditPageVerifyHostFailed": "{host} —— 核驗失敗：{error}",
+  "auditPageVerifyHeadersAllPresent": "這幾個響應頭都在",
+  "auditPageVerifyHeaderMissing": "缺 {name} —— {desc}",
+  "diagPageRerun": "重新檢測",
+  "diagPageTip": "檢查本機抓包鏈路是否通暢；只做只讀檢測，不會改你的系統設定。同樣的結論也能透過 MCP 工具 diagnose_capture 交給 AI。",
+  "diagPageNextSteps": "先做這幾步",
+  "diagPageCauseQuicTitle": "走 QUIC / HTTP3 的目標",
+  "diagPageCauseQuicDesc": "手機端開「攔截 QUIC」讓應用回落 TCP；桌面瀏覽器可在 chrome://flags 裡關閉 QUIC 後重試",
+  "diagPageCauseFlutterTitle": "Flutter 應用",
+  "diagPageCauseFlutterDesc": "Dart（Flutter）自帶一份證書列表，不看系統證書——所以裝了證書也抓不到它的 HTTPS。要麼在 App 內部信任，要麼改抓它的網路庫。",
+  "diagPageCausePinningTitle": "開了證書固定（SSL Pinning）的應用",
+  "diagPageCausePinningDesc": "App 裡寫死了證書指紋，中間人證書會被拒絕，表現就是一片連線失敗（帶感嘆號）。",
+  "diagPageCauseWinStackTitle": "Windows 上自帶網路棧的程序",
+  "diagPageCauseWinStackDesc": "系統代理管不到它們。用「偏好設定 → Windows 接管增強」，仍不行則把 ProxyPin 掛到支援 TUN 的工具下",
+  "diagPageCauseMasTitle": "Mac App Store 上架的應用",
+  "diagPageCauseMasDesc": "沙箱 + 強制簽名，系統代理無效，需要 Network Extension/TUN（本倉未簽名構建，做不了）",
+  "diagPageCauseProxyIgnoredTitle": "只改了代理但應用不理會",
+  "diagPageCauseProxyIgnoredDesc": "換應用自身的代理設定，或用支援 TUN 的工具統一接管",
+  "diagPageCommonCausesTitle": "抓不到流量？按這幾條對號入座",
+  "mcpConnDeskClientWizard": "客戶端接入嚮導（Claude Code / Codex / Cursor）",
+  "mcpConnDeskPortConfig": "埠配置",
+  "mcpConnDeskServicePort": "MCP 服務埠",
+  "mcpConnDeskIpAddress": "IP 地址",
+  "mcpConnDeskAiConfigHint": "在您的 AI 工具（如 Cursor、Windsurf 等）中新增以下配置：",
+  "mcpConnDeskConfigCopied": "配置已複製",
+  "mcpConnDeskCopyConfig": "複製配置",
+  "mcpConnDeskControlModeDesc": "ProxyPin MCP 支援兩種連線方式：",
+  "mcpConnDeskModeMcpTitle": "MCP (推薦)",
+  "mcpConnDeskModeMcpDesc": "標準 MCP 協議，支援完整功能",
+  "mcpConnDeskModeSseDesc": "Server-Sent Events，相容舊客戶端",
+  "prefSplashTitle": "啟動頁",
+  "prefSplashDesc": "預設使用系統原生啟動頁，可切換為自定義品牌頁",
+  "prefSplashBackground": "背景",
+  "prefSplashBgOff": "原啟動頁（預設）",
+  "prefSplashBgGradient": "漸變品牌頁",
+  "prefSplashBgCustom": "自定義圖片",
+  "prefSplashBgTransparent": "跟隨主題（推薦）",
+  "prefSplashDuration": "展示時長",
+  "prefSplashDurationSeconds": "{seconds} 秒",
+  "prefSplashDurationFixed": "原啟動頁為系統畫面，不支援自定義時長",
+  "prefSplashNotSelected": "未選擇",
+  "prefSplashSelectedTapChange": "已設定，點選更換",
+  "prefSplashSubtitleLabel": "自定義小字",
+  "prefSplashSubtitleDefault": "預設顯示版本資訊",
+  "prefSplashSubtitleUnsupported": "原啟動頁不支援自定義小字，切換為漸變/透明後可用",
+  "prefSplashSubtitleField": "副標題文字",
+  "prefSplashSubtitleHint": "留空恢復預設（顯示版本資訊）",
+  "prefMtls": "雙向認證 (mTLS)",
+  "prefMtlsChainLabel": "客戶端證書鏈 (PEM)",
+  "prefMtlsKeyLabel": "客戶端私鑰 (PEM，未加密)",
+  "prefMtlsHint": "證書鏈檔案裡要有 -----BEGIN CERTIFICATE-----，私鑰檔案裡要有 -----BEGIN PRIVATE KEY-----（加密過的私鑰不支援）。設定後，之後新建的 HTTPS 連線生效。",
+  "prefMtlsSelectBoth": "請先選擇證書鏈與私鑰檔案",
+  "prefMtlsChainInvalid": "證書鏈檔案格式不對，需要 PEM 格式",
+  "prefMtlsKeyInvalid": "私鑰檔案格式不正確（需要未加密 PEM）",
+  "prefMtlsLoadFailed": "證書載入失敗，請檢查檔案內容",
+  "prefMtlsEnabled": "mTLS 已啟用",
+  "prefRootDenied": "未獲得 Root 授權，無法執行系統級回落",
+  "prefSysFallbackOn": "系統級回落已啟用：UDP:443 將被丟棄（重啟系統後失效）",
+  "prefSysFallbackOff": "系統級回落已停用",
+  "prefExecFailed": "執行失敗：{error}",
+  "prefIptablesUnavailable": "iptables 不可用",
+  "prefMonet": "莫奈取色",
+  "prefMonetDesc": "Android 12+ 跟隨桌布配色（主題與啟動頁自動取色）",
+  "prefPredictiveBack": "預測性返回",
+  "prefPredictiveBackDesc": "Android 14+ 返回手勢預測動畫（Material 3 頁面轉場）",
+  "prefCaptureBodyLimit": "抓包內容上限",
+  "prefBlockQuic": "攔截 QUIC (UDP:443)",
+  "prefQuicBlocked": "已攔截 {count} 個 QUIC 包，強制回落 TCP 使流量可抓包",
+  "prefQuicBlockDesc": "丟棄 UDP 443 強制應用回落 TCP，使 HTTPS 流量可抓包",
+  "prefQuicBlockOff": "已關閉，重新啟動抓包後生效",
+  "prefSysFallbackDesc": "系統級回落（需 Root + iptables）：丟棄全部 UDP:443 強制回落 TCP，重啟系統後失效",
+  "prefDisable": "停用",
+  "prefMtlsEnabledTapConfig": "已啟用 · 點選配置客戶端證書",
+  "prefMtlsDesc": "與上游伺服器 TLS 握手時提供客戶端證書（PEM）",
+  "prefRootMode": "Root 模式抓包",
+  "prefRootModeDesc": "用 root 許可權把系統出站流量重定向到本機代理，繞過“檢測到 VPN 就拒絕聯網”的應用；需裝置已 root，與 VPN 抓包互斥",
+  "prefWanUnit": "萬",
+  "cfgManagement": "配置管理",
+  "cfgManagementDesc": "匯入/匯出配置，備份或恢復設定",
+  "cfgExport": "匯出配置",
+  "cfgExportDesc": "將當前配置匯出為 JSON 檔案，用於備份或分享",
+  "cfgImport": "匯入配置",
+  "cfgImportDesc": "從 JSON 檔案匯入配置，會覆蓋當前配置",
+  "cfgCopyToClipboard": "複製配置到剪貼簿",
+  "cfgCopyToClipboardDesc": "生成配置文字，貼上到其它裝置即可匯入（無需傳檔案）",
+  "cfgImportFromClipboard": "從剪貼簿匯入配置",
+  "cfgImportFromClipboardDesc": "讀取剪貼簿裡的配置文字，會覆蓋當前配置",
+  "cfgBackupDesc": "檢視、恢復或刪除自動備份的配置檔案",
+  "cfgNotice": "注意事項",
+  "cfgNoticeBody": "• 匯出配置會包含所有代理設定、過濾規則、MCP 配置等\n• 匯入配置會完全覆蓋當前配置，請謹慎操作\n• 建議定期匯出配置進行備份\n• 配置檔案為 JSON 格式，可用文字編輯器檢視",
+  "cfgExporting": "正在匯出配置",
+  "cfgExportPreparing": "請稍候，正在準備匯出檔案...",
+  "cfgPreparing": "準備中...",
+  "cfgSelectSaveLocation": "選擇儲存位置",
+  "cfgExportedTo": "配置已匯出到：{path}",
+  "cfgExportFailed": "匯出失敗：{error}",
+  "cfgConfirmImport": "確認匯入",
+  "cfgImportConfirmBody": "匯入配置會完全覆蓋當前配置，確定要繼續嗎？\n\n建議先匯出當前配置進行備份。",
+  "cfgImportSuccessRestart": "配置匯入成功，部分設定可能需要重啟應用後生效",
+  "cfgImportFailed": "匯入失敗：{error}",
+  "cfgCopied": "配置已複製到剪貼簿，在其它裝置貼上匯入即可",
+  "cfgCopyFailed": "複製失敗：{error}",
+  "cfgImportConfirmBodyShort": "匯入會覆蓋當前配置，確定繼續？",
+  "cfgClipboardEmpty": "剪貼簿裡沒有文字",
+  "cfgClipboardNotConfig": "剪貼簿內容不是配置 JSON，請先複製配置文字",
+  "devToolCron": "Cron 表示式",
+  "devToolJwt": "JWT 解碼",
+  "devToolSha": "SHA 雜湊",
+  "devToolCronExampleWorkday": "工作日每天上午 9 點",
+  "devToolCronExampleMonthly": "每月 1 號 8:30",
+  "devToolCronExampleMidnight": "每天零點",
+  "devToolCronExampleEvery15Min": "每 15 分鐘",
+  "devToolCronExampleEvery2Hours": "每 2 小時",
+  "devToolCronExampleMondayNoon": "每週一中午 12 點",
+  "devToolCronParseError": "無法解析該表示式，請檢查各欄位",
+  "devToolCronHint": "分 時 日 月 星期",
+  "devToolCronParse": "解析",
+  "devToolCronNextRuns": "接下來 6 次執行時間",
+  "devToolCronFieldHelp": "欄位說明",
+  "devToolCronWildcardHint": "支援萬用字元：* 任意值 · , 列表 · - 範圍 · / 步進",
+  "devToolCronExamples": "常用示例（點選填入）",
+  "devToolCronFieldMinute": "分鐘",
+  "devToolCronFieldHour": "小時",
+  "devToolCronFieldDay": "日",
+  "devToolCronFieldMonth": "月",
+  "devToolCronFieldWeek": "星期",
+  "devToolCronFieldWeekRange": "0-6（0 為週日）",
+  "devToolJwtInvalid": "JWT 應由兩段以上 Base64Url 組成（header.payload.signature）",
+  "devToolJwtDecodeFailed": "解碼失敗：{error}",
+  "devToolJwtExpiry": "{time}（{status}）",
+  "devToolJwtExpLabel": "過期時間：{time}",
+  "devToolJwtExpired": "已過期",
+  "devToolJwtValid": "有效",
+  "devToolJwtLabel": "貼上 JWT Token",
+  "devToolJwtHint": "支援直接貼上帶 Bearer 字首的 Authorization 值",
+  "devToolUuidCount": "數量",
+  "devToolUuidUppercase": "大寫",
+  "devToolUuidGenerate": "生成 UUID v4",
+  "devToolUuidEmpty": "點選上方按鈕生成",
+  "devToolCopiedAll": "已複製全部",
+  "devToolCopyAll": "複製全部",
+  "devToolShaInput": "輸入文字",
+  "devToolShaNote": "以 UTF-8 編碼計算；檔案/二進位制校驗請使用抓包資料的十六進位制工具。",
+  "calcTitle": "計算器",
+  "calcTabIntConvert": "進位制/補碼",
+  "calcTabBitwise": "位運算",
+  "calcTabEndian": "位元組序",
+  "calcTabCrcHash": "CRC/雜湊",
+  "calcEmptyHint": "輸入後點「計算」檢視結果",
+  "calcCopiedKey": "已複製 {name}",
+  "calcCompute": "計算",
+  "calcLabelValue": "數值",
+  "calcIntValueHint": "支援 0x / 0b / 0o / 十進位制，可帶負號",
+  "calcLabelWidth": "位寬",
+  "calcNBits": "{bits} 位",
+  "calcLabelOperation": "運算",
+  "calcLabelOperandA": "運算元 A",
+  "calcLabelShiftAmount": "位移量（十進位制）",
+  "calcLabelOperandB": "運算元 B",
+  "calcHintShiftExample": "例如 4",
+  "calcHintOperandBExample": "例如 0x0FF0",
+  "calcLabelHexData": "十六進位制資料",
+  "calcHintHexDataExample": "例如 0x78563412",
+  "calcLabelByteWidth": "位元組寬度",
+  "calcByteWidthAuto": "按輸入長度",
+  "calcNBytes": "{bytes} 位元組",
+  "calcLabelMachineOrValue": "機器碼或數值",
+  "calcIeeeHint": "十六進位制機器碼（如 0x3f800000）或十進位制小數（如 1.5）",
+  "calcLabelPrecision": "精度",
+  "calcLabelAlgorithm": "演算法",
+  "calcLabelInputFormat": "輸入格式",
+  "calcLabelData": "資料",
+  "wsPageTitle": "工作區",
+  "wsPageNew": "新建工作區",
+  "wsPageNameHint": "名稱（如「支付模組」「測試環境」）",
+  "wsPageRenameTitle": "重新命名工作區",
+  "wsPageDeleteTitle": "刪除工作區",
+  "wsPageDeleteConfirm": "「{name}」及其本地資料會被刪除，無法恢復。",
+  "wsPageNoCaptureData": "當前沒有抓包資料可儲存",
+  "wsPageSavedTo": "已儲存 {count} 條到「{name}」",
+  "wsPageSaveFailed": "儲存失敗：{error}",
+  "wsPageEmptyWorkspace": "工作區裡沒有資料",
+  "wsPageImportedToHistory": "已匯入 {count} 條到歷史",
+  "wsPageImportFailed": "匯入失敗：{error}",
+  "wsPageServerTitle": "工作區服務端",
+  "wsPageServerUrlHint": "服務端地址（如 http://10.0.0.5:8787）",
+  "wsPageTokenTitle": "訪問令牌（可留空）",
+  "wsPageServerSaved": "已儲存服務端配置",
+  "wsPageServerCleared": "已清空服務端配置",
+  "wsPageServerNeeded": "請先配置工作區服務端",
+  "wsPagePushed": "已推送到服務端（{bytes} 位元組）",
+  "wsPagePushFailed": "推送失敗：{error}",
+  "wsPageServerNoWorkspaces": "服務端沒有工作區",
+  "wsPagePulled": "已拉取 {count} 個工作區",
+  "wsPagePullFailed": "拉取失敗：{error}",
+  "wsPageServerTooltip": "服務端配置",
+  "wsPagePullFromServer": "從服務端拉取",
+  "wsPageEmptyHint": "還沒有工作區。建一個，把當前抓包存進去，就能按專案分開管理。",
+  "wsPageCustomServer": "自定義服務端",
+  "wsPageServerNotConfiguredHint": "未配置。只用本地工作區的話不需要它；想共享/備份到自己的伺服器再填。",
+  "wsPageSaveCurrent": "儲存當前抓包",
+  "wsPageImportToHistory": "匯入到歷史",
+  "wsPagePushToServer": "推送到服務端",
+  "wsPageItemMeta": "{count} 條 · {time}",
+  "logViewReadyHint": "日誌記錄已就緒：應用執行日誌將實時顯示在此（最多保留 500 條）",
+  "logViewExportSuccess": "日誌匯出成功",
+  "logViewExportFailed": "日誌匯出失敗",
+  "logViewExportError": "匯出失敗：{error}",
+  "logViewClearLogs": "清除日誌",
+  "logViewClearConfirm": "確定要清除所有日誌嗎？此操作不可恢復。",
+  "logViewCleared": "日誌已清除",
+  "logViewTitle": "日誌管理",
+  "logViewTapToPause": "正在記錄，點選暫停",
+  "logViewTapToResume": "已暫停，點選開啟",
+  "logViewRecordingResumed": "日誌記錄已開啟",
+  "logViewRecordingPaused": "日誌記錄已暫停",
+  "logViewMore": "更多",
+  "logViewSearchLogs": "搜尋日誌",
+  "logViewExportLogs": "匯出日誌",
+  "logViewNoLogs": "暫無日誌",
+  "logViewStatTotal": "總數",
+  "logViewStatDebug": "除錯",
+  "logViewStatInfo": "資訊",
+  "logViewStatWarning": "警告",
+  "logViewStatError": "錯誤",
+  "logViewTime": "時間",
+  "logViewTag": "標籤",
+  "logViewMessage": "訊息:",
+  "logViewStack": "堆疊:",
+  "cmpTitle": "請求對比",
+  "cmpTabOverview": "概覽",
+  "cmpHasDiff": "存在差異",
+  "cmpIdentical": "完全相同",
+  "cmpTotalChanges": "共 {count} 處變化",
+  "cmpFieldMethod": "方法",
+  "cmpChangeStats": "變化統計",
+  "cmpHeaderChanges": "請求頭變化",
+  "cmpQueryChanges": "引數變化",
+  "cmpBodyChanges": "請求體變化",
+  "cmpStatusChanges": "狀態碼變化",
+  "cmpDetailedReport": "詳細報告",
+  "cmpNoHeaderChanges": "請求頭無變化",
+  "cmpOldValue": "舊：{value}",
+  "cmpNewValue": "新：{value}",
+  "cmpNoBodyChanges": "請求體無變化",
+  "cmpBodyA": "請求體 A",
+  "cmpBodyB": "請求體 B",
+  "cmpNoResponseData": "無響應資料",
+  "cmpResponseHeaderChanges": "響應頭變化 ({count})",
+  "cmpNoChanges": "無變化",
+  "cmpResponseBodyA": "響應體 A",
+  "cmpResponseBodyB": "響應體 B",
+  "cmpModified": "已修改",
+  "cmpRequestLabel": "請求 {label}",
+  "cmpEmpty": "(空)",
+  "backupCreated": "已建立備份：{name}（{count} 項）",
+  "backupFailed": "備份失敗：{error}",
+  "backupNow": "立即備份（配置+證書+指令碼+工作區）",
+  "backupAutoToAppDataDir": "配置會自動備份到應用資料目錄",
+  "backupOk": "確定",
+  "backupConfirmRestore": "確認恢復",
+  "backupRestoreConfirm": "恢復備份 \"{name}\" 會覆蓋當前配置，確定要繼續嗎？",
+  "backupConfirmDelete": "確認刪除",
+  "backupRestoredApplied": "已恢復 {restored} 個檔案，配置已生效",
+  "backupRestoredNotApplied": "已恢復 {restored} 個檔案（配置未生效{failedSuffix}）",
+  "backupFailedSuffix": "，{failed} 項失敗",
+  "backupAppliedSuffix": "，配置已生效",
+  "backupConfigRestored": "配置已恢復",
+  "backupRestoreFailed": "恢復失敗：{error}",
+  "backupRestoredSummary": "已恢復 {restored} 個檔案{applied}{failed}",
+  "backupRestored": "備份已恢復",
+  "backupChooseSaveLocation": "選擇儲存位置",
+  "backupExportedTo": "已匯出到：{path}",
+  "backupExportDialogTitle": "匯出備份檔案",
+  "backupExportSuccess": "匯出成功",
+  "backupExportFailed": "匯出失敗：{error}",
+  "backupDeleteConfirm": "確定要刪除備份 \"{name}\" 嗎？",
+  "backupDeleteConfirmDesktop": "確定要刪除備份檔案 \"{name}\" 嗎？\n\n此操作不可撤銷。",
+  "backupDeleted": "備份已刪除",
+  "backupDeleteFailed": "刪除失敗：{error}",
+  "backupDirNotFound": "備份目錄不存在",
+  "backupRestoreConfirmDesktop": "確定要恢復備份檔案 \"{name}\" 嗎？\n\n當前配置將被覆蓋。",
+  "backupViewTitle": "檢視備份：{name}",
+  "backupViewFailed": "檢視失敗：{error}",
+  "backupCopied": "已複製到剪貼簿",
+  "backupJustNow": "剛剛",
+  "cfgDeskGeneratingConfig": "正在生成配置檔案...",
+  "cfgDeskCannotReadFile": "無法讀取檔案",
+  "rootProxyNoAccess": "沒有拿到 root 許可權：裝置可能未 root，或你沒有在授權框裡點允許",
+  "rootProxyClosed": "已關閉，iptables 規則已清理",
+  "rootProxyStopError": "關閉時出錯：規則可能仍在，建議重試或重啟裝置",
+  "rootProxyNeedCapture": "請先啟動抓包：代理埠沒在監聽時開重定向會讓裝置上不了網",
+  "rootProxyNeedStopVpn": "請先停止 VPN 抓包：兩種抓包方式不能同時開啟",
+  "rootProxyStartDenied": "開啟失敗，請確認已授予 root 許可權",
+  "rootProxyStartFailed": "開啟失敗：{reason}",
+  "rootProxyActive": "重定向已生效",
+  "rootProxyInactive": "未生效",
+  "rootProxyTargetPort": "目標埠：{port}　防護：異常退出後會在下次啟動時自動清理規則",
+  "rootProxyCheckRoot": "檢測 root 許可權",
+  "rootProxyFirstCheck": "首次檢測會彈出 su 授權框",
+  "rootProxyGranted": "已獲得 root 許可權",
+  "rootProxyNotGranted": "未獲得 root 許可權",
+  "rootProxyNotesTitle": "說明",
+  "rootProxyNotesBody": "· 需要裝置已 root 並授予 su 許可權；\n· 原理是往 nat 表加一條只屬於 ProxyPin 的鏈，把出站 TCP 連線轉到代理埠，不做任何其它改動；\n· 只處理 IPv4，IPv6 流量保持直連；\n· 與 VPN 抓包互斥，開啟前請先關掉 VPN；\n· 若手機出現「連著 WiFi 但上不了網」，先關掉這裡；App 每次啟動也會自動清理殘留規則。",
+  "fuzzDictDefaultName": "匯入的字典",
+  "fuzzDictImported": "已匯入「{name}」",
+  "fuzzDictDeleteTitle": "刪除字典",
+  "fuzzDictDeleteConfirm": "刪除「{name}」？",
+  "fuzzDictTitle": "Fuzz 字典",
+  "fuzzDictTips": "點一個字典就能填進當前測試項。工具裡不預置攻擊載荷，自帶的只是邊界值和異常格式的字串，其餘請自己填、匯入或用指令碼生成。",
+  "fuzzDictNoCustom": "還沒有自定義字典",
+  "fuzzDictImportFile": "從檔案匯入",
+  "fuzzDictNEntries": "{count} 條",
+  "fuzzDictExpanded": "展開後共 {count} 條：{preview}",
+  "fuzzDictScriptFailed": "指令碼執行失敗：{error}",
+  "fuzzDictNameRequired": "給字典起個名字",
+  "fuzzDictCreate": "新建字典",
+  "fuzzDictEditTitle": "編輯字典",
+  "fuzzDictScriptLabel": "指令碼（可選，JS；把陣列賦給 result）",
+  "fuzzDictTestRun": "試跑",
+  "fuzzDictScriptNote": "指令碼的產物會和上面的取值合併去重",
+  "apiEpTitle": "介面列表（{count}）",
+  "apiEpSearchHint": "搜尋介面...",
+  "apiEpTotalEndpoints": "介面總數",
+  "apiEpResourceGroups": "資源組",
+  "apiEpTotalRequests": "總請求",
+  "apiEpPathCalls": "{path} · {count} 次請求",
+  "apiEpCallsSuccess": "{count} 次 · 成功率 {rate}",
+  "apiEpNoMatch": "沒有找到匹配的介面",
+  "apiEpGroupView": "分組檢視",
+  "apiEpListView": "列表檢視",
+  "apiEpGroupByDomain": "按域名分組",
+  "apiEpExportOpenApi": "匯出為 OpenAPI",
+  "apiEpSwaggerFormat": "Swagger 格式",
+  "apiEpExportPostman": "匯出為 Postman",
+  "apiEpCollectionFormat": "Collection 格式",
+  "apiEpExportJson": "匯出為 JSON",
+  "apiEpExported": "{label} 已匯出",
+  "apiEpExportFailed": "{label} 匯出失敗: {error}",
+  "apiEpFullUrl": "完整 URL",
+  "apiEpCallCount": "呼叫次數",
+  "apiEpAvgResponseTime": "平均響應時間",
+  "apiEpFirstSeen": "首次發現",
+  "apiEpLastSeen": "最後訪問",
+  "apiEpTags": "標籤",
+  "perfLoadFailed": "載入資料失敗：{error}",
+  "perfTitle": "效能監控",
+  "perfRetry": "重試",
+  "perfLoading": "正在載入資料...",
+  "perfLastUpdate": "最後更新：{time}",
+  "perfProxyStatus": "代理狀態",
+  "perfRunning": "執行中",
+  "perfStopped": "已停止",
+  "perfOverview": "效能概覽",
+  "perfTotalRequests": "總請求",
+  "perfConnectionPool": "連線池狀態",
+  "perfActiveConnections": "活躍連線",
+  "perfIdleConnections": "空閒連線",
+  "perfMetrics": "效能指標",
+  "perfAvgResponseTime": "平均響應時間",
+  "perfQps": "QPS（每秒請求）",
+  "perfRequestStats": "請求統計",
+  "perfNoBreakdown": "暫無分類資料",
+  "rqTitle": "傳送佇列",
+  "rqClearFinished": "清除已結束的任務",
+  "rqIntro": "這裡彙總本次執行期間發起的所有重放任務（單次多次 / 批次 / 定時）：可檢視進行中的進度、成功與失敗統計，以及等待傳送的請求清單。任務為記憶體態，應用重啟後清空。",
+  "rqCancelTask": "取消任務（停止後續傳送）",
+  "rqRemoveRecord": "移除記錄",
+  "rqStatRetried": "重試",
+  "rqStatPlanned": "計劃",
+  "rqLastError": "最近錯誤：{error}",
+  "rqPendingRequests": "待傳送請求（{count}）",
+  "rqMoreRemaining": "… 其餘 {count} 條",
+  "rqStatusScheduled": "等待傳送",
+  "rqStatusRunning": "傳送中",
+  "rqStatusCompleted": "已完成",
+  "rqStatusCanceled": "已取消",
+  "rqEmptyTitle": "暫無重放任務",
+  "rqEmptyHint": "發起重放（含批次與定時）後，任務會出現在這裡",
+  "bvDescTimestamp": "秒級 Unix 時間戳",
+  "bvDescTimestampMs": "毫秒級 Unix 時間戳",
+  "bvDescDatetime": "ISO 8601 日期時間",
+  "bvDescDate": "日期（yyyy-MM-dd）",
+  "bvDescTime": "時間（HH:mm:ss）",
+  "bvDescUnixDate": "自 1970 年以來的天數",
+  "bvDescUuid": "隨機 UUID（每次引用都不同）",
+  "bvTitle": "內建變數",
+  "bvIntro": "下面這些變數不用定義，在任何支援 {mark} 的地方（重寫規則、上報地址、指令碼等）都能直接引用。點一下複製。",
+  "bvCopied": "已複製 {text}",
+  "bvGotIt": "知道了",
+  "toolboxNavCalcTip": "進位制/補碼 · 位運算 · 位元組序 · IEEE754 · CRC/雜湊",
+  "toolboxNavMcpTip": "MCP Server 設定",
+  "toolboxNavLogView": "日誌檢視",
+  "toolboxNavWaf": "WAF 變異",
+  "toolboxNavWafTip": "載荷等價寫法變異 + WAF 特徵比對 + 主動探測（探測會真發請求，需授權）",
+  "toolboxNavPinningTip": "過證書固定輔助：檢查手機有沒有 frida · 生成並部署 hook 指令碼 · 一鍵注入",
+  "toolboxNavWorkspaceTip": "按專案/環境分開管理抓包（標準 HAR 儲存）· 可接自定義服務端做共享/備份",
+  "toolboxNavCloudTip": "賬號 · 工作區雲端託管 · 多人實時協同（自部署服務端）",
+  "toolboxNavAiTip": "AI 對話分析抓包資料（支援 Agent 模式）",
+  "deskNavUpgradeTitle": "更新內容V{version}",
+  "deskNavUpgradeBody": "提示：預設不會開啟HTTPS抓包，請安裝證書後再開啟HTTPS抓包。\n點選HTTPS抓包(加鎖圖示)，選擇安裝根證書，按照提示操作即可。\n\n1. 新增內建 MCP 服務，AI 助手（如 Claude）可接入檢視與除錯抓包流量；\n2. 環境變數支援內建動態變數；\n3. 請求重寫規則支援上移、下移排序；\n4. 修復 Windows 端右鍵選單導致崩潰的問題；\n5. 修復指令碼或重寫處理多值請求頭（如多個 Set-Cookie）時被錯誤合併的問題；\n6. 修復明文 HTTP/2（h2c）抓包、非 ASCII 域名歸一化、以 IP 訪問時證書校驗失敗等問題；\n7. 修復 iOS 13 崩潰、無 Content-Length 響應 Body 丟失、Android VPN 目的埠記錄等若干問題。\n",
+  "setNavThemeTip": "主題設定在頂部工具欄，點選太陽/月亮圖示即可切換",
+  "setNavProxyDomainsHint": "多個使用;分割",
+  "setNavClearProxyResidue": "清除系統代理殘留",
+  "setNavClearProxyResidueDesc": "異常退出後網路打不開時點這裡恢復",
+  "setNavProxyResidueCleared": "已清除系統代理設定，網路應恢復正常",
+  "setNavRepair": "修復",
+  "mobNavUpgradeTitle": "更新內容V{version}",
+  "mobNavUpgradeBody": "提示：預設不會開啟HTTPS抓包，請安裝證書後再開啟HTTPS抓包。\n\n1. 新增內建 MCP 服務，AI 助手（如 Claude）可接入檢視與除錯抓包流量；\n2. 環境變數支援內建動態變數；\n3. 請求重寫規則支援上移、下移排序；\n4. 修復 Windows 端右鍵選單導致崩潰的問題；\n5. 修復指令碼或重寫處理多值請求頭（如多個 Set-Cookie）時被錯誤合併的問題；\n6. 修復明文 HTTP/2（h2c）抓包、非 ASCII 域名歸一化、以 IP 訪問時證書校驗失敗等問題；\n7. 修復 iOS 13 崩潰、無 Content-Length 響應 Body 丟失、Android VPN 目的埠記錄等若干問題。\n",
+  "appFilterUnknownApp": "未知應用",
+  "appFilterClearInvalid": "清除失效應用",
+  "appFilterWhitelistHint": "未設定白名單應用時會對所有應用抓包",
+  "appFilterRemoveWhitelistConfirm": "從白名單裡移除這個應用？",
+  "appFilterRemoveBlacklistConfirm": "從黑名單裡移除這個應用？",
+  "appFilterSearchHint": "請輸入應用名或包名",
+  "appFilterShowSystemApps": "顯示系統應用",
+  "contentBodyOriginalMb": "（原始 {size} MB）",
+  "contentBodyOriginalKb": "（原始 {size} KB）",
+  "contentBodyTruncatedTip": "已按「抓包內容上限」裁剪，完整內容未保留",
+  "contentBodyTruncatedBadge": "已裁剪{size}",
+  "contentBodySaveFailed": "儲存失敗：{error}",
+  "contentBodyDecodeTruncatedTip": "響應體較大，預覽只解碼到上限（可在「設定 → 抓包內容上限」調整）。僅影響預覽，不影響轉發與已儲存內容。",
+  "contentBodyPreviewTruncated": "預覽已截斷",
+  "guideLoadFailed": "文件載入失敗：{error}",
+  "guideSearchHint": "搜尋文件",
+  "guideMarkResetTooltip": "重置重點標記說明",
+  "wsRuleMgrFrameActionTitle": "幀級動作",
+  "wsRuleMgrActionLabel": "動作",
+  "wsRuleMgrActionObserve": "僅匹配，不干預",
+  "wsRuleMgrActionRewrite": "改寫幀內容",
+  "wsRuleMgrActionDrop": "丟棄該幀",
+  "wsRuleMgrActionDelay": "延遲轉發",
+  "wsRuleMgrActionDuplicate": "重複傳送一幀",
+  "wsRuleMgrPayloadMatchLabel": "幀內容匹配（留空＝該方向全部幀）",
+  "wsRuleMgrPayloadMatchHint": "按上面的匹配模式作用於幀內容，如 login",
+  "wsRuleMgrReplaceWith": "替換為",
+  "wsRuleMgrRewriteNote": "分片幀、壓縮幀與控制幀不會被改寫，仍原樣轉發",
+  "wsRuleMgrDelayMs": "延遲毫秒",
+  "pcCertInstallToSystem": " 安裝證書到本系統，{detail}",
+  "pcCertMacTrustHint": "安裝完雙擊選擇“始終信任此證書”。 如安裝開啟失敗，請匯出證書拖拽到系統證書裡",
+  "pcCertWinTrustHint": "請選「受信任的根證書頒發機構」",
+  "pcCertLinuxGuide": "裝到本機系統（以 Ubuntu 為例）：先把下載的證書複製到 /usr/local/share/ca-certificates/，再執行 sudo update-ca-certificates 就裝好了。\n其他系統請自行搜尋「安裝根證書」的方法。",
+  "pcCertFirefoxHint": "提示：FireFox有自己的信任證書庫，所以要手動在設定中匯入需要匯入的證書。",
+  "pcCertTrustTitle": "透過安裝並信任 ProxyPin CA",
+  "pcCertTrustDesc": "ProxyPin 可以動態解密 HTTPS 流量以展示原始請求/響應。",
+  "pcCertInstalledTitle": "證書已安裝",
+  "pcCertInstallSuccess": "證書安裝成功",
+  "pcCertInstallFailed": "證書安裝失敗，請嘗試手動安裝",
+  "fuzzerDictFilled": "已填入「{name}」共 {count} 條",
+  "fuzzerDictFailed": "字典展開失敗：{error}",
+  "fuzzerFillFromDict": "從字典填充",
+  "fuzzerPayloadCount": "{count} 條",
+  "fuzzerRulesTitle": "判定規則（與基線比對）",
+  "fuzzerNoRuleEnabled": "未啟用任何規則",
+  "fuzzerRulesEnabled": "已啟用：{names}",
+  "fuzzerRulesNote": "規則只負責標出「和基線不一樣」，不代表這裡就有漏洞 —— 結論由你下。",
+  "capLimitUnlimitedOption": "不限（保留完整內容，預設）",
+  "capLimitOption128": "128 KB（只看頭部與少量內容）",
+  "capLimitUnlimitedDesc": "不限：保留完整請求/響應內容",
+  "capLimitSizeMb": "上限 {mb} MB：超出部分只保留前 {mb} MB 用於展示",
+  "capLimitSizeKb": "上限 {kb} KB：超出部分只保留前 {kb} KB 用於展示",
+  "capLimitDesc": "超過上限的響應/請求體只保留前 N 位元組（壓縮體整體釋放），用於降低長時間抓包的記憶體佔用。裁剪在轉發完成後進行，不影響實際轉發。",
+  "navBarMultiSeparatorHint": "多個使用;分割",
+  "navBarAiEnabled": "已啟用 · {model}",
+  "navBarAiNotConfigured": "未配置 · 接入 OpenAI 相容介面分析抓包請求",
+  "navBarLogSubtitle": "應用執行日誌檢視與匯出",
+  "navBarDocSubtitle": "功能教程 · 規範文件 · 開發文件（離線內建）",
+  "updRestartHint": "應用將退出並重啟以完成更新。",
+  "updPreparing": "正在準備更新...",
+  "updDownloading": "正在下載更新...",
+  "updReadyToInstall": "更新已下載完成，可立即安裝",
+  "updLaunchingInstaller": "正在啟動安裝...",
+  "updFailed": "更新失敗",
+  "updCancelled": "更新已取消",
+  "updDownloadFailed": "下載失敗: {error}",
+  "updInvalidUrl": "下載地址無效",
+  "updDownloadHttpError": "下載失敗 (HTTP {code})",
+  "updVerifyFailed": "下載檔案校驗失敗",
+  "updInstallerMissing": "安裝檔案缺失",
+  "updInPlaceFailed": "原地更新失敗, 請手動安裝",
+  "updLaunchFailed": "安裝啟動失敗: {error}",
+  "updPlatformUnsupported": "當前平臺不支援自動安裝",
+  "updMacExtractFailed": "解壓更新包失敗: {error}",
+  "updMacAppNotFound": "更新包中未找到 App",
+  "updMacMultipleApps": "更新包中包含多個 App，無法確認安裝目標",
+  "updMacInvalidApp": "更新包 App 結構無效",
+  "updMacAuthFailed": "使用者取消授權或授權安裝失敗",
+  "updWinUacLaunchFailed": "UAC 提權啟動更新指令碼失敗，ShellExecuteW result={code}",
+  "updWinUacTimeout": "等待 UAC 提權啟動更新指令碼超時，請確認已在許可權提示中點選“是”",
+  "updWinExeNotFound": "更新包中未找到 exe",
+  "updWinMultipleExe": "更新包中包含多個 exe，無法確認啟動目標",
+  "domainAddHelper": "域名或 URL 字首均可，* 為萬用字元",
+  "splashSubtitle": "v{version} · 開源免費抓包工具",
+  "bvVariableWord": "變數",
+  "bvSampleVariable": "{lb}{lb}{word}{rb}{rb}",
+  "imageRenderFailed": "無法渲染圖片：{error}",
+  "copyValue": "複製值",
+  "repeatBatchCount": "批次重放 {count} 個請求",
+  "aiSettings": "AI 設定",
+  "millisecond": "毫秒",
+  "minute": "分鐘",
+  "searchHistory": "搜尋歷史",
+  "clearSearchHistory": "清空搜尋歷史？",
+  "languageChineseSimplified": "簡體中文",
+  "languageChineseTraditional": "繁體中文",
+  "invalidRewriteRuleList": "內容不是有效的重寫規則列表",
+  "scriptConsoleTitle": "指令碼控制檯",
+  "remoteDeviceDisconnected": "遠端裝置連線已斷開",
+  "cryptoRuleEmpty": "暫無解密規則",
+  "cryptoRuleEmptyHint": "點選右上角 + 新增需要解密的請求",
+  "cryptoRuleFieldHintEmpty": "為空=整個 body",
+  "jsonViewerEmptyHint": "請輸入或開啟 JSON",
+  "aboutSlogan": "全平臺開源免費抓包軟體",
+  "downloadAddress": "下載地址",
+  "beautifyNotSupported": "當前資料型別不支援美化",
+  "repeatResultSuccess": "成功：{count}",
+  "repeatResultFail": "失敗：{count}",
+  "repeatResultRetry": "重試：{count}",
+  "repeatResultError": "錯誤：{error}",
+  "exportReqNoFileWritten": "匯出失敗：{count} 條請求都沒寫出檔案{detail}，可改用「匯出 HAR」",
+  "exportImportDialogTitle": "匯入 / 匯出",
+  "exportImportClipboardTitle": "從剪貼簿匯入口令",
+  "exportImportClipboardDesc": "貼上此前匯出的口令，還原請求到列表",
+  "exportImportEmpty": "口令中沒有任何請求",
+  "exportImportedCount": "已匯入 {count} 條請求",
+  "exportInvalidPasscodeWithError": "口令無效：{error}",
+  "exportCsvDesc": "一行一條請求，敏感查詢引數（token / 密碼 / 簽名等）自動打碼",
+  "exportJsonDesc": "結構化 JSON，敏感查詢引數自動打碼，便於餵給 AI 或指令碼分析",
+  "exportCopyPasscode": "複製口令",
+  "exportCopyPasscodeDesc": "將所選請求壓縮為口令文字，貼上給他人即可匯入",
+  "exportPasscodeCopied": "口令已複製（{count} 條請求）",
+  "cmpReportTitle": "=== 請求對比報告 ===",
+  "cmpUrlChanges": "URL 變化:",
+  "cmpMethodChanges": "方法變化:",
+  "cmpResultLabel": "對比結果：{value}",
+  "cmpChars": "字元",
+  "wsPayloadEmpty": "空幀",
+  "wsPayloadImage": "{format} 圖片 · {size}",
+  "wsPayloadDecompressed": "{compression} 解壓 → {kind} · {size}",
+  "wsPayloadTextKind": "文字",
+  "wsPayloadBinaryKind": "二進位制",
+  "wsPayloadText": "文字 · {size}",
+  "wsPayloadBinary": "二進位制 · {size}",
+  "securityVerifHsts": "HSTS —— 讓瀏覽器以後只用 HTTPS 訪問",
+  "securityVerifCsp": "CSP —— 限制頁面能載入執行哪些資源",
+  "securityVerifNoSniff": "禁止瀏覽器自行猜測 Content-Type",
+  "securityVerifFrame": "別讓別的網站把你的頁面套進它的框架裡（防點選劫持）",
+  "securityVerifReferrer": "控制 Referer 帶出去多少資訊",
+  "mcpSchedMon": "一",
+  "mcpSchedTue": "二",
+  "mcpSchedWed": "三",
+  "mcpSchedThu": "四",
+  "mcpSchedFri": "五",
+  "mcpSchedSat": "六",
+  "mcpSchedSun": "日",
+  "mcpSchedWeekdaySep": "、",
+  "mcpSchedDaily": "每天",
+  "mcpSchedDailyCount": "每天 · 共{count}次",
+  "mcpSchedWeekly": "每週{days}",
+  "mcpSchedWeeklyCount": "每週{days} · 共{count}次",
+  "mcpSchedInterval": "每{min}分鐘",
+  "mcpSchedIntervalCount": "每{min}分鐘 · 共{count}次",
+  "mcpSchedOnce": "一次性",
+  "apiExtractFullCrud": "完整 CRUD",
+  "apiExtractReadWrite": "讀寫模式",
+  "apiExtractReadOnly": "只讀模式",
+  "apiExtractCustom": "自定義模式",
+  "apiExtractDocDesc": "從 ProxyPin 抓包資料自動生成的 API 文件",
+  "wafTechUrlEncode": "URL 編碼",
+  "wafTechUrlEncodeDesc": "空格等特殊字元轉 %XX，繞過按原文匹配的規則",
+  "wafTechDoubleUrl": "雙重 URL 編碼",
+  "wafTechDoubleUrlDesc": "把 % 也編碼成 %25，針對只解碼一次的 WAF",
+  "wafTechUnicode": "Unicode 編碼",
+  "wafTechUnicodeDesc": "轉成 \\uXXXX，針對不處理 Unicode 的解析鏈",
+  "wafTechCaseMix": "大小寫混用",
+  "wafTechCaseMixDesc": "SeLeCt —— 針對區分大小寫的正則",
+  "wafTechCommentSplit": "註釋分割",
+  "wafTechCommentSplitDesc": "用 /**/ 替掉空白，SQL 裡等價於空格",
+  "wafTechCommentWrap": "內聯註釋包裹",
+  "wafTechCommentWrapDesc": "/*!50000select*/ —— MySQL 會執行註釋裡的內容",
+  "wafTechWhitespaceAlt": "空白替換",
+  "wafTechWhitespaceAltDesc": "空格換 %09/%0a/%0c/+/() 等等價物",
+  "wafTechDoubleWrite": "關鍵字雙寫",
+  "wafTechDoubleWriteDesc": "oorr → or —— 針對只替換一次的過濾器",
+  "wafTechKeywordReplace": "等價關鍵字",
+  "wafTechKeywordReplaceDesc": "and→&&、or→||、=→like 等語義等價替換",
+  "wafTechQuoteEscape": "引號變形",
+  "wafTechQuoteEscapeDesc": "單引號/雙引號/反引號互換與轉義",
+  "wafTechConcatString": "字串拼接",
+  "wafTechConcatStringDesc": "'a'||'b' / CONCAT —— 繞過對整串字面量的匹配",
+  "wafTechNewlineInject": "換行/分塊注入",
+  "wafTechNewlineInjectDesc": "在關鍵字中間插入換行或 %0d%0a",
+  "wafTechChunked": "分塊編碼",
+  "wafTechChunkedDesc": "HTTP chunked 形式切開載荷",
+  "wafTechHpp": "引數汙染 (HPP)",
+  "wafTechHppDesc": "同名引數重複，利用前後端取值不一致",
+  "wafTechBase64Wrap": "Base64 包裝",
+  "wafTechBase64WrapDesc": "把載荷整體 base64，針對 WAF 之後才解碼的場景",
+  "wafTechHexWrap": "十六進位制包裝",
+  "wafTechHexWrapDesc": "0x... 形式（資料庫層面等價）",
+  "wafCombinedResult": "組合結果（按選擇順序疊加）",
+  "wafVerdictBaseline": "基線",
+  "wafVerdictBlocked": "被攔截",
+  "wafVerdictPassed": "疑似繞過",
+  "wafVerdictChanged": "響應有變化",
+  "wafVerdictFailed": "請求失敗",
+  "wafBaselineOriginal": "基線（原始載荷）",
+  "capturePlanTplMobileName": "移動端 App 抓包排查",
+  "capturePlanTplMobileApp": "任意移動 App",
+  "capturePlanTplMobileDesc": "從零確認代理連通性，再定位目標 App 的請求，適合首次對某個 App 抓包或排查載入異常。",
+  "capturePlanTplMobileStepConnectTitle": "確認手機已連上代理",
+  "capturePlanTplMobileStepConnectDesc": "把手機 Wi-Fi 代理指向本機區域網地址與抓包埠，確認能看到其他 App 的請求。",
+  "capturePlanTplMobileStepCaTitle": "信任根證書",
+  "capturePlanTplMobileStepCaDesc": "在手機上裝好 ProxyPin 根證書並完全信任它，不然 HTTPS 內容只能看到密文。",
+  "capturePlanTplMobileStepTargetTitle": "只留目標 App",
+  "capturePlanTplMobileStepTargetDesc": "關閉其他應用的後臺活動，或用「應用篩選」只保留目標 App，減少無關請求干擾。",
+  "capturePlanTplMobileStepReproduceTitle": "復現並核對",
+  "capturePlanTplMobileStepReproduceDesc": "在目標 App 裡復現操作，回到請求列表核對介面、狀態碼與響應內容。",
+  "capturePlanTplApiName": "介面清單梳理",
+  "capturePlanTplApiApp": "任意客戶端",
+  "capturePlanTplApiDesc": "把一個功能的全部請求抓齊，整理成介面清單，適合做介面梳理與聯調核對。",
+  "capturePlanTplApiStepScopeTitle": "圈定域名範圍",
+  "capturePlanTplApiStepScopeDesc": "在方案裡填入目標業務域名，一鍵應用到域名過濾器，只保留相關請求。",
+  "capturePlanTplApiStepCollectTitle": "走完整個功能流程",
+  "capturePlanTplApiStepCollectDesc": "在客戶端裡把目標功能的每個步驟都操作一遍，確保介面儘量抓全。",
+  "capturePlanTplApiStepCatalogTitle": "匯出介面清單",
+  "capturePlanTplApiStepCatalogDesc": "開啟「介面列表」工具，把抓到的介面彙總出來，可以匯出成 OpenAPI / Postman / JSON。",
+  "fuzzerBodyTruncated": "[響應過大，僅保留前 {kb} KB]",
+  "fuzzerDiffStatus": "狀態 {from} → {to}",
+  "fuzzerDiffLength": "長度 {delta}",
+  "fuzzerDiffDuration": "耗時 {pct}%",
+  "fuzzerDiffError": "請求異常",
+  "fuzzerDiffSep": "，",
+  "fuzzerRuleFailedName": "請求失敗",
+  "fuzzerRuleFailedDesc": "連不上 / 超時 / 被中斷",
+  "fuzzerRuleStatusName": "狀態碼變化",
+  "fuzzerRuleStatusDesc": "與基線的狀態碼不同",
+  "fuzzerRuleLengthName": "長度明顯變化",
+  "fuzzerRuleLengthDesc": "響應體長度差超過閾值",
+  "fuzzerRuleSlowerName": "響應明顯變慢",
+  "fuzzerRuleSlowerDesc": "比基線慢超過閾值",
+  "fuzzerRuleKeywordName": "命中關鍵字",
+  "fuzzerRuleKeywordDesc": "響應體出現你指定的關鍵字",
+  "mcpAutoTriggerRequestMatch": "請求匹配",
+  "mcpAutoTriggerResponseMatch": "響應匹配",
+  "mcpAutoTriggerInterval": "定時觸發",
+  "mcpAutoTriggerProxyStart": "代理啟動",
+  "mcpAutoTriggerProxyStop": "代理停止",
+  "mcpAutoTriggerManual": "手動觸發",
+  "mcpAutoActionModifyRequest": "修改請求",
+  "mcpAutoActionModifyResponse": "修改響應",
+  "mcpAutoActionBlockRequest": "攔截請求",
+  "mcpAutoActionReplayRequest": "重放請求",
+  "mcpAutoActionSendNotification": "傳送通知",
+  "rewriteRuleTypeRequestReplace": "替換請求",
+  "rewriteRuleTypeResponseReplace": "替換響應",
+  "rewriteRuleTypeRequestUpdate": "修改請求",
+  "rewriteRuleTypeResponseUpdate": "修改響應",
+  "rewriteRuleTypeRedirect": "重定向",
+  "rewriteBodyTypeText": "文字",
+  "rewriteBodyTypeFile": "檔案",
+  "rewriteTypeUpdateBody": "修改Body",
+  "rewriteTypeAddQueryParam": "新增引數",
+  "rewriteTypeRemoveQueryParam": "刪除引數",
+  "rewriteTypeUpdateQueryParam": "修改引數",
+  "rewriteTypeAddHeader": "新增頭部",
+  "rewriteTypeRemoveHeader": "刪除頭部",
+  "rewriteTypeUpdateHeader": "修改頭部",
+  "sendToDecoder": "傳送到解碼器",
+  "sendToAesDecrypt": "傳送到 AES 解密",
+  "toolboxHash": "雜湊",
+  "commonAlgorithm": "演算法",
+  "commonMode": "模式",
+  "commonPadding": "填充",
+  "commonKey": "金鑰",
+  "commonKeyLength": "金鑰長度",
+  "commonCompute": "計算",
+  "commonRun": "執行",
+  "commonFile": "檔案",
+  "commonVerify": "校驗",
+  "commonGenerate": "生成",
+  "commonSign": "簽名",
+  "commonMessage": "訊息",
+  "commonNotMatch": "不匹配",
+  "commonBits": "{n} 位",
+  "commonError": "錯誤：{error}",
+  "cryptoEncryptFailed": "加密失敗",
+  "cryptoDecryptFailed": "解密失敗",
+  "cryptoHexEvenLength": "十六進位制字串長度必須為偶數",
+  "cryptoValidSig": "簽名有效",
+  "cryptoInvalidSig": "簽名無效",
+  "cryptoRsaKey": "公鑰 / 私鑰（PEM）",
+  "cryptoRsaSignature": "簽名（Base64）",
+  "cryptoBcryptHash": "Bcrypt 雜湊",
+  "regexpPattern": "表示式",
+  "regexpPatternHint": "輸入正規表示式",
+  "regexpDigits": "數字",
+  "regexpLetters": "字母",
+  "regexpAlphanumeric": "字母數字",
+  "regexpEmail": "郵箱",
+  "regexpDate": "日期（YYYY-MM-DD）",
+  "regexpReplaceText": "替換文字",
+  "regexpReplaceHint": "輸入替換內容",
+  "regexpResult": "結果",
+  "regexpInvalid": "正規表示式無效：{error}",
+  "invalidTimestamp": "無效的時間戳",
+  "invalidDateTime": "無效的日期時間",
+  "wsInvalidUrl": "無效的 URL",
+  "wsClosed": "已關閉",
+  "wsDisconnected": "已斷開",
+  "wsConnectFailed": "連線失敗：{error}",
+  "wsSendFileFailed": "傳送檔案失敗：{error}",
+  "wsClearMessages": "清空訊息",
+  "wsJumpLatest": "跳到最新訊息",
+  "editorPlainText": "純文字",
+  "jwtHeader": "頭部",
+  "jwtPayload": "載荷",
+  "encoderParams": "引數",
+  "toolboxEncodeUrlTip": "URL 編碼/解碼",
+  "toolboxEncodeBase64Tip": "Base64 編碼/解碼",
+  "toolboxEncodeUnicodeTip": "Unicode 編碼/解碼",
+  "toolboxEncodeBase32Tip": "Base32 編碼/解碼",
+  "toolboxEncodeHexTip": "Hex 編碼/解碼",
+  "toolboxEncodeHtmlTip": "HTML 實體編碼/解碼",
+  "toolboxEncodeGzipTip": "GZip 壓縮/解壓",
+  "toolboxEncodeDeflateTip": "Deflate/ZLib 壓縮/解壓",
+  "toolboxUrlParams": "URL 引數",
+  "toolboxUrlParamsTip": "URL 查詢引數解析/構建",
+  "toolboxMd5Tip": "MD5 雜湊",
+  "toolboxRsaTip": "RSA 加解密/簽名",
+  "toolboxHashTip": "雜湊摘要（MD5/SHA/SM3）",
+  "toolboxBcryptTip": "Bcrypt 雜湊",
+  "cipherButtonTip": "{label} 加密/解密",
+  "toolboxSslPinning": "SSL 證書固定",
+  "toolboxSign": "位元組簽名",
+  "signTabSign": "簽名",
+  "signTabWeb": "Web 簽名",
+  "signTabParams": "引數",
+  "signPlatform": "平臺",
+  "signUrl": "URL / 查詢串",
+  "signUrlHint": "貼上完整 URL 或僅查詢串",
+  "signBody": "請求體（可選）",
+  "signCompute": "生成",
+  "signHeaders": "簽名頭",
+  "signCopyAll": "全部複製",
+  "signNeedInput": "請輸入 URL 或查詢串",
+  "signAppVersion": "應用版本",
+  "signVersionCode": "版本號",
+  "signMssdk": "MSSDK 版本號",
+  "signParamsHint": "這些引數隨版本變化，請按目標 App 版本調整。",
+  "toolboxDevice": "裝置指紋",
+  "deviceModel": "機型",
+  "deviceHint": "先選機型，再點「生成」，就會造出一份前後一致的裝置資訊。",
+  "regexpHelp": "正則幫助",
+  "regexpHelpSearchHint": "搜尋語法或示例",
+  "regexpNoMatch": "沒有匹配的內容",
+  "regexpModifiers": "修飾符",
+  "regexpMatches": "匹配 {count} 處",
+  "regexpApplyToInput": "用結果替換測試資料",
+  "regexpReplaced": "已替換 {count} 處",
+  "snippetManagerTitle": "快捷插入管理",
+  "snippetManagerHint": "標籤留空則顯示插入內容本身；插入內容為空的行會被丟棄。",
+  "snippetManagerEmpty": "暫無條目，點「新增」新增。",
+  "snippetManagerReset": "恢復預設",
+  "snippetManagerLabel": "標籤",
+  "snippetManagerInsert": "插入內容",
+  "diffPrev": "上一處差異",
+  "diffNext": "下一處差異",
+  "diffAdded": "新增",
+  "diffDeleted": "刪除",
+  "diffModified": "修改",
+  "diffSummaryDetail": "新增 {added} 行，刪除 {deleted} 行，修改 {modified} 行",
+  "diffPosition": "第 {index}/{total} 處差異",
+  "editorUntitled": "未命名",
+  "editorNewFile": "新建檔案",
+  "editorDocuments": "文件列表",
+  "editorDocsHint": "點選切換 · 長按拖動排序 · 右滑顯示操作",
+  "editorPin": "置頂",
+  "editorUnpin": "取消置頂",
+  "editorRetain": "保留檔案",
+  "editorRetainHint": "退出編輯器時不移除，並儲存以便下次恢復",
+  "editorShowAsciiControl": "顯示 ASCII 控制字元",
+  "editorShowUnicodeSpecial": "顯示 Unicode 特殊字元",
+  "editorSpecialReport": "特殊字元檢測",
+  "editorSpecialNone": "沒有檢測到不可見字元",
+  "editorJumpTo": "跳轉",
+  "editorRemoveAll": "刪除該字元的全部出現",
+  "editorRemoved": "已刪除 {count} 個字元",
+  "editorSmoothMode": "流暢模式",
+  "editorSmoothAutoEnabled": "文字過長，已自動開啟流暢模式",
+  "editorSelectToLine": "選到第 N 行",
+  "editorStartLine": "起始行",
+  "editorEndLine": "結束行",
+  "editorReplaceLine": "替換當前行",
+  "editorReplacedLine": "已替換當前行",
+  "editorClipboardEmpty": "剪貼簿沒有文字",
+  "editorToggleComment": "切換註釋",
+  "editorCommentUnsupported": "當前語法不支援切換註釋",
+  "editorInsertSymbol": "插入符號",
+  "editorManage": "管理",
+  "editorUndo": "撤銷",
+  "editorRedo": "重做",
+  "editorMore": "更多",
+  "editorNewline": "換行符",
+  "editorNewlineHint": "隻影響儲存檔案時的換行符；編輯器內部始終按 LF 處理。",
+  "editorRetainPref": "新檔案保留偏好",
+  "editorRetainAsk": "退出時詢問",
+  "editorRetainAlways": "預設保留",
+  "editorRetainNever": "不保留",
+  "editorExitRetainTitle": "要保留這些檔案嗎？",
+  "editorExitRetainBody": "有檔案未標記為「保留」，退出後將從編輯器移除。",
+  "editorDiscard": "不保留",
+  "editorUnsaved": "未儲存",
+  "editorMinify": "壓縮程式碼",
+  "editorMinifyUnsupported": "當前語法不支援壓縮",
+  "editorMinified": "已壓縮：{before} → {after} 字元",
+  "editorGutterAnchorSet": "已記下起始行 {line}，再長按另一行號即選中區間",
+  "editorGutterRangeSelected": "已選中第 {from} — {to} 行",
+  "diffReplaceBlockLeft": "用此處替換右側",
+  "diffReplaceBlockRight": "用此處替換左側",
+  "diffApplied": "已應用到另一側",
+  "diffNoChangeHere": "此處沒有可應用的差異",
+  "diffExitKeepTitle": "保留本次對比內容嗎？",
+  "diffExitKeepBody": "將儲存左右兩段文字，下次進入自動恢復。",
+  "diffKeep": "保留",
+  "editorSmoothKeepIme": "流暢模式保留輸入法建議",
+  "editorMinifyAggressive": "激進壓縮（重新命名 / 去死程式碼）",
+  "editorMinifyAggressiveUnsupported": "語法超出內建編譯器支援的子集範圍，已跳過",
+  "@mcpHintRun": {
+    "placeholders": {
+      "client": {
+        "type": "String"
+      }
+    }
+  },
+  "@securityAiApplyConfirm": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@wafAppliedCombo": {
+    "placeholders": {
+      "waf": {
+        "type": "String"
+      }
+    }
+  },
+  "@wafNeedPlaceholder": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
+  "@wafDoneAll": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "bypass": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafStep3Hint": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
+  "@wafWillProbe": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "@wafBatchHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafNextBatch": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafLimitsHard": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafCopied": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideRenderError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideDemoTitle": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideDemoDefault": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideLoadMore": {
+    "placeholders": {
+      "visible": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafBatchDone": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafProbeError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@wafAdvancedSummary": {
+    "placeholders": {
+      "delay": {
+        "type": "int"
+      },
+      "timeout": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafNRecords": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@wafResultMeta": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "bytes": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "@aiNMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@aiStatus": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "@aiAnalyzeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@aiToolCalled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@aiMaxRounds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@aiImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@aiJsonFormatHint": {
+    "placeholders": {
+      "example": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicPacketsBytes": {
+    "placeholders": {
+      "packets": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicLastActivity": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicCopiedSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicBannerKeylogLoaded": {
+    "placeholders": {
+      "keys": {
+        "type": "int"
+      },
+      "connections": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicSessionSummary": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "remote": {
+        "type": "String"
+      },
+      "firstSeen": {
+        "type": "String"
+      },
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicSessionIds": {
+    "placeholders": {
+      "dcid": {
+        "type": "String"
+      },
+      "packets": {
+        "type": "int"
+      },
+      "frames": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "decrypted": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicDecryptedSegments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicTimelineSummary": {
+    "placeholders": {
+      "packets": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "buckets": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicImportedNKeys": {
+    "placeholders": {
+      "keys": {
+        "type": "int"
+      },
+      "connections": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicDecryptedTitle": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicDecryptedAbout": {
+    "placeholders": {
+      "segments": {
+        "type": "int"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "@quicQpackTableUsed": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      },
+      "live": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicHttp3Headers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicSecondsAgo": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@quicHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "@pinningDeployDone": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@pinningDeployFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@pinningAttached": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
+  "@pinningAttachFailed": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
+  "@cloudAuthFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@cloudPushFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@cloudPulled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@cloudPullFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@cloudInvited": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@cloudInviteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@sslInstallFailedRoot": {
+    "placeholders": {
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "@sslAutoInstallFailedRoot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@sslRemoveFailedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@sslMountFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "@sslUnmountFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "@sslZygoteRestartFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoReading": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoReadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoScriptNotFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoScriptExecuted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoScriptRunFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoLastRun": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoRanTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpAutoCronNextAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoDescHttp": {
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoDescNetwork": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoDescProxy": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoDescCapture": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpAutoRuleSummary": {
+    "placeholders": {
+      "conditions": {
+        "type": "int"
+      },
+      "actions": {
+        "type": "int"
+      },
+      "enabled": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoPromptDescWithArgs": {
+    "placeholders": {
+      "desc": {
+        "type": "String"
+      },
+      "params": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoRequiredArg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoNodesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpAutoDependsOn": {
+    "placeholders": {
+      "deps": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpAutoWorkflowStart": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpConnRegenerateTokenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpConnProtocolVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpConnFloatingBallColorDesc": {
+    "placeholders": {
+      "hex": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpConnOpacityPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpConnFloatingBallStartFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpConnFloatingBallStopFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpConnFloatingBallCallFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpConnToolCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@auditUrlSecretDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditCookieFlagDetail": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditMissingHeadersDetail": {
+    "placeholders": {
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditFingerprintDetail": {
+    "placeholders": {
+      "header": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditSecretDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditPiiDetail": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditErrorDetail": {
+    "placeholders": {
+      "trace": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditSqlDetail": {
+    "placeholders": {
+      "signature": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditXssDetail": {
+    "placeholders": {
+      "meta": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditCustomHitDetail": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "describe": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditRuleDescribe": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "match": {
+        "type": "String"
+      }
+    }
+  },
+  "@diagProxyListening": {
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "@diagSystemProxyMatched": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "@diagSystemProxyMismatch": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      },
+      "expected": {
+        "type": "int"
+      }
+    }
+  },
+  "@diagReadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@diagSslPinningDetail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sample": {
+        "type": "String"
+      }
+    }
+  },
+  "@diagTrafficFresh": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ago": {
+        "type": "int"
+      }
+    }
+  },
+  "@diagTrafficStale": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ago": {
+        "type": "int"
+      }
+    }
+  },
+  "@diagExtMemDetail": {
+    "placeholders": {
+      "rss": {
+        "type": "String"
+      },
+      "peak": {
+        "type": "String"
+      },
+      "connections": {
+        "type": "String"
+      },
+      "buffered": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditPageVerifyScope": {
+    "placeholders": {
+      "hosts": {
+        "type": "int"
+      },
+      "delay": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "@auditPageVerifyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditPageVerifyHostFailed": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@auditPageVerifyHeaderMissing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "desc": {
+        "type": "String"
+      }
+    }
+  },
+  "@prefSplashDurationSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "@prefExecFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@prefQuicBlocked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@cfgExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@cfgExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@cfgImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@cfgCopyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@devToolJwtDecodeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@devToolJwtExpiry": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@devToolJwtExpLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@calcCopiedKey": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@calcNBits": {
+    "placeholders": {
+      "bits": {
+        "type": "int"
+      }
+    }
+  },
+  "@calcNBytes": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
+  "@wsPageDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPageSavedTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPageSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPageImportedToHistory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@wsPageImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPagePushed": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      }
+    }
+  },
+  "@wsPagePushFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPagePulled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@wsPagePullFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPageItemMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@logViewExportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@cmpTotalChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@cmpOldValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@cmpNewValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@cmpResponseHeaderChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@cmpRequestLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupRestoreConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupRestoredApplied": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      }
+    }
+  },
+  "@backupRestoredNotApplied": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      },
+      "failedSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupFailedSuffix": {
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "@backupRestoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupRestoredSummary": {
+    "placeholders": {
+      "restored": {
+        "type": "int"
+      },
+      "applied": {
+        "type": "String"
+      },
+      "failed": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupDeleteConfirmDesktop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupRestoreConfirmDesktop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupViewTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupViewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@rootProxyStartFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@rootProxyTargetPort": {
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "@fuzzDictImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzDictDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzDictNEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@fuzzDictExpanded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzDictScriptFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@apiEpTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@apiEpPathCalls": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@apiEpCallsSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "@apiEpExported": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "@apiEpExportFailed": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@perfLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@perfLastUpdate": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@rqLastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@rqPendingRequests": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@rqMoreRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@bvIntro": {
+    "placeholders": {
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
+  "@bvCopied": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "@deskNavUpgradeTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@mobNavUpgradeTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@contentBodyOriginalMb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@contentBodyOriginalKb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@contentBodyTruncatedBadge": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@contentBodySaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@pcCertInstallToSystem": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzerDictFilled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzerDictFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzerPayloadCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzerRulesEnabled": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "@capLimitSizeMb": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
+  "@capLimitSizeKb": {
+    "placeholders": {
+      "kb": {
+        "type": "String"
+      }
+    }
+  },
+  "@navBarAiEnabled": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "@updDownloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@updDownloadHttpError": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "@updLaunchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@updMacExtractFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@updWinUacLaunchFailed": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "@splashSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@bvSampleVariable": {
+    "placeholders": {
+      "lb": {
+        "type": "String"
+      },
+      "word": {
+        "type": "String"
+      },
+      "rb": {
+        "type": "String"
+      }
+    }
+  },
+  "@imageRenderFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@repeatBatchCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repeatResultSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repeatResultFail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repeatResultRetry": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repeatResultError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@exportReqNoFileWritten": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "@exportImportedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@exportInvalidPasscodeWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@exportPasscodeCopied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@cmpResultLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPayloadImage": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPayloadDecompressed": {
+    "placeholders": {
+      "compression": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPayloadText": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsPayloadBinary": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpSchedDailyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpSchedWeekly": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "@mcpSchedWeeklyCount": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpSchedInterval": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "@mcpSchedIntervalCount": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@fuzzerBodyTruncated": {
+    "placeholders": {
+      "kb": {
+        "type": "int"
+      }
+    }
+  },
+  "@fuzzerDiffStatus": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzerDiffLength": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "@fuzzerDiffDuration": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "@commonBits": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "@commonError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@regexpInvalid": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsConnectFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@wsSendFileFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@cipherButtonTip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "@regexpMatches": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@regexpReplaced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@diffSummaryDetail": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "deleted": {
+        "type": "int"
+      },
+      "modified": {
+        "type": "int"
+      }
+    }
+  },
+  "@diffPosition": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@editorRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@editorMinified": {
+    "placeholders": {
+      "before": {
+        "type": "String"
+      },
+      "after": {
+        "type": "String"
+      }
+    }
+  },
+  "@editorGutterAnchorSet": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "@editorGutterRangeSelected": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  }
 }
