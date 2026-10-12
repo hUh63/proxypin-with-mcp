@@ -1,0 +1,57 @@
+name: Quality (analyze + test)
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Static analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # error 级别必须为 0；info / warning 先不阻塞（存量较多，逐步收紧）。
+      - name: Flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    # 首版先观察：存量测试里可能有依赖原生插件或历史遗留的用例。
+    # 待清干净后去掉这一行，改为阻塞。
+    continue-on-error: true
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter test
+        run: flutter test --reporter expanded

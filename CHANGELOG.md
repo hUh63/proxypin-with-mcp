@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.55.00 (2026-10-12)
+
+### CI 补上静态检查与单元测试
+
+- 新增 `.github/workflows/quality.yml`，每次推送 / PR 并行跑两个 job：
+  **静态分析**（`flutter analyze`，error 级必须为 0）与**单元测试**（`flutter test`）。
+- 此前 4 个 workflow 只做构建，仓库里的 50 个测试文件与 `flutter_lints` 配置
+  从未被执行过——编译能过不代表静态检查干净。
+- 首版把 `flutter test` 设为不阻塞（`continue-on-error`），先清掉存量用例中的
+  历史遗留问题，随后改为强制。
+
 ## v1.54.03 (2026-10-12)
 
 ### 定时任务支持一次执行多个动作
