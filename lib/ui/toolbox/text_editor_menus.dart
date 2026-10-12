@@ -1143,6 +1143,9 @@ String familyLabel(AppLocalizations loc, LangFamily family) {
 }
 
 /// 新增 / 编辑一条自定义语法。
+///
+/// 关键是**关键字可以直接填**：填了就由这些词构造高亮与补全，不再受内核内置
+/// 语言表限制；只填「高亮基础」时就退化成借用内置高亮。
 class _CustomLangEditorDialog extends StatefulWidget {
   const _CustomLangEditorDialog({this.existing, required this.takenNames});
 
@@ -1157,14 +1160,32 @@ class _CustomLangEditorDialog extends StatefulWidget {
 
 class _CustomLangEditorDialogState extends State<_CustomLangEditorDialog> {
   late final TextEditingController _name = TextEditingController(text: widget.existing?.name ?? '');
+  late final TextEditingController _keywords =
+      TextEditingController(text: (widget.existing?.keywords ?? const []).join(' '));
+  late final TextEditingController _builtIns =
+      TextEditingController(text: (widget.existing?.builtIns ?? const []).join(' '));
+  late final TextEditingController _literals =
+      TextEditingController(text: (widget.existing?.literals ?? const []).join(' '));
   late String _base = widget.existing?.baseKey ?? '';
   late String _familyName = widget.existing?.family?.name ?? 'auto';
+  late bool _caseInsensitive = widget.existing?.caseInsensitive ?? false;
 
   @override
   void dispose() {
     _name.dispose();
+    _keywords.dispose();
+    _builtIns.dispose();
+    _literals.dispose();
     super.dispose();
   }
+
+  /// 按空格 / 逗号 / 分号 / 换行切词。
+  static List<String> _parseWords(String raw) => raw
+      .split(RegExp(r'[\s,;，；、]+'))
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toSet()
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -1175,9 +1196,9 @@ class _CustomLangEditorDialogState extends State<_CustomLangEditorDialog> {
     return AlertDialog(
       title: Text(widget.existing == null ? loc.syntaxAdd : loc.syntaxEditLang),
       content: SizedBox(
-        width: (size.width * 0.8).clamp(240.0, 360.0),
+        width: (size.width * 0.86).clamp(260.0, 420.0),
         child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             TextField(
               controller: _name,
               autofocus: true,
@@ -1188,12 +1209,53 @@ class _CustomLangEditorDialogState extends State<_CustomLangEditorDialog> {
               ),
             ),
             const SizedBox(height: 12),
+            TextField(
+              controller: _keywords,
+              minLines: 2,
+              maxLines: 5,
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: loc.custLangKeywords,
+                helperText: loc.custLangWordsHint,
+                helperMaxLines: 2,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _builtIns,
+              minLines: 1,
+              maxLines: 3,
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: loc.custLangBuiltIns,
+                helperText: loc.custLangWordsHint,
+                helperMaxLines: 2,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _literals,
+              minLines: 1,
+              maxLines: 2,
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: loc.custLangLiterals,
+                helperText: loc.custLangWordsHint,
+                helperMaxLines: 2,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _base,
               isExpanded: true,
               decoration: InputDecoration(
                 isDense: true,
                 labelText: loc.custLangBase,
+                helperText: loc.custLangBaseHint,
+                helperMaxLines: 2,
                 border: const OutlineInputBorder(),
               ),
               items: [
@@ -1223,6 +1285,15 @@ class _CustomLangEditorDialogState extends State<_CustomLangEditorDialog> {
               ],
               onChanged: (v) => setState(() => _familyName = v ?? 'auto'),
             ),
+            const SizedBox(height: 4),
+            SwitchListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+              value: _caseInsensitive,
+              title: Text(loc.custLangCaseInsensitive, style: const TextStyle(fontSize: 13)),
+              onChanged: (v) => setState(() => _caseInsensitive = v),
+            ),
           ]),
         ),
       ),
@@ -1244,12 +1315,23 @@ class _CustomLangEditorDialogState extends State<_CustomLangEditorDialog> {
       FlutterToastr.show('${loc.custLangNameTaken}: $name', context, duration: 2);
       return;
     }
+    final keywords = _parseWords(_keywords.text);
+    final builtIns = _parseWords(_builtIns.text);
+    final literals = _parseWords(_literals.text);
+    if (keywords.isEmpty && builtIns.isEmpty && literals.isEmpty && _base.isEmpty) {
+      FlutterToastr.show(loc.custLangNeedWords, context, duration: 3);
+      return;
+    }
     Navigator.pop(
       context,
       CustomLang(
         name: name,
-        baseKey: _base,
+        baseKey: _base.isEmpty ? null : _base,
+        keywords: keywords,
+        builtIns: builtIns,
+        literals: literals,
         family: _familyName == 'auto' ? null : CustomLang.familyFromName(_familyName),
+        caseInsensitive: _caseInsensitive,
       ),
     );
   }

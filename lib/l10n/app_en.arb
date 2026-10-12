@@ -4552,5 +4552,12 @@
         "type": "int"
       }
     }
-  }
+  },
+  "custLangKeywords": "Keywords",
+  "custLangBuiltIns": "Built-in functions / types",
+  "custLangLiterals": "Literals",
+  "custLangWordsHint": "Separate with spaces, commas or newlines",
+  "custLangBaseHint": "Optional; when set, this built-in language is used as the highlighter base",
+  "custLangCaseInsensitive": "Ignore case",
+  "custLangNeedWords": "Enter at least one keyword, or pick a highlighter base"
 }

@@ -88,7 +88,11 @@ class _LangOption {
   /// 是否是用户自定义语法。
   final bool custom;
 
-  const _LangOption(this.label, this.mode, [this.key = '', this.family, this.custom = false]);
+  /// 自定义语法里用户填写的关键字 / 内置函数 / 字面量（直接进入补全候选）。
+  final List<String> customWords;
+
+  const _LangOption(this.label, this.mode,
+      [this.key = '', this.family, this.custom = false, this.customWords = const []]);
 }
 
 /// 少数语言的展示名与内核给的 name 不同，这里做覆盖。
@@ -133,17 +137,17 @@ List<_LangOption> get _langs {
   return _allLangsCache!;
 }
 
-/// 把自定义语法映射成下拉项：套用其借用的内置高亮 Mode。
+/// 把自定义语法映射成下拉项。
+///
+/// 高亮 Mode 由 [CustomLang.buildMode] 在运行时构造：
+/// 用户填了关键字就自建 Mode（保证一定能高亮 + 补全），否则复用其借用的内置高亮。
 List<_LangOption> _buildCustomLangs() {
   final out = <_LangOption>[];
   for (final lang in CustomLangStore.current) {
-    Mode? mode;
-    if (lang.baseKey.isNotEmpty) {
-      mode = builtinAllLanguages[lang.baseKey];
-      // 借用的高亮不存在（内核语言表变化）时跳过，避免留下无法高亮的死条目。
-      if (mode == null) continue;
-    }
-    out.add(_LangOption(lang.name, mode, lang.baseKey, lang.family, true));
+    final mode = lang.buildMode();
+    // 既没有关键字、又借不到内置高亮时跳过，避免留下「点了没反应」的死条目。
+    if (mode == null && lang.isEmptyHighlight) continue;
+    out.add(_LangOption(lang.name, mode, lang.baseKey ?? '', lang.family, true, lang.allWords));
   }
   return out;
 }
@@ -1337,8 +1341,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 幂等赋值，不触发重建。
     if (doc != null) {
       final smart = SmartCompletion.enabled.value && !_smooth;
-      doc.controller.extraSuggestions =
-          smart ? CodeKeywords.forLanguage(doc.langLabel, _lang.key) : const <String>[];
+      final builtinWords = CodeKeywords.forLanguage(doc.langLabel, _lang.key);
+      doc.controller.extraSuggestions = smart
+          ? (_lang.customWords.isEmpty
+              ? builtinWords
+              : <String>[..._lang.customWords, ...builtinWords])
+          : const <String>[];
       doc.controller.contextSuggestionProvider = smart
           ? (ctx) => SmartSuggestions.suggest(
                 language: doc.langLabel,

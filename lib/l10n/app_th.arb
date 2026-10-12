@@ -2615,5 +2615,12 @@
   "mcpAutoRemoveAction": "ลบการทำงานนี้",
   "mcpAutoMultiActionHint": "งานหนึ่งสามารถรันหลายการทำงานตามลำดับ ถ้าอันหนึ่งล้มเหลว อันที่เหลือยังทำงานต่อ",
   "mcpAutoActionIndex": "การทำงาน {n}",
-  "mcpAutoActionsCount": "{n} การทำงาน"
+  "mcpAutoActionsCount": "{n} การทำงาน",
+  "custLangKeywords": "คีย์เวิร์ด",
+  "custLangBuiltIns": "ฟังก์ชัน / ชนิดในตัว",
+  "custLangLiterals": "ลิเทอรัล",
+  "custLangWordsHint": "คั่นด้วยช่องว่าง จุลภาค หรือขึ้นบรรทัดใหม่",
+  "custLangBaseHint": "ไม่บังคับ หากระบุ จะใช้ภาษาในตัวนี้เป็นฐาน",
+  "custLangCaseInsensitive": "ไม่สนตัวพิมพ์เล็กใหญ่",
+  "custLangNeedWords": "กรอกคีย์เวิร์ดอย่างน้อยหนึ่งคำ หรือเลือกฐานไฮไลต์"
 }

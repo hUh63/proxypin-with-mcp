@@ -4416,5 +4416,12 @@
         "type": "int"
       }
     }
-  }
+  },
+  "custLangKeywords": "關鍵字",
+  "custLangBuiltIns": "內建函式 / 型別",
+  "custLangLiterals": "字面量",
+  "custLangWordsHint": "用空格、逗號或換行分隔",
+  "custLangBaseHint": "可留空；填了就以該內建語言的高亮為基礎",
+  "custLangCaseInsensitive": "忽略大小寫",
+  "custLangNeedWords": "請至少填一個關鍵字，或選一個高亮基礎"
 }

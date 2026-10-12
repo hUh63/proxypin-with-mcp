@@ -20,52 +20,147 @@ import 'package:flutter/foundation.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/lang_meta.dart';
+import 'package:re_highlight/languages/all.dart';
+import 'package:re_highlight/re_highlight.dart';
 
-/// 自定义语法定义。
+/// 用户自定义语法。
 ///
-/// proxypin 的高亮来自 re_highlight 的内置语言表（编译期构建的 Mode，运行时无法
-/// 由用户书写正则），因此自定义语法采用「借用内置高亮 + 自定外观」的方式：
+/// 与「借用内置高亮」不同，这里的高亮是**运行时按用户配置构造**的：
+/// re_highlight 的 [Mode] 是普通 Dart 类，字段全部公开，因此可以由关键字列表、
+/// 注释定界符、字符串定界符、数字规则直接拼出一个可用的高亮器。
 ///
-/// * [name] —— 显示名，也是写入文档的语法名（与内置语言重名会被拒绝）；
-/// * [baseKey] —— 借用哪个内置语言的高亮（空串 = 纯文本，不做高亮）；
-/// * [family] —— 注释 / 格式化按哪个语言族走（null = 跟随 [baseKey]）。
+/// 这样即便某门语言（公司内部 DSL、新语言、模板语法）re_highlight 里没有，
+/// 用户也能自己把关键字填进去，拿到**高亮 + 补全**，而不必迁就内置列表。
 ///
-/// 这样「内部用 `#` 注释、结构却像 C」这类语言也能拿到注释切换、格式化和全套
-/// 智能补全，而不需要用户去手写语法文件。
+/// [baseKey] 是可选的“起点”：填了就以内置语言为基础（此时关键字为空则直接用
+/// 内置 Mode）；留空则完全由 [keywords] / [builtIns] / [literals] 构造。
 @immutable
 class CustomLang {
   final String name;
-  final String baseKey;
 
-  /// 显式指定的注释 / 格式化族；null 表示跟随 [baseKey]。
+  /// 借用哪个内置语言作为基础（空串 = 纯自定义）。
+  final String? baseKey;
+
+  /// 关键字（高亮为 keyword，同时进入补全候选）。
+  final List<String> keywords;
+
+  /// 内置类型 / 标准库函数（高亮为 built_in，同时进入补全候选）。
+  final List<String> builtIns;
+
+  /// 字面量（true / false / null 等，高亮为 literal，同时进入补全候选）。
+  final List<String> literals;
+
+  /// 注释 / 格式化族（null = 跟随 [baseKey]；纯自定义时默认按 hash 处理）。
   final LangFamily? family;
 
-  const CustomLang({required this.name, this.baseKey = '', this.family});
+  /// 行注释定界符覆盖（null = 用族默认）。
+  final String? lineComment;
 
-  CustomLang copyWith({String? name, String? baseKey, LangFamily? family, bool clearFamily = false}) {
+  /// 块注释定界符覆盖（null = 用族默认）。
+  final String? blockOpen;
+  final String? blockClose;
+
+  /// 是否忽略大小写（SQL / VB / Fortran 这类语言需要）。
+  final bool caseInsensitive;
+
+  const CustomLang({
+    required this.name,
+    this.baseKey,
+    this.keywords = const [],
+    this.builtIns = const [],
+    this.literals = const [],
+    this.family,
+    this.lineComment,
+    this.blockOpen,
+    this.blockClose,
+    this.caseInsensitive = false,
+  });
+
+  bool get isEmptyHighlight =>
+      (baseKey == null || baseKey!.isEmpty) &&
+      keywords.isEmpty &&
+      builtIns.isEmpty &&
+      literals.isEmpty;
+
+  /// 进入补全候选的全部词。
+  List<String> get allWords => [...keywords, ...builtIns, ...literals];
+
+  /// 解析注释族：显式指定优先，否则跟随基础语言，最后按 hash 兜底。
+  LangFamily get resolvedFamily =>
+      family ?? (baseKey != null && baseKey!.isNotEmpty ? langFamilyOf(key: baseKey) : LangFamily.hash);
+
+  String? get resolvedLineComment => lineComment ?? familyLineComment(resolvedFamily);
+
+  (String, String)? get resolvedBlockComment {
+    if (blockOpen != null && blockClose != null && blockOpen!.isNotEmpty && blockClose!.isNotEmpty) {
+      return (blockOpen!, blockClose!);
+    }
+    return familyBlockComment(resolvedFamily);
+  }
+
+  CustomLang copyWith({
+    String? name,
+    String? baseKey,
+    List<String>? keywords,
+    List<String>? builtIns,
+    List<String>? literals,
+    LangFamily? family,
+    String? lineComment,
+    String? blockOpen,
+    String? blockClose,
+    bool? caseInsensitive,
+    bool clearBase = false,
+    bool clearFamily = false,
+    bool clearComments = false,
+  }) {
     return CustomLang(
       name: name ?? this.name,
-      baseKey: baseKey ?? this.baseKey,
+      baseKey: clearBase ? null : (baseKey ?? this.baseKey),
+      keywords: keywords ?? this.keywords,
+      builtIns: builtIns ?? this.builtIns,
+      literals: literals ?? this.literals,
       family: clearFamily ? null : (family ?? this.family),
+      lineComment: clearComments ? null : (lineComment ?? this.lineComment),
+      blockOpen: clearComments ? null : (blockOpen ?? this.blockOpen),
+      blockClose: clearComments ? null : (blockClose ?? this.blockClose),
+      caseInsensitive: caseInsensitive ?? this.caseInsensitive,
     );
   }
 
   Map<String, dynamic> toJson() => {
         'name': name,
-        'base': baseKey,
+        if (baseKey != null && baseKey!.isNotEmpty) 'base': baseKey,
+        if (keywords.isNotEmpty) 'keywords': keywords,
+        if (builtIns.isNotEmpty) 'builtIns': builtIns,
+        if (literals.isNotEmpty) 'literals': literals,
         if (family != null) 'family': family!.name,
+        if (lineComment != null) 'lineComment': lineComment,
+        if (blockOpen != null) 'blockOpen': blockOpen,
+        if (blockClose != null) 'blockClose': blockClose,
+        if (caseInsensitive) 'caseInsensitive': true,
       };
 
   factory CustomLang.fromJson(Map<String, dynamic> json) {
-    final rawName = json['name'];
-    final rawBase = json['base'];
-    final name = rawName is String ? rawName.trim() : '';
-    final base = rawBase is String ? rawBase.trim() : '';
-    return CustomLang(name: name, baseKey: base, family: familyFromName(json['family']));
+    List<String> strList(Object? raw) =>
+        raw is List ? raw.whereType<String>().map((e) => e.trim()).where((e) => e.isNotEmpty).toList() : const [];
+    final base = (json['base'] as String? ?? '').trim();
+    final open = (json['blockOpen'] as String? ?? '').trim();
+    final close = (json['blockClose'] as String? ?? '').trim();
+    return CustomLang(
+      name: (json['name'] as String? ?? '').trim(),
+      baseKey: base.isEmpty ? null : base,
+      keywords: strList(json['keywords']),
+      builtIns: strList(json['builtIns']),
+      literals: strList(json['literals']),
+      family: _familyFromName(json['family']),
+      lineComment: (json['lineComment'] as String? ?? '').trim().isEmpty ? null : (json['lineComment'] as String).trim(),
+      blockOpen: open.isEmpty ? null : open,
+      blockClose: close.isEmpty ? null : close,
+      caseInsensitive: json['caseInsensitive'] as bool? ?? false,
+    );
   }
 
-  /// 把族名解析成 [LangFamily]（无法识别返回 null）。
-  static LangFamily? familyFromName(Object? value) {
+  static LangFamily? _familyFromName(Object? value) {
     if (value is! String || value.isEmpty) return null;
     for (final f in LangFamily.values) {
       if (f.name == value) return f;
@@ -73,24 +168,84 @@ class CustomLang {
     return null;
   }
 
+  static LangFamily? familyFromName(Object? value) => _familyFromName(value);
+
+  /// 构造高亮 [Mode]。
+  ///
+  /// * 有基础语言且用户没填任何关键字 → 直接复用内置 Mode（零开销、效果最好）；
+  /// * 否则按用户配置拼一个：关键字 / 内置函数 / 字面量 + 注释 + 字符串 + 数字。
+  Mode? buildMode([Mode? base]) {
+    final baseMode = base ?? (baseKey != null && baseKey!.isNotEmpty ? builtinAllLanguages[baseKey!] : null);
+    if (allWords.isEmpty) return baseMode;
+    // 以基础语言为底、叠加用户关键字的情况交给 re_highlight 处理不了，
+    // 这里选择「用户配置优先」：自建 Mode，保证用户填的词一定被高亮与补全。
+    final contains = <Mode>[];
+    final line = resolvedLineComment;
+    if (line != null && line.isNotEmpty) {
+      contains.add(Mode(scope: 'comment', begin: _re(line), end: '\\\$', relevance: 0));
+    }
+    final block = resolvedBlockComment;
+    if (block != null && block.$1.isNotEmpty && block.$2.isNotEmpty) {
+      contains.add(Mode(scope: 'comment', begin: _re(block.$1), end: _re(block.$2), relevance: 0));
+    }
+    // 字符串：单引号 / 双引号 / 反引号（存在才加）
+    for (final q in ['"', "'", '`']) {
+      contains.add(Mode(
+        scope: 'string',
+        begin: _re(q),
+        end: _re(q),
+        illegal: '\\n',
+        contains: <Mode>[Mode(begin: '\\\\\\\\.', relevance: 0)],
+      ));
+    }
+    // 数字
+    contains.add(Mode(scope: 'number', begin: '\\\\b\\\\d+(\\\\.\\\\d+)?', relevance: 0));
+
+    return Mode(
+      name: name,
+      caseInsensitive: caseInsensitive,
+      keywords: <String, dynamic>{
+        if (keywords.isNotEmpty) 'keyword': keywords.join(' '),
+        if (builtIns.isNotEmpty) 'built_in': builtIns.join(' '),
+        if (literals.isNotEmpty) 'literal': literals.join(' '),
+      },
+      contains: contains,
+      relevance: 0,
+    );
+  }
+
+  /// 把定界符转成正则片段（转义正则元字符）。
+  static String _re(String delimiter) => delimiter.replaceAllMapped(
+        RegExp(r'[.*+?^${}()|\[\]\\]'),
+        (m) => '\\${m[0]}',
+      );
+
   @override
   bool operator ==(Object other) =>
-      other is CustomLang && other.name == name && other.baseKey == baseKey && other.family == family;
+      other is CustomLang &&
+      other.name == name &&
+      other.baseKey == baseKey &&
+      listEquals(other.keywords, keywords) &&
+      listEquals(other.builtIns, builtIns) &&
+      listEquals(other.literals, literals) &&
+      other.family == family &&
+      other.lineComment == lineComment &&
+      other.blockOpen == blockOpen &&
+      other.blockClose == blockClose &&
+      other.caseInsensitive == caseInsensitive;
 
   @override
-  int get hashCode => Object.hash(name, baseKey, family);
+  int get hashCode => Object.hash(name, baseKey, Object.hashAll(keywords), Object.hashAll(builtIns),
+      Object.hashAll(literals), family, lineComment, blockOpen, blockClose, caseInsensitive);
 }
 
-/// 自定义语法的本地存储（`custom_langs.json`）。
-///
-/// 同时负责「语法配置」的导入 / 导出：导出内容 = 自定义语法 + 语言显示勾选，
-/// 便于换机迁移或团队内共享同一套语法清单。
+/// 自定义语法的本地存储（`custom_langs.json`），兼导 / 导入语法配置。
 class CustomLangStore extends ChangeNotifier {
   static const String _fileName = 'custom_langs.json';
 
   /// 导出文件的类型标记 / 版本号。
   static const String fileType = 'proxypin.syntax';
-  static const int fileVersion = 1;
+  static const int fileVersion = 2;
 
   static CustomLangStore? _instance;
 
@@ -172,16 +327,6 @@ class CustomLangStore extends ChangeNotifier {
     _langs.removeWhere((l) => l.name == name);
     await _save();
     _bump();
-  }
-
-  /// 覆盖式导入（清空后写入）。返回写入条数。
-  Future<int> replaceAll(List<CustomLang> langs) async {
-    _langs
-      ..clear()
-      ..addAll(langs);
-    await _save();
-    _bump();
-    return _langs.length;
   }
 
   /// 合并导入：同名覆盖、新名追加。返回 (新增数, 覆盖数)。

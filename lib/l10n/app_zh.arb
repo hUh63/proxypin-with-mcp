@@ -4416,5 +4416,12 @@
   "editorExitConfirmAgainTitle": "再次确认",
   "editorExitConfirmAgainBody": "确定要退出编辑器吗？",
   "editorMenuManage": "管理",
-  "editorFormatUnsupported": "当前语言暂不支持格式化"
+  "editorFormatUnsupported": "当前语言暂不支持格式化",
+  "custLangKeywords": "关键字",
+  "custLangBuiltIns": "内置函数 / 类型",
+  "custLangLiterals": "字面量",
+  "custLangWordsHint": "用空格、逗号或换行分隔",
+  "custLangBaseHint": "可留空；填了就以该内置语言的高亮为基础",
+  "custLangCaseInsensitive": "忽略大小写",
+  "custLangNeedWords": "请至少填一个关键字，或选一个高亮基础"
 }

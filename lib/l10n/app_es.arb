@@ -2615,5 +2615,12 @@
   "mcpAutoRemoveAction": "Quitar esta accion",
   "mcpAutoMultiActionHint": "Una tarea puede ejecutar varias acciones en orden; si una falla, las demas siguen.",
   "mcpAutoActionIndex": "Accion {n}",
-  "mcpAutoActionsCount": "{n} acciones"
+  "mcpAutoActionsCount": "{n} acciones",
+  "custLangKeywords": "Palabras clave",
+  "custLangBuiltIns": "Funciones / tipos integrados",
+  "custLangLiterals": "Literales",
+  "custLangWordsHint": "Separa con espacios, comas o saltos de linea",
+  "custLangBaseHint": "Opcional; si se define, ese lenguaje integrado sirve de base",
+  "custLangCaseInsensitive": "Ignorar mayusculas",
+  "custLangNeedWords": "Escribe al menos una palabra clave, o elige una base"
 }

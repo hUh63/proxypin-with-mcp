@@ -2615,5 +2615,12 @@
   "mcpAutoRemoveAction": "Hapus aksi ini",
   "mcpAutoMultiActionHint": "Satu tugas bisa menjalankan beberapa aksi berurutan; jika satu gagal, sisanya tetap jalan.",
   "mcpAutoActionIndex": "Aksi {n}",
-  "mcpAutoActionsCount": "{n} aksi"
+  "mcpAutoActionsCount": "{n} aksi",
+  "custLangKeywords": "Kata kunci",
+  "custLangBuiltIns": "Fungsi / tipe bawaan",
+  "custLangLiterals": "Literal",
+  "custLangWordsHint": "Pisahkan dengan spasi, koma, atau baris baru",
+  "custLangBaseHint": "Opsional; jika diisi, bahasa bawaan ini jadi dasar",
+  "custLangCaseInsensitive": "Abaikan huruf besar-kecil",
+  "custLangNeedWords": "Isi minimal satu kata kunci, atau pilih dasar highlighter"
 }

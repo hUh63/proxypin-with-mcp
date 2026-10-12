@@ -2615,5 +2615,12 @@
   "mcpAutoRemoveAction": "Xoa hanh dong nay",
   "mcpAutoMultiActionHint": "Mot tac vu co the chay nhieu hanh dong theo thu tu; neu mot cai loi, cac cai con lai van chay.",
   "mcpAutoActionIndex": "Hanh dong {n}",
-  "mcpAutoActionsCount": "{n} hanh dong"
+  "mcpAutoActionsCount": "{n} hanh dong",
+  "custLangKeywords": "Tu khoa",
+  "custLangBuiltIns": "Ham / kieu co san",
+  "custLangLiterals": "Literal",
+  "custLangWordsHint": "Phan tach bang dau cach, dau phay hoac xuong dong",
+  "custLangBaseHint": "Tuy chon; neu dat, ngon ngu co san nay lam nen",
+  "custLangCaseInsensitive": "Bo qua chu hoa-thuong",
+  "custLangNeedWords": "Nhap it nhat mot tu khoa, hoac chon nen to sang"
 }
