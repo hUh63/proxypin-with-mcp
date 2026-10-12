@@ -984,13 +984,17 @@ class _LanguageManagerDialogState extends State<LanguageManagerDialog> with Sing
               )
             : ListView(
                 children: _custom.map((c) {
-                  final base = c.baseKey.isEmpty ? loc.custLangBaseNone : langLabelOf(c.baseKey);
+                  final baseKey = c.baseKey ?? '';
+                  final base = baseKey.isEmpty ? loc.custLangBaseNone : langLabelOf(baseKey);
                   final fam = c.family == null ? loc.custLangFamilyAuto : familyLabel(loc, c.family!);
+                  final words = c.allWords.length;
                   return ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
                     title: Text(c.name, style: const TextStyle(fontSize: 13.5)),
-                    subtitle: Text('${loc.custLangBase}: $base · ${loc.custLangFamily}: $fam',
+                    subtitle: Text(
+                        '${loc.custLangBase}: $base · ${loc.custLangFamily}: $fam'
+                        '${words > 0 ? ' · ${loc.custLangKeywords} ×$words' : ''}',
                         style: const TextStyle(fontSize: 11)),
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                       IconButton(
