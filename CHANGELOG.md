@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.55.02 (2026-10-12)
+
+### 测试首轮结果：环境依赖用例分离 + 修复可修复项
+
+`flutter test` 首跑 232 通过 / 15 失败，逐条归因后分类处理：
+
+- 新增 `dart_test.yaml` 声明 `integration` 标签；把**依赖真实 socket、原生动态库
+  或仓库内测试资产**的 4 个用例标为 integration，CI 用
+  `--exclude-tags integration` 跳过（本地可 `--tags integration` 单独跑）：
+  `web_test` / `http_test`（连本机 127.0.0.1:7890）、`js_test`（需
+  `libquickjs_c_bridge`）、`cert_test`（需 `assets/certs/server.key`）。
+- 修 `search_controller_test`：`SearchTextController` 内部访问
+  `WidgetsBinding.instance`，测试 lacked binding 初始化，补上
+  `TestWidgetsFlutterBinding.ensureInitialized()`。
+- 修 `mcp_rule_engine_test` 的历史断言：`McpRuleEngine` 是单例、执行历史跨用例
+  累积，断言改为只看本次评估新增的两条。
+- **待排查（已定位，不阻塞 CI）**：`highlight_text_test` / `virtualized_highlight_text_test`
+  的 dispose 期 ancestor 查找、`h2c_proxy_test` 的 NPE 与超时、`sse_chunked_test`
+  的分块解码、`favorites_trim_test` 的裁剪边界——这些指向产品代码的真实缺陷，
+  将在后续批次逐个修复。
+
 ## v1.55.01 (2026-10-12)
 
 ### 静态检查首轮结果：清理死代码与过期测试

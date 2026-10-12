@@ -1,0 +1,7 @@
+# 测试标签声明。
+#
+# integration：需要真实网络 socket / 原生动态库 / 仓库内的测试资产，
+# 不适合在 CI 容器内运行。CI 使用 `flutter test --exclude-tags integration`；
+# 本地需要时可单独执行 `flutter test --tags integration`。
+tags:
+  integration:

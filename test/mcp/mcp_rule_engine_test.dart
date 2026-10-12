@@ -279,9 +279,11 @@ void main() {
 
       await engine.evaluate({'method': 'GET'});
 
-      final history = engine.getExecutionHistory();
-      expect(history.length, 2);
-      expect(history.where((h) => h.matched).length, 1);
+      // 引擎是单例、历史跨用例累积，因此只断言「本次评估新增的两条」。
+      final lastTwo = engine.getExecutionHistory(limit: 2);
+      expect(lastTwo.length, 2);
+      expect(lastTwo.map((h) => h.ruleId).toList(), ['m1', 'm2']);
+      expect(lastTwo.where((h) => h.matched).length, 1);
       expect(engine.getExecutionHistory(limit: 1).length, 1);
     });
   });
