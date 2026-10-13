@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.65.03 (2026-10-14)
+
+### 压测：pipelining 用例改用裸 TCP origin
+
+上一版修掉「HTTP/1.1 只处理第一个请求」之后，这条用例仍然超时。排查发现是
+**测试脚手架的问题**：origin 用的是 `dart:io` 的 `HttpServer`，而它对 HTTP/1.1
+pipelining 支持有限，把它自身的行为混进了对 proxy 的判断。
+
+改成**裸 `ServerSocket`** 作为 origin：自己按 `Content-Length` 切分请求、逐条立即
+回响应。这样测的就是 proxy 有没有处理同一次读入里的全部请求，不再受上游实现影响。
+
 ## v1.65.02 (2026-10-14)
 
 ### 压测挖出的真 bug：HTTP/1.1 pipelining 时只有第一个请求被处理

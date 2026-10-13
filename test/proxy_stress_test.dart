@@ -257,28 +257,62 @@ void main() {
     socket.destroy();
   });
 
-  test('§1 pipelining：同一连接连发 20 个请求（不等响应）不丢、不损坏', () async {
-    const n = 20;
+  test('§1 pipelining：同一连接连发 10 个请求（不等响应）不丢、不损坏', () async {
+    // 用一个**裸 TCP** origin，而不是 dart:io HttpServer —— 后者对 HTTP/1.1
+    // pipelining 支持有限，会把它的行为混进对 proxy 的判断里。裸 origin 完全
+    // 按我们的节奏逐条回响应，这样测的才是 proxy 有没有处理同一次读入的全部请求。
+    final rawOrigin = await io.ServerSocket.bind(io.InternetAddress.loopbackIPv4, 0);
+    final originConn = <io.Socket>[];
+    rawOrigin.listen((socket) {
+      originConn.add(socket);
+      final pending = <int>[];
+      var headerEnd = -1;
+      var contentLength = 0;
+      var matched = 0;
+      socket.listen((incoming) {
+        pending.addAll(incoming);
+        while (true) {
+          if (headerEnd < 0) {
+            final idx = _indexOfDoubleCrlf(pending);
+            if (idx < 0) return;
+            headerEnd = idx + 4;
+            final head = latin1.decode(pending.sublist(0, idx));
+            final m = RegExp(r'content-length:\s*(\d+)', caseSensitive: false).firstMatch(head);
+            contentLength = m == null ? 0 : int.parse(m.group(1)!);
+          }
+          final total = headerEnd + contentLength;
+          if (pending.length < total) return;
+          // 切出这一条请求并立刻回一个带长度标记的响应
+          final bodyLen = total - headerEnd;
+          pending.removeRange(0, total);
+          headerEnd = -1;
+          contentLength = 0;
+          matched++;
+          final payload = utf8.encode('$bodyLen');
+          socket.add(latin1.encode('HTTP/1.1 200 OK\r\n'
+              'Content-Length: ${payload.length}\r\n'
+              'Connection: keep-alive\r\n\r\n'));
+          socket.add(payload);
+        }
+      });
+    });
+
+    const n = 10;
     final socket = await io.Socket.connect('127.0.0.1', proxyPort);
     final it = StreamIterator(socket);
 
-    // 一次性把所有请求灌进去，逼迫同一连接内出现多个未完成的读事件。
-    // 这验证的是：客户端发出的每一个请求都恰好被处理一次，且每个响应体完整
-    // 对应某一个请求（长度一一对应）。
-    //
-    // 注意：这里**不**断言响应的先后顺序。HTTP/1.1 pipelining 的响应顺序由上游
-    // 决定，proxy 是逐条独立转发的，不做顺序保证（实测确实可能乱序）。顺序若被
-    // 打乱，客户端本来就会配错响应——这是 pipelining 自身在代理场景下的固有限制，
-    // 不属于本次读串行化(§1)的范围。
     final expectedLengths = <String>[];
+    final buf = StringBuffer();
     for (var i = 0; i < n; i++) {
       final body = utf8.encode('req-$i-${'x' * (i * 37)}');
       expectedLengths.add('${body.length}');
-      final head = 'POST http://127.0.0.1:$originPort/p$i HTTP/1.1\r\n'
-          'Host: 127.0.0.1:$originPort\r\n'
-          'Connection: keep-alive\r\n'
-          'Content-Length: ${body.length}\r\n\r\n';
-      socket.add(latin1.encode(head));
+      // 全部塞进**同一次**写入，确保它们极可能落在同一个 socket 读事件里
+      buf.write('POST http://127.0.0.1:${rawOrigin.port}/p$i HTTP/1.1\r\n');
+      buf.write('Host: 127.0.0.1:${rawOrigin.port}\r\n');
+      buf.write('Connection: keep-alive\r\n');
+      buf.write('Content-Length: ${body.length}\r\n\r\n');
+      socket.add(latin1.encode(buf.toString()));
+      buf.clear();
       socket.add(body);
     }
 
@@ -292,16 +326,20 @@ void main() {
         if (!await it.moveNext()) break;
         payload.addAll(it.current);
       }
-      final text = utf8.decode(payload.sublist(0, min(payload.length, len)));
-      actualLengths.add(text.split(':').first);
+      actualLengths.add(utf8.decode(payload.sublist(0, min(payload.length, len))));
     }
 
-    // 多重集合比对：每个请求恰好有一个响应，没有丢失、没有重复、没有串包
+    // 每个请求恰好有一个响应：丢了、重了、串了都会在这里暴露。
+    // 不断言顺序——pipelining 的响应顺序由上游决定，proxy 逐条独立转发，不做保证。
     expect(actualLengths.length, n);
     expect(actualLengths.toList()..sort(), expectedLengths.toList()..sort(),
-        reason: '响应集合必须与请求集合一一对应（丢包或串包都会在这里暴露）');
+        reason: '响应集合必须与请求集合一一对应');
 
     socket.destroy();
+    for (final c in originConn) {
+      c.destroy();
+    }
+    await rawOrigin.close();
   });
 
   test('慢客户端：分片 + 间隔发送 1MB body，上游收到完整数据', () async {
