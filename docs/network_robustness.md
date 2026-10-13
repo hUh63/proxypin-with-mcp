@@ -4,6 +4,19 @@
 低风险项（消息帧上界、pending 等待超时、完成集上界、Host 空指针、h2 订阅登记等）
 已在 v1.24.75 系列修复，不在本文件范围。
 
+> **实施进度（2026-10-13 更新）**
+>
+> - §1 读事件串行化：已用「专用 `readQueue` 闸住两个读入口」的方式缓解（`enqueueRead`），
+>   未做「把 channelRead 内部递归改成队列任务」（会自锁）。剩余的是把读处理整体
+>   搬进队列任务，需压测后再定。
+> - §2 写背压：**已实现**（`channel.dart` 的 `writeBytes`：FIFO 队列 + `_unflushedBytes`
+>   阈值 + 带超时的 `flush()`）。
+> - §3 O(n²) 拷贝：**已完成**。WebSocket `ByteBuffer` 改用 `BytesBuilder`；
+>   h2 解码侧改用流上常驻 `BytesBuilder`（首帧零拷贝）；h2 编码侧 DATA / CONTINUATION
+>   切帧改用 `Uint8List.view`；SSE 改用 chunked UTF-8 解码 + 行扫描游标。
+> - §4 `channelRead` 迭代化：**已完成**（尾部递归改 `while` 循环）。
+> - 仍待做：§1 的完整形态（含压测）。
+
 ## 1. HTTP/1.1 读事件共享 `ByteBuf` 的跨 `await` 竞态（P0）
 
 **现象**：`ChannelDispatcher` 每个连接复用同一个 `buffer`（`channel_dispatcher.dart:28`），

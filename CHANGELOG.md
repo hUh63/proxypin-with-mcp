@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.63.00 (2026-10-13)
+
+### 网络层 §3 收尾：HTTP/2 编码侧的 O(n²) 切帧
+
+`h2_codec.dart` 里两处把大块数据切成帧的循环，原本是「边切边重分配」：
+
+```dart
+var chunk  = payload.sublist(0, chunkSize);
+payload = payload.sublist(chunkSize);   // 每轮复制剩余的全部字节
+```
+
+一个 1 MB 的 body 按 16 KB 切帧，就要复制约 (1MB/16KB) 次、累计约 32 MB ——
+响应越大越糟。现改为：先把 body 统一成 `Uint8List`（至多一次拷贝），
+之后全部用 `Uint8List.view` **零拷贝**切片。`_writeFrame` 是同步消费
+（直接 `add` 进 `BytesBuilder`），不会在调用后持有视图，因此安全。
+DATA 帧与 CONTINUATION 帧两条路径都已改。
+
+至此 `docs/network_robustness.md` 的 §2（写背压）、§3（O(n²) 拷贝）、
+§4（channelRead 迭代化）三项全部落地，文档里同步标注了实施进度。
+只剩 §1 的完整形态（把整个读处理搬进队列任务）——它必须配压测，仍留待专项。
+
 ## v1.62.00 (2026-10-13)
 
 ### 网络层：多帧读事件改为迭代解码 + 修 tooltip 作用域

@@ -423,15 +423,20 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
 
     //body
     if (!emptyBody) {
-      var payload = data.body!;
-      while (payload.length > maxFrameSize) {
-        var chunkSize = min(maxFrameSize, payload.length);
-        var chunk = payload.sublist(0, chunkSize);
-        payload = payload.sublist(chunkSize);
+      // O(n²) -> O(n)：原实现每轮 `payload = payload.sublist(n)` 会复制剩余全部字节，
+      // 大 body 切成 M 帧就是 M 次整体拷贝。改为先统一成 Uint8List（至多一次拷贝），
+      // 之后用 `Uint8List.view` 零拷贝切片；_writeFrame 是同步消费（直接 add 进 builder），
+      // 不会在调用后持有视图，因此安全。
+      final rawBody = data.body!;
+      final body = rawBody is Uint8List ? rawBody : Uint8List.fromList(rawBody);
+      var offset = 0;
+      while (body.length - offset > maxFrameSize) {
+        final chunk = Uint8List.view(body.buffer, body.offsetInBytes + offset, maxFrameSize);
         _writeFrame(channelContext, bytesBuilder, FrameType.data, 0, data.streamId!, chunk);
+        offset += maxFrameSize;
       }
-
-      _writeFrame(channelContext, bytesBuilder, FrameType.data, FrameHeader.flagsEndStream, data.streamId!, payload);
+      final tail = Uint8List.view(body.buffer, body.offsetInBytes + offset, body.length - offset);
+      _writeFrame(channelContext, bytesBuilder, FrameType.data, FrameHeader.flagsEndStream, data.streamId!, tail);
     }
 
     return bytesBuilder.takeBytes();
@@ -455,19 +460,23 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
       }
       _writeHeadersFrame(bytesBuilder, channelContext, flags, streamId, fragment);
     } else {
-      var chunk = fragment.sublist(0, maxSize);
-      fragment = fragment.sublist(maxSize);
+      // O(n²) -> O(n)：同上，用视图切片代替反复 sublist 复制。
+      final rawFragment = fragment is Uint8List ? fragment : Uint8List.fromList(fragment);
+      var fragOffset = 0;
+      final firstChunk = Uint8List.view(rawFragment.buffer, rawFragment.offsetInBytes, maxSize);
+      fragOffset = maxSize;
+      _writeHeadersFrame(bytesBuilder, channelContext, 0, streamId, firstChunk);
 
-      _writeHeadersFrame(bytesBuilder, channelContext, 0, streamId, chunk);
-
-      while (fragment.length > maxSize) {
-        var chunk = fragment.sublist(0, maxSize);
-        fragment = fragment.sublist(maxSize);
+      while (rawFragment.length - fragOffset > maxSize) {
+        final chunk = Uint8List.view(rawFragment.buffer, rawFragment.offsetInBytes + fragOffset, maxSize);
         _writeFrame(channelContext, bytesBuilder, FrameType.continuation, 0, streamId, chunk);
+        fragOffset += maxSize;
       }
 
+      final lastFragment = Uint8List.view(
+          rawFragment.buffer, rawFragment.offsetInBytes + fragOffset, rawFragment.length - fragOffset);
       _writeFrame(
-          channelContext, bytesBuilder, FrameType.continuation, FrameHeader.flagsEndHeaders, streamId, fragment);
+          channelContext, bytesBuilder, FrameType.continuation, FrameHeader.flagsEndHeaders, streamId, lastFragment);
 
       if (endStream) {
         //如果没有body，发送一个空的DATA帧
