@@ -124,6 +124,9 @@ class ReverseProxyRule {
     return rest.startsWith('/') ? rest : '/$rest';
   }
 
+  static String _generateId() =>
+      DateTime.now().millisecondsSinceEpoch.toRadixString(36) + RandomUtil.randomString(4);
+
   /// 命中优先级：前缀越长越精确。
   int get weight => normalizePrefix(prefix).length;
 
@@ -261,9 +264,6 @@ class ReverseProxy {
         .where((r) => r.isValid)
         .toList(growable: false);
   }
-
-  static String _generateId() =>
-      DateTime.now().millisecondsSinceEpoch.toRadixString(36) + RandomUtil.randomString(4);
 
   /// 默认规则示例（UI 里「新建」时用作占位，不写入配置）。
   @visibleForTesting

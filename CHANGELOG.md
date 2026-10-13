@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.60.01 (2026-10-13)
+
+### 修反向代理首轮 CI 暴露的三处编译错误
+
+- `ReverseProxyRule` 生成 id 时调用了一个定义在 `ReverseProxy` 类里的私有方法，
+  作用域不对；已把 `_generateId()` 移到 `ReverseProxyRule` 内。
+- 规则启用开关误用了 Material 的 `Switch`（它没有 `scale` 参数），改用项目自带的
+  `SwitchWidget`。
+- `reverseProxyStopped` 文案在 9 个语言文件里缺漏，补齐。
+
 ## v1.60.00 (2026-10-13)
 
 ### 反向代理模式：按路径把请求转发到不同上游

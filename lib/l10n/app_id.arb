@@ -2645,5 +2645,6 @@
   "reverseProxyEmpty": "Permintaan diteruskan ke upstream sesuai prefiks dan tetap terlihat di daftar tangkapan.",
   "reverseProxyHint": "Hit",
   "reverseProxyHit": "Mendengarkan",
-  "reverseProxyRunning": "Tidak mendengarkan"
+  "reverseProxyRunning": "Tidak mendengarkan",
+  "reverseProxyStopped": "Tidak mendengarkan"
 }

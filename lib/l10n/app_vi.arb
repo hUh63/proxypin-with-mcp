@@ -2645,5 +2645,6 @@
   "reverseProxyEmpty": "Yeu cau duoc chuyen tiep theo tien to va van hien trong danh sach bat goi.",
   "reverseProxyHint": "Luot khop",
   "reverseProxyHit": "Dang lang nghe",
-  "reverseProxyRunning": "Khong lang nghe"
+  "reverseProxyRunning": "Khong lang nghe",
+  "reverseProxyStopped": "Khong lang nghe"
 }

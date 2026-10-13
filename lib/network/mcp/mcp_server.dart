@@ -3461,7 +3461,6 @@ class McpServer {
 
       case 'list_reverse_proxy':
         try {
-          var conf = Configuration.loaded;
           return {
             'enabled': ReverseProxy.enabled,
             'port': ReverseProxy.port,

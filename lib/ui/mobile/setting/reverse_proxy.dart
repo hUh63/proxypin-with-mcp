@@ -19,6 +19,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/reverse/reverse_proxy.dart';
+import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/network/reverse/reverse_proxy_server.dart';
 
 /// 反向代理设置页：按路径把请求转发到不同上游。
@@ -331,7 +332,7 @@ class _ReverseProxySettingState extends State<ReverseProxySetting> {
                 style: const TextStyle(fontSize: 11.5),
               ),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                Switch(value: rule.enabled, scale: 0.7, onChanged: (v) => _toggleRule(rule, v)),
+                SwitchWidget(value: rule.enabled, scale: 0.7, onChanged: (v) => _toggleRule(rule, v)),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.edit_outlined, size: 18),

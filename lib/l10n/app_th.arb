@@ -2645,5 +2645,6 @@
   "reverseProxyEmpty": "คำขอจะถูกส่งต่อไปยังต้นทางตามคำนำหน้า และยังปรากฏในรายการดักจับ",
   "reverseProxyHint": "ตรงกัน",
   "reverseProxyHit": "กำลังรอรับ",
-  "reverseProxyRunning": "ไม่ได้รอรับ"
+  "reverseProxyRunning": "ไม่ได้รอรับ",
+  "reverseProxyStopped": "ไม่ได้รอรับ"
 }

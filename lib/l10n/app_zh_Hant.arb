@@ -4446,5 +4446,6 @@
   "reverseProxyEmpty": "請求會依路徑前綴轉發到對應上游，並照常出現在擷取清單中。",
   "reverseProxyHint": "命中",
   "reverseProxyHit": "監聽中",
-  "reverseProxyRunning": "未監聽"
+  "reverseProxyRunning": "未監聽",
+  "reverseProxyStopped": "未監聽"
 }

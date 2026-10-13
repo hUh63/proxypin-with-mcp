@@ -4582,5 +4582,6 @@
   "reverseProxyEmpty": "Requests are forwarded to the matching upstream by path prefix, and stay visible in the capture list.",
   "reverseProxyHint": "Hits",
   "reverseProxyHit": "Listening",
-  "reverseProxyRunning": "Not listening"
+  "reverseProxyRunning": "Not listening",
+  "reverseProxyStopped": "Not listening"
 }

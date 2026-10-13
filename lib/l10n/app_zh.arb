@@ -4446,5 +4446,6 @@
   "reverseProxyEmpty": "请求会按路径前缀转发到对应上游，并照常出现在抓包列表里。",
   "reverseProxyHint": "命中",
   "reverseProxyHit": "监听中",
-  "reverseProxyRunning": "未监听"
+  "reverseProxyRunning": "未监听",
+  "reverseProxyStopped": "未监听"
 }

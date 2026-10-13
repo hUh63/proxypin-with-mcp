@@ -2645,5 +2645,6 @@
   "reverseProxyEmpty": "Las peticiones se reenvian al destino segun el prefijo y siguen visibles en la lista.",
   "reverseProxyHint": "Aciertos",
   "reverseProxyHit": "Escuchando",
-  "reverseProxyRunning": "Sin escuchar"
+  "reverseProxyRunning": "Sin escuchar",
+  "reverseProxyStopped": "Sin escuchar"
 }

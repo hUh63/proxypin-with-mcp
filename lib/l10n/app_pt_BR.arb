@@ -2646,5 +2646,6 @@
   "reverseProxyEmpty": "As requisicoes sao encaminhadas ao destino pelo prefixo e continuam visiveis na lista.",
   "reverseProxyHint": "Acertos",
   "reverseProxyHit": "Escutando",
-  "reverseProxyRunning": "Sem escuta"
+  "reverseProxyRunning": "Sem escuta",
+  "reverseProxyStopped": "Sem escuta"
 }
