@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.64.01 (2026-10-14)
+
+### 修出口 HTTP/2 读处理器的返回值类型
+
+`Http2ClientHandler.onData` 是 `void`，而队列处理函数要求 `Future<void>`，
+首轮 CI 报 `A value of type 'void' can't be returned from a function with return
+type 'Future<void>'`。改为在 `async` 闭包内调用，不再直接返回它的结果。
+
 ## v1.64.00 (2026-10-14)
 
 ### 网络层 §1 完整形态：三条读入口统一串行化 + 真实流量压测

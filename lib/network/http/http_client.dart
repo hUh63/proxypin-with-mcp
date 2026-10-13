@@ -241,7 +241,9 @@ class Http2ClientHandler {
 
     // §1：出口 HTTP/2 连接的读事件同样先排进 dispatcher 的 readQueue，
     // 避免多条读事件并发改写共享的 byteBuf / 窗口计数（与入口侧保持同一套串行化）。
-    channel.dispatcher.readEventHandler = (context, ch, data) => onData(context, ch, data);
+    channel.dispatcher.readEventHandler = (context, ch, data) async {
+      onData(context, ch, data);
+    };
     final subscription = channel.dispatcher.enqueueReadSubscription(channelContext, channel,
         onError: (error, trace) => handler.exceptionCaught(channelContext, channel, error, trace: trace),
         onDone: () => handler.channelInactive(channelContext, channel));
