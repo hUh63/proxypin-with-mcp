@@ -1314,5 +1314,56 @@ request_id from get_recent_requests or search_requests.''',
           'required': ['action', 'host'],
         },
       },
+      // ==================== Reverse proxy tools ====================
+      {
+        'name': 'list_reverse_proxy',
+        'description':
+            'List reverse-proxy routes (path prefix -> upstream) plus the enabled state, '
+                'listen port and per-rule hit counts. Call this before set_reverse_proxy, '
+                'or when the user asks how /api and friends are routed locally.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+      {
+        'name': 'set_reverse_proxy',
+        'description':
+            'Manage the reverse proxy: add/update/remove/toggle a route, switch the whole '
+                'feature on or off, or change the listen port. Reversed traffic is forwarded '
+                'through the normal capture chain, so it still shows up in the request list.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'action': {
+              'type': 'string',
+              'enum': ['add', 'update', 'remove', 'toggle', 'enable', 'set_port', 'list'],
+              'description': 'Operation to perform',
+            },
+            'prefix': {
+              'type': 'string',
+              'description': 'Path prefix, must start with / (e.g. /api). Required for add/update/remove/toggle.',
+            },
+            'target': {
+              'type': 'string',
+              'description': 'Upstream base URL for add/update, e.g. http://127.0.0.1:3000',
+            },
+            'strip_prefix': {
+              'type': 'boolean',
+              'description': 'Drop the prefix before forwarding (default false)',
+            },
+            'host_header': {
+              'type': 'string',
+              'description': 'Optional Host header override sent upstream',
+            },
+            'enabled': {
+              'type': 'boolean',
+              'description': 'For toggle/enable: turn the rule or the whole feature on or off',
+            },
+            'port': {
+              'type': 'integer',
+              'description': 'For set_port: listen port (1-65535)',
+            },
+          },
+          'required': ['action'],
+        },
+      },
   ];
 }

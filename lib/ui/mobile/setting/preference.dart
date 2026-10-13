@@ -9,6 +9,7 @@ import 'package:proxypin/native/mcp_screen.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/network/util/mtls.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/ui/mobile/setting/reverse_proxy.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/components/ws_traffic_server.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -828,6 +829,15 @@ class _PreferenceState extends State<Preference> {
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (context) => const WebSocketInterceptManager())),
+            ),
+            Divider(height: 0, thickness: 0.3, color: dividerColor),
+            ListTile(
+              leading: const Icon(Icons.swap_calls, color: Colors.deepOrange),
+              title: Text(localizations.reverseProxy),
+              subtitle: Text(localizations.reverseProxyDesc, style: const TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => ReverseProxySetting(configuration: configuration))),
             ),
             Divider(height: 0, thickness: 0.3, color: dividerColor),
             ListTile(

@@ -22,6 +22,7 @@ import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/util/file_read.dart';
 import 'package:proxypin/network/components/host_filter.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/reverse/reverse_proxy.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
 import 'package:proxypin/utils/platform.dart';
 
@@ -136,6 +137,11 @@ class Configuration {
   String? mtlsChainPath; // 客户端证书链 PEM
   String? mtlsKeyPath;   // 客户端私钥 PEM（未加密）
 
+  //反向代理：独立端口，按路径规则把请求转发到配置的上游
+  bool reverseProxyEnabled = false;
+  int reverseProxyPort = 8888;
+  List<ReverseProxyRule> reverseProxyRules = [];
+
   //自动备份配置
   bool autoBackupEnabled = true; // 是否启用自动备份
   int autoBackupIntervalHours = 24; // 自动备份间隔（小时）
@@ -221,6 +227,10 @@ class Configuration {
     appBlacklist = config['appBlacklist'] == null ? null : List<String>.from(config['appBlacklist']);
     HostFilter.whitelist.load(config['whitelist']);
     HostFilter.blacklist.load(config['blacklist']);
+    reverseProxyEnabled = config['reverseProxyEnabled'] == true;
+    reverseProxyPort = config['reverseProxyPort'] is int ? config['reverseProxyPort'] as int : 8888;
+    reverseProxyRules = ReverseProxy.parseRules(config['reverseProxyRules']);
+    ReverseProxy.load(enabled: reverseProxyEnabled, port: reverseProxyPort, rules: reverseProxyRules);
     autoBackupEnabled = config['autoBackupEnabled'] ?? true;
     autoBackupIntervalHours = config['autoBackupIntervalHours'] ?? 24;
   }
@@ -316,6 +326,10 @@ class Configuration {
       'antiCacheEnabled': antiCacheEnabled,
       'mcpToolsEnabled': mcpToolsEnabled,
       'enabledHttp2': enabledHttp2,
+      'reverseProxyEnabled': reverseProxyEnabled,
+      'reverseProxyPort': reverseProxyPort,
+      if (reverseProxyRules.isNotEmpty)
+        'reverseProxyRules': reverseProxyRules.map((e) => e.toJson()).toList(),
       'autoBackupEnabled': autoBackupEnabled,
       'autoBackupIntervalHours': autoBackupIntervalHours,
       'whitelist': HostFilter.whitelist.toJson(),

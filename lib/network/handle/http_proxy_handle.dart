@@ -16,6 +16,7 @@ import 'package:proxypin/network/http/http_headers.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
+import 'package:proxypin/network/reverse/reverse_proxy.dart';
 import 'package:proxypin/network/util/capture_body_limiter.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/proxy_helper.dart';
@@ -29,7 +30,11 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
 
   final List<Interceptor> interceptors;
 
-  HttpProxyChannelHandler({this.listener, required this.interceptors});
+  /// 本连接是否由反向代理监听端口接入。为 true 时，请求目标由路径规则决定，
+  /// 而不是由客户端指定（见 [ReverseProxy.rewrite]）。
+  final bool reverseProxy;
+
+  HttpProxyChannelHandler({this.listener, required this.interceptors, this.reverseProxy = false});
 
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, HttpRequest msg) async {
@@ -38,6 +43,26 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       ProxyHelper.crtDownload(channelContext, channel, msg);
       return;
     }
+
+    // 反向代理：先把请求目标改写成规则指定的上游，再走正常转发。
+    // 必须放在下面「请求本服务」判断之前——否则 Host 指向本机监听端口时会被
+    // 误判为「请求本服务」而短路。
+    if (reverseProxy) {
+      if (!ReverseProxy.rewrite(channelContext, msg)) {
+        final body = utf8.encode('No reverse proxy rule matched: ${msg.path}');
+        final resp = HttpResponse(
+            HttpStatus.newStatus(502, 'Reverse proxy: no rule matched'),
+            protocolVersion: msg.protocolVersion)
+          ..request = msg
+          ..body = body
+          ..headers.contentType = 'text/plain; charset=utf-8'
+          ..headers.contentLength = body.length;
+        listener?.onResponse(channelContext, resp);
+        channel.writeAndClose(channelContext, resp);
+        return;
+      }
+    }
+
     //请求本服务
     if (((await localIps()).contains(msg.hostAndPort?.host) || '127.0.0.1' == msg.hostAndPort?.host) &&
         msg.hostAndPort?.port == channel.socket.port) {

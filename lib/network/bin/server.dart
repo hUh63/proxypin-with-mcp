@@ -35,6 +35,8 @@ import 'package:proxypin/network/util/quic/quic_probe.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
 import 'package:proxypin/network/mcp/script_workflow_engine.dart';
+import 'package:proxypin/network/reverse/reverse_proxy.dart';
+import 'package:proxypin/network/reverse/reverse_proxy_server.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/components/js/script_engine.dart';
 import 'package:proxypin/network/util/crts.dart';
@@ -109,6 +111,8 @@ class ProxyServer {
     // 同一份事件闸同时供给「服务器」与「代理处理器」，停止时可一次性闸住所有回调
     final combinedListener = CombinedEventListener(listeners);
     _combinedListener = combinedListener;
+    // 反向代理复用同一条事件链，这样反代流量也会出现在抓包列表
+    ReverseProxyServer.listener = combinedListener;
     Server server = Server(configuration, listener: combinedListener);
 
     List<Interceptor> interceptors = [
@@ -136,6 +140,8 @@ class ProxyServer {
     return server.bind(port).then((serverSocket) async {
       logger.i("listen on $port");
       this.server = server;
+      // 反向代理（可选）：独立端口，按路径规则转发到配置的上游。
+      await _startReverseProxy();
       if (configuration.enableSystemProxy) {
         setSystemProxyEnable(true);
       }
@@ -209,6 +215,12 @@ class ProxyServer {
   /// 停止代理服务
   Future<Server?> stop() async {
     _stopQuicProbeListener();
+    // 停止反向代理服务（独立端口）
+    try {
+      await ReverseProxyServer.current?.stop().timeout(const Duration(seconds: 5));
+    } catch (e) {
+      logger.w('反向代理服务停止异常（已跳过）', error: e);
+    }
     // 闸住事件回调：停止后到达的残留读事件不再更新界面（上游 #674）
     _combinedListener?.stopped = true;
     _combinedListener = null;
@@ -373,6 +385,46 @@ class ProxyServer {
     }
 
     await SystemProxy.setSystemProxyEnable(port, enable, enableSsl, passDomains: configuration.proxyPassDomains);
+  }
+
+  /// 启动反向代理服务（可选）。
+  ///
+  /// 只在用户开启且至少配了一条规则时启动；端口与正向代理冲突时给出告警而不
+  /// 影响主服务。
+  Future<void> _startReverseProxy() async {
+    try {
+      final existing = ReverseProxyServer.current;
+      if (!ReverseProxy.enabled) {
+        await existing?.stop();
+        return;
+      }
+      if (ReverseProxy.rules.isEmpty) {
+        logger.i('[ReverseProxy] enabled but no rule configured, skip');
+        await existing?.stop();
+        return;
+      }
+      if (ReverseProxy.port == port) {
+        logger.w('[ReverseProxy] listen port(${ReverseProxy.port}) 与正向代理端口相同，已跳过');
+        return;
+      }
+      await ReverseProxyServer(configuration).start();
+    } catch (e, s) {
+      logger.e('[ReverseProxy] 启动失败', error: e, stackTrace: s);
+    }
+  }
+
+  /// 反向代理规则或端口变化后调用（供设置页使用）。
+  Future<void> restartReverseProxy() async {
+    if (!isRunning) return;
+    try {
+      if (!ReverseProxy.enabled || ReverseProxy.rules.isEmpty || ReverseProxy.port == port) {
+        await ReverseProxyServer.current?.stop();
+        return;
+      }
+      await ReverseProxyServer(configuration).restart();
+    } catch (e, s) {
+      logger.e('[ReverseProxy] 重启失败', error: e, stackTrace: s);
+    }
   }
 
   /// 重启代理服务

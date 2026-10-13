@@ -6,9 +6,11 @@ import 'dart:io' as io;
 import 'dart:math' as math;
 
 import 'package:proxypin/network/bin/configuration.dart';
-import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/components/host_filter.dart';
 import 'package:proxypin/network/components/manager/hosts_manager.dart';
+import 'package:proxypin/network/reverse/reverse_proxy.dart';
+import 'package:proxypin/network/reverse/reverse_proxy_server.dart';
+import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/components/manager/request_block_manager.dart';
 import 'package:proxypin/network/components/manager/request_rewrite_manager.dart';
 import 'package:proxypin/network/components/manager/rewrite_rule.dart';
@@ -3455,6 +3457,139 @@ class McpServer {
           }
         } catch (e) {
           return {'error': 'Failed to set host: $e'};
+        }
+
+      case 'list_reverse_proxy':
+        try {
+          var conf = Configuration.loaded;
+          return {
+            'enabled': ReverseProxy.enabled,
+            'port': ReverseProxy.port,
+            'running': ReverseProxyServer.current?.isRunning ?? false,
+            'total': ReverseProxy.rules.length,
+            'rules': ReverseProxy.rules
+                .map((r) => {
+                      ...r.toJson(),
+                      'hit_count': ReverseProxy.hitsOf(r),
+                    })
+                .toList(),
+          };
+        } catch (e) {
+          return {'error': 'Failed to list reverse proxy: $e'};
+        }
+
+      case 'set_reverse_proxy':
+        try {
+          final action = (args['action'] as String? ?? 'list').toLowerCase();
+          var conf = Configuration.loaded;
+          if (conf == null) return {'error': 'Configuration not loaded yet'};
+
+          if (action == 'list') {
+            return {
+              'enabled': ReverseProxy.enabled,
+              'port': ReverseProxy.port,
+              'running': ReverseProxyServer.current?.isRunning ?? false,
+              'rules': ReverseProxy.rules.map((r) => r.toJson()).toList(),
+            };
+          }
+
+          if (action == 'set_port') {
+            final port = args['port'] is int ? args['port'] as int : null;
+            if (port == null || port < 1 || port > 65535) return {'error': 'Invalid port (1-65535)'};
+            if (port == conf.port) return {'error': 'Port conflicts with the forward proxy port'};
+            conf.reverseProxyPort = port;
+            conf.flushConfig();
+            ReverseProxy.load(enabled: conf.reverseProxyEnabled, port: port, rules: conf.reverseProxyRules);
+            await ReverseProxyServer.apply(conf);
+            return {'status': 'success', 'port': port};
+          }
+
+          if (action == 'enable') {
+            final enabled = args['enabled'] as bool? ?? true;
+            conf.reverseProxyEnabled = enabled;
+            conf.flushConfig();
+            ReverseProxy.load(enabled: enabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
+            await ReverseProxyServer.apply(conf);
+            return {'status': 'success', 'enabled': enabled};
+          }
+
+          final prefix = (args['prefix'] as String? ?? '').trim();
+          if (prefix.isEmpty) return {'error': 'prefix is required for $action'};
+          final normalized = ReverseProxyRule.normalizePrefix(prefix);
+
+          ReverseProxyRule? find() {
+            for (var r in conf.reverseProxyRules) {
+              if (r.prefix == normalized) return r;
+            }
+            return null;
+          }
+
+          if (action == 'remove') {
+            final rule = find();
+            if (rule == null) return {'error': 'No route found for $normalized'};
+            conf.reverseProxyRules = List<ReverseProxyRule>.from(conf.reverseProxyRules)..remove(rule);
+            conf.flushConfig();
+            ReverseProxy.load(
+                enabled: conf.reverseProxyEnabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
+            await ReverseProxyServer.apply(conf);
+            return {'status': 'success', 'message': 'Removed route $normalized'};
+          }
+
+          if (action == 'toggle') {
+            final rule = find();
+            if (rule == null) return {'error': 'No route found for $normalized'};
+            final enabled = args['enabled'] as bool? ?? !rule.enabled;
+            final list = List<ReverseProxyRule>.from(conf.reverseProxyRules);
+            list[list.indexOf(rule)] = rule.copyWith(enabled: enabled);
+            conf.reverseProxyRules = list;
+            conf.flushConfig();
+            ReverseProxy.load(
+                enabled: conf.reverseProxyEnabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
+            return {'status': 'success', 'prefix': normalized, 'enabled': enabled};
+          }
+
+          // add / update
+          final target = (args['target'] as String? ?? '').trim();
+          if (target.isEmpty) return {'error': 'target is required for $action'};
+          final uri = Uri.tryParse(target);
+          if (uri == null || uri.host.isEmpty) return {'error': 'Invalid target URL: $target'};
+          final stripPrefix = args['strip_prefix'] as bool? ?? false;
+          final hostHeader = (args['host_header'] as String? ?? '').trim();
+          final enabled = args['enabled'] as bool? ?? true;
+
+          final list = List<ReverseProxyRule>.from(conf.reverseProxyRules);
+          final existing = find();
+          if (existing != null) {
+            list[list.indexOf(existing)] = existing.copyWith(
+              target: target,
+              stripPrefix: stripPrefix,
+              hostHeader: hostHeader,
+              clearHostHeader: hostHeader.isEmpty,
+              enabled: enabled,
+            );
+          } else {
+            list.add(ReverseProxyRule(
+              id: DateTime.now().millisecondsSinceEpoch.toRadixString(36),
+              prefix: normalized,
+              target: target,
+              stripPrefix: stripPrefix,
+              hostHeader: hostHeader.isEmpty ? null : hostHeader,
+              enabled: enabled,
+            ));
+          }
+          conf.reverseProxyRules = list;
+          conf.flushConfig();
+          ReverseProxy.load(
+              enabled: conf.reverseProxyEnabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
+          await ReverseProxyServer.apply(conf);
+          return {
+            'status': 'success',
+            'message': 'Route $normalized -> $target',
+            'prefix': normalized,
+            'target': target,
+          };
+        } catch (e) {
+          return {'error': 'Failed to set reverse proxy: $e'};
         }
 
       default:

@@ -10,6 +10,10 @@ interface class AttributeKeys {
   static const String socks5Proxy = "SOCKS5_PROXY";
   static const String processInfo = "PROCESS_INFO";
   static const String skipCapture = "SKIP_CAPTURE";
+  /// 该连接是否由反向代理监听端口接入（见 ReverseProxyServer）
+  static const String reverseProxy = "REVERSE_PROXY";
+  /// 命中的反向代理规则 id
+  static const String reverseProxyRule = "REVERSE_PROXY_RULE";
   
   // HTTP/2 相关属性
   static const String h2FallbackToHttp1 = "H2_FALLBACK_TO_HTTP1"; // HTTP/2 降级到 HTTP/1.1
