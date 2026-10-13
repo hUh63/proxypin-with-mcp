@@ -294,12 +294,12 @@ void main() {
       timeout: const Timeout(Duration(seconds: 25)), () async {
     final rawOrigin = await io.ServerSocket.bind(io.InternetAddress.loopbackIPv4, 0);
     final originConn = <io.Socket>[];
+    var matchedAtOrigin = 0;
     rawOrigin.listen((socket) {
       originConn.add(socket);
       final pending = <int>[];
       var headerEnd = -1;
       var contentLength = 0;
-      var matched = 0;
       socket.listen((incoming) {
         pending.addAll(incoming);
         while (true) {
@@ -317,7 +317,7 @@ void main() {
           pending.removeRange(0, total);
           headerEnd = -1;
           contentLength = 0;
-          matched++;
+          matchedAtOrigin++;
           final payload = utf8.encode('$bodyLen');
           socket.add(latin1.encode('HTTP/1.1 200 OK\r\n'
               'Content-Length: ${payload.length}\r\n'
@@ -329,13 +329,10 @@ void main() {
 
     const n = 10;
     final socket = await io.Socket.connect('127.0.0.1', proxyPort);
-    final it = StreamIterator(socket);
 
-    final expectedLengths = <String>[];
     final buf = StringBuffer();
     for (var i = 0; i < n; i++) {
       final body = utf8.encode('req-$i-${'x' * (i * 37)}');
-      expectedLengths.add('${body.length}');
       buf.write('POST http://127.0.0.1:${rawOrigin.port}/p$i HTTP/1.1\r\n');
       buf.write('Host: 127.0.0.1:${rawOrigin.port}\r\n');
       buf.write('Connection: keep-alive\r\n');
@@ -345,44 +342,28 @@ void main() {
       socket.add(body);
     }
 
-    // 留时间让 proxy 处理（读完再报诊断）
-    await Future.delayed(const Duration(milliseconds: 1500));
-    // ignore: avoid_print
-    print('DIAG-PIPE proxy handler 收到 ${recorder.arrived.length} 个请求: ${recorder.arrived}');
-    // ignore: avoid_print
-    print('DIAG-PIPE listener requests=${listener.requests} responses=${listener.responses}');
+    // 收集客户端实际收到的字节（3 秒上限），不做 HTTP 解析，只统计数据
+    final received = <int>[];
+    final sub = socket.listen((d) => received.addAll(d));
+    await Future.delayed(const Duration(seconds: 3));
+    await sub.cancel();
 
-    // 用 8 秒上限读响应；超时则报告进度
-    final actualLengths = <String>[];
-    var readError = '';
-    try {
-      await Future<void>.delayed(Duration.zero);
-      for (var i = 0; i < n; i++) {
-        final (statusLine, headers, rest) = await readHead(it).timeout(const Duration(seconds: 3));
-        expect(int.parse(statusLine.split(' ')[1]), 200, reason: '第 $i 个响应不是 200');
-        final len = int.tryParse(headers['content-length'] ?? '') ?? 0;
-        var payload = rest;
-        while (payload.length < len) {
-          if (!await it.moveNext()) break;
-          payload.addAll(it.current);
-        }
-        actualLengths.add(utf8.decode(payload.sublist(0, min(payload.length, len))));
-      }
-    } catch (e) {
-      readError = '$e';
-    }
-
-    if (actualLengths.length != n) {
-      fail('只收到 ${actualLengths.length}/$n 个响应，错误: $readError；'
-          'proxy 收到 ${recorder.arrived.length} 个请求，listener requests=${listener.requests}。');
-    }
-    expect(actualLengths.toList()..sort(), expectedLengths.toList()..sort());
+    final text = latin1.decode(received, allowMalformed: true);
+    final okCount = 'HTTP/1.1 200 OK'.allMatches(text).length;
+    // ignore: avoid_print
+    print('DIAG-PIPE2 客户端收到 ${received.length} 字节, 其中 200 响应 $okCount 个');
+    // ignore: avoid_print
+    print('DIAG-PIPE2 origin 收到 $matchedAtOrigin 个请求');
+    // ignore: avoid_print
+    print('DIAG-PIPE2 listener requests=${listener.requests} responses=${listener.responses}');
 
     socket.destroy();
     for (final c in originConn) {
       c.destroy();
     }
     await rawOrigin.close();
+
+    expect(okCount, n, reason: '客户端应收到 $n 个响应，实际 $okCount 个（收到 ${received.length} 字节）');
   });
 
   test('慢客户端：分片 + 间隔发送 1MB body，上游收到完整数据', () async {

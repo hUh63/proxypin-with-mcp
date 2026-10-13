@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.66.02 (2026-10-14)
+
+### 修复：`parseInitialLine` 把「长度」当「绝对下标上界」
+
+`HttpParse.parseInitialLine(data, size)` 里 `size` 是调用方算好的
+「本次允许检查的最大字节数」（`min(readableBytes, maxInitialLineLength)`），
+但循环写的是 `for (i = data.readerIndex; i < size; i++)` —— 一旦
+`readerIndex > 0`（同一次读入里解析第二条及以后的消息），`i < size`
+会立即不成立，整行直接解析失败、消息被当作「数据不足」卡住。
+
+改为先换算成绝对下标 `endIndex = readerIndex + size` 再循环。
+上一条消息留下的 readerIndex 偏移不会再让后续消息解析失败。
+
+同时把 pipelining 诊断用例改为**统计客户端实际收到的响应个数**
+（不按 HTTP 逐条读，只数 `HTTP/1.1 200 OK` 出现次数），并打印 origin 侧
+收到的请求数，用于区分「只回写了 1 个响应」还是「响应没到达客户端」。
+
 ## v1.66.01 (2026-10-14)
 
 ### 补齐 v1.66.00 遗漏推送的文件 + codec 层单测

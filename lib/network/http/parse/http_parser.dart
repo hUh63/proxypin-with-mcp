@@ -9,10 +9,15 @@ class HttpParse {
   static const int defaultMaxLength = 102400;
 
   /// 解析请求行
+  ///
+  /// [size] 是「本次允许检查的最大字节数」，不是绝对下标上界。必须换算成
+  /// 绝对下标再循环——否则当 readerIndex > 0（同一次读入里解析第二条之后的
+  /// 消息）时，`i < size` 会立即不成立，整条消息被当成「数据不足」而卡住。
   List<String> parseInitialLine(ByteBuf data, int size) {
     List<String> initialLine = [];
     var startIndex = data.readerIndex;
-    for (int i = data.readerIndex; i < size; i++) {
+    final int endIndex = startIndex + size;
+    for (int i = startIndex; i < endIndex; i++) {
       if (_isLineEnd(data, i)) {
         //请求行结束
         Uint8List requestLine = data.readBytes(i - data.readerIndex);
