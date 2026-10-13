@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.66.01 (2026-10-14)
+
+### 补齐 v1.66.00 遗漏推送的文件 + codec 层单测
+
+v1.66.00 的推送脚本只带了测试文件，`lib/` 下三处真正修复
+（`byte_buf.dart` 的 `unreadBytes`、`body_reader.dart` 的精确消费、
+`codec.dart` 的回退逻辑）**没有提交上去**，所以那次 CI 里 pipelining
+用例仍然只处理 1 个请求。本版把它们补上；今后每次推送后都会用
+GitHub API 回读远端文件确认改动落地。
+
+同时新增 `test/http_codec_pipeline_test.dart`：三个纯 codec 单测
+（两个 POST、无 body 的 GET、body 分两次到达），不依赖 socket，
+直接锁定「同一次缓冲里的多条消息都要能解出、且互不吞字节」。
+
 ## v1.66.00 (2026-10-14)
 
 ### 修复：HTTP/1.1 pipelining 只有第一个请求被处理

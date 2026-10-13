@@ -78,6 +78,18 @@ class ByteBuf {
     readerIndex += length;
   }
 
+  /// 回退读取位置：把「已读走但实际并不属于当前消息」的字节还给上层。
+  ///
+  /// HTTP/1.1 pipelining 时一次 TCP 读入可能包含多条消息的字节，
+  /// 而 [readAvailableBytes] 会把整个可读区间一次性取走。若当前消息只需要其中
+  /// 一部分（例如 body 只应取 Content-Length 个字节），多出来的部分必须留在
+  /// buffer 里，交给后续消息解析——否则后续请求会被静默丢弃。
+  void unreadBytes(int length) {
+    if (length <= 0) return;
+    readerIndex -= length;
+    if (readerIndex < 0) readerIndex = 0;
+  }
+
   int read() => _buffer[readerIndex++];
 
   int readByte() => _buffer[readerIndex++];

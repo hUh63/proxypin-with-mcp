@@ -28,7 +28,15 @@ class Result {
 
   Uint8List? body;
 
-  Result(this.isDone, {this.body, this.supportedParse = true});
+  /// 本次 [BodyReader.readBody] 实际消费的输入字节数，供上层把「不属于本条消息」
+  /// 的字节退回给 buffer（HTTP/1.1 pipelining：同一次读入可能含后续消息）。
+  ///
+  /// 取值约定：
+  ///  - `>= 0`：精确消费量（固定长度 body 路径）；
+  ///  - `-1`  ：全部消费（chunked / 原样转发等路径，多余字节由各自机制保存）。
+  final int consumedBytes;
+
+  Result(this.isDone, {this.body, this.supportedParse = true, this.consumedBytes = -1});
 }
 
 class BodyReader {
@@ -108,29 +116,51 @@ class BodyReader {
       return Result(false, supportedParse: false, body: data);
     }
 
+    // chunked 路径内部有 carry 缓冲，多余字节由解码器保留，这里不精确回报消费量；
+    // 固定长度路径按 Content-Length 精确消费，剩余字节必须退回给上层。
+    final int consumed;
     if (_chunkedDecoder != null) {
       _readChunked(data);
+      consumed = -1;
     } else {
-      _readFixedLengthContent(data);
+      consumed = _readFixedLengthContent(data);
     }
 
     if (_done) {
       var body = _bodyBuffer.toBytes();
       _bodyBuffer.clear();
-      return Result(true, body: body);
+      return Result(true, body: body, consumedBytes: consumed);
     }
 
-    return Result(false);
+    return Result(false, consumedBytes: consumed);
   }
 
-  void _readFixedLengthContent(Uint8List data) {
+  /// 按 Content-Length 读取固定长度 body，返回本次实际消费的字节数。
+  ///
+  /// 关键：只能消费属于本条消息的字节。早先的实现无条件 `_bodyBuffer.add(data)`，
+  /// 而调用方传入的是「本 buffer 当前全部可读字节」——当客户端把多个请求合并到
+  /// 同一次写入（HTTP/1.1 pipelining）时，第一个请求的 body 会把后续请求的字节
+  /// 一并吞掉，上层再 clearRead() 就把它们永久丢掉了。
+  int _readFixedLengthContent(Uint8List data) {
     if (message.contentLength > 0) {
-      _bodyBuffer.add(data);
+      final int need = message.contentLength - _bodyBuffer.length;
+      final int take = need <= 0 ? 0 : (data.length < need ? data.length : need);
+      if (take > 0) {
+        _bodyBuffer.add(Uint8List.sublistView(data, 0, take));
+      }
+      if (_bodyBuffer.length >= message.contentLength) {
+        _done = true;
+      }
+      return take;
     }
 
-    if (message.contentLength == -1 || _bodyBuffer.length >= message.contentLength) {
-      _done = true;
-    }
+    // contentLength <= 0：没有 body 可消费。
+    //  - 请求没有 Content-Length 头（HttpHeaders.contentLength 此时返回 0），
+    //    按 RFC 7230 请求即无 body；
+    //  - Content-Length: 0 同样是空 body。
+    // 两种情况都不消费输入字节——同一次读入里紧跟的下一个请求必须留在 buffer 里。
+    _done = true;
+    return 0;
   }
 
   void _readChunked(Uint8List data) {

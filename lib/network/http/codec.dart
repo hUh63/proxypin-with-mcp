@@ -142,7 +142,18 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
             (this is HttpResponseCodec && channelContext.currentRequest?.method == HttpMethod.connect);
 
         bool resolveBody = channelContext.currentRequest?.method != HttpMethod.head && !isConnectResponse;
-        var bodyResult = resolveBody ? bodyReader!.readBody(data.readAvailableBytes()) : null;
+        Result? bodyResult;
+        if (resolveBody) {
+          // 取出当前全部可读字节交给 body 解析器；它按 Content-Length 精确消费，
+          // 并把「不属于本条消息」的剩余字节数回报出来。
+          final bodyBytes = data.readAvailableBytes();
+          bodyResult = bodyReader!.readBody(bodyBytes);
+          if (bodyResult.consumedBytes >= 0 && bodyResult.consumedBytes < bodyBytes.length) {
+            // HTTP/1.1 pipelining：同一次读入可能紧跟下一个请求，
+            // 把多读的字节退回 buffer，供下一轮 decode 解析，避免请求被丢弃。
+            data.unreadBytes(bodyBytes.length - bodyResult.consumedBytes);
+          }
+        }
         if (!resolveBody || bodyResult?.isDone == true) {
           _state = State.done;
           result.data!.body = bodyResult?.body;
