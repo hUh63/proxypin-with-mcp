@@ -378,7 +378,11 @@ class Client extends Network {
 
   @override
   Future<void> onEvent(Uint8List data, ChannelContext channelContext, Channel channel) async {
-    // 读事件串行化：与 ChannelDispatcher.listen 共用同一队列，避免共享 buffer 跨 await 竞态。
-    channel.dispatcher.enqueueRead(channelContext, channel, data);
+    // 出口连接没有 TLS / SOCKS / h2c 嗅探，直接进入解析。
+    //
+    // 注意：入队已由 [listen] 完成（读事件统一经 readQueue 串行）。此处**不能**
+    // 再调 enqueueRead —— 本方法本身就是 readQueue 里的处理函数，再入队会形成
+    // 「任务入队任务」的自循环，队列永远排不空（曾经因此让测试挂起）。
+    await channel.dispatcher.channelRead(channelContext, channel, data);
   }
 }

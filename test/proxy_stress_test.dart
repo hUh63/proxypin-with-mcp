@@ -26,6 +26,9 @@ import 'package:proxypin/network/http/codec.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/file_read.dart';
 
+// 若读路径出现自循环/死锁，宁可让用例超时失败，也不要让 CI 无限挂起。
+@Timeout(Duration(minutes: 3))
+
 /// 简单事件监听器：只记录计数，避免把 body 全留在内存里影响压测本身。
 class _CountingListener extends EventListener {
   int requests = 0;
@@ -97,7 +100,7 @@ void main() {
   late Server proxy;
   late io.HttpServer origin;
   late io.Directory work;
-  late String previousHome;
+  String? previousHome;
   late int proxyPort;
   late int originPort;
 
