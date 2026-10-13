@@ -31,10 +31,10 @@ class Hosts extends Interceptor {
   @override
   Future<HostAndPort> preConnect(HostAndPort hostAndPort) async {
     var host = hostAndPort.host;
-    var hostsItem = await hostsManager.then((it) => it.getHosts(host));
-    if (hostsItem != null) {
-      logger.d('Hosts: $host -> ${hostsItem.toAddress}');
-      return hostAndPort.copyWith(host: hostsItem.toAddress);
+    var hostsItem = await hostsManager.then((it) => it.getHosts(host, hostAndPort.port));
+    if (hostsItem != null && hostsItem.toAddress != null) {
+      logger.d('Hosts: $host:${hostAndPort.port} -> ${hostsItem.displayAddress}');
+      return hostAndPort.copyWith(host: hostsItem.toAddress!);
     }
     return hostAndPort;
   }

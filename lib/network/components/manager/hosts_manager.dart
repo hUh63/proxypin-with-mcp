@@ -30,6 +30,9 @@ class HostsManager {
   bool enabled = true;
   final List<HostsItem> list = [];
 
+  /// 本次运行累计命中次数（key = HostsItem.id），不持久化。
+  final Map<String, int> hitCounts = {};
+
   final Map<String, List<HostsItem>> _folderMap = {};
 
   HostsManager._();
@@ -108,8 +111,13 @@ class HostsManager {
     }
   }
 
-  Future<HostsItem?> getHosts(String host) async {
+  /// 查找匹配的连接目标。
+  ///
+  /// [port] 为连接端口；规则若限定了端口则必须一致（null 视为不限端口）。
+  Future<HostsItem?> getHosts(String host, [int? port]) async {
     if (!enabled) return null;
+
+    HostsItem? found;
 
     for (var item in list) {
       if (!item.enabled) continue;
@@ -118,19 +126,40 @@ class HostsManager {
         var list = _folderMap[item.id];
         if (list == null) continue;
         for (var it in list) {
-          if (it.enabled && it.match(host)) {
-            return it;
+          if (it.enabled && it.match(host) && it.matchesPort(port)) {
+            found = it;
+            break;
           }
         }
+        if (found != null) break;
         continue;
       }
 
-      if (item.match(host)) {
-        return item;
+      if (item.match(host) && item.matchesPort(port)) {
+        found = item;
+        break;
       }
     }
 
-    return null;
+    if (found != null) {
+      found.hitCount++;
+      hitCounts[found.id] = (hitCounts[found.id] ?? 0) + 1;
+    }
+    return found;
+  }
+
+  /// 命中次数（按规则 id）。
+  int hitsOf(HostsItem item) => hitCounts[item.id] ?? item.hitCount;
+
+  /// 清空命中统计。
+  void resetHits() {
+    hitCounts.clear();
+    for (var item in list) {
+      item.hitCount = 0;
+      for (var it in _folderMap[item.id] ?? const <HostsItem>[]) {
+        it.hitCount = 0;
+      }
+    }
   }
 
   removeHosts(Iterable<HostsItem> items) async {
@@ -159,7 +188,20 @@ class HostsItem {
   String? toAddress;
   RegExp? _hostReg;
 
-  HostsItem({String? id, required this.host, this.toAddress, required this.enabled, this.isFolder = false, this.parent})
+  /// 只对该端口的目标生效；null 表示不限端口。
+  int? port;
+
+  /// 本次运行中该规则的命中次数（不持久化，仅供 UI 展示与排查）。
+  int hitCount = 0;
+
+  HostsItem(
+      {String? id,
+      required this.host,
+      this.toAddress,
+      this.port,
+      required this.enabled,
+      this.isFolder = false,
+      this.parent})
       : id = id ?? generateId();
 
   static String generateId() {
@@ -173,11 +215,35 @@ class HostsItem {
     return _hostReg!.hasMatch(domain);
   }
 
+  /// 端口是否匹配：规则未限定端口时一律通过。
+  bool matchesPort(int? targetPort) => port == null || port == targetPort;
+
+  /// 生效的展示字符串，如 `192.168.1.10:8443`。
+  String get displayAddress {
+    final addr = toAddress ?? '';
+    if (port == null || addr.isEmpty) return addr;
+    if (addr.contains(':')) return '[$addr]:$port';
+    return '$addr:$port';
+  }
+
+  HostsItem copyWith({String? host, String? toAddress, int? port, bool clearPort = false, bool? enabled}) {
+    return HostsItem(
+      id: id,
+      host: host ?? this.host,
+      toAddress: toAddress ?? this.toAddress,
+      port: clearPort ? null : (port ?? this.port),
+      enabled: enabled ?? this.enabled,
+      isFolder: isFolder,
+      parent: parent,
+    );
+  }
+
   factory HostsItem.fromJson(Map<String, dynamic> json) {
     return HostsItem(
       id: json['id'],
       host: json['host'],
       toAddress: json['toAddress'],
+      port: json['port'] is int ? json['port'] as int : null,
       enabled: json['enabled'],
       parent: json['parent'],
       isFolder: json['isFolder'] == true,
@@ -192,6 +258,7 @@ class HostsItem {
       'isFolder': isFolder,
       'host': host,
       'toAddress': toAddress,
+      if (port != null) 'port': port,
     };
   }
 }

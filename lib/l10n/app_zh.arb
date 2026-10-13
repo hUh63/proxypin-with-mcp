@@ -4423,5 +4423,8 @@
   "custLangWordsHint": "用空格、逗号或换行分隔",
   "custLangBaseHint": "可留空；填了就以该内置语言的高亮为基础",
   "custLangCaseInsensitive": "忽略大小写",
-  "custLangNeedWords": "请至少填一个关键字，或选一个高亮基础"
+  "custLangNeedWords": "请至少填一个关键字，或选一个高亮基础",
+  "hostsPort": "端口",
+  "hostsPortHint": "不限",
+  "hostsHit": "命中"
 }

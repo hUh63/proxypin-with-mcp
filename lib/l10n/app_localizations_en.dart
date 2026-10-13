@@ -6108,4 +6108,265 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sendToAesDecrypt => 'Send to AES Decrypt';
+
+
+  @override
+  String get regexpHelp => 'RegExp Help';
+
+  @override
+  String get regexpHelpSearchHint => 'Search syntax or example';
+
+  @override
+  String get regexpNoMatch => 'No matching content';
+
+  @override
+  String get regexpModifiers => 'Flags';
+
+  @override
+  String regexpMatches(int count) {
+    return '$count match(es)';
+  }
+
+  @override
+  String get regexpApplyToInput => 'Replace test data with result';
+
+  @override
+  String regexpReplaced(int count) {
+    return 'Replaced $count occurrence(s)';
+  }
+
+  @override
+  String get snippetManagerTitle => 'Quick Insert';
+
+  @override
+  String get snippetManagerHint => 'Leave the label empty to show the inserted text itself; rows with empty content are dropped.';
+
+  @override
+  String get snippetManagerEmpty => 'No items yet, tap "Add" to create one.';
+
+  @override
+  String get snippetManagerReset => 'Reset to defaults';
+
+  @override
+  String get snippetManagerLabel => 'Label';
+
+  @override
+  String get snippetManagerInsert => 'Insert text';
+
+
+  @override
+  String get diffPrev => 'Previous change';
+
+  @override
+  String get diffNext => 'Next change';
+
+  @override
+  String get diffAdded => 'Added';
+
+  @override
+  String get diffDeleted => 'Deleted';
+
+  @override
+  String get diffModified => 'Modified';
+
+  @override
+  String get diffReplaceLeftToRight => 'Copy left → right (overwrite)';
+
+  @override
+  String get diffReplaceRightToLeft => 'Copy right → left (overwrite)';
+
+  @override
+  String diffSummaryDetail(int added, int deleted, int modified) {
+    return '$added added, $deleted deleted, $modified modified';
+  }
+
+  @override
+  String diffPosition(int index, int total) {
+    return 'Change $index/$total';
+  }
+
+
+  @override
+  String get editorUntitled => 'Untitled';
+
+  @override
+  String get editorNewFile => 'New file';
+
+  @override
+  String get editorDocuments => 'Documents';
+
+  @override
+  String get editorDocsHint => 'Tap to switch · long-press to reorder · swipe right for actions';
+
+  @override
+  String get editorPin => 'Pin';
+
+  @override
+  String get editorUnpin => 'Unpin';
+
+  @override
+  String get editorRetain => 'Keep file';
+
+  @override
+  String get editorRetainHint => 'Do not remove on exit, and save it so it can be restored next time';
+
+  @override
+  String get editorCloseFile => 'Close';
+
+  @override
+  String get editorShowAsciiControl => 'Show ASCII control chars';
+
+  @override
+  String get editorShowUnicodeSpecial => 'Show Unicode special chars';
+
+  @override
+  String get editorSpecialReport => 'Invisible character report';
+
+  @override
+  String get editorSpecialNone => 'No invisible characters found';
+
+  @override
+  String get editorJumpTo => 'Jump to';
+
+  @override
+  String get editorRemoveAll => 'Remove every occurrence';
+
+  @override
+  String editorRemoved(int count) {
+    return 'Removed $count character(s)';
+  }
+
+  @override
+  String get editorTooManySpecial => 'Too many invisible characters; only the first 3000 are highlighted';
+
+  @override
+  String get editorSmoothMode => 'Smooth mode';
+
+  @override
+  String get editorSmoothAutoEnabled => 'Text is very long; smooth mode has been enabled automatically';
+
+  @override
+  String get editorSelectToLine => 'Select lines';
+
+  @override
+  String get editorStartLine => 'Start line';
+
+  @override
+  String get editorEndLine => 'End line';
+
+  @override
+  String get editorReplaceLine => 'Replace current line with clipboard';
+
+  @override
+  String get editorReplacedLine => 'Current line replaced';
+
+  @override
+  String get editorClipboardEmpty => 'Clipboard has no text';
+
+  @override
+  String get editorToggleComment => 'Toggle comment';
+
+  @override
+  String get editorCommentUnsupported => 'The current syntax does not support comment toggling';
+
+  @override
+  String get editorInsertSymbol => 'Insert symbol';
+
+  @override
+  String get editorManage => 'Manage';
+
+  @override
+  String get editorUndo => 'Undo';
+
+  @override
+  String get editorRedo => 'Redo';
+
+  @override
+  String get editorMore => 'More';
+
+  @override
+  String get editorNewline => 'Line ending';
+
+  @override
+  String get editorNewlineHint => 'Affects only the line ending used when saving; inside the editor the text is always treated as LF.';
+
+  @override
+  String get editorRetainPref => 'Keep preference for new files';
+
+  @override
+  String get editorRetainAsk => 'Ask on exit';
+
+  @override
+  String get editorRetainAlways => 'Always keep';
+
+  @override
+  String get editorRetainNever => 'Never keep';
+
+  @override
+  String get editorExitRetainTitle => 'Keep these files?';
+
+  @override
+  String get editorExitRetainBody => 'Some files are not marked as kept and will be removed from the editor on exit.';
+
+  @override
+  String get editorDiscard => 'Don\'t keep';
+
+  @override
+  String get editorUnsaved => 'Unsaved';
+
+
+  @override
+  String get editorMinify => 'Minify code';
+
+  @override
+  String get editorMinifyUnsupported => 'Minifying is not supported for this syntax';
+
+  @override
+  String editorMinified(String before, String after) {
+    return 'Minified: $before → $after chars';
+  }
+
+
+  @override
+  String editorGutterAnchorSet(int line) {
+    return 'Start line $line set; long-press another line number to finish';
+  }
+
+  @override
+  String editorGutterRangeSelected(int from, int to) {
+    return 'Selected lines $from–$to';
+  }
+
+
+  @override
+  String get diffReplaceBlockLeft => 'Replace right with this';
+
+  @override
+  String get diffReplaceBlockRight => 'Replace left with this';
+
+  @override
+  String get diffApplied => 'Applied to the other side';
+
+  @override
+  String get diffNoChangeHere => 'No change to apply here';
+
+  @override
+  String get diffExitKeepTitle => 'Keep this comparison?';
+
+  @override
+  String get diffExitKeepBody => 'Both texts will be saved and restored next time.';
+
+  @override
+  String get diffKeep => 'Keep';
+
+
+  @override
+  String get editorSmoothKeepIme => 'Keep IME suggestions in smooth mode';
+
+
+  @override
+  String get editorMinifyAggressive => 'Aggressive minify (rename / drop dead code)';
+
+  @override
+  String get editorMinifyAggressiveUnsupported => 'Syntax is beyond the built-in compiler\'s supported subset; skipped';
 }

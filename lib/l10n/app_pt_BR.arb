@@ -2623,5 +2623,8 @@
   "custLangWordsHint": "Separe com espacos, virgulas ou quebras de linha",
   "custLangBaseHint": "Opcional; se definido, essa linguagem integrada serve de base",
   "custLangCaseInsensitive": "Ignorar maiusculas",
-  "custLangNeedWords": "Informe ao menos uma palavra-chave, ou escolha uma base"
+  "custLangNeedWords": "Informe ao menos uma palavra-chave, ou escolha uma base",
+  "hostsPort": "Porta",
+  "hostsPortHint": "Qualquer",
+  "hostsHit": "Acertos"
 }

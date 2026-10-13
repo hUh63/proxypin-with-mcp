@@ -11328,6 +11328,488 @@ Trimming happens after forwarding completes and does not affect the actual forwa
   /// **'Send to AES Decrypt'**
   String get sendToAesDecrypt;
 
+
+  /// No description provided for @regexpHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'RegExp Help'**
+  String get regexpHelp;
+
+  /// No description provided for @regexpHelpSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search syntax or example'**
+  String get regexpHelpSearchHint;
+
+  /// No description provided for @regexpNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching content'**
+  String get regexpNoMatch;
+
+  /// No description provided for @regexpModifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Flags'**
+  String get regexpModifiers;
+
+  /// No description provided for @regexpMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'$count match(es)'**
+  String regexpMatches(int count);
+
+  /// No description provided for @regexpApplyToInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace test data with result'**
+  String get regexpApplyToInput;
+
+  /// No description provided for @regexpReplaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced $count occurrence(s)'**
+  String regexpReplaced(int count);
+
+  /// No description provided for @snippetManagerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Insert'**
+  String get snippetManagerTitle;
+
+  /// No description provided for @snippetManagerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the label empty to show the inserted text itself; rows with empty content are dropped.'**
+  String get snippetManagerHint;
+
+  /// No description provided for @snippetManagerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No items yet, tap "Add" to create one.'**
+  String get snippetManagerEmpty;
+
+  /// No description provided for @snippetManagerReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to defaults'**
+  String get snippetManagerReset;
+
+  /// No description provided for @snippetManagerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get snippetManagerLabel;
+
+  /// No description provided for @snippetManagerInsert.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert text'**
+  String get snippetManagerInsert;
+
+
+  /// No description provided for @diffPrev.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous change'**
+  String get diffPrev;
+
+  /// No description provided for @diffNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next change'**
+  String get diffNext;
+
+  /// No description provided for @diffAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get diffAdded;
+
+  /// No description provided for @diffDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get diffDeleted;
+
+  /// No description provided for @diffModified.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get diffModified;
+
+  /// No description provided for @diffReplaceLeftToRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy left → right (overwrite)'**
+  String get diffReplaceLeftToRight;
+
+  /// No description provided for @diffReplaceRightToLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy right → left (overwrite)'**
+  String get diffReplaceRightToLeft;
+
+  /// No description provided for @diffSummaryDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'$added added, $deleted deleted, $modified modified'**
+  String diffSummaryDetail(int added, int deleted, int modified);
+
+  /// No description provided for @diffPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Change $index/$total'**
+  String diffPosition(int index, int total);
+
+
+  /// No description provided for @editorUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get editorUntitled;
+
+  /// No description provided for @editorNewFile.
+  ///
+  /// In en, this message translates to:
+  /// **'New file'**
+  String get editorNewFile;
+
+  /// No description provided for @editorDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get editorDocuments;
+
+  /// No description provided for @editorDocsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to switch · long-press to reorder · swipe right for actions'**
+  String get editorDocsHint;
+
+  /// No description provided for @editorPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get editorPin;
+
+  /// No description provided for @editorUnpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get editorUnpin;
+
+  /// No description provided for @editorRetain.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep file'**
+  String get editorRetain;
+
+  /// No description provided for @editorRetainHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not remove on exit, and save it so it can be restored next time'**
+  String get editorRetainHint;
+
+  /// No description provided for @editorCloseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get editorCloseFile;
+
+  /// No description provided for @editorShowAsciiControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Show ASCII control chars'**
+  String get editorShowAsciiControl;
+
+  /// No description provided for @editorShowUnicodeSpecial.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Unicode special chars'**
+  String get editorShowUnicodeSpecial;
+
+  /// No description provided for @editorSpecialReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Invisible character report'**
+  String get editorSpecialReport;
+
+  /// No description provided for @editorSpecialNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No invisible characters found'**
+  String get editorSpecialNone;
+
+  /// No description provided for @editorJumpTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to'**
+  String get editorJumpTo;
+
+  /// No description provided for @editorRemoveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove every occurrence'**
+  String get editorRemoveAll;
+
+  /// No description provided for @editorRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed $count character(s)'**
+  String editorRemoved(int count);
+
+  /// No description provided for @editorTooManySpecial.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many invisible characters; only the first 3000 are highlighted'**
+  String get editorTooManySpecial;
+
+  /// No description provided for @editorSmoothMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Smooth mode'**
+  String get editorSmoothMode;
+
+  /// No description provided for @editorSmoothAutoEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Text is very long; smooth mode has been enabled automatically'**
+  String get editorSmoothAutoEnabled;
+
+  /// No description provided for @editorSelectToLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Select lines'**
+  String get editorSelectToLine;
+
+  /// No description provided for @editorStartLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Start line'**
+  String get editorStartLine;
+
+  /// No description provided for @editorEndLine.
+  ///
+  /// In en, this message translates to:
+  /// **'End line'**
+  String get editorEndLine;
+
+  /// No description provided for @editorReplaceLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace current line with clipboard'**
+  String get editorReplaceLine;
+
+  /// No description provided for @editorReplacedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Current line replaced'**
+  String get editorReplacedLine;
+
+  /// No description provided for @editorClipboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard has no text'**
+  String get editorClipboardEmpty;
+
+  /// No description provided for @editorToggleComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle comment'**
+  String get editorToggleComment;
+
+  /// No description provided for @editorCommentUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'The current syntax does not support comment toggling'**
+  String get editorCommentUnsupported;
+
+  /// No description provided for @editorInsertSymbol.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert symbol'**
+  String get editorInsertSymbol;
+
+  /// No description provided for @editorManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get editorManage;
+
+  /// No description provided for @editorUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get editorUndo;
+
+  /// No description provided for @editorRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get editorRedo;
+
+  /// No description provided for @editorMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get editorMore;
+
+  /// No description provided for @editorNewline.
+  ///
+  /// In en, this message translates to:
+  /// **'Line ending'**
+  String get editorNewline;
+
+  /// No description provided for @editorNewlineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Affects only the line ending used when saving; inside the editor the text is always treated as LF.'**
+  String get editorNewlineHint;
+
+  /// No description provided for @editorRetainPref.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep preference for new files'**
+  String get editorRetainPref;
+
+  /// No description provided for @editorRetainAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask on exit'**
+  String get editorRetainAsk;
+
+  /// No description provided for @editorRetainAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always keep'**
+  String get editorRetainAlways;
+
+  /// No description provided for @editorRetainNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never keep'**
+  String get editorRetainNever;
+
+  /// No description provided for @editorExitRetainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep these files?'**
+  String get editorExitRetainTitle;
+
+  /// No description provided for @editorExitRetainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some files are not marked as kept and will be removed from the editor on exit.'**
+  String get editorExitRetainBody;
+
+  /// No description provided for @editorDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\\'t keep'**
+  String get editorDiscard;
+
+  /// No description provided for @editorUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved'**
+  String get editorUnsaved;
+
+
+  /// No description provided for @editorMinify.
+  ///
+  /// In en, this message translates to:
+  /// **'Minify code'**
+  String get editorMinify;
+
+  /// No description provided for @editorMinifyUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Minifying is not supported for this syntax'**
+  String get editorMinifyUnsupported;
+
+  /// No description provided for @editorMinified.
+  ///
+  /// In en, this message translates to:
+  /// **'Minified: $before → $after chars'**
+  String editorMinified(String before, String after);
+
+
+  /// No description provided for @editorGutterAnchorSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Start line $line set; long-press another line number to finish'**
+  String editorGutterAnchorSet(int line);
+
+  /// No description provided for @editorGutterRangeSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected lines $from–$to'**
+  String editorGutterRangeSelected(int from, int to);
+
+
+  /// No description provided for @diffReplaceBlockLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace right with this'**
+  String get diffReplaceBlockLeft;
+
+  /// No description provided for @diffReplaceBlockRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace left with this'**
+  String get diffReplaceBlockRight;
+
+  /// No description provided for @diffApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied to the other side'**
+  String get diffApplied;
+
+  /// No description provided for @diffNoChangeHere.
+  ///
+  /// In en, this message translates to:
+  /// **'No change to apply here'**
+  String get diffNoChangeHere;
+
+  /// No description provided for @diffExitKeepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this comparison?'**
+  String get diffExitKeepTitle;
+
+  /// No description provided for @diffExitKeepBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Both texts will be saved and restored next time.'**
+  String get diffExitKeepBody;
+
+  /// No description provided for @diffKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get diffKeep;
+
+
+  /// No description provided for @editorSmoothKeepIme.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep IME suggestions in smooth mode'**
+  String get editorSmoothKeepIme;
+
+
+  /// No description provided for @editorMinifyAggressive.
+  ///
+  /// In en, this message translates to:
+  /// **'Aggressive minify (rename / drop dead code)'**
+  String get editorMinifyAggressive;
+
+  /// No description provided for @editorMinifyAggressiveUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Syntax is beyond the built-in compiler\\'s supported subset; skipped'**
+  String get editorMinifyAggressiveUnsupported;
+
 }
 
 class _AppLocalizationsDelegate

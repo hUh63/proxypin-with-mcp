@@ -6071,6 +6071,267 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get sendToAesDecrypt => '发送到 AES 解密';
 
+
+  @override
+  String get regexpHelp => '正则帮助';
+
+  @override
+  String get regexpHelpSearchHint => '搜索语法或示例';
+
+  @override
+  String get regexpNoMatch => '没有匹配的内容';
+
+  @override
+  String get regexpModifiers => '修饰符';
+
+  @override
+  String regexpMatches(int count) {
+    return '匹配 $count 处';
+  }
+
+  @override
+  String get regexpApplyToInput => '用结果替换测试数据';
+
+  @override
+  String regexpReplaced(int count) {
+    return '已替换 $count 处';
+  }
+
+  @override
+  String get snippetManagerTitle => '快捷插入管理';
+
+  @override
+  String get snippetManagerHint => '标签留空则显示插入内容本身；插入内容为空的行会被丢弃。';
+
+  @override
+  String get snippetManagerEmpty => '暂无条目，点「添加」新增。';
+
+  @override
+  String get snippetManagerReset => '恢复默认';
+
+  @override
+  String get snippetManagerLabel => '标签';
+
+  @override
+  String get snippetManagerInsert => '插入内容';
+
+
+  @override
+  String get diffPrev => '上一处差异';
+
+  @override
+  String get diffNext => '下一处差异';
+
+  @override
+  String get diffAdded => '新增';
+
+  @override
+  String get diffDeleted => '删除';
+
+  @override
+  String get diffModified => '修改';
+
+  @override
+  String get diffReplaceLeftToRight => '用左侧覆盖右侧';
+
+  @override
+  String get diffReplaceRightToLeft => '用右侧覆盖左侧';
+
+  @override
+  String diffSummaryDetail(int added, int deleted, int modified) {
+    return '新增 $added 行，删除 $deleted 行，修改 $modified 行';
+  }
+
+  @override
+  String diffPosition(int index, int total) {
+    return '第 $index/$total 处差异';
+  }
+
+
+  @override
+  String get editorUntitled => '未命名';
+
+  @override
+  String get editorNewFile => '新建文件';
+
+  @override
+  String get editorDocuments => '文档列表';
+
+  @override
+  String get editorDocsHint => '点击切换 · 长按拖动排序 · 右滑显示操作';
+
+  @override
+  String get editorPin => '置顶';
+
+  @override
+  String get editorUnpin => '取消置顶';
+
+  @override
+  String get editorRetain => '保留文件';
+
+  @override
+  String get editorRetainHint => '退出编辑器时不移除，并保存以便下次恢复';
+
+  @override
+  String get editorCloseFile => '关闭';
+
+  @override
+  String get editorShowAsciiControl => '显示 ASCII 控制字符';
+
+  @override
+  String get editorShowUnicodeSpecial => '显示 Unicode 特殊字符';
+
+  @override
+  String get editorSpecialReport => '特殊字符检测';
+
+  @override
+  String get editorSpecialNone => '没有检测到不可见字符';
+
+  @override
+  String get editorJumpTo => '跳转';
+
+  @override
+  String get editorRemoveAll => '删除该字符的全部出现';
+
+  @override
+  String editorRemoved(int count) {
+    return '已删除 $count 个字符';
+  }
+
+  @override
+  String get editorTooManySpecial => '特殊字符过多，仅高亮前 3000 个';
+
+  @override
+  String get editorSmoothMode => '流畅模式';
+
+  @override
+  String get editorSmoothAutoEnabled => '文本过长，已自动开启流畅模式';
+
+  @override
+  String get editorSelectToLine => '选到第 N 行';
+
+  @override
+  String get editorStartLine => '起始行';
+
+  @override
+  String get editorEndLine => '结束行';
+
+  @override
+  String get editorReplaceLine => '替换当前行';
+
+  @override
+  String get editorReplacedLine => '已替换当前行';
+
+  @override
+  String get editorClipboardEmpty => '剪贴板没有文本';
+
+  @override
+  String get editorToggleComment => '切换注释';
+
+  @override
+  String get editorCommentUnsupported => '当前语法不支持切换注释';
+
+  @override
+  String get editorInsertSymbol => '插入符号';
+
+  @override
+  String get editorManage => '管理';
+
+  @override
+  String get editorUndo => '撤销';
+
+  @override
+  String get editorRedo => '重做';
+
+  @override
+  String get editorMore => '更多';
+
+  @override
+  String get editorNewline => '换行符';
+
+  @override
+  String get editorNewlineHint => '只影响保存文件时的换行符；编辑器内部始终按 LF 处理。';
+
+  @override
+  String get editorRetainPref => '新文件保留偏好';
+
+  @override
+  String get editorRetainAsk => '退出时询问';
+
+  @override
+  String get editorRetainAlways => '默认保留';
+
+  @override
+  String get editorRetainNever => '不保留';
+
+  @override
+  String get editorExitRetainTitle => '要保留这些文件吗？';
+
+  @override
+  String get editorExitRetainBody => '有文件未标记为「保留」，退出后将从编辑器移除。';
+
+  @override
+  String get editorDiscard => '不保留';
+
+  @override
+  String get editorUnsaved => '未保存';
+
+
+  @override
+  String get editorMinify => '压缩代码';
+
+  @override
+  String get editorMinifyUnsupported => '当前语法不支持压缩';
+
+  @override
+  String editorMinified(String before, String after) {
+    return '已压缩：$before → $after 字符';
+  }
+
+
+  @override
+  String editorGutterAnchorSet(int line) {
+    return '已记下起始行 $line，再长按另一行号即选中区间';
+  }
+
+  @override
+  String editorGutterRangeSelected(int from, int to) {
+    return '已选中第 $from — $to 行';
+  }
+
+
+  @override
+  String get diffReplaceBlockLeft => '用此处替换右侧';
+
+  @override
+  String get diffReplaceBlockRight => '用此处替换左侧';
+
+  @override
+  String get diffApplied => '已应用到另一侧';
+
+  @override
+  String get diffNoChangeHere => '此处没有可应用的差异';
+
+  @override
+  String get diffExitKeepTitle => '保留本次对比内容吗？';
+
+  @override
+  String get diffExitKeepBody => '将保存左右两段文本，下次进入自动恢复。';
+
+  @override
+  String get diffKeep => '保留';
+
+
+  @override
+  String get editorSmoothKeepIme => '流畅模式保留输入法建议';
+
+
+  @override
+  String get editorMinifyAggressive => '激进压缩（重命名 / 去死代码）';
+
+  @override
+  String get editorMinifyAggressiveUnsupported => '语法超出内置编译器支持的子集范围，已跳过';
+
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

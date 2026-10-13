@@ -2622,5 +2622,8 @@
   "custLangWordsHint": "Phan tach bang dau cach, dau phay hoac xuong dong",
   "custLangBaseHint": "Tuy chon; neu dat, ngon ngu co san nay lam nen",
   "custLangCaseInsensitive": "Bo qua chu hoa-thuong",
-  "custLangNeedWords": "Nhap it nhat mot tu khoa, hoac chon nen to sang"
+  "custLangNeedWords": "Nhap it nhat mot tu khoa, hoac chon nen to sang",
+  "hostsPort": "Cổng",
+  "hostsPortHint": "Bất kỳ",
+  "hostsHit": "Lượt khớp"
 }

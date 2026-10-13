@@ -2622,5 +2622,8 @@
   "custLangWordsHint": "Separa con espacios, comas o saltos de linea",
   "custLangBaseHint": "Opcional; si se define, ese lenguaje integrado sirve de base",
   "custLangCaseInsensitive": "Ignorar mayusculas",
-  "custLangNeedWords": "Escribe al menos una palabra clave, o elige una base"
+  "custLangNeedWords": "Escribe al menos una palabra clave, o elige una base",
+  "hostsPort": "Puerto",
+  "hostsPortHint": "Cualquiera",
+  "hostsHit": "Aciertos"
 }

@@ -3348,6 +3348,115 @@ class McpServer {
           return out;
         }
 
+      case 'list_hosts':
+        try {
+          var manager = await HostsManager.instance;
+          return {
+            'enabled': manager.enabled,
+            'total': manager.list.length,
+            'rules': manager.list
+                .map((e) => {
+                      ...e.toJson(),
+                      'hit_count': manager.hitsOf(e),
+                    })
+                .toList(),
+          };
+        } catch (e) {
+          return {'error': 'Failed to list hosts: $e'};
+        }
+
+      case 'set_host':
+        try {
+          final action = (args['action'] as String? ?? 'add').toLowerCase();
+          final host = (args['host'] as String? ?? '').trim();
+          if (host.isEmpty) return {'error': 'host is required'};
+          final port = args['port'] is int ? args['port'] as int : null;
+          var manager = await HostsManager.instance;
+
+          HostsItem? find() {
+            for (var it in manager.list) {
+              if (!it.isFolder && it.host == host) return it;
+            }
+            return null;
+          }
+
+          switch (action) {
+            case 'remove':
+              final item = find();
+              if (item == null) return {'error': 'No rule found for $host'};
+              await manager.removeHosts([item]);
+              _notifyConfigChanged('hosts', {'action': 'remove', 'host': host});
+              return {'status': 'success', 'message': 'Removed rule $host'};
+
+            case 'toggle':
+              final item = find();
+              if (item == null) return {'error': 'No rule found for $host'};
+              final enabled = args['enabled'] as bool? ?? !item.enabled;
+              item.enabled = enabled;
+              await manager.flushConfig();
+              _notifyConfigChanged('hosts', {'action': 'toggle', 'host': host, 'enabled': enabled});
+              return {
+                'status': 'success',
+                'host': host,
+                'enabled': enabled,
+              };
+
+            case 'update':
+              final item = find();
+              if (item == null) return {'error': 'No rule found for $host'};
+              final toAddress = (args['to_address'] as String? ?? '').trim();
+              if (toAddress.isEmpty) return {'error': 'to_address is required for update'};
+              item.toAddress = toAddress;
+              if (args.containsKey('port')) item.port = port;
+              await manager.flushConfig();
+              _notifyConfigChanged('hosts', {'action': 'update', 'host': host});
+              return {
+                'status': 'success',
+                'host': host,
+                'to_address': toAddress,
+                'port': item.port,
+              };
+
+            case 'add':
+            default:
+              final toAddress = (args['to_address'] as String? ?? '').trim();
+              if (toAddress.isEmpty) return {'error': 'to_address is required for add'};
+              final existing = find();
+              if (existing != null) {
+                existing.toAddress = toAddress;
+                if (args.containsKey('port')) existing.port = port;
+                existing.enabled = args['enabled'] as bool? ?? existing.enabled;
+                await manager.flushConfig();
+                _notifyConfigChanged('hosts', {'action': 'update', 'host': host});
+                return {
+                  'status': 'success',
+                  'message': 'Rule $host updated',
+                  'host': host,
+                  'to_address': toAddress,
+                  'port': existing.port,
+                };
+              }
+              final item = HostsItem(
+                host: host,
+                toAddress: toAddress,
+                port: port,
+                enabled: args['enabled'] as bool? ?? true,
+              );
+              await manager.addHosts(item);
+              await manager.flushConfig();
+              _notifyConfigChanged('hosts', {'action': 'add', 'host': host});
+              return {
+                'status': 'success',
+                'message': 'Rule $host added',
+                'host': host,
+                'to_address': toAddress,
+                'port': port,
+              };
+          }
+        } catch (e) {
+          return {'error': 'Failed to set host: $e'};
+        }
+
       default:
         // 自有工具未命中：转交官方工具源（规则 CRUD / 脚本 / Hosts / SSL / 构造请求等）
         try {

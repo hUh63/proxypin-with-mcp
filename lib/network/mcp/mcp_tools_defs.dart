@@ -1270,5 +1270,49 @@ request_id from get_recent_requests or search_requests.''',
           'required': ['steps'],
         },
       },
+      // ==================== Hosts / DNS override tools ====================
+      {
+        'name': 'list_hosts',
+        'description':
+            'List all Hosts rules (domain -> IP overrides, optional port) with their enabled '
+                'state and hit counts. Call this before set_host, or when the user asks how '
+                'domains are currently remapped.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+      {
+        'name': 'set_host',
+        'description':
+            'Create, update, enable/disable or remove a Hosts rule. Only the connection '
+                'target is overridden - the HTTP Host header and TLS SNI keep the original '
+                'domain, so certificates still validate. Useful for pointing a production '
+                'domain at a test server or bypassing bad DNS.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'action': {
+              'type': 'string',
+              'enum': ['add', 'update', 'remove', 'toggle'],
+              'description': 'Operation to perform (default add)',
+            },
+            'host': {
+              'type': 'string',
+              'description': 'Domain pattern, wildcards supported, e.g. *.example.com',
+            },
+            'to_address': {
+              'type': 'string',
+              'description': 'Target IP address (IPv4 or IPv6) for add/update',
+            },
+            'port': {
+              'type': 'integer',
+              'description': 'Optional port; omit or null to apply to every port',
+            },
+            'enabled': {
+              'type': 'boolean',
+              'description': 'For toggle: true to enable, false to disable',
+            },
+          },
+          'required': ['action', 'host'],
+        },
+      },
   ];
 }

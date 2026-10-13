@@ -65,7 +65,16 @@ class _HostsPageState extends State<HostsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(centerTitle: true, title: Text('Hosts', style: const TextStyle(fontSize: 16))),
+        appBar: AppBar(
+            centerTitle: true,
+            title: Text('Hosts', style: const TextStyle(fontSize: 16)),
+            actions: [
+              IconButton(
+                tooltip: localizations.reset,
+                icon: const Icon(Icons.restart_alt, size: 20),
+                onPressed: () => setState(() => hostsManager.resetHits()),
+              ),
+            ]),
         persistentFooterButtons: [multiple ? globalMenu() : const SizedBox()],
         body: Padding(
             padding: const EdgeInsets.all(8),
@@ -170,7 +179,7 @@ class _HostsPageState extends State<HostsPage> {
                           text: item.host,
                           textStyle: const TextStyle(fontSize: 14))),
                   Container(width: 15),
-                  Expanded(child: Text(item.toAddress ?? '', style: const TextStyle(fontSize: 14)))
+                  Expanded(child: _addressCell(item))
                 ],
               ))),
       if (item.isFolder)
@@ -181,6 +190,31 @@ class _HostsPageState extends State<HostsPage> {
                     .getFolderList(item.id)
                     .map((e) => row(e, !isEven, padding: EdgeInsets.only(left: 60)))
                     .toList()))
+    ]);
+  }
+
+  /// 目标地址单元格：命中过则附带次数（本次运行累计）。
+  Widget _addressCell(HostsItem item) {
+    if (item.isFolder) return const SizedBox.shrink();
+    final hits = widget.hostsManager.hitsOf(item);
+    final addr = item.displayAddress;
+    if (hits <= 0) {
+      return Text(addr, style: const TextStyle(fontSize: 14));
+    }
+    return Row(children: [
+      Flexible(
+          child: Text(addr,
+              overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14))),
+      const SizedBox(width: 6),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.teal.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Text('${localizations.hostsHit} $hits',
+            style: const TextStyle(fontSize: 11, color: Colors.teal)),
+      ),
     ]);
   }
 
@@ -428,6 +462,7 @@ class _HostsEditDialogState extends State<HostsEditDialog> {
   bool enabled = true;
   TextEditingController hostController = TextEditingController();
   TextEditingController toAddressController = TextEditingController();
+  TextEditingController portController = TextEditingController();
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -438,6 +473,7 @@ class _HostsEditDialogState extends State<HostsEditDialog> {
       enabled = widget.item!.enabled;
       hostController.text = widget.item!.host;
       toAddressController.text = widget.item!.toAddress ?? '';
+      portController.text = widget.item!.port?.toString() ?? '';
     }
   }
 
@@ -445,6 +481,7 @@ class _HostsEditDialogState extends State<HostsEditDialog> {
   void dispose() {
     hostController.dispose();
     toAddressController.dispose();
+    portController.dispose();
     super.dispose();
   }
 
@@ -463,18 +500,27 @@ class _HostsEditDialogState extends State<HostsEditDialog> {
                   return;
                 }
 
+                final portText = portController.text.trim();
+                final portValue = portText.isEmpty ? null : int.tryParse(portText);
+                if (portText.isNotEmpty && (portValue == null || portValue < 1 || portValue > 65535)) {
+                  FlutterToastr.show(localizations.mcpPortInvalid, context, position: FlutterToastr.center);
+                  return;
+                }
+
                 HostsItem? hostItem;
                 if (widget.item == null) {
                   hostItem = HostsItem(
                       enabled: enabled,
                       parent: widget.parent?.id,
                       host: hostController.text,
-                      toAddress: toAddressController.text);
+                      toAddress: toAddressController.text,
+                      port: portValue);
                   HostsManager.instance.then((it) => it.addHosts(hostItem!));
                 } else {
                   widget.item!.enabled = enabled;
                   widget.item!.host = hostController.text;
                   widget.item!.toAddress = toAddressController.text;
+                  widget.item!.port = portValue;
                   hostItem = widget.item;
                 }
 
@@ -501,6 +547,19 @@ class _HostsEditDialogState extends State<HostsEditDialog> {
                             hintStyle: TextStyle(color: Colors.grey),
                             errorStyle: TextStyle(height: 0, fontSize: 0),
                             border: OutlineInputBorder()))),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                SizedBox(width: 80, child: Text(localizations.hostsPort)),
+                Expanded(
+                    child: TextFormField(
+                        controller: portController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                            hintText: localizations.hostsPortHint,
+                            errorStyle: const TextStyle(height: 0, fontSize: 0),
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            border: const OutlineInputBorder()))),
               ]),
               const SizedBox(height: 10),
               Row(children: [

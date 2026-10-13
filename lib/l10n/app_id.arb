@@ -2622,5 +2622,8 @@
   "custLangWordsHint": "Pisahkan dengan spasi, koma, atau baris baru",
   "custLangBaseHint": "Opsional; jika diisi, bahasa bawaan ini jadi dasar",
   "custLangCaseInsensitive": "Abaikan huruf besar-kecil",
-  "custLangNeedWords": "Isi minimal satu kata kunci, atau pilih dasar highlighter"
+  "custLangNeedWords": "Isi minimal satu kata kunci, atau pilih dasar highlighter",
+  "hostsPort": "Port",
+  "hostsPortHint": "Semua",
+  "hostsHit": "Hit"
 }
