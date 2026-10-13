@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.66.00 (2026-10-14)
+
+### 修复：HTTP/1.1 pipelining 只有第一个请求被处理
+
+**根因**（上游原版就存在，非本轮引入）：`HttpCodec.decode` 在处理消息体时调用
+`data.readAvailableBytes()`，会把当前 buffer 里**全部**可读字节一次性取走交给
+`BodyReader`；而 `_readFixedLengthContent` 又无条件 `_bodyBuffer.add(data)`。
+于是当客户端把多个请求合并到同一次写入（HTTP/1.1 pipelining）时：
+
+1. 第一个请求的 body 会把后续请求的字节一并吞进自己的 body；
+2. `readAvailableBytes()` 已把 readerIndex 推到末尾，`channelRead` 随后
+   `buffer.clearRead()` 就把这些字节永久丢弃了。
+
+结果：同一连接上只有第一个请求得到处理，后续请求静默消失、客户端永远等不到响应。
+这也是上一轮把「继续解码剩余字节」的条件放宽到 HTTP/1.1 之后用例仍失败的原因——
+剩余字节在更早的 body 解析阶段就已经没了。
+
+**修法**（三处最小改动）：
+
+- `ByteBuf` 新增 `unreadBytes(int)`：回退读取位置，把「已读走但不属于当前消息」
+  的字节还给 buffer。
+- `BodyReader` 的 `Result` 新增 `consumedBytes`，按 `Content-Length` 精确消费，
+  并回报本次实际消费量（`-1` 表示全部消费，用于 chunked / 原样转发路径）。
+- `HttpCodec.decode` 在 body 解析后，把未消费的剩余字节 `unreadBytes` 退回 buffer，
+  供下一轮 `decode` 继续解析。
+
+chunked 路径的多余字节本就由 `ChunkedDecoder` 内部的 carry 缓冲保留，本次不改动它。
+
+**验证**：压测用例 `§1 pipelining`（同一次写入 10 个请求）由超时转为通过；
+2 MB 上传/下载、慢客户端分片、40 并发、200 轮混合等用例保持通过。
+
 ## v1.65.05 (2026-10-14)
 
 ### 诊断：HTTP/1.1 pipelining 定位（临时，非最终形态）
