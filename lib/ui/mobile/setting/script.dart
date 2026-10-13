@@ -386,7 +386,7 @@ class _ScriptLogSmallWindowState extends State<ScriptLogSmallWindow> {
                     Positioned(
                         top: -12,
                         right: -8,
-                        child: IconButton(tooltip: localizations.close, 
+                        child: IconButton(tooltip: AppLocalizations.of(context)!.close, 
                             onPressed: () => widget.floatingWindowManager.hide(),
                             icon: const Icon(Icons.close, size: 20))),
                     list()

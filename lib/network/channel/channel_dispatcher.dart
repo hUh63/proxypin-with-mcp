@@ -134,114 +134,121 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     buffer.add(msg);
 
     try {
-      if (remote != null) {
-        await remoteForward(channelContext, remote);
-        return;
-      }
+      // §4 迭代解码：一次 socket 读入可能含多帧（HTTP/2 尤其常见）。
+      // 用 while 循环代替原来的尾部递归，避免 M 帧 -> M 层栈深，也让 _pendingReads 不被放大。
+      while (true) {
+        if (remote != null) {
+          await remoteForward(channelContext, remote);
+          return;
+        }
 
-      Channel? remoteChannel = channelContext.getAttribute(channel.id);
+        Channel? remoteChannel = channelContext.getAttribute(channel.id);
 
-      //大body 不解析直接转发
-      if (buffer.length > Codec.maxBodyLength && handler is! RelayHandler && handler is! MqttRelayHandler && remoteChannel != null) {
-        logger.w("[$channel] forward large body");
-        relay(channelContext, channel, remoteChannel);
-        return;
-      }
+        //大body 不解析直接转发
+        if (buffer.length > Codec.maxBodyLength && handler is! RelayHandler && handler is! MqttRelayHandler && remoteChannel != null) {
+          logger.w("[$channel] forward large body");
+          relay(channelContext, channel, remoteChannel);
+          return;
+        }
 
-      var decodeResult = decoder.decode(channelContext, buffer);
+        var decodeResult = decoder.decode(channelContext, buffer);
 
-      //If the body does not support parsing, forward directly
-      if (decodeResult.supportedParse == false) {
-        await notSupportedForward(channelContext, channel, decodeResult);
-        return;
-      }
+        //If the body does not support parsing, forward directly
+        if (decodeResult.supportedParse == false) {
+          await notSupportedForward(channelContext, channel, decodeResult);
+          return;
+        }
 
-      if (decodeResult.forward != null) {
+        if (decodeResult.forward != null) {
+          buffer.clearRead();
+
+          if (remoteChannel != null) {
+            await remoteChannel.writeBytes(decodeResult.forward!);
+          } else if (channelContext.isHttp2PriorKnowledge && identical(channel, channelContext.clientChannel)) {
+            channelContext.bufferHttp2Frames(decodeResult.forward!);
+            await channelContext.sendInitialHttp2Settings();
+          } else {
+            logger.w("[$channel] forward remoteChannel is null");
+          }
+
+          if (decodeResult.data == null) {
+            return;
+          }
+        }
+
+        if (!decodeResult.isDone) {
+          return;
+        }
+
+        var length = buffer.length;
         buffer.clearRead();
 
-        if (remoteChannel != null) {
-          await remoteChannel.writeBytes(decodeResult.forward!);
-        } else if (channelContext.isHttp2PriorKnowledge && identical(channel, channelContext.clientChannel)) {
-          channelContext.bufferHttp2Frames(decodeResult.forward!);
-          await channelContext.sendInitialHttp2Settings();
-        } else {
-          logger.w("[$channel] forward remoteChannel is null");
+        var data = decodeResult.data;
+        if (data is HttpMessage) {
+          data.packageSize ??= length;
+          data.remoteHost = channel.remoteSocketAddress.host;
+          data.remotePort = channel.remoteSocketAddress.port;
         }
 
-        if (decodeResult.data == null) {
+        if (data is HttpRequest) {
+          if (data.protocolVersion == 'HTTP/2') {
+            final request = data;
+            final sent = channelContext.http2Requests.submit(request.streamId!, () async {
+              await prepareRequest(channelContext, channel, request);
+              if (channelContext.http2Requests.canForward(request.streamId!)) {
+                await handler.channelRead(channelContext, channel, request);
+              }
+            });
+            final guarded = sent.catchError((Object error, StackTrace trace) {
+              onError(channelContext, channel, error, trace: trace);
+            });
+            // 先排空现有帧，不能等较大流号发送后才去解析较小流号的后续 DATA。
+            if (buffer.isReadable()) await channelRead(channelContext, channel, Uint8List(0));
+            await guarded;
+            return;
+          }
+          await prepareRequest(channelContext, channel, data);
+        }
+
+        if (data is HttpResponse) {
+          data.request ??= channelContext.currentRequest;
+          data.requestId = data.request?.requestId ?? data.requestId;
+        }
+
+        //websocket协议
+        if (data is HttpResponse && data.isWebSocket && remoteChannel != null) {
+          onWebSocketHandle(channelContext, channel, data);
           return;
         }
-      }
 
-      if (!decodeResult.isDone) {
-        return;
-      }
-
-      var length = buffer.length;
-      buffer.clearRead();
-
-      var data = decodeResult.data;
-      if (data is HttpMessage) {
-        data.packageSize ??= length;
-        data.remoteHost = channel.remoteSocketAddress.host;
-        data.remotePort = channel.remoteSocketAddress.port;
-      }
-
-      if (data is HttpRequest) {
-        if (data.protocolVersion == 'HTTP/2') {
-          final request = data;
-          final sent = channelContext.http2Requests.submit(request.streamId!, () async {
-            await prepareRequest(channelContext, channel, request);
-            if (channelContext.http2Requests.canForward(request.streamId!)) {
-              await handler.channelRead(channelContext, channel, request);
-            }
-          });
-          final guarded = sent.catchError((Object error, StackTrace trace) {
-            onError(channelContext, channel, error, trace: trace);
-          });
-          // 先排空现有帧，不能等较大流号发送后才去解析较小流号的后续 DATA。
-          if (buffer.isReadable()) await channelRead(channelContext, channel, Uint8List(0));
-          await guarded;
-          return;
-        }
-        await prepareRequest(channelContext, channel, data);
-      }
-
-      if (data is HttpResponse) {
-        data.request ??= channelContext.currentRequest;
-        data.requestId = data.request?.requestId ?? data.requestId;
-      }
-
-      //websocket协议
-      if (data is HttpResponse && data.isWebSocket && remoteChannel != null) {
-        onWebSocketHandle(channelContext, channel, data);
-        return;
-      }
-
-      if (data is HttpMessage && channelContext.containsStreamDependency(data.streamId)) {
-        taskQueue.add(data.streamId!, channelContext.getStreamDependency(data.streamId!)?.streamDependency,
-            () => handler.channelRead(channelContext, channel, data),
-            onError: (error, stackTrace) => onError(channelContext, channel, error, trace: stackTrace));
-      } else {
-        await handler.channelRead(channelContext, channel, data!);
-      }
-
-      // h2 streaming 请求：HEADERS 帧 emit 后，buffer 里可能还留着已到达的 DATA
-      // 帧字节（HEADERS 之后同一次 socket 读入的内容）。此时不再触发新的
-      // channelRead（Chrome 已经把整段字节发到 socket），需要主动把剩余字节
-      // 交给 decoder，让 DATA 帧走 forward 透传到远端。
-      // 只做一次：递归调用里 decodeResult.data == null，走完 forward 后 return。
-      if (data is HttpMessage && data.streamingBody && buffer.isReadable()) {
-        Channel? remote = channelContext.getAttribute(channel.id);
-        if (remote == null) {
-          logger.e("[$channel] h2 streaming but remoteChannel is null, drop buffered data");
-          buffer.clear();
+        if (data is HttpMessage && channelContext.containsStreamDependency(data.streamId)) {
+          taskQueue.add(data.streamId!, channelContext.getStreamDependency(data.streamId!)?.streamDependency,
+              () => handler.channelRead(channelContext, channel, data),
+              onError: (error, stackTrace) => onError(channelContext, channel, error, trace: stackTrace));
         } else {
-          await channelRead(channelContext, channel, Uint8List(0));
+          await handler.channelRead(channelContext, channel, data!);
         }
-      } else if (data is HttpMessage && data.protocolVersion == 'HTTP/2' && buffer.isReadable()) {
-        // 一个TCP读事件可能包含多个完整流；不能依赖下一次socket事件继续解码。
-        await channelRead(channelContext, channel, Uint8List(0));
+
+        // h2 streaming 请求：HEADERS 帧 emit 后，buffer 里可能还留着已到达的 DATA
+        // 帧字节（HEADERS 之后同一次 socket 读入的内容）。此时不再触发新的
+        // channelRead（Chrome 已经把整段字节发到 socket），需要主动把剩余字节
+        // 交给 decoder，让 DATA 帧走 forward 透传到远端。
+        // 只做一次：递归调用里 decodeResult.data == null，走完 forward 后 return。
+        if (data is HttpMessage && data.streamingBody && buffer.isReadable()) {
+          Channel? remote = channelContext.getAttribute(channel.id);
+          if (remote == null) {
+            logger.e("[$channel] h2 streaming but remoteChannel is null, drop buffered data");
+            buffer.clear();
+          } else {
+            // §4：尾部递归改为继续循环（见函数头的 while），避免栈深随帧数增长
+            continue;
+          }
+        } else if (data is HttpMessage && data.protocolVersion == 'HTTP/2' && buffer.isReadable()) {
+          // 一个TCP读事件可能包含多个完整流；不能依赖下一次socket事件继续解码。
+          continue;
+        }
+        // 本次读入已无更多可解码内容
+        break;
       }
     } catch (error, trace) {
       onError(channelContext, channel, error, trace: trace);
