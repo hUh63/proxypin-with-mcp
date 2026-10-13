@@ -62,8 +62,13 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     handle(codec, codec, handler);
   }
 
-  /// 监听
+  /// 监听（已确定协议后的直接解析路径）。
+  ///
+  /// 走到这里说明不再需要 TLS / SOCKS / h2c 嗅探，因此把 [readEventHandler]
+  /// 复位为默认的 [channelRead]。TLS 解包是在**同一个 Channel** 上替换 socket 后
+  /// 重新调用本方法，若不复位会再次进入 `onEvent` 重复嗅探（甚至死循环）。
   void listen(Channel channel, ChannelContext channelContext) {
+    readEventHandler = null;
     buffer.clear();
     channel.socket.done.onError((error, StackTrace trace) {
       logger.e('[${channelContext.clientChannel?.id}] secureSocket done error', error: error, stackTrace: trace);
@@ -77,13 +82,36 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     channel.attachSocketSubscription(subscription);
   }
 
-  /// 把一次 socket 读事件排入串行队列（HTTP/1.1 读事件串行化的统一入口）。
+  /// 读事件的实际处理函数。
   ///
-  /// 所有读事件入口（[listen] 与 `Network.onEvent`）都必须走这里，
-  /// 否则仍会有并发读事件改写共享 [buffer]。
+  /// 默认是 [channelRead]（已解析的连接，如 `ChannelDispatcher.listen` 接管后）。
+  /// `Network.listen` 会在建立连接时把它换成 `onEvent`（需要先做 TLS / SOCKS /
+  /// h2c 嗅探），但**仍然经由同一个 [readQueue]** —— 这样不分连接类型，
+  /// 同一连接内所有读事件都严格串行，共享 [buffer] 不再被并发改写。
+  Future<void> Function(ChannelContext channelContext, Channel channel, Uint8List data)? readEventHandler;
+
+  /// 把一次 socket 读事件排入串行队列（所有读事件入口的唯一通道）。
+  ///
+  /// 走这里的理由见 [readQueue] 的注释：`Socket.listen` 回调不等待返回的 Future，
+  /// 上一条读事件若在 `await` 期间未结束，下一条就会并发进入。
   void enqueueRead(ChannelContext channelContext, Channel channel, Uint8List data) {
-    readQueue.add(++_readSeq, null, () => channelRead(channelContext, channel, data),
+    final handler = readEventHandler ?? channelRead;
+    readQueue.add(++_readSeq, null, () => handler(channelContext, channel, data),
         onError: (error, trace) => exceptionCaught(channelContext, channel, error, trace: trace));
+  }
+
+  /// 订阅 socket 读事件并统一走 [enqueueRead]（供不走标准 listen 的处理器复用，
+  /// 如出口 HTTP/2 的 [Http2ClientHandler]）。返回订阅以便通道关闭时取消。
+  StreamSubscription<Uint8List> enqueueReadSubscription(
+    ChannelContext channelContext,
+    Channel channel, {
+    Function? onError,
+    void Function()? onDone,
+  }) {
+    final subscription = channel.socket.listen((data) => enqueueRead(channelContext, channel, data),
+        onError: onError, onDone: onDone);
+    channel.attachSocketSubscription(subscription);
+    return subscription;
   }
 
   @override

@@ -1,5 +1,44 @@
 # Changelog
 
+## v1.64.00 (2026-10-14)
+
+### 网络层 §1 完整形态：三条读入口统一串行化 + 真实流量压测
+
+**§1 补齐**（`docs/network_robustness.md` 最后一项）
+
+此前只有 `ChannelDispatcher.listen` 一条读入口走了 `readQueue`；另外两条——`Network.listen`
+（`Server` / `Client` 都用它，走 `onEvent` 做 TLS / SOCKS / h2c 嗅探）和出口 HTTP/2 的
+`Http2ClientHandler.listen`——都是**直接** `socket.listen` 后并发处理。于是同一条连接
+仍可能出现两条读事件同时进入：一条在 `await` 连上游，另一条已经在读写**共享的**
+`buffer` / `byteBuf`，并与协议嗅探的状态切换交错。
+
+现在：
+
+- `ChannelDispatcher` 新增 `readEventHandler`。`enqueueRead` 调它（缺省为 `channelRead`），
+  于是「排进同一个队列」与「具体怎么处理」解耦。
+- `Network.listen` 改为 `enqueueRead`，并把处理函数设为 `onEvent`——嗅探逻辑与解析逻辑
+  从此**共享同一条串行队列**，语义不变、不再并发。
+- 出口 HTTP/2 走新增的 `enqueueReadSubscription`，同样入队。
+- `ChannelDispatcher.listen` 入口把 `readEventHandler` **复位为 null**。TLS 解包是在同一个
+  `Channel` 上替换 socket 后重新 `listen`，不复位会再次进入 `onEvent` 重复嗅探。
+- 未动的只有 `cloud_client.dart`（独立云客户端，不参与代理转发）。
+
+至此同一条连接内，**所有** socket 读事件严格串行，`buffer` 不再被并发改写。
+
+**真实流量压测**（`test/proxy_stress_test.dart`，真实 socket，CI 上会执行）
+
+| 用例 | 验证点 |
+|---|---|
+| 2 MB 上传 | 转发后上游收到的字节与客户端完全一致（FNV-1a 校验） |
+| 2 MB 下载 | 分块返回的响应逐字节比对一致（§3 切帧零拷贝） |
+| 20 个请求 pipelining | 一次性灌入不等响应，响应顺序与请求一一对应、不串包（§1） |
+| 1 MB 分片慢上传 | 16 KB 一片、每片间隔 2 ms，上游收到完整数据（§1） |
+| 40 并发连接 × 5 请求 | 全部 200 且 body 校验一致 |
+| 200 轮大小交替 | 小请求与大 body 混合，200 次全部成功 |
+
+这些用例不打 `integration` 标签，因此 `flutter test --exclude-tags integration`
+会真实执行；这也是 §1 / §3 / §4 三项改动的主要验证手段。
+
 ## v1.63.00 (2026-10-13)
 
 ### 网络层 §3 收尾：HTTP/2 编码侧的 O(n²) 切帧

@@ -50,7 +50,14 @@ abstract class Network {
     _channelInitializer.call(channel);
     channel.dispatcher.channelActive(channelContext, channel);
 
-    final subscription = channel.socket.listen((data) => onEvent(data, channelContext, channel),
+    // §1 读事件串行化：读事件先排进 dispatcher 的 readQueue，保证同一连接内严格
+    // 串行——socket.listen 回调不会等待返回的 Future，若让 onEvent 并发执行，
+    // 两条读事件会同时读写共享 buffer，并与 TLS/SOCKS 嗅探的状态切换交错。
+    // 这里通过 readEventHandler 把 onEvent 挂进队列，语义不变但不再并发。
+    channel.dispatcher.readEventHandler = (context, ch, data) => onEvent(data, context, ch);
+
+    final subscription = channel.socket.listen(
+        (data) => channel.dispatcher.enqueueRead(channelContext, channel, data),
         onError: (error, StackTrace trace) =>
             channel.dispatcher.exceptionCaught(channelContext, channel, error, trace: trace),
         onDone: () => channel.dispatcher.channelInactive(channelContext, channel));
