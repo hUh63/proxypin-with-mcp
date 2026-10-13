@@ -2646,5 +2646,10 @@
   "reverseProxyHint": "ตรงกัน",
   "reverseProxyHit": "กำลังรอรับ",
   "reverseProxyRunning": "ไม่ได้รอรับ",
-  "reverseProxyStopped": "ไม่ได้รอรับ"
+  "reverseProxyStopped": "ไม่ได้รอรับ",
+  "cmdPalette": "แผงคำสั่ง",
+  "cmdPaletteHint": "พิมพ์คำสั่ง…",
+  "cmdGroupNav": "นำทาง",
+  "cmdGroupAction": "การทำงาน",
+  "cmdGroupSetting": "การตั้งค่า"
 }

@@ -20,6 +20,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:proxypin/event/event_bus.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/ui/component/command_palette.dart';
+import 'package:proxypin/ui/mobile/setting/reverse_proxy.dart';
+import 'package:proxypin/ui/mobile/setting/hosts.dart';
+import 'package:proxypin/network/components/manager/hosts_manager.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/bin/listener.dart';
@@ -215,7 +219,9 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
       Toolbox(requestContainer: container)
     ];
 
-    return Scaffold(
+    return CommandPaletteShortcuts(
+        onOpen: _openCommandPalette,
+        child: Scaffold(
         appBar: Tab(
             child: Container(
           padding: EdgeInsets.only(bottom: 2.5),
@@ -250,7 +256,86 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
                   right: panel),
             )
           ],
-        ));
+        )));
+  }
+
+  /// 打开命令面板：把「能跳的页面」和「能做的动作」都收敛到一处。
+  void _openCommandPalette() {
+    final items = <CommandItem>[
+      CommandItem(
+        id: 'nav.capture',
+        label: localizations.requests,
+        group: localizations.cmdGroupNav,
+        icon: Icons.list_alt,
+        keywords: const ['capture', 'requests', 'list'],
+        onRun: () => _selectIndex.value = 0,
+      ),
+      CommandItem(
+        id: 'nav.favorite',
+        label: localizations.favorite,
+        group: localizations.cmdGroupNav,
+        icon: Icons.star_outline,
+        keywords: const ['favorite', 'bookmark'],
+        onRun: () => _selectIndex.value = 1,
+      ),
+      CommandItem(
+        id: 'nav.history',
+        label: localizations.history,
+        group: localizations.cmdGroupNav,
+        icon: Icons.history,
+        keywords: const ['history'],
+        onRun: () => _selectIndex.value = 2,
+      ),
+      CommandItem(
+        id: 'nav.toolbox',
+        label: localizations.toolbox,
+        group: localizations.cmdGroupNav,
+        icon: Icons.handyman_outlined,
+        keywords: const ['toolbox', 'tools'],
+        onRun: () => _selectIndex.value = 3,
+      ),
+      CommandItem(
+        id: 'action.clear',
+        label: localizations.clear,
+        group: localizations.cmdGroupAction,
+        icon: Icons.delete_outline,
+        keywords: const ['clear', 'delete'],
+        onRun: () {
+          container.clear();
+          requestListStateKey.currentState?.setState(() {});
+        },
+      ),
+      CommandItem(
+        id: 'open.reverseProxy',
+        label: localizations.reverseProxy,
+        hint: localizations.reverseProxyDesc,
+        group: localizations.cmdGroupSetting,
+        icon: Icons.swap_calls,
+        keywords: const ['reverse', 'proxy', 'upstream'],
+        onRun: () => _pushPage((_) => ReverseProxySetting(configuration: widget.configuration)),
+      ),
+      CommandItem(
+        id: 'open.hosts',
+        label: 'Hosts',
+        hint: localizations.toAddress,
+        group: localizations.cmdGroupSetting,
+        icon: Icons.dns_outlined,
+        keywords: const ['hosts', 'dns', 'ip'],
+        onRun: () => _pushPage((_) => FutureBuilder<HostsManager>(
+              future: HostsManager.instance,
+              builder: (_, snap) => snap.hasData ? HostsPage(hostsManager: snap.data!) : const SizedBox(),
+            )),
+      ),
+    ];
+
+    CommandPalette.show(context,
+        items: items, title: localizations.cmdPalette, hint: localizations.cmdPaletteHint);
+  }
+
+  void _pushPage(WidgetBuilder builder) {
+    Navigator.push(context, MaterialPageRoute(builder: builder)).whenComplete(() {
+      if (mounted) setState(() {});
+    });
   }
 
   //更新引导

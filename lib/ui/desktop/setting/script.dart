@@ -639,7 +639,7 @@ class _ScriptEditState extends State<ScriptEdit> {
                           const Spacer(),
                           Tooltip(
                               message: localizations.copy,
-                              child: IconButton(
+                              child: IconButton(tooltip: localizations.copy, 
                                   icon: const Icon(Icons.copy_all_outlined, size: 20),
                                   onPressed: () {
                                     Clipboard.setData(ClipboardData(text: script.text));

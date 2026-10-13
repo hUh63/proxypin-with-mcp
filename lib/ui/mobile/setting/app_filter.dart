@@ -174,7 +174,7 @@ class _AppWhitelistState extends State<AppWhitelist> {
                                   appInfo.icon == null ? const Icon(Icons.question_mark) : Image.memory(appInfo.icon!),
                               title: Text(appInfo.name ?? ""),
                               subtitle: Text(appInfo.packageName ?? ""),
-                              trailing: IconButton(
+                              trailing: IconButton(tooltip: localizations.delete, 
                                 icon: const Icon(Icons.delete),
                                 onPressed: () {
                                   showConfirmDialog(context,
@@ -328,7 +328,7 @@ class _AppBlacklistState extends State<AppBlacklist> {
                       leading: appInfo.icon == null ? const Icon(Icons.question_mark) : Image.memory(appInfo.icon!),
                       title: Text(appInfo.name ?? ""),
                       subtitle: Text(appInfo.packageName ?? ""),
-                      trailing: IconButton(
+                      trailing: IconButton(tooltip: localizations.delete, 
                         icon: const Icon(Icons.delete),
                         onPressed: () {
                           showConfirmDialog(context,

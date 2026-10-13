@@ -386,7 +386,7 @@ class _ScriptLogSmallWindowState extends State<ScriptLogSmallWindow> {
                     Positioned(
                         top: -12,
                         right: -8,
-                        child: IconButton(
+                        child: IconButton(tooltip: localizations.close, 
                             onPressed: () => widget.floatingWindowManager.hide(),
                             icon: const Icon(Icons.close, size: 20))),
                     list()
@@ -757,7 +757,7 @@ class _ScriptEditState extends State<ScriptEdit> {
                             const Spacer(),
                             Tooltip(
                                 message: localizations.copy,
-                                child: IconButton(
+                                child: IconButton(tooltip: localizations.copy, 
                                     icon: const Icon(Icons.copy_all_outlined, size: 20),
                                     onPressed: () {
                                       Clipboard.setData(ClipboardData(text: script.text));
@@ -770,7 +770,7 @@ class _ScriptEditState extends State<ScriptEdit> {
                                     onPressed: _useRemote ? null : _resetScript)),
                             Tooltip(
                                 message: localizations.clear,
-                                child: IconButton(
+                                child: IconButton(tooltip: localizations.delete, 
                                     icon: const Icon(Icons.delete_sweep_outlined, size: 22),
                                     onPressed: _useRemote
                                         ? null

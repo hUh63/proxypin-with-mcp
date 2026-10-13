@@ -192,7 +192,7 @@ class RewriteReplaceState extends State<MobileRewriteReplace> {
                     }))),
         Expanded(
             child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          IconButton(icon: Icon(Icons.search, size: 20), onPressed: () => findController.toggleActive()),
+          IconButton(tooltip: localizations.search, icon: Icon(Icons.search, size: 20), onPressed: () => findController.toggleActive()),
           IconButton(
             tooltip: 'JSON Format',
             icon:

@@ -68,14 +68,19 @@ class _LeftNavigationBarState extends State<LeftNavigationBar> {
             return const SizedBox();
           }
 
+          // 窄窗口适配：宽度不足时收成纯图标栏，把空间让给请求列表与详情面板。
+          final compact = MediaQuery.of(context).size.width < 820;
+
           return Container(
-            width: (localizations.localeName == 'zh' || localizations.localeName == 'zh_Hant') ? 57 : 70,
+            width: compact
+                ? 54
+                : (localizations.localeName == 'zh' || localizations.localeName == 'zh_Hant') ? 57 : 70,
             decoration:
                 BoxDecoration(border: Border(right: BorderSide(color: Theme.of(context).dividerColor, width: 0.2))),
             child: Column(children: <Widget>[
               SizedBox(
-                height: 320,
-                child: leftNavigation(index),
+                height: compact ? 250 : 320,
+                child: leftNavigation(index, compact: compact),
               ),
               Expanded(
                   child: Column(
@@ -110,14 +115,14 @@ class _LeftNavigationBarState extends State<LeftNavigationBar> {
   }
 
   //left menu eg: requests, favorites, history, toolbox
-  Widget leftNavigation(int index) {
+  Widget leftNavigation(int index, {bool compact = false}) {
     return NavigationRail(
-        minWidth: 57,
+        minWidth: compact ? 54 : 57,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         selectedIconTheme: IconTheme.of(context).copyWith(color: Theme.of(context).colorScheme.primary, size: 22),
         unselectedIconTheme:
             IconTheme.of(context).copyWith(color: IconTheme.of(context).color?.withValues(alpha: 0.55), size: 22),
-        labelType: NavigationRailLabelType.all,
+        labelType: compact ? NavigationRailLabelType.none : NavigationRailLabelType.all,
         destinations: destinations,
         selectedIndex: index,
         onDestinationSelected: (int index) {

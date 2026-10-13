@@ -2646,5 +2646,10 @@
   "reverseProxyHint": "Luot khop",
   "reverseProxyHit": "Dang lang nghe",
   "reverseProxyRunning": "Khong lang nghe",
-  "reverseProxyStopped": "Khong lang nghe"
+  "reverseProxyStopped": "Khong lang nghe",
+  "cmdPalette": "Bang lenh",
+  "cmdPaletteHint": "Nhap lenh…",
+  "cmdGroupNav": "Dieu huong",
+  "cmdGroupAction": "Hanh dong",
+  "cmdGroupSetting": "Cai dat"
 }

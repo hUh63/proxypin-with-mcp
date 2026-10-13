@@ -2646,5 +2646,10 @@
   "reverseProxyHint": "Hit",
   "reverseProxyHit": "Mendengarkan",
   "reverseProxyRunning": "Tidak mendengarkan",
-  "reverseProxyStopped": "Tidak mendengarkan"
+  "reverseProxyStopped": "Tidak mendengarkan",
+  "cmdPalette": "Palet perintah",
+  "cmdPaletteHint": "Ketik perintah…",
+  "cmdGroupNav": "Navigasi",
+  "cmdGroupAction": "Tindakan",
+  "cmdGroupSetting": "Pengaturan"
 }

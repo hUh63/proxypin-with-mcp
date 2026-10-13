@@ -455,7 +455,7 @@ class _VariableRowState extends State<_VariableRow> {
             onSelected: (key) => _insertAtCursor(valueCtrl, '{{$key}}'),
           ),
         ),
-        IconButton(
+        IconButton(tooltip: localizations.delete, 
           padding: EdgeInsets.zero,
           splashRadius: 18,
           constraints: const BoxConstraints(minWidth: 30, minHeight: 30),

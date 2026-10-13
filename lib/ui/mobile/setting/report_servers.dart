@@ -126,9 +126,9 @@ class _ReportServersPageMobileState extends State<ReportServersPageMobile> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // IconButton(
+                          // IconButton(tooltip: localizations.edit, 
                           //     onPressed: () => _editServer(idx), icon: const Icon(Icons.edit_outlined, size: 23)),
-                          IconButton(
+                          IconButton(tooltip: localizations.delete, 
                               onPressed: () => _confirmDelete(idx), icon: const Icon(Icons.delete_outline, size: 23)),
                         ],
                       ),

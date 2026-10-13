@@ -4583,5 +4583,10 @@
   "reverseProxyHint": "Hits",
   "reverseProxyHit": "Listening",
   "reverseProxyRunning": "Not listening",
-  "reverseProxyStopped": "Not listening"
+  "reverseProxyStopped": "Not listening",
+  "cmdPalette": "Command palette",
+  "cmdPaletteHint": "Type a command…",
+  "cmdGroupNav": "Navigate",
+  "cmdGroupAction": "Actions",
+  "cmdGroupSetting": "Settings"
 }

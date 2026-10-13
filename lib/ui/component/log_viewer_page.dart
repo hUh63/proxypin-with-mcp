@@ -651,7 +651,7 @@ class LogSearchDelegate extends SearchDelegate<String> {
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
-      IconButton(
+      IconButton(tooltip: localizations.clear, 
         icon: const Icon(Icons.clear),
         onPressed: () {
           query = '';

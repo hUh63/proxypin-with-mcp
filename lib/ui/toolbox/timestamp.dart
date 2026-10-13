@@ -96,7 +96,7 @@ class _TimestampPageState extends State<TimestampPage> {
                 width: 100,
                 child: TextField(
                     controller: nowTimestamp, readOnly: true, decoration: InputDecoration(border: InputBorder.none))),
-            IconButton(
+            IconButton(tooltip: localizations.copy, 
                 icon: Icon(Icons.copy, size: 18),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: nowTimestamp.text));
@@ -172,7 +172,7 @@ class _TimestampPageState extends State<TimestampPage> {
         onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
         decoration: decoration(context,
             hintText: 'timestamp',
-            suffixIcon: IconButton(icon: Icon(Icons.clear, size: 20), onPressed: () => timestamp.clear())));
+            suffixIcon: IconButton(tooltip: localizations.clear, icon: Icon(Icons.clear, size: 20), onPressed: () => timestamp.clear())));
   }
 
   Widget timestampOutField() {
@@ -181,7 +181,7 @@ class _TimestampPageState extends State<TimestampPage> {
   }
 
   Widget timestampOutCopyButton() {
-    return IconButton(
+    return IconButton(tooltip: localizations.copy, 
         icon: Icon(Icons.copy, size: 22),
         onPressed: () {
           if (timestampOut.text.isEmpty) return;
@@ -200,7 +200,7 @@ class _TimestampPageState extends State<TimestampPage> {
         onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
         decoration: decoration(context,
             hintText: 'yyyy-MM-dd HH:mm:ss',
-            suffixIcon: IconButton(icon: Icon(Icons.clear, size: 20), onPressed: () => dateTime.clear())));
+            suffixIcon: IconButton(tooltip: localizations.clear, icon: Icon(Icons.clear, size: 20), onPressed: () => dateTime.clear())));
   }
 
   Widget timeButton() {
@@ -219,7 +219,7 @@ class _TimestampPageState extends State<TimestampPage> {
   }
 
   Widget timeOutCopyButton() {
-    return IconButton(
+    return IconButton(tooltip: localizations.copy, 
         icon: Icon(Icons.copy, size: 22),
         onPressed: () {
           if (dateTimeOut.text.isEmpty) return;

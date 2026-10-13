@@ -2647,5 +2647,10 @@
   "reverseProxyHint": "Acertos",
   "reverseProxyHit": "Escutando",
   "reverseProxyRunning": "Sem escuta",
-  "reverseProxyStopped": "Sem escuta"
+  "reverseProxyStopped": "Sem escuta",
+  "cmdPalette": "Paleta de comandos",
+  "cmdPaletteHint": "Digite um comando…",
+  "cmdGroupNav": "Navegar",
+  "cmdGroupAction": "Acoes",
+  "cmdGroupSetting": "Configuracoes"
 }

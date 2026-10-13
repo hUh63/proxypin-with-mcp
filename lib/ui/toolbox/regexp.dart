@@ -243,7 +243,7 @@ class _RegExpPageState extends State<RegExpPage> {
             decoration: decoration(context,
                 label: localizations.regexpPattern,
                 hintText: localizations.regexpPatternHint,
-                suffixIcon: IconButton(icon: const Icon(Icons.clear), onPressed: () => pattern.clear())),
+                suffixIcon: IconButton(tooltip: localizations.clear, icon: const Icon(Icons.clear), onPressed: () => pattern.clear())),
           ),
           const SizedBox(height: 6),
           _modifierRow(primaryColor),

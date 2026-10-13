@@ -4447,5 +4447,10 @@
   "reverseProxyHint": "命中",
   "reverseProxyHit": "監聽中",
   "reverseProxyRunning": "未監聽",
-  "reverseProxyStopped": "未監聽"
+  "reverseProxyStopped": "未監聽",
+  "cmdPalette": "命令面板",
+  "cmdPaletteHint": "輸入指令…",
+  "cmdGroupNav": "導覽",
+  "cmdGroupAction": "操作",
+  "cmdGroupSetting": "設定"
 }

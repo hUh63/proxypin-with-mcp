@@ -459,7 +459,7 @@ class _VarRowState extends State<_VarRow> {
           onPressed: () => _showBuiltInPicker(l, valueCtrl),
           icon: Icon(Icons.code, size: 18, color: Colors.grey.shade500),
         ),
-        IconButton(
+        IconButton(tooltip: localizations.delete, 
           onPressed: widget.onDelete,
           icon: Icon(Icons.delete_outline, size: 18, color: Colors.grey.shade500),
         ),

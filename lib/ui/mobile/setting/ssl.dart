@@ -839,7 +839,7 @@ class _IosCaInstallState extends State<IosCaInstall> {
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.installRootCa, style: const TextStyle(fontSize: 16)),
-        actions: [IconButton(onPressed: _refreshStatus, icon: const Icon(Icons.refresh))],
+        actions: [IconButton(tooltip: localizations.refresh, onPressed: _refreshStatus, icon: const Icon(Icons.refresh))],
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())

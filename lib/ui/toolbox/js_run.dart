@@ -150,7 +150,7 @@ class _JavaScriptState extends State<JavaScript> {
                     style: TextStyle(fontSize: 16, color: primaryColor, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 15),
                 //copy
-                IconButton(
+                IconButton(tooltip: localizations.copy, 
                     icon: Icon(Icons.copy, color: primaryColor, size: 18),
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: outLines.join("\n")));
