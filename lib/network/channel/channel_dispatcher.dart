@@ -271,8 +271,13 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
             // §4：尾部递归改为继续循环（见函数头的 while），避免栈深随帧数增长
             continue;
           }
-        } else if (data is HttpMessage && data.protocolVersion == 'HTTP/2' && buffer.isReadable()) {
-          // 一个TCP读事件可能包含多个完整流；不能依赖下一次socket事件继续解码。
+        } else if (data is HttpMessage && buffer.isReadable()) {
+          // 一次 TCP 读入可能包含多个完整消息：HTTP/2 是多个流，HTTP/1.1 则是
+          // pipelining 的多个请求（也可能是紧跟其后的下一个 keep-alive 请求）。
+          // 这些字节都已经到达，不会再触发新的 socket 读事件，必须在这里继续解码；
+          // 否则剩余的请求会一直留在 buffer 里，客户端永远等不到响应。
+          // 若剩余字节还不足以构成一条完整消息，decode 会返回 isDone == false，
+          // 上面会直接 return，因此不会空转。
           continue;
         }
         // 本次读入已无更多可解码内容

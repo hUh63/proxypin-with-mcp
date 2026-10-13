@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.65.02 (2026-10-14)
+
+### 压测挖出的真 bug：HTTP/1.1 pipelining 时只有第一个请求被处理
+
+「一个 TCP 读入里可能有多个完整消息」这件事，代码里只对 **HTTP/2** 处理了：
+
+```dart
+} else if (data is HttpMessage && data.protocolVersion == 'HTTP/2' && buffer.isReadable()) {
+  continue;   // 继续解码剩余帧
+}
+```
+
+HTTP/1.1 走不到这个分支。于是当客户端在**同一次** TCP 写入里发出多个请求
+（pipelining，或者连续两个 keep-alive 请求恰好被合并到一个读事件）时：
+
+- 第一个请求被正常解析并转发；
+- 其余请求的字节**留在 buffer 里**；
+- 因为客户端已经把数据全发完了，之后**不会再有 socket 读事件**；
+- 于是这些请求永远不会被处理，客户端一直等不到响应 —— 压测里表现为 30 秒超时。
+
+修法：去掉 `protocolVersion == 'HTTP/2'` 限制，只要 buffer 里还有可读字节就继续
+解码。剩余字节不足以构成完整消息时，`decode` 会返回 `isDone == false` 并提前
+`return`，所以不会空转。
+
+这个 bug **不是本系列改动引入的**（条件判断一直是 HTTP/2 专用），只是此前没有
+覆盖 pipelining 的测试，一直没暴露。压测补上后立刻就抓出来了。
+
 ## v1.65.01 (2026-10-14)
 
 ### 压测：pipelining 用例不再断言响应顺序
