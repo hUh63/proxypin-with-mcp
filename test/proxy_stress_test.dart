@@ -87,11 +87,38 @@ Future<(String, Map<String, String>, List<int>)> readHead(StreamIterator<List<in
   return (lines.first, headers, rest);
 }
 
-int _indexOfDoubleCrlf(List<int> b) {
-  for (var i = 0; i + 3 < b.length; i++) {
+int _indexOfDoubleCrlf(List<int> b, [int from = 0]) {
+  for (var i = from; i + 3 < b.length; i++) {
     if (b[i] == 13 && b[i + 1] == 10 && b[i + 2] == 13 && b[i + 3] == 10) return i;
   }
   return -1;
+}
+
+/// 从累积的字节流里按 Content-Length 边界切出所有**完整**的响应体，
+/// 返回每个响应体的文本。
+///
+/// 不用 StreamIterator 逐条读：pipelining 下多个响应常常落在同一次到达里，
+/// 逐条读会在「读到下一条响应头」时把上一条剩余的字节丢掉。
+List<String> _parseResponseBodies(List<int> all) {
+  final bodies = <String>[];
+  var off = 0;
+  while (true) {
+    final headEnd = _indexOfDoubleCrlf(all, off);
+    if (headEnd < 0) break;
+    final headText = latin1.decode(all.sublist(off, headEnd));
+    var len = 0;
+    for (final line in headText.split('\r\n').skip(1)) {
+      final c = line.indexOf(':');
+      if (c > 0 && line.substring(0, c).trim().toLowerCase() == 'content-length') {
+        len = int.tryParse(line.substring(c + 1).trim()) ?? 0;
+      }
+    }
+    final bodyStart = headEnd + 4;
+    if (bodyStart + len > all.length) break; // body 还没到齐
+    bodies.add(utf8.decode(all.sublist(bodyStart, bodyStart + len)));
+    off = bodyStart + len;
+  }
+  return bodies;
 }
 
 void main() {
@@ -308,7 +335,6 @@ void main() {
 
     const n = 10;
     final socket = await io.Socket.connect('127.0.0.1', proxyPort);
-    final it = StreamIterator(socket);
 
     final expectedLengths = <String>[];
     final buf = StringBuffer();
@@ -325,22 +351,20 @@ void main() {
       socket.add(body);
     }
 
-    final actualLengths = <String>[];
-    for (var i = 0; i < n; i++) {
-      final (statusLine, headers, rest) = await readHead(it).timeout(const Duration(seconds: 5));
-      expect(int.parse(statusLine.split(' ')[1]), 200, reason: '第 $i 个响应不是 200');
-      final len = int.tryParse(headers['content-length'] ?? '') ?? 0;
-      var payload = rest;
-      while (payload.length < len) {
-        if (!await it.moveNext()) break;
-        payload.addAll(it.current);
-      }
-      actualLengths.add(utf8.decode(payload.sublist(0, min(payload.length, len))));
+    // 累积所有到达字节，按响应边界切分（不依赖到达顺序、不丢字节）。
+    final received = <int>[];
+    final sub = socket.listen((d) => received.addAll(d));
+    List<String> actualLengths = _parseResponseBodies(received);
+    final deadline = DateTime.now().add(const Duration(seconds: 8));
+    while (actualLengths.length < n && DateTime.now().isBefore(deadline)) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      actualLengths = _parseResponseBodies(received);
     }
+    await sub.cancel();
 
     // 每个请求恰好有一个响应：丢了、重了、串了都会在这里暴露。
     // 不断言顺序——pipelining 的响应顺序由上游决定，proxy 逐条独立转发，不做保证。
-    expect(actualLengths.length, n);
+    expect(actualLengths.length, n, reason: '应收到 $n 个响应，实际 ${actualLengths.length} 个');
     expect(actualLengths.toList()..sort(), expectedLengths.toList()..sort(),
         reason: '响应集合必须与请求集合一一对应');
     expect(matchedAtOrigin, n, reason: '上游应收到全部 $n 个请求');
