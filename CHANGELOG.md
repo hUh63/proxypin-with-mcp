@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.67.04 (2026-10-15)
+
+### 修复：虚拟化高亮「切换到下一个匹配」时自动滚动失效
+
+第 9 个存量失败（也是本轮最后 1 个）根因：
+
+`_updateSearchState` 在 post-frame 回调里判断需要滚动后，调用
+`_scheduleScrollToCurrentMatch`，后者把滚动**再推迟一帧**（另一个
+post-frame 回调）。但首次搜索之外的情况——例如 `moveNext()` 切到下一个
+匹配——`updateMatchCount()` 的值没变、`value = copyWith(...)` 的
+`SearchSettings` 与新值相等（定义了 `==`），两者都不触发 `notifyListeners`，
+因此**没有任何 widget 需要重建、也就没有下一帧**；被推迟的滚动回调永远
+不会执行，自动跳转静默失效。
+
+修复：注册回调后显式 `WidgetsBinding.instance.scheduleFrame()`，保证它一定
+有一帧可以运行。同时在滚动后 `await endOfFrame` 让 `itemPositionsListener`
+刷新，再做「目标块是否进入视口」的校验，避免因位置未刷新而误判/额外抖动。
+
+诊断日志（v1.67.02/v1.67.03 加入）与测试里的临时打印已全部移除。
+
 ## v1.67.03 (2026-10-15)
 
 ### 临时诊断（二）：虚拟化高亮滚动（下一步移除）

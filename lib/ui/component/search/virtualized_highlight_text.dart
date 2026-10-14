@@ -169,7 +169,6 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
 
   void _updateSearchState(HighlightTextDocument document) {
     if (_searchUpdateScheduled) {
-      logger.w('[VHT2] update skipped (already scheduled)');
       return;
     }
     _searchUpdateScheduled = true;
@@ -180,11 +179,6 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
       // 使用缓存的文档，确保使用最新的数据
       final cachedDoc = _cachedDocument;
       if (cachedDoc == null) return;
-
-      logger.w('[VHT2] pfc cur=${widget.searchController.currentMatchIndex.value} '
-          'last=$_lastScrolledMatchIndex should=${widget.searchController.shouldSearch()} '
-          'overlay=${widget.searchController.isSearchOverlayVisible} '
-          'pattern=${widget.searchController.patternController.text} total=${cachedDoc.totalMatchCount}');
 
       final settings = widget.searchController.value;
       final searchSignature = '${settings.pattern}|${settings.isCaseSensitive}|${settings.isRegExp}';
@@ -214,6 +208,10 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
       }
       _scrollToCurrentMatch(document, requestId);
     });
+    // 这里注册的是「下一帧」的回调，但切换到下一个匹配（moveNext）时
+    // updateMatchCount/notifyListeners 都是空操作（值未变化 → 不重建），
+    // 若不主动请求一帧，该回调永远不会执行，自动滚动静默失效。
+    WidgetsBinding.instance.scheduleFrame();
   }
 
   Future<void> _scrollToCurrentMatch(HighlightTextDocument document, int requestId, [int attempt = 0]) async {
@@ -251,11 +249,6 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
     double alignment = (lineOffsetInChunk + 0.5) / chunkLineCount;
     alignment = alignment.clamp(0.1, 0.9);
 
-    final vp0 = itemPositionsListener.itemPositions.value;
-    logger.w('[VHT] target match=$matchIndex line=$lineIndex chunk=$chunkIndex attempt=$attempt '
-        'attached=${itemScrollController.isAttached} chunks=${chunks.length} total=${document.totalMatchCount} '
-        'viewport=${vp0.isEmpty ? "empty" : "${vp0.map((p) => p.index).reduce(min)}-${vp0.map((p) => p.index).reduce(max)}"}');
-
     // 如果 itemScrollController 尚未 attach，则延迟一帧重试一次
     if (!itemScrollController.isAttached) {
       if (attempt >= 7) {
@@ -274,6 +267,9 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
         alignment: alignment,
       );
 
+      // 让 itemPositionsListener 刷新到滚动后的位置，再做可见性校验。
+      await WidgetsBinding.instance.endOfFrame;
+
       // ScrollablePositionedList 对尚未构建的项使用估算高度，长距离跳转
       // （例如从第 24 行跳到第 260 行）可能落不到目标块上。滚动结束后校验
       // 一次：目标块不在视口内就再修正一次（有次数上限，不会反复抖动）。
@@ -281,10 +277,6 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
         await WidgetsBinding.instance.endOfFrame;
         return _scrollToCurrentMatch(document, requestId, attempt + 1);
       }
-
-      final vp1 = itemPositionsListener.itemPositions.value;
-      logger.w('[VHT] scrolled chunk=$chunkIndex visible=${_isChunkVisible(chunkIndex)} '
-          'viewport=${vp1.isEmpty ? "empty" : "${vp1.map((p) => p.index).reduce(min)}-${vp1.map((p) => p.index).reduce(max)}"}');
 
       // 只在滚动成功后更新 lastScrolled，避免失败后丢失同一索引的重试机会。
       _lastScrolledMatchIndex = matchIndex;

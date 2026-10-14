@@ -69,16 +69,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.currentMatchIndex.value, 1);
-      if (find.text('line 260 target').evaluate().isEmpty) {
-        final texts = tester
-            .widgetList<Text>(find.byType(Text))
-            .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
-            .where((t) => t.isNotEmpty)
-            .toList();
-        // ignore: avoid_print
-        print('DIAG-V rendered=${texts.length} has260=${texts.any((t) => t.contains('260'))} '
-            'sample=${texts.take(4).toList()}');
-      }
       expect(find.text('line 260 target'), findsOneWidget);
 
       await _disposeController(tester, controller);
