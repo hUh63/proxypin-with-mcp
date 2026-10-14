@@ -171,10 +171,31 @@ class ChannelContext {
     await Future.wait(writes);
   }
 
+  /// 被客户端 RST_STREAM 取消的流 id。
+  ///
+  /// 取消后 `_streams` 里已无该流上下文，若后续仍收到它的 DATA 帧，
+  /// `getMessage` 返回 null 会被当成「HEADERS 未到」而**原样转发**给上游——
+  /// 但该流在上游从未打开，转发是协议违例（上游会报错/断连）。
+  /// 因此记录取消过的流，供解码器丢弃其残留帧。
+  final Set<int> _cancelledStreams = {};
+
+  /// 取消流记录的保留上限，避免长连接上无界增长（h2 流 id 单调递增、不会复用）。
+  static const int _maxCancelledStreams = 100000;
+
+  bool isStreamCancelled(int streamId) => _cancelledStreams.contains(streamId);
+
+  void markStreamCancelled(int streamId) {
+    _cancelledStreams.add(streamId);
+    while (_cancelledStreams.length > _maxCancelledStreams) {
+      _cancelledStreams.remove(_cancelledStreams.first);
+    }
+  }
+
   /// 上游尚未打开的流不能收到 RST_STREAM，否则会牵连其它复用请求。
   bool cancelHttp2Request(int streamId) {
     final forwarded = _forwardedHttp2Streams.contains(streamId);
     http2Requests.cancel(streamId);
+    markStreamCancelled(streamId);
     removeStream(streamId);
     return forwarded;
   }

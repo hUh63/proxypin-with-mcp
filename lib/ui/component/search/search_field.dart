@@ -49,9 +49,11 @@ class _SearchFieldState extends State<SearchField> {
       width: searchBoxWidth,
       child: Material(
           elevation: 1,
-          child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.end, children: [
-            SizedBox(
-              width: Platforms.isDesktop() ? 260 : 220,
+          // 输入框改为 Expanded：容器宽度固定（min(450, 屏宽-20)），
+          // 固定宽度的输入框 + 结果区/翻页/关闭按钮在桌面会超出容器
+          // （约 498 > 450，RenderFlex 溢出 48px）。让输入框吃掉剩余空间即可。
+          child: Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.end, children: [
+            Expanded(
               child: TextField(
                 autofocus: true,
                 focusNode: focusNode,

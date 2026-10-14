@@ -46,8 +46,11 @@ void main() {
     final response = HttpResponse(HttpStatus.ok);
     final favorite = Favorite(request, response: response);
 
+    // 120 帧 × 16KB = 1.875MB，必须超过 maxWebSocketPayloadBytesPerFavorite(1MB)
+    // 才会触发按字节裁剪。原先用 3KB（合计 360KB）达不到阈值，函数会正确地
+    // 返回 false，测试却断言 true——属测试数据未越过阈值。
     for (int i = 0; i < 120; i++) {
-      final frame = _frame(i, fromClient: i.isEven, payloadBytes: 3 * 1024);
+      final frame = _frame(i, fromClient: i.isEven, payloadBytes: 16 * 1024);
       if (i.isEven) {
         request.messages.add(frame);
       } else {

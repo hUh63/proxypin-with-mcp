@@ -125,6 +125,15 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
   DecoderResult<T> parseHttp2Packet(ChannelContext channelContext, FrameHeader frameHeader, List<int> framePayload) {
     var result = DecoderResult<T>(isDone: false);
 
+    // 客户端已 RST_STREAM 取消该流：忽略其后续任何帧（HEADERS/CONTINUATION/DATA）。
+    // 否则残留 DATA 会因为取不到流上下文而被当成「HEADERS 未到」原样转发给上游，
+    // 而该流在上游从未打开，属于协议违例；残留 HEADERS 还会重新打开一个已取消的流。
+    if (this is Http2RequestDecoder &&
+        frameHeader.streamIdentifier != 0 &&
+        channelContext.isStreamCancelled(frameHeader.streamIdentifier)) {
+      return result;
+    }
+
     // logger.d(
     //     "[${channelContext.clientChannel?.id}] ${this is Http2RequestDecoder ? 'request' : 'response'} streamId:${frameHeader.streamIdentifier} ${frameHeader.type} endHeaders: ${frameHeader.hasEndHeadersFlag} "
     //     "endStream: ${frameHeader.hasEndStreamFlag} ${frameHeader.length}");

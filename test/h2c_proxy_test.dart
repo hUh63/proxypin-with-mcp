@@ -426,9 +426,11 @@ void main() {
 
   test('filtered h2c connections keep protocol framing without recording traffic', () async {
     final saved = HostFilter.blacklist.toJson();
+    // 上游 #225 起，带 path 的调用匹配目标是 `host + path`，
+    // 因此规则不能只写 `^127\.0\.0\.1$`（那样连不上 /filtered-a）。
     HostFilter.blacklist.load({
       'enabled': true,
-      'list': [r'^127\.0\.0\.1$']
+      'list': [r'^127\.0\.0\.1(:\d+)?(/.*)?$']
     });
     try {
       final peer = await client();

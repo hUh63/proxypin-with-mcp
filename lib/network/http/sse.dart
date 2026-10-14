@@ -38,14 +38,24 @@ class SseDecoder {
     _utf8Sink.add(bytes);
 
     final String current = _lineBuf.toString();
-    int start = _scanOffset;
+    // 必须区分两个位置：
+    //  - searchFrom：继续查找 '\n' 的起点（其之前已确认不含 '\n'，避免重复扫描）；
+    //  - lineStart ：当前（可能尚未结束的）行在 current 中的起点。
+    // 早先二者共用一个变量。逐字节喂入时 searchFrom 会等于 current.length，
+    // 新到的 '\n' 恰好落在该下标上，把 searchFrom 当行起点就会解析出空行、
+    // 整行被丢弃（sse_chunked_test 的逐字节用例即由此失败）。
+    int searchFrom = _scanOffset;
+    int lineStart = 0;
+    int consumedEnd = 0;
 
     while (true) {
-      final int nl = current.indexOf('\n', start);
+      final int nl = current.indexOf('\n', searchFrom);
       if (nl == -1) break;
 
-      String line = current.substring(start, nl);
-      start = nl + 1;
+      String line = current.substring(lineStart, nl);
+      searchFrom = nl + 1;
+      lineStart = searchFrom;
+      consumedEnd = searchFrom;
 
       if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
 
@@ -97,13 +107,14 @@ class SseDecoder {
     }
 
     // 丢弃已消费部分，仅保留未成行的尾部；避免缓冲随流长度无界增长。
-    if (start > 0) {
-      final String rest = current.substring(start);
+    if (consumedEnd > 0) {
+      final String rest = current.substring(consumedEnd);
       _lineBuf
         ..clear()
         ..write(rest);
       _scanOffset = 0;
     } else {
+      // 本次没有消费任何完整行：整个缓冲都是未完成行，必须完整保留。
       _scanOffset = current.length;
     }
 
