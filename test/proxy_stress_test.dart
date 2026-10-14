@@ -41,31 +41,6 @@ class _CountingListener extends EventListener {
   void onResponse(ChannelContext channelContext, HttpResponse response) => responses++;
 }
 
-/// 诊断用：包装 HttpProxyChannelHandler，记录「解码后真正交给代理的请求」。
-/// 用来区分问题是「proxy 没解出后续请求」还是「解出来了但响应没回写」。
-class _RecordingHandler extends ChannelHandler<HttpRequest> {
-  final HttpProxyChannelHandler inner;
-  final List<String> arrived = [];
-
-  _RecordingHandler(this.inner);
-
-  @override
-  void channelActive(ChannelContext c, Channel ch) => inner.channelActive(c, ch);
-
-  @override
-  Future<void> channelRead(ChannelContext c, Channel ch, HttpRequest msg) {
-    arrived.add('${msg.method.name} ${msg.pathAndQuery}');
-    return inner.channelRead(c, ch, msg);
-  }
-
-  @override
-  void channelInactive(ChannelContext c, Channel ch) => inner.channelInactive(c, ch);
-
-  @override
-  void exceptionCaught(ChannelContext c, Channel ch, dynamic error, {StackTrace? trace}) =>
-      inner.exceptionCaught(c, ch, error, trace: trace);
-}
-
 /// 造一段可校验的伪随机数据（固定 seed，便于定位不一致的位置）。
 Uint8List makePayload(int length, [int seed = 42]) {
   final rnd = Random(seed);
@@ -129,7 +104,6 @@ void main() {
   late int proxyPort;
   late int originPort;
   late _CountingListener listener;
-  late _RecordingHandler recorder;
 
   // origin 收到的 body 校验和 + 长度，供断言
   final originReceived = <String, int>{};
@@ -189,9 +163,8 @@ void main() {
     listener = _CountingListener();
     proxy = Server(config, listener: listener);
     proxy.initChannel((channel) {
-      final inner = HttpProxyChannelHandler(listener: listener, interceptors: []);
-      recorder = _RecordingHandler(inner);
-      channel.dispatcher.channelHandle(HttpServerCodec(), recorder);
+      channel.dispatcher
+          .channelHandle(HttpServerCodec(), HttpProxyChannelHandler(listener: listener, interceptors: []));
     });
     proxyPort = (await proxy.bind(0)).port;
   });
@@ -286,11 +259,17 @@ void main() {
     socket.destroy();
   });
 
-  // 诊断版：把「proxy 解码后收到几个请求」「listener 记了几个请求/响应」打出来，
-  // 再在 8 秒内做一次读响应尝试。目的是区分：
-  //   A. proxy 只解出首个请求（→ 解码/读循环问题）
-  //   B. proxy 解出全部但响应没回写（→ 回写路径问题）
-  test('§1 pipelining 诊断：一次写入 10 个请求，观测 proxy 收到几个',
+  // HTTP/1.1 pipelining：客户端把 10 个请求合并到同一次写入，代理必须逐个处理。
+  //
+  // 这条用例曾经长期失败（只处理第一个请求），根因有三处，均已修复：
+  //   1. BodyReader 经 readAvailableBytes() 把后续请求的字节吞进第一个请求的 body；
+  //   2. ChannelDispatcher 里「继续解码剩余字节」的条件原本只对 HTTP/2 生效；
+  //   3. HttpParse.parseInitialLine 把 size（长度）当绝对下标上界用。
+  // 详见 CHANGELOG v1.66.00 ~ v1.66.03。
+  //
+  // 用**裸 TCP** origin 而不是 dart:io HttpServer —— 后者对 HTTP/1.1 pipelining
+  // 支持有限，会把它的行为混进对 proxy 的判断里。
+  test('§1 pipelining：同一连接连发 10 个请求（不等响应）不丢、不损坏',
       timeout: const Timeout(Duration(seconds: 25)), () async {
     final rawOrigin = await io.ServerSocket.bind(io.InternetAddress.loopbackIPv4, 0);
     final originConn = <io.Socket>[];
@@ -329,10 +308,14 @@ void main() {
 
     const n = 10;
     final socket = await io.Socket.connect('127.0.0.1', proxyPort);
+    final it = StreamIterator(socket);
 
+    final expectedLengths = <String>[];
     final buf = StringBuffer();
     for (var i = 0; i < n; i++) {
       final body = utf8.encode('req-$i-${'x' * (i * 37)}');
+      expectedLengths.add('${body.length}');
+      // 全部塞进**同一次**写入，确保它们极可能落在同一个 socket 读事件里
       buf.write('POST http://127.0.0.1:${rawOrigin.port}/p$i HTTP/1.1\r\n');
       buf.write('Host: 127.0.0.1:${rawOrigin.port}\r\n');
       buf.write('Connection: keep-alive\r\n');
@@ -342,29 +325,33 @@ void main() {
       socket.add(body);
     }
 
-    // 收集客户端实际收到的字节（3 秒上限），不做 HTTP 解析，只统计数据
-    final received = <int>[];
-    final sub = socket.listen((d) => received.addAll(d));
-    await Future.delayed(const Duration(seconds: 3));
-    await sub.cancel();
+    final actualLengths = <String>[];
+    for (var i = 0; i < n; i++) {
+      final (statusLine, headers, rest) = await readHead(it).timeout(const Duration(seconds: 5));
+      expect(int.parse(statusLine.split(' ')[1]), 200, reason: '第 $i 个响应不是 200');
+      final len = int.tryParse(headers['content-length'] ?? '') ?? 0;
+      var payload = rest;
+      while (payload.length < len) {
+        if (!await it.moveNext()) break;
+        payload.addAll(it.current);
+      }
+      actualLengths.add(utf8.decode(payload.sublist(0, min(payload.length, len))));
+    }
 
-    // latin1 对任意字节都不会失败，无需 allowMalformed
-    final text = latin1.decode(received);
-    final okCount = 'HTTP/1.1 200 OK'.allMatches(text).length;
-    // ignore: avoid_print
-    print('DIAG-PIPE2 客户端收到 ${received.length} 字节, 其中 200 响应 $okCount 个');
-    // ignore: avoid_print
-    print('DIAG-PIPE2 origin 收到 $matchedAtOrigin 个请求');
-    // ignore: avoid_print
-    print('DIAG-PIPE2 listener requests=${listener.requests} responses=${listener.responses}');
+    // 每个请求恰好有一个响应：丢了、重了、串了都会在这里暴露。
+    // 不断言顺序——pipelining 的响应顺序由上游决定，proxy 逐条独立转发，不做保证。
+    expect(actualLengths.length, n);
+    expect(actualLengths.toList()..sort(), expectedLengths.toList()..sort(),
+        reason: '响应集合必须与请求集合一一对应');
+    expect(matchedAtOrigin, n, reason: '上游应收到全部 $n 个请求');
+    expect(listener.requests, n, reason: '代理应记录 $n 个请求');
+    expect(listener.responses, n, reason: '代理应记录 $n 个响应');
 
     socket.destroy();
     for (final c in originConn) {
       c.destroy();
     }
     await rawOrigin.close();
-
-    expect(okCount, n, reason: '客户端应收到 $n 个响应，实际 $okCount 个（收到 ${received.length} 字节）');
   });
 
   test('慢客户端：分片 + 间隔发送 1MB body，上游收到完整数据', () async {
