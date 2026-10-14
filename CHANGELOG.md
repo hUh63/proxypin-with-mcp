@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.67.01 (2026-10-14)
+
+### 虚拟化高亮：长距离跳转到匹配行更可靠
+
+`VirtualizedHighlightText` 的「滚动到当前匹配行」在长文档下可能落不到目标行：
+
+- 重试路径用的是裸 `Future.delayed`。它不会调度新帧，因此在 widget 测试里
+  `pumpAndSettle` 不会推进它（更一般地，纯定时器驱动的重试在帧空闲时会被挂起）。
+  改为 `WidgetsBinding.instance.endOfFrame` 逐帧重试。
+- `ScrollablePositionedList` 对尚未构建的项使用估算高度，从第 24 行跳到第 260 行
+  这类长距离跳转可能落偏。新增 `ItemPositionsListener`，滚动后校验目标块是否
+  真的进入视口，未进入则再修正一次（上限 3 次）。
+
 ## v1.67.00 (2026-10-14)
 
 ### 清理 9 个存量单测失败：3 处真实缺陷 + 2 处过期测试

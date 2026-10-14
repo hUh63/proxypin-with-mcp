@@ -34,6 +34,7 @@ class VirtualizedHighlightText extends StatefulWidget {
 
 class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
   final ItemScrollController itemScrollController = ItemScrollController();
+  final ItemPositionsListener itemPositionsListener = ItemPositionsListener.create();
   ScrollController? trackingScrollController;
   int _lastScrolledMatchIndex = -1;
   int _lastRenderedMatchIndex = -1;
@@ -151,6 +152,7 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
           physics: Platforms.isDesktop() ? null : const BouncingScrollPhysics(),
           scrollController: Platforms.isDesktop() ? null : _trackingScroll(),
           itemScrollController: itemScrollController,
+          itemPositionsListener: itemPositionsListener,
           padding: const EdgeInsets.only(bottom: 10),
           minCacheExtent: minCacheExtent,
           itemCount: items.length,
@@ -249,7 +251,7 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
         logger.w('VirtualizedHighlightText scroll aborted: itemScrollController not attached');
         return;
       }
-      await Future<void>.delayed(Duration(milliseconds: 16 * (attempt + 1)));
+      await WidgetsBinding.instance.endOfFrame;
       return _scrollToCurrentMatch(document, requestId, attempt + 1);
     }
 
@@ -261,6 +263,14 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
         alignment: alignment,
       );
 
+      // ScrollablePositionedList 对尚未构建的项使用估算高度，长距离跳转
+      // （例如从第 24 行跳到第 260 行）可能落不到目标块上。滚动结束后校验
+      // 一次：目标块不在视口内就再修正一次（有次数上限，不会反复抖动）。
+      if (attempt < 3 && !_isChunkVisible(chunkIndex)) {
+        await WidgetsBinding.instance.endOfFrame;
+        return _scrollToCurrentMatch(document, requestId, attempt + 1);
+      }
+
       // 只在滚动成功后更新 lastScrolled，避免失败后丢失同一索引的重试机会。
       _lastScrolledMatchIndex = matchIndex;
     } catch (e) {
@@ -269,11 +279,21 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
         _lastScrolledMatchIndex = -1;
         return;
       }
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await WidgetsBinding.instance.endOfFrame;
       return _scrollToCurrentMatch(document, requestId, attempt + 1);
     }
   }
 
+
+  /// 目标块是否真的处在视口内（用于滚动后校验）。
+  bool _isChunkVisible(int index) {
+    for (final position in itemPositionsListener.itemPositions.value) {
+      if (position.index == index && position.itemLeadingEdge < 1.0 && position.itemTrailingEdge > 0.0) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   ScrollController _trackingScroll() {
     if (trackingScrollController != null) {
