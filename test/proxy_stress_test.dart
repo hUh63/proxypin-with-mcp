@@ -348,7 +348,8 @@ void main() {
     await Future.delayed(const Duration(seconds: 3));
     await sub.cancel();
 
-    final text = latin1.decode(received, allowMalformed: true);
+    // latin1 对任意字节都不会失败，无需 allowMalformed
+    final text = latin1.decode(received);
     final okCount = 'HTTP/1.1 200 OK'.allMatches(text).length;
     // ignore: avoid_print
     print('DIAG-PIPE2 客户端收到 ${received.length} 字节, 其中 200 响应 $okCount 个');

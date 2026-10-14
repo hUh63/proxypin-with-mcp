@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.66.03 (2026-10-14)
+
+### 修正压测脚本文案（编译错误）
+
+v1.66.02 的诊断代码里对 `latin1.decode` 传了 `allowMalformed: true`，
+而 `latin1` 编码器没有这个参数（只有 `utf8` 有），导致
+`test/proxy_stress_test.dart` 编译失败、整个测试文件无法加载。
+
+去掉该参数（latin1 对任意字节都不会失败）。
+
 ## v1.66.02 (2026-10-14)
 
 ### 修复：`parseInitialLine` 把「长度」当「绝对下标上界」
