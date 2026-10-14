@@ -245,6 +245,11 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
     double alignment = (lineOffsetInChunk + 0.5) / chunkLineCount;
     alignment = alignment.clamp(0.1, 0.9);
 
+    final vp0 = itemPositionsListener.itemPositions.value;
+    logger.w('[VHT] target match=$matchIndex line=$lineIndex chunk=$chunkIndex attempt=$attempt '
+        'attached=${itemScrollController.isAttached} chunks=${chunks.length} total=${document.totalMatchCount} '
+        'viewport=${vp0.isEmpty ? "empty" : "${vp0.map((p) => p.index).reduce(min)}-${vp0.map((p) => p.index).reduce(max)}"}');
+
     // 如果 itemScrollController 尚未 attach，则延迟一帧重试一次
     if (!itemScrollController.isAttached) {
       if (attempt >= 7) {
@@ -270,6 +275,10 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
         await WidgetsBinding.instance.endOfFrame;
         return _scrollToCurrentMatch(document, requestId, attempt + 1);
       }
+
+      final vp1 = itemPositionsListener.itemPositions.value;
+      logger.w('[VHT] scrolled chunk=$chunkIndex visible=${_isChunkVisible(chunkIndex)} '
+          'viewport=${vp1.isEmpty ? "empty" : "${vp1.map((p) => p.index).reduce(min)}-${vp1.map((p) => p.index).reduce(max)}"}');
 
       // 只在滚动成功后更新 lastScrolled，避免失败后丢失同一索引的重试机会。
       _lastScrolledMatchIndex = matchIndex;
