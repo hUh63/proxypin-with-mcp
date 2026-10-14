@@ -169,6 +169,7 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
 
   void _updateSearchState(HighlightTextDocument document) {
     if (_searchUpdateScheduled) {
+      logger.w('[VHT2] update skipped (already scheduled)');
       return;
     }
     _searchUpdateScheduled = true;
@@ -179,6 +180,11 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
       // 使用缓存的文档，确保使用最新的数据
       final cachedDoc = _cachedDocument;
       if (cachedDoc == null) return;
+
+      logger.w('[VHT2] pfc cur=${widget.searchController.currentMatchIndex.value} '
+          'last=$_lastScrolledMatchIndex should=${widget.searchController.shouldSearch()} '
+          'overlay=${widget.searchController.isSearchOverlayVisible} '
+          'pattern=${widget.searchController.patternController.text} total=${cachedDoc.totalMatchCount}');
 
       final settings = widget.searchController.value;
       final searchSignature = '${settings.pattern}|${settings.isCaseSensitive}|${settings.isRegExp}';
