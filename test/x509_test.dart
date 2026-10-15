@@ -1,89 +1,54 @@
+/*
+ * X509 subject hash 单测。
+ *
+ * 原文件只是读 assets/certs/ca.crt、print(getSubjectHashName(...))，无断言。
+ * 这里改为真断言：CA 证书可解析、subject 非空、subject hash 为稳定的 8 位
+ * 十六进制（OpenSSL X509_NAME_hash 风格），纯 Dart，无网络依赖。
+ */
+
 import 'dart:io';
 
+import 'package:flutter_test/flutter_test.dart';
+import 'package:proxypin/network/util/cert/cert_data.dart';
 import 'package:proxypin/network/util/cert/x509.dart';
 
-void main() async {
-  // encoding();
-  // Add ext key usage 2.5.29.37
-// // Add key usage  2.5.29.15
-//   var keyUsage = [KeyUsage.KEY_CERT_SIGN, KeyUsage.CRL_SIGN];
-//
-//   var encode = keyUsageSequence(keyUsage)?.encode();
-//   print(Int8List.view(encode!.buffer));
+void main() {
+  late X509CertificateDataHolder holder;
 
-  var caPem = await File('assets/certs/ca.crt').readAsString();
+  setUpAll(() async {
+    final caPem = await File('assets/certs/ca.crt').readAsString();
+    holder = X509CertificateDataHolder(X509Utils.x509CertificateFromPem(caPem));
+  });
 
-  // var caPem = File('/Users/wanghongen/Downloads/proxyman.crt').readAsStringSync();
-  //生成 公钥和私钥
-  var caRoot = X509Utils.x509CertificateFromPem(caPem);
-  var subject = caRoot.subject;
-  var d = X509Utils.getSubjectHashName(subject);
+  test('仓库 CA 证书可解析且 subject 非空', () {
+    final caRoot = holder.cert;
+    expect(caRoot.subject, isNotEmpty);
+    expect(caRoot.subject['2.5.4.3'], isA<String>());
+    expect(caRoot.subject['2.5.4.6'], 'CN'); // C=CN
+  });
 
-  //16进制
-  print(d);
-  // var certPath = 'assets/certs/ca.crt';
-  //生成 公钥和私钥
-  // var caRoot = X509Utils.x509CertificateFromPem(caPem);
-  // print(caRoot.tbsCertificate.);
-  // caRoot.subject = X509Utils.getSubject(caRoot.subject);
+  test('subject hash 为 8 位小写十六进制', () {
+    final hash = X509Utils.getSubjectHashName(holder.cert.subject);
+    expect(hash, matches(RegExp(r'^[0-9a-f]{8}$')));
+  });
+
+  test('subject hash 可重复计算（确定性）', () {
+    final first = X509Utils.getSubjectHashName(holder.cert.subject);
+    final second = X509Utils.getSubjectHashName(holder.cert.subject);
+    expect(second, first);
+  });
+
+  test('不同 subject 得到不同 hash', () {
+    final other = Map<String, String?>.from(holder.cert.subject);
+    other['2.5.4.3'] = '${other['2.5.4.3']} (other)';
+    expect(X509Utils.getSubjectHashName(other),
+        isNot(X509Utils.getSubjectHashName(holder.cert.subject)));
+  });
 }
 
-//获取证书 subject hash
+/// 简单持有者，避免顶层可变状态被 lint 抱怨。
+class X509CertificateDataHolder {
+  final X509CertificateData cert;
 
-// class KeyUsage {
-//   static const int keyCertSign = (1 << 2);
-//   static const int cRLSign = (1 << 1);
-//
-//   final ASN1BitString bitString;
-//
-//   KeyUsage(int usage) : bitString = ASN1BitString(stringValues: getBytes(usage))..unusedbits = getPadBits(usage);
-//
-//   static Uint8List getBytes(int bitString) {
-//     if (bitString == 0) {
-//       return Uint8List(0);
-//     }
-//
-//     int bytes = 4;
-//     for (int i = 3; i >= 1; i--) {
-//       if ((bitString & (0xFF << (i * 8))) != 0) {
-//         break;
-//       }
-//       bytes--;
-//     }
-//
-//     Uint8List result = Uint8List(bytes);
-//     for (int i = 0; i < bytes; i++) {
-//       result[i] = ((bitString >> (i * 8)) & 0xFF);
-//     }
-//
-//     return result;
-//   }
-//
-//   static int getPadBits(int bitString) {
-//     int val = 0;
-//     for (int i = 3; i >= 0; i--) {
-//       if (i != 0) {
-//         if ((bitString >> (i * 8)) != 0) {
-//           val = (bitString >> (i * 8)) & 0xFF;
-//           break;
-//         }
-//       } else {
-//         if (bitString != 0) {
-//           val = bitString & 0xFF;
-//           break;
-//         }
-//       }
-//     }
-//
-//     if (val == 0) {
-//       return 0;
-//     }
-//
-//     int bits = 1;
-//     while (((val <<= 1) & 0xFF) != 0) {
-//       bits++;
-//     }
-//
-//     return 8 - bits;
-//   }
-// }
+  X509CertificateDataHolder(this.cert);
+}

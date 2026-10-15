@@ -1,5 +1,40 @@
 # Changelog
 
+## v1.67.05 (2026-10-15)
+
+### 全量功能验证（A / B / C 三项）—— 真测试从约 40 个扩到 125+，并补上首条桌面端真实 App 冒烟
+
+本轮不修业务 bug，而是「把功能验证这件事本身补齐」，分三块：
+
+**A. 功能矩阵审计**
+全库 455 个文件 / 20.7 万行，逐个核对「功能 → 入口 → 是否真的接线 → 是否被测试覆盖 →
+平台限制」，产出功能矩阵（含 317 行表格）。审计过程确证 2 个真实缺陷（见「修复」）。
+
+**B. CI 集成级功能测试（新增 85 个用例，全部在 CI 容器内可跑）**
+- `test/integration/https_mitm_test.dart`：HTTPS MITM 全链路（按 host 签发叶证书 / SNI 分流 /
+  真实 TLS 握手 / 代理侧明文可见）。
+- `test/integration/breakpoint_state_machine_test.dart`：断点状态机（挂起 / 放行 / 改写 / 中止）。
+- `test/integration/websocket_sse_e2e_test.dart`：WS 握手（含 Sec-WebSocket-Accept 独立校验）、
+  帧收发、粘包、逐字节分片；SSE chunked 增量、多字节 UTF-8 逐字节、事件语法。
+- `test/integration/h2_stream_mux_test.dart`：HTTP/2 多流乱序归属、RST_STREAM 取消已转发流。
+- `test/tool_pure_test.dart`(18) + `test/export_diff_pure_test.dart`(13)：WAF / Fuzz / 请求对比 /
+  PCAPNG / Excel / 流量统计 / 文本对比 / 正则 / JS 压缩。
+- `test/mcp/mcp_tools_test.dart`(20)：MCP 工具 schema 完整性、重名、参数校验、只读工具正常路径、
+  错误语义（未知工具 / 必填缺失）。
+- 8 个「假测试」文件（`main()` 里只有 `print`、零断言）全部转为真断言：
+  `base64/url/http/cert/x509/pk12/js/web_test.dart`（pk12 去掉硬编码 Windows 路径）。
+
+**C. 桌面端真实 App 冒烟（新增 `desktop-smoke.yml` + `integration_test/app_smoke_test.dart`）**
+ubuntu + xvfb 真实构建并运行 Linux 桌面 App：验证桌面插件注册、Rust FFI 初始化、
+主界面渲染，并真实启动 `ProxyServer` 转发一次 loopback 请求。
+补上 `build-desktop.yml` / `build-deb.yml`「只 build 不 run」覆盖不到的空白。
+
+### 修复
+- MCP `get_certificate_status` 工具漏接线：`CertStatus.query()` 早已实现，但 `McpActions`
+  构造处未注入 `certStatusProvider`，且全仓库无引用 → 工具永远返回 `available:false`。已接线。
+- MCP `list_hosts` 工具名重复：原生表与厂商表同名且未在过滤集合中，导致 `tools/list`
+  返回重复项。已加入 `_nativeToolNames`（以本 fork 的原生实现为准）。
+
 ## v1.67.04 (2026-10-15)
 
 ### 修复：虚拟化高亮「切换到下一个匹配」时自动滚动失效

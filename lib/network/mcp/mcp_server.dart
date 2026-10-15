@@ -21,6 +21,7 @@ import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/components/request_breakpoint.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/channel/host_port.dart';
+import 'package:proxypin/mcp/capture/cert_status.dart';
 import 'package:proxypin/mcp/capture/flow_store.dart';
 import 'package:proxypin/mcp/capture/history_provider.dart';
 import 'package:proxypin/mcp/protocol/mcp_actions.dart';
@@ -1240,9 +1241,12 @@ class McpServer {
   // 本 fork 的 MCP 是唯一服务主体（协议 2026-07-28 + Streamable HTTP / SSE）。
   // 官方那套（规则 CRUD、脚本、Hosts、SSL、重放构造、收藏等）在这里作为
   // 「官方工具源」注册进来，与自有工具合成同一张工具表，对外只有一套工具清单。
-  // 同名工具（generate_code / update_script）以本 fork 实现为准。
+  // 同名工具（generate_code / update_script / list_hosts）以本 fork 实现为准。
 
-  static const Set<String> _nativeToolNames = {'generate_code', 'update_script'};
+  /// 同名工具以本 fork 实现为准，官方同名版本不进入对外工具表。
+  /// `list_hosts` 的原生分支（见 `_executeTool`）与官方 `McpActions._listHosts()` 同名，
+  /// 若不在此隐藏官方版本，`tools/list` 会返回重复项。
+  static const Set<String> _nativeToolNames = {'generate_code', 'update_script', 'list_hosts'};
 
   /// 语义与自建工具重复、从工具表隐藏的官方工具（实现保留，可随时恢复）：
   /// clear_session ≡ clear_requests；replay_flow ≡ replay_request。
@@ -1328,6 +1332,8 @@ class McpServer {
       _officialActions = McpActions(
         store: store,
         onClearSession: () async => McpBridge().onClearUI?.call(),
+        // 桌面端根 CA 安装/信任状态：注入平台实现，否则 get_certificate_status 永远返回占位值
+        certStatusProvider: CertStatus.query,
         redactEnabled: () => _redactEnabled,
       );
     }

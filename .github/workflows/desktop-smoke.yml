@@ -1,0 +1,61 @@
+name: Desktop smoke (Linux, real app)
+
+# 桌面端「真实 App 冒烟」：在 ubuntu runner 上用 xvfb 起虚拟显示，
+# 真实构建并运行 Linux 桌面 App，执行 integration_test/app_smoke_test.dart。
+#
+# 为什么单独一个 workflow：
+#   - build-desktop.yml / build-deb.yml 只 **build** 不 **run**，桌面插件注册、
+#     Rust FFI 初始化、主界面渲染这些问题它们都发现不了。
+#   - quality.yml 跑的是 `flutter test --exclude-tags integration`，纯 Dart/Widget 层，
+#     同样不碰真实桌面运行时。
+# 本 workflow 补上这块：App 能不能在真实桌面平台起来、跑得动。
+#
+# 触发范围只挂分支 push 与 PR，不挂 tag（发布时不需要重跑冒烟，省时间）。
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Linux desktop smoke test
+    runs-on: ubuntu-latest
+    # 故意不加 continue-on-error：冒烟失败就是真失败，必须红。
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      # 与 build-deb.yml 保持一致的 GTK / 桌面构建依赖，另加 xvfb（虚拟显示）。
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev \
+            libayatana-appindicator3-dev xvfb
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Show available devices
+        run: flutter devices
+
+      - name: Run desktop smoke test (xvfb)
+        # integration_test 需要真实设备（-d linux）；xvfb-run 提供 DISPLAY。
+        run: |
+          xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+            flutter test integration_test -d linux --reporter expanded
