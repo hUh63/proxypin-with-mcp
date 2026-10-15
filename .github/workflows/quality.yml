@@ -36,10 +36,6 @@ jobs:
   test:
     name: Unit tests
     runs-on: ubuntu-latest
-    # 首版先观察：存量测试里可能有依赖原生插件或历史遗留的用例。
-    # 待清干净后去掉这一行，改为阻塞。
-    continue-on-error: true
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v5
@@ -53,7 +49,8 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      # 排除 integration：这些用例需要真实 socket / 原生库 / 测试资产，
+      # 排除 @Tags(['integration'])：少数用例需要原生 JS 运行时 / 外部网络，
       # 不适合在 CI 容器内跑（本地可用 `flutter test --tags integration` 单独执行）。
+      # 注意：test/integration/ 下的端到端用例**没有**打该标签，会在 CI 真实执行。
       - name: Flutter test
         run: flutter test --reporter expanded --exclude-tags integration

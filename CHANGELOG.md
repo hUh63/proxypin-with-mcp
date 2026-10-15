@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.67.08 (2026-10-16)
+
+### 修复：最后一处编译错误；CI 测试门改为阻塞
+
+第三轮 CI 结果：**`Desktop smoke` 首次全绿**（桌面真实 App 冒烟通过，包含真实启动
+`ProxyServer` 并转发 loopback 请求）、`Build Linux DEB` 绿、`+355 -1`，只剩 **1 处编译错误**：
+
+- `test/integration/websocket_sse_e2e_test.dart:317`：`List` 没有 `containsAll`（那是 `Set` 的），
+  改 `toSet().containsAll(...)`。该错误在重写文件时被带回来过一次。
+
+另外把 `.github/workflows/quality.yml` 的 test job **去掉 `continue-on-error: true`**，
+单元测试从此真正阻塞 CI：此前即使测试全挂、CI 也显示绿色，属于「假绿」，
+是本轮功能验证审计点名的薄弱项。现在 `flutter analyze` 与 `flutter test` 都是硬门。
+
 ## v1.67.07 (2026-10-16)
 
 ### 修复：v1.67.06 第二轮 CI 暴露的 13 个测试失败（编译已全过，问题都在测试自身）
