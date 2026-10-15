@@ -72,6 +72,14 @@ Future<HttpResponse> _waitResponseWithBody(_Capture capture,
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // flutter_test 的 TestWidgetsFlutterBinding 会用 HttpOverrides 覆盖 HttpClient：
+  // 所有请求直接返回 400 且不会真正联网。本文件的客户端必须走真实网络，
+  // 因此在**每个用例前**恢复真实实现（只在 main() 顶部设一次会被 binding 的
+  // 构造时机盖掉，故放在 setUp 里）。
+  setUp(() {
+    io.HttpOverrides.global = null;
+  });
+
   late io.Directory work;
   late io.ServerSocket sniProbe;
   final sniProbeBytes = <int>[];

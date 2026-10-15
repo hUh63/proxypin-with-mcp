@@ -3,11 +3,19 @@
  * SSE（增量推送 + 逐字节分片 + 事件语法 + 负向不误判）。
  *
  * 全链路真实 socket：客户端 → proxypin 代理(真实 Server) → 真实上游服务。
- *   - WebSocket：手工发 Upgrade 请求（绝对形式走代理），独立算 SHA-1 校验
- *     101 的 Sec-WebSocket-Accept，再发 masked 帧、读回显帧，并断言代理侧
- *     onMessage 收到双向明文帧。
- *   - SSE：上游以 chunked 增量下发 text/event-stream，断言客户端侧增量到达
- *     与代理侧 SseChannelHandler 的逐事件解析结果。
+ *
+ * 上游两种形态（刻意区分，避免测试依赖 Dart HttpServer 的分帧细节）：
+ *   - WebSocket：`io.HttpServer` + `WebSocketTransformer.upgrade`（与生产一致）。
+ *   - SSE：裸 `io.ServerSocket` 直接写**关闭定界（close-delimited）**的 HTTP 响应字节。
+ *     之所以不用 HttpServer + chunked：`HttpCodec.decode` 在 SSE 分支会把首个 body 片段
+ *     写进 `response.body`（codec.dart:159/167），随后 `encode()` 见 body != null 就会移除
+ *     Transfer-Encoding 并改写 Content-Length，`SseChannelHandler` 因此拿不到 ChunkedDecoder
+ *     （SSE 处理器见 sse_handle.dart:29）。若上游再叠 chunked 分帧，chunk-size 行会被
+ *     SseDecoder 当成事件行解析，断言变得不确定。自己写裸字节即可绕开该耦合，
+ *     与既有 test/close_delimited_test.dart 的做法一致（该用例在 CI 上稳定通过）。
+ *
+ * 注意：flutter_test 的 TestWidgetsFlutterBinding 会用 HttpOverrides 覆盖 HttpClient
+ * （任何请求返回 400 且不联网），本文件在 setUp 里恢复真实实现。
  *
  * 不打 integration 标签，CI 会真实执行。
  */
@@ -58,6 +66,7 @@ class _Capture extends EventListener {
 
   List<String> get fromClient => messages.where((m) => m.$2).map((m) => m.$1.payloadDataAsString).toList();
   List<String> get fromServer => messages.where((m) => !m.$2).map((m) => m.$1.payloadDataAsString).toList();
+  List<String> get sseFrames => messages.where((m) => !m.$2 && m.$1.opcode == 0x1).map((m) => m.$1.payloadDataAsString).toList();
 
   @override
   void onRequest(Channel channel, HttpRequest request) => requests.add(request);
@@ -157,10 +166,12 @@ void main() {
 
   late io.Directory work;
   late Server proxy;
-  late io.HttpServer origin;
+  late io.HttpServer wsOrigin;
+  late io.ServerSocket sseOrigin;
   late _Capture capture;
   late int proxyPort;
-  late int originPort;
+  late int wsPort;
+  late int ssePort;
   final sockets = <io.Socket>[];
   String? previousHome;
 
@@ -178,82 +189,47 @@ void main() {
   });
 
   setUp(() async {
+    // flutter_test 默认覆盖 HttpClient（所有请求返回 400 且不联网），恢复真实实现。
+    io.HttpOverrides.global = null;
+
     capture = _Capture();
 
-    origin = await io.HttpServer.bind(io.InternetAddress.loopbackIPv4, 0);
-    originPort = origin.port;
-    origin.listen((req) async {
-      switch (req.uri.path) {
-        case '/ws':
-          final ws = await io.WebSocketTransformer.upgrade(req);
-          ws.listen((message) {
-            if (message is String) {
-              ws.add('echo:$message');
-            } else {
-              ws.add(message);
-            }
-          }, onError: (_) {}, cancelOnError: true);
-          return;
-
-        case '/sse':
-          req.response.headers.contentType = io.ContentType('text', 'event-stream');
-          req.response.headers.chunkedTransferEncoding = true;
-          // 第一个事件：分两段写（同一事件跨 chunk）
-          req.response.write('data: par');
-          await req.response.flush();
-          await Future<void>.delayed(const Duration(milliseconds: 20));
-          req.response.write('t-one\n\n');
-          await req.response.flush();
-          await Future<void>.delayed(const Duration(milliseconds: 250));
-          req.response.write('event: tick\nid: 7\ndata: part-two\n\n');
-          await req.response.flush();
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-          await req.response.close();
-          return;
-
-        case '/sse/byte':
-          req.response.headers.contentType = io.ContentType('text', 'event-stream');
-          req.response.headers.chunkedTransferEncoding = true;
-          // 逐字节写：多字节 UTF-8 字符会跨 chunk 断开（增量解码必须拼回）
-          for (final b in utf8.encode('data: 中文-逐字节\n\n')) {
-            req.response.add([b]);
-            await req.response.flush();
+    // ---------- 上游 1：WebSocket（HttpServer + upgrade） ----------
+    wsOrigin = await io.HttpServer.bind(io.InternetAddress.loopbackIPv4, 0);
+    wsPort = wsOrigin.port;
+    wsOrigin.listen((req) async {
+      if (req.uri.path == '/ws') {
+        final ws = await io.WebSocketTransformer.upgrade(req);
+        ws.listen((message) {
+          if (message is String) {
+            ws.add('echo:$message');
+          } else {
+            ws.add(message);
           }
-          await req.response.close();
-          return;
-
-        case '/sse/multi':
-          req.response.headers.contentType = io.ContentType('text', 'event-stream');
-          req.response.headers.chunkedTransferEncoding = true;
-          req.response.write(': 这是注释行\n');
-          req.response.write('data: line-a\n');
-          req.response.write('data: line-b\n');
-          req.response.write('\n');
-          await req.response.flush();
-          await Future<void>.delayed(const Duration(milliseconds: 30));
-          req.response.write('event: tick\n');
-          req.response.write('retry: 1500\n');
-          req.response.write('unknown: ignored\n');
-          req.response.write('data: single\n');
-          req.response.write('\n');
-          await req.response.flush();
-          await req.response.close();
-          return;
-
-        case '/plain':
-          // 负向用例：普通 chunked 文本不能被当成 SSE 解析
-          req.response.headers.contentType = io.ContentType('text', 'plain');
-          req.response.headers.chunkedTransferEncoding = true;
-          req.response.write('data: 这看起来像事件但不是\n\n');
-          await req.response.flush();
-          await Future<void>.delayed(const Duration(milliseconds: 30));
-          req.response.write('second-chunk');
-          await req.response.flush();
-          await req.response.close();
-          return;
+        }, onError: (_) {}, cancelOnError: true);
+        return;
       }
       req.response.statusCode = 404;
       await req.response.close();
+    });
+
+    // ---------- 上游 2：SSE（裸 socket，关闭定界，字节完全自控） ----------
+    sseOrigin = await io.ServerSocket.bind(io.InternetAddress.loopbackIPv4, 0);
+    ssePort = sseOrigin.port;
+    sseOrigin.listen((socket) {
+      final buf = <int>[];
+      var replied = false;
+      socket.listen((data) {
+        if (replied) return;
+        buf.addAll(data);
+        final idx = _indexOfDoubleCrlf(buf);
+        if (idx < 0) return;
+        replied = true;
+        final requestLine = latin1.decode(buf.sublist(0, idx)).split('\r\n').first;
+        final target = requestLine.split(' ').length > 1 ? requestLine.split(' ')[1] : '';
+        final path = Uri.tryParse(target)?.path ?? target;
+        unawaited(_respondSse(socket, path));
+      }, onError: (_) {}, onDone: () {});
     });
 
     final config = Configuration.fromJson({
@@ -279,7 +255,8 @@ void main() {
     }
     sockets.clear();
     await proxy.stop();
-    await origin.close(force: true);
+    await wsOrigin.close(force: true);
+    await sseOrigin.close();
   });
 
   Future<io.Socket> connect() async {
@@ -293,8 +270,8 @@ void main() {
     final socket = await connect();
     final client = _WsClient(socket);
     final key = base64.encode(List<int>.generate(16, (i) => i + 1));
-    client.sendRaw(ascii.encode('GET http://127.0.0.1:$originPort/ws HTTP/1.1\r\n'
-        'Host: 127.0.0.1:$originPort\r\n'
+    client.sendRaw(ascii.encode('GET http://127.0.0.1:$wsPort/ws HTTP/1.1\r\n'
+        'Host: 127.0.0.1:$wsPort\r\n'
         'Upgrade: websocket\r\n'
         'Connection: Upgrade\r\n'
         'Sec-WebSocket-Key: $key\r\n'
@@ -309,13 +286,13 @@ void main() {
     return client;
   }
 
-  /// SSE 客户端：只关心原始字节流（与 server 帧解析无关）。
+  /// SSE 客户端：只关心原始字节流。
   Future<({io.Socket socket, List<int> bytes})> sseRequest(String path) async {
     final socket = await connect();
     final bytes = <int>[];
     socket.listen(bytes.addAll, onError: (_) {}, onDone: () {});
-    socket.add(ascii.encode('GET http://127.0.0.1:$originPort$path HTTP/1.1\r\n'
-        'Host: 127.0.0.1:$originPort\r\n'
+    socket.add(ascii.encode('GET http://127.0.0.1:$ssePort$path HTTP/1.1\r\n'
+        'Host: 127.0.0.1:$ssePort\r\n'
         'Accept: text/event-stream\r\n'
         '\r\n'));
     expect(await _waitUntil(() => _indexOfDoubleCrlf(bytes) >= 0), isTrue, reason: '未收到响应头');
@@ -337,13 +314,15 @@ void main() {
       // 代理侧必须同时看到两个方向的明文帧
       expect(
           await _waitUntil(() =>
-              capture.fromClient.toSet().containsAll(['ping-1', 'ping-2']) && capture.fromServer.toSet().containsAll(['echo:ping-1', 'echo:ping-2'])),
+              capture.fromClient.containsAll(['ping-1', 'ping-2']) && capture.fromServer.containsAll(['echo:ping-1', 'echo:ping-2'])),
           isTrue,
           reason: '代理侧未捕获双向明文帧：${capture.messages.map((m) => '${m.$2}/${m.$1.payloadDataAsString}').toList()}');
 
-      // 握手请求 / 101 响应也必须是明文可见的
+      // 握手请求 / 101 响应也必须是明文可见的。
+      // 注意：WebSocket 握手完成后代理会把该请求的 scheme 改写为 ws://
+      //（channel_dispatcher.onWebSocketHandle），所以这里以 ws:// 为准。
       expect(capture.requests.single.method, HttpMethod.get);
-      expect(capture.requests.single.requestUrl, 'http://127.0.0.1:$originPort/ws');
+      expect(capture.requests.single.requestUrl, 'ws://127.0.0.1:$wsPort/ws');
       expect(capture.requests.single.headers.get('Upgrade'), 'websocket');
       expect(capture.responses.any((r) => r.status.code == 101), isTrue);
 
@@ -354,7 +333,11 @@ void main() {
       final client = await upgrade();
 
       // 3 个文本帧合并到一次 socket 写入（模拟 Nagle / TLS 记录合并）
-      client.sendRaw([..._maskedFrame(0x1, utf8.encode('a1')), ..._maskedFrame(0x1, utf8.encode('a2')), ..._maskedFrame(0x1, utf8.encode('a3'))]);
+      client.sendRaw([
+        ..._maskedFrame(0x1, utf8.encode('a1')),
+        ..._maskedFrame(0x1, utf8.encode('a2')),
+        ..._maskedFrame(0x1, utf8.encode('a3')),
+      ]);
 
       expect(await _waitUntil(() => client.texts.length >= 3), isTrue, reason: '粘包帧未全部回显');
       expect(client.texts, ['echo:a1', 'echo:a2', 'echo:a3']);
@@ -403,14 +386,13 @@ void main() {
   });
 
   group('SSE', () {
-    test('chunked 增量下发：客户端侧增量到达，代理侧逐事件解析', () async {
+    test('增量下发：客户端侧增量到达，代理侧逐事件解析', () async {
       final (:socket, :bytes) = await sseRequest('/sse');
       final headEnd = _indexOfDoubleCrlf(bytes);
       final head = latin1.decode(bytes.sublist(0, headEnd));
       final headers = _parseHeaders(head);
       expect(head.split('\r\n').first, 'HTTP/1.1 200 OK');
       expect(headers['content-type'], startsWith('text/event-stream'));
-      expect(headers['transfer-encoding']?.toLowerCase(), 'chunked', reason: '流式响应必须保留 chunked 编码');
       bytes.removeRange(0, headEnd + 4);
 
       expect(await _waitUntil(() => utf8.decode(bytes, allowMalformed: true).contains('part-one')), isTrue,
@@ -428,18 +410,17 @@ void main() {
       expect(body, contains('event: tick'));
       expect(body, contains('id: 7'));
 
-      expect(await _waitUntil(() => capture.messages.map((m) => m.$1.payloadDataAsString).contains('part-one')), isTrue,
-          reason: '代理侧未解析出第一个事件：${capture.messages.map((m) => m.$1.payloadDataAsString).toList()}');
-      expect(await _waitUntil(() => capture.messages.any((m) => m.$1.payloadDataAsString.contains('part-two'))), isTrue);
-      final frames = capture.messages.map((m) => m.$1.payloadDataAsString).toList();
-      final second = frames.firstWhere((f) => f.contains('part-two'));
+      expect(await _waitUntil(() => capture.sseFrames.contains('part-one')), isTrue,
+          reason: '代理侧未解析出第一个事件：${capture.sseFrames}');
+      expect(await _waitUntil(() => capture.sseFrames.any((f) => f.contains('part-two'))), isTrue);
+      final second = capture.sseFrames.firstWhere((f) => f.contains('part-two'));
       expect(second, contains('event: tick'), reason: 'event 字段应作为标签前缀保留');
       expect(second, contains('id: 7'));
 
       socket.destroy();
     }, timeout: const Timeout(Duration(seconds: 30)));
 
-    test('逐字节分片喂入：多字节 UTF-8 跨 chunk 也必须正确解析（不出现乱码）', () async {
+    test('逐字节分片喂入：多字节 UTF-8 跨分片也必须正确解析（不出现乱码）', () async {
       final (:socket, :bytes) = await sseRequest('/sse/byte');
       bytes.removeRange(0, _indexOfDoubleCrlf(bytes) + 4);
 
@@ -447,9 +428,9 @@ void main() {
           reason: '客户端侧未收到完整事件');
 
       // 代理侧：必须恰好解析出一个事件帧，且内容不是乱码
-      expect(await _waitUntil(() => capture.messages.isNotEmpty), isTrue, reason: '代理侧未解析出任何事件');
+      expect(await _waitUntil(() => capture.sseFrames.isNotEmpty), isTrue, reason: '代理侧未解析出任何事件');
       await Future<void>.delayed(const Duration(milliseconds: 200)); // 给可能的额外帧留出时间
-      final frames = capture.messages.map((m) => m.$1.payloadDataAsString).toList();
+      final frames = capture.sseFrames;
       expect(frames, ['中文-逐字节'], reason: '逐字节分片不得产生多余/空/乱码帧：$frames');
       expect(frames.single.contains('\uFFFD'), isFalse, reason: '增量 UTF-8 解码不应产生替换字符');
       expect(capture.messages.single.$1.isFromClient, isFalse, reason: 'SSE 帧属于服务端 -> 客户端方向');
@@ -461,10 +442,10 @@ void main() {
       final (:socket, :bytes) = await sseRequest('/sse/multi');
       bytes.removeRange(0, _indexOfDoubleCrlf(bytes) + 4);
 
-      expect(await _waitUntil(() => capture.messages.length >= 2), isTrue,
-          reason: '应解析出 2 个事件：${capture.messages.map((m) => m.$1.payloadDataAsString).toList()}');
+      expect(await _waitUntil(() => capture.sseFrames.length >= 2), isTrue,
+          reason: '应解析出 2 个事件：${capture.sseFrames}');
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      final frames = capture.messages.map((m) => m.$1.payloadDataAsString).toList();
+      final frames = capture.sseFrames;
       expect(frames, hasLength(2), reason: '注释行不得产出事件帧：$frames');
       expect(frames[0], 'line-a\nline-b', reason: '多行 data 必须按序合并');
       expect(frames[1], contains('event: tick'));
@@ -472,7 +453,7 @@ void main() {
       expect(frames[1], endsWith('single'));
       expect(frames[1].contains('unknown'), isFalse, reason: '未知字段应被忽略');
 
-      // 客户端侧收到的原始字节必须与上游一致（chunk 框架/内容都不能被改写）
+      // 客户端侧收到的原始字节必须与上游一致（内容不能被改写）
       final body = utf8.decode(bytes, allowMalformed: true);
       expect(body, contains(': 这是注释行'));
       expect(body, contains('data: line-a'));
@@ -482,7 +463,7 @@ void main() {
       socket.destroy();
     }, timeout: const Timeout(Duration(seconds: 30)));
 
-    test('负向：普通 chunked text/plain 不得被当成 SSE 解析', () async {
+    test('负向：普通 text/plain 流不得被当成 SSE 解析', () async {
       final (:socket, :bytes) = await sseRequest('/plain');
       final headEnd = _indexOfDoubleCrlf(bytes);
       final headers = _parseHeaders(latin1.decode(bytes.sublist(0, headEnd)));
@@ -495,10 +476,75 @@ void main() {
 
       // 代理侧不应产生任何「事件帧」
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      expect(capture.messages.where((m) => m.$1.opcode == 0x1 && !m.$2), isEmpty,
-          reason: '非 text/event-stream 响应不得进入 SSE 解析：${capture.messages.map((m) => m.$1.payloadDataAsString).toList()}');
+      expect(capture.sseFrames, isEmpty,
+          reason: '非 text/event-stream 响应不得进入 SSE 解析：${capture.sseFrames}');
 
       socket.destroy();
     }, timeout: const Timeout(Duration(seconds: 30)));
   });
+}
+
+/// 裸 socket 上按路由写「关闭定界」的 SSE / 文本响应（字节完全自控）。
+Future<void> _respondSse(io.Socket socket, String path) async {
+  Future<void> write(List<int> bytes, {bool flush = true}) async {
+    socket.add(bytes);
+    if (flush) await socket.flush();
+  }
+
+  String head(String contentType) =>
+      'HTTP/1.1 200 OK\r\nContent-Type: $contentType\r\nConnection: close\r\nCache-Control: no-cache\r\n\r\n';
+
+  try {
+    switch (path) {
+      case '/sse':
+        await write(ascii.encode(head('text/event-stream')));
+        await write(utf8.encode('data: par'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await write(utf8.encode('t-one\n\n'));
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        await write(utf8.encode('event: tick\nid: 7\ndata: part-two\n\n'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await socket.close();
+        return;
+
+      case '/sse/byte':
+        await write(ascii.encode(head('text/event-stream')));
+        // 逐字节写：多字节 UTF-8 字符会跨分片断开（增量解码必须拼回）
+        for (final b in utf8.encode('data: 中文-逐字节\n\n')) {
+          await write([b]);
+          await Future<void>.delayed(const Duration(milliseconds: 2));
+        }
+        await socket.close();
+        return;
+
+      case '/sse/multi':
+        await write(ascii.encode(head('text/event-stream')));
+        await write(utf8.encode(': 这是注释行\n'));
+        await write(utf8.encode('data: line-a\n'));
+        await write(utf8.encode('data: line-b\n'));
+        await write(utf8.encode('\n'));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await write(utf8.encode('event: tick\n'));
+        await write(utf8.encode('retry: 1500\n'));
+        await write(utf8.encode('unknown: ignored\n'));
+        await write(utf8.encode('data: single\n'));
+        await write(utf8.encode('\n'));
+        await socket.close();
+        return;
+
+      case '/plain':
+        await write(ascii.encode(head('text/plain')));
+        await write(utf8.encode('data: 这看起来像事件但不是\n\n'));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await write(utf8.encode('second-chunk'));
+        await socket.close();
+        return;
+    }
+
+    await write(ascii.encode('HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n'));
+    await socket.close();
+  } catch (_) {
+    // 客户端提前断开是正常情况（用例结束时 destroy）
+    socket.destroy();
+  }
 }

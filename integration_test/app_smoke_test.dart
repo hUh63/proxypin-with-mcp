@@ -34,9 +34,12 @@ void main() {
   testWidgets(
     '桌面端冷启动冒烟：App 能启动并渲染主界面',
     (tester) async {
+      // 启动真实 App：app.main() 内部完成插件注册 / Rust FFI 初始化后 runApp 主界面。
+      app.main(const []);
+
       // 让真实异步初始化（Rust FFI / 插件 / 偏好）有机会推进。
       await tester.runAsync(
-        () => Future<void>.delayed(const Duration(seconds: 3)),
+        () => Future<void>.delayed(const Duration(seconds: 5)),
       );
 
       // 冷启动是异步的：循环 pump 直到 MaterialApp 出现（最多 ~30s）。

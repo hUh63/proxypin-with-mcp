@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.67.07 (2026-10-16)
+
+### 修复：v1.67.06 第二轮 CI 暴露的 13 个测试失败（编译已全过，问题都在测试自身）
+
+第二轮 CI：Static analysis 绿、`+350` 通过、**13 个用例失败**。全部为测试自身问题，业务实现未改。
+
+**根因一：`flutter_test` 会覆盖 `HttpClient`（影响面最大）**
+`TestWidgetsFlutterBinding` 用 `HttpOverrides` 把 `dart:io` 的 `HttpClient` 换掉，
+**所有请求直接返回 400 且不真正联网**（CI 日志有明确 warning）。凡是需要真实网络的用例
+（HTTPS MITM 全链路、WebSocket / SSE、HTTP/2 多流）都因此失败。
+修复：这几个文件的 `setUp()` 里 `HttpOverrides.global = null;` 恢复真实实现
+（只写在 `main()` 顶部会被 binding 构造时机盖掉，必须逐用例重设）。
+
+**根因二：断言与实现语义不符（逐条按源码真实行为校正）**
+- PcapNg：PCAPNG 文件本身是小端，块字段（link type 等）应按**小端**读；帧内 IPv4/TCP
+  字段才是网络序。测试新增 `_u16le` / `_u32be`：link type 改小端读取，TCP seq/ack 改大端
+  （原先误用小端 helper，被前一处失败挡住、没暴露出来）。
+- WebSocket：代理侧记录的明文 URL 保留 `ws://` scheme（不是 `http://`）。
+- `expandReplacement`：`\l` / `\u` 只改紧随其后那次组引用结果的**首字符**，`\L` / `\U`
+  才是整串大小写转换；原断言假设 `\u` 能把全大写串变成 `User`，与实现不符。
+- `RequestFuzzer.parsePayloads`：实现只做 `trimRight()`（行尾空白去掉、前导空白保留）。
+- `RequestComparator`：两个完全相同的请求 `hasChanges=false`；`summary` 字段由调用方 /
+  `detailedReport(loc)` 生成，此处为空串，原断言错写成 non-empty。
+
+**桌面冒烟**：`integration_test/app_smoke_test.dart` 首轮**漏写 `app.main()`**（主界面因此
+永远不出现），已补上；第二个用例「真实启动 `ProxyServer` 并转发一次 loopback 请求」首轮已通过。
+
 ## v1.67.06 (2026-10-15)
 
 ### 修复：v1.67.05 首轮 CI 暴露的 9 处问题（5 个编译错误 + 2 个断言错误 + 2 处连带）

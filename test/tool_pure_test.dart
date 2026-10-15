@@ -81,9 +81,18 @@ void main() {
       expect(expandReplacement(r'\$1', m), r'$1', reason: r'\$' + ' 表示字面量美元');
       expect(expandReplacement(r'\n', m), '\n');
       expect(expandReplacement(r'[$0]', m), '[USER@host]');
-      expect(expandReplacement(r'\U$1', m), 'USER');
-      expect(expandReplacement(r'\u$1', m), 'User');
-      expect(expandReplacement(r'\l$1', m), 'uSER');
+
+      // 大小写扩展的真实语义（见 regexp_util.dart 的 _applyCase）：
+      //  - \l / \u 只改「紧随其后那次组引用结果」的**首字符**（perChar），其余原样；
+      //  - \L / \U 才是整串小写/大写。
+      // 因此 \u 打在已经全大写的 'USER' 上结果仍是 'USER'（不是 'User'）。
+      final lower = RegExp(r'(\w+)@(\w+)').firstMatch('user@host')!;
+      expect(expandReplacement(r'\U$1', lower), 'USER', reason: r'\U' + ' 整串大写');
+      expect(expandReplacement(r'\L$1', m), 'user', reason: r'\L' + ' 整串小写');
+      expect(expandReplacement(r'\u$1', lower), 'User', reason: r'\u' + ' 仅首字符大写');
+      expect(expandReplacement(r'\u$1', m), 'USER', reason: r'\u' + ' 不动其余字符，故已大写的 USER 不变');
+      expect(expandReplacement(r'\l$1', m), 'uSER', reason: r'\l' + ' 仅首字符小写');
+      expect(expandReplacement(r'\l$1', lower), 'user');
 
       // 越界组引用返回空串，不抛异常
       expect(expandReplacement(r'$9', m), '');
@@ -236,10 +245,14 @@ void main() {
     });
 
     test('parsePayloads：一行一个取值，忽略空行与 # 注释', () {
+      // 实现只做 trimRight()（regexp 无关）：行尾空白被去掉、**前导空白保留**；
+      // 过滤条件是 `line.trim().isNotEmpty && !line.trimLeft().startsWith('#')`。
       final values = RequestFuzzer.parsePayloads("1\n\n# 注释\n 2 \n3\n#\n");
-      expect(values, ['1', ' 2 ', '3']);
+      expect(values, ['1', ' 2', '3'], reason: '行尾空白被 trimRight，前导空白保留');
+      expect(RequestFuzzer.parsePayloads('  a  \n b'), ['  a', ' b'], reason: '前导空白不得被吞掉');
       expect(RequestFuzzer.parsePayloads(''), isEmpty);
       expect(RequestFuzzer.parsePayloads('# only comment'), isEmpty);
+      expect(RequestFuzzer.parsePayloads('   \n\t\n'), isEmpty, reason: '纯空白行不算取值');
     });
 
     test('toCsv：表头 + 逐行结果（baseline 行 index 留空）', () {
@@ -267,7 +280,11 @@ void main() {
       expect(result.headerDiffs, isEmpty);
       expect(result.queryDiffs, isEmpty);
       expect(result.bodyDiff?.hasChanged, isNot(true));
-      expect(result.summary, isNotEmpty);
+      // compare() 不填 summary（该字段留给调用方 / detailedReport(loc) 生成），
+      // 因此无差异时它就是默认空串 —— 这里按实现真实行为断言。
+      expect(result.summary, isEmpty);
+      expect(identical(result.requestA, a), isTrue);
+      expect(identical(result.requestB, b), isTrue);
     });
 
     test('URL / 方法 / 头 / 查询串 / body 差异都能识别', () {

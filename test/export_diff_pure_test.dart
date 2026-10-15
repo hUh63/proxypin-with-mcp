@@ -48,7 +48,15 @@ List<_Block> _readBlocks(Uint8List data) {
 
 int _u32(Uint8List d, int o) => d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24);
 
+/// PCAPNG 文件本身是小端（byte-order magic 0x1A2B3C4D 以 4D 3C 2B 1A 落盘），
+/// 块字段（接口 link type 等）一律按小端读取；帧内 IPv4/TCP 字段则是网络序。
+int _u16le(List<int> d, int o) => d[o] | (d[o + 1] << 8);
+
 int _u16be(List<int> d, int o) => (d[o] << 8) | d[o + 1];
+
+/// 帧内字段（TCP seq/ack 等）是网络序（大端）。
+int _u32be(List<int> d, int o) =>
+    (d[o] << 24) | (d[o + 1] << 16) | (d[o + 2] << 8) | d[o + 3];
 
 int _onesComplementSum(List<int> data) {
   var sum = 0;
@@ -97,8 +105,8 @@ int _onesComplementSum(List<int> data) {
     dstIp: dstIp,
     srcPort: _u16be(tcp, 0),
     dstPort: _u16be(tcp, 2),
-    seq: _u32(Uint8List.fromList(tcp), 4),
-    ack: _u32(Uint8List.fromList(tcp), 8),
+    seq: _u32be(tcp, 4),
+    ack: _u32be(tcp, 8),
     payload: tcp.sublist(20),
   );
 }
@@ -135,7 +143,7 @@ void main() {
       expect(_u32(blocks[0].bytes, 0), 0x1A2B3C4D, reason: '字节序 magic');
       // IDB 内容 = 20 - 12 = 8
       expect(blocks[1].bytes.length, 8);
-      expect(_u16be(blocks[1].bytes, 0), 1, reason: 'link type 必须是 Ethernet');
+      expect(_u16le(blocks[1].bytes, 0), 1, reason: 'link type 必须是 Ethernet（PCAPNG 块字段小端）');
 
       // 请求帧：先校验 EPB 的 caplen/origlen 与补零
       final reqCapLen = _u32(blocks[2].bytes, 12);
