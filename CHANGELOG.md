@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.67.06 (2026-10-15)
+
+### 修复：v1.67.05 首轮 CI 暴露的 9 处问题（5 个编译错误 + 2 个断言错误 + 2 处连带）
+
+新增的集成测试首轮在 CI 上跑出以下问题，全部修掉：
+
+**编译错误**
+- `integration_test/app_smoke_test.dart`：`utf8` 属于 `dart:convert`，误写成 `io.utf8`。
+- `test/http_test.dart`：`ContentType` 不是 const 构造，误写 `const original = ContentType(...)`。
+- `test/integration/h2_stream_mux_test.dart`：`sublist()` 返回 `List<int>`，赋给了被推断为 `Uint8List` 的变量。
+- `test/integration/https_mitm_test.dart`：`..badCertificateCallback = (...) => true` 后面紧跟 cascade，
+  被 Dart 解析为对 `true` 的 cascade（报 `The setter 'findProxy' isn't defined for the type 'bool'`），
+  拆成独立语句。
+- `test/integration/websocket_sse_e2e_test.dart`：`List` 没有 `containsAll`（那是 `Set` 的），改 `toSet().containsAll(...)`。
+- `test/tool_pure_test.dart`：测试名里的 `${n}` 被当成字符串插值（`Undefined name 'n'`），转义为 `\${n}`；
+  `Locale` 未导入，改用 `ui.Locale`（`import 'dart:ui' as ui`）。
+
+**断言错误（测试断言写错，非实现缺陷）**
+- `test/export_diff_pure_test.dart`（PcapNg）：`_readBlocks` 返回的是剥离 8 字节块头 + 4 字节块尾后的**块内容**，
+  SHB 内容应为 16（不是 20）、IDB 内容应为 8（不是 12）。
+- 同文件 `TextDiff diffChars`：LCS 对插入点存在歧义（`' brave'` 与 `'brave '` 得到的结果字符串相同），
+  原断言写死了后者；改为只校验插入 / 删除的文本内容。
+
+以上都只是**测试自身**的问题，业务实现未改动。
+
 ## v1.67.05 (2026-10-15)
 
 ### 全量功能验证（A / B / C 三项）—— 真测试从约 40 个扩到 125+，并补上首条桌面端真实 App 冒烟

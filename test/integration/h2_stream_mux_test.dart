@@ -204,7 +204,7 @@ void main() {
       }
 
       socket.listen((incoming) {
-        var bytes = incoming;
+        List<int> bytes = incoming;
         if (awaitingPreface) {
           prefix.addAll(bytes);
           if (prefix.length < _preface.length) return;

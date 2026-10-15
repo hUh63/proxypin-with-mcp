@@ -241,9 +241,9 @@ void main() {
       proxyPort = (await proxy.bind(0)).port;
 
       // 3) 客户端：HttpClient 走代理；不校验证书（代理是自签 CA）
-      client = io.HttpClient()
-        ..badCertificateCallback = (cert, host, port) => true
-        ..findProxy = (uri) => 'PROXY 127.0.0.1:$proxyPort';
+      client = io.HttpClient();
+      client.badCertificateCallback = (cert, host, port) => true;
+      client.findProxy = (uri) => 'PROXY 127.0.0.1:$proxyPort';
     });
 
     tearDown(() async {

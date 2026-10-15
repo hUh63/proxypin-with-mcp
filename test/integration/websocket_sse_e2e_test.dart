@@ -337,7 +337,7 @@ void main() {
       // 代理侧必须同时看到两个方向的明文帧
       expect(
           await _waitUntil(() =>
-              capture.fromClient.containsAll(['ping-1', 'ping-2']) && capture.fromServer.containsAll(['echo:ping-1', 'echo:ping-2'])),
+              capture.fromClient.toSet().containsAll(['ping-1', 'ping-2']) && capture.fromServer.toSet().containsAll(['echo:ping-1', 'echo:ping-2'])),
           isTrue,
           reason: '代理侧未捕获双向明文帧：${capture.messages.map((m) => '${m.$2}/${m.$1.payloadDataAsString}').toList()}');
 

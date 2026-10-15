@@ -33,7 +33,7 @@ void main() {
     });
 
     test('构造后再 parse 回同一 mime / charset', () {
-      const original = ContentType('text', 'html', charset: 'gbk');
+      final original = ContentType('text', 'html', charset: 'gbk');
       final parsed = ContentType.parse(original.toString());
 
       expect(parsed.mimeType, original.mimeType);

@@ -17,6 +17,7 @@
  * 不参与 quality.yml 的 `flutter test --exclude-tags integration`。
  */
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:flutter/material.dart';
@@ -88,7 +89,7 @@ void main() {
               Uri.parse('http://127.0.0.1:${origin.port}/ping'),
             );
             final resp = await req.close();
-            final body = await resp.transform(io.utf8.decoder).join();
+            final body = await resp.transform(utf8.decoder).join();
 
             expect(resp.statusCode, 200, reason: '经代理转发应拿到源站状态码');
             expect(body, 'origin-ok:/ping', reason: '经代理转发应拿到源站明文响应体');

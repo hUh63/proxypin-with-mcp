@@ -130,9 +130,11 @@ void main() {
       final blocks = _readBlocks(bytes);
       expect(blocks.map((b) => b.type).toList(), [0x0A0D0D0A, 1, 6, 6],
           reason: 'SHB + IDB + 请求 EPB + 响应 EPB');
-      expect(blocks[0].bytes.length, 20);
+      // _readBlocks 已剥离 8 字节块头 + 4 字节块尾：SHB 内容 = 28 - 12 = 16
+      expect(blocks[0].bytes.length, 16);
       expect(_u32(blocks[0].bytes, 0), 0x1A2B3C4D, reason: '字节序 magic');
-      expect(blocks[1].bytes.length, 12);
+      // IDB 内容 = 20 - 12 = 8
+      expect(blocks[1].bytes.length, 8);
       expect(_u16be(blocks[1].bytes, 0), 1, reason: 'link type 必须是 Ethernet');
 
       // 请求帧：先校验 EPB 的 caplen/origlen 与补零
@@ -372,11 +374,22 @@ void main() {
     test('diffChars：字符级改动区间（半开区间），可还原出改动内容', () {
       final inserted = diffChars('hello world', 'hello brave world');
       expect(inserted.leftRanges, isEmpty);
-      expect(inserted.rightRanges.map((r) => 'hello brave world'.substring(r.start, r.end)).join(), 'brave ');
+      // LCS 对插入点有歧义（' brave' / 'brave ' 结果等价），校验插入的文本内容
+      expect(
+          inserted.rightRanges
+              .map((r) => 'hello brave world'.substring(r.start, r.end))
+              .join()
+              .trim(),
+          'brave');
 
       final removed = diffChars('hello brave world', 'hello world');
       expect(removed.rightRanges, isEmpty);
-      expect(removed.leftRanges.map((r) => 'hello brave world'.substring(r.start, r.end)).join(), 'brave ');
+      expect(
+          removed.leftRanges
+              .map((r) => 'hello brave world'.substring(r.start, r.end))
+              .join()
+              .trim(),
+          'brave');
 
       final changed = diffChars('foo = 1', 'foo = 2');
       expect(changed.leftRanges.map((r) => 'foo = 1'.substring(r.start, r.end)).join(), '1');

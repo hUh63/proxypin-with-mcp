@@ -8,6 +8,7 @@
  * 全部为纯计算，无 socket / 无原生依赖；不打 integration 标签，CI 会真实执行。
  */
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -73,7 +74,7 @@ void main() {
       expect(captureGroupsOf(noGroup), isEmpty);
     });
 
-    test('expandReplacement：组引用 / ${n} / 转义 / 大小写', () {
+    test('expandReplacement：组引用 / \${n} / 转义 / 大小写', () {
       final m = RegExp(r'(\w+)@(\w+)').firstMatch('USER@host')!;
       expect(expandReplacement(r'$2/$1', m), 'host/USER');
       expect(expandReplacement(r'${2}-${1}', m), 'host-USER');
@@ -120,7 +121,7 @@ void main() {
     });
 
     test('mutate / mutateAll：变异是「等价写法」而非加密，且组合可复现', () async {
-      final loc = await lookupAppLocalizations(const Locale('en'));
+      final loc = await lookupAppLocalizations(const ui.Locale('en'));
       const payload = 'select * from users where id=1';
 
       final variants = WafBypass.mutateAll(payload, loc);
