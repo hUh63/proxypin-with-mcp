@@ -1334,6 +1334,8 @@
   "mcpConnDhizukuGranted": "Dhizuku autorizado",
   "mcpConnRequestDhizuku": "Solicitar autorización de Dhizuku",
   "mcpConnDhizukuAuthIncomplete": "Autorización no completada: asegúrate de que Dhizuku esté instalado y se haya completado la activación de Owner",
+  "mcpConnNotInstalled": "No instalado",
+  "mcpConnDhizukuNotInstalledHint": "Dhizuku no está instalado. Instálalo y actívalo como propietario del dispositivo; después vuelve aquí para autorizarlo.",
   "mcpConnAvailableTools": "Herramientas disponibles",
   "mcpConnToolCount": "{count} herramientas",
   "mcpConnDisabledToolsHint": "Las herramientas desactivadas se ocultan de la lista y la IA no puede llamarlas.",

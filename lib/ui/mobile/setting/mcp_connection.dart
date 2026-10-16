@@ -527,6 +527,8 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     // hasShizuku 只代表 Shizuku 正在运行（binder 已连接），不代表本应用已获授权
     final shizukuGranted = _deviceInfo?['shizukuGranted'] as bool? ?? false;
     final hasDhizuku = _deviceInfo?['hasDhizuku'] as bool? ?? false;
+    // Dhizuku 是否已安装：用于区分「未安装」与「已安装但未授权」
+    final dhizukuInstalled = _deviceInfo?['dhizukuInstalled'] as bool? ?? false;
     final accessibilityEnabled =
         _deviceInfo?['accessibilityEnabled'] as bool? ?? false;
 
@@ -1021,10 +1023,17 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ListTile(
                         leading: const Icon(Icons.verified_user),
                         title: const Text('Dhizuku'),
+                        // 三态：已授权（可用）/ 已安装但未授权 / 未安装
                         trailing: Text(
-                          hasDhizuku ? loc.mcpConnAvailable : loc.mcpConnUnavailable,
+                          hasDhizuku
+                              ? loc.mcpConnDhizukuGranted
+                              : (dhizukuInstalled
+                                  ? loc.mcpConnNotGranted
+                                  : loc.mcpConnNotInstalled),
                           style: TextStyle(
-                            color: hasDhizuku ? Colors.green : Colors.grey,
+                            color: hasDhizuku
+                                ? Colors.green
+                                : (dhizukuInstalled ? Colors.orange : Colors.grey),
                           ),
                         ),
                       ),
@@ -1110,7 +1119,8 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                     ),
                   ),
                 ],
-                if (McpScreen.isSupported && !hasDhizuku) ...[
+                // Dhizuku 已安装但未授权 -> 显示「请求授权」按钮
+                if (McpScreen.isSupported && dhizukuInstalled && !hasDhizuku) ...[
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -1130,6 +1140,20 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         await _loadDeviceInfo();
                         if (mounted) setState(() {});
                       },
+                    ),
+                  ),
+                ],
+                // Dhizuku 未安装 -> 只给说明，不显示授权按钮（否则点了必然失败）
+                if (McpScreen.isSupported && !dhizukuInstalled) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      loc.mcpConnDhizukuNotInstalledHint,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.grey),
                     ),
                   ),
                 ],

@@ -2017,6 +2017,8 @@
   "mcpConnDhizukuGranted": "Dhizuku 已授权",
   "mcpConnRequestDhizuku": "请求 Dhizuku 授权",
   "mcpConnDhizukuAuthIncomplete": "授权未完成：请确认已安装 Dhizuku 并完成 Owner 激活",
+  "mcpConnNotInstalled": "未安装",
+  "mcpConnDhizukuNotInstalledHint": "未检测到 Dhizuku。请先安装 Dhizuku 并把它激活为设备所有者，再回到这里授权。",
   "mcpConnAvailableTools": "可用工具",
   "mcpConnToolCount": "共 {count} 个",
   "@mcpConnToolCount": {

@@ -1580,6 +1580,8 @@
   "mcpConnDhizukuGranted": "Dhizuku 已授權",
   "mcpConnRequestDhizuku": "請求 Dhizuku 授權",
   "mcpConnDhizukuAuthIncomplete": "授權未完成：請確認已安裝 Dhizuku 並完成 Owner 啟用",
+  "mcpConnNotInstalled": "未安裝",
+  "mcpConnDhizukuNotInstalledHint": "未偵測到 Dhizuku。請先安裝 Dhizuku 並將其啟用為裝置擁有者，再回到這裡授權。",
   "mcpConnAvailableTools": "可用工具",
   "mcpConnToolCount": "共 {count} 個",
   "mcpConnDisabledToolsHint": "關閉的工具將從工具列表中隱藏，AI 無法呼叫。",

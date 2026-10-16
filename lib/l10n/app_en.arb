@@ -2077,6 +2077,8 @@
   "mcpConnDhizukuGranted": "Dhizuku authorized",
   "mcpConnRequestDhizuku": "Request Dhizuku authorization",
   "mcpConnDhizukuAuthIncomplete": "Authorization not completed: make sure Dhizuku is installed and Owner activation is finished",
+  "mcpConnNotInstalled": "Not installed",
+  "mcpConnDhizukuNotInstalledHint": "Dhizuku is not installed. Install it and activate it as device owner, then come back here to grant access.",
   "mcpConnAvailableTools": "Available tools",
   "mcpConnToolCount": "{count} tools",
   "@mcpConnToolCount": {

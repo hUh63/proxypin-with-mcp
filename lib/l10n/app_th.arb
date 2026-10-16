@@ -1334,6 +1334,8 @@
   "mcpConnDhizukuGranted": "อนุญาต Dhizuku แล้ว",
   "mcpConnRequestDhizuku": "ขออนุญาต Dhizuku",
   "mcpConnDhizukuAuthIncomplete": "การอนุญาตยังไม่เสร็จสิ้น: โปรดตรวจสอบว่าติดตั้ง Dhizuku และเปิดใช้งาน Owner เสร็จแล้ว",
+  "mcpConnNotInstalled": "ยังไม่ได้ติดตั้ง",
+  "mcpConnDhizukuNotInstalledHint": "ยังไม่พบ Dhizuku กรุณาติดตั้ง Dhizuku และเปิดใช้งานเป็นเจ้าของอุปกรณ์ จากนั้นกลับมาให้สิทธิ์ที่นี่",
   "mcpConnAvailableTools": "เครื่องมือที่ใช้ได้",
   "mcpConnToolCount": "ทั้งหมด {count} รายการ",
   "mcpConnDisabledToolsHint": "เครื่องมือที่ปิดไว้จะถูกซ่อนจากรายการ และ AI เรียกใช้ไม่ได้",

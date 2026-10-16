@@ -261,6 +261,8 @@ class McpPlugin : FlutterPlugin {
         val accessibilityEnabled = McpAccessibilityService.isRunning()
         val hasShizuku = hasShizuku()
         val hasDhizuku = hasDhizuku()
+        // Dhizuku 是否已安装：用于区分「未安装」与「已安装但未授权」两种状态，界面文案更精确
+        val dhizukuInstalled = isDhizukuInstalled()
 
         val mode = when {
             hasRoot -> "root"
@@ -284,6 +286,7 @@ class McpPlugin : FlutterPlugin {
                 Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
             }.getOrDefault(false)),
             "hasDhizuku" to hasDhizuku,
+            "dhizukuInstalled" to dhizukuInstalled,
             "accessibilityEnabled" to accessibilityEnabled,
             "mode" to mode
         )
@@ -815,6 +818,20 @@ class McpPlugin : FlutterPlugin {
         }
         dhizukuStatus = result
         return result
+    }
+
+    /**
+     * Dhizuku 是否**已安装**（不要求已激活为 Device Owner、也不要求已授权给本应用）。
+     * 只用于界面区分「未安装 Dhizuku」与「已安装但未授权」，不参与权限判定。
+     */
+    private fun isDhizukuInstalled(): Boolean {
+        return try {
+            val pm = context?.packageManager ?: return false
+            pm.getPackageInfo(DHIZUKU_PACKAGE, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     // ---------------- Shizuku UserService（官方推荐的 shell 通道）----------------

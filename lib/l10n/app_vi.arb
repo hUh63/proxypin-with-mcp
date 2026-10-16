@@ -1334,6 +1334,8 @@
   "mcpConnDhizukuGranted": "Đã cấp quyền Dhizuku",
   "mcpConnRequestDhizuku": "Yêu cầu cấp quyền Dhizuku",
   "mcpConnDhizukuAuthIncomplete": "Chưa hoàn tất ủy quyền: hãy chắc chắn đã cài Dhizuku và hoàn tất kích hoạt Owner",
+  "mcpConnNotInstalled": "Chưa cài đặt",
+  "mcpConnDhizukuNotInstalledHint": "Chưa phát hiện Dhizuku. Hãy cài đặt Dhizuku và kích hoạt nó làm chủ sở hữu thiết bị, sau đó quay lại đây để cấp quyền.",
   "mcpConnAvailableTools": "Công cụ khả dụng",
   "mcpConnToolCount": "Tổng {count} công cụ",
   "mcpConnDisabledToolsHint": "Công cụ đã tắt sẽ bị ẩn khỏi danh sách và AI không thể gọi.",

@@ -1334,6 +1334,8 @@
   "mcpConnDhizukuGranted": "Dhizuku diizinkan",
   "mcpConnRequestDhizuku": "Minta izin Dhizuku",
   "mcpConnDhizukuAuthIncomplete": "Otorisasi belum selesai: pastikan Dhizuku terpasang dan aktivasi Owner telah selesai",
+  "mcpConnNotInstalled": "Belum terpasang",
+  "mcpConnDhizukuNotInstalledHint": "Dhizuku belum terpasang. Pasang lalu aktifkan sebagai pemilik perangkat, lalu kembali ke sini untuk memberi izin.",
   "mcpConnAvailableTools": "Alat tersedia",
   "mcpConnToolCount": "{count} alat",
   "mcpConnDisabledToolsHint": "Alat yang dinonaktifkan disembunyikan dari daftar dan tidak dapat dipanggil oleh AI.",
