@@ -14,8 +14,10 @@
 
     <!-- Shizuku permission - required for Shizuku to recognize and manage this app -->
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
-    <!-- Dhizuku permission - required for Dhizuku to recognize and manage this app -->
-    <uses-permission android:name="me.bmax.dhizuku.permission.DHIZUKU_API" />
+    <!-- Dhizuku permission —— Dhizuku 通过该权限识别哪些应用可以申请设备所有者权限。
+         注意正确的包名是 com.rosan.dhizuku，权限名后缀是 .permission.API；
+         之前写成 me.bmax.dhizuku.permission.DHIZUKU_API 是错的，Dhizuku 会直接忽略本应用。 -->
+    <uses-permission android:name="com.rosan.dhizuku.permission.API" />
 
     <!-- Declare media/storage permissions. These are required if your app or
          plugins directly read media files. You still need to request these at
@@ -30,6 +32,10 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+
+    <!-- Dhizuku-API 声明的 minSdk 是 26，高于本应用的 minSdk，因此放开合并检查；
+         所有 Dhizuku 调用点都有 Build.VERSION.SDK_INT >= O 守卫，在低版本系统上不会触达。 -->
+    <uses-sdk tools:overrideLibrary="com.rosan.dhizuku.api" />
 
     <application
         android:enableOnBackInvokedCallback="true"

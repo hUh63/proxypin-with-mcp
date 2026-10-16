@@ -1,5 +1,59 @@
 # Changelog
 
+## v1.67.09 (2026-10-16)
+
+### 修复：Dhizuku 授权/检测/shell 全链路失效；Shizuku shell 改用官方 UserService；UI 工具补上特权通道
+
+按 Dhizuku 官方仓库（iamr0s/Dhizuku-API）文档与源码逐项核对后确认：「请求 Dhizuku 授权」
+及其相关路径**从未真正工作过**。本轮全部修正，并把 Shizuku / Dhizuku 的能力接进 UI 工具。
+
+**1. Dhizuku 全链路修正（此前包名与 API 全错）**
+
+官方包名是 `com.rosan.dhizuku`（v1.0.2 至今；IzzyOnDroid AppID 亦同），代码里写的
+`com.bmax.dhizuku` / `me.bmax.dhizuku` 都**不存在**。逐项对照官方 API：
+
+| 官方真实 API | 原代码 | 处理 |
+|---|---|---|
+| `com.rosan.dhizuku.api.Dhizuku` | `com.bmax.dhizuku.api.Dhizuku`（反射） | 改用官方依赖 `io.github.iamr0s:Dhizuku-API:2.5.3` |
+| `Dhizuku.isPermissionGranted()` | `isOwnerGranted()` | 改官方方法 |
+| `Dhizuku.requestPermission(DhizukuRequestPermissionListener)` | `requestPermission(int)` + `add/removeRequestPermissionResultListener` + `REQUEST_PERMISSION_ID` | 改官方签名（这些 API 官方都不存在） |
+| `Dhizuku.newProcess(String[], String[], File)` | `execCommand(String)` | 改官方方法 |
+| `Dhizuku.getOwnerPackageName()` | 硬编码 `me.bmax.dhizuku` | 用官方 API |
+
+- 之所以**必须引入官方依赖**：Dhizuku 的 `DhizukuRequestPermissionListener` 是 abstract class
+  （继承自 AIDL Stub）而**不是 interface**，`java.lang.reflect.Proxy` 无法构造它。
+- `hasDhizuku()` 语义改为「服务可连接 **且** 本应用已被授权」，不再把「仅安装」当作可用
+  （旧逻辑会让 UI 显示可用、实际执行必然失败）。
+- `AndroidManifest` 权限名 `me.bmax.dhizuku.permission.DHIZUKU_API`
+  → **`com.rosan.dhizuku.permission.API`**。
+- Dhizuku-API 的 minSdk 为 26，故加 `tools:overrideLibrary="com.rosan.dhizuku.api"`，
+  且所有调用点都加 `Build.VERSION.SDK_INT >= O` 守卫。
+
+**2. Shizuku shell：改用官方推荐的 UserService**
+
+Shizuku changelog 13.1.3 明确 *"Prepare to remove Shizuku#newProcess, developers should have
+to use UserService instead"*。本轮：
+- 新增 `android/app/src/main/aidl/com/network/proxy/shizuku/IShellService.aidl` 与实现
+  `ShizukuShellService`（由 Shizuku 服务端以 shell / root 身份反射实例化）；为此在
+  `build.gradle` 开启 `buildFeatures.aidl = true`，并在 proguard 里 keep 该类与构造器。
+- `shellViaShizuku()` 改为「**UserService 优先、`Shizuku.newProcess` 兜底**」，同时去掉
+  `Class.forName("rikka.shizuku.Shizuku")` 反射 —— 该反射在 release 构建
+  （`minifyEnabled true`）下随时可能因 R8 重命名而失效。
+
+**3. UI 自动化工具补上特权通道（不开无障碍也能用）**
+
+此前 `tap / click / swipe / key_event / input_text / dump_ui` 只有「无障碍服务 → root」两条路，
+Shizuku / Dhizuku 完全没接；`screenshot` 更是只有 root 能用。现在统一为
+**`无障碍服务 → 特权 shell（root > Shizuku > Dhizuku）`**：
+- `input tap / swipe / keyevent / text`、`uiautomator dump` 走特权 shell；
+- `screenshot` 新增 Shizuku 通道（无障碍服务**做不到**截图，Shizuku 可以）——通过 UserService
+  在设备端直接 `screencap -p`；
+- `get_current_activity` 同样支持 Shizuku / Dhizuku。
+- 同步更新 MCP 工具描述（`dump_ui` / `screenshot` / `key_event` / `get_device_info`）。
+
+> ⚠️ 以上均为 Android 原生路径。CI 只能验证「Kotlin 编译 + Manifest 合并 + AIDL 生成」，
+> 授权弹窗、shell 执行、截图等行为需要在真机上验证。
+
 ## v1.67.08 (2026-10-16)
 
 ### 修复：最后一处编译错误；CI 测试门改为阻塞

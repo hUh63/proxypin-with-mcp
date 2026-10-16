@@ -51,6 +51,12 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+    buildFeatures {
+        // Shizuku UserService 需要 AIDL（android/app/src/main/aidl/...）。
+        // AGP 8.x 默认关闭 aidl，必须显式开启，否则 IShellService 不会生成 Stub。
+        aidl = true
+    }
+
     packagingOptions {
         dex {
             useLegacyPackaging true
@@ -105,4 +111,15 @@ dependencies {
     // Shizuku 标准 API：支持应用内弹出系统授权弹窗，并在 Shizuku 应用管理中可见
     implementation 'dev.rikka.shizuku:api:13.1.5'
     implementation 'dev.rikka.shizuku:provider:13.1.5'
+
+    // Dhizuku 官方 API（把 Device Owner 权限共享给本应用）。
+    // 之前这里没有依赖，Met 是用手工反射调用一个并不存在的包名（com.bmax.dhizuku /
+    // me.bmax.dhizuku）实现的，导致授权与 shell 全部静默失效；现改为官方 API。
+    // 注意两点：
+    //   1) Dhizuku-API 的 minSdk = 26，本应用 minSdk 更低 => 需要在 AndroidManifest 用
+    //      tools:overrideLibrary="com.rosan.dhizuku.api" 放开，且所有调用点先判断
+    //      Build.VERSION.SDK_INT >= Build.VERSION_CODES.O；
+    //   2) Dhizuku 的 DhizukuRequestPermissionListener 是 abstract class（不是 interface），
+    //      反射 Proxy 无法构造，这也是必须用官方依赖的原因。
+    implementation 'io.github.iamr0s:Dhizuku-API:2.5.3'
 }

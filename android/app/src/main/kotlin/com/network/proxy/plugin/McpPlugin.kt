@@ -12,6 +12,10 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONArray
 import org.json.JSONObject
+import com.network.proxy.shizuku.IShellService
+import com.network.proxy.shizuku.ShizukuShellService
+import com.rosan.dhizuku.api.Dhizuku
+import com.rosan.dhizuku.api.DhizukuRequestPermissionListener
 import rikka.shizuku.Shizuku
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -19,6 +23,10 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import android.content.ComponentName
+import android.content.ServiceConnection
+import android.os.IBinder
 
 /**
  * MCP Plugin for Flutter
@@ -46,6 +54,9 @@ class McpPlugin : FlutterPlugin {
     companion object {
         private const val CHANNEL_NAME = "com.proxy/mcpScreen"
         private const val SHIZUKU_REQUEST_CODE = 631
+
+        /** Dhizuku 应用包名（官方包名是 com.rosan.dhizuku，不存在 me.bmax / com.bmax）。 */
+        private const val DHIZUKU_PACKAGE = "com.rosan.dhizuku"
 
         // 原生 → Flutter 事件通道（悬浮球面板"跳转 MCP 设置"等）
         private const val TO_FLUTTER_CHANNEL = "com.proxy/toFlutter"
@@ -282,10 +293,15 @@ class McpPlugin : FlutterPlugin {
         if (McpAccessibilityService.isRunning() && McpAccessibilityService.currentPackage.isNotEmpty()) {
             return "${McpAccessibilityService.currentPackage}/${McpAccessibilityService.currentClassName}"
         }
-        if (hasRoot()) {
-            return shell("dumpsys activity activities | grep -E 'topResumedActivity|mResumedActivity'", true, 3000L)["stdout"].toString()
+        // 无无障碍服务：走特权 shell（root > Shizuku > Dhizuku）读 dumpsys
+        if (hasRoot() || hasShizuku() || hasDhizuku()) {
+            val out = shellWithMode(
+                "dumpsys activity activities | grep -E 'topResumedActivity|mResumedActivity'",
+                "auto", 5000L
+            )["stdout"].toString()
+            if (out.isNotBlank()) return out
         }
-        return "unknown (no root or accessibility)"
+        return "unknown (no accessibility / Shizuku / Dhizuku / root)"
     }
 
     // ==================== UI Dump ====================
@@ -295,23 +311,32 @@ class McpPlugin : FlutterPlugin {
         if (service != null) {
             return service.dumpUi(clickableOnly, packageFilter)
         }
-        if (hasRoot()) {
-            return dumpUiViaRoot(clickableOnly, packageFilter)
+        // 无无障碍服务：走特权 shell（root > Shizuku > Dhizuku）执行 uiautomator dump
+        if (hasRoot() || hasShizuku() || hasDhizuku()) {
+            return dumpUiViaShell(clickableOnly, packageFilter)
         }
-        throw UnsupportedOperationException("No accessibility service or root available. Enable accessibility in settings.")
+        throw UnsupportedOperationException("No accessibility service, Shizuku, Dhizuku or root available. Enable accessibility in settings.")
     }
 
     /**
-     * Dump UI hierarchy via root uiautomator command.
+     * Dump UI hierarchy via 特权 shell（root / Shizuku / Dhizuku）执行 uiautomator dump。
+     * 输出解析与无障碍路径保持一致（parseUiautomatorXml）。
      */
-    private fun dumpUiViaRoot(clickableOnly: Boolean, packageFilter: String?): String {
-        val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "uiautomator dump /dev/fd/1"))
-        val xml = BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).readText()
-        val stderr = BufferedReader(InputStreamReader(process.errorStream, Charsets.UTF_8)).readText()
-        val exitCode = process.waitFor()
-        
+    private fun dumpUiViaShell(clickableOnly: Boolean, packageFilter: String?): String {
+        val result = shellWithMode("uiautomator dump /dev/fd/1", "auto", 20_000L)
+        var xml = result["stdout"].toString()
+        val exitCode = (result["exitCode"] as? Number)?.toInt() ?: -1
+
         if (exitCode != 0 || xml.isBlank()) {
-            throw RuntimeException("uiautomator dump failed (exit=$exitCode): $stderr")
+            // 部分 ROM 不支持 /dev/fd/1，退回写临时文件再 cat
+            val fallback = shellWithMode(
+                "uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1; cat /sdcard/window_dump.xml",
+                "auto", 20_000L
+            )
+            xml = fallback["stdout"].toString()
+            if (xml.isBlank()) {
+                throw RuntimeException("uiautomator dump failed (exit=$exitCode): ${result["stderr"]}")
+            }
         }
 
         // Extract the XML hierarchy content
@@ -384,6 +409,19 @@ class McpPlugin : FlutterPlugin {
 
     // ==================== Actions ====================
 
+    /**
+     * 通过「特权 shell」执行命令：自动在 root > Shizuku > Dhizuku 中选择可用通道。
+     *
+     * 用途：在**未开启无障碍服务**时，为 tap / click / swipe / keyEvent / inputText / dumpUi
+     * 提供等价能力 —— Shizuku 的 shell 身份（uid 2000）本来就可以执行 input / uiautomator，
+     * 截图甚至只有 Shizuku/root 能做到（无障碍服务做不到）。
+     */
+    private fun runPrivilegedShell(command: String, timeoutMs: Long = 10_000L): Boolean {
+        if (!hasRoot() && !hasShizuku() && !hasDhizuku()) return false
+        val result = shellWithMode(command, "auto", timeoutMs)
+        return result["success"] == true
+    }
+
     private fun tap(x: Int, y: Int): Boolean {
         val service = McpAccessibilityService.instance
         if (service != null) {
@@ -396,11 +434,7 @@ class McpPlugin : FlutterPlugin {
             latch.await(10, TimeUnit.SECONDS)
             return result
         }
-        if (hasRoot()) {
-            shell("input tap $x $y", true, 10000L)
-            return true
-        }
-        throw UnsupportedOperationException("No accessibility service or root available")
+        return runPrivilegedShell("input tap $x $y")
     }
 
     private fun click(x: Int, y: Int, duration: Long): Boolean {
@@ -415,11 +449,7 @@ class McpPlugin : FlutterPlugin {
             latch.await(10, TimeUnit.SECONDS)
             return result
         }
-        if (hasRoot()) {
-            shell("input swipe $x $y $x $y $duration", true, 10000L)
-            return true
-        }
-        throw UnsupportedOperationException("No accessibility service or root available")
+        return runPrivilegedShell("input swipe $x $y $x $y $duration")
     }
 
     private fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, duration: Long): Boolean {
@@ -434,11 +464,7 @@ class McpPlugin : FlutterPlugin {
             latch.await(10, TimeUnit.SECONDS)
             return result
         }
-        if (hasRoot()) {
-            shell("input swipe $x1 $y1 $x2 $y2 $duration", true, 10000L)
-            return true
-        }
-        throw UnsupportedOperationException("No accessibility service or root available")
+        return runPrivilegedShell("input swipe $x1 $y1 $x2 $y2 $duration")
     }
 
     private fun keyEvent(keycode: Int): Boolean {
@@ -448,14 +474,12 @@ class McpPlugin : FlutterPlugin {
         if (service != null && accessibilitySupported) {
             return service.performGlobalActionByKeycode(keycode)
         }
-        if (hasRoot()) {
-            shell("input keyevent $keycode", true, 10000L)
-            return true
-        }
+        // 其它键码 / 无无障碍服务：走特权 shell（root > Shizuku > Dhizuku）
+        if (runPrivilegedShell("input keyevent $keycode")) return true
         if (service != null && !accessibilitySupported) {
-            throw UnsupportedOperationException("Keycode $keycode is not supported by accessibility service. Supported: 3=HOME, 4=BACK, 26=POWER, 187=RECENTS. Use root for other keys.")
+            throw UnsupportedOperationException("Keycode $keycode is not supported by accessibility service. Supported: 3=HOME, 4=BACK, 26=POWER, 187=RECENTS. Use root/Shizuku for other keys.")
         }
-        throw UnsupportedOperationException("No accessibility service or root available")
+        throw UnsupportedOperationException("No accessibility service, Shizuku, Dhizuku or root available")
     }
 
     private fun inputText(text: String): Boolean {
@@ -463,37 +487,51 @@ class McpPlugin : FlutterPlugin {
         if (service != null) {
             return service.setText(text)
         }
-        if (hasRoot()) {
-            // 使用 Android input text 命令的安全转义
-            // input text 命令中空格需用 %s 表示，其他特殊字符需要转义
-            val escaped = text
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("'", "\\'")
-                .replace("`", "\\`")
-                .replace("$", "\\$")
-                .replace("(", "\\(")
-                .replace(")", "\\)")
-                .replace(";", "\\;")
-                .replace("|", "\\|")
-                .replace("&", "\\&")
-                .replace("<", "\\<")
-                .replace(">", "\\>")
-                .replace("\n", "%n")
-                .replace(" ", "%s")
-            shell("input text \"$escaped\"", true, 10000L)
-            return true
-        }
-        throw UnsupportedOperationException("No accessibility service or root available")
+        // 无无障碍服务：走特权 shell（root > Shizuku > Dhizuku）执行 input text。
+        // 注意 input text 的空格要写成 %s、换行写成 %n，其余特殊字符需要转义
+        val escaped = text
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("'", "\\'")
+            .replace("`", "\\`")
+            .replace("$", "\\$")
+            .replace("(", "\\(")
+            .replace(")", "\\)")
+            .replace(";", "\\;")
+            .replace("|", "\\|")
+            .replace("&", "\\&")
+            .replace("<", "\\<")
+            .replace(">", "\\>")
+            .replace("\n", "%n")
+            .replace(" ", "%s")
+        return runPrivilegedShell("input text \"$escaped\"")
     }
 
     // ==================== Screenshot ====================
 
+    /**
+     * 截图。
+     *
+     * 通道优先级：root（su + screencap）> Shizuku（UserService 内直接 screencap）。
+     * 无障碍服务**无法**截图，所以对非 root 用户来说 Shizuku 是唯一可用的自动化截图途径；
+     * 两者都不可用时才报错（MediaProjection 方案尚未实现）。
+     */
     private fun screenshot(): String {
         if (hasRoot()) {
             return screenshotViaRoot()
         }
-        throw UnsupportedOperationException("Screenshot requires root. Non-root MediaProjection not yet implemented.")
+        if (hasShizuku()) {
+            try {
+                val svc = ensureShizukuUserService()
+                if (svc != null) {
+                    val bytes = svc.screencap()
+                    if (bytes.isNotEmpty()) return Base64.encodeToString(bytes, Base64.NO_WRAP)
+                }
+            } catch (e: Throwable) {
+                Log.w("ProxyPin", "screenshot via shizuku failed", e)
+            }
+        }
+        throw UnsupportedOperationException("Screenshot requires root or Shizuku. Non-root MediaProjection not yet implemented.")
     }
 
     private fun screenshotViaRoot(): String {
@@ -637,55 +675,48 @@ class McpPlugin : FlutterPlugin {
         }
     }
 
+    /**
+     * 请求 Dhizuku 授权（官方 API）。
+     *
+     * 说明：Dhizuku 的 DhizukuRequestPermissionListener 是 abstract class（继承自 AIDL Stub），
+     * **不是 interface**，因此 java.lang.reflect.Proxy 无法构造它 —— 这是必须引入官方依赖
+     * io.github.iamr0s:Dhizuku-API 的原因（此前用反射调用一个并不存在的包名
+     * com.bmax.dhizuku.api，导致授权永远静默失败）。
+     *
+     * 流程：init() 连接 Dhizuku 服务 -> isPermissionGranted() 已授权直接返回 true ->
+     * 否则 requestPermission(listener) 拉起 Dhizuku 授权界面，用户允许后回调返回结果。
+     */
     private fun requestDhizukuAuthorization(): Boolean {
-        // 优先走 Dhizuku 标准 API（应用内弹出授权弹窗），失败回退到打开 Dhizuku 应用
-        try {
-            val context = context ?: return openDhizukuApp()
-            val clazz = Class.forName("com.bmax.dhizuku.api.Dhizuku")
-            // 初始化
-            clazz.getMethod("init", android.content.Context::class.java).invoke(null, context)
+        return try {
+            val ctx = context ?: return openDhizukuApp()
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return openDhizukuApp()
+            // init() 返回 false => 未安装 Dhizuku 或其服务不可用
+            if (!Dhizuku.init(ctx)) return openDhizukuApp()
+            if (Dhizuku.isPermissionGranted()) return true
 
-            val isOwnerGranted = clazz.getMethod("isOwnerGranted").invoke(null) as Boolean
-            if (isOwnerGranted) {
-                return true
-            }
-
-            // requestPermission 触发 Dhizuku 的标准授权弹窗，等待用户操作
-            var granted = false
+            val granted = AtomicBoolean(false)
             val latch = CountDownLatch(1)
-            val listenerInterface = Class.forName("com.bmax.dhizuku.api.Dhizuku\$OnRequestPermissionResultListener")
-            val handler = java.lang.reflect.InvocationHandler { _, method, args ->
-                if (method.name == "onRequestPermissionResult" && args != null && args.size >= 2) {
-                    granted = (args[1] as Int) == 0
+            Dhizuku.requestPermission(object : DhizukuRequestPermissionListener() {
+                override fun onRequestPermission(grantResult: Int) {
+                    granted.set(grantResult == PackageManager.PERMISSION_GRANTED)
                     latch.countDown()
                 }
-                null
-            }
-            val listener = java.lang.reflect.Proxy.newProxyInstance(
-                listenerInterface.classLoader, arrayOf(listenerInterface), handler)
-
-            clazz.getMethod("addRequestPermissionResultListener", listenerInterface).invoke(null, listener)
-            try {
-                val requestCodeField = clazz.getField("REQUEST_PERMISSION_ID")
-                val requestCode = requestCodeField.get(null) as Int
-                clazz.getMethod("requestPermission", Int::class.javaPrimitiveType).invoke(null, requestCode)
-                latch.await(90, TimeUnit.SECONDS)
-            } finally {
-                clazz.getMethod("removeRequestPermissionResultListener", listenerInterface)
-                    .invoke(null, listener)
-            }
-            return granted
+            })
+            latch.await(90, TimeUnit.SECONDS)
+            // 兜底：即使回调未触发，用户在 Dhizuku 里手动授权后实时检查也会成功
+            granted.get() || Dhizuku.isPermissionGranted()
         } catch (e: Throwable) {
-            // API 不可用（未装 Dhizuku / 版本过旧），回退：打开 Dhizuku 应用
-            return openDhizukuApp()
+            // API 不可用（未装 Dhizuku / 版本过旧），回退：打开 Dhizuku 应用让用户手动处理
+            Log.w("ProxyPin", "requestDhizukuAuthorization failed", e)
+            openDhizukuApp()
         }
     }
 
-    /** 打开 Dhizuku 应用（回退路径） */
+    /** 打开 Dhizuku 应用（回退路径）。包名固定为 com.rosan.dhizuku。 */
     private fun openDhizukuApp(): Boolean {
         return try {
             val pm = context?.packageManager ?: return false
-            val dhizukuPkg = "me.bmax.dhizuku"
+            val dhizukuPkg = DHIZUKU_PACKAGE
 
             val intent = pm.getLaunchIntentForPackage(dhizukuPkg)
             if (intent != null) {
@@ -693,7 +724,7 @@ class McpPlugin : FlutterPlugin {
                 context?.startActivity(intent)
                 true
             } else {
-                val dhizukuIntent = Intent("me.bmax.dhizuku.action.OPEN").apply {
+                val dhizukuIntent = Intent("$dhizukuPkg.action.OPEN").apply {
                     setPackage(dhizukuPkg)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
@@ -762,8 +793,10 @@ class McpPlugin : FlutterPlugin {
     }
 
     /**
-     * 检测 Dhizuku（Device Owner 扩展）是否可用：
-     * 检查 me.bmax.dhizuku 是否被授予 Device Owner 权限
+     * 检测 Dhizuku 是否「已授权可用」。
+     *
+     * 语义 = Dhizuku 服务可连接（已安装且已激活为 Device Owner）**且**本应用已被其授权。
+     * 不再使用「仅安装即算可用」的旧逻辑：那会让 UI 显示可用、但 shell 实际执行必然失败。
      */
     @Volatile
     private var dhizukuStatus: Boolean? = null
@@ -771,52 +804,136 @@ class McpPlugin : FlutterPlugin {
     private fun hasDhizuku(): Boolean {
         dhizukuStatus?.let { return it }
         val result = try {
-            val pm = context?.packageManager ?: return false
-            val dpm = context?.getSystemService(android.content.Context.DEVICE_POLICY_SERVICE)
-                    as? android.app.admin.DevicePolicyManager
-            val isOwner = dpm?.isDeviceOwnerApp("me.bmax.dhizuku") == true
-            // Dhizuku 未作为 device owner 时，检查其是否已安装（部分系统用其它方式激活）
-            val installed = try {
-                pm.getPackageInfo("me.bmax.dhizuku", 0)
-                true
-            } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                 false
+            } else {
+                val ctx = context
+                ctx != null && Dhizuku.init(ctx) && Dhizuku.isPermissionGranted()
             }
-            isOwner || installed
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             false
         }
         dhizukuStatus = result
         return result
     }
 
+    // ---------------- Shizuku UserService（官方推荐的 shell 通道）----------------
+
+    @Volatile
+    private var shizukuShellService: IShellService? = null
+    @Volatile
+    private var shizukuShellBinding = false
+    @Volatile
+    private var shizukuShellError: String? = null
+    private val shizukuShellLock = java.lang.Object()
+
+    private val shizukuUserServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            synchronized(shizukuShellLock) {
+                shizukuShellService =
+                    if (binder != null && binder.pingBinder()) IShellService.Stub.asInterface(binder) else null
+                shizukuShellBinding = false
+                if (shizukuShellService == null) shizukuShellError = "user service binder is null"
+                shizukuShellLock.notifyAll()
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            synchronized(shizukuShellLock) {
+                shizukuShellService = null
+                shizukuShellError = "user service disconnected"
+            }
+        }
+    }
+
     /**
-     * 通过 Shizuku 执行 shell 命令（无需 root）
-     * 注：Shizuku API 13 起官方移除直接 newProcess，需改为 User Service；
-     * 此处保留运行时反射以兼容旧版 Shizuku，API 13+ 将走 root/su 路径。
+     * 确保 Shizuku UserService 已绑定，返回其接口（最长等待 10 秒）。
+     * 绑定结果会缓存；断开后下次调用会重新绑定。
+     */
+    private fun ensureShizukuUserService(): IShellService? {
+        shizukuShellService?.let { return it }
+        if (!Shizuku.pingBinder()) return null
+        if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+            shizukuShellError = "permission not granted"
+            return null
+        }
+        if (Shizuku.getVersion() < 10) {
+            shizukuShellError = "requires Shizuku API 10+"
+            return null
+        }
+        val ctx = context ?: return null
+        synchronized(shizukuShellLock) {
+            shizukuShellService?.let { return it }
+            if (shizukuShellBinding) {
+                shizukuShellLock.wait(10_000)
+                return shizukuShellService
+            }
+            shizukuShellBinding = true
+            shizukuShellError = null
+            try {
+                val args = Shizuku.UserServiceArgs(
+                    ComponentName(ctx.packageName, ShizukuShellService::class.java.name))
+                    .daemon(false)
+                    .processNameSuffix("shizuku_shell")
+                    .debuggable(false)
+                    .version(1)
+                Shizuku.bindUserService(args, shizukuUserServiceConnection)
+                shizukuShellLock.wait(10_000)
+            } catch (e: Throwable) {
+                shizukuShellError = e.message
+                shizukuShellBinding = false
+            }
+            return shizukuShellService
+        }
+    }
+
+    /**
+     * 通过 Shizuku 执行 shell 命令（无需 root）。
+     *
+     * 通道优先级：
+     *   1) UserService —— 官方推荐（Shizuku 13.1.3 起 newProcess 已被标记 "prepare to remove"）；
+     *   2) newProcess —— 旧版 Shizuku 兜底（13.x 仍可用，但已 deprecated）。
+     *
+     * 此前用 `Class.forName("rikka.shizuku.Shizuku")` 反射调用 newProcess，在 release 构建
+     * （minifyEnabled true）下随时可能因 R8 重命名而失效，现改为编译期直接调用。
      */
     private fun shellViaShizuku(command: String, timeoutMs: Long): Map<String, Any> {
+        if (!Shizuku.pingBinder()) {
+            return shizukuFail(command, timeoutMs, "Shizuku binder not connected")
+        }
+        if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+            return shizukuFail(command, timeoutMs, "Shizuku permission not granted")
+        }
+
+        // 1) UserService（官方推荐路径）
         try {
-            if (!Shizuku.pingBinder()) throw IllegalStateException("Shizuku binder not connected")
-            if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-                throw IllegalStateException("Shizuku permission not granted")
-            }
-            val process = try {
-                // 兼容旧版 Shizuku（< API 13）：反射调用 newProcess
-                val clazz = Class.forName("rikka.shizuku.Shizuku")
-                val newProcess = clazz.getMethod(
-                    "newProcess",
-                    Array<String>::class.java,
-                    Array<String>::class.java,
-                    String::class.java
+            val svc = ensureShizukuUserService()
+            if (svc != null) {
+                val json = JSONObject(svc.exec(command, timeoutMs))
+                return mapOf(
+                    "success" to (json.optInt("exitCode", -1) == 0),
+                    "command" to command,
+                    "useSu" to false,
+                    "useShizuku" to true,
+                    "shizukuChannel" to "user_service",
+                    "timeoutMs" to timeoutMs,
+                    "timedOut" to json.optBoolean("timedOut", false),
+                    "exitCode" to json.optInt("exitCode", -1),
+                    "stdout" to json.optString("stdout"),
+                    "stderr" to json.optString("stderr")
                 )
-                newProcess.invoke(null, arrayOf("sh", "-c", command), null, null) as java.lang.Process
-            } catch (e: Exception) {
-                throw IllegalStateException("Shizuku newProcess unavailable (API 13+), use root mode")
             }
+        } catch (e: Throwable) {
+            shizukuShellError = e.message
+        }
+
+        // 2) newProcess 兜底（旧版 Shizuku）
+        try {
+            @Suppress("DEPRECATION")
+            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
             val stdout = process.inputStream.bufferedReader().readText()
-            val stderr = process.getErrorStream().bufferedReader().readText()
-            val completed = process.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+            val stderr = process.errorStream.bufferedReader().readText()
+            val completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
             val exitCode = if (completed) process.exitValue() else -1
             if (!completed) process.destroyForcibly()
             return mapOf(
@@ -824,54 +941,71 @@ class McpPlugin : FlutterPlugin {
                 "command" to command,
                 "useSu" to false,
                 "useShizuku" to true,
+                "shizukuChannel" to "new_process",
                 "timeoutMs" to timeoutMs,
                 "timedOut" to !completed,
                 "exitCode" to exitCode,
                 "stdout" to stdout,
                 "stderr" to stderr
             )
-        } catch (e: Exception) {
-            return mapOf(
-                "success" to false,
-                "command" to command,
-                "useSu" to false,
-                "useShizuku" to true,
-                "timedOut" to false,
-                "exitCode" to -1,
-                "stdout" to "",
-                "stderr" to "Shizuku failed: ${e.message}"
-            )
+        } catch (e: Throwable) {
+            val reason = shizukuShellError ?: e.message ?: "unknown"
+            return shizukuFail(command, timeoutMs, "Shizuku exec unavailable: $reason")
         }
     }
 
+    private fun shizukuFail(command: String, timeoutMs: Long, message: String): Map<String, Any> = mapOf(
+        "success" to false,
+        "command" to command,
+        "useSu" to false,
+        "useShizuku" to true,
+        "timeoutMs" to timeoutMs,
+        "timedOut" to false,
+        "exitCode" to -1,
+        "stdout" to "",
+        "stderr" to "Shizuku failed: $message"
+    )
+
     /**
-     * 通过 Dhizuku 执行 shell 命令（Device Owner 权限，无需 root）
+     * 通过 Dhizuku 执行 shell 命令（以 Dhizuku 的 Device Owner 身份运行，无需 root）。
+     *
+     * 使用官方 API `Dhizuku.newProcess(String[] cmd, String[] env, File dir)`，它返回的
+     * DhizukuRemoteProcess 继承 java.lang.Process。此前调用的 "execCommand" 方法在官方
+     * API 里根本不存在（且包名也写错了），因此这条路径从来没能成功过。
      */
     private fun shellViaDhizuku(command: String, timeoutMs: Long): Map<String, Any> {
-        try {
-            val clazz = Class.forName("me.bmax.dhizuku.api.Dhizuku")
-            val execMethod = clazz.getMethod("execCommand", String::class.java)
-            val result = execMethod.invoke(null, command) as? String ?: ""
-            // execCommand 返回 {status: 0, stdout: "...", stderr: "..."} JSON
-            val json = org.json.JSONObject(result)
-            val code = json.optInt("status", -1)
-            return mapOf(
-                "success" to (code == 0),
+        return try {
+            val ctx = context ?: throw IllegalStateException("no context")
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                throw IllegalStateException("Dhizuku requires Android 8.0+")
+            }
+            if (!Dhizuku.init(ctx)) throw IllegalStateException("Dhizuku service unavailable")
+            if (!Dhizuku.isPermissionGranted()) throw IllegalStateException("Dhizuku permission not granted")
+
+            val process = Dhizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            val stdout = process.inputStream.bufferedReader().readText()
+            val stderr = process.errorStream.bufferedReader().readText()
+            val completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+            val exitCode = if (completed) process.exitValue() else -1
+            if (!completed) process.destroyForcibly()
+            mapOf(
+                "success" to (completed && exitCode == 0),
                 "command" to command,
                 "useSu" to false,
                 "useDhizuku" to true,
                 "timeoutMs" to timeoutMs,
-                "timedOut" to false,
-                "exitCode" to code,
-                "stdout" to json.optString("stdout", ""),
-                "stderr" to json.optString("stderr", "")
+                "timedOut" to !completed,
+                "exitCode" to exitCode,
+                "stdout" to stdout,
+                "stderr" to stderr
             )
-        } catch (e: Exception) {
-            return mapOf(
+        } catch (e: Throwable) {
+            mapOf(
                 "success" to false,
                 "command" to command,
                 "useSu" to false,
                 "useDhizuku" to true,
+                "timeoutMs" to timeoutMs,
                 "timedOut" to false,
                 "exitCode" to -1,
                 "stdout" to "",

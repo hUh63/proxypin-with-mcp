@@ -737,7 +737,7 @@ request_id from get_recent_requests or search_requests.''',
         'description':
             'Get Android device info (model, brand, Android version, WiFi IP, root and ' 
             'accessibility status). Call this first when device automation is needed: the ' 
-            'root and accessibility flags tell you which other device tools will actually ' 
+            'root / accessibility / Shizuku / Dhizuku readiness flags tell you which device tools will actually ' 
             'work.',
         'inputSchema': {'type': 'object', 'properties': {}},
       },
@@ -752,7 +752,7 @@ request_id from get_recent_requests or search_requests.''',
       {
         'name': 'dump_ui',
         'description':
-            'Dump the current Android UI hierarchy as a JSON array of elements. Call this ' 
+            'Dump the current Android UI hierarchy as a JSON array of elements (via the accessibility service, or via uiautomator over Shizuku / root when it is off). Call this ' 
             'when you need to locate a control by text or id before tapping it, which is ' 
             'more reliable than guessing coordinates.',
         'inputSchema': {
@@ -828,7 +828,7 @@ request_id from get_recent_requests or search_requests.''',
         'name': 'key_event',
         'description':
             'Send a hardware key event. Keycodes: 3=HOME, 4=BACK, 26=POWER, 82=MENU, ' 
-            '187=RECENTS. Call this when the user wants to navigate back or home, or wake ' 
+            '187=RECENTS. Only 3/4/26/187 work via the accessibility service; other keycodes need root or Shizuku. Call this when the user wants to navigate back or home, or wake ' 
             'the screen.',
         'inputSchema': {
           'type': 'object',
@@ -858,7 +858,7 @@ request_id from get_recent_requests or search_requests.''',
       {
         'name': 'screenshot',
         'description':
-            'Take a screenshot and return it as Base64 PNG (requires root). Call this ' 
+            'Take a screenshot and return it as Base64 PNG (requires root or Shizuku; the accessibility service cannot capture the screen). Call this ' 
             'when the user wants to see the current screen, or to visually confirm the ' 
             'result of a tap or input sequence.',
         'inputSchema': {'type': 'object', 'properties': {}},
