@@ -20,7 +20,10 @@ import java.util.concurrent.TimeUnit
  *
  * 因为运行身份已经是 shell(uid 2000) 或 root(uid 0)，这里直接 fork 子进程即可，不需要 su。
  */
-class ShizukuShellService : IShellService.Stub() {
+class ShizukuShellService : IShellService.Stub {
+
+    /** 无参构造器（Shizuku 会优先尝试带 Context 的那个，失败时回退到这里）。 */
+    constructor() : super()
 
     @Keep
     constructor(context: Context) : super()

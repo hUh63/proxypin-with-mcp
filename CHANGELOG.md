@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.67.10 (2026-10-16)
+
+### 修复：v1.67.09 暴露的 2 个 Kotlin 编译错误（含一个重要 API 事实修正）
+
+APK 构建（`compileReleaseKotlin`）报出 2 个错误，均已修正：
+
+1. **`Shizuku.newProcess` 在 13.1.5 里已经是 private**
+   `e: McpPlugin.kt: Cannot access 'static fun newProcess(...)': it is private in 'rikka.shizuku.Shizuku'`
+   这同时说明**旧代码的 `Class.forName(...).getMethod("newProcess", ...)` 反射也一直是失败的**
+   （`getMethod` 只返回 public 方法）—— 也就是说在 Shizuku 13.1.5 上，Shizuku shell 从来没能成功执行过。
+   现在主路径是官方推荐的 **UserService**；`newProcess` 仅作为旧版 Shizuku 的兜底，改用
+   `getDeclaredMethod + setAccessible`，并在 proguard 中加
+   `-keep class rikka.shizuku.** { *; }`（避免 R8 在处理这段反射时把目标改名/删除）。
+
+2. **UserService 的 supertype 写法**
+   `e: ShizukuShellService.kt:23: Supertype initialization is impossible without a primary constructor`
+   —— `class X : Base()` 之后又声明次构造器时，Kotlin 无法确定由谁初始化 supertype。
+   改为 `class X : IShellService.Stub { constructor() : super(); @Keep constructor(ctx: Context) : super() }`。
+
 ## v1.67.09 (2026-10-16)
 
 ### 修复：Dhizuku 授权/检测/shell 全链路失效；Shizuku shell 改用官方 UserService；UI 工具补上特权通道

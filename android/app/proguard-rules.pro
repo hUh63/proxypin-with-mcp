@@ -17,6 +17,13 @@
 -keep class com.network.proxy.shizuku.** { *; }
 
 # ---------------------------------------------------------------------------
+# Shizuku
+# shellViaShizuku 会用 getDeclaredMethod 反射调用 Shizuku.newProcess（13.1.5 起为 private），
+# 且 ShizukuProvider 需要在 AndroidManifest 里按原名引用，因此整体保留。
+# ---------------------------------------------------------------------------
+-keep class rikka.shizuku.** { *; }
+
+# ---------------------------------------------------------------------------
 # Dhizuku-API
 # 该库内部引用了一批 hidden API stub（在库内以 compileOnly 引入，不会随 AAR 打包，
 # 运行时由系统提供），R8 在 minify 时无需为这些引用报缺失警告。

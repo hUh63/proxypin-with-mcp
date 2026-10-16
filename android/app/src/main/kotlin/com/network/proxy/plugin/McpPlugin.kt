@@ -927,10 +927,19 @@ class McpPlugin : FlutterPlugin {
             shizukuShellError = e.message
         }
 
-        // 2) newProcess 兜底（旧版 Shizuku）
+        // 2) newProcess 兜底（仅旧版 Shizuku）
+        //    注意：Shizuku 13.1.5 起 newProcess 已变成 private，编译期不可直接调用
+        //    （旧代码用 getMethod 反射同样拿不到），因此这里用 getDeclaredMethod + setAccessible。
         try {
-            @Suppress("DEPRECATION")
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            val newProcess = Shizuku::class.java.getDeclaredMethod(
+                "newProcess",
+                Array<String>::class.java,
+                Array<String>::class.java,
+                String::class.java
+            )
+            newProcess.isAccessible = true
+            val process = newProcess.invoke(null, arrayOf("sh", "-c", command), null, null) as? java.lang.Process
+                ?: throw IllegalStateException("Shizuku newProcess returned null")
             val stdout = process.inputStream.bufferedReader().readText()
             val stderr = process.errorStream.bufferedReader().readText()
             val completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
