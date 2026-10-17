@@ -363,6 +363,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
   }
 
   Future<void> _loadInfo() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       _deviceIp = await localIp();
@@ -376,13 +377,10 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
       if (McpScreen.isSupported) {
         _deviceInfo = await McpScreen.getDeviceInfo();
       }
-      await _loadFloatingBallConfig();
-      if (McpScreen.isSupported) {
-        _deviceInfo = await McpScreen.getDeviceInfo();
-      }
     } catch (e) {
       // ignore
     }
+    if (!mounted) return;
     setState(() => _loading = false);
   }
 

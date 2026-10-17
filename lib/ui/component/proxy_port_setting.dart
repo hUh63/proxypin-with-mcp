@@ -49,6 +49,19 @@ class _PortState extends State<PortWidget> {
   }
 
   @override
+  void didUpdateWidget(covariant PortWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 端口可能在别处被改动（配置导入 config_management、MCP set_port），
+    // 而 Configuration 不是 Listenable、不会主动通知。父级重建时在这里把
+    // 输入框拉回真值，避免页面一直显示进入时的旧端口。用户正在输入时不打断。
+    if (portFocus.hasFocus) return;
+    final current = widget.proxyServer.port.toString();
+    if (textController.text != current) {
+      textController.text = current;
+    }
+  }
+
+  @override
   void dispose() {
     portFocus.dispose();
     textController.dispose();

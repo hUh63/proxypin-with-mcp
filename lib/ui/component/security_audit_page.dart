@@ -67,8 +67,11 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
 
   Future<void> _init() async {
     final store = await SecurityRuleStore.instance;
-    store.addListener(_onRulesChanged);
+    // mounted 必须在 addListener **之前**判断：否则页面在 await 期间被 pop 时，
+    // _store 字段还是 null，dispose 里的 removeListener 摘不掉这个监听，
+    // 单例上会永久残留（每进一次页面就多挂一个）。
     if (!mounted) return;
+    store.addListener(_onRulesChanged);
     setState(() => _store = store);
     _run();
   }

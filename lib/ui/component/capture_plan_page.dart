@@ -58,8 +58,10 @@ class _CapturePlanPageState extends State<CapturePlanPage> {
 
   Future<void> _load() async {
     final manager = await CapturePlanManager.instanceOf(AppLocalizations.of(context)!);
-    manager.addListener(_onChanged);
+    // 同 security_audit_page：mounted 判断必须在 addListener 之前，
+    // 否则页面提前销毁时监听会永久残留在单例 manager 上。
     if (!mounted) return;
+    manager.addListener(_onChanged);
     setState(() {
       _manager = manager;
       _loading = false;

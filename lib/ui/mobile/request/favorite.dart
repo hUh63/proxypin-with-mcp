@@ -235,9 +235,12 @@ class _FavoriteItemState extends State<_FavoriteItem> {
 
   ///右键菜单
   void menu(details) {
-    // setState(() {
-    //   selected = true;
-    // });
+    // 长按即选中。ListTile.selected 只在重建时生效，必须 setState；
+    // 此前这行被注释掉，selected 永远停在 false，长按弹出的菜单
+    // 没有任何「已选中」视觉反馈。
+    setState(() {
+      selected = true;
+    });
 
     var globalPosition = details.globalPosition;
     MediaQueryData mediaQuery = MediaQuery.of(context);
@@ -369,8 +372,12 @@ class _FavoriteItemState extends State<_FavoriteItem> {
             ],
           )),
         ]).then((value) {
-      selected = false;
-      // if (mounted) setState(() {});
+      // 菜单关闭后取消选中；页面可能已销毁，避免 unmounted setState。
+      if (mounted) {
+        setState(() => selected = false);
+      } else {
+        selected = false;
+      }
     });
   }
 

@@ -84,6 +84,12 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
     });
     try {
       final socket = await WebSocket.connect(url);
+      // 连接是异步的：等待期间用户可能已经退出了本页。此时必须把刚建立的 socket
+      // 关掉，否则它会逃过 dispose（dispose 只能关当时已知的 _socket）。
+      if (!mounted) {
+        await socket.close();
+        return;
+      }
       _socket = socket;
       _connected = true;
       _connecting = false;
@@ -91,6 +97,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
       setState(() {});
       _addSys(localizations.connected);
     } catch (e) {
+      if (!mounted) return;
       _connecting = false;
       _connected = false;
       setState(() {});
@@ -101,6 +108,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
   void _listen() {
     _sub?.cancel();
     _sub = _socket?.listen((data) {
+      if (!mounted) return;
       // data can be String or List<int>
       if (data is String) {
         _messages.add(_WsMessage(false, utf8.encode(data), false, time: DateTime.now()));
@@ -112,8 +120,10 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
       setState(() {});
       _scheduleScroll();
     }, onError: (error) {
+      if (!mounted) return;
       _addSys(localizations.commonError('$error'));
     }, onDone: () {
+      if (!mounted) return;
       _connected = false;
       setState(() {});
       _addSys(localizations.wsClosed);
@@ -124,6 +134,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
     try {
       await _socket?.close();
     } catch (_) {}
+    if (!mounted) return;
     _connected = false;
     setState(() {});
     _addSys(localizations.wsDisconnected);

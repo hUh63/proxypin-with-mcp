@@ -1,5 +1,52 @@
 # Changelog
 
+## v1.67.13 (2026-10-17)
+
+### 修复：按缺陷审查报告清理监听泄漏 / unmounted setState / 失效的选中态，并补齐桌面端搜索历史
+
+**1. 桌面端搜索没有搜索历史（`lib/ui/desktop/request/search.dart`）**
+
+`SearchHistory` 早已实现，移动端接了、桌面端完全没引用 —— 同一个应用两端行为不一致。
+现在桌面搜索框的下拉菜单加入历史区块（点击直接填入并搜索）与「清空历史」，
+记录时机与移动端对齐（回车 / 点搜索时写入）。
+
+**2. 两处监听泄漏：`if (!mounted) return` 写在 `addListener` 之后**
+（`security_audit_page.dart`、`capture_plan_page.dart`）
+
+两者都是 `await X.instance` 之后先 `addListener` 再判 `mounted`。若页面在 await 期间被 pop，
+`_store` / `_manager` 字段仍是 null，`dispose()` 里的 `removeListener` 摘不掉，
+监听会**永久残留在单例上**，每进一次页面多挂一个。改为先判 `mounted` 再挂监听。
+
+**3. 桌面历史列表整个文件没有 `dispose()`（`lib/ui/desktop/left_menus/history.dart`）**
+
+`initState` 里用匿名 `OnchangeListEvent(...)` 注册到单例 `HistoryStorage`，
+既没有引用也就无法摘除，反复进出历史页监听线性叠加（移动端同名页面有 `removeListener`，
+两端不对称）。改为把监听提为字段 `_listener`，`initState` 直接注册，`dispose()` 摘除。
+
+**4. WebSocket 工具箱的 unmounted setState（`lib/ui/toolbox/websocket_request.dart`）**
+
+`await WebSocket.connect(url)` 期间用户可能已离开页面：此前会继续 `setState`，
+而且刚建立的 socket 会逃过 `dispose()`（它只能关当时已知的 `_socket`），变成泄漏连接。
+现在 await 后 `if (!mounted)` 先 `socket.close()` 再 return；`_listen` 的三个回调
+（data / onError / onDone）与 `_disconnect()` 都补上了 `mounted` 守卫。
+
+**5. 收藏页长按没有选中反馈（`lib/ui/mobile/request/favorite.dart`）**
+
+`selected` 的**唯一写入点**被整段注释掉了（`menu()` 里的 `setState` 和菜单关闭后的复位），
+于是 `ListTile.selected` 永远停在 false，长按弹出的菜单没有任何「已选中」视觉反馈。
+已恢复：长按置 true、菜单关闭复位（带 `mounted` 判断）。
+
+**6. `_loadInfo()` 里的 8 行重复代码 + 缺 mounted（`lib/ui/mobile/setting/mcp_connection.dart`）**
+
+`_loadFloatingBallConfig()` + `getDeviceInfo()` 被复制粘贴了两遍，第二次的结果完全覆盖第一次，
+等于白做一次设备信息查询；且首尾 `setState` 没有 mounted 守卫。已去重并补守卫。
+
+**7. 端口输入框不同步（`lib/ui/component/proxy_port_setting.dart`）**
+
+`PortWidget` 只在 `initState` 读一次端口。配置导入（`config_management.dart`）或 MCP 改端口后，
+输入框仍显示旧值（`Configuration` 不是 `Listenable`，不会主动通知）。补 `didUpdateWidget`：
+父级重建时把输入框拉回真值；用户正在输入（有焦点）时不打断。
+
 ## v1.67.12 (2026-10-17)
 
 ### 修复：文本对比页搜索「跳转到错误一侧」+ 搜索历史不记录；Shizuku 状态拆成四态

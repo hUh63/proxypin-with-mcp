@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/ui/component/search_condition.dart';
+import 'package:proxypin/ui/component/search_history.dart';
 
 import '../../component/model/search_model.dart';
 
@@ -40,6 +41,29 @@ class SearchState extends State<Search> {
   bool searched = false;
   TextEditingController keywordController = TextEditingController();
   bool changing = false;
+
+  /// 搜索历史。桌面端此前完全没有接 SearchHistory（只有移动端接了），
+  /// 于是同一个应用在两端行为不一致：手机有历史、桌面没有。
+  List<String> _history = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  @override
+  void dispose() {
+    keywordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
+    final list = await SearchHistory.load();
+    if (mounted && list != _history) {
+      setState(() => _history = list);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +129,8 @@ class SearchState extends State<Search> {
     if (Platform.isMacOS) {
       height -= 30;
     }
-    showMenu(
+    final loc = AppLocalizations.of(context)!;
+    showMenu<String>(
         context: context,
         position: RelativeRect.fromLTRB(65, height, 65, height),
         constraints: const BoxConstraints(minWidth: 260, maxWidth: 330),
@@ -125,8 +150,53 @@ class SearchState extends State<Search> {
                               keywordController.text = searchModel.keyword ?? '';
                               widget.onSearch?.call(searchModel);
                             });
-                          }))))
-        ]);
+                            // 主动搜索时记录历史（与移动端行为保持一致）
+                            final kw = (searchModel.keyword ?? '').trim();
+                            if (kw.isNotEmpty) {
+                              SearchHistory.record(kw).then((_) => _loadHistory());
+                            }
+                          })))),
+          // 搜索历史：点某条直接按该关键词搜索；末尾提供「清空搜索历史」
+          if (_history.isNotEmpty) ...[
+            const PopupMenuDivider(),
+            for (final h in _history)
+              PopupMenuItem<String>(
+                  value: h,
+                  height: 34,
+                  padding: const EdgeInsets.only(left: 15, right: 15),
+                  child: Row(children: [
+                    const Icon(Icons.history, size: 14, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Expanded(
+                        child: Text(h,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13))),
+                  ])),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+                value: '__clear__',
+                height: 34,
+                padding: const EdgeInsets.only(left: 15, right: 15),
+                child: Row(children: [
+                  const Icon(Icons.delete_outline, size: 14, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(loc.clearSearchHistory, style: const TextStyle(fontSize: 13)),
+                ])),
+          ]
+        ]).then((value) {
+      if (!mounted || value == null) return;
+      if (value == '__clear__') {
+        SearchHistory.clear().then((_) => _loadHistory());
+        return;
+      }
+      // 选了一条历史关键词：填回输入框并立即搜索
+      setState(() {
+        searchModel.keyword = value;
+        keywordController.text = value;
+        searched = searchModel.isNotEmpty;
+        widget.onSearch?.call(searchModel);
+      });
+    });
   }
 }
 

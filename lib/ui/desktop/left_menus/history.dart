@@ -122,6 +122,12 @@ class _HistoryListState extends State<_HistoryListWidget> {
   late ListenableList<HttpRequest> container;
   late ProxyServer proxyServer;
 
+  /// 保存监听引用，供 dispose 摘除。
+  /// 此前整个文件没有 dispose()，而 HistoryStorage 是单例 —— 每进一次「历史」页
+  /// 就多挂一个监听，反复进出会线性叠加（移动端同名页面有对应的 removeListener，
+  /// 两端不对称）。
+  OnchangeListEvent<HistoryItem>? _listener;
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -131,11 +137,17 @@ class _HistoryListState extends State<_HistoryListWidget> {
     container = widget.container;
     proxyServer = widget.proxyServer;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      storage.addListener(OnchangeListEvent(() {
-        if (mounted) setState(() {});
-      }));
+    _listener = OnchangeListEvent<HistoryItem>(() {
+      if (mounted) setState(() {});
     });
+    storage.addListener(_listener!);
+  }
+
+  @override
+  void dispose() {
+    final listener = _listener;
+    if (listener != null) storage.removeListener(listener);
+    super.dispose();
   }
 
   @override
