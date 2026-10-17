@@ -5,7 +5,7 @@
 /// HPACK specification. See here for more information:
 ///   https://tools.ietf.org/html/draft-ietf-httpbis-header-compression-10
 
-import 'dart:convert' show ascii;
+import 'dart:convert' show ascii, latin1;
 import 'dart:typed_data';
 
 import '../../../util/byte_utils.dart';

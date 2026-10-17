@@ -50,7 +50,7 @@ class SelectionActionBar extends StatelessWidget {
     selectionController.clear();
   }
 
-  Widget _actionIcon({required VoidCallback onPressed, String? tooltip, required IconData icon}) {
+  Widget _actionIcon({VoidCallback? onPressed, String? tooltip, required IconData icon}) {
     return IconButton(
       onPressed: onPressed,
       tooltip: tooltip,

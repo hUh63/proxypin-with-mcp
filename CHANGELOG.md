@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.67.21 (2026-10-18)
+
+### 修复：v1.67.19 的两处编译错误
+
+- `hpack.dart` 的 import 只 `show ascii`，新增的 `latin1.decode` 不可见 → 补进 show 列表。
+- `selection_action_bar.dart` 的 `_actionIcon` 把 `onPressed` 声明成非空，而 `onSelectAll` 等
+  是可空回调（`if (x != null)` 不会提升实例字段）→ 参数改为可空。
+
 ## v1.67.19 (2026-10-18)
 
 ### 修复：剩余 4 项决策项 + 第四轮深度调查（网络协议层 / 代理核心 / MCP 与 UI）
