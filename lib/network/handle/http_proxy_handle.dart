@@ -176,6 +176,10 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         };
         unawaited(MCPAutomationManager().onRequest(reqMap).catchError((e, s) {
           log.e('MCP 自动化 onRequest 触发失败', error: e, stackTrace: s);
+          // 必须返回与 Future 同类型的值：onRequest 是 Future<List<String>>，
+          // handler 返回 void 会抛 Invalid argument(s) (onError)，
+          // 异常就会逃出 catchError 并打断转发链路。
+          return const <String>[];
         }));
       } catch (e, s) {
         log.e('MCP 自动化 onRequest 触发失败', error: e, stackTrace: s);
@@ -403,6 +407,7 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
         };
         unawaited(MCPAutomationManager().onResponse(respMap).catchError((e, s) {
           log.e('MCP 自动化 onResponse 触发失败', error: e, stackTrace: s);
+          return const <String>[];
         }));
       } catch (e, s) {
         log.e('MCP 自动化 onResponse 触发失败', error: e, stackTrace: s);

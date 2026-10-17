@@ -1,5 +1,39 @@
 # Changelog
 
+## v1.67.15 (2026-10-17)
+
+### 修复：v1.67.14 引入的回归 —— 自动化懒加载卡住代理转发链路 / catchError 类型不匹配
+
+v1.67.14 让 `MCPAutomationManager` 的事件入口（onRequest / onResponse / shouldBlockRequest /
+代理启停）在首次调用时懒加载任务表。写法有问题，CI 的 unit tests 直接大面积失败
+（`+177 -22`：proxy_stress / h2c_proxy / h2_stream_mux / https_mitm / websocket_sse 几乎全红）。
+
+**根因一：在转发关键路径上同步等磁盘**
+
+`shouldBlockRequest` 是**逐请求 await** 的（`http_proxy_handle.forward` 里
+`if (await ...shouldBlockRequest(...))`），而懒加载内部要 `await SharedPreferences.getInstance()`。
+在无 UI 环境（单测、后台 isolate）这个平台调用可能很慢甚至失败，整条转发链路就被卡住。
+
+修复：懒加载一律 `unawaited(_ensureLoaded())` —— 后台发起、**绝不同步等待**。
+代价只是最早一两个请求看不到自动化规则，之后即生效；转发路径保持零 IO。
+
+**根因二：`catchError` 的 handler 返回类型不对（旧 bug，此前异常被掩盖才没暴露）**
+
+    unawaited(MCPAutomationManager().onRequest(reqMap).catchError((e, s) {
+      log.e('MCP 自动化 onRequest 触发失败', error: e, stackTrace: s);  // 返回 void
+    }));
+
+`onRequest` 是 `Future<List<String>>`，`catchError` 的 handler 必须返回同类型；返回 `void`
+会抛 `Invalid argument(s) (onError): The error handler of Future.catchError must return
+a value of the future's type`。这个新异常从 `catchError` 逃逸成**未捕获的异步错误**，
+flutter_test 会把它算到当时正在跑的任意用例头上，于是几十个测试一起红。
+现在 handler 补上 `return const <String>[];`（onRequest / onResponse 两处）。
+
+**根因三：加载失败会被反复重试**
+
+`_ensureLoaded` 失败时原本把 `_loaded` 复位成 false，导致每个请求都重试一次失败的平台调用。
+改为失败后保持「已尝试」状态，真正的重试交给 `init()`（用户打开自动化页时）。
+
 ## v1.67.14 (2026-10-17)
 
 ### 修复：第二轮专项审查（资源释放 / 异步竞态 / 两端不对称 / MCP 自动化边界）查出的 12 条问题

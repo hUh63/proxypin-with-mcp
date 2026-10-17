@@ -239,17 +239,44 @@ class MCPAutomationManager {
 
   final List<MCPAutomationTask> _tasks = [];
   bool _initialized = false;
+  /// 任务表是否已从磁盘加载过（与 _initialized 区分：它不涉及 interval timer）
+  bool _loaded = false;
   Timer? _intervalTimer;
   final Map<String, int> _taskLastExecuted = {}; // taskId -> lastExecutedTimestamp
 
   /// 初始化 - 从 SharedPreferences 加载任务
   Future<void> init() async {
     if (_initialized) return;
-    
-    final prefs = await SharedPreferences.getInstance();
-    await _loadTasks(prefs);
+
+    // SharedPreferences 在无 UI 环境（单测、后台 isolate）可能拿不到；
+    // 加载失败不应该让调用方（请求转发链路）跟着炸。
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await _loadTasks(prefs);
+      _loaded = true;
+    } catch (e) {
+      logger.e('[MCP Automation] 加载任务失败', error: e);
+    }
     _startIntervalTimer();
     _initialized = true;
+  }
+
+  /// 只加载任务表，不启动 interval timer。
+  ///
+  /// 事件入口（onRequest/onResponse/代理启停）用它做懒加载：冷启动后用户即使
+  /// 没打开过「MCP 自动化任务」页，规则也应该生效。但定时轮询的 timer 仍由
+  /// init()（页面打开时）负责，避免在无 UI 场景留下 pending timer。
+  Future<void> _ensureLoaded() async {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await _loadTasks(prefs);
+    } catch (e) {
+      // 保持 _loaded = true：否则每个请求都会重试一次失败的平台调用（刷日志 + 开销）。
+      // 真正需要重试的场景由 init()（用户打开自动化页）负责。
+      logger.e('[MCP Automation] 懒加载任务失败', error: e);
+    }
   }
 
   /// 从 SharedPreferences 加载任务
@@ -395,10 +422,11 @@ class MCPAutomationManager {
 
   /// 检查请求匹配并执行自动化任务
   Future<List<String>> onRequest(Map<String, dynamic> request) async {
-    // 首次事件到达时确保任务表已加载（init 本身幂等）。
-    // 此前 init() 只在「MCP 自动化任务管理页」里调用，冷启动后没进过那个页面
-    // 的用户，_tasks 一直是空的 —— 请求/响应自动化规则全部不触发。
-    await init();
+    // 冷启动后若用户没打开过「MCP 自动化任务」页，_tasks 一直是空的，规则不触发。
+    // 这里发起一次后台懒加载 —— 但**绝不 await**：本方法在代理转发的关键路径上
+    // （shouldBlockRequest 更是逐请求 await），同步等磁盘/平台通道会把整条链路卡住。
+    // 代价只是最早的一两个请求看不到规则，之后即生效。
+    unawaited(_ensureLoaded());
     final executedActions = <String>[];
     
     for (final task in enabledTasks) {
@@ -414,7 +442,8 @@ class MCPAutomationManager {
   /// 检查是否存在命中该请求的「拦截请求」任务（onRequest 触发器 + blockRequest 动作）。
   /// 由转发管道在真实发出请求前调用，命中则短路返回拦截响应。
   Future<bool> shouldBlockRequest(Map<String, dynamic> request) async {
-    await init();
+    // 后台懒加载，不等（转发链路上同步等 IO 会卡住所有请求）
+    unawaited(_ensureLoaded());
     for (final task in enabledTasks) {
       if (task.triggerType != AutomationTriggerType.onRequest) continue;
       if (!task.actions.contains(AutomationActionType.blockRequest)) continue;
@@ -425,7 +454,7 @@ class MCPAutomationManager {
 
   /// 检查响应匹配并执行自动化任务
   Future<List<String>> onResponse(Map<String, dynamic> response) async {
-    await init();
+    unawaited(_ensureLoaded());
     final executedActions = <String>[];
     
     for (final task in enabledTasks) {
@@ -450,8 +479,8 @@ class MCPAutomationManager {
 
   /// 按触发器类型执行任务
   Future<List<String>> _triggerByType(AutomationTriggerType type, Map<String, dynamic> context) async {
-    // 代理启动/停止事件同样不依赖用户打开过自动化页，这里懒加载。
-    await init();
+    // 代理启动/停止事件同样不依赖用户打开过自动化页，这里后台懒加载。
+    unawaited(_ensureLoaded());
     final executedActions = <String>[];
     for (final task in enabledTasks) {
       if (task.triggerType == type) {
