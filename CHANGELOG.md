@@ -1,5 +1,79 @@
 # Changelog
 
+## v1.67.14 (2026-10-17)
+
+### 修复：第二轮专项审查（资源释放 / 异步竞态 / 两端不对称 / MCP 自动化边界）查出的 12 条问题
+
+**1. 桌面收藏页：静态回调泄漏 + 对已销毁 State 调 setState（`lib/ui/desktop/left_menus/favorite.dart`）**
+
+`initState` 把闭包直接赋给静态字段 `FavoriteStorage.addNotifier`，而 `_FavoritesState` **没有
+`dispose()`**。页面销毁后只要发生一次「添加收藏 / 导入收藏」（`addFavorite` → `addNotifier?.call()`），
+就会对已 unmount 的 State 调 `setState`，抛 `Null check operator used on a null value`（release 同样抛）。
+现在闭包提为字段 `_notifier`，`dispose()` 里在「仍指向自己」时清空静态槽位。
+
+**2. 每次 build 泄漏一个 `ScrollController`（`lib/ui/content/panel.dart` + `body.dart`）**
+
+`request()` / `response()` 每次构建都 `ScrollController()` 新建一个、从不释放（抓包时高频重建 → 持续累积）；
+同时 `HttpBodyState.dispose()` 去 `dispose(widget.scrollController)` —— 释放的是**父组件建的** controller，
+所有权颠倒，一旦复用就会 use-after-dispose。现在由 `NetworkTabState` 持有
+`_requestScroll` / `_responseScroll` 并在 `dispose` 释放，`body.dart` 不再释放外部传入的 controller。
+
+**3. 对话框里的 TextEditingController 未释放（`lib/ui/mobile/setting/mcp_automation.dart`）**
+
+`_showRootDialog` 新建了 `uriController` / `nameController`，`await showDialog` 结束后直接丢弃。
+已在对话框关闭后 dispose。
+
+**4. 用已销毁的对话框 context 弹提示（同上文件）**
+
+保存成功后先 `Navigator.pop(context)`（对话框 context），紧接着又用它调 `FlutterToastr.show`。
+按钮回调里的 `context` 是 `builder` 的对话框 context，pop 之后已失效。改为记录 `saved`，
+对话框关闭后用**页面** context 弹提示。
+
+**5. `Future.delayed` 回调里无 mounted 守卫（`lib/ui/component/api_endpoint_page.dart`）**
+
+回调里既读 `context`（取 localizations）又 `setState`，页面在下一个事件循环前被 pop 即崩。已补。
+
+**6. 移动端导入 .saz 必然失败（`lib/ui/mobile/request/history.dart`）**
+
+桌面端按扩展名分流（`.saz` → `addSazFile`，其余 → `addHarFile`），移动端无论选什么都走 `addHarFile`，
+而 picker 是 `FileType.any`。同一功能两端能力不一致，选 .saz 必提示「导入失败」。已对齐。
+
+**7. 定时任务遍历期间被修改 → ConcurrentModificationError**
+（`lib/network/mcp/mcp_scheduler.dart`、`mcp_automation_manager.dart`）
+
+`for (final task in _tasks)` / `for (final task in _tasks.where(...))` 里 `await _runTask`（可能很长的网络调用），
+期间用户新增/取消任务会修改同一个 List。两处都改为先取快照再遍历。
+
+**8. 取消定时任务不持久化 —— 重启后任务复活（`mcp_scheduler.dart`）**
+
+`cancelAll()` / `cancelTask()` 只改内存 + 停 timer，没写回 `mcp_tasks.json`；下次启动 `loadTasks()`
+会把 daily / weekly / interval / cron 任务重新读回来。两者改为 `async` 并在内部 `await saveTasks()`。
+顺带删掉 `_checkTasks` 里两个分支完全相同的死代码（`if (isCancelled) saveTasks() else saveTasks()`）。
+
+**9. 工作流 `continueOnError` 语义错误：状态永久停在 `running`（`script_workflow_engine.dart`）**
+
+`if (status != success && !node.continueOnError) status = failed;` —— 节点失败且声明了 `continueOnError`
+时，status 停留在 `running`（非法终态），而下游依赖检查用 `isFailed` 判断时恒为 false，
+等于「失败被当成没失败」，同时也**没有**真正让下游继续执行。
+现在：失败一律记为 `failed`；`continueOnError` 改为在**依赖检查**处生效（依赖失败但该依赖声明了
+`continueOnError` 则继续执行下游）。
+
+**10. 自动化任务：一条坏数据清空整张表（`mcp_automation_manager.dart`）**
+
+`actions: (json['actions'] as List)` 是非空强转，缺字段即抛；`_loadTasks` 的 catch 里 `_tasks.clear()`
+→ 一条脏记录抹掉全部任务。改为 `(as List?) ?? const []`，并让 `_loadTasks` 逐条 try/catch 只跳过坏条目，
+整体 JSON 解析失败时保留原内存数据。
+
+**11. 事件自动化在「没打开过自动化页」时完全不生效（同上文件）**
+
+`init()` 只被 `mcp_task_manager_page` 调用，冷启动后没进过该页面的用户 `_tasks` 一直是空的 ——
+`onRequest` / `onResponse` / 代理启动停止这些触发器的规则全部不触发。现在这四处入口都会先
+`await init()`（幂等，已初始化时立即返回）。
+
+**12. `deleteTask` 不清「上次执行时间」（同上文件）**
+
+只从 `_tasks` 移除，`_taskLastExecuted` 里留着旧记录；同 id 的任务重建后会立刻触发一次。已同步清理。
+
 ## v1.67.13 (2026-10-17)
 
 ### 修复：按缺陷审查报告清理监听泄漏 / unmounted setState / 失效的选中态，并补齐桌面端搜索历史

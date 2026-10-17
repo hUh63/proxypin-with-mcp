@@ -95,7 +95,9 @@ class McpScheduler {
   Future<void> _checkTasks() async {
     final now = DateTime.now();
 
-    for (final task in _tasks) {
+    // 遍历期间 await _runTask（可能是一次很长的网络调用）；用户此刻新增/取消任务
+    // 会修改同一个 List，直接遍历会抛 ConcurrentModificationError。先取快照。
+    for (final task in List.of(_tasks)) {
       if (task.isCancelled) continue;
 
       if (now.isAfter(task.executeAt) || now.isAtSameMomentAs(task.executeAt)) {
@@ -152,11 +154,9 @@ class McpScheduler {
             logger.i('定时任务 ${task.name} 已完成全部 ${task.repeatCount} 次执行');
           }
 
-          if (task.isCancelled) {
-            await saveTasks();
-          } else {
-            await saveTasks();
-          }
+          // 两个分支原本都是 await saveTasks()（死代码）。合并成一次：
+          // lastExecuted / executedCount / 下一次 executeAt 都需要落盘。
+          await saveTasks();
         } catch (e) {
           logger.e('执行定时任务 ${task.name} 失败', error: e);
         }
@@ -192,21 +192,26 @@ class McpScheduler {
   }
 
   /// 取消所有任务
-  void cancelAll() {
+  Future<void> cancelAll() async {
     _checkTimer?.cancel();
     _checkTimer = null;
     _tasks.clear();
+    // 必须落盘：否则下次启动 loadTasks() 会把已取消的 daily/weekly/interval/cron
+    // 任务重新读回来，「取消」形同虚设。
+    await saveTasks();
     logger.i('已取消所有定时任务');
   }
 
   /// 取消单个定时任务（按名称，避免误删全部）
-  void cancelTask(String name) {
+  Future<void> cancelTask(String name) async {
     for (final task in _tasks) {
       if (task.name == name && !task.isCancelled) {
         task.isCancelled = true;
       }
     }
     _tasks.removeWhere((task) => task.isCancelled);
+    // 同上：只改内存不落盘，重启后任务会复活。
+    await saveTasks();
     logger.i('已取消定时任务：$name');
   }
 

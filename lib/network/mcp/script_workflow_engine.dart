@@ -408,6 +408,20 @@ class ScriptWorkflowEngine {
     for (final depId in node.dependencies) {
       final depResult = context.nodeResults[depId];
       if (depResult == null || depResult.isFailed) {
+        // 依赖失败、但该依赖自己声明了 continueOnError：视为「可继续」。
+        // 这是 continueOnError 唯一真正生效的地方（此前它被错用在 status 赋值上，
+        // 结果既没让下游继续、又把状态留在 running）。
+        WorkflowNode? depNode;
+        for (final n in workflow.nodes) {
+          if (n.id == depId) {
+            depNode = n;
+            break;
+          }
+        }
+        if (depResult != null && depResult.isFailed && (depNode?.continueOnError ?? false)) {
+          logger.d('节点 ${node.id} 的依赖 $depId 失败，但它声明了 continueOnError，继续执行');
+          continue;
+        }
         logger.w('跳过节点 ${node.id}：依赖 $depId 执行失败');
         context.nodeResults[node.id] = ScriptExecutionResult(
           scriptId: node.scriptId,
@@ -447,7 +461,11 @@ class ScriptWorkflowEngine {
     }
 
     final completedAt = DateTime.now();
-    if (status != ScriptExecutionStatus.success && !node.continueOnError) {
+    // 节点失败就是 failed。continueOnError 的语义是「允许下游节点继续执行」，
+    // 不是「把失败伪装成未失败」——此前这里带 `&& !node.continueOnError`，
+    // 导致这类节点的 status 永远停在 running（非法终态），且下游依赖检查用
+    // isFailed 判断时恒为 false。下游放宽见上方依赖检查。
+    if (status != ScriptExecutionStatus.success) {
       status = ScriptExecutionStatus.failed;
     }
 

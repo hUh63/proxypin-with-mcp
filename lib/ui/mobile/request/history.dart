@@ -215,7 +215,10 @@ class _MobileHistoryState extends State<MobileHistory> {
     }
 
     try {
-      var historyItem = await storage.addHarFile(file.xFile);
+      // 与桌面端对齐：按扩展名分流。移动端此前无论选什么都走 addHarFile，
+      // 用户选中 .saz（桌面明确支持）必然解析失败并提示「导入失败」。
+      final isSaz = file.name.toLowerCase().endsWith('.saz');
+      var historyItem = isSaz ? await storage.addSazFile(file.xFile) : await storage.addHarFile(file.xFile);
       setState(() {
         toRequestsView(historyItem, storage);
         FlutterToastr.show(localizations.importSuccess, context);

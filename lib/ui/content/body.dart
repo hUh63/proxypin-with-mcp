@@ -161,7 +161,8 @@ class HttpBodyState extends State<HttpBodyWidget> {
   void dispose() {
     HardwareKeyboard.instance.removeHandler(onKeyEvent);
     searchController.dispose();
-    widget.scrollController?.dispose();
+    // 不再释放 widget.scrollController：它由父组件创建（panel.dart 的
+    // NetworkTabState），所有权在父组件，重复释放会造成 use-after-dispose。
     super.dispose();
   }
 

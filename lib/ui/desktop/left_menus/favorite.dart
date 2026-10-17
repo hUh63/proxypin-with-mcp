@@ -61,12 +61,28 @@ class Favorites extends StatefulWidget {
 class _FavoritesState extends State<Favorites> {
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
+  /// 保存闭包引用，dispose 时把它从静态槽位上摘掉。
+  /// 之前这里直接给静态字段赋值、且整个 State 没有 dispose()：页面销毁后只要发生
+  /// 一次「添加收藏 / 导入收藏」（FavoriteStorage.addFavorite → addNotifier?.call()），
+  /// 就会对已 unmount 的 State 调 setState 并抛 Null check operator used on a null value。
+  Function()? _notifier;
+
   @override
   void initState() {
     super.initState();
-    FavoriteStorage.addNotifier = () {
-      setState(() {});
+    _notifier = () {
+      if (mounted) setState(() {});
     };
+    FavoriteStorage.addNotifier = _notifier;
+  }
+
+  @override
+  void dispose() {
+    // 只在仍指向自己时清空，避免把后来者的回调误清。
+    if (identical(FavoriteStorage.addNotifier, _notifier)) {
+      FavoriteStorage.addNotifier = null;
+    }
+    super.dispose();
   }
 
   @override

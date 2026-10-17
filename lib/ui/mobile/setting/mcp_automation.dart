@@ -173,6 +173,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     final isEdit = existing != null;
     final uriController = TextEditingController(text: existing?['uri']?.toString() ?? '');
     final nameController = TextEditingController(text: existing?['name']?.toString() ?? '');
+    // 记录是否保存成功，用于对话框关闭后（用页面 context）弹提示
+    var saved = false;
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -224,20 +226,30 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 }
               });
               await _saveRoots();
+              saved = true;
+              // 这里只用对话框自己的 context 关闭即可：提示语改到对话框关闭后用
+              // **页面** context 弹出（此处 context 在 pop 之后已失效）。
               if (context.mounted) Navigator.pop(context);
-              FlutterToastr.show(
-                  isEdit
-                      ? AppLocalizations.of(context)!.mcpAutoRootUpdated
-                      : AppLocalizations.of(context)!.mcpAutoRootAdded,
-                  context,
-                  duration: 2,
-                  backgroundColor: Colors.green);
             },
             child: Text(AppLocalizations.of(context)!.mcpAutoSave),
           ),
         ],
       ),
     );
+
+    // 对话框用的两个 controller 由本方法创建，必须由本方法释放（此前直接丢弃）。
+    uriController.dispose();
+    nameController.dispose();
+
+    if (saved && mounted) {
+      FlutterToastr.show(
+          isEdit
+              ? AppLocalizations.of(context)!.mcpAutoRootUpdated
+              : AppLocalizations.of(context)!.mcpAutoRootAdded,
+          context,
+          duration: 2,
+          backgroundColor: Colors.green);
+    }
   }
 
   /// 删除 Root
@@ -1072,8 +1084,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
   }
 
   void _cancelTask(ScheduledTask task) {
-    _scheduler.cancelTask(task.name);
-    unawaited(_scheduler.saveTasks());
+    // cancelTask 现在内部会自行 saveTasks（否则重启后任务会复活），
+    // 这里不再重复持久化；_tasks 的移除是同步的，setState 后列表即已刷新。
+    unawaited(_scheduler.cancelTask(task.name));
     setState(() {});
     FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskCancelled, context,
         duration: 2, backgroundColor: Colors.green);

@@ -45,6 +45,9 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
     setState(() => _isLoading = true);
     
     Future.delayed(Duration.zero, () {
+      // 这个回调在下一个事件循环才跑，期间页面可能已被 pop；
+      // 回调里既读 context（取 localizations）又 setState，必须先判 mounted。
+      if (!mounted) return;
       final endpoints = _extractor.extract(widget.requests, responses: widget.responses);
       final groups = _extractor.groupByResource(endpoints);
       final patterns = _extractor.identifyRestPatterns(endpoints, AppLocalizations.of(context)!);

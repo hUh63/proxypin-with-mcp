@@ -99,6 +99,13 @@ class NetworkTabState extends State<NetworkTabController> with TickerProviderSta
   final GlobalKey<HttpBodyState> requestHttpBodyKey = GlobalKey<HttpBodyState>();
   final GlobalKey<HttpBodyState> responseHttpBodyKey = GlobalKey<HttpBodyState>();
 
+  /// Request / Response 两个 tab 各自的内层滚动控制器。
+  /// 之前是在 request()/response() 里每次 build 都 new 一个（高频刷新时不断累积、
+  /// 且从不释放），同时 HttpBodyWidget 又去 dispose 父组件创建的 controller ——
+  /// 所有权颠倒。改为由本 State 持有并在 dispose 统一释放。
+  final ScrollController _requestScroll = ScrollController();
+  final ScrollController _responseScroll = ScrollController();
+
   void changeState() {
     final mqtt = widget.request.get()?.protocolVersion == 'MQTT';
     if (mqtt != _mqttTabs) {
@@ -137,6 +144,8 @@ class NetworkTabState extends State<NetworkTabController> with TickerProviderSta
   @override
   void dispose() {
     _tabController.dispose();
+    _requestScroll.dispose();
+    _responseScroll.dispose();
     HardwareKeyboard.instance.removeHandler(onKeyEvent);
     super.dispose();
   }
@@ -222,7 +231,8 @@ class NetworkTabState extends State<NetworkTabController> with TickerProviderSta
       return const SizedBox();
     }
 
-    var scrollController = ScrollController(); //处理body也有滚动条问题
+    // 复用本 State 持有的 controller（处理 body 也有滚动条的问题），不再每次 build 新建
+    final scrollController = _requestScroll;
     var path = widget.request.get()?.path ?? '';
     try {
       path = Uri.decodeFull(path);
@@ -242,7 +252,7 @@ class NetworkTabState extends State<NetworkTabController> with TickerProviderSta
       return const SizedBox();
     }
 
-    var scrollController = ScrollController();
+    final scrollController = _responseScroll;
     return SingleChildScrollView(
         controller: scrollController,
         child: Column(children: [

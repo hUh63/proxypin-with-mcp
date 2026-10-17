@@ -208,7 +208,9 @@ class MCPAutomationTask {
         (e) => e.name == json['triggerType'],
         orElse: () => AutomationTriggerType.manual,
       ),
-      actions: (json['actions'] as List)
+      // 旧版本数据可能没有 actions 字段：用 `as List` 强转会直接抛异常，
+      // 而 _loadTasks 的 catch 会 clear 全部任务 —— 一条坏数据清空整表。
+      actions: ((json['actions'] as List?) ?? const [])
           .map((a) => AutomationActionType.values.firstWhere(
                 (e) => e.name == a,
                 orElse: () => AutomationActionType.runScript,
@@ -256,12 +258,19 @@ class MCPAutomationManager {
     if (tasksJson != null && tasksJson.isNotEmpty) {
       try {
         final List<dynamic> decoded = jsonDecode(tasksJson);
+        // 逐条解析：单条坏数据只跳过它，不要因为一条脏记录把整张任务表清空。
+        final loaded = <MCPAutomationTask>[];
+        for (final e in decoded) {
+          try {
+            loaded.add(MCPAutomationTask.fromJson(e as Map<String, dynamic>));
+          } catch (err) {
+            logger.w('[MCP Automation] 跳过无法解析的任务: $err');
+          }
+        }
         _tasks.clear();
-        _tasks.addAll(
-          decoded.map((e) => MCPAutomationTask.fromJson(e as Map<String, dynamic>)),
-        );
+        _tasks.addAll(loaded);
       } catch (e) {
-        _tasks.clear();
+        logger.e('[MCP Automation] 任务表解析失败，本次不加载（保留原内存数据）', error: e);
       }
     }
   }
@@ -283,8 +292,12 @@ class MCPAutomationManager {
   /// 检查定时任务 - 实现定时任务逻辑
   Future<void> _checkIntervalTasks() async {
     final now = DateTime.now();
-    for (final task in _tasks.where((t) => 
-        t.enabled && t.triggerType == AutomationTriggerType.onInterval)) {
+    // 先取快照：await _executeTask 期间用户可能 addTask/deleteTask，
+    // 惰性迭代 _tasks 会抛 ConcurrentModificationError。
+    final pending = _tasks
+        .where((t) => t.enabled && t.triggerType == AutomationTriggerType.onInterval)
+        .toList();
+    for (final task in pending) {
       // 检查是否到了执行时间
       final intervalSeconds = task.actionParams['intervalSeconds'] as int? ?? 60;
       final lastExecuted = _taskLastExecuted[task.id] ?? 0;
@@ -349,6 +362,8 @@ class MCPAutomationManager {
     if (index == -1) return false;
     
     _tasks.removeAt(index);
+    // 一并清掉「上次执行时间」，否则同 id 的任务被重建后会立刻触发一次。
+    _taskLastExecuted.remove(taskId);
     final prefs = await SharedPreferences.getInstance();
     await _saveTasks(prefs);
     
@@ -380,6 +395,10 @@ class MCPAutomationManager {
 
   /// 检查请求匹配并执行自动化任务
   Future<List<String>> onRequest(Map<String, dynamic> request) async {
+    // 首次事件到达时确保任务表已加载（init 本身幂等）。
+    // 此前 init() 只在「MCP 自动化任务管理页」里调用，冷启动后没进过那个页面
+    // 的用户，_tasks 一直是空的 —— 请求/响应自动化规则全部不触发。
+    await init();
     final executedActions = <String>[];
     
     for (final task in enabledTasks) {
@@ -395,6 +414,7 @@ class MCPAutomationManager {
   /// 检查是否存在命中该请求的「拦截请求」任务（onRequest 触发器 + blockRequest 动作）。
   /// 由转发管道在真实发出请求前调用，命中则短路返回拦截响应。
   Future<bool> shouldBlockRequest(Map<String, dynamic> request) async {
+    await init();
     for (final task in enabledTasks) {
       if (task.triggerType != AutomationTriggerType.onRequest) continue;
       if (!task.actions.contains(AutomationActionType.blockRequest)) continue;
@@ -405,6 +425,7 @@ class MCPAutomationManager {
 
   /// 检查响应匹配并执行自动化任务
   Future<List<String>> onResponse(Map<String, dynamic> response) async {
+    await init();
     final executedActions = <String>[];
     
     for (final task in enabledTasks) {
@@ -429,6 +450,8 @@ class MCPAutomationManager {
 
   /// 按触发器类型执行任务
   Future<List<String>> _triggerByType(AutomationTriggerType type, Map<String, dynamic> context) async {
+    // 代理启动/停止事件同样不依赖用户打开过自动化页，这里懒加载。
+    await init();
     final executedActions = <String>[];
     for (final task in enabledTasks) {
       if (task.triggerType == type) {
