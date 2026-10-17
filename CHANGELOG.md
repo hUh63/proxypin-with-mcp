@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.67.17 (2026-10-18)
+
+### 修复：v1.67.16 新增测试的编译错误
+
+`test/mcp/rule_engine_robustness_test.dart` 里把正则写成 `'^a.c$'`：Dart 字符串中的 `$`
+必须跟标识符或 `{...}`，`$` 后直接是引号即 `missing_identifier` / 「A '$' has special meaning
+inside a string」—— analyze 与 unit tests 因此都红。改为 raw string `r'^a.c$'`。
+
+（v1.67.16 的 26 项功能修复本身未受影响，其余测试全部通过。）
+
 ## v1.67.16 (2026-10-18)
 
 ### 修复：第三轮全量功能检验 —— 导入导出 / 配置持久化 / 规则与工作流 / Android 主线程

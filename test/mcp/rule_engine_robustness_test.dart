@@ -20,7 +20,7 @@ void main() {
     });
 
     test('合法正则仍正常匹配', () {
-      expect(matches('^a.c$').evaluate({'x': 'abc'}), isTrue);
+      expect(matches(r'^a.c$').evaluate({'x': 'abc'}), isTrue);
       expect(matches('^z').evaluate({'x': 'abc'}), isFalse);
     });
   });
