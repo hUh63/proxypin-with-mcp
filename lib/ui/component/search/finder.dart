@@ -75,6 +75,19 @@ class _FindPanelViewState extends State<FindPanelView> with SingleTickerProvider
     _syncAnim();
   }
 
+  /// 文本对比页左右两侧共用同一个 FindPanelView，靠切换 widget.controller 决定当前
+  /// 作用于哪一侧。切换时必须把监听从旧 controller 上摘下来，否则：新 controller 的状态
+  /// 变化不会驱动展开/收起动画，且会在旧 controller 上留下悬挂监听。
+  @override
+  void didUpdateWidget(covariant FindPanelView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller.removeListener(_syncAnim);
+      widget.controller.addListener(_syncAnim);
+      _syncAnim();
+    }
+  }
+
   @override
   void dispose() {
     widget.controller.removeListener(_syncAnim);
@@ -281,13 +294,26 @@ class _FindPanelViewState extends State<FindPanelView> with SingleTickerProvider
       runSpacing: 0,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _textButton(localizations.findPrevious, none ? null : controller.previous),
-        _textButton(localizations.findNext, none ? null : controller.next),
-        _textButton(localizations.replace, none ? null : controller.replace),
-        _textButton(localizations.findReplaceAll, none ? null : controller.replaceAll),
+        _textButton(localizations.findPrevious, none ? null : () => _recordAndRun(controller.previous)),
+        _textButton(localizations.findNext, none ? null : () => _recordAndRun(controller.next)),
+        _textButton(localizations.replace, none ? null : () => _recordAndRun(controller.replace)),
+        _textButton(localizations.findReplaceAll, none ? null : () => _recordAndRun(controller.replaceAll)),
         _textButton(localizations.close, controller.toggleActive),
       ],
     );
+  }
+
+  /// 执行查找/替换动作前，先把当前搜索词写进历史。
+  ///
+  /// 需求：只要搜索框里**有内容**，点「上一个 / 下一个 / 替换 / 全部替换」都要记录历史
+  /// （原实现只在搜索框按回车时才记录）。去重与置顶由 [FindHistory.record] 负责。
+  Future<void> _recordAndRun(VoidCallback action) async {
+    final q = controller.findInputController.text.trim();
+    if (q.isNotEmpty) {
+      final updated = await FindHistory.record(q);
+      if (mounted) setState(() => _history = updated);
+    }
+    action();
   }
 
   // -------------------------------------------------------- 历史记录 / 收藏

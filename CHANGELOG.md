@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.67.12 (2026-10-17)
+
+### 修复：文本对比页搜索「跳转到错误一侧」+ 搜索历史不记录；Shizuku 状态拆成四态
+
+**1. 文本对比页：搜索跳转作用到错误的一侧**
+
+现象（用户反馈）：左右两侧都有多个同名匹配时，先点右侧、再点左侧、然后回到右侧点
+「下一个」，跳转却作用在了**左侧（原文）**的光标上。
+
+根因：`_onPointerDown` 里只写了 `_leftActive = isLeft`，**没有 setState**。而搜索面板的
+controller 来自 `FindPanelView(controller: _leftActive ? _findLeft : _findRight)`——
+不触发重建的话，面板拿到的仍是上一次构建时的 controller，于是继续操作**上一侧**。
+
+修复：
+- `_leftActive` 真的变化时 `setState`；
+- 给 `FindPanelView` 补上 `didUpdateWidget`，controller 切换时正确迁移监听。
+  （原先只在 `initState` 加监听，切换后新 controller 唤不动展开/收起动画，
+  旧 controller 上还留着悬挂监听。）
+
+**2. 文本对比页：搜索历史不记录**
+
+需求：只要搜索框**有内容**，点「上一个 / 下一个 / 替换 / 全部替换」就要记录历史。
+原实现只在搜索框按回车（`onSubmit`）时记录。修复：给这四个动作包一层
+`_recordAndRun()` —— 先 `FindHistory.record(当前搜索词)` 再执行动作；
+去重/置顶沿用 `FindHistory`（最多 30 条）。
+
+**3. Shizuku 状态拆成四态**（与上一轮 Dhizuku 的处理对齐）
+
+- 原生 `get_device_info` 新增 `shizukuInstalled` 字段；
+- 状态行四态：**已授权**（绿）/ **未授权**（橙，服务在运行）/ **未运行**（橙，装了但服务没起）/
+  **未安装**（灰）；
+- 「请求 Shizuku 授权」按钮：未安装时不显示（改为显示说明文案）；已安装但服务没运行时点击，
+  toast 提示「Shizuku 未运行：请先在 Shizuku 应用里启动服务」，而不是笼统的「授权未完成」。
+- 新增 3 个 l10n 键（9 语言齐全）：`mcpConnNotRunning`、`mcpConnShizukuNotInstalledHint`、
+  `mcpConnShizukuNotRunningHint`。
+
 ## v1.67.11 (2026-10-16)
 
 ### 优化：Dhizuku 状态区分「未安装 / 已安装未授权 / 已授权」

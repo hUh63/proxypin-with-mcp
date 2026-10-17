@@ -379,7 +379,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
   // ---------- 长按：把此处差异应用到另一侧 ----------
 
   void _onPointerDown(bool isLeft, PointerDownEvent e) {
-    _leftActive = isLeft;
+    // 必须 setState：搜索面板用的 controller（_findLeft / _findRight）由 _leftActive 决定，
+    // 不触发重建的话面板会继续操作**上一侧**的 controller ——
+    // 「先点右侧、再点左侧、然后回来点『下一个』」就会把跳转作用在错误的一侧。
+    if (_leftActive != isLeft) {
+      setState(() => _leftActive = isLeft);
+    }
     _pressDown = e.position;
     _longPressTimer?.cancel();
     _longPressTimer = Timer(const Duration(milliseconds: 560), () {

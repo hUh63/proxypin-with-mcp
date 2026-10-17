@@ -58,6 +58,9 @@ class McpPlugin : FlutterPlugin {
         /** Dhizuku 应用包名（官方包名是 com.rosan.dhizuku，不存在 me.bmax / com.bmax）。 */
         private const val DHIZUKU_PACKAGE = "com.rosan.dhizuku"
 
+        /** Shizuku 应用包名（官方）。 */
+        private const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+
         // 原生 → Flutter 事件通道（悬浮球面板"跳转 MCP 设置"等）
         private const val TO_FLUTTER_CHANNEL = "com.proxy/toFlutter"
         @Volatile
@@ -261,7 +264,9 @@ class McpPlugin : FlutterPlugin {
         val accessibilityEnabled = McpAccessibilityService.isRunning()
         val hasShizuku = hasShizuku()
         val hasDhizuku = hasDhizuku()
-        // Dhizuku 是否已安装：用于区分「未安装」与「已安装但未授权」两种状态，界面文案更精确
+        // 是否「已安装」（不论是否在运行 / 是否已授权），用于把状态拆成
+        // 未安装 / 未运行 / 未授权 / 已授权 四种，界面提示更精确
+        val shizukuInstalled = isShizukuInstalled()
         val dhizukuInstalled = isDhizukuInstalled()
 
         val mode = when {
@@ -280,6 +285,7 @@ class McpPlugin : FlutterPlugin {
             "wifiIp" to wifiIp,
             "hasRoot" to hasRoot,
             "hasShizuku" to hasShizuku,
+            "shizukuInstalled" to shizukuInstalled,
             // 注意：hasShizuku 只代表 Shizuku binder 已连接（运行中），不代表本应用已获授权；
             // 「请求 Shizuku 授权」按钮的显隐必须依据 shizukuGranted
             "shizukuGranted" to (hasShizuku && runCatching {
@@ -784,7 +790,7 @@ class McpPlugin : FlutterPlugin {
             } else {
                 // Shizuku 未运行时，检查应用是否已安装（提示用户先启动 Shizuku）
                 val pm = context?.packageManager ?: return false
-                pm.getPackageInfo("moe.shizuku.privileged.api", 0)
+                pm.getPackageInfo(SHIZUKU_PACKAGE, 0)
                 false
             }
         } catch (e: Exception) {
@@ -793,6 +799,20 @@ class McpPlugin : FlutterPlugin {
         shizukuStatus = result
         shizukuCheckTime = now
         return result
+    }
+
+    /**
+     * Shizuku 是否**已安装**（不论服务是否在运行、本应用是否已授权）。
+     * 只用于界面把状态拆成「未安装 / 未运行 / 未授权 / 已授权」，不参与权限判定。
+     */
+    private fun isShizukuInstalled(): Boolean {
+        return try {
+            val pm = context?.packageManager ?: return false
+            pm.getPackageInfo(SHIZUKU_PACKAGE, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     /**

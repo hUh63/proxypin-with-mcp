@@ -526,6 +526,8 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     final hasShizuku = _deviceInfo?['hasShizuku'] as bool? ?? false;
     // hasShizuku 只代表 Shizuku 正在运行（binder 已连接），不代表本应用已获授权
     final shizukuGranted = _deviceInfo?['shizukuGranted'] as bool? ?? false;
+    // Shizuku 是否已安装：用于区分「未安装」与「已安装但服务未运行」
+    final shizukuInstalled = _deviceInfo?['shizukuInstalled'] as bool? ?? false;
     final hasDhizuku = _deviceInfo?['hasDhizuku'] as bool? ?? false;
     // Dhizuku 是否已安装：用于区分「未安装」与「已安装但未授权」
     final dhizukuInstalled = _deviceInfo?['dhizukuInstalled'] as bool? ?? false;
@@ -1006,16 +1008,21 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ListTile(
                         leading: const Icon(Icons.security),
                         title: const Text('Shizuku'),
+                        // 四态：已授权 / 未授权（服务在运行）/ 未运行（装了但服务没起）/ 未安装
                         trailing: Text(
                           shizukuGranted
                               ? loc.mcpAuthGranted
                               : (hasShizuku
-                                    ? loc.mcpConnNotGranted
-                                    : loc.notConnected),
+                                  ? loc.mcpConnNotGranted
+                                  : (shizukuInstalled
+                                      ? loc.mcpConnNotRunning
+                                      : loc.mcpConnNotInstalled)),
                           style: TextStyle(
                             color: shizukuGranted
                                 ? Colors.green
-                                : (hasShizuku ? Colors.orange : Colors.grey),
+                                : (hasShizuku || shizukuInstalled
+                                    ? Colors.orange
+                                    : Colors.grey),
                           ),
                         ),
                       ),
@@ -1066,7 +1073,22 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                     ),
                   ),
                 ],
-                if (McpScreen.isSupported) ...[
+                // Shizuku 未安装 -> 只给说明，不显示授权按钮（点了必然失败）
+                if (McpScreen.isSupported && !shizukuInstalled) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      loc.mcpConnShizukuNotInstalledHint,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.grey),
+                    ),
+                  ),
+                ],
+                // Shizuku 已安装 -> 显示授权按钮（服务没在跑时点击会提示先启动）
+                if (McpScreen.isSupported && shizukuInstalled) ...[
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -1081,10 +1103,14 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       onPressed: () async {
                         final ok = await McpScreen.requestShizukuAuthorization();
                         if (!mounted) return;
+                        // 失败时区分「服务没运行」与「用户未授权」，提示更准确
+                        final msg = ok
+                            ? loc.mcpConnShizukuGranted
+                            : (hasShizuku
+                                ? loc.mcpConnShizukuAuthIncomplete
+                                : loc.mcpConnShizukuNotRunningHint);
                         FlutterToastr.show(
-                          ok
-                              ? loc.mcpConnShizukuGranted
-                              : loc.mcpConnShizukuAuthIncomplete,
+                          msg,
                           context,
                           duration: 3,
                           backgroundColor: ok ? Colors.green : Colors.orange,
