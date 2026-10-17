@@ -140,8 +140,18 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
                         Obx(() => selectionController.selectionMode.value
                             ? SelectionActionBar(
                                 selectionController: selectionController,
-                                onSelectAll: () =>
-                                    selectionController.selectAll(container.source.map((r) => r.requestId)),
+                                onSelectAll: () {
+                                  // 全选必须基于「当前视图」，不能是未过滤的全量：
+                                  // 旧实现用 container.source，过滤态下会把看不见的请求
+                                  // 一起选中，ActionBar 显示 N 条，而删除/导出走的是过滤后
+                                  // 的 selectedRequests() → 实际只操作 M 条（N != M），
+                                  // 用户会误以为已经清空了全部。
+                                  // 两个 Tab 共用同一套过滤条件（selectedIds 是集合，
+                                  // 与展示顺序无关），因此统一取 DomainList 的当前视图。
+                                  final Iterable<HttpRequest> view =
+                                      domainListKey.currentState?.currentView() ?? container.source;
+                                  selectionController.selectAll(view.map((r) => r.requestId));
+                                },
                                 onRepeat: repeatSelected,
                                 onCompare: compareSelected,
                                 onExport: exportSelected,

@@ -294,9 +294,15 @@ class CertificateManager {
 
       _state = StartState.initialized;
       _initializationCompleter.complete();
-    } catch (e) {
-      logger.e('init ca config error:$e');
+    } catch (e, st) {
+      logger.e('init ca config error:$e', error: e, stackTrace: st);
       _state = StartState.uninitialized;
+      // 部分调用点并不 await（server.dart 启动时、importPkcs12 导入后刷新）：
+      // 没有 listener 的 completeError 会变成未捕获异步异常（进 Zone.onError）。
+      // 先挂一个只记日志的 listener；await 的调用点仍会正常收到错误。
+      unawaited(_initializationCompleter.future.catchError((Object error, StackTrace stackTrace) {
+        logger.e('CA 初始化失败（未被 await 的调用点）', error: error, stackTrace: stackTrace);
+      }));
       _initializationCompleter.completeError(e);
     }
 

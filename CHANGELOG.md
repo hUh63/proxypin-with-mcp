@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.67.23 (2026-10-18)
+
+### 修复：桌面「全选」口径 + CA 初始化失败未被监听
+
+- **桌面请求列表全选**：`onSelectAll` 用的是未过滤的 `container.source`，而删除/导出走的是
+  过滤后的 `selectedRequests()`。过滤态下 ActionBar 显示「N 选中」，实际只操作 M 条（N ≠ M），
+  用户会误以为已经清空了全部。改为基于 DomainList 的 `currentView()`。
+- **`CertificateManager.initCAConfig` 失败时 `completeError` 无人监听**：`server.dart` 启动与
+  `importPkcs12` 后的刷新都不 await，失败会变成未捕获异步异常。挂一个只记日志的 listener，
+  await 的调用点行为不变。
+
 ## v1.67.22 (2026-10-18)
 
 ### 修复：未知工具的错误契约
