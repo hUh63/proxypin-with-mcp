@@ -18,6 +18,7 @@ import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:charset/charset.dart' as charset;
 import 'package:brotli/brotli.dart';
 
 /// 一条原始 HTTP 报文（请求或响应）的解析结果。
@@ -117,6 +118,7 @@ class SazParser {
 
     final respBody = resp == null ? null : _decodedBody(resp);
     final respCt = resp == null ? '' : _contentType(resp);
+    final respRawCt = resp == null ? '' : _rawContentType(resp);
 
     Map<String, dynamic>? respMap;
     if (resp != null) {
@@ -132,7 +134,7 @@ class SazParser {
         'content': {
           'size': body.length,
           'mimeType': respCt,
-          'text': _isBinary(respCt) ? base64Encode(body) : utf8.decode(body, allowMalformed: true),
+          'text': _isBinary(respCt) ? base64Encode(body) : _decodeText(body, respRawCt),
         },
         'bodySize': body.length,
       };
@@ -276,6 +278,37 @@ class SazParser {
     return (semi >= 0 ? ct.substring(0, semi) : ct).trim();
   }
 
+  /// 完整 Content-Type（保留 charset 参数）
+  static String _rawContentType(_RawMessage m) => (m.header('content-type') ?? '').trim();
+
+  /// 按 Content-Type 的 charset 解码文本体。
+  ///
+  /// 旧实现一律 `utf8.decode(..., allowMalformed: true)`，而 `_contentType` 又主动
+  /// 截掉了 `; charset=gbk`：国内站点极常见的 GBK / GB2312 响应会被解成一串 U+FFFD，
+  /// 且原始字节不可恢复（导入后重放/导出全是坏数据）。这里按 charset 走仓库已有的
+  /// charset 包，解不出来再退回 UTF-8 容错，保证不抛异常。
+  static String _decodeText(Uint8List body, String contentType) {
+    final lower = contentType.toLowerCase();
+    final idx = lower.indexOf('charset=');
+    if (idx >= 0) {
+      var name = contentType.substring(idx + 8).trim();
+      final semi = name.indexOf(';');
+      if (semi >= 0) name = name.substring(0, semi).trim();
+      name = name.replaceAll('"', '').replaceAll("'", '').toLowerCase();
+      if (name.isNotEmpty && name != 'utf-8' && name != 'utf8') {
+        final encoding = charset.Charset.getByName(name);
+        if (encoding != null) {
+          try {
+            return encoding.decode(body);
+          } catch (_) {
+            // 落到 UTF-8 容错
+          }
+        }
+      }
+    }
+    return utf8.decode(body, allowMalformed: true);
+  }
+
   static bool _isBinary(String ct) {
     final t = ct.toLowerCase();
     return t.startsWith('image/') ||
@@ -285,7 +318,11 @@ class SazParser {
         t.contains('application/octet-stream') ||
         t.contains('application/pdf') ||
         t.contains('application/zip') ||
-        t.contains('application/x-protobuf');
+        t.contains('application/x-protobuf') ||
+        t.contains('application/wasm') ||
+        t.contains('application/x-font') ||
+        t.contains('application/vnd.ms-') ||
+        t.contains('application/x-msdownload');
   }
 
   static int? _portOf(String host) {

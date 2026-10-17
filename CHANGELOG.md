@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.67.18 (2026-10-18)
+
+### 修复：SAZ 编码 / 系统 CA 安装完整性 / Windows 单实例
+
+**1. SAZ 导入忽略 Content-Type 的 charset**
+
+`saz.dart` 的 `_contentType` 主动截掉了 `; charset=...`，随后一律 `utf8.decode(allowMalformed: true)`。
+`text/html; charset=gbk`、`application/json; charset=gb2312` 这类国内站点极常见的响应会被解成一串
+U+FFFD，且原始字节不可恢复 —— 导入后正文、重放、再导出全是坏数据。现在按 charset 走仓库已有的
+`charset` 包（GBK/GB2312/EUC/Shift-JIS 等），解不出来再退回 UTF-8 容错。同时把 `application/wasm`、
+私有字体、`application/vnd.ms-*` 纳入二进制判定，避免被当文本解码。
+
+**2. 系统 CA 直挂：备份不完整也会报成功**
+
+`system_ca.dart` 的备份步骤用 `cp ... 2>/dev/null` 丢弃所有错误，且只用 `base >= 1` 判断是否备份成功。
+只要有一个文件没复制成功（超长文件名 / 不可读 / tmp 空间不足），就会把「子集」bind 到
+`/system/etc/security/cacerts` 或 `/apex/.../cacerts`：被漏掉的系统 CA 全部失效，大量 HTTPS 握手失败，
+而后续校验用的还是同一个 `base`，依旧自洽通过并显示「安装成功」，且不会回滚。现在用
+`find -maxdepth 1 -type f | wc -l` 比较「源文件数 == 备份文件数」，不相等立即 `ERR_BASE` 中止
+（已有全量回滚逻辑会清理）。
+
+**3. Windows 端没有单实例保护**
+
+重复启动会起两个进程：各自初始化配置、各自 bind 同一代理端口（第二个失败）、各自注册托盘图标；
+关掉其中一个时 `ClearSystemProxy()` 还会清掉另一个正在使用的系统代理。`main.cpp` 现在用命名
+互斥体（`ProxyPin_SingleInstance`）判定，已在运行时通过 `FindWindowW` 激活既有窗口后退出。
+
 ## v1.67.17 (2026-10-18)
 
 ### 修复：v1.67.16 新增测试的编译错误

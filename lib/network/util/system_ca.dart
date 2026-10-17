@@ -208,9 +208,14 @@ for t in $TARGETS; do
   st="$WORK/stage$k"
   mkdir -p "$st" || { FAIL="$t:ERR_STAGE"; break; }
   # 1) 备份原目录内容（失败即中止，绝不半途开始挂载）
+  # 用「文件数严格相等」判断备份是否完整。旧实现只要求 base>=1，
+  # 任何一个文件复制失败（超长文件名 / 不可读 / tmp 空间不足）都会被放过，
+  # 随后把「子集」bind 到系统信任库 —— 被漏掉的 CA 全部失效，大量 HTTPS
+  # 握手失败，而数量校验用的是同一个 base，仍然自洽通过并报成功。
+  orig=$(find "$t" -maxdepth 1 -type f 2>/dev/null | wc -l)
   cp -f "$t"/* "$st"/ 2>/dev/null
-  base=$(ls -A "$st" 2>/dev/null | wc -l)
-  [ "$base" -ge 1 ] || { FAIL="$t:ERR_BASE"; break; }
+  base=$(find "$st" -maxdepth 1 -type f 2>/dev/null | wc -l)
+  [ "$orig" -ge 1 ] && [ "$base" -eq "$orig" ] || { FAIL="$t:ERR_BASE"; break; }
   # 2) 放入我们的 CA，并顺带把属性对齐（root:root / 644 / 安全上下文）
   cp -f __CA_PATH__ "$st/__CA_NAME__" || { FAIL="$t:ERR_CP"; break; }
   chmod 644 "$st"/* 2>/dev/null
