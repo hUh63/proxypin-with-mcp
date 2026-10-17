@@ -308,12 +308,37 @@ class MCPAutomationManager {
     await prefs.setString(_tasksKey, tasksJson);
   }
 
+  /// 上一轮 tick 是否仍在执行：Timer.periodic 不会等上一轮结束，
+  /// 慢任务会让检查叠加，同一任务被并发重复触发。
+  bool _tickBusy = false;
+
+  /// 正在执行的定时任务 id，跳过在飞任务（跨 tick 的重入保护）。
+  final Set<String> _runningIntervalTasks = {};
+
   /// 启动定时任务检查器
   void _startIntervalTimer() {
     _intervalTimer?.cancel();
     _intervalTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      await _checkIntervalTasks();
+      if (_tickBusy) return;
+      _tickBusy = true;
+      try {
+        await _checkIntervalTasks();
+      } finally {
+        _tickBusy = false;
+      }
     });
+  }
+
+  /// 从任务参数读取执行间隔。
+  /// 旧实现是 `as int?`：持久化 JSON / 表单里若存成 "60" 或 60.0，
+  /// 每次都抛 TypeError → 整轮检查中断，且排在它后面的 interval 任务
+  /// 永远不会被执行（异常落在 Timer 回调里无人捕获）。
+  int _intervalSecondsOf(MCPAutomationTask task) {
+    final raw = task.actionParams['intervalSeconds'];
+    final parsed = raw is num ? raw.toInt() : int.tryParse('$raw') ?? 60;
+    if (parsed < 10) return 10;
+    if (parsed > 86400) return 86400;
+    return parsed;
   }
 
   /// 检查定时任务 - 实现定时任务逻辑
@@ -325,15 +350,23 @@ class MCPAutomationManager {
         .where((t) => t.enabled && t.triggerType == AutomationTriggerType.onInterval)
         .toList();
     for (final task in pending) {
-      // 检查是否到了执行时间
-      final intervalSeconds = task.actionParams['intervalSeconds'] as int? ?? 60;
+      if (_runningIntervalTasks.contains(task.id)) continue;
+
+      final intervalSeconds = _intervalSecondsOf(task);
       final lastExecuted = _taskLastExecuted[task.id] ?? 0;
       final elapsedSeconds = now.millisecondsSinceEpoch ~/ 1000 - lastExecuted;
-      
+
       if (elapsedSeconds >= intervalSeconds) {
         logger.i('[MCP Automation] Executing interval task: ${task.name}');
-        await _executeTask(task, {'interval': true, 'timestamp': now.millisecondsSinceEpoch});
+        // 先记账再执行：写入放在 await 之后时，执行超过 10s 的任务
+        // 在下一 tick 仍被判为「已到期」，会被重复执行。
         _taskLastExecuted[task.id] = now.millisecondsSinceEpoch ~/ 1000;
+        _runningIntervalTasks.add(task.id);
+        try {
+          await _executeTask(task, {'interval': true, 'timestamp': now.millisecondsSinceEpoch});
+        } finally {
+          _runningIntervalTasks.remove(task.id);
+        }
       }
     }
   }

@@ -322,20 +322,40 @@ class AppConfiguration {
   /// 是否正在写入
   bool _isWriting = false;
 
+  /// 写入期间又有新的修改需要落盘
+  bool _pendingWrite = false;
+
   /// 刷新配置文件
   Future<void> flushConfig() async {
-    if (_isWriting) return;
+    // 旧实现「正在写就直接 return」：连续快速改两个设置时，第二次的修改
+    // 只能在「下一次 flush」才落盘，用户随即退出就丢了。改为脏标记 + 尾随写。
+    if (_isWriting) {
+      _pendingWrite = true;
+      return;
+    }
     _isWriting = true;
+    try {
+      do {
+        _pendingWrite = false;
+        await _writeOnce();
+      } while (_pendingWrite);
+    } catch (e, st) {
+      // 平台目录不可用（HOME/USERPROFILE 均为 null 等）时，旧实现的
+      // _isWriting 会永久停在 true —— 之后整场会话所有设置保存都是静默 no-op。
+      logger.e('保存界面配置失败', error: e, stackTrace: st);
+      _pendingWrite = false;
+    } finally {
+      _isWriting = false;
+    }
+  }
 
+  Future<void> _writeOnce() async {
     var file = await _path;
-    var exists = await file.exists();
+    final exists = await file.exists();
     if (!exists) {
       file = await file.create(recursive: true);
     }
-
-    var json = jsonEncode(toJson());
-    await file.writeAsString(json);
-    _isWriting = false;
+    await file.writeAsString(jsonEncode(toJson()));
   }
 
   Map<String, dynamic> toJson() {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -68,6 +69,8 @@ class _JavaScriptState extends State<JavaScript> {
   }
 
   dynamic consoleLog(dynamic args) async {
+    // 引擎里 setTimeout 排队的回调可能在页面 dispose 之后才触发
+    if (!mounted) return null;
     var level = args.removeAt(0);
     String output = args.join(' ');
     if (level == 'info') level = 'warn';
@@ -116,14 +119,26 @@ class _JavaScriptState extends State<JavaScript> {
                         outLines.clear();
                         //失去焦点
                         FocusScope.of(context).unfocus();
-                        var jsResult = await flutterJs!.evaluateAsync(code.text);
-                        if (jsResult.isPromise || jsResult.rawResult is Future) {
-                          jsResult = await flutterJs!.handlePromise(jsResult);
-                        }
-                        if (jsResult.isError) {
+                        try {
+                          // while(true) / 永不 resolve 的 promise 会把页面挂死：
+                          // 旧实现没有任何超时，也没有「停止」入口。
+                          var jsResult =
+                              await flutterJs!.evaluateAsync(code.text).timeout(const Duration(seconds: 10));
+                          if (jsResult.isPromise || jsResult.rawResult is Future) {
+                            jsResult = await flutterJs!.handlePromise(jsResult).timeout(const Duration(seconds: 10));
+                          }
+                          if (!mounted) return;
+                          if (jsResult.isError) {
+                            setState(() {
+                              outLines.add(
+                                  Text(jsResult.toString(), style: const TextStyle(color: Colors.red, fontSize: 13)));
+                            });
+                          }
+                        } on TimeoutException {
+                          if (!mounted) return;
                           setState(() {
                             outLines.add(
-                                Text(jsResult.toString(), style: const TextStyle(color: Colors.red, fontSize: 13)));
+                                Text('执行超时（10 秒），脚本可能进入死循环', style: const TextStyle(color: Colors.red, fontSize: 13)));
                           });
                         }
                       },

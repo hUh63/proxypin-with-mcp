@@ -215,10 +215,12 @@ class _HistoryListState extends State<_HistoryListWidget> {
       var historyItem = isSaz
           ? await storage.addSazFile(file.xFile)
           : await storage.addHarFile(file.xFile);
-      setState(() {
-        toRequestsView(historyItem);
-        FlutterToastr.show(localizations.importSuccess, context);
-      });
+      // 导入可能耗时数秒，期间用户可能已离开历史页。
+      if (!mounted) return;
+      // Navigator.push / Overlay 操作不能放在 setState 的同步回调里
+      // （会在「标记需要重建」期间插入路由/Overlay 条目）。
+      toRequestsView(historyItem);
+      FlutterToastr.show(localizations.importSuccess, context);
     } catch (e, t) {
       logger.e('导入失败 $file', error: e, stackTrace: t);
       if (mounted) {

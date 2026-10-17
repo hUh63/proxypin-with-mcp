@@ -187,11 +187,17 @@ class Condition {
         return actualValue.toString().startsWith(value.toString());
       case Operator.endsWith:
         return actualValue.toString().endsWith(value.toString());
-      case Operator.matches:
-        if (value is RegExp) {
-          return value.hasMatch(actualValue.toString());
+      case Operator.matches: {
+        if (value is RegExp) return value.hasMatch(actualValue.toString());
+        // 用户可手填正则，非法模式（"(" / "[a-" / "*foo"）会让 RegExp()
+        // 抛 FormatException。旧实现无保护，every() 随之中断，后续所有规则
+        // （含 critical）都不再评估，执行历史里连一条记录都留不下。
+        try {
+          return RegExp(value.toString()).hasMatch(actualValue.toString());
+        } catch (_) {
+          return false;
         }
-        return RegExp(value.toString()).hasMatch(actualValue.toString());
+      }
       case Operator.inList:
         if (value is List) {
           return value.contains(actualValue);
@@ -419,11 +425,11 @@ class Action {
       }
 
       logger.i('发送 Webhook 到：$url');
-      final response = await http.post(
-        Uri.parse(url),
-        headers: headers,
-        body: jsonEncode(payload),
-      );
+      // 动作是串行 await 的：不可达但建连不返回的地址（黑洞 IP、内网蜜罐）
+      // 会把整条规则评估链挂住数分钟，后续规则的动作全部不执行。
+      final response = await http
+          .post(Uri.parse(url), headers: headers, body: jsonEncode(payload))
+          .timeout(const Duration(seconds: 10));
       logger.i('Webhook 响应：${response.statusCode}');
     } catch (e) {
       logger.e('Webhook 发送失败：$e');
@@ -695,12 +701,35 @@ class McpRuleEngine {
       if (!await file.exists()) return;
       final content = await file.readAsString();
       if (content.trim().isEmpty) return;
-      final list = jsonDecode(content) as List<dynamic>;
+      final decoded = jsonDecode(content);
+      if (decoded is! List) {
+        logger.w('mcp_rules.json 格式不是数组，忽略');
+        return;
+      }
+
+      // 逐条解析后再整体替换。旧实现先 clear() 再 map(...)：任意一条坏数据
+      // （旧版本写入 / 手工编辑缺 id、name）抛 TypeError 后 addAll 中断，
+      // 外层 catch 吞掉 → 内存规则表变空/残缺；用户随后新增一条规则就会
+      // 把残缺表写回磁盘，原规则永久丢失。
+      final loaded = <Rule>[];
+      var skipped = 0;
+      for (final item in decoded) {
+        if (item is! Map) {
+          skipped++;
+          continue;
+        }
+        try {
+          loaded.add(Rule.fromJson(Map<String, dynamic>.from(item)));
+        } catch (e) {
+          skipped++;
+          logger.w('跳过无法解析的规则：$e');
+        }
+      }
       _rules
         ..clear()
-        ..addAll(list.map((e) => Rule.fromJson(e as Map<String, dynamic>)));
+        ..addAll(loaded);
       _sortRules();
-      logger.i('已加载 ${_rules.length} 条规则');
+      logger.i('已加载 ${_rules.length} 条规则${skipped > 0 ? '（跳过 $skipped 条）' : ''}');
     } catch (e, st) {
       logger.e('加载规则失败', error: e, stackTrace: st);
     }

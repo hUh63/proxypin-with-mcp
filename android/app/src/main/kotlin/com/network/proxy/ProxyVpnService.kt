@@ -208,6 +208,9 @@ class ProxyVpnService : VpnService(), ProtectSocket {
 
         return if (intent.action == ACTION_DISCONNECT) {
             disconnect()
+            // 旧实现只停止线程/关闭接口，Service 仍处于 started 状态 →
+            // 进程一直不被回收，再次启动复用的是同一个旧实例。
+            stopSelf()
             START_NOT_STICKY
         } else {
             val proxyHost = intent.getStringExtra(PROXY_HOST_KEY) ?: (host ?: "127.0.0.1")

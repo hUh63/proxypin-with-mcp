@@ -1,5 +1,101 @@
 # Changelog
 
+## v1.67.16 (2026-10-18)
+
+### 修复：第三轮全量功能检验 —— 导入导出 / 配置持久化 / 规则与工作流 / Android 主线程
+
+本轮对「导入导出、证书与系统代理、MCP/脚本引擎、工具箱、配置持久化、原生通道」六个域逐文件审查，
+共修 26 处。
+
+**导入导出（HAR / 历史）**
+
+1. **「收藏导出 HAR → 再导入」必然失败**（`lib/utils/har.dart` `readFile`）：历史文件是「每行一个
+   entry」，而 `writeFile` / Chrome / Charles / Fiddler 产出的都是单个 JSON 对象。旧实现 `readAsLines`
+   只拿到一行，`jsonDecode` 得到 `{log:...}`，取 `har['request']` 为 null 后抛 `NoSuchMethodError` ——
+   该功能等于完全不可用。现在先按标准 HAR 嗅探，两种格式都读。
+2. **HAR 请求体中文乱码**：`String.fromCharCodes(原始字节)` 把每个字节当码点，含中文的 UTF-8 体在
+   外部工具里全是 mojibake（同一份 HAR 的响应侧却用的是正确解码的 `bodyAsString`）。文本体改按
+   charset 解码，二进制体改 `base64 + encoding`；读取端按「是否出现 >0xFF 码点」区分旧版字节映射
+   与真 Unicode 文本，保证自导自入往返正确。
+3. **忽略 `postData/content.encoding = base64`**：base64 文本被当正文（体积膨胀 33%，重放全错）。
+4. **第三方 HAR 强转崩溃**：缺 `request` / `headers` 时抛 `TypeError`，整份文件不可用。现在逐条容错
+   （坏 entry 跳过并计数），缺 `request` 抛明确的 `FormatException`。
+5. **历史文件一行损坏导致整份打不开**：进程被强杀时最后一条 entry 可能只写了一半，`jsonDecode`
+   一抛就终止整个读取。现在跳过坏行继续。
+6. **`addHarFile` 缺 `log.entries` 守卫**：导入错文件时只显示 `NoSuchMethodError`。
+7. **桌面历史导入**：`await` 之后无 `mounted`，且把 `Navigator.push` / `FlutterToastr.show` 塞进
+   `setState` 的同步回调（会在标记重建期间插入路由/Overlay）。
+8. **单条请求导出 HAR 遗留 `print(entry)`**：完整 entry（含 Cookie / Authorization）明文进 stdout。
+
+**配置持久化**
+
+9. **`Configuration.flushConfig` 没有 `await`**（`lib/network/bin/configuration.dart`）：Future 在写入
+   完成前就 complete，`ConfigAutoSave` 打出「保存成功」时文件可能还没写完 —— 此时划掉 App，端口 /
+   白名单 / MCP token 全部丢失；写失败还变成未捕获异步异常。改为串行写队列 + `await` + `flush: true`。
+10. **`_loadConfig` 无 try/catch**：半截 JSON 让整份配置静默回默认值，下一次 flush 又把默认值写回，
+    原配置彻底丢失。现在解析失败先备份 `.bad` 再降级。
+11. **`enableSsl = config['enableSsl'] == true`** 覆盖了字段默认值：首次启动 `config` 为 `{}`，移动端
+    新装后 HTTPS 抓包默认关闭（只看到 CONNECT 隧道）。改为 `?? Platforms.isMobile()`。
+12. **UI 配置写盘期间的新修改被丢弃、写失败后 `_isWriting` 永不复位**（`lib/ui/configuration.dart`）：
+    连续快速改两个设置时后一个丢失；平台目录不可用时整场会话所有保存变成静默 no-op。改为脏标记 +
+    尾随写 + `finally` 复位。
+13. **历史写队列一次失败永久污染**（`lib/storage/histories.dart`）：之后所有 `.then` 都不再执行，
+    本次运行内新增/删除历史全丢且无日志。`removeHistory` 在文件已被外部清理时抛异常、跳过落盘，
+    导致「删掉的历史」下次启动复活。
+
+**规则 / 定时任务 / 工作流**
+
+14. **`loadRules` 一条坏数据清空全部规则**（`mcp_rule_engine.dart`）：先 `clear()` 再 `map(...)`，
+    任意一条缺 id/name 抛 `TypeError` 后 `addAll` 中断、异常被吞 → 内存表变空；用户随后新增一条规则
+    就把空表写回磁盘。改为先解析到临时列表、逐条容错，再整体替换。
+15. **`matches` 非法正则中断整轮评估**：用户填 `(` / `[a-` 时 `RegExp()` 抛 `FormatException`，
+    `every()` 中断 → 后续所有规则（含 critical）不再评估。现在降级为「不匹配」。
+16. **Webhook 无超时**：不可达但建连不返回的地址会把整条规则评估链挂住数分钟。加 10s 超时。
+17. **定时任务两处**：`intervalSeconds as int?` 遇到字符串/浮点抛 `TypeError`，整轮检查中断且排在
+    后面的任务永不执行；`Timer.periodic` 不防重入，慢任务被并发重复触发（上次执行时间写在 `await`
+    之后）。改为宽松解析 + tick 互斥 + 在飞任务集合 + 先记账再执行。
+18. **工作流**：依赖指向已删除节点时 `validate()` 抛裸 `Exception`（`registerWorkflow` 连注册都进不去）；
+    `node.timeout` 只透传给 executor，引擎自身从不计时，节点可永久挂住整个工作流。前者改为返回
+    `false`，后者用 `.timeout()` 强制并记 `timeout` 状态。
+
+**脱敏**
+
+19. **`export_har` 与代码生成完全绕过脱敏开关**：打开脱敏后，模型调 `export_har` / 「生成 cURL」
+    仍能拿到完整 `Authorization` / `Cookie`。现在 cURL / Python / JS / Go / Node / HAR 六个出口
+    统一走 `SensitiveData`。脱敏头清单从 4 项扩到 18 项，并增加片段匹配（`*token*`、`*api-key*`、
+    `*secret*`、`*session*` 等），覆盖 `X-Gitlab-Token` / `X-Amz-Security-Token` 这类自定义命名。
+
+**工具箱**
+
+20. **Base64 解码静默删 `.`**（`encoder.dart`）：想兼容 JWT，却把 `a.b.c` 拼成一段按 4 取整补 `=`，
+    长度常常恰好合法 → 解出二进制垃圾而不是报错。
+21. **Unicode 编解码损坏 emoji**：编码端对 BMP 之外的码点输出 5 位 `\u1f600`，解码正则只吃 4 位 →
+    得到 `\u1f60` 加残留字符。现在编码为代理对，解码支持代理对与 `\u{...}`。
+22. **RSA 2048 密钥生成在 UI 线程**：纯 Dart 素数搜索桌面 1~15s、手机更久，期间无法出帧 →
+    Android 5s 即 ANR。改为 `Isolate.run`。
+23. **JS 运行页**：`evaluateAsync` 无超时、无停止入口，`while(true)` 可冻结页面；`consoleLog` 在
+    页面销毁后仍会 `setState`。加 10s 超时 + `mounted` 守卫。
+
+**Android 原生**
+
+24. **`MethodHandlerPlugin` 在主线程执行 su**：`RootProxyManager.start()` 内部是 stop+start+verify，
+    最多 6 次 su 进程 fork，首次还会弹授权框（Magisk 默认 15s）→ ANR。移到单线程执行器，结果经
+    `Handler(mainLooper)` 回主线程。
+25. **`McpPlugin.shell()` 先 `readText()` 再 `waitFor(timeout)`**：`readText` 要等子进程退出才返回，
+    `timeoutMs` 完全失效；stdin 从未关闭；stderr 写满后与 stdout 互锁。改为关 stdin + 并发读流 +
+    `waitFor(timeout)` + `destroyForcibly`（`screenshotViaRoot` 同样修）。两条 `MethodChannel` 的
+    `result.*` 也改为回主线程（此前违反 platform-thread 契约，Dart 侧只能靠 timeout 兜底）。
+    `hasDhizuku()` 的缓存授权成功后不失效，已在授权返回时清空。
+26. **`ProxyVpnService.disconnect()` 不 `stopSelf()`**：点「停止抓包」后服务常驻，进程不被回收，
+    再次启动复用同一旧实例。**Windows 系统代理读取** `where(...).first` 在注册表没有 `ProxyEnable`
+    时抛 `Bad state: No element`（`substring` 还会越界），且 `catchError` 挂在后一个 Future 上保护不到。
+
+**测试**
+
+- 新增 `test/har_roundtrip_test.dart`：标准 HAR 读取、自导自入往返、逐行历史格式、截断容错、
+  `encoding: base64`、缺 headers、脱敏头识别。
+- 新增 `test/mcp/rule_engine_robustness_test.dart`：非法正则降级、缺依赖工作流 validate/register。
+
 ## v1.67.15 (2026-10-17)
 
 ### 修复：v1.67.14 引入的回归 —— 自动化懒加载卡住代理转发链路 / catchError 类型不匹配

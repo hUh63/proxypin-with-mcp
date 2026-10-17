@@ -106,7 +106,7 @@ class HistoryStorage {
   Future<HistoryItem> addHistory(String name, File file, int requestLength) async {
     var historyItem = HistoryItem(name, file.path, requestLength, await file.length());
     _histories.add(historyItem);
-    refresh();
+    await refresh();
     return historyItem;
   }
 
@@ -117,7 +117,7 @@ class HistoryStorage {
   //更新
   Future<void> updateHistory(int index, HistoryItem item) async {
     _histories.update(index, item);
-    refresh();
+    await refresh();
   }
 
   //获取
@@ -127,7 +127,18 @@ class HistoryStorage {
 
   /// 刷新持久化文件：串行执行，避免并发写同一文件
   Future<void> refresh() {
-    _writeQueue = _writeQueue.then((_) => _storageFile.writeAsString(jsonEncode(_histories.source)));
+    // 队列一旦因一次写失败进入 error 状态，后续所有 .then 都不再执行：
+    // 本次运行内新增/删除历史全部只在内存里，重启后消失，且日志一条没有。
+    // 每次写入前吃掉上一次的错误。
+    _writeQueue = _writeQueue.catchError((Object e, StackTrace s) {
+      logger.e('保存历史列表失败', error: e, stackTrace: s);
+    }).then((_) async {
+      try {
+        await _storageFile.writeAsString(jsonEncode(_histories.source));
+      } catch (e, s) {
+        logger.e('保存历史列表失败', error: e, stackTrace: s);
+      }
+    });
     return _writeQueue;
   }
 
@@ -137,7 +148,14 @@ class HistoryStorage {
     logger.i('删除历史记录 $history');
     final homePath = await _homePath();
     var file = File('$homePath${Platform.pathSeparator}${Files.getName(history.path)}');
-    await file.delete();
+    // 文件可能已被外部清理（用户清 history 目录 / 便携模式切换路径）。
+    // 旧实现这里抛异常就跳过 refresh，histories.json 仍留着这一项，
+    // 下次启动「删掉的历史」又出现。
+    try {
+      if (await file.exists()) await file.delete();
+    } catch (e, s) {
+      logger.w('删除历史文件失败 ${file.path}', error: e, stackTrace: s);
+    }
     await refresh();
   }
 
@@ -211,20 +229,25 @@ class HistoryStorage {
 
   //添加历史
   Future<HistoryItem> addHarFile(XFile file) async {
-    var readAsBytes = await file.readAsString();
-    var json = jsonDecode(readAsBytes);
-    var log = json['log'];
-    String name = formatDate(DateTime.now(), [mm, '-', d, ' ', HH, ':', nn, ':', ss]);
-    List? pages = log['pages'] as List?;
-    if (pages?.isNotEmpty == true) {
-      name = pages?.first['title'];
+    final content = await file.readAsString();
+    final json = jsonDecode(content);
+    // 标准 HAR 必须有 log.entries。缺字段时给出明确错误，
+    // 而不是在 log['pages'] / log['entries'] 上抛 NoSuchMethodError，
+    // 让用户只看到「导入失败: NoSuchMethodError」。
+    final log = json is Map ? json['log'] : null;
+    if (log is! Map || log['entries'] is! List) {
+      throw const FormatException('不是有效的 HAR 文件（缺少 log.entries）');
     }
 
-    //解析请求
-    List entries = log['entries'];
-    var list = entries.map((e) => Har.toRequest(e)).toList();
+    String name = formatDate(DateTime.now(), [mm, '-', d, ' ', HH, ':', nn, ':', ss]);
+    final pages = log['pages'];
+    if (pages is List && pages.isNotEmpty && pages.first is Map) {
+      final title = (pages.first as Map)['title']?.toString();
+      if (title != null && title.trim().isNotEmpty) name = title;
+    }
 
-    return addRequests(list, name: name);
+    // 逐条容错：单条坏 entry 不再让整份历史导入失败
+    return addRequests(Har.readEntries(log['entries'] as List), name: name);
   }
 
   /// 从 Fiddler SAZ 文件导入历史（解成 HAR entry 后复用 Har.toRequest）。

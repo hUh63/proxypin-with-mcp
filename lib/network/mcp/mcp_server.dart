@@ -28,6 +28,7 @@ import 'package:proxypin/mcp/protocol/mcp_actions.dart';
 import 'package:proxypin/mcp/protocol/mcp_tool.dart';
 import 'package:proxypin/mcp/transport/mcp_stdio_bridge.dart';
 import 'package:proxypin/mcp/transport/setup_script.dart';
+import 'package:proxypin/mcp/capture/sensitive_data.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_runtime.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -3614,7 +3615,10 @@ class McpServer {
 
     req.headers.forEach((key, values) {
       for (var v in values) {
-        sb.write(" -H '$key: $v'");
+        // 与 requestToJson 共用脱敏策略：脱敏开关打开时不能通过
+        // 「生成 cURL」把 Authorization / Cookie 原文交给模型
+        var redacted = SensitiveData.redactValue(key, v);
+        sb.write(" -H '$key: $redacted'");
       }
     });
 
@@ -3640,7 +3644,7 @@ class McpServer {
     sb.writeln("headers = {");
     req.headers.forEach((key, values) {
       // Python requests usually takes the first value if multiple, or list
-      var val = values.length == 1 ? values.first : values.join(',');
+      var val = SensitiveData.redactValue(key, values.length == 1 ? values.first : values.join(','));
       // Escape quotes
       val = val.replaceAll('"', '\\"');
       sb.writeln("    \"$key\": \"$val\",");
@@ -3691,7 +3695,7 @@ class McpServer {
     sb.writeln("  method: \"${req.method.name}\",");
     sb.writeln("  headers: {");
     req.headers.forEach((key, values) {
-      var val = values.join(',');
+      var val = SensitiveData.redactValue(key, values.join(','));
       val = val.replaceAll('"', '\\"');
       sb.writeln("    \"$key\": \"$val\",");
     });
@@ -3746,7 +3750,7 @@ class McpServer {
     sb.writeln("    }");
     req.headers.forEach((key, values) {
       for (var v in values) {
-        var val = v.replaceAll('"', '\\"');
+        var val = SensitiveData.redactValue(key, v).replaceAll('"', '\\"');
         sb.writeln("    req.Header.Add(\"$key\", \"$val\")");
       }
     });
@@ -3777,7 +3781,7 @@ class McpServer {
     sb.writeln("  path: url.pathname + url.search,");
     sb.writeln("  headers: {");
     req.headers.forEach((key, values) {
-      var val = values.join(',');
+      var val = SensitiveData.redactValue(key, values.join(','));
       val = val.replaceAll('"', '\\"');
       sb.writeln("    \"$key\": \"$val\",");
     });
@@ -3816,7 +3820,7 @@ class McpServer {
           "httpVersion": req.protocolVersion,
           "cookies": _parseCookies(req.headers.get('cookie')),
           "headers": req.headers.entries
-              .map((e) => {"name": e.key, "value": e.value.join(',')})
+              .map((e) => {"name": e.key, "value": SensitiveData.redactValue(e.key, e.value.join(','))})
               .toList(),
           "queryString": _parseQueryString(req.requestUrl),
           "headersSize": -1,
@@ -3832,7 +3836,7 @@ class McpServer {
           "cookies": [],
           "headers":
               response?.headers.entries
-                  .map((e) => {"name": e.key, "value": e.value.join(',')})
+                  .map((e) => {"name": e.key, "value": SensitiveData.redactValue(e.key, e.value.join(','))})
                   .toList() ??
               [],
           "content": {

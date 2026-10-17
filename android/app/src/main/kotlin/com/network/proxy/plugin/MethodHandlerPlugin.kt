@@ -1,6 +1,8 @@
 package com.network.proxy.plugin
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
@@ -8,6 +10,7 @@ import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.util.concurrent.Executors
 
 /**
  * 与 iOS 侧 `ios/Runner/Handlers/MethodHandler.swift` 对应的 Android 实现，通道 `com.proxypin/method`。
@@ -20,6 +23,25 @@ class MethodHandlerPlugin : AndroidFlutterPlugin() {
 
     /** 供 root 模式读取本 App uid（用于把自身流量排除在重定向之外，防止死循环） */
     private var appContext: Context? = null
+
+    /**
+     * su 调用必须离开 platform 主线程。
+     *
+     * 首次调用会弹 root 授权框（Magisk 默认 15s 超时），而 RootProxyManager.start()
+     * 内部是 stop + start + verify，最多 6 次 su 进程 fork。放在主线程上执行
+     * 会直接触发 ANR（输入事件 5s 无响应）。
+     */
+    private val rootExecutor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    /** MethodChannel.Result 必须在 platform 主线程回调 */
+    private fun postSuccess(result: MethodChannel.Result, value: Any?) {
+        mainHandler.post { result.success(value) }
+    }
+
+    private fun postError(result: MethodChannel.Result, message: String?) {
+        mainHandler.post { result.error("ERROR", message, null) }
+    }
 
     companion object {
         private const val TAG = "MethodHandlerPlugin"
@@ -47,22 +69,38 @@ class MethodHandlerPlugin : AndroidFlutterPlugin() {
                     "caInstallScope" -> result.success(caInstallScope(call.argument<String>("pem")))
 
                     // ---- root 模式抓包（上游 #839 Feature Request 2）----
-                    // 只有用户在设置里主动开启时才会走到这几条，
-                    // 它们会执行 su，首次调用弹出 root 授权框属预期行为。
-                    "isRootAvailable" -> result.success(RootProxyManager.isRootAvailable())
-
-                    "isRootProxyRunning" -> result.success(RootProxyManager.isRootProxyRunning())
+                    // 只有用户在设置里主动开启时才会走到这几条。它们都会 fork su
+                    // （首次还会弹授权框），不能在主线程执行，见 rootExecutor 注释。
+                    "isRootAvailable", "isRootProxyRunning", "stopRootProxy", "cleanupRootProxy" -> {
+                        rootExecutor.execute {
+                            try {
+                                val value: Any = when (call.method) {
+                                    "isRootAvailable" -> RootProxyManager.isRootAvailable()
+                                    "isRootProxyRunning" -> RootProxyManager.isRootProxyRunning()
+                                    "stopRootProxy" -> mapOf("success" to RootProxyManager.stop())
+                                    else -> RootProxyManager.cleanupStale()
+                                }
+                                postSuccess(result, value)
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "root call ${call.method} failed", e)
+                                postError(result, e.message)
+                            }
+                        }
+                    }
 
                     "startRootProxy" -> {
                         val port = call.argument<Int>("port") ?: 0
                         val uid = appContext?.applicationInfo?.uid ?: -1
-                        val started = RootProxyManager.start(port, uid)
-                        result.success(mapOf("success" to started.first, "message" to started.second))
+                        rootExecutor.execute {
+                            try {
+                                val started = RootProxyManager.start(port, uid)
+                                postSuccess(result, mapOf("success" to started.first, "message" to started.second))
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "startRootProxy failed", e)
+                                postError(result, e.message)
+                            }
+                        }
                     }
-
-                    "stopRootProxy" -> result.success(mapOf("success" to RootProxyManager.stop()))
-
-                    "cleanupRootProxy" -> result.success(RootProxyManager.cleanupStale())
 
                     else -> result.notImplemented()
                 }
@@ -71,6 +109,11 @@ class MethodHandlerPlugin : AndroidFlutterPlugin() {
                 result.error("ERROR", e.message, null)
             }
         }
+    }
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        rootExecutor.shutdownNow()
+        super.onDetachedFromEngine(binding)
     }
 
     /**

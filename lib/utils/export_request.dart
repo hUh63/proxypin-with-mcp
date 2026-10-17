@@ -77,7 +77,6 @@ void exportHar(HttpRequest request) async {
   String fileName = "har_${request.hostAndPort?.host}_${request.requestId}.har";
 
   var entry = Har.toHar(request);
-  print(entry);
   var har = {
     "log": {
       "version": "1.2",

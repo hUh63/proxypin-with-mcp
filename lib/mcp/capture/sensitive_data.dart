@@ -27,13 +27,47 @@ class SensitiveData {
     'proxy-authorization',
     'cookie',
     'set-cookie',
+    'www-authenticate',
+    'proxy-authenticate',
+    'x-api-key',
+    'api-key',
+    'apikey',
+    'x-auth-token',
+    'x-access-token',
+    'x-csrf-token',
+    'x-xsrf-token',
+    'x-id-token',
+    'x-refresh-token',
+    'private-token',
+    'x-amz-security-token',
+    'x-goog-api-key',
   };
+
+  /// 名字里含这些片段的头也视为凭据（覆盖各家自定义命名，
+  /// 如 X-Gitlab-Token / X-Session-Id / X-Client-Secret）。
+  static const List<String> _sensitiveFragments = [
+    'token',
+    'api-key',
+    'apikey',
+    'secret',
+    'session',
+    'password',
+    'credential',
+  ];
+
+  /// 合法但会被上面片段误伤的头，先放行
+  static const Set<String> _nonSensitive = {'content-type', 'content-length'};
 
   /// 打码占位符
   static const String placeholder = '***redacted***';
 
   /// 该头是否属于敏感头
-  static bool isRedactedHeader(String name) => redactedHeaders.contains(name.toLowerCase());
+  static bool isRedactedHeader(String name) {
+    final lower = name.toLowerCase();
+    if (_nonSensitive.contains(lower)) return false;
+    if (redactedHeaders.contains(lower)) return true;
+    return _sensitiveFragments.any(lower.contains);
+  }
 
   /// 敏感头返回占位符，否则原值
   static String redactValue(String name, String value) =>

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -59,11 +60,14 @@ class _RsaPageState extends State<RsaPage> {
     super.dispose();
   }
 
-  void run() {
+  Future<void> run() async {
     try {
       switch (mode) {
         case 'Generate':
-          final pair = RsaTools.generateKeyPair(keySize: 2048);
+          // 2048 位纯 Dart 密钥生成要反复做素性检测，桌面 1~15s、中端手机更久。
+          // 同步执行时无法出帧，Android 5s 无响应即 ANR，所以放到后台 isolate。
+          final pair = await Isolate.run(() => RsaTools.generateKeyPair(keySize: 2048));
+          if (!mounted) return;
           keyController.text = pair[1];
           outputController.text = pair[0];
           break;
@@ -93,6 +97,7 @@ class _RsaPageState extends State<RsaPage> {
           break;
       }
     } catch (e) {
+      if (!mounted) return;
       outputController.text = '';
       logger.e('RSA error: $e');
       FlutterToastr.show(localizations.commonError('$e'), context, duration: 3, backgroundColor: Colors.red);

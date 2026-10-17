@@ -156,6 +156,14 @@ class McpPlugin : FlutterPlugin {
 
     private var context: Context? = null
 
+    /**
+     * MethodChannel.Result 必须回到 platform 主线程。
+     * 此前 "com.proxy/floatingBall" 与 "com.proxy/mcpScreen" 两条通道都在
+     * 工作线程直接 result.success/error，Flutter engine 的 @UiThread 契约被破坏：
+     * debug 下断言、release 下可能丢消息，Dart 侧只能靠 10~60s 的 timeout 兜底。
+     */
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext
         binaryMessenger = binding.binaryMessenger
@@ -165,12 +173,12 @@ class McpPlugin : FlutterPlugin {
                 Thread {
                     try {
                         val response = handleFloatingBall(call)
-                        result.success(response)
+                        mainHandler.post { result.success(response) }
                     } catch (e: Throwable) {
                         // 捕 Throwable：这里会走到 Shizuku / root / 反射相关代码，
                         // 类加载失败等 Error 不是 Exception，漏掉就会不回 result
                         Log.w("ProxyPin", "floatingBall ${call.method} failed", e)
-                        result.error("FB_ERROR", e.message ?: e.toString(), null)
+                        mainHandler.post { result.error("FB_ERROR", e.message ?: e.toString(), null) }
                     }
                 }.start()
             }
@@ -180,11 +188,11 @@ class McpPlugin : FlutterPlugin {
                     val method = call.method
                     val args = (call.arguments as? Map<*, *>)?.mapKeys { it.key.toString() } ?: emptyMap()
                     val response = handleMethod(method, args)
-                    result.success(response)
+                    mainHandler.post { result.success(response) }
                 } catch (e: Throwable) {
                     // 同上：Shizuku / 无障碍 / 反射路径可能抛 Error，必须回 result
                     Log.w("ProxyPin", "mcp method failed", e)
-                    result.error("MCP_ERROR", e.message ?: e.toString(), null)
+                    mainHandler.post { result.error("MCP_ERROR", e.message ?: e.toString(), null) }
                 }
             }.start()
         }
@@ -545,11 +553,28 @@ class McpPlugin : FlutterPlugin {
 
     private fun screenshotViaRoot(): String {
         val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "screencap -p"))
-        val bytes = process.inputStream.readBytes()
-        val stderr = BufferedReader(InputStreamReader(process.errorStream, Charsets.UTF_8)).readText()
-        val exitCode = process.waitFor()
-        if (exitCode != 0 || bytes.isEmpty()) {
-            throw RuntimeException("screencap failed (exit=$exitCode): $stderr")
+        runCatching { process.outputStream.close() }
+
+        // 与 shell() 同理：先 readBytes 再 waitFor 等于没有超时，
+        // stderr 写满还会和 stdout 互锁。改为并发读 + 显式超时。
+        val out = java.io.ByteArrayOutputStream()
+        val stderr = StringBuilder()
+        val tOut = Thread { runCatching { process.inputStream.copyTo(out) } }
+        val tErr = Thread {
+            runCatching { process.errorStream.bufferedReader().use { stderr.append(it.readText()) } }
+        }
+        tOut.start()
+        tErr.start()
+
+        val finished = process.waitFor(20, TimeUnit.SECONDS)
+        if (!finished) process.destroyForcibly()
+        runCatching { tOut.join(1000) }
+        runCatching { tErr.join(500) }
+
+        val bytes = out.toByteArray()
+        val exitCode = if (finished) runCatching { process.exitValue() }.getOrDefault(-1) else -1
+        if (!finished || exitCode != 0 || bytes.isEmpty()) {
+            throw RuntimeException("screencap failed (exit=$exitCode, timeout=${!finished}): $stderr")
         }
         return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
@@ -558,15 +583,36 @@ class McpPlugin : FlutterPlugin {
 
     private fun shell(command: String, useSu: Boolean, timeoutMs: Long): Map<String, Any> {
         val fullCommand = if (useSu) arrayOf("su", "-c", command) else arrayOf("sh", "-c", command)
-        val process = Runtime.getRuntime().exec(fullCommand)
-        val stdout = BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).readText()
-        val stderr = BufferedReader(InputStreamReader(process.errorStream, Charsets.UTF_8)).readText()
-        val completed = process.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-        val exitCode = if (completed) process.exitValue() else -1
+        val stdout = StringBuilder()
+        val stderr = StringBuilder()
+        var completed = false
+        var exitCode = -1
 
-        // 超时后必须销毁进程，避免资源泄漏
-        if (!completed) {
-            process.destroyForcibly()
+        try {
+            val process = Runtime.getRuntime().exec(fullCommand)
+            // 命令不读 stdin：立即关闭，否则读 stdin 的子进程会永久等待。
+            runCatching { process.outputStream.close() }
+
+            // 必须并发读 stdout/stderr、再 waitFor 判超时。
+            // 旧实现先 readText() 再 waitFor(timeout)：readText 要等子进程退出才返回，
+            // timeoutMs 完全失效（su 授权框无人确认时线程永久阻塞）；
+            // 且 stderr 缓冲区写满后子进程阻塞，stdout 也读不完 → 死锁。
+            val tOut = Thread {
+                runCatching { process.inputStream.bufferedReader().use { stdout.append(it.readText()) } }
+            }
+            val tErr = Thread {
+                runCatching { process.errorStream.bufferedReader().use { stderr.append(it.readText()) } }
+            }
+            tOut.start()
+            tErr.start()
+
+            completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+            if (!completed) process.destroyForcibly()
+            runCatching { tOut.join(500) }
+            runCatching { tErr.join(500) }
+            if (completed) exitCode = runCatching { process.exitValue() }.getOrDefault(-1)
+        } catch (e: Throwable) {
+            stderr.append("exec failed: ${e.message}")
         }
 
         return mapOf(
@@ -576,8 +622,8 @@ class McpPlugin : FlutterPlugin {
             "timeoutMs" to timeoutMs,
             "timedOut" to !completed,
             "exitCode" to exitCode,
-            "stdout" to stdout,
-            "stderr" to stderr
+            "stdout" to stdout.toString(),
+            "stderr" to stderr.toString()
         )
     }
 
@@ -713,6 +759,9 @@ class McpPlugin : FlutterPlugin {
             })
             latch.await(90, TimeUnit.SECONDS)
             // 兜底：即使回调未触发，用户在 Dhizuku 里手动授权后实时检查也会成功
+            // 授权结果可能刚刚变化：清掉 hasDhizuku() 的缓存，
+            // 让 shellWithMode("auto") 立刻改走 Dhizuku 通道。
+            dhizukuStatus = null
             granted.get() || Dhizuku.isPermissionGranted()
         } catch (e: Throwable) {
             // API 不可用（未装 Dhizuku / 版本过旧），回退：打开 Dhizuku 应用让用户手动处理

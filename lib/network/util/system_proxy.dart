@@ -349,10 +349,13 @@ class WindowsSystemProxy extends SystemProxy {
   ///获取系统代理
   @override
   Future<ProxyInfo?> _getSystemProxy(ProxyTypes types) async {
-    var results = await _internetSettings('query', ['ProxyEnable']);
-
-    var proxyEnableLine = results.split('\r\n').where((item) => item.contains('ProxyEnable')).first.trim();
-    if (proxyEnableLine.substring(proxyEnableLine.length - 1) != '1') {
+    // 全新 Windows 配置 / 被组策略或清理工具删过时，注册表里可能没有
+    // ProxyEnable 值：旧实现 where(...).first 直接抛 Bad state: No element，
+    // 而下面的 .catchError 只挂在后一个 Future 上，保护不到这里。
+    final results = await _internetSettings('query', ['ProxyEnable']);
+    final proxyEnableLine =
+        results.split('\r\n').where((item) => item.contains('ProxyEnable')).firstOrNull?.trim();
+    if (proxyEnableLine == null || proxyEnableLine.isEmpty || !proxyEnableLine.endsWith('1')) {
       return null;
     }
 

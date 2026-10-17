@@ -180,7 +180,9 @@ class Configuration {
   /// 一处赋值，新增字段不会再漏。
   void applyJson(Map<String, dynamic> config) {
     port = config['port'] ?? port;
-    enableSsl = config['enableSsl'] == true;
+    // 旧写法 `== true` 会把字段默认值（移动端 true）覆盖成 false：
+    // 首次启动 config 为 {}，移动端新装后 HTTPS 只能看到 CONNECT 隧道。
+    enableSsl = config['enableSsl'] ?? Platforms.isMobile();
     startup = config['startup'] ?? Platforms.isDesktop();
     aiEnabled = config['aiEnabled'] ?? false;
     aiBaseUrl = config['aiBaseUrl'] ?? "https://api.openai.com/v1";
@@ -242,18 +244,33 @@ class Configuration {
     return File("${home.path}${separator}config.cnf");
   }
 
+  /// 写盘串行队列：ConfigAutoSave 的定时器回调与设置页里的直接调用
+  /// 可能同时命中，两次 writeAsString 各自以 truncate 打开同一文件，
+  /// 会写出半截 JSON（下次启动读回失败 → 整份配置静默回默认）。
+  static Future<void> _writeChain = Future.value();
+
   /// 刷新配置文件
   Future<void> flushConfig() async {
-    var file = await configFile();
-    var exists = await file.exists();
-    if (!exists) {
-      file = await file.create(recursive: true);
-    }
-    HostFilter.whitelist.toJson();
-    HostFilter.blacklist.toJson();
-    var json = jsonEncode(toJson());
-    logger.d('Refresh configuration file $runtimeType ${redactSecrets(toJson())}');
-    file.writeAsString(json);
+    final json = jsonEncode(toJson());
+    _writeChain = _writeChain.then((_) async {
+      try {
+        var file = await configFile();
+        if (!await file.exists()) {
+          file = await file.create(recursive: true);
+        }
+        HostFilter.whitelist.toJson();
+        HostFilter.blacklist.toJson();
+        logger.d('Refresh configuration file $runtimeType ${redactSecrets(toJson())}');
+        // 必须 await：旧实现没有 await，Future 在写入完成前就 complete，
+        // ConfigAutoSave 打出「保存成功」时文件可能还没写完 —— 用户此刻
+        // 从最近任务划掉 App，端口 / 白名单 / MCP token 全部丢失；
+        // 写失败也会变成未捕获异步异常，UI 毫无提示。
+        await file.writeAsString(json, flush: true);
+      } catch (e, st) {
+        logger.e('保存配置失败', error: e, stackTrace: st);
+      }
+    });
+    return _writeChain;
   }
 
   /// 脱敏：掩码敏感字段，避免写入日志或经 MCP 资源泄露（密钥 / 私钥路径 / 上游代理口令）
@@ -279,9 +296,23 @@ class Configuration {
       return {};
     }
 
-    Map<String, dynamic> config = jsonDecode(await file.readAsString());
-    logger.i('加载配置文件 [$file]');
-    return config;
+    try {
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is Map) {
+        logger.i('加载配置文件 [$file]');
+        return Map<String, dynamic>.from(decoded);
+      }
+      logger.w('配置文件不是 JSON 对象，忽略：$file');
+      return {};
+    } catch (e, st) {
+      // 半截 JSON（上次写盘被强杀）会让整份配置静默回默认值，且下次 flush
+      // 直接用默认值覆盖原文件 —— 用户原配置彻底丢失。先备份再忽略。
+      logger.e('配置文件解析失败，已备份为 .bad：$file', error: e, stackTrace: st);
+      try {
+        await file.copy('${file.path}.bad');
+      } catch (_) {}
+      return {};
+    }
   }
 
   Map<String, dynamic> toJson() {

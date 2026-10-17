@@ -15,11 +15,13 @@
  */
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_headers.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/process_info.dart';
 import 'package:proxypin/ui/configuration.dart';
 
@@ -188,19 +190,60 @@ class Har {
 
   //读取文件
   static Future<List<HttpRequest>> readFile(File file) async {
-    var lines = await file.readAsLines();
-    List<HttpRequest> list = [];
+    final text = await file.readAsString();
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return [];
 
-    for (var value in lines) {
+    // 历史文件是「每行一个 entry」的追加写格式；而本仓库 writeFile 以及
+    // Chrome / Charles / Fiddler 等导出的标准 HAR 是「单个 JSON 对象」。
+    // 旧实现只认前一种：收藏页「导出 HAR → 再导入」时 readAsLines 只得到一行，
+    // jsonDecode 得到 {log:...}，取 har['request'] 为 null 后直接抛
+    // NoSuchMethodError —— 该功能等于完全不可用，第三方 HAR 同样必失败。
+    if (trimmed.startsWith('{')) {
+      try {
+        final root = jsonDecode(trimmed);
+        final log = root is Map ? root['log'] : null;
+        final entries = log is Map ? log['entries'] : null;
+        if (entries is List) return readEntries(entries);
+      } catch (_) {
+        // 不是合法整 JSON（可能被截断），继续按逐行格式解析
+      }
+    }
+
+    final list = <HttpRequest>[];
+    var skipped = 0;
+    for (final value in text.split(RegExp(r'\r?\n'))) {
       var line = value.trim();
       if (line.isEmpty) continue;
-      if (line.endsWith(',')) {
-        line = line.substring(0, line.length - 1);
+      if (line.endsWith(',')) line = line.substring(0, line.length - 1);
+      try {
+        list.add(toRequest(jsonDecode(line)));
+      } catch (_) {
+        // 进程被强杀 / 磁盘写满时最后一条 entry 可能只写了一半。
+        // 旧实现一抛就终止，导致整份历史都打不开；现在跳过坏行继续。
+        skipped++;
       }
-      var har = jsonDecode(line);
-      var request = toRequest(har);
-      list.add(request);
     }
+    if (skipped > 0) logger.w('HAR 读取跳过 $skipped 条损坏记录');
+    return list;
+  }
+
+  /// 把 HAR 的 entries 数组转成请求列表（逐条容错，坏 entry 不拖垮整份文件）
+  static List<HttpRequest> readEntries(List entries) {
+    final list = <HttpRequest>[];
+    var skipped = 0;
+    for (final entry in entries) {
+      if (entry is! Map) {
+        skipped++;
+        continue;
+      }
+      try {
+        list.add(toRequest(entry));
+      } catch (_) {
+        skipped++;
+      }
+    }
+    if (skipped > 0) logger.w('HAR 读取跳过 $skipped 条无效记录');
     return list;
   }
 
@@ -220,39 +263,85 @@ class Har {
     return headers;
   }
 
+  /// HAR 的 text 字段转回原始字节。
+  ///
+  /// 历史包袱：旧版 ProxyPin 用 `String.fromCharCodes(原始字节)` 写出，每个字节
+  /// 变成一个 ≤0xFF 的码点；新版与第三方 HAR 写的则是真正的 Unicode 文本。
+  /// 直接 codeUnits 会让新版的中文体变成「UTF-16 码元」而非 UTF-8 字节，
+  /// 直接 utf8.encode 又会让旧数据二次编码。用「是否出现 >0xFF 的码点」区分。
+  static List<int> _bodyFromText(String text) {
+    for (final unit in text.codeUnits) {
+      if (unit > 0xFF) return utf8.encode(text);
+    }
+    return text.codeUnits;
+  }
+
   /// har to request
   static HttpRequest toRequest(Map har) {
-    var request = har['request'];
-    var method = request['method'];
-    List headers = request['headers'];
+    final request = har['request'];
+    // 第三方 HAR 里 request / headers 都可能缺失或类型不对，裸强转会抛
+    // TypeError，被 UI 统一显示成「导入失败: type ... is not a subtype」。
+    if (request is! Map) {
+      throw const FormatException('invalid HAR entry: missing request');
+    }
+    final method = request['method']?.toString() ?? 'GET';
+    final headers = request['headers'] is List ? request['headers'] as List : const [];
 
-    var httpRequest = HttpRequest(HttpMethod.valueOf(method), request['url'], protocolVersion: request['httpVersion']);
+    final httpRequest =
+        HttpRequest(HttpMethod.valueOf(method), request['url'], protocolVersion: request['httpVersion']);
     if (har.containsKey("_id")) httpRequest.requestId = har['_id'].toString(); // 页面标识
     httpRequest.processInfo = har['_app'] == null ? null : ProcessInfo.fromJson(har['_app']);
-    httpRequest.body = request['postData']?['text']?.toString().codeUnits;
-    for (var element in headers) {
-      httpRequest.headers.add(element['name'], element['value']);
-    }
-    var response = har['response'];
-    HttpResponse? httpResponse;
-    if (response != null && response['status'] != null) {
-      httpResponse = HttpResponse(HttpStatus.newStatus(response['status'], response['statusText']),
-          protocolVersion: response['httpVersion']);
-      List responseHeaders = response['headers'];
-      for (var element in responseHeaders) {
-        httpResponse.headers.add(element['name'], element['value']);
-      }
 
-      var responseText = response['content']?['text'];
-      if (responseText != null) {
-        if (httpResponse.contentType.isBinary) {
+    // HAR 1.2 用 postData.encoding == 'base64' 标明 text 是 base64；
+    // 忽略它会把 base64 文本当正文（体积膨胀 33%，重放/另存全错）。
+    final postData = request['postData'];
+    if (postData is Map) {
+      final text = postData['text']?.toString();
+      if (text != null) {
+        if (postData['encoding'] == 'base64') {
           try {
-            httpResponse.body = base64Decode(responseText);
-          } catch (e) {
-            httpResponse.body = responseText.toString().codeUnits;
+            httpRequest.body = base64Decode(text);
+          } catch (_) {
+            httpRequest.body = _bodyFromText(text);
           }
         } else {
-          httpResponse.body = responseText.toString().codeUnits;
+          httpRequest.body = _bodyFromText(text);
+        }
+      }
+    }
+    for (final element in headers) {
+      if (element is! Map) continue;
+      final name = element['name']?.toString();
+      if (name == null) continue;
+      final value = element['value'];
+      httpRequest.headers.add(name, value is List ? value.join(',') : value?.toString() ?? '');
+    }
+    final response = har['response'];
+    HttpResponse? httpResponse;
+    if (response is Map && response['status'] != null) {
+      httpResponse = HttpResponse(HttpStatus.newStatus(response['status'], response['statusText']),
+          protocolVersion: response['httpVersion']);
+      final responseHeaders = response['headers'] is List ? response['headers'] as List : const [];
+      for (final element in responseHeaders) {
+        if (element is! Map) continue;
+        final name = element['name']?.toString();
+        if (name == null) continue;
+        final value = element['value'];
+        httpResponse.headers.add(name, value is List ? value.join(',') : value?.toString() ?? '');
+      }
+
+      final content = response['content'];
+      final responseText = content is Map ? content['text'] : null;
+      if (responseText != null) {
+        final isBase64 = content is Map && content['encoding'] == 'base64';
+        if (isBase64 || httpResponse.contentType.isBinary) {
+          try {
+            httpResponse.body = base64Decode(responseText.toString());
+          } catch (e) {
+            httpResponse.body = _bodyFromText(responseText.toString());
+          }
+        } else {
+          httpResponse.body = _bodyFromText(responseText.toString());
         }
       }
     }
@@ -285,17 +374,24 @@ class Har {
   }
 
   static Map<String, dynamic> _getPostData(HttpRequest request) {
-    if (request.contentType == ContentType.formData || request.contentType == ContentType.formUrl) {
+    final mimeType = request.headers.contentType; // 请求体类型
+    if (request.body == null) return {"mimeType": mimeType};
+
+    // 请求体是原始字节。旧实现用 String.fromCharCodes 把每个字节当码点，
+    // 含中文的 UTF-8 体会变成 mojibake（同一份 HAR 里响应侧却用的是正确解码的
+    // bodyAsString），外部工具打开/回放全是乱码。
+    if (request.contentType.isBinary) {
       return {
-        "mimeType": request.headers.contentType, // 请求体类型
-        if (request.body != null) "text": String.fromCharCodes(request.body!), // 请求体内容
-        "params": [], // 请求体内容
+        "mimeType": mimeType,
+        "text": base64Encode(request.body!),
+        "encoding": "base64",
       };
     }
-    return {
-      "mimeType": request.headers.contentType, // 请求体类型
-      if (request.body != null) "text": String.fromCharCodes(request.body!), // 请求体内容
-    };
+    final map = <String, dynamic>{"mimeType": mimeType, "text": request.bodyAsString};
+    if (request.contentType == ContentType.formData || request.contentType == ContentType.formUrl) {
+      map["params"] = []; // 请求体参数
+    }
+    return map;
   }
 
   static String _getResponseText(HttpResponse? response) {

@@ -201,8 +201,9 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
         case EncoderType.url:
           result = Uri.decodeFull(inputText);
         case EncoderType.base64:
-          // base64.
-          var text = inputText.replaceAll('.', '');
+          // 不再静默删除 '.'：旧实现想兼容 JWT，却把 a.b.c 三段拼起来按 4 取整
+          // 补 '='，长度常常恰好合法 → 解出二进制垃圾而不是报错。
+          var text = inputText.replaceAll(RegExp(r'\s'), '');
           if (text.length % 4 != 0) {
             text = text.padRight(text.length + (4 - text.length % 4), '=');
           }
@@ -246,13 +247,66 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
   }
 
   String encodeToUnicode(String input) {
-    return input.runes.map((rune) => '\\u${rune.toRadixString(16).padLeft(4, '0')}').join();
+    final sb = StringBuffer();
+    for (final rune in input.runes) {
+      if (rune <= 0xFFFF) {
+        sb.write('\\u${rune.toRadixString(16).padLeft(4, '0')}');
+      } else {
+        // BMP 之外（emoji / CJK 扩展 B 人名用字）必须写成代理对。
+        // 旧实现直接输出 5 位的 \u1f600，而解码端只吃 4 位 → 解出 \u1f60 加一个
+        // 残留字符 "0"，emoji 静默损坏。
+        final v = rune - 0x10000;
+        final high = 0xD800 + (v >> 10);
+        final low = 0xDC00 + (v & 0x3FF);
+        sb.write('\\u${high.toRadixString(16).padLeft(4, '0')}');
+        sb.write('\\u${low.toRadixString(16).padLeft(4, '0')}');
+      }
+    }
+    return sb.toString();
   }
 
   String decodeFromUnicode(String input) {
-    return input.replaceAllMapped(RegExp(r'\\u([0-9a-fA-F]{4})'), (match) {
-      return String.fromCharCode(int.parse(match.group(1)!, radix: 16));
-    });
+    final sb = StringBuffer();
+    var i = 0;
+    while (i < input.length) {
+      if (input[i] != '\\' || i + 1 >= input.length || input[i + 1] != 'u') {
+        sb.write(input[i]);
+        i++;
+        continue;
+      }
+      // \u{1F600}
+      if (i + 2 < input.length && input[i + 2] == '{') {
+        final end = input.indexOf('}', i + 3);
+        if (end > 0) {
+          final cp = int.tryParse(input.substring(i + 3, end), radix: 16);
+          if (cp != null && cp <= 0x10FFFF) {
+            sb.write(String.fromCharCodes([cp]));
+            i = end + 1;
+            continue;
+          }
+        }
+      }
+      // \uXXXX，以及连续的代理对 \uD83D\uDE00
+      if (i + 6 <= input.length) {
+        final first = int.tryParse(input.substring(i + 2, i + 6), radix: 16);
+        if (first != null) {
+          if (first >= 0xD800 && first <= 0xDBFF && i + 12 <= input.length && input[i + 6] == '\\' && input[i + 7] == 'u') {
+            final second = int.tryParse(input.substring(i + 8, i + 12), radix: 16);
+            if (second != null && second >= 0xDC00 && second <= 0xDFFF) {
+              sb.write(String.fromCharCodes([0x10000 + ((first - 0xD800) << 10) + (second - 0xDC00)]));
+              i += 12;
+              continue;
+            }
+          }
+          sb.write(String.fromCharCodes([first]));
+          i += 6;
+          continue;
+        }
+      }
+      sb.write(input[i]);
+      i++;
+    }
+    return sb.toString();
   }
 
   static const String _base32Alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

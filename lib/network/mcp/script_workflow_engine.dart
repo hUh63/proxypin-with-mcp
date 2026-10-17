@@ -137,8 +137,20 @@ class ScriptWorkflow {
     ).toList();
   }
 
-  /// 验证工作流是否有效（无循环依赖）
+  /// 验证工作流是否有效（依赖完整 + 无循环依赖）
   bool validate() {
+    final nodeIds = nodes.map((n) => n.id).toSet();
+
+    // 依赖指向已删除的节点时直接判无效。旧实现走 firstWhere(orElse: throw)：
+    // registerWorkflow 里 `if (!workflow.validate())` 期待 false，实际会抛
+    // 裸 Exception('Node not found')，工作流连注册都进不去，且 entryNodes
+    // 又把这种节点当入口放行，两处语义互相矛盾。
+    for (final node in nodes) {
+      for (final dep in node.dependencies) {
+        if (!nodeIds.contains(dep)) return false;
+      }
+    }
+
     final visited = <String>{};
     final recStack = <String>{};
 
@@ -149,7 +161,7 @@ class ScriptWorkflow {
       visited.add(nodeId);
       recStack.add(nodeId);
 
-      final node = nodes.firstWhere((n) => n.id == nodeId, orElse: () => throw Exception('Node not found'));
+      final node = nodes.firstWhere((n) => n.id == nodeId);
       for (final depId in node.dependencies) {
         if (hasCycle(depId)) return true;
       }
@@ -445,9 +457,23 @@ class ScriptWorkflowEngine {
         logger.d('执行节点 ${node.id} (尝试 ${attempts + 1}/${node.maxRetries + 1})');
         status = ScriptExecutionStatus.running;
 
-        output = await _executeNode(node, context);
+        // node.timeout 此前只作为参数透传给 executor，引擎自身不计时：
+        // executor 不实现超时（或脚本卡在 JS promise / 网络 IO）时
+        // 该节点永久挂起，工作流永不 complete，后台仍占用运行时。
+        final timeout = node.timeout;
+        output = timeout == null
+            ? await _executeNode(node, context)
+            : await _executeNode(node, context).timeout(timeout);
         status = ScriptExecutionStatus.success;
         break;
+      } on TimeoutException catch (e) {
+        attempts++;
+        status = ScriptExecutionStatus.timeout;
+        error = '执行超时：${e.message ?? e}';
+        logger.w('节点 ${node.id} 执行超时 (尝试 $attempts)', error: e);
+        if (attempts <= node.maxRetries) {
+          await Future.delayed(node.retryDelay);
+        }
       } catch (e, stackTrace) {
         attempts++;
         error = e.toString();
@@ -465,7 +491,7 @@ class ScriptWorkflowEngine {
     // 不是「把失败伪装成未失败」——此前这里带 `&& !node.continueOnError`，
     // 导致这类节点的 status 永远停在 running（非法终态），且下游依赖检查用
     // isFailed 判断时恒为 false。下游放宽见上方依赖检查。
-    if (status != ScriptExecutionStatus.success) {
+    if (status != ScriptExecutionStatus.success && status != ScriptExecutionStatus.timeout) {
       status = ScriptExecutionStatus.failed;
     }
 
