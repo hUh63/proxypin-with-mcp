@@ -198,7 +198,14 @@ class HttpHeaders {
 
   bool get isGzip => contentEncoding == "gzip";
 
-  bool get isChunked => get(HttpHeaders.TRANSFER_ENCODING)?.toLowerCase().trimLeft() == "chunked";
+  bool get isChunked {
+    // 旧实现要求整串严格等于 "chunked"：`chunked `（尾空格）、`gzip, chunked`、
+    // 以及重复头（get() 只取第一条）都会漏判 → body 不走 chunked 分支，整段
+    // chunk 编码被当「下一条 HTTP 消息」解析，轻则关连接，重则请求走私。
+    final values = getList(HttpHeaders.TRANSFER_ENCODING);
+    if (values == null || values.isEmpty) return false;
+    return values.any((value) => value.split(',').any((e) => e.trim().toLowerCase() == 'chunked'));
+  }
 
   List<String> get cookies => getList(Cookie) ?? [];
 

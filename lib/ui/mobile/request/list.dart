@@ -160,6 +160,9 @@ class RequestListState extends State<RequestListWidget> {
       );
       // 上游 #899：超限丢弃的请求同样释放字节数据
       MemoryCleanupMonitor.releaseAll(removed);
+      // 选中集合必须同步收缩：被丢弃的 id 若不 prune，ActionBar 仍显示
+      // 「N 选中」，删除/导出却查不到对象（桌面端三处都有 prune，移动端漏了）。
+      widget.selectionController.prune(container.map((request) => request.requestId));
     }
   }
 
@@ -210,6 +213,7 @@ class RequestListState extends State<RequestListWidget> {
     });
     // 上游 #899：清空后立即释放字节数据，而不是等 GC 慢慢回收
     MemoryCleanupMonitor.releaseAll(removed);
+    widget.selectionController.clear();
   }
 
   ///清理早期数据
@@ -229,6 +233,7 @@ class RequestListState extends State<RequestListWidget> {
     );
     // 上游 #899：被清理的请求立刻释放字节数据
     MemoryCleanupMonitor.releaseAll(removeRange);
+    widget.selectionController.prune(container.map((request) => request.requestId));
   }
 
   //导出har或文件夹

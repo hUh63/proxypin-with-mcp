@@ -35,6 +35,8 @@ List<Map<String, dynamic>> _nativeToolsJson() {
           'properties': {
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Max requests to export (default 100)',
             },
             'request_ids': {
@@ -105,6 +107,8 @@ List<Map<String, dynamic>> _nativeToolsJson() {
             },
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Max results (default 20)',
             },
           },
@@ -200,6 +204,8 @@ List<Map<String, dynamic>> _nativeToolsJson() {
             },
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Max results (default 20)',
             },
             'offset': {
@@ -225,6 +231,8 @@ List<Map<String, dynamic>> _nativeToolsJson() {
           'properties': {
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Max number of requests (default 20)',
             },
             'url_filter': {
@@ -419,6 +427,8 @@ request_id from get_recent_requests or search_requests.''',
             },
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Max results (default 10)',
             },
           },
@@ -1037,6 +1047,8 @@ request_id from get_recent_requests or search_requests.''',
             },
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Maximum number of sessions to return (default 50)',
             },
           },
@@ -1071,6 +1083,8 @@ request_id from get_recent_requests or search_requests.''',
             },
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Maximum number of issues to return (default 100)',
             },
           },
@@ -1161,6 +1175,8 @@ request_id from get_recent_requests or search_requests.''',
           'properties': {
             'limit': {
               'type': 'integer',
+              'minimum': 1,
+              'maximum': 2000,
               'description': 'Maximum number of records to return (default 50, newest last)',
             },
             'tool': {

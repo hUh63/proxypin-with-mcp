@@ -116,12 +116,11 @@ class BodyReader {
       return Result(false, supportedParse: false, body: data);
     }
 
-    // chunked 路径内部有 carry 缓冲，多余字节由解码器保留，这里不精确回报消费量；
-    // 固定长度路径按 Content-Length 精确消费，剩余字节必须退回给上层。
+    // 两条路径都按「本次实际属于本条消息的字节数」精确回报，剩余字节由 codec
+    // 通过 unreadBytes 退回 buffer —— 否则同一次读入里紧跟的下一条消息会被丢弃。
     final int consumed;
     if (_chunkedDecoder != null) {
-      _readChunked(data);
-      consumed = -1;
+      consumed = _readChunked(data);
     } else {
       consumed = _readFixedLengthContent(data);
     }
@@ -163,18 +162,31 @@ class BodyReader {
     return 0;
   }
 
-  void _readChunked(Uint8List data) {
+  /// 返回本次从 [data] 中消费掉的字节数。
+  ///
+  /// 解码器在内部 `_carry` 里保留未解析的尾部（跨包），另外 chunked body 结束后
+  /// 同一次读入里的剩余字节属于下一条消息。前者需要从「本包消费量」里扣掉，
+  /// 后者要作为未消费字节退还给上层。
+  int _readChunked(Uint8List data) {
+    final decoder = _chunkedDecoder!;
+    final int before = decoder.pendingBytes;
     final Uint8List payload;
     try {
-      payload = _chunkedDecoder!.feed(data);
+      payload = decoder.feed(data);
     } on FormatException catch (e) {
       throw ParserException(e.message);
     }
     if (payload.isNotEmpty) {
       _bodyBuffer.add(payload);
     }
-    if (_chunkedDecoder!.isDone) {
+    if (decoder.isDone) {
       _done = true;
+      final int leftover = decoder.leftoverBytes;
+      final int fromThisPacket = leftover > before ? leftover - before : 0;
+      return data.length - fromThisPacket;
     }
+    final int pending = decoder.pendingBytes;
+    final int fromThisPacket = pending > before ? pending - before : 0;
+    return data.length - fromThisPacket;
   }
 }

@@ -186,6 +186,39 @@ class CipherTools {
     return Uint8List.fromList(utf8.encode(value));
   }
 
+  /// 校验密钥字节数是否与所选 keyLength 匹配；null 表示通过。
+  ///
+  /// 底层 `_fit` 会把不足的密钥用 0 补齐、超出截断。用户在 AES 页填 16 字节口令
+  /// 却保留默认「256 位」时，实际按 AES-256 加密 —— 本工具内往返一致，所以自测
+  /// 「没问题」，但与服务端/抓包里抓到的密文完全对不上，排查成本极高。
+  static String? validateKey(String algorithm, String key, int keyLength) {
+    final bytes = decodeKeyBytes(key);
+    if (bytes.isEmpty) {
+      return '密钥为空，或 base64: 前缀后的内容无法解析';
+    }
+    final expected = _expectedKeyBytes(algorithm, keyLength);
+    if (expected > 0 && bytes.length != expected) {
+      return '密钥为 ${bytes.length} 字节，与所选 $keyLength 位不匹配（需要 $expected 字节）';
+    }
+    return null;
+  }
+
+  static int _expectedKeyBytes(String algorithm, int keyLength) {
+    switch (algorithm) {
+      case 'AES':
+        return keyLength ~/ 8;
+      case 'SM4':
+        return 16;
+      case 'DES':
+        return 8;
+      case '3DES':
+        return keyLength == 128 ? 16 : 24;
+      default:
+        // ChaCha20 等不补齐，不做长度约束
+        return 0;
+    }
+  }
+
   static Uint8List _fit(Uint8List src, int size) {
     final out = Uint8List(size);
     final n = src.length < size ? src.length : size;

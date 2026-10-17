@@ -296,7 +296,10 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     ConnectionRegistry.instance.noteRequest(channelContext, data);
     data.hostAndPort ??= channelContext.host ?? getHostAndPort(data, ssl: channel.isSsl);
     if (data.headers.host != null && data.headers.host?.contains(":") == false) {
-      data.hostAndPort?.host = data.headers.host!;
+      // 不能就地修改 data.hostAndPort.host：它与 channelContext.host 可能是同一个
+      // 实例（`??=` 直接共享引用）。HTTP/2 一条连接复用多个 :authority 时，上一个流
+      // 的 Host 头会把上下文改掉 → 后续流域名串台、WS 记录挂到错误的 host 下。
+      data.hostAndPort = data.hostAndPort?.copyWith(host: data.headers.host!);
     }
     await _fixAndroidVpnPort(channelContext, channel, data);
     data.processInfo ??= await ProcessInfoUtils.getProcessByPort(channel.remoteSocketAddress, data.remoteDomain()!);

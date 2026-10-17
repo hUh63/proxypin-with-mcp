@@ -34,7 +34,30 @@ class Hosts extends Interceptor {
     var hostsItem = await hostsManager.then((it) => it.getHosts(host, hostAndPort.port));
     if (hostsItem != null && hostsItem.toAddress != null) {
       logger.d('Hosts: $host:${hostAndPort.port} -> ${hostsItem.displayAddress}');
-      return hostAndPort.copyWith(host: hostsItem.toAddress!);
+      // toAddress 允许写成 "1.2.3.4:8443"（UI 的 displayAddress 就展示这种形式），
+      // 旧实现整串塞进 copyWith(host:) → Socket.connect 必然失败，用户只看到网络错误。
+      var address = hostsItem.toAddress!.trim();
+      var targetPort = hostsItem.port ?? hostAndPort.port;
+      if (address.startsWith('[')) {
+        final end = address.indexOf(']');
+        if (end > 0) {
+          final rest = address.substring(end + 1);
+          if (rest.startsWith(':')) {
+            targetPort = int.tryParse(rest.substring(1)) ?? targetPort;
+          }
+          address = address.substring(1, end);
+        }
+      } else {
+        final parts = address.split(':');
+        if (parts.length == 2) {
+          final p = int.tryParse(parts[1]);
+          if (p != null) {
+            address = parts[0];
+            targetPort = p;
+          }
+        }
+      }
+      return hostAndPort.copyWith(host: address, port: targetPort);
     }
     return hostAndPort;
   }

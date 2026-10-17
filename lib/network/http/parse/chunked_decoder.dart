@@ -26,6 +26,15 @@ class ChunkedDecoder {
 
   bool get isDone => _done;
 
+  /// 当前 carry 中尚未解析的输入字节数（跨 feed 保留）。
+  int get pendingBytes => _pending;
+
+  /// 解码结束后多出来的字节数（属于同一次读入里的下一条消息）。
+  int get leftoverBytes => _leftover;
+
+  int _pending = 0;
+  int _leftover = 0;
+
   /// Feed a new slice of chunk-encoded bytes; return whatever payload bytes
   /// could be decoded from what has been seen so far. May return empty.
   Uint8List feed(Uint8List data) {
@@ -43,6 +52,7 @@ class ChunkedDecoder {
             final int lf = _indexOf(all, _lf, offset);
             if (lf == -1) {
               _carry.add(Uint8List.sublistView(all, offset));
+              _pending = all.length - offset;
               return out.takeBytes();
             }
             int lineEnd = lf;
@@ -82,6 +92,7 @@ class ChunkedDecoder {
               // Need to see both bytes before deciding; keep the byte we have.
               // If it's a lone LF we still consume 2 to be safe on next feed.
               _carry.add(Uint8List.sublistView(all, offset));
+              _pending = all.length - offset;
               return out.takeBytes();
             }
             if (all[offset] == _cr && all[offset + 1] == _lf) {
@@ -101,6 +112,7 @@ class ChunkedDecoder {
             final int lf = _indexOf(all, _lf, offset);
             if (lf == -1) {
               _carry.add(Uint8List.sublistView(all, offset));
+              _pending = all.length - offset;
               return out.takeBytes();
             }
             int lineEnd = lf;
@@ -110,16 +122,23 @@ class ChunkedDecoder {
             if (empty) {
               _done = true;
               _state = _ChunkState.finished;
+              // 同一次读入里 chunked body 之后的字节属于下一条消息：
+              // 记录长度让 BodyReader 精确回报消费量，否则会被 clearRead 丢掉
+              // （HTTP/1.1 pipelining 下第二个请求永远不处理）。
+              _leftover = all.length - offset;
+              _pending = 0;
               return out.takeBytes();
             }
             // otherwise a trailer header line — ignore its content.
             break;
           }
         case _ChunkState.finished:
+          _pending = 0;
           return out.takeBytes();
       }
     }
 
+    _pending = all.length - offset;
     return out.takeBytes();
   }
 

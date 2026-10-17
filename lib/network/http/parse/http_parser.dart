@@ -27,6 +27,12 @@ class HttpParse {
       }
     }
 
+    if (initialLine.length == 2) {
+      // `HTTP/1.1 200\r\n`（reason-phrase 为空且服务器省略了尾随空格）、
+      // `GET /\r\n`（HTTP/0.9 风格请求行）。旧实现只接受 3 段，会一直判定为
+      // 「数据不足」并把 readerIndex 回退 —— 字节数不再增长，连接空等到客户端超时。
+      initialLine.add('');
+    }
     if (initialLine.length == 3) {
       return initialLine;
     }

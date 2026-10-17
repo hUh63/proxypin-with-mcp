@@ -270,6 +270,12 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
         result.forward = List.from(frameHeader.encode())..addAll(framePayload);
         return result;
       case FrameType.goaway:
+        // 畸形/被截断的 GOAWAY（载荷 < 8 字节）会让 readInt32 越界抛 RangeError，
+        // 异常穿透后关闭整条连接；这种帧原样转发即可。
+        if (frameHeader.length < 8) {
+          result.forward = List.from(frameHeader.encode())..addAll(framePayload);
+          return result;
+        }
         var lastStreamId = readInt32(framePayload, 0);
         var errorCode = readInt32(framePayload, 4);
         var debugData = viewOrSublist(framePayload, 8, frameHeader.length - 8);
@@ -852,7 +858,12 @@ class FrameReader {
     }
 
     int length = data.read() << 16 | data.read() << 8 | data.read();
-    FrameType type = FrameType.values[data.read()];
+    // RFC 9113 §4.1：未知帧类型必须忽略并继续。旧实现把类型字节当数组下标，
+    // 遇到 ALTSVC / ORIGIN / PRIORITY_UPDATE / GREASE（CDN 常态化发送）会抛
+    // RangeError，异常穿透 decode 后直接关闭整条连接。
+    final int typeByte = data.read();
+    final FrameType type =
+        typeByte < FrameType.values.length ? FrameType.values[typeByte] : FrameType.unknown;
     int flags = data.read();
     int streamIdentifier = data.readInt();
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/utils/crypto_tools.dart';
 
 import '../component/buttons.dart';
 import '../component/text_field.dart';
@@ -26,7 +27,9 @@ class _AesWidgetState extends State<AesPage> {
 
   String selectedMode = 'ECB';
   String selectedPadding = 'PKCS7';
-  int selectedKeyLength = 128;
+  // 与密码学主工具（CipherPage / CipherTools.defaultKeyLength）保持一致。
+  // 此前这里是 128，而同一套 AES 在另一页默认 256，用户切页后结果不同。
+  int selectedKeyLength = CipherTools.defaultKeyLength('AES');
   final List<String> modes = ['ECB', 'CBC'];
   final List<String> paddingModes = ['PKCS7', 'ZeroPadding'];
   final List<int> keyLengths = [128, 192, 256];
@@ -38,6 +41,11 @@ class _AesWidgetState extends State<AesPage> {
   }
 
   void encryptText() {
+    final keyError = CipherTools.validateKey('AES', keyController.text, selectedKeyLength);
+    if (keyError != null) {
+      FlutterToastr.show(keyError, context, duration: 4, backgroundColor: Colors.red);
+      return;
+    }
     try {
       final input = Uint8List.fromList(utf8.encode(inputController.text));
       final encrypted = AesUtils.encrypt(input,
@@ -54,6 +62,11 @@ class _AesWidgetState extends State<AesPage> {
   }
 
   void decryptText() {
+    final keyError = CipherTools.validateKey('AES', keyController.text, selectedKeyLength);
+    if (keyError != null) {
+      FlutterToastr.show(keyError, context, duration: 4, backgroundColor: Colors.red);
+      return;
+    }
     try {
       final input = base64.decode(inputController.text);
       final decrypted = AesUtils.decrypt(input,

@@ -1,5 +1,68 @@
 # Changelog
 
+## v1.67.19 (2026-10-18)
+
+### 修复：剩余 4 项决策项 + 第四轮深度调查（网络协议层 / 代理核心 / MCP 与 UI）
+
+**签名与构建**
+
+1. `android/app/build.gradle` 支持用环境变量注入签名材料（`RELEASE_STORE_FILE` /
+   `RELEASE_STORE_PASSWORD` / `RELEASE_KEY_ALIAS` / `RELEASE_KEY_PASSWORD`），未设置时回退到
+   `key.properties`；**debug buildType 改回系统 debug 签名**（此前 debug 也用 release 签名，
+   等于每次 `flutter run` 都产出与正式包同签名的 APK）。新增 `docs/signing.md` 说明轮换步骤
+   （仓库内 jks 的移除会让已装旧版本无法升级，需你确认后执行）。
+
+**对称加密**
+
+2. 新增 `CipherTools.validateKey`：密钥字节数与所选 keyLength 不匹配时直接提示，不再静默补零
+   （16 字节口令 + 默认「256 位」实际按 AES-256 加密，本工具内往返一致但与服务端永远对不上）；
+   CBC 未填 IV 也提示。`AesPage` 默认 keyLength 与主工具统一为 256。
+
+**Windows**
+
+3. `ClearSystemProxy` 只在 `ProxyServer` 指向本机（`127.0.0.1` / `localhost` / `[::1]`）时才清理，
+   不再无条件清掉用户其它代理工具/手工配置的系统代理。
+
+**网络协议层**
+
+4. **HPACK 头值不能用 ASCII 解码**：`ascii.decode` 遇到 ≥0x80 直接抛 `FormatException`，
+   而解码器只捕 `RangeError`/`HuffmanDecodingException` → 异常穿透后关闭整条 h2 连接。
+   中文文件名（`content-disposition: attachment; filename="报告.pdf"`）即可触发。改用 `latin1`。
+5. **未知 h2 帧类型**（ALTSVC 0x0a / ORIGIN 0x0c / PRIORITY_UPDATE 0x10 / GREASE）不再当数组下标，
+   新增 `FrameType.unknown` 走原样转发（此前 `RangeError` 直接关连接，CDN 常态化发送这些帧）。
+6. **GOAWAY 载荷 < 8 字节**时原样转发，不再因 `readInt32` 越界关连接。
+7. **`Transfer-Encoding` 支持多值/逗号列表**（`gzip, chunked`、`chunked `、重复头），此前要求整串
+   严格等于 `chunked`，漏判会让整段 chunk 编码被当成下一条 HTTP 消息解析。
+8. **状态行/请求行允许 2 段**：`HTTP/1.1 200\r\n`（reason-phrase 为空且省略尾随空格）此前被判为
+   「数据不足」并回退 readerIndex，连接空等到客户端超时。
+9. **chunked 精确回报消费量**：body 结束后同一次读入里的剩余字节不再被 `clearRead()` 丢弃，
+   HTTP/1.1 pipelining 下第二个请求可正常处理。
+10. **WebSocket / SSE handler 补 `channelInactive`**：客户端断开后关闭上游，此前 proxy→server 的
+    FD 与读订阅一直存活（长连接场景线性累积到 `Too many open files`）。
+
+**代理核心**
+
+11. **反向代理按 target 的 scheme 决定 TLS**：此前只看 `clientChannel.isSsl`，明文反代到
+    `https://` 上游会把明文 HTTP 打进 443（必失败），TLS 反代到 `http://` 上游又会强行握手。
+12. `prepareRequest` 不再就地修改 `data.hostAndPort.host`：它与 `channelContext.host` 可能是同一
+    实例，HTTP/2 一条连接复用多个 `:authority` 时会把上下文 host 改掉（域名串台）。
+13. **Hosts 匹配改为「精确 > 通配、限定端口 > 不限、模式更长更优先」**，此前按列表顺序命中即止，
+    先加的通配 `*.example.com` 会永远压住后加的精确规则；`toAddress` 支持写 `host:port`。
+14. 拦截器 `execute` 短路（本地 mock / 阻断）时关闭已建立的上游连接，不再每条泄漏一个 socket。
+15. `redirect()` 关闭被替换的旧上游连接（此前 `serverChannel` 被顶掉后旧 socket 无人回收）。
+
+**MCP / UI**
+
+16. **未在 `tools/list` 声明的工具一律拒绝**：`clear_session` / `replay_flow` 已从工具表隐藏
+    （因此没有 schema、参数校验被跳过），但 `default` 分支仍能转给官方实现 —— AI 猜中名字即可
+    不可撤销地清空抓包列表并得到 success。
+17. `limit` 参数统一 `clamp(1, 2000)`，schema 补 `minimum`/`maximum`（负数此前抛 RangeError，
+    0 返回「成功但空」的导出）。
+18. 多窗口 `arguments` 解析失败不再白屏（非 object / 非法 JSON 时回落空参数）。
+19. 多选操作栏按钮紧凑化（6 个 48×48 按钮在窄屏必然 `RenderFlex overflow`，右侧按钮点不到）。
+20. 移动端选中集合在「超限丢弃 / 清空 / 早期数据清理」后同步 `prune`（此前 ActionBar 仍显示
+    N 选中，但批量删除/导出查不到对象）。
+
 ## v1.67.18 (2026-10-18)
 
 ### 修复：SAZ 编码 / 系统 CA 安装完整性 / Windows 单实例

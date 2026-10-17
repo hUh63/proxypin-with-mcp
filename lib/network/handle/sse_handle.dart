@@ -28,6 +28,12 @@ class SseChannelHandler extends ChannelHandler<Uint8List> {
   SseChannelHandler(this.proxyChannel, this.message)
       : _chunkDecoder = message.headers.isChunked ? ChunkedDecoder() : null;
 
+  /// 同 WebSocket：客户端关掉 SSE 后上游 socket 不能继续挂着。
+  @override
+  void channelInactive(ChannelContext channelContext, Channel channel) {
+    proxyChannel.close();
+  }
+
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, Uint8List msg) async {
     // Always forward the raw bytes first (keep original chunk framing intact).

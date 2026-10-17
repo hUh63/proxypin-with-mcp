@@ -46,9 +46,14 @@ class Header {
 
   Header(this.name, this.value, {this.neverIndexed = false});
 
-  String get nameString => ascii.decode(name);
+  // HTTP/2 只约束头名字符集，头值可以是任意字节（RFC 9113 §8.2.1）。
+  // ascii.decode 默认 allowInvalid=false，遇到 >=0x80 直接抛 FormatException；
+  // 而 HPackDecoder.decode 只捕 RangeError / HuffmanDecodingException，异常会
+  // 穿透到 dispatcher 的 catch 并关掉连接。典型触发：中文文件名
+  // （content-disposition: attachment; filename="报告.pdf"）、带中文的 location。
+  String get nameString => latin1.decode(name, allowInvalid: true);
 
-  String get valueString => ascii.decode(value);
+  String get valueString => latin1.decode(value, allowInvalid: true);
 
   factory Header.ascii(String name, String value) {
     // Specs: `However, header field names MUST be converted to lowercase prior

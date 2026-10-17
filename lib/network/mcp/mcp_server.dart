@@ -1769,7 +1769,7 @@ class McpServer {
         };
 
       case 'export_har':
-        final limit = (args['limit'] as num?)?.toInt() ?? 100;
+        final limit = _clampLimit(args['limit'], 100);
         final requestIds = args['request_ids'];
 
         var list = McpBridge().source;
@@ -1801,7 +1801,7 @@ class McpServer {
         }
 
       case 'search_requests':
-        final limit = (args['limit'] as num?)?.toInt() ?? 20;
+        final limit = _clampLimit(args['limit'], 20);
         final query = args['query'] as String?;
         final method = args['method'] as String?;
         final statusCode = args['status_code'] as String?;
@@ -1920,7 +1920,7 @@ class McpServer {
       case 'get_quic_sessions':
         // QUIC 连接概览：会话元数据 + 10 分钟时间轴 + 密钥日志状态 + 已解密流预览
         final quicHostFilter = (args['host_filter'] as String?)?.toLowerCase();
-        final quicLimit = (args['limit'] as num?)?.toInt() ?? 50;
+        final quicLimit = _clampLimit(args['limit'], 50);
         final quicNow = DateTime.now();
         final allQuic = QuicProbe.instance.sessions
           ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
@@ -1992,7 +1992,7 @@ class McpServer {
       case 'get_security_audit':
         // 对已抓流量跑被动安全自检（只读：不发送请求、不投递载荷）
         final auditRequests = McpBridge().source.toList();
-        final auditLimit = (args['limit'] as num?)?.toInt() ?? 100;
+        final auditLimit = _clampLimit(args['limit'], 100);
         final auditSeverity = args['severity'] as String?;
         final auditCategoryArg = args['category'] as String?;
         final auditCategories = (auditCategoryArg == null || auditCategoryArg.trim().isEmpty)
@@ -2080,7 +2080,7 @@ class McpServer {
         return await _handleKeepAlive(args);
 
       case 'get_mcp_audit':
-        final auditLimit = (args['limit'] as num?)?.toInt() ?? 50;
+        final auditLimit = _clampLimit(args['limit'], 50);
         final auditTool = args['tool'] as String?;
         final auditOnlyFailed = args['only_failed'] as bool?;
         final records = McpAuditLog.instance.recent(
@@ -2195,7 +2195,7 @@ class McpServer {
         if (historyId == null) {
           return {'error': 'history_id is required (call list_histories for valid ids)'};
         }
-        final hLimit = (args['limit'] as num?)?.toInt() ?? 20;
+        final hLimit = _clampLimit(args['limit'], 20);
         final hOffset = (args['offset'] as num?)?.toInt() ?? 0;
         final hKeyword = args['keyword'] as String?;
         final hStore = _getHistoryStore();
@@ -2224,7 +2224,7 @@ class McpServer {
         };
 
       case 'get_recent_requests':
-        final limit = (args['limit'] as num?)?.toInt() ?? 20;
+        final limit = _clampLimit(args['limit'], 20);
         final page = (args['page'] as num?)?.toInt() ?? 0;
         final urlFilter = args['url_filter'] as String?;
         final method = args['method'] as String?;
@@ -2313,7 +2313,7 @@ class McpServer {
 
       case 'find_similar_requests':
         final refId = args['request_id'] as String;
-        final limit = (args['limit'] as num?)?.toInt() ?? 10;
+        final limit = _clampLimit(args['limit'], 10);
 
         final refReq = McpBridge().getRequestById(refId);
         if (refReq == null) return {'error': 'Reference request not found'};
@@ -3599,7 +3599,15 @@ class McpServer {
         }
 
       default:
-        // 自有工具未命中：转交官方工具源（规则 CRUD / 脚本 / Hosts / SSL / 构造请求等）
+        // 自有工具未命中：转交官方工具源（规则 CRUD / 脚本 / Hosts / SSL / 构造请求等）。
+        // 但必须先确认该名字在对外工具表里声明过：`clear_session` / `replay_flow`
+        // 已被 _shadowedOfficialTools 从 tools/list 移除（因此没有 inputSchema，
+        // 参数校验会被完全跳过），default 分支却仍能转给官方实现 —— AI 只要猜中
+        // 名字就能不可撤销地清空用户抓包列表，且返回 success。
+        final declared = _getToolsList().any((tool) => tool['name'] == name);
+        if (!declared) {
+          return {'error': '未知工具（未在 tools/list 中声明）：$name', 'tool': name};
+        }
         try {
           return await _executeOfficialTool(name, args);
         } on ToolException catch (e) {
@@ -3607,6 +3615,16 @@ class McpServer {
           return {'error': e.message, 'tool': name};
         }
     }
+  }
+
+  /// 分页/数量参数统一收敛。
+  ///
+  /// 负数会让 `take()` 抛 RangeError（回给模型的是 Dart 内部错误），0 会返回
+  /// 「成功但空」的结果，过大则全量序列化（工具超时后任务仍在后台跑）。
+  static int _clampLimit(dynamic value, int fallback, {int max = 2000}) {
+    final raw = value is num ? value.toInt() : int.tryParse('$value') ?? fallback;
+    if (raw < 1) return fallback;
+    return raw > max ? max : raw;
   }
 
   String _generateCurl(HttpRequest req) {

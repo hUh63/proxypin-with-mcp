@@ -20,6 +20,14 @@ class WebSocketChannelHandler extends ChannelHandler<Uint8List> {
 
   WebSocketChannelHandler(this.proxyChannel, this.message);
 
+  /// 客户端断开后必须关闭上游连接。
+  /// 此前没有覆写，ChannelHandler 的空实现让 proxy→server 的 FD 与读订阅一直
+  /// 存活（长连接场景线性累积，最终 Too many open files）。
+  @override
+  void channelInactive(ChannelContext channelContext, Channel channel) {
+    proxyChannel.close();
+  }
+
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, Uint8List msg) async {
     await _forward(channelContext, msg);

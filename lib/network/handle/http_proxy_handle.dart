@@ -213,6 +213,10 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         if (response != null) {
           listener?.onResponse(channelContext, response);
           channel.writeAndClose(channelContext, response);
+          // 上游连接在 forward 开头就建好了。本地 mock / 阻断短路时必须关掉：
+          // Channel.close() 会先 cancel 读订阅，onDone 不再触发，channelInactive
+          // 里的兜底也随之失效 → 每条被 mock 的请求都留一条无人回收的 socket。
+          remoteChannel?.close();
           return;
         }
       }
@@ -276,7 +280,13 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
     }
     httpRequest.headers.host = '${redirectUri.host}${redirectUri.hasPort ? ':${redirectUri.port}' : ''}';
     var redirectChannel = await HttpClients.connect(redirectUri, proxyHandler, channelContext);
+    // 旧上游连接（forward 开头为原始目标建立的）必须关闭：serverChannel 被顶掉后
+    // channelInactive 只会关「当前」那条，旧 socket 变成无人回收的半开连接。
+    final previousChannel = channelContext.serverChannel;
     channelContext.serverChannel = redirectChannel;
+    if (previousChannel != null && !identical(previousChannel, redirectChannel)) {
+      previousChannel.close();
+    }
     await redirectChannel.write(channelContext, httpRequest);
   }
 
@@ -334,7 +344,12 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
     }
 
     final proxyChannel = await connectRemote(channelContext, clientChannel, remoteAddress);
-    if (clientChannel.isSsl) {
+    // 是否对上游做 TLS：反向代理必须看 target 的 scheme（旧实现只看
+    // clientChannel.isSsl —— 明文反代到 https:// 上游会把明文 HTTP 打进 443，
+    // TLS 反代到 http:// 上游又会强行握手，两种情况都必然失败）。
+    // 正向代理保持原语义（CONNECT 目标不一定是 443，不能只看端口）。
+    final bool needsTls = reverseProxy ? remoteAddress.isSsl() : clientChannel.isSsl;
+    if (needsTls) {
       await proxyChannel.secureSocket(channelContext,
           host: hostAndPort.host,
           supportedProtocols: channelContext.clientChannel?.selectedProtocol == null

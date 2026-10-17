@@ -152,8 +152,18 @@ void main(List<String> args) async {
   //多窗口
   if (args.firstOrNull == 'multi_window') {
     final windowId = windowController!.windowId;
-    final argument =
-        windowController.arguments.isEmpty ? const {} : jsonDecode(windowController.arguments) as Map<String, dynamic>;
+    // 参数来自外部（WindowController.arguments），不是 object / 不是合法 JSON
+    // 时 `as Map<String, dynamic>` 会抛 TypeError —— 且发生在 runApp 之前，
+    // 表现为白窗、无任何错误提示。
+    Map<String, dynamic> argument = const {};
+    if (windowController.arguments.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(windowController.arguments);
+        if (decoded is Map) argument = Map<String, dynamic>.from(decoded);
+      } catch (e) {
+        logger.w('多窗口参数解析失败：$e');
+      }
+    }
     DesktopMultiWindow.initializeFromArguments(argument);
     var appConfiguration = await instance;
 

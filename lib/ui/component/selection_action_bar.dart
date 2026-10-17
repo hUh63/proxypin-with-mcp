@@ -30,30 +30,35 @@ class SelectionActionBar extends StatelessWidget {
           const SizedBox(width: 8),
           _SelectLabel(selectionController: selectionController),
           const Spacer(),
+          // 6 个默认 48x48 的 IconButton ≈ 288px：窄窗口/手机竖屏 + 左侧面板
+          // 拉窄时必然 RenderFlex overflow（右侧按钮被裁掉点不到）。统一压缩。
           if (onSelectAll != null)
-            IconButton(
-                onPressed: onSelectAll,
-                tooltip: localizations?.selectAll,
-                icon: const Icon(Icons.select_all, size: 18)),
+            _actionIcon(onPressed: onSelectAll, tooltip: localizations?.selectAll, icon: Icons.select_all),
           if (onRepeat != null)
-            IconButton(onPressed: onRepeat, tooltip: localizations?.repeat, icon: const Icon(Icons.repeat, size: 18)),
+            _actionIcon(onPressed: onRepeat, tooltip: localizations?.repeat, icon: Icons.repeat),
           if (onCompare != null)
-            IconButton(
-                onPressed: onCompare,
-                tooltip: localizations?.compare,
-                icon: const Icon(Icons.compare_arrows, size: 18)),
+            _actionIcon(onPressed: onCompare, tooltip: localizations?.compare, icon: Icons.compare_arrows),
           if (onExport != null)
-            IconButton(
-                onPressed: onExport, tooltip: localizations?.export, icon: const Icon(Icons.share_outlined, size: 18)),
+            _actionIcon(onPressed: onExport, tooltip: localizations?.export, icon: Icons.share_outlined),
           if (onDelete != null)
-            IconButton(
-                onPressed: onDelete, tooltip: localizations?.delete, icon: const Icon(Icons.delete_outline, size: 18)),
-          IconButton(onPressed: _onCancel, tooltip: localizations?.cancel, icon: const Icon(Icons.close, size: 18)),
+            _actionIcon(onPressed: onDelete, tooltip: localizations?.delete, icon: Icons.delete_outline),
+          _actionIcon(onPressed: _onCancel, tooltip: localizations?.cancel, icon: Icons.close),
         ]));
   }
 
   void _onCancel() {
     selectionController.clear();
+  }
+
+  Widget _actionIcon({required VoidCallback onPressed, String? tooltip, required IconData icon}) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(icon, size: 18),
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+    );
   }
 }
 

@@ -81,6 +81,17 @@ class _CipherPageState extends State<CipherPage> {
   }
 
   void process(bool encrypt) {
+    // 底层会静默补零/截断密钥，这里显式拦截，避免与服务端结果对不上却毫无提示。
+    final keyError = CipherTools.validateKey(algorithm, keyController.text, keyLength);
+    if (keyError != null) {
+      FlutterToastr.show(keyError, context, duration: 4, backgroundColor: Colors.red);
+      return;
+    }
+    if (!_isStream && mode == 'CBC' && ivController.text.trim().isEmpty) {
+      FlutterToastr.show('CBC 模式需要 IV（留空会按全 0 处理，通常与服务端不一致）', context,
+          duration: 4, backgroundColor: Colors.red);
+      return;
+    }
     try {
       final result = CipherTools.process(
         _inputBytes(encrypt),

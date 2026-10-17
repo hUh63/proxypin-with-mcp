@@ -32,6 +32,19 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// 签名材料支持环境变量注入，便于把 jks / 口令从版本库移出（见 docs/signing.md）。
+// 未设置时回退到仓库内的 key.properties，保证现有 CI 仍可出包。
+def envOrProp = { String envName, String propName ->
+    def fromEnv = System.getenv(envName)
+    return (fromEnv != null && !fromEnv.isEmpty()) ? fromEnv : keystoreProperties[propName]
+}
+def releaseStoreFile = envOrProp('RELEASE_STORE_FILE', 'storeFile')
+def releaseStorePassword = envOrProp('RELEASE_STORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = envOrProp('RELEASE_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = envOrProp('RELEASE_KEY_PASSWORD', 'keyPassword')
+def hasReleaseSigning = releaseStoreFile != null && releaseStorePassword != null &&
+        releaseKeyAlias != null && releaseKeyPassword != null
+
 android {
     namespace "com.network.proxy"
     compileSdk flutter.compileSdkVersion
@@ -77,25 +90,31 @@ android {
     }
 
     signingConfigs {
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
+        if (hasReleaseSigning) {
+            release {
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+            }
         }
     }
 
     buildTypes {
         release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.release
+            // 有签名材料才配 signingConfig；缺失时产出 unsigned APK（CI 会用它自带的 key.properties）
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
 
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
-            signingConfig signingConfigs.release
+            // 此前 debug 也用 release 签名：每次 `flutter run` 都产出与正式包同签名的
+            // APK，一旦泄漏即可覆盖安装官方版本。debug 必须用系统的 debug 签名。
+            signingConfig signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

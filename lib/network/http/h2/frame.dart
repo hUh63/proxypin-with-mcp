@@ -14,7 +14,22 @@
  * limitations under the License.
  */
 
-enum FrameType { data, headers, priority, rstStream, settings, pushPromise, ping, goaway, windowUpdate, continuation }
+enum FrameType {
+  data,
+  headers,
+  priority,
+  rstStream,
+  settings,
+  pushPromise,
+  ping,
+  goaway,
+  windowUpdate,
+  continuation,
+
+  /// 扩展帧（ALTSVC 0x0a / ORIGIN 0x0c / PRIORITY_UPDATE 0x10 / GREASE 等）。
+  /// 协议要求「忽略并继续」，不能当成错误。
+  unknown,
+}
 
 class FrameHeader {
   static const flagsEndStream = 0x01;

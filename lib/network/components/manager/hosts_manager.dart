@@ -117,34 +117,41 @@ class HostsManager {
   Future<HostsItem?> getHosts(String host, [int? port]) async {
     if (!enabled) return null;
 
-    HostsItem? found;
+    // 先收集全部命中项再挑最优。旧实现「命中即 break」按列表插入顺序决定，
+    // 先加的通配 `*.example.com → 127.0.0.1` 会永远压住后加的精确
+    // `api.example.com → 10.0.0.5`，且没有任何提示。
+    final matches = <HostsItem>[];
+    void consider(HostsItem it) {
+      if (it.enabled && !it.isFolder && it.match(host) && it.matchesPort(port)) {
+        matches.add(it);
+      }
+    }
 
     for (var item in list) {
-      if (!item.enabled) continue;
-
       if (item.isFolder) {
-        var list = _folderMap[item.id];
-        if (list == null) continue;
-        for (var it in list) {
-          if (it.enabled && it.match(host) && it.matchesPort(port)) {
-            found = it;
-            break;
-          }
+        final children = _folderMap[item.id];
+        if (children == null) continue;
+        for (var it in children) {
+          consider(it);
         }
-        if (found != null) break;
-        continue;
-      }
-
-      if (item.match(host) && item.matchesPort(port)) {
-        found = item;
-        break;
+      } else {
+        consider(item);
       }
     }
 
-    if (found != null) {
-      found.hitCount++;
-      hitCounts[found.id] = (hitCounts[found.id] ?? 0) + 1;
+    if (matches.isEmpty) return null;
+
+    int score(HostsItem it) {
+      var s = it.host.contains('*') ? 0 : 100; // 精确 > 通配
+      if (it.port != null) s += 10; // 限定端口更具体
+      s += it.host.length.clamp(0, 90); // 更长的模式更具体
+      return s;
     }
+
+    matches.sort((a, b) => score(b).compareTo(score(a)));
+    final found = matches.first;
+    found.hitCount++;
+    hitCounts[found.id] = (hitCounts[found.id] ?? 0) + 1;
     return found;
   }
 
