@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.67.22 (2026-10-18)
+
+### 修复：未知工具的错误契约
+
+`_executeTool` 的 default 分支补白名单后返回了 error map，而既有测试与调用链约定「未知工具抛
+`ToolException`（消息含 `Unknown tool`）」。改为抛异常，由 `_runTool` / `tools/call` 统一转成错误内容。
+
 ## v1.67.21 (2026-10-18)
 
 ### 修复：v1.67.19 的两处编译错误

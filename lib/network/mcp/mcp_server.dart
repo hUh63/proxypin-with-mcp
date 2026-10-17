@@ -3606,7 +3606,9 @@ class McpServer {
         // 名字就能不可撤销地清空用户抓包列表，且返回 success。
         final declared = _getToolsList().any((tool) => tool['name'] == name);
         if (!declared) {
-          return {'error': '未知工具（未在 tools/list 中声明）：$name', 'tool': name};
+          // 抛异常而不是返回 error map：调用方（_runTool / tools/call）会把它转成
+          // 明确的错误内容，同时保持「未知工具必须显式失败」的既有契约。
+          throw ToolException('Unknown tool: $name (not declared in tools/list)');
         }
         try {
           return await _executeOfficialTool(name, args);
