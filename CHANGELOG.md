@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.67.40 (2026-10-18)
+
+### 修复 v1.67.39 残留的字段声明错误
+
+批量把裸 `appConfiguration` 换成 `widget.appConfiguration` 时，误伤了 `SettingPage` 的字段声明行
+（变成 `final AppConfiguration widget.appConfiguration;`），导致构造器/字段检查连锁报错。已修回。
+
 ## v1.67.39 (2026-10-18)
 
 ### 修复 v1.67.38 的编译错误

@@ -203,7 +203,7 @@ void navigator(BuildContext context, Widget widget) async {
 
 class SettingPage extends StatefulWidget {
   final ProxyServer proxyServer;
-  final AppConfiguration widget.appConfiguration;
+  final AppConfiguration appConfiguration;
 
   const SettingPage({super.key, required this.proxyServer, required this.appConfiguration});
 
