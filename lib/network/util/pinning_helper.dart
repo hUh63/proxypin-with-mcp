@@ -363,6 +363,40 @@ Java.perform(function () {
         log('WebViewClient.onReceivedSslError not hooked: ' + e);
     }
 
+    // 9) 环境检测绕过：让目标进程看不到「系统代理」。
+    //    很多 App 检测到代理就直接拒绝联网（表现为「开抓包就连不上」），
+    //    这一步只改代理相关的系统属性与 ProxySelector，不动 VPN 网卡检测
+    //    （VPN 检测各厂商实现差异大，强 hook 容易误伤，需要时单独处理）。
+    try {
+        var System = Java.use('java.lang.System');
+        var getProperty = System.getProperty.overload('java.lang.String');
+        getProperty.implementation = function (key) {
+            if (key === 'http.proxyHost' || key === 'https.proxyHost' ||
+                key === 'http.proxyPort' || key === 'https.proxyPort' ||
+                key === 'socksProxyHost' || key === 'socksProxyPort') {
+                log('bypass System.getProperty(' + key + ')');
+                return null;
+            }
+            return getProperty.call(this, key);
+        };
+    } catch (e) {
+        log('System.getProperty proxy hook failed: ' + e);
+    }
+
+    try {
+        var Proxy = Java.use('java.net.Proxy');
+        var ProxyType = Java.use('java.net.Proxy$Type');
+        var directProxy = Proxy.$new(ProxyType.DIRECT.value, null);
+        var ProxySelector = Java.use('java.net.ProxySelector');
+        ProxySelector.select.implementation = function (uri) {
+            var list = Java.use('java.util.ArrayList').$new();
+            list.add(directProxy);
+            return list;
+        };
+    } catch (e) {
+        log('ProxySelector.select hook failed: ' + e);
+    }
+
     log('pinning bypass loaded');
 });
 ''';

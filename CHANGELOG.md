@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.67.42 (2026-10-19)
+
+### SSL 绕过脚本再补「代理检测绕过」
+
+对照用户提供的 LSPosed 模块（`com.example.sslbypass`，三开关：SSL / Proxy / VPN），
+Frida 脚本增加两段：
+
+- `System.getProperty` 的 `http.proxyHost` / `https.proxyHost` / `socksProxyHost` 等
+  一律返回 null；
+- `ProxySelector.select()` 一律返回 DIRECT。
+
+很多 App 检测到系统代理就直接拒绝联网（表现就是"一开抓包就连不上"），这两处是
+最常见、副作用最小的两个判断点。VPN 网卡检测（`NetworkInterface` /
+`ConnectivityManager`）各厂商实现差异大、强 hook 容易误伤，暂不默认启用。
+
 ## v1.67.41 (2026-10-19)
 
 ### 深度排查（第四轮）：规则匹配链路
