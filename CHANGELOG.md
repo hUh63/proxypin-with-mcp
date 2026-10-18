@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.67.36 (2026-10-18)
+
+### 修复：h2 HEADERS 分片被 RST_STREAM 中断时的内存泄漏
+
+`parseHttp2Packet` 的 RST_STREAM 分支清了 `_bodyBuilders` / `_largeBodyStreamIds` /
+`_headerEndStreamPending`，但漏了 `_pendingHeaderBlocks` / `_pendingHeaderFrames` /
+`_pendingHeaderForward`。若客户端在一个 HEADERS 分片序列还没收完时就 reset 该流
+（浏览器取消请求时很常见），这三个 map 会永久留下该 streamId 和已累积的 header 块，
+连接存活期间不断累积。现在一并清理。
+
 ## v1.67.35 (2026-10-18)
 
 ### 深度排查：性能面板一直是 0（假数据）

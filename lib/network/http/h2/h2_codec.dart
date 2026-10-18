@@ -258,6 +258,11 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
         _headerEndStreamPending.remove(frameHeader.streamIdentifier);
         // 清理该流的 body 累积器，避免流被 RST 后累积器常驻（资源泄漏）
         _bodyBuilders.remove(frameHeader.streamIdentifier);
+        // HEADERS 分片还没收完该流就被 RST_STREAM 时，下面三个 pending map 也要一起清，
+        // 否则 streamId + 已累积的 header 块会永久残留（每中断一次泄漏一条）。
+        _pendingHeaderBlocks.remove(frameHeader.streamIdentifier);
+        _pendingHeaderFrames.remove(frameHeader.streamIdentifier);
+        _pendingHeaderForward.remove(frameHeader.streamIdentifier);
         if (_largeBodyStreamIds.remove(frameHeader.streamIdentifier)) {
           logger.w("[${channelContext.clientChannel?.id}] h2 streaming stream:${frameHeader.streamIdentifier} reset");
         }
