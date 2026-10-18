@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.67.28 (2026-10-18)
+
+### 新发布密钥按要求提交回仓库
+
+个人测试仓库，签名材料改为「仓库内提交 + Secrets 双份」，不再只存 Secrets：
+
+- 新增 `android/app/proxypin-release.jks`（新密钥，RSA 4096 / CN=proxypin）与
+  `android/key.properties`，`android/.gitignore` 重新放行这两个文件；
+- `build-apk.yml` 的准备步骤改为：有 `RELEASE_STORE_BASE64` 走 Secrets，没有则回退仓库内
+  jks + key.properties，两者都缺才失败；APK 仍逐个用 apksigner 校验 `CN=proxypin`；
+- 旧密钥不做历史清理（按用户要求保留），文档注明它已不参与出包。
+
 ## v1.67.27 (2026-10-18)
 
 ### CI：签名校验步骤改为输出全量证书信息

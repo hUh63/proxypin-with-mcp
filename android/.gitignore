@@ -6,11 +6,10 @@ gradle-wrapper.jar
 /local.properties
 GeneratedPluginRegistrant.java
 
-# 签名材料绝不入库：本仓库是 public，提交 jks / key.properties 等于公开私钥。
-# CI 从仓库 Secrets 解码（RELEASE_STORE_BASE64 等），本地构建请自建
-# android/key.properties 并放在本地不入库。流程见 docs/signing.md。
-key.properties
-**/*.keystore
-**/*.jks
+# 签名材料随仓库提交：本仓库是个人测试仓库，用户明确要求把新密钥放进仓库
+# （public 仓库 => 私钥等同公开，仅限自用测试，不要分发这些 APK）。
+# 同一把密钥也存在于 GitHub Secrets，CI 优先用 Secrets，仓库副本供本地构建与备份。
+!proxypin-release.jks
+!key.properties
 
 /app/.cxx/

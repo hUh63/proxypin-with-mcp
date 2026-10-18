@@ -51,24 +51,27 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Decode signing keystore from Secrets
+      - name: Prepare signing material (Secrets, fallback to repo copy)
         env:
           RELEASE_STORE_BASE64: ${{ secrets.RELEASE_STORE_BASE64 }}
         run: |
-          if [ -z "$RELEASE_STORE_BASE64" ]; then
-            echo "::error::RELEASE_STORE_BASE64 secret is not configured"
+          if [ -n "$RELEASE_STORE_BASE64" ]; then
+            echo "$RELEASE_STORE_BASE64" | base64 -d > "$RUNNER_TEMP/proxypin-release.jks"
+            test -s "$RUNNER_TEMP/proxypin-release.jks"
+            echo "RELEASE_STORE_FILE=$RUNNER_TEMP/proxypin-release.jks" >> "$GITHUB_ENV"
+            keytool -list -keystore "$RUNNER_TEMP/proxypin-release.jks" \
+              -storepass "$RELEASE_STORE_PASSWORD" -alias "$RELEASE_KEY_ALIAS" > /dev/null
+            echo "signing source: GitHub Secrets (alias=$RELEASE_KEY_ALIAS)"
+          elif [ -f android/app/proxypin-release.jks ] && [ -f android/key.properties ]; then
+            SP=$(grep '^storePassword=' android/key.properties | cut -d= -f2-)
+            AL=$(grep '^keyAlias=' android/key.properties | cut -d= -f2-)
+            keytool -list -keystore android/app/proxypin-release.jks \
+              -storepass "$SP" -alias "$AL" > /dev/null
+            echo "signing source: repository copy (android/key.properties, alias=$AL)"
+          else
+            echo "::error::no signing material: set RELEASE_STORE_BASE64 or commit android/app/proxypin-release.jks + android/key.properties"
             exit 1
           fi
-          if [ -z "$RELEASE_STORE_PASSWORD" ] || [ -z "$RELEASE_KEY_ALIAS" ]; then
-            echo "::error::RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS secret is not configured"
-            exit 1
-          fi
-          echo "$RELEASE_STORE_BASE64" | base64 -d > "$RUNNER_TEMP/proxypin-release.jks"
-          test -s "$RUNNER_TEMP/proxypin-release.jks"
-          echo "RELEASE_STORE_FILE=$RUNNER_TEMP/proxypin-release.jks" >> "$GITHUB_ENV"
-          keytool -list -keystore "$RUNNER_TEMP/proxypin-release.jks" \
-            -storepass "$RELEASE_STORE_PASSWORD" -alias "$RELEASE_KEY_ALIAS" > /dev/null
-          echo "keystore decoded, alias=$RELEASE_KEY_ALIAS"
 
       - name: Build Universal APK (all architectures)
         run: flutter build apk --release
