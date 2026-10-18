@@ -46,8 +46,15 @@ class FavoriteStorage {
         }
         try {
           var config = jsonDecode(value) as List<dynamic>;
+          // 逐条容错：单条收藏损坏时跳过，而不是让整个收藏列表变空。
           for (var element in config) {
-            list?.add(Favorite.fromJson(element));
+            try {
+              if (element is Map) {
+                list?.add(Favorite.fromJson(Map<String, dynamic>.from(element)));
+              }
+            } catch (e) {
+              logger.w('跳过无法解析的收藏项: $e');
+            }
           }
         } catch (e, t) {
           logger.e('收藏列表解析失败', error: e, stackTrace: t);
@@ -129,7 +136,14 @@ class FavoriteStorage {
         return;
       }
       final decoded = jsonDecode(content) as List<dynamic>;
-      imported = decoded.map((e) => Favorite.fromJson(e as Map<String, dynamic>)).toList(growable: false);
+      imported = <Favorite>[];
+      for (var e in decoded) {
+        try {
+          if (e is Map) imported.add(Favorite.fromJson(Map<String, dynamic>.from(e)));
+        } catch (err) {
+          logger.w('导入收藏时跳过无效项: $err');
+        }
+      }
     }
 
     final current = await favorites;

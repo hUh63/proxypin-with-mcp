@@ -125,7 +125,7 @@ String copyRawRequest(HttpRequest request) {
   var uri = request.requestUri!;
   var pathAndQuery = uri.path + (uri.query.isNotEmpty ? '?${uri.query}' : '');
 
-  sb.writeln("${request.method.name} $pathAndQuery ${request.protocolVersion}");
+  sb.writeln("${request.methodLabel} $pathAndQuery ${request.protocolVersion}");
   sb.write(request.headers.headerLines());
   if (request.bodyAsString.isNotEmpty) {
     sb.writeln();
@@ -138,7 +138,7 @@ String copyRequest(HttpRequest request, HttpResponse? response) {
   response ??= request.response;
   var sb = StringBuffer();
   sb.writeln("Request");
-  sb.writeln("${request.method.name} ${request.requestUrl} ${request.protocolVersion}");
+  sb.writeln("${request.methodLabel} ${request.requestUrl} ${request.protocolVersion}");
   sb.writeln(request.headers.headerLines());
   sb.writeln();
   sb.writeln(request.bodyAsString);

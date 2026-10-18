@@ -137,7 +137,7 @@ class RequestRowState extends State<RequestRow> {
   Widget build(BuildContext context) {
     String url = widget.displayDomain ? request.requestUrl : request.path;
     var operationName = request.graphqlOperationName;
-    var title = request.protocolVersion == 'MQTT' ? 'MQTT $url' : Strings.autoLineString('${request.method.name} $url');
+    var title = request.protocolVersion == 'MQTT' ? 'MQTT $url' : Strings.autoLineString('${request.methodLabel} $url');
 
     var time = formatDate(request.requestTime, [HH, ':', nn, ':', ss]);
     var contentType = response?.contentType.name.toUpperCase() ?? '';
@@ -483,8 +483,8 @@ class RequestRowState extends State<RequestRow> {
             (prefs) => MobileCustomRepeat(
                 onRepeat: () => onRepeat(request),
                 prefs: prefs,
-                taskTitle: '${request.method.name} ${request.domainPath}',
-                pendingItems: ['${request.method.name} ${request.domainPath}'])));
+                taskTitle: '${request.methodLabel} ${request.domainPath}',
+                pendingItems: ['${request.methodLabel} ${request.domainPath}'])));
 
     Navigator.push(getContext(), pageRoute);
   }

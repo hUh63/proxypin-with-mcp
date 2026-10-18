@@ -307,7 +307,7 @@ class Condition {
       case 'url':
         return request.requestUrl;
       case 'method':
-        return request.method.name;
+        return request.methodLabel;
       case 'statusCode':
         return request.response?.status.code;
       case 'duration':

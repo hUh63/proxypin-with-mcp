@@ -1855,7 +1855,7 @@ class McpServer {
                 (r) => {
                   'id': r.requestId,
                   'url': r.requestUrl,
-                  'method': r.method.name,
+                  'method': r.methodLabel,
                   'statusCode': r.response?.status.code,
                   'contentType': r.response?.headers.contentType,
                   'timestamp': r.requestTime.toIso8601String(),
@@ -2389,11 +2389,11 @@ class McpServer {
                 continue;
               }
 
-              var key = '${req.method.name} ${uri.host}${uri.path}';
+              var key = '${req.methodLabel} ${uri.host}${uri.path}';
 
               if (!endpoints.containsKey(key)) {
                 endpoints[key] = ApiEndpoint(
-                  req.method.name,
+                  req.methodLabel,
                   uri.host,
                   uri.path,
                 );
@@ -2659,7 +2659,7 @@ class McpServer {
           var errorCount = 0;
 
           for (var req in requests) {
-            methods[req.method.name] = (methods[req.method.name] ?? 0) + 1;
+            methods[req.methodLabel] = (methods[req.methodLabel] ?? 0) + 1;
             totalSize += req.packageSize ?? 0;
             var res = req.response;
             if (res != null) {
@@ -3654,7 +3654,7 @@ class McpServer {
 
   String _generateCurl(HttpRequest req) {
     var sb = StringBuffer();
-    sb.write("curl -X ${req.method.name} '${req.requestUrl}'");
+    sb.write("curl -X ${req.methodLabel} '${req.requestUrl}'");
 
     req.headers.forEach((key, values) {
       for (var v in values) {
@@ -3708,21 +3708,21 @@ class McpServer {
           // Safe way: treat as string then json.loads? Or just raw string
           // Let's just use data for now to be safe
           sb.writeln(
-            "response = requests.request(\"${req.method.name}\", url, headers=headers, data='''$body''')",
+            "response = requests.request(\"${req.methodLabel}\", url, headers=headers, data='''$body''')",
           );
         } else {
           sb.writeln(
-            "response = requests.request(\"${req.method.name}\", url, headers=headers, data='''$body''')",
+            "response = requests.request(\"${req.methodLabel}\", url, headers=headers, data='''$body''')",
           );
         }
       } catch (e) {
         sb.writeln(
-          "response = requests.request(\"${req.method.name}\", url, headers=headers, data='''$body''')",
+          "response = requests.request(\"${req.methodLabel}\", url, headers=headers, data='''$body''')",
         );
       }
     } else {
       sb.writeln(
-        "response = requests.request(\"${req.method.name}\", url, headers=headers)",
+        "response = requests.request(\"${req.methodLabel}\", url, headers=headers)",
       );
     }
 
@@ -3735,7 +3735,7 @@ class McpServer {
     var sb = StringBuffer();
     sb.writeln("const url = \"${req.requestUrl}\";");
     sb.writeln("const options = {");
-    sb.writeln("  method: \"${req.method.name}\",");
+    sb.writeln("  method: \"${req.methodLabel}\",");
     sb.writeln("  headers: {");
     req.headers.forEach((key, values) {
       var val = SensitiveData.redactValue(key, values.join(','));
@@ -3776,7 +3776,7 @@ class McpServer {
     sb.writeln();
     sb.writeln("func main() {");
     sb.writeln("    url := \"${req.requestUrl}\"");
-    sb.writeln("    method := \"${req.method.name}\"");
+    sb.writeln("    method := \"${req.methodLabel}\"");
 
     var body = req.bodyAsString;
     if (body.isNotEmpty) {
@@ -3818,7 +3818,7 @@ class McpServer {
     sb.writeln();
     sb.writeln("const url = new URL(\"${req.requestUrl}\");");
     sb.writeln("const options = {");
-    sb.writeln("  method: \"${req.method.name}\",");
+    sb.writeln("  method: \"${req.methodLabel}\",");
     sb.writeln("  hostname: url.hostname,");
     sb.writeln("  port: url.port || (url.protocol === 'https:' ? 443 : 80),");
     sb.writeln("  path: url.pathname + url.search,");
@@ -3858,7 +3858,7 @@ class McpServer {
         "startedDateTime": req.requestTime.toIso8601String(),
         "time": duration,
         "request": {
-          "method": req.method.name,
+          "method": req.methodLabel,
           "url": req.requestUrl,
           "httpVersion": req.protocolVersion,
           "cookies": _parseCookies(req.headers.get('cookie')),
@@ -3910,7 +3910,9 @@ class McpServer {
       var requestJson = entry['request'];
       var url = requestJson['url'];
       var method = requestJson['method'];
-      var req = HttpRequest(HttpMethod.valueOf(method), url);
+      final parsedMethod = HttpMethod.valueOf(method.toString());
+      var req = HttpRequest(parsedMethod, url,
+          rawMethod: parsedMethod == HttpMethod.unknown ? method.toString() : null);
 
       if (entry['startedDateTime'] != null) {
         req.requestTime = DateTime.parse(entry['startedDateTime']);
@@ -4018,7 +4020,7 @@ class McpServer {
   Map<String, dynamic> _compactRequestJson(HttpRequest r) {
     return {
       'id': r.requestId,
-      'method': r.method.name,
+      'method': r.methodLabel,
       'url': r.requestUrl,
       'status': r.response?.status.code,
       'duration': r.response?.responseTime.difference(r.requestTime).inMilliseconds,

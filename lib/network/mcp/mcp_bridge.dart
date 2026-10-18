@@ -79,7 +79,7 @@ class McpBridge implements EventListener {
     // HTTP 方法过滤
     if (method != null && method.isNotEmpty) {
       requests = requests.where((req) => 
-        req.method.name.toUpperCase() == method.toUpperCase()
+        req.methodLabel.toUpperCase() == method.toUpperCase()
       ).toList();
     }
     
@@ -256,7 +256,7 @@ class McpBridge implements EventListener {
     
     for (var req in requests) {
       // 方法统计
-      methodCount[req.method.name] = (methodCount[req.method.name] ?? 0) + 1;
+      methodCount[req.methodLabel] = (methodCount[req.methodLabel] ?? 0) + 1;
       
       // 状态码统计
       if (req.response != null) {
@@ -439,7 +439,7 @@ class McpBridge implements EventListener {
     return {
       'id': request.requestId,
       'url': request.requestUrl,
-      'method': request.method.name,
+      'method': request.methodLabel,
       'timestamp': request.requestTime.toIso8601String(),
       'statusCode': request.response?.status.code,
       'duration': request.response?.responseTime.difference(request.requestTime).inMilliseconds,

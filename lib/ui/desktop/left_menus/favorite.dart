@@ -156,7 +156,7 @@ class _FavoriteItemState extends State<_FavoriteItem> {
 
     var response = widget.favorite.response;
     var operationName = request.graphqlOperationName;
-    var title = '${request.method.name} ${request.requestUrl}'.fixAutoLines();
+    var title = '${request.methodLabel} ${request.requestUrl}'.fixAutoLines();
     var time = formatDate(request.requestTime, [mm, '-', d, ' ', HH, ':', nn, ':', ss]);
 
     return GestureDetector(
@@ -249,8 +249,8 @@ class _FavoriteItemState extends State<_FavoriteItem> {
           return CustomRepeatDialog(
               onRepeat: () => onRepeat(request),
               prefs: prefs,
-              taskTitle: '${request.method.name} ${request.domainPath}',
-              pendingItems: ['${request.method.name} ${request.domainPath}']);
+              taskTitle: '${request.methodLabel} ${request.domainPath}',
+              pendingItems: ['${request.methodLabel} ${request.domainPath}']);
         });
   }
 

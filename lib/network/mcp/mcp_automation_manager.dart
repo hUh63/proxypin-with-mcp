@@ -711,7 +711,7 @@ class MCPAutomationManager {
       final client = io.HttpClient();
       final uri = Uri.parse(httpRequest.requestUrl);
       
-      var ioRequest = await client.openUrl(httpRequest.method.name, uri);
+      var ioRequest = await client.openUrl(httpRequest.methodLabel, uri);
       
       // 复制请求头
       httpRequest.headers.toMap().forEach((key, value) {
@@ -793,7 +793,7 @@ class MCPAutomationManager {
           ? request.response!.responseTime.difference(request.requestTime).inMilliseconds
           : 0,
       'request': {
-        'method': request.method.name.toUpperCase(),
+        'method': request.methodLabel.toUpperCase(),
         'url': request.requestUrl,
         'httpVersion': 'HTTP/1.1',
         'headers': request.headers.toMap().entries.map((e) => {
@@ -822,7 +822,7 @@ class MCPAutomationManager {
     return {
       'id': request.requestId,
       'url': request.requestUrl,
-      'method': request.method.name.toUpperCase(),
+      'method': request.methodLabel.toUpperCase(),
       'statusCode': request.response?.status.code,
       'requestTime': request.requestTime.toIso8601String(),
       'responseTime': request.response?.responseTime.toIso8601String(),

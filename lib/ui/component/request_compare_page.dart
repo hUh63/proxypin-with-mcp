@@ -127,8 +127,8 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
           const SizedBox(height: 12),
           _buildComparisonCard(
             localizations.cmpFieldMethod,
-            widget.requestA.method.name,
-            widget.requestB.method.name,
+            widget.requestA.methodLabel,
+            widget.requestB.methodLabel,
             changed: _result.methodChanged,
           ),
           const SizedBox(height: 12),

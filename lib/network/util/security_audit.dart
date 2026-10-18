@@ -166,7 +166,7 @@ class SecurityAuditor {
   static void _inspect(HttpRequest request, AppLocalizations loc, void Function(SecurityIssue) emit) {
     final url = request.requestUrl;
     final uri = request.requestUri;
-    final method = request.method.name.toUpperCase();
+    final method = request.methodLabel.toUpperCase();
     final response = request.response;
 
     final reqBody = _safeBody(request);
@@ -409,7 +409,7 @@ class SecurityAuditor {
   /// 应用用户自定义规则。同样只读本地已抓到的数据，不产生任何请求。
   static void _inspectCustom(HttpRequest request, List<CustomSecurityRule> rules, AppLocalizations loc,
       void Function(SecurityIssue) emit) {
-    final method = request.method.name.toUpperCase();
+    final method = request.methodLabel.toUpperCase();
     final url = request.requestUrl;
 
     String? urlText;

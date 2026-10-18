@@ -53,7 +53,7 @@ class ExcelExport {
       rows.add([
         seq,
         _formatTime(r.requestTime),
-        r.method.name,
+        r.methodLabel,
         resp?.status.code ?? 0,
         r.protocolVersion,
         r.hostAndPort?.host ?? '',

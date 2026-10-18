@@ -778,7 +778,8 @@ class Http2RequestDecoder extends Http2Codec<HttpRequest> {
     HttpMethod httpMethod = HttpMethod.valueOf(methodValues.first);
 
     var httpRequest = HttpRequest(httpMethod, pathValues.first,
-        protocolVersion: headers[":version"]?.firstOrNull ?? "HTTP/2");
+        protocolVersion: headers[":version"]?.firstOrNull ?? "HTTP/2",
+        rawMethod: httpMethod == HttpMethod.unknown ? methodValues.first : null);
 
     String? authority = headers[":authority"]?.firstOrNull;
     String? scheme = headers[":scheme"]?.firstOrNull;
@@ -825,7 +826,7 @@ class Http2RequestDecoder extends Http2Codec<HttpRequest> {
   List<Header> encodeHeaders(HttpRequest message) {
     var headers = <Header>[];
     var uri = message.requestUri!;
-    headers.add(Header.ascii(":method", message.method.name));
+    headers.add(Header.ascii(":method", message.methodLabel));
     headers.add(Header.ascii(":scheme", uri.scheme));
     // 上游 #871：:authority 优先沿用客户端原始 Host 头——MITM 场景下它才是权威值。
     // 直接用 uri.host 重建会丢掉非默认端口（upstream 可能据此路由/校验而返回 403）。

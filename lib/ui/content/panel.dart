@@ -357,7 +357,7 @@ class General extends StatelessWidget {
       const SizedBox(height: 10),
       RowWidget("Request URL", requestUrl),
       const SizedBox(height: 15),
-      RowWidget("Request Method", request.method.name),
+      RowWidget("Request Method", request.methodLabel),
       const SizedBox(height: 15),
       RowWidget("Protocol", request.protocolVersion),
       const SizedBox(height: 15),

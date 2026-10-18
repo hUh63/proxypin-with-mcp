@@ -24,7 +24,7 @@ String copyAsFetch(HttpRequest request) {
 
   final sb = StringBuffer();
   sb.writeln('fetch(${jsonEncode(request.requestUrl)}, {');
-  sb.writeln('  method: ${jsonEncode(request.method.name.toUpperCase())},');
+  sb.writeln('  method: ${jsonEncode(request.methodLabel.toUpperCase())},');
 
   if (headers.isNotEmpty) {
     sb.writeln('  headers: {');
@@ -86,7 +86,7 @@ String curlRequest(HttpRequest request) {
     body = "  --data '${request.bodyAsString}' \\\n";
   }
 
-  return "curl -X ${request.method.name} '${request.requestUrl}' \\\n"
+  return "curl -X ${request.methodLabel} '${request.requestUrl}' \\\n"
       "${headers.join('\\\n')} \\\n $body  --compressed";
 }
 
@@ -250,6 +250,7 @@ class Curl {
 
   static HttpRequest parse(String curlCommand) {
     HttpMethod method = HttpMethod.get;
+    String? rawMethod;
     HttpHeaders headers = HttpHeaders();
 
     String? url;
@@ -288,6 +289,8 @@ class Curl {
 
       if ((value = optionValue(part, const [_request], const [_x])) != null) {
         method = HttpMethod.valueOf(value!);
+        // `-X PROPFIND` 这类非标准方法：方法名要原样保留，否则重建请求时会变成 UNKNOWN。
+        if (method == HttpMethod.unknown) rawMethod = value;
         methodExplicit = true;
       } else if ((value = optionValue(part, const [_header], const [_h])) != null) {
         _addHeader(headers, value!);
@@ -351,7 +354,8 @@ class Curl {
       }
     }
 
-    HttpRequest request = HttpRequest(method, url ?? '', protocolVersion: protocolVersion);
+    HttpRequest request =
+        HttpRequest(method, url ?? '', protocolVersion: protocolVersion, rawMethod: rawMethod);
     request.headers.addAll(headers);
     request.body = data?.codeUnits;
     return request;

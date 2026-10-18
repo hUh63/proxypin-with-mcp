@@ -381,7 +381,7 @@ class _AiChatPageState extends State<AiChatPage> {
                       dense: true,
                       value: checked,
                       controlAffinity: ListTileControlAffinity.trailing,
-                      secondary: Text(req.method.name,
+                      secondary: Text(req.methodLabel,
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                       title: Text(req.requestUrl,
                           maxLines: 1, overflow: TextOverflow.ellipsis,

@@ -186,7 +186,7 @@ class _FavoriteItemState extends State<_FavoriteItem> {
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
             TextSpan(children: [
-              TextSpan(text: '${request.method.name} ', style: const TextStyle(fontSize: 14, color: Colors.teal)),
+              TextSpan(text: '${request.methodLabel} ', style: const TextStyle(fontSize: 14, color: Colors.teal)),
               TextSpan(
                 text: request.remoteDomain(),
                 style: TextStyle(fontSize: 14, color: Colors.blue),
@@ -389,8 +389,8 @@ class _FavoriteItemState extends State<_FavoriteItem> {
             (prefs) => MobileCustomRepeat(
                 onRepeat: () => onRepeat(request),
                 prefs: prefs,
-                taskTitle: '${request.method.name} ${request.domainPath}',
-                pendingItems: ['${request.method.name} ${request.domainPath}']))));
+                taskTitle: '${request.methodLabel} ${request.domainPath}',
+                pendingItems: ['${request.methodLabel} ${request.domainPath}']))));
   }
 
   void onRepeat(HttpRequest request) {

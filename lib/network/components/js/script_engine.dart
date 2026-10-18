@@ -204,7 +204,7 @@ class JavaScriptEngine {
       'path': requestUri?.path,
       'queries': requestUri?.queryParameters,
       'headers': headersForScript(request.headers),
-      'method': request.method.name,
+      'method': request.methodLabel,
       'body': await request.decodeBodyString(),
       'rawBody': request.body
     };

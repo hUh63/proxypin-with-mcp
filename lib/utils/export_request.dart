@@ -624,7 +624,7 @@ Future<void> exportRequestsCsv(
     final duration = resp == null ? '' : '${resp.responseTime.difference(r.requestTime).inMilliseconds}';
     buffer.writeln(<String>[
       '${i + 1}',
-      r.method.name,
+      r.methodLabel,
       _csvCell(_maskSensitiveInUrl(r.requestUrl ?? '')),
       resp?.status.code?.toString() ?? '',
       duration,
@@ -659,7 +659,7 @@ Future<void> exportRequestsJson(
     final resp = r.response;
     list.add({
       'index': i + 1,
-      'method': r.method.name,
+      'method': r.methodLabel,
       'url': _maskSensitiveInUrl(r.requestUrl ?? ''),
       'status': resp?.status.code,
       'duration_ms': resp == null ? null : resp.responseTime.difference(r.requestTime).inMilliseconds,

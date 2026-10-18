@@ -201,7 +201,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
   Future<void> _export(bool asJson) async {
     if (_results.isEmpty) return;
     try {
-      final template = '${_templates[_templateIndex].method.name.toUpperCase()} '
+      final template = '${_templates[_templateIndex].methodLabel.toUpperCase()} '
           '${_templates[_templateIndex].pathAndQuery}';
       final content = asJson ? RequestFuzzer.toJson(_results, template: template) : RequestFuzzer.toCsv(_results);
       final Uri? path = await FilePicker.saveFile(
@@ -328,7 +328,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
                       DropdownMenuItem(
                         value: i,
                         child: Text(
-                          '${_templates[i].method.name.toUpperCase()} ${_templates[i].pathAndQuery}',
+                          '${_templates[i].methodLabel.toUpperCase()} ${_templates[i].pathAndQuery}',
                           style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
                           overflow: TextOverflow.ellipsis,
                         ),

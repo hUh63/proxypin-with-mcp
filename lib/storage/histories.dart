@@ -63,8 +63,16 @@ class HistoryStorage {
       }
       try {
         var list = jsonDecode(content) as List<dynamic>;
+        // 逐条容错：一条记录字段损坏（早期版本写入的 null/字符串数字、外部编辑）
+        // 不应该让后面所有历史都不显示——以前是整段 try，第一条坏就全丢。
         for (var entry in list) {
-          _histories.add(HistoryItem.formJson(entry));
+          try {
+            if (entry is Map) {
+              _histories.add(HistoryItem.formJson(Map<String, dynamic>.from(entry)));
+            }
+          } catch (e) {
+            logger.w("跳过无法解析的历史记录: $e");
+          }
         }
       } catch (e) {
         logger.e("历史记录解析错误", error: e);
@@ -468,8 +476,22 @@ class HistoryItem {
 
   //json反序列化
   factory HistoryItem.formJson(Map<String, dynamic> map) {
-    return HistoryItem(map['name'], map['path'], map['requestLength'], map['fileSize'],
-        createTime: map['createTime'] == null ? null : DateTime.fromMillisecondsSinceEpoch(map['createTime']));
+    // 宽容解析：字段缺失/类型不对时用默认值，避免一条坏记录毁掉整个历史列表。
+    return HistoryItem(
+        map['name']?.toString() ?? '',
+        map['path']?.toString() ?? '',
+        _asInt(map['requestLength']) ?? 0,
+        _asInt(map['fileSize']),
+        createTime: _asInt(map['createTime']) == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(_asInt(map['createTime'])!));
+  }
+
+  static int? _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
   }
 
   //json序列化

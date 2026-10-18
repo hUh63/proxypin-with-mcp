@@ -195,7 +195,7 @@ class SearchModel {
     }
     
     // 请求方法匹配 (20 分)
-    if (request.method.name.toLowerCase().contains(pattern)) {
+    if (request.methodLabel.toLowerCase().contains(pattern)) {
       score += 20;
     }
     
@@ -357,7 +357,7 @@ class SearchModel {
     }
 
     if (option == Option.method) {
-      return matches(request.method.name);
+      return matches(request.methodLabel);
     }
 
     if (option == Option.clientHost) {

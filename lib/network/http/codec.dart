@@ -287,8 +287,16 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
 class HttpRequestCodec extends HttpCodec<HttpRequest> {
   @override
   HttpRequest createMessage(List<String> reqLine) {
-    HttpMethod httpMethod = HttpMethod.valueOf(reqLine[0]);
-    return HttpRequest(httpMethod, reqLine[1], protocolVersion: reqLine[2]);
+    // 畸形请求行（如只有 `GET /`）：以前的 reqLine[2] 会抛 RangeError，
+    // 让整条连接被关掉；协议版本缺失时按 HTTP/1.1 兜底。
+    if (reqLine.length < 2) {
+      throw FormatException('Invalid request line: $reqLine');
+    }
+    final methodName = reqLine[0];
+    HttpMethod httpMethod = HttpMethod.valueOf(methodName);
+    return HttpRequest(httpMethod, reqLine[1],
+        protocolVersion: reqLine.length > 2 ? reqLine[2] : 'HTTP/1.1',
+        rawMethod: httpMethod == HttpMethod.unknown ? methodName : null);
   }
 
   @override
@@ -303,7 +311,7 @@ class HttpRequestCodec extends HttpCodec<HttpRequest> {
 
     //请求行
     buffer
-      ..add(message.method.name.codeUnits)
+      ..add(message.methodLabel.codeUnits)
       ..addByte(HttpConstants.sp)
       ..add(uri.codeUnits)
       ..addByte(HttpConstants.sp)

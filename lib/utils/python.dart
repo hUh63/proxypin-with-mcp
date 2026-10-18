@@ -12,7 +12,7 @@ String copyAsPythonRequests(HttpRequest request) {
       .where((entry) => entry.key.toLowerCase() != 'content-length')
       .map((entry) => '${entry.key}: ${entry.value}')
       .toList();
-  String method = request.method.name.toLowerCase();
+  String method = request.methodLabel.toLowerCase();
 
   sb.write('url = "${escapeCharacter(url)}"\n');
   bool cookiesExist = processCookies(sb, headers);

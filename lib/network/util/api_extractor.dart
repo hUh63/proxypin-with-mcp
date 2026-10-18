@@ -312,7 +312,7 @@ class ApiExtractor {
     if (uri == null) return;
     final domain = uri.host;
     final path = uri.path;
-    final methodName = request.method.name;
+    final methodName = request.methodLabel;
     final key = '$methodName:$domain:$path';
 
     final stats = _stats.putIfAbsent(key, () => _EndpointStats(

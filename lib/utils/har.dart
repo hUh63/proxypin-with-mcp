@@ -44,7 +44,7 @@ class Har {
       "_id": request.requestId, // 页面标识
       '_app': request.processInfo?.toJson(),
       "request": {
-        "method": request.method.name, // 请求方法
+        "method": request.methodLabel, // 请求方法
         "url": request.requestUrl, // 请求地址
         "httpVersion": request.protocolVersion, // HTTP协议版本
         "cookies": [], // 请求携带的cookie
@@ -93,7 +93,7 @@ class Har {
       "_phase": "request",
       '_app': request.processInfo?.toJson(),
       "request": {
-        "method": request.method.name,
+        "method": request.methodLabel,
         "url": request.requestUrl,
         "httpVersion": request.protocolVersion,
         "cookies": [],
@@ -119,7 +119,7 @@ class Har {
       "_phase": "response",
       '_app': request.processInfo?.toJson(),
       "request": {
-        "method": request.method.name,
+        "method": request.methodLabel,
         "url": request.requestUrl,
       },
       "response": {
@@ -287,8 +287,10 @@ class Har {
     final method = request['method']?.toString() ?? 'GET';
     final headers = request['headers'] is List ? request['headers'] as List : const [];
 
-    final httpRequest =
-        HttpRequest(HttpMethod.valueOf(method), request['url'], protocolVersion: request['httpVersion']);
+    final parsedMethod = HttpMethod.valueOf(method);
+    final httpRequest = HttpRequest(parsedMethod, request['url'],
+        protocolVersion: request['httpVersion'],
+        rawMethod: parsedMethod == HttpMethod.unknown ? method : null);
     if (har.containsKey("_id")) httpRequest.requestId = har['_id'].toString(); // 页面标识
     httpRequest.processInfo = har['_app'] == null ? null : ProcessInfo.fromJson(har['_app']);
 

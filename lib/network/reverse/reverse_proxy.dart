@@ -250,7 +250,7 @@ class ReverseProxy {
     channelContext.putAttribute(AttributeKeys.reverseProxyRule, rule.id);
 
     hitCounts[rule.id] = (hitCounts[rule.id] ?? 0) + 1;
-    logger.d('[ReverseProxy] ${request.method.name} ${request.path} -> ${rule.target}');
+    logger.d('[ReverseProxy] ${request.methodLabel} ${request.path} -> ${rule.target}');
     return true;
   }
 

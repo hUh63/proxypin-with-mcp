@@ -301,7 +301,7 @@ class FlowStore extends EventListener {
 
   bool _matches(HttpRequest request, String? host, String? method, int? statusFrom, int? statusTo,
       String? keyword, int? sinceMs) {
-    if (method != null && method.isNotEmpty && request.method.name.toUpperCase() != method) {
+    if (method != null && method.isNotEmpty && request.methodLabel.toUpperCase() != method) {
       return false;
     }
 

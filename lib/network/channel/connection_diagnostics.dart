@@ -96,7 +96,7 @@ class ConnectionDiagnostics {
             issues.add(DiagnosticIssue(
               ConnDiagLevel.warn,
               '请求带 streamId 但协议不是 HTTP/2',
-              '${r.method.name} ${r.uri} · streamId=${r.streamId} · proto=${r.protocolVersion}',
+              '${r.methodLabel} ${r.uri} · streamId=${r.streamId} · proto=${r.protocolVersion}',
               connectionId: e.id,
             ));
           }
@@ -104,7 +104,7 @@ class ConnectionDiagnostics {
           issues.add(DiagnosticIssue(
             ConnDiagLevel.info,
             'HTTP/2 请求未解析到 streamId',
-            '${r.method.name} ${r.uri}（连接树里该请求不会显示 #streamId）',
+            '${r.methodLabel} ${r.uri}（连接树里该请求不会显示 #streamId）',
             connectionId: e.id,
           ));
         }
@@ -199,7 +199,7 @@ class ConnectionDiagnostics {
         'lastActive': e.lastActive.toIso8601String(),
         'recent': e.recent.map((r) {
           return {
-            'method': r.method.name,
+            'method': r.methodLabel,
             'uri': r.uri,
             'protocol': r.protocolVersion,
             'streamId': r.streamId,

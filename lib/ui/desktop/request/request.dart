@@ -166,7 +166,7 @@ class _RequestWidgetState extends State<RequestWidget> {
     var response = widget.response.get() ?? request.response;
     var operationName = request.graphqlOperationName;
     String path = widget.displayDomain ? request.domainPath : request.path;
-    String title = '${request.method.name} $path';
+    String title = '${request.methodLabel} $path';
 
     var time = formatDate(request.requestTime, [HH, ':', nn, ':', ss]);
     String contentType = response?.contentType.name.toUpperCase() ?? '';
@@ -521,8 +521,8 @@ class _RequestWidgetState extends State<RequestWidget> {
           return CustomRepeatDialog(
               onRepeat: () => onRepeat(request),
               prefs: prefs,
-              taskTitle: '${request.method.name} ${request.domainPath}',
-              pendingItems: ['${request.method.name} ${request.domainPath}']);
+              taskTitle: '${request.methodLabel} ${request.domainPath}',
+              pendingItems: ['${request.methodLabel} ${request.domainPath}']);
         });
   }
 

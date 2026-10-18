@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.67.44 (2026-10-19)
+
+### 非标准 HTTP 方法不再断连接（WebDAV / 自定义方法）
+
+`HttpMethod.valueOf` 遇到枚举外的方法会抛 `StateError`，而它跑在**每条请求**的解码路径上：
+
+- 抓到一条 `MKCOL`/`COPY`/`PROPPATCH`/`LOCK`（Windows「映射网络驱动器」、CalDAV、
+  企业内网 `QUERY`/`PURGE`）就关掉整条连接，客户端看到 RST；
+- HAR/收藏/分享口令里带这种方法的记录会让整批加载失败。
+
+现在新增 `HttpMethod.unknown`，原始方法名记在 `HttpRequest.rawMethod`，
+转发/HTTP2 `:method`/导出/展示统一走 `methodLabel`，报文里的方法与客户端发出的一致。
+
+### 历史与收藏列表逐条容错
+
+`histories.json` / `favorites.json` 里只要有一条记录字段损坏（早期版本写入的
+字符串数字、外部编辑过），以前整段 `try` 会吞掉**后面全部**记录，表现为重启后
+历史/收藏「全没了」。现在逐条解析、单条失败只跳过该条。
+
 ## v1.67.43 (2026-10-19)
 
 ### 非 UTF-8 响应体真正解码（GBK 页面不再满屏乱码）

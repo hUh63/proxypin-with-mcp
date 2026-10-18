@@ -132,7 +132,7 @@ class _ConnectionTreeDialogState extends State<_ConnectionTreeDialog> {
         children: [
           SizedBox(
             width: 60,
-            child: Text('${r.method.name}$stream',
+            child: Text('${r.methodLabel}$stream',
                 style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500),
                 overflow: TextOverflow.ellipsis),
           ),

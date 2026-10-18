@@ -99,7 +99,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
 
   /// 转发请求
   Future<void> forward(ChannelContext channelContext, Channel channel, HttpRequest httpRequest) async {
-    // log.d("[${channel.id}] ${httpRequest.method.name} ${httpRequest.requestUrl}");
+    // log.d("[${channel.id}] ${httpRequest.methodLabel} ${httpRequest.requestUrl}");
     //获取远程连接
     Channel? remoteChannel;
 
@@ -114,7 +114,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       try {
         remoteChannel = await _getRemoteChannel(channelContext, channel, httpRequest);
       } catch (error, stackTrace) {
-        log.e("[${channel.id}] 连接异常 ${httpRequest.method.name} ${httpRequest.requestUrl}",
+        log.e("[${channel.id}] 连接异常 ${httpRequest.methodLabel} ${httpRequest.requestUrl}",
             error: error, stackTrace: stackTrace);
         if (httpRequest.method == HttpMethod.connect) {
           channel.error = error; //记录异常
@@ -137,7 +137,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
     //实现抓包代理转发
     if (httpRequest.method != HttpMethod.connect) {
       // log.d(
-      //     "[${channel.id}] streamId:${httpRequest.streamId ?? ''} ${httpRequest.protocolVersion}  ${httpRequest.method.name} ${httpRequest.requestUrl}");
+      //     "[${channel.id}] streamId:${httpRequest.streamId ?? ''} ${httpRequest.protocolVersion}  ${httpRequest.methodLabel} ${httpRequest.requestUrl}");
       if (HostFilter.filter(httpRequest.hostAndPort?.host, path: httpRequest.pathAndQuery)) {
         await remoteChannel?.write(channelContext, httpRequest);
         return;
@@ -179,7 +179,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       try {
         final reqMap = <String, dynamic>{
           'url': request!.requestUrl ?? '',
-          'method': request.method.name,
+          'method': request.methodLabel,
           'headers': request.headers.toMap(),
         };
         unawaited(MCPAutomationManager().onRequest(reqMap).catchError((e, s) {
@@ -198,7 +198,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       try {
         final blockMap = <String, dynamic>{
           'url': request!.requestUrl ?? '',
-          'method': request.method.name,
+          'method': request.methodLabel,
           'headers': request.headers.toMap(),
         };
         if (await MCPAutomationManager().shouldBlockRequest(blockMap)) {

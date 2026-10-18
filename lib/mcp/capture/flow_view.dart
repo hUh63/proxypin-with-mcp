@@ -53,7 +53,7 @@ class FlowView {
         : response.responseTime.difference(request.requestTime).inMilliseconds;
     return {
       'id': request.requestId,
-      'method': request.method.name,
+      'method': request.methodLabel,
       'url': request.requestUrl,
       'host': request.requestUri?.host ?? request.remoteDomain() ?? '',
       'path': request.pathAndQuery,
@@ -74,7 +74,7 @@ class FlowView {
     var response = request.response;
     return {
       'id': request.requestId,
-      'method': request.method.name,
+      'method': request.methodLabel,
       'url': request.requestUrl,
       'httpVersion': request.protocolVersion,
       'time': request.requestTime.toUtc().toIso8601String(),

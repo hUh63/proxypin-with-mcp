@@ -562,7 +562,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     final task = RepeatTaskManager.instance.create(
       title: localizations!.repeatBatchCount(requests.length),
       total: requests.length,
-      pending: requests.map((r) => '${r.method.name} ${r.domainPath}').toList(),
+      pending: requests.map((r) => '${r.methodLabel} ${r.domainPath}').toList(),
     );
     RepeatTaskManager.instance.markRunning(task);
 

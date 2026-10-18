@@ -257,6 +257,13 @@ class HttpRequest extends HttpMessage {
   String _uri;
   HttpMethod method;
 
+  /// [method] 为 [HttpMethod.unknown] 时的原始方法名（如 `PROPPATCH`）。
+  /// 编码转发、展示、导出都必须用它，否则请求行会变成 `UNKNOWN`。
+  String? rawMethod;
+
+  /// 展示与编码使用的请求方法名。
+  String get methodLabel => rawMethod ?? method.name;
+
   HostAndPort? hostAndPort;
   DateTime requestTime = DateTime.now(); //请求时间
   HttpResponse? response;
@@ -280,7 +287,7 @@ class HttpRequest extends HttpMessage {
     _requestUri = null;
   }
 
-  HttpRequest(this.method, this._uri, {String protocolVersion = "HTTP/1.1"}) : super(protocolVersion);
+  HttpRequest(this.method, this._uri, {String protocolVersion = "HTTP/1.1", this.rawMethod}) : super(protocolVersion);
 
   /// 释放该请求及其响应占用的字节数据（上游 #899）
   ///
@@ -411,7 +418,9 @@ class HttpRequest extends HttpMessage {
 
   ///复制请求
   HttpRequest copy({String? uri}) {
-    var request = HttpRequest(method, uri ?? this.uri, protocolVersion: protocolVersion);
+    // 非标准方法（rawMethod）必须跟着复制，否则重放/另存时请求行会变成 UNKNOWN。
+    var request = HttpRequest(method, uri ?? this.uri,
+        protocolVersion: protocolVersion, rawMethod: rawMethod);
     request.headers.addAll(headers);
     if (uri != null && !uri.startsWith('/')) {
       request.hostAndPort = HostAndPort.of(uri);
@@ -430,6 +439,7 @@ class HttpRequest extends HttpMessage {
       '_id': requestId,
       'uri': requestUrl,
       'method': method.name,
+      'methodRaw': rawMethod,
       'protocolVersion': protocolVersion,
       'packageSize': packageSize,
       'headers': headers.toJson(),
@@ -440,8 +450,12 @@ class HttpRequest extends HttpMessage {
   }
 
   factory HttpRequest.fromJson(Map<String, dynamic> json) {
-    var request = HttpRequest(HttpMethod.valueOf(json['method']), json['uri'],
+    final methodName = json['method']?.toString() ?? 'GET';
+    final parsedMethod = HttpMethod.valueOf(methodName);
+    var request = HttpRequest(parsedMethod, json['uri'],
         protocolVersion: json['protocolVersion'] ?? "HTTP/1.1");
+    // 非标准方法：优先取持久化的原文，其次退回 json['method'] 本身。
+    request.rawMethod = json['methodRaw']?.toString() ?? (parsedMethod == HttpMethod.unknown ? methodName : null);
 
     request.requestId = json['_id'] ?? request.requestId;
     request.headers.addAll(HttpHeaders.fromJson(json['headers']));
@@ -462,7 +476,7 @@ class HttpRequest extends HttpMessage {
 
   @override
   String toString() {
-    return 'HttpRequest{version: $protocolVersion, uri: $uri, method: ${method.name}, headers: $headers, contentLength: $contentLength, bodyLength: ${body?.length}}';
+    return 'HttpRequest{version: $protocolVersion, uri: $uri, method: $methodLabel, headers: $headers, contentLength: $contentLength, bodyLength: ${body?.length}}';
   }
 }
 
@@ -557,24 +571,37 @@ enum HttpMethod {
   connect("CONNECT"),
   propfind("PROPFIND"),
   report("REPORT"),
+
+  /// 不在枚举内的自定义/扩展方法（WebDAV 的 MKCOL/COPY/MOVE/PROPPATCH/LOCK、
+  /// 企业内网的 QUERY/PURGE 等）。原始方法名保存在 [HttpRequest.rawMethod]。
+  unknown("UNKNOWN"),
   ;
 
   final String name;
 
   const HttpMethod(this.name);
 
+  /// 解析请求方法。
+  ///
+  /// 以前遇到非枚举方法（WebDAV 的 MKCOL/COPY/PROPPATCH、企业内网的 QUERY/PURGE…）
+  /// 会抛 StateError：解码路径上一条这样的请求就会关掉整条连接，客户端看到 RST；
+  /// 历史/收藏/HAR 里带这种方法的记录还会让整批加载失败。
+  /// 现在统一返回 [unknown]，由调用方把原始名记到 [HttpRequest.rawMethod]。
   static HttpMethod valueOf(String name) {
-    try {
-      return HttpMethod.values.firstWhere((element) => element.name == name.toUpperCase());
-    } catch (error) {
-      logger.e("HttpMethod error $name :$error");
-      rethrow;
+    final upper = name.toUpperCase();
+    for (final method in values) {
+      if (method.name == upper) return method;
     }
+    return HttpMethod.unknown;
   }
 
   static List<HttpMethod> methods() {
     return values
-        .where((method) => method != HttpMethod.propfind && method != HttpMethod.report && method != HttpMethod.mqtt)
+        .where((method) =>
+            method != HttpMethod.propfind &&
+            method != HttpMethod.report &&
+            method != HttpMethod.mqtt &&
+            method != HttpMethod.unknown)
         .toList();
   }
 }

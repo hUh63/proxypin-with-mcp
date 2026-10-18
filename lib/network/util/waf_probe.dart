@@ -251,8 +251,10 @@ class WafProbe {
     final finalUrl = inject(url, payload);
     HttpRequest request;
     try {
-      request = HttpRequest(HttpMethod.valueOf(method), finalUrl,
-          protocolVersion: 'HTTP/1.1');
+      final parsedMethod = HttpMethod.valueOf(method);
+      request = HttpRequest(parsedMethod, finalUrl,
+          protocolVersion: 'HTTP/1.1',
+          rawMethod: parsedMethod == HttpMethod.unknown ? method : null);
     } catch (e) {
       logger.w('WAF 探测：URL 解析失败 $finalUrl : $e');
       return WafProbeResult(

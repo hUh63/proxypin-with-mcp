@@ -102,7 +102,7 @@ class ComparisonResult {
 
     if (methodChanged) {
       buffer.writeln(loc.cmpMethodChanges);
-      buffer.writeln('  - ${requestA?.method.name} → + ${requestB?.method.name}\n');
+      buffer.writeln('  - ${requestA?.methodLabel} → + ${requestB?.methodLabel}\n');
     }
 
     if (headerDiffs.isNotEmpty) {

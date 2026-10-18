@@ -384,6 +384,15 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
                 headers: pendingCall.headers,
               );
               break;
+            default:
+              // 其余方法（OPTIONS/TRACE/PROPFIND/PROPPATCH…以及脚本里的自定义方法）
+              // 以前没有 default，脚本用这些方法发 XHR 会静默拿到空响应。
+              final generic = http.Request(
+                  (pendingCall.method ?? 'GET').toUpperCase(), Uri.parse(pendingCall.url!));
+              pendingCall.headers.forEach(generic.headers.add);
+              if (pendingCall.body != null) generic.body = pendingCall.body!;
+              response = await http.Response.fromStream(await httpClient!.send(generic));
+              break;
           }
         } catch (e) {
           // 增强：捕获请求异常，返回错误响应 (#890)

@@ -227,7 +227,7 @@ class WsTrafficServer implements EventListener {
           .take(500) // 单次最多 500 条，避免响应过大
           .map((r) => {
                 'id': r.requestId,
-                'method': r.method.name,
+                'method': r.methodLabel,
                 'url': r.requestUrl,
                 'status': r.response?.status.code,
                 'time': r.requestTime.millisecondsSinceEpoch,
@@ -254,7 +254,7 @@ class WsTrafficServer implements EventListener {
       'type': 'request',
       'data': {
         'id': request.requestId,
-        'method': request.method.name,
+        'method': request.methodLabel,
         'url': request.requestUrl,
         'headers': _safeHeaders(request.headers),
         'size': request.contentLength,
@@ -271,7 +271,7 @@ class WsTrafficServer implements EventListener {
       'type': 'response',
       'data': {
         'id': response.requestId,
-        'method': request?.method.name,
+        'method': request?.methodLabel,
         'url': request?.requestUrl,
         'status': response.status.code,
         'size': response.contentLength,

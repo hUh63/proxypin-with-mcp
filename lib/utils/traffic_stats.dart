@@ -118,7 +118,7 @@ class TrafficStats {
 
         final host = r.hostAndPort?.host ?? '';
         entries.add(RequestEntry(
-          method: r.method.name,
+          method: r.methodLabel,
           url: r.requestUrl,
           host: host,
           status: code,
