@@ -208,16 +208,33 @@ void navigator(BuildContext context, Widget widget) {
   );
 }
 
-class _SettingPage extends StatelessWidget {
+class _SettingPage extends StatefulWidget {
   final ProxyServer proxyServer;
   final AppConfiguration appConfiguration;
 
   const _SettingPage({required this.proxyServer, required this.appConfiguration});
 
   @override
+  State<_SettingPage> createState() => _SettingPageState();
+}
+
+class _SettingPageState extends State<_SettingPage> {
+  /// 控制器必须由 State 持有。
+  ///
+  /// 之前是在 build() 里 `TextEditingController(...)`：每次重建都新建一个，
+  /// 输入过程中任何 setState 都会把光标和内容重置，同时持续泄漏监听器。
+  late final TextEditingController textEditingController =
+      TextEditingController(text: widget.proxyServer.configuration.proxyPassDomains);
+
+  @override
+  void dispose() {
+    textEditingController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final configuration = proxyServer.configuration;
-    var textEditingController = TextEditingController(text: configuration.proxyPassDomains);
+    final configuration = widget.proxyServer.configuration;
 
     AppLocalizations localizations = AppLocalizations.of(context)!;
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
@@ -260,7 +277,7 @@ class _SettingPage extends StatelessWidget {
                           scale: 0.8,
                           onChanged: (value) {
                             configuration.enableSystemProxy = value;
-                            proxyServer.configuration.flushConfig();
+                            widget.proxyServer.configuration.flushConfig();
                           })),
                 if (Platform.isAndroid)
                   Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
@@ -271,7 +288,7 @@ class _SettingPage extends StatelessWidget {
                         scale: 0.8,
                         onChanged: (value) {
                           configuration.enableSocks5 = value;
-                          proxyServer.configuration.flushConfig();
+                          widget.proxyServer.configuration.flushConfig();
                         })),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
                 ListTile(
@@ -281,7 +298,7 @@ class _SettingPage extends StatelessWidget {
                         scale: 0.8,
                         onChanged: (value) {
                           configuration.enabledHttp2 = value;
-                          proxyServer.configuration.flushConfig();
+                          widget.proxyServer.configuration.flushConfig();
                         })),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
                 ListTile(
@@ -290,7 +307,7 @@ class _SettingPage extends StatelessWidget {
                     onTap: () {
                       showDialog(
                           context: context,
-                          builder: (_) => ExternalProxyDialog(configuration: proxyServer.configuration));
+                          builder: (_) => ExternalProxyDialog(configuration: widget.proxyServer.configuration));
                     }),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
                 Padding(
@@ -324,7 +341,7 @@ class _SettingPage extends StatelessWidget {
                         controller: textEditingController,
                         onSubmitted: (_) {
                           configuration.proxyPassDomains = textEditingController.text;
-                          proxyServer.configuration.flushConfig();
+                          widget.proxyServer.configuration.flushConfig();
                         },
                         decoration:
                             const InputDecoration(contentPadding: EdgeInsets.all(10), border: OutlineInputBorder()),

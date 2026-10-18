@@ -46,7 +46,9 @@ Future<String?> showSharePasswordDialog(
   final formKey = GlobalKey<FormState>();
   var obscure = true;
 
-  final result = await showDialog<String>(
+  String? result;
+  try {
+    result = await showDialog<String>(
     context: context,
     builder: (context) => StatefulBuilder(builder: (context, setState) {
       final localizations = AppLocalizations.of(context)!;
@@ -109,5 +111,11 @@ Future<String?> showSharePasswordDialog(
   );
 
   // 注意：不在对话框关闭后立即 dispose controller——关闭动画期间控件仍可能引用它
+  } finally {
+    // 对话框关闭后释放输入控制器（每次弹窗都会新建两个）。
+    controller.dispose();
+    confirmController.dispose();
+  }
+
   return result;
 }

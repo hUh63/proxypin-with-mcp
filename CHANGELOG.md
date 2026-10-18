@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.67.38 (2026-10-18)
+
+### 深度排查（第三轮）：设置页输入框会被自己打断
+
+`drawer.dart` 的 `_SettingPage` 与 `bottom_navigation.dart` 的 `_ConfigPageState` 都在
+`build()` 里 `TextEditingController(...)`。后果有两层：
+
+1. 每次重建都新建一个控制器，旧的永不释放 → 持续泄漏（Controller 是有监听者的 ChangeNotifier）；
+2. 更直观的是**输入会被打断**：在「代理绕过域名」输入框里打字时，任何 setState
+   （键盘弹出、开关变化）都会换掉 controller 实例，光标跳回开头、内容被重置。
+
+`_SettingPage` 改为 StatefulWidget 并让 State 持有控制器（`dispose` 释放），
+`_ConfigPageState` 把控制器提升为字段。
+
+### 深度排查（第三轮）：输入框控制器泄漏
+
+以下位置创建的 `TextEditingController` 从未释放，每次打开都泄漏一组：
+
+- `aes_page.dart`（4 个）、`report_servers.dart` 编辑页（3 个）；
+- 分享口令对话框（2 个）、WS 推送端口对话框、场景重命名对话框、工作区新建/重命名对话框
+  （函数内创建，现在在 `finally` 里释放）。
+
+### 深度排查（第三轮）：MCP 工具参数类型过于严格
+
+MCP 客户端（尤其是 LLM）经常把布尔值传成 `"true"` / `"1"` / `1`，把端口传成 `"8080"`。
+原来 18 处 `args['x'] as bool?` 会直接抛类型错误，整个工具调用失败（其中 3 处是不可空
+`as bool`，参数缺失时也一样崩）。新增 `mcpAsBool` / `mcpAsInt` 宽容解析并全量替换，
+端口解析同时支持字符串。
+
 ## v1.67.37 (2026-10-18)
 
 ### 修复 v1.67.35 的编译错误

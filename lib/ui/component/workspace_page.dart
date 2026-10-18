@@ -256,9 +256,11 @@ class _WorkspacePageState extends State<WorkspacePage> {
     setState(() => _items = storage.items);
   }
 
-  Future<String?> _promptText({required String title, required String label, String initial = ''}) {
+  Future<String?> _promptText({required String title, required String label, String initial = ''}) async {
     final controller = TextEditingController(text: initial);
-    return showDialog<String>(
+    String? result;
+    try {
+      result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title, style: const TextStyle(fontSize: 16)),
@@ -274,6 +276,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
         ],
       ),
     );
+    } finally {
+      controller.dispose();
+    }
+    return result;
   }
 
   Future<bool> _confirm({required String title, required String content}) async {

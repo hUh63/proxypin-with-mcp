@@ -152,7 +152,9 @@ class _RewriteScenarioDialogState extends State<RewriteScenarioDialog> {
 
   Future<void> _rename(String scenario) async {
     var controller = TextEditingController(text: scenario);
-    var result = await showDialog<String>(
+    String? result;
+    try {
+      result = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -169,6 +171,9 @@ class _RewriteScenarioDialogState extends State<RewriteScenarioDialog> {
                     onPressed: () => Navigator.of(ctx).pop(controller.text), child: Text(localizations.save)),
               ],
             ));
+    } finally {
+      controller.dispose();
+    }
     var name = result?.trim();
     if (name == null || name.isEmpty || name == scenario) {
       return;

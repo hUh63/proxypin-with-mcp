@@ -86,6 +86,16 @@ class _AesWidgetState extends State<AesPage> {
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
+  void dispose() {
+    // 这四个控制器此前从未释放：每打开一次 AES 页就泄漏一组监听器。
+    inputController.dispose();
+    outputController.dispose();
+    keyController.dispose();
+    ivController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("AES", style: TextStyle(fontSize: 16)), centerTitle: true),

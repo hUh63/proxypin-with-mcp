@@ -64,6 +64,17 @@ class ConfigPage extends StatefulWidget {
 }
 
 class _ConfigPageState extends State<ConfigPage> {
+  /// 与 drawer 里的设置页同理：controller 不能建在 build() 里，
+  /// 否则每次重建都会重置输入内容并泄漏监听器。
+  late final TextEditingController textEditingController =
+      TextEditingController(text: widget.proxyServer.configuration.proxyPassDomains);
+
+  @override
+  void dispose() {
+    textEditingController.dispose();
+    super.dispose();
+  }
+
   late ProxyServer proxyServer = widget.proxyServer;
   late HistoryTask historyTask;
 
@@ -210,8 +221,6 @@ class SettingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final configuration = proxyServer.configuration;
-
-    var textEditingController = TextEditingController(text: configuration.proxyPassDomains);
 
     AppLocalizations localizations = AppLocalizations.of(context)!;
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');

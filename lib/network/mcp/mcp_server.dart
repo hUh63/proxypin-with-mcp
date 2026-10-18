@@ -50,6 +50,28 @@ import 'package:proxypin/native/mcp_screen.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:flutter/material.dart';
 
+/// MCP 客户端（尤其是 LLM）经常把布尔值传成 `"true"` / `"1"` / `1`，
+/// 直接 `as bool?` 会抛类型错误让整个工具调用失败。这里做宽容解析。
+bool? mcpAsBool(Object? value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final v = value.trim().toLowerCase();
+    if (v == 'true' || v == '1' || v == 'yes' || v == 'on') return true;
+    if (v == 'false' || v == '0' || v == 'no' || v == 'off') return false;
+  }
+  return null;
+}
+
+/// 同上：接受 `"8080"` 这种字符串形式的整数。
+int? mcpAsInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value.trim());
+  return null;
+}
+
+
 part 'mcp_tools_defs.dart';
 
 class McpServer {
@@ -1508,7 +1530,7 @@ class McpServer {
     if (rawSteps.length > maxBatchSteps) {
       return {'error': 'too many steps: ${rawSteps.length} (max $maxBatchSteps)'};
     }
-    final stopOnError = args['stop_on_error'] as bool? ?? true;
+    final stopOnError = mcpAsBool(args['stop_on_error']) ?? true;
     final results = <Map<String, dynamic>>[];
 
     for (var i = 0; i < rawSteps.length; i++) {
@@ -2082,7 +2104,7 @@ class McpServer {
       case 'get_mcp_audit':
         final auditLimit = _clampLimit(args['limit'], 50);
         final auditTool = args['tool'] as String?;
-        final auditOnlyFailed = args['only_failed'] as bool?;
+        final auditOnlyFailed = mcpAsBool(args['only_failed']);
         final records = McpAuditLog.instance.recent(
           limit: auditLimit,
           tool: auditTool,
@@ -2399,7 +2421,7 @@ class McpServer {
         // 在请求/响应中搜索敏感数据（密钥、密码、手机号、身份证等）
         try {
           final requestId = args['request_id'] as String?;
-          final searchBody = args['search_body'] as bool? ?? true;
+          final searchBody = mcpAsBool(args['search_body']) ?? true;
           final requests = requestId != null
               ? McpBridge().source
                     .where((r) => r.requestId == requestId)
@@ -2690,7 +2712,7 @@ class McpServer {
           return {'error': 'Device control is only available on Android'};
         }
         try {
-          var clickableOnly = args['clickable_only'] as bool? ?? false;
+          var clickableOnly = mcpAsBool(args['clickable_only']) ?? false;
           var packageFilter = args['package_filter'] as String?;
           var uiJson = await McpScreen.dumpUi(
             clickableOnly: clickableOnly,
@@ -2802,7 +2824,7 @@ class McpServer {
         }
         try {
           var command = args['command'] as String;
-          var useSu = args['use_su'] as bool? ?? false;
+          var useSu = mcpAsBool(args['use_su']) ?? false;
           var mode = args['mode'] as String?;
           var timeoutMs = (args['timeout_ms'] as num?)?.toInt() ?? 10000;
           return await McpScreen.shell(
@@ -2818,7 +2840,7 @@ class McpServer {
       // ==================== Breakpoint Debugging Tools (1.3.1+) ====================
       case 'toggle_breakpoint':
         try {
-          final enabled = args['enabled'] as bool;
+          final enabled = (mcpAsBool(args['enabled']) ?? true);
           var manager = await RequestBreakpointManager.instance;
           manager.enabled = enabled;
           await manager.save();
@@ -2993,7 +3015,7 @@ class McpServer {
         try {
           final urlPattern = args['url_pattern'] as String;
           final profileId = args['profile_id'] as String;
-          final enabled = args['enabled'] as bool? ?? true;
+          final enabled = mcpAsBool(args['enabled']) ?? true;
 
           var manager = await NetworkConditionManager.instance;
 
@@ -3038,7 +3060,7 @@ class McpServer {
               (args['response_latency_ms'] as num?)?.toInt() ?? 0;
           final jitterMs = (args['jitter_ms'] as num?)?.toInt() ?? 0;
           final lossRate = (args['loss_rate'] as num?)?.toDouble() ?? 0.0;
-          final offline = args['offline'] as bool? ?? false;
+          final offline = mcpAsBool(args['offline']) ?? false;
 
           var manager = await NetworkConditionManager.instance;
           var profile = NetworkConditionProfile(
@@ -3104,7 +3126,7 @@ class McpServer {
 
       case 'toggle_weak_network':
         try {
-          final enabled = args['enabled'] as bool;
+          final enabled = (mcpAsBool(args['enabled']) ?? true);
           var manager = await NetworkConditionManager.instance;
           manager.enabled = enabled;
           await manager.flushConfig();
@@ -3140,7 +3162,7 @@ class McpServer {
           final key = args['key'] as String;
           final value = args['value'] as String?;
           final environmentId = args['environment_id'] as String?;
-          final enabled = args['enabled'] as bool? ?? true;
+          final enabled = mcpAsBool(args['enabled']) ?? true;
 
           var manager = await EnvironmentManager.instance;
 
@@ -3273,7 +3295,7 @@ class McpServer {
 
       case 'toggle_environment_variables':
         try {
-          final enabled = args['enabled'] as bool;
+          final enabled = (mcpAsBool(args['enabled']) ?? true);
           var manager = await EnvironmentManager.instance;
           manager.setEnabled(enabled);
           await manager.flushConfig();
@@ -3379,7 +3401,7 @@ class McpServer {
           final action = (args['action'] as String? ?? 'add').toLowerCase();
           final host = (args['host'] as String? ?? '').trim();
           if (host.isEmpty) return {'error': 'host is required'};
-          final port = args['port'] is int ? args['port'] as int : null;
+          final port = mcpAsInt(args['port']);
           var manager = await HostsManager.instance;
 
           HostsItem? find() {
@@ -3400,7 +3422,7 @@ class McpServer {
             case 'toggle':
               final item = find();
               if (item == null) return {'error': 'No rule found for $host'};
-              final enabled = args['enabled'] as bool? ?? !item.enabled;
+              final enabled = mcpAsBool(args['enabled']) ?? !item.enabled;
               item.enabled = enabled;
               await manager.flushConfig();
               _notifyConfigChanged('hosts', {'action': 'toggle', 'host': host, 'enabled': enabled});
@@ -3434,7 +3456,7 @@ class McpServer {
               if (existing != null) {
                 existing.toAddress = toAddress;
                 if (args.containsKey('port')) existing.port = port;
-                existing.enabled = args['enabled'] as bool? ?? existing.enabled;
+                existing.enabled = mcpAsBool(args['enabled']) ?? existing.enabled;
                 await manager.flushConfig();
                 _notifyConfigChanged('hosts', {'action': 'update', 'host': host});
                 return {
@@ -3449,7 +3471,7 @@ class McpServer {
                 host: host,
                 toAddress: toAddress,
                 port: port,
-                enabled: args['enabled'] as bool? ?? true,
+                enabled: mcpAsBool(args['enabled']) ?? true,
               );
               await manager.addHosts(item);
               await manager.flushConfig();
@@ -3500,7 +3522,7 @@ class McpServer {
           }
 
           if (action == 'set_port') {
-            final port = args['port'] is int ? args['port'] as int : null;
+            final port = mcpAsInt(args['port']);
             if (port == null || port < 1 || port > 65535) return {'error': 'Invalid port (1-65535)'};
             if (port == conf.port) return {'error': 'Port conflicts with the forward proxy port'};
             conf.reverseProxyPort = port;
@@ -3511,7 +3533,7 @@ class McpServer {
           }
 
           if (action == 'enable') {
-            final enabled = args['enabled'] as bool? ?? true;
+            final enabled = mcpAsBool(args['enabled']) ?? true;
             conf.reverseProxyEnabled = enabled;
             conf.flushConfig();
             ReverseProxy.load(enabled: enabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
@@ -3544,7 +3566,7 @@ class McpServer {
           if (action == 'toggle') {
             final rule = find();
             if (rule == null) return {'error': 'No route found for $normalized'};
-            final enabled = args['enabled'] as bool? ?? !rule.enabled;
+            final enabled = mcpAsBool(args['enabled']) ?? !rule.enabled;
             final list = List<ReverseProxyRule>.from(conf.reverseProxyRules);
             list[list.indexOf(rule)] = rule.copyWith(enabled: enabled);
             conf.reverseProxyRules = list;
@@ -3559,9 +3581,9 @@ class McpServer {
           if (target.isEmpty) return {'error': 'target is required for $action'};
           final uri = Uri.tryParse(target);
           if (uri == null || uri.host.isEmpty) return {'error': 'Invalid target URL: $target'};
-          final stripPrefix = args['strip_prefix'] as bool? ?? false;
+          final stripPrefix = mcpAsBool(args['strip_prefix']) ?? false;
           final hostHeader = (args['host_header'] as String? ?? '').trim();
-          final enabled = args['enabled'] as bool? ?? true;
+          final enabled = mcpAsBool(args['enabled']) ?? true;
 
           final list = List<ReverseProxyRule>.from(conf.reverseProxyRules);
           final existing = find();

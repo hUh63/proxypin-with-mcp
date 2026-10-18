@@ -172,6 +172,15 @@ class _ReportServerEditPageMobileState extends State<ReportServerEditPageMobile>
     _splitReport = init?.splitReport ?? false;
   }
 
+  @override
+  void dispose() {
+    // 编辑页关闭时释放输入控制器（此前每次进入编辑页泄漏三个）。
+    _nameCtrl.dispose();
+    _matchUrlCtrl.dispose();
+    _serverUrlCtrl.dispose();
+    super.dispose();
+  }
+
   InputDecoration dec({String? hint}) => InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),

@@ -13,7 +13,9 @@ Future<int?> showWsTrafficPortDialog(BuildContext context, {required int current
   final controller = TextEditingController(text: currentPort.toString());
   final formKey = GlobalKey<FormState>();
 
-  final result = await showDialog<int>(
+  int? result;
+  try {
+    result = await showDialog<int>(
     context: context,
     builder: (context) {
       final localizations = AppLocalizations.of(context)!;
@@ -57,5 +59,10 @@ Future<int?> showWsTrafficPortDialog(BuildContext context, {required int current
       );
     },
   );
+  } finally {
+    // 弹窗关闭后释放输入控制器（每次打开都会新建一个）。
+    controller.dispose();
+  }
+
   return result;
 }
