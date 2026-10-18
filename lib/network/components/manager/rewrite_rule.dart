@@ -93,7 +93,9 @@ class RequestRewriteRule {
     HttpMethod? method;
     try {
       if (map['method'] != null) {
-        method = HttpMethod.valueOf(map['method'].toString());
+        final parsed = HttpMethod.valueOf(map['method'].toString());
+        // 同 breakpoint：unknown 视为「不按方法过滤」，不能当成真实方法去比。
+        method = parsed == HttpMethod.unknown ? null : parsed;
       }
     } catch (e) {
       // ignore invalid method

@@ -39,7 +39,11 @@ class RequestBreakpointRule {
     HttpMethod? method;
     try {
       if (map['method'] != null) {
-        method = HttpMethod.valueOf(map['method']);
+        final parsed = HttpMethod.valueOf(map['method']);
+        // 非法方法名降级为「不按方法过滤」。HttpMethod.valueOf 现在返回
+        // HttpMethod.unknown 而不是抛异常，这里必须显式转 null——否则
+        // unknown 会当成一个真实方法，把所有自定义方法请求都拦下来。
+        method = parsed == HttpMethod.unknown ? null : parsed;
       }
     } catch (e) {
       logger.e(

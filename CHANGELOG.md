@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.67.46 (2026-10-19)
+
+### 断点/改写规则：非法方法名仍按「不按方法过滤」处理
+
+`HttpMethod.valueOf` 改为返回 `HttpMethod.unknown`（不再抛异常）后，规则反序列化里
+原来的 `try/catch` 兜底失效，`unknown` 会被当成一个真实方法——结果是一条填错方法名的
+断点/改写规则会拦下所有自定义方法（MKCOL/PROPPATCH…）的请求。现在显式把 `unknown`
+转回 `null`。
+
 ## v1.67.45 (2026-10-19)
 
 ### 未声明 charset 的页面按 UTF-8 解析，GBK 内容自动探测
