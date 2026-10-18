@@ -13,6 +13,15 @@
   未设置时才回退到 `key.properties`；
 - `debug` buildType 已改回系统 debug 签名（此前 debug 也用 release 签名）。
 
+## 一键生成新密钥
+
+```bash
+scripts/rotate_signing_key.sh
+```
+
+脚本会生成 `proxypin-release-v2.jks`、直接打印可粘贴的 base64、并输出需要配置的 4 个
+GitHub Secret 与 workflow 片段（它不会也不能替你设置 Secret）。
+
 ## 轮换步骤（会让已装旧版本无法直接升级，需提前通知）
 
 1. 生成新 keystore：

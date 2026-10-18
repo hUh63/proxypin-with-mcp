@@ -106,10 +106,22 @@ class WebSocketFrame {
 class WebSocketDecoder {
   ByteBuffer buffer = ByteBuffer();
 
+  /// 已判定为非法流（保留 opcode / 帧边界错位）。此后丢弃输入，
+  /// 避免 buffer 只进不出导致内存持续增长（旧实现把「非法」与「数据不全」
+  /// 混用同一个 null 返回，该方向会永久停摆）。
+  bool invalid = false;
+
   WebSocketFrame? decode(Uint8List newData) {
+    if (invalid) return null;
     buffer.putBytes(newData);
     int? frameLen = _tryFrameLength(buffer.bytes);
     if (frameLen == null) {
+      final bytes = buffer.bytes;
+      if (bytes.length >= 2 && (bytes[0] & 0x0f) > 0xA) {
+        invalid = true;
+        logger.w('WebSocket 非法 opcode 0x${(bytes[0] & 0x0f).toRadixString(16)}，停止解析该方向');
+        buffer.removeBytes(bytes.length);
+      }
       return null;
     }
 

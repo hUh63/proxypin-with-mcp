@@ -360,8 +360,31 @@ class CertificateManager {
       throw Exception('Invalid pkcs12 file');
     }
 
-    await keyFile.writeAsString(decodePkcs12[0]);
-    await caFile.writeAsString(decodePkcs12[1]);
+    // 配对自检：key 与 cert 不匹配时（换了证书忘了换 key、第三方 p12 的条目顺序
+    // 与 parsePkcs12 的 [key, cert] 约定不同、密码只解出一半），后续所有叶子证书
+    // 都会由不匹配的 CA 私钥签发 —— 客户端一律报 Certificate signature failure，
+    // 而应用内毫无提示。这里至少校验密钥长度与公钥指数。
+    final importedKeyPem = decodePkcs12[0];
+    final importedCertPem = decodePkcs12[1];
+    try {
+      final certificate = X509Utils.x509CertificateFromPem(importedCertPem);
+      final privateKey = CryptoUtils.rsaPrivateKeyFromPem(importedKeyPem);
+      final keyBits = privateKey.modulus?.bitLength;
+      final certBits = int.tryParse('${certificate.publicKeyData.length ?? ''}');
+      final keyExponent = privateKey.publicExponent?.toInt();
+      final certExponent = certificate.publicKeyData.exponent;
+      if ((certBits != null && keyBits != null && certBits != keyBits) ||
+          (certExponent != null && keyExponent != null && certExponent != keyExponent)) {
+        throw Exception(
+            'PKCS12 中的私钥与证书不匹配（证书 ${certBits ?? '?'}bit/e=$certExponent，'
+            '私钥 ${keyBits ?? '?'}bit/e=$keyExponent）');
+      }
+    } on FormatException catch (e) {
+      throw Exception('PKCS12 内容无法解析：${e.message}');
+    }
+
+    await keyFile.writeAsString(importedKeyPem);
+    await caFile.writeAsString(importedCertPem);
 
     cleanCache();
     _state = StartState.uninitialized;

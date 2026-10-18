@@ -59,6 +59,16 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
   // CONTINUATION 完成时用来判定"其实没 body"，避免激活 streaming 让远端空等。
   final Set<int> _headerEndStreamPending = {};
 
+  // 等待 CONTINUATION 的 header block（按 streamId）。
+  //
+  // HPACK 是有状态解码：一个 header block 被切成 HEADERS + N 个 CONTINUATION
+  // 时，必须收齐再解。旧实现第一片就送进 decoder：截断落在字符串中间 → 越界
+  // 抛异常关连接；恰好落在字段边界 → 「解出半份 + 动态表被写入」，随后续片又被
+  // 当成**新的 block** 再解一次，动态表与对端永久错位（后续请求头全错）。
+  final Map<int, BytesBuilder> _pendingHeaderBlocks = {};
+  final Map<int, FrameHeader> _pendingHeaderFrames = {};
+  final Map<int, List<int>> _pendingHeaderForward = {};
+
   // DATA 帧 body 累积器（按 streamId）。
   // 旧实现每来一帧就 `BytesBuilder..add(body)..add(data)` 再 `toBytes()`，
   // 「分片多、body 大」时每帧都要把已累积部分整体拷贝一次 → O(N²)。
@@ -140,72 +150,58 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     //根据帧类型进行处理
     switch (frameHeader.type) {
       case FrameType.headers:
-        //处理HEADERS帧
-        var headersFrame = _handleHeadersFrame(channelContext, frameHeader, ByteBuf(framePayload));
-        result.isDone = frameHeader.hasEndStreamFlag && frameHeader.hasEndHeadersFlag;
-        if (headersFrame.streamDependency != null) {
-          headersFrame.headerBlockFragment = [];
-          channelContext.put(frameHeader.streamIdentifier, headersFrame);
+        //处理HEADERS帧（先只解 padding/priority，拿到 header block fragment）
+        var parsedHeaders = _readHeadersFragment(frameHeader, ByteBuf(framePayload));
+        if (!frameHeader.hasEndHeadersFlag && frameHeader.streamIdentifier != 0) {
+          // 分片：先暂存，等 CONTINUATION 收齐再解（HPACK 必须整块解码）
+          _pendingHeaderBlocks[frameHeader.streamIdentifier] =
+              BytesBuilder(copy: false)..add(parsedHeaders.headerBlockFragment);
+          _pendingHeaderFrames[frameHeader.streamIdentifier] = frameHeader;
+          _pendingHeaderForward[frameHeader.streamIdentifier] =
+              List<int>.from(frameHeader.encode())..addAll(framePayload);
+          // 记录 END_STREAM，供 CONTINUATION 完成时判定「无 body」
+          if (frameHeader.hasEndStreamFlag) {
+            _headerEndStreamPending.add(frameHeader.streamIdentifier);
+          }
+          break;
         }
 
-        // 记录 END_STREAM，供后续 CONTINUATION 帧判 streaming 时参考
-        if (frameHeader.hasEndStreamFlag && !frameHeader.hasEndHeadersFlag) {
-          _headerEndStreamPending.add(frameHeader.streamIdentifier);
-        }
-
-        //handle special case for SSE
-        var possibleMessage = getMessage(channelContext, frameHeader);
-        if (possibleMessage is HttpResponse &&
-            possibleMessage.headers.contentType.toLowerCase().startsWith('text/event-stream')) {
-          result.forward = List.from(frameHeader.encode())..addAll(framePayload);
-          result.data = possibleMessage;
-          var currentRequest = channelContext.getStreamRequest(frameHeader.streamIdentifier);
-          currentRequest?.response = possibleMessage;
-          possibleMessage.request ??= channelContext.currentRequest;
-          channelContext.listener?.onResponse(channelContext, possibleMessage);
-          return result;
-        }
-
-        // 大 body 请求：HEADERS 帧一到就 emit request（body=null），让 handler
-        // 立即建立远端连接、发送 headers；后续 DATA 帧由 forward 透传。
-        // 需要 END_HEADERS 完成（避免 CONTINUATION 帧还没来），且 stream 不会
-        // 立即结束（END_STREAM=0，说明还有 body）。
-        if (frameHeader.hasEndHeadersFlag &&
-            !frameHeader.hasEndStreamFlag &&
-            _tryStartStreamingUpload(channelContext, frameHeader, possibleMessage, result)) {
-          return result;
-        }
-
-        break;
+        _decodeHeadersMessage(channelContext, frameHeader, parsedHeaders);
+        return _afterHeaders(channelContext, frameHeader, parsedHeaders, result,
+            List<int>.from(frameHeader.encode())..addAll(framePayload));
       case FrameType.continuation:
         //处理CONTINUATION帧
+        final pendingBlock = _pendingHeaderBlocks[frameHeader.streamIdentifier];
+        if (pendingBlock != null) {
+          pendingBlock.add(framePayload);
+          _pendingHeaderForward[frameHeader.streamIdentifier]!
+            ..addAll(frameHeader.encode())
+            ..addAll(framePayload);
+          if (!frameHeader.hasEndHeadersFlag) break;
+
+          final originalFrame = _pendingHeaderFrames.remove(frameHeader.streamIdentifier)!;
+          final forwarded = _pendingHeaderForward.remove(frameHeader.streamIdentifier)!;
+          final block = pendingBlock.takeBytes();
+          _pendingHeaderBlocks.remove(frameHeader.streamIdentifier);
+
+          // 用原始 HEADERS 的 flags（END_STREAM 只在这里合法）重建帧头：
+          // 去掉 PADDED(0x08)/PRIORITY(0x20)（fragment 里已剥离），补 END_HEADERS。
+          final completedFrame = FrameHeader(block.length, FrameType.headers,
+              (originalFrame.flags & ~0x28) | FrameHeader.flagsEndHeaders, originalFrame.streamIdentifier);
+          final completedHeaders = HeadersFrame(completedFrame, 0, false, null, null, block);
+          _decodeHeadersMessage(channelContext, completedFrame, completedHeaders);
+          return _afterHeaders(
+              channelContext, completedFrame, completedHeaders, result, forwarded);
+        }
+
+        // 没有待收的 header block：保持旧行为（原样转发）
         var message = getMessage(channelContext, frameHeader);
         if (message == null) {
           logger.e("CONTINUATION frame but no message found");
           result.forward = List.from(frameHeader.encode())..addAll(framePayload);
           return result;
         }
-
-        Map<String, List<String>> headers = _parseHeaders(channelContext, framePayload);
-        headers.forEach((key, values) => message.headers.addValues(key, values));
         message.packageSize = (message.packageSize ?? 0) + frameHeader.length;
-        if (frameHeader.hasEndHeadersFlag &&
-            channelContext.getStreamRequest(frameHeader.streamIdentifier)?.method == HttpMethod.head) {
-          result.isDone = true;
-        }
-
-        // content-length 有可能落在 CONTINUATION 帧里，等 END_HEADERS 后再判一次。
-        // 注意：CONTINUATION 帧 flags 里的 END_STREAM 不合法，必须查原始 HEADERS 帧的状态。
-        if (frameHeader.hasEndHeadersFlag) {
-          bool originalEndStream = _headerEndStreamPending.remove(frameHeader.streamIdentifier);
-          if (originalEndStream) {
-            // 原始 HEADERS 带 END_STREAM：headers 收全即请求完成，无 body
-            result.isDone = true;
-          } else if (_tryStartStreamingUpload(channelContext, frameHeader, message, result)) {
-            return result;
-          }
-        }
-
         break;
       case FrameType.data:
         //处理DATA帧
@@ -588,11 +584,22 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     // 累积改为「流上常驻 BytesBuilder」，仅在 END_STREAM 时物化一次，
     // 消除旧实现每帧 `toBytes()` 整体拷贝造成的 O(N²)（见 _bodyBuilders 注释）。
     final streamId = frameHeader.streamIdentifier;
+    // 上限保护：没有 content-length 的流式 body（fetch ReadableStream / gRPC /
+    // 自研协议）会走这里无界累积，直到 END_STREAM 才物化 —— 对端只要不结束，
+    // 内存就线性增长到 OOM。超过 Codec.maxBodyLength 后只保留前 4MB 用于展示，
+    // 其余字节仍由 decode 的 forward 原样转发给客户端/上游。
+    const int maxBodyLength = Codec.maxBodyLength;
+    var truncated = false;
     if (message.body == null) {
       // 首帧直接引用（零拷贝）；若还有后续帧则建累积器继续追加。
-      message.body = data;
+      if (data.length <= maxBodyLength) {
+        message.body = data;
+      } else {
+        message.body = Uint8List.sublistView(data, 0, maxBodyLength);
+        truncated = true;
+      }
       if (!endStream) {
-        _bodyBuilders[streamId] = BytesBuilder(copy: false)..add(data);
+        _bodyBuilders[streamId] = BytesBuilder(copy: false)..add(message.body!);
       }
     } else {
       final builder = _bodyBuilders.putIfAbsent(streamId, () {
@@ -600,17 +607,31 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
         b.add(message.body!);
         return b;
       });
-      builder.add(data);
+      if (builder.length < maxBodyLength) {
+        final room = maxBodyLength - builder.length;
+        if (data.length <= room) {
+          builder.add(data);
+        } else {
+          builder.add(Uint8List.sublistView(data, 0, room));
+          truncated = true;
+        }
+      } else {
+        truncated = true;
+      }
       if (endStream) {
         message.body = builder.takeBytes();
         _bodyBuilders.remove(streamId);
       }
     }
+    if (truncated) {
+      logger.w('[h2] stream:$streamId body 超过 $maxBodyLength 字节，仅保留前缀用于展示');
+    }
     message.packageSize = (message.packageSize ?? 0) + frameHeader.length;
     return DataFrame(frameHeader, padLength, data);
   }
 
-  HeadersFrame _handleHeadersFrame(ChannelContext channelContext, FrameHeader frameHeader, ByteBuf payload) {
+  /// 只解析 padding / priority 并取出 header block fragment，不做 HPACK 解码。
+  HeadersFrame _readHeadersFragment(FrameHeader frameHeader, ByteBuf payload) {
     //  HEADERS 帧格式
     int padLength = 0;
     //如果帧头部有PADDED标志位，则需要读取PADDED长度
@@ -643,9 +664,13 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     }
 
     var blockFragment = payload.readBytes(headerBlockLength);
+    return HeadersFrame(frameHeader, padLength, exclusiveDependency, streamDependency, weight, blockFragment);
+  }
 
-    //读取头部信息
-    Map<String, List<String>> headers = _parseHeaders(channelContext, blockFragment);
+  /// 对完整的 header block 做 HPACK 解码并创建 message（会注册到 channelContext）。
+  T _decodeHeadersMessage(
+      ChannelContext channelContext, FrameHeader frameHeader, HeadersFrame headersFrame) {
+    Map<String, List<String>> headers = _parseHeaders(channelContext, headersFrame.headerBlockFragment);
 
     T message = createMessage(channelContext, frameHeader, headers);
 
@@ -657,7 +682,45 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
 
     message.streamId = frameHeader.streamIdentifier;
     message.packageSize = frameHeader.length;
-    return HeadersFrame(frameHeader, padLength, exclusiveDependency, streamDependency, weight, blockFragment);
+    return message;
+  }
+
+  /// HEADERS（完整或分片收齐后）的统一后续处理：END_STREAM 判定、SSE 特例、
+  /// 大 body 流式上传激活，以及原样转发。
+  DecoderResult<T> _afterHeaders(ChannelContext channelContext, FrameHeader frameHeader,
+      HeadersFrame headersFrame, DecoderResult<T> result, List<int> forwarded) {
+    result.isDone = frameHeader.hasEndStreamFlag && frameHeader.hasEndHeadersFlag;
+    if (headersFrame.streamDependency != null) {
+      headersFrame.headerBlockFragment = [];
+      channelContext.put(frameHeader.streamIdentifier, headersFrame);
+    }
+
+    if (frameHeader.hasEndHeadersFlag) {
+      _headerEndStreamPending.remove(frameHeader.streamIdentifier);
+    }
+
+    //handle special case for SSE
+    var possibleMessage = getMessage(channelContext, frameHeader);
+    if (possibleMessage is HttpResponse &&
+        possibleMessage.headers.contentType.toLowerCase().startsWith('text/event-stream')) {
+      result.forward = forwarded;
+      result.data = possibleMessage;
+      var currentRequest = channelContext.getStreamRequest(frameHeader.streamIdentifier);
+      currentRequest?.response = possibleMessage;
+      possibleMessage.request ??= channelContext.currentRequest;
+      channelContext.listener?.onResponse(channelContext, possibleMessage);
+      return result;
+    }
+
+    // 大 body 请求：HEADERS 收全就 emit request（body=null），让 handler 立即建立
+    // 远端连接、发送 headers；后续 DATA 帧由 forward 透传。
+    if (frameHeader.hasEndHeadersFlag &&
+        !frameHeader.hasEndStreamFlag &&
+        _tryStartStreamingUpload(channelContext, frameHeader, possibleMessage, result)) {
+      return result;
+    }
+
+    return result;
   }
 
   Map<String, List<String>> _parseHeaders(ChannelContext channelContext, List<int> payload) {

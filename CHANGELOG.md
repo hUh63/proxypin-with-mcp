@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.67.24 (2026-10-18)
+
+### 修复：h2 分片与流式 body 上限 / WebSocket 非法帧 / PKCS12 配对校验 / 签名轮换脚本
+
+**1. HTTP/2 HEADERS + CONTINUATION 必须收齐后再做 HPACK 解码**（`h2_codec.dart`）
+
+HPACK 是「一个 header block」的有状态解码。当 block 超过对端 `MAX_FRAME_SIZE`（默认 16384）时会被
+切成 HEADERS + N 个 CONTINUATION，旧实现第一片就送进 decoder：截断落在字符串中间 → 越界抛异常关
+连接；恰好落在字段边界 → 解出半份并把写入动态表，随后续片又被当成**新的 block** 再解一次 →
+动态表与对端永久错位，后续所有请求头都错。现在按 streamId 累积 fragment，只在 END_HEADERS 时解一次
+（并把原始帧字节原样转发）。
+
+**2. HTTP/2 无 Content-Length 的 DATA 帧无界累积**
+
+4MB 上限此前只覆盖 HTTP/1.1 的 `BodyReader`，以及「声明了 Content-Length 且超过阈值」的 h2 流式上传。
+没有 content-length 的流（fetch ReadableStream / gRPC / 自研协议）会一直累积到 END_STREAM，对端不结束
+就是内存线性增长到 OOM。现在超过 `Codec.maxBodyLength`（4MB）后只保留前缀用于展示，其余字节仍原样
+转发。
+
+**3. WebSocket 非法 opcode 让解码器永久停摆**
+
+`_tryFrameLength` 把「非法 opcode（0x0B–0x0F）」和「数据不全」混用同一个 `null`，导致一旦出现保留
+opcode 或帧边界错位，该方向 buffer 只进不出，之后所有真实帧都不再解析且内存持续增长。现在区分两者：
+判定非法后标记 `invalid` 并丢弃该方向后续字节、记一条警告。
+
+**4. PKCS12 导入缺少私钥/证书配对校验**
+
+换了证书忘换 key、第三方 p12 条目顺序与 `parsePkcs12` 的 `[key, cert]` 约定不同、密码只解出一半时，
+后续所有叶子证书都会由不匹配的 CA 私钥签发 —— 客户端一律 `Certificate signature failure`，应用内毫无
+提示。现在导入时校验密钥长度与公钥指数，不匹配直接报错并保留原证书。
+
+**5. 签名轮换自动化**
+
+新增 `scripts/rotate_signing_key.sh`：生成新 keystore、打印可直接粘贴的 base64、输出需要配置的 4 个
+GitHub Secret 与 workflow 片段（`docs/signing.md` 同步更新）。仓库内旧 jks 的删除仍需要你确认
+（会让已安装的旧版本无法直接升级）。
+
 ## v1.67.23 (2026-10-18)
 
 ### 修复：桌面「全选」口径 + CA 初始化失败未被监听
