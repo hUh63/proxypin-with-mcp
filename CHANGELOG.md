@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.67.25 (2026-10-18)
+
+### 修复：v1.67.24 的 h2 回归（提前 return 跳过 message emit）
+
+`parseHttp2Packet` 的 switch 之后有一段公共逻辑：`result.isDone` 时把 message 挂到 `result.data`、
+设置 `currentRequest`、并清理已完成的响应流。v1.67.24 在 HEADERS / CONTINUATION 分支里直接
+`return _afterHeaders(...)`，把这段跳过了 —— 请求永远不会 emit，上游一直等到客户端超时
+（CI 中 h2c_proxy / h2_stream_mux / h2c_codec 共 17 个用例失败）。
+
+现在 `_afterHeaders` 改为 void、只写 `result`，两个分支执行完继续 `break`，落到公共 emit 逻辑。
+
 ## v1.67.24 (2026-10-18)
 
 ### 修复：h2 分片与流式 body 上限 / WebSocket 非法帧 / PKCS12 配对校验 / 签名轮换脚本

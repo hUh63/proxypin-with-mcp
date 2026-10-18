@@ -167,8 +167,11 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
         }
 
         _decodeHeadersMessage(channelContext, frameHeader, parsedHeaders);
-        return _afterHeaders(channelContext, frameHeader, parsedHeaders, result,
+        // 不能直接 return：switch 之后还有「isDone 时把 message 挂到 result.data
+        // 并清理响应流」的公共逻辑，提前返回会让请求永远不 emit（上游等到超时）。
+        _afterHeaders(channelContext, frameHeader, parsedHeaders, result,
             List<int>.from(frameHeader.encode())..addAll(framePayload));
+        break;
       case FrameType.continuation:
         //处理CONTINUATION帧
         final pendingBlock = _pendingHeaderBlocks[frameHeader.streamIdentifier];
@@ -190,8 +193,8 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
               (originalFrame.flags & ~0x28) | FrameHeader.flagsEndHeaders, originalFrame.streamIdentifier);
           final completedHeaders = HeadersFrame(completedFrame, 0, false, null, null, block);
           _decodeHeadersMessage(channelContext, completedFrame, completedHeaders);
-          return _afterHeaders(
-              channelContext, completedFrame, completedHeaders, result, forwarded);
+          _afterHeaders(channelContext, completedFrame, completedHeaders, result, forwarded);
+          break;
         }
 
         // 没有待收的 header block：保持旧行为（原样转发）
@@ -687,7 +690,7 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
 
   /// HEADERS（完整或分片收齐后）的统一后续处理：END_STREAM 判定、SSE 特例、
   /// 大 body 流式上传激活，以及原样转发。
-  DecoderResult<T> _afterHeaders(ChannelContext channelContext, FrameHeader frameHeader,
+  void _afterHeaders(ChannelContext channelContext, FrameHeader frameHeader,
       HeadersFrame headersFrame, DecoderResult<T> result, List<int> forwarded) {
     result.isDone = frameHeader.hasEndStreamFlag && frameHeader.hasEndHeadersFlag;
     if (headersFrame.streamDependency != null) {
@@ -709,7 +712,7 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
       currentRequest?.response = possibleMessage;
       possibleMessage.request ??= channelContext.currentRequest;
       channelContext.listener?.onResponse(channelContext, possibleMessage);
-      return result;
+      return;
     }
 
     // 大 body 请求：HEADERS 收全就 emit request（body=null），让 handler 立即建立
@@ -717,10 +720,8 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     if (frameHeader.hasEndHeadersFlag &&
         !frameHeader.hasEndStreamFlag &&
         _tryStartStreamingUpload(channelContext, frameHeader, possibleMessage, result)) {
-      return result;
+      return;
     }
-
-    return result;
   }
 
   Map<String, List<String>> _parseHeaders(ChannelContext channelContext, List<int> payload) {
