@@ -3,20 +3,36 @@
 # 轮换 Android 发布签名（会改变应用签名，已安装的旧版本无法直接升级）。
 #
 # 用法：
-#   scripts/rotate_signing_key.sh [输出目录]
+#   scripts/rotate_signing_key.sh [输出目录] [--push]
 #
-# 脚本只做本地能做的部分：
-#   1. 生成新 keystore（RSA 2048 / 10000 天）
-#   2. 输出 base64（可直接贴进 GitHub Secret）
-#   3. 打印需要配置的 4 个仓库 Secret 与 workflow 片段
+#   --push   生成后用 gh CLI 直接把 4 个值写进仓库 Secrets（需要已 gh auth login）
 #
-# 它不会、也不能替你：在 GitHub 仓库设置 Secret、删除历史中的旧 jks、
-# 通知用户升级（旧包无法覆盖安装新包）。
+# 生成物：
+#   <输出目录>/proxypin-release-<日期>.jks   私钥（chmod 600，切勿提交）
+#   <输出目录>/proxypin-release-<日期>.b64   base64，供 RELEASE_STORE_BASE64
+#
+# 仓库是 public：任何提交进 git 的 keystore 都应视为已泄露。签名材料只放 Secrets。
 set -euo pipefail
 
-OUT_DIR="${1:-.}"
+usage() {
+  echo "用法: scripts/rotate_signing_key.sh [输出目录] [--push]"
+}
+
+PUSH=0
+OUT_DIR="."
+for arg in "$@"; do
+  case "$arg" in
+    --push) PUSH=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) OUT_DIR="$arg" ;;
+  esac
+done
+
 ALIAS="${RELEASE_KEY_ALIAS:-proxypin}"
-STORE_FILE="${OUT_DIR%/}/proxypin-release-v2.jks"
+STAMP="$(date +%Y%m%d)"
+STORE_FILE="${OUT_DIR%/}/proxypin-release-${STAMP}.jks"
+B64_FILE="${OUT_DIR%/}/proxypin-release-${STAMP}.b64"
+DN="${RELEASE_DNAME:-CN=proxypin, OU=Release, O=proxypin, L=Shenzhen, ST=Guangdong, C=CN}"
 
 if [[ -e "$STORE_FILE" ]]; then
   echo "错误：$STORE_FILE 已存在，请先移走（避免覆盖正在使用的密钥）" >&2
@@ -28,7 +44,7 @@ if ! command -v keytool >/dev/null 2>&1; then
   exit 1
 fi
 
-read -r -s -p "新 keystore 口令（至少 6 位）：" STORE_PASS
+read -r -s -p "新 keystore 口令（至少 12 位）：" STORE_PASS
 echo
 read -r -s -p "再次输入：" STORE_PASS2
 echo
@@ -36,52 +52,64 @@ if [[ "$STORE_PASS" != "$STORE_PASS2" ]]; then
   echo "错误：两次口令不一致" >&2
   exit 1
 fi
-if [[ ${#STORE_PASS} -lt 6 ]]; then
-  echo "错误：口令太短" >&2
+if [[ ${#STORE_PASS} -lt 12 ]]; then
+  echo "错误：口令太短（建议 24 位以上随机串）" >&2
   exit 1
 fi
 
+# JKS：keyPassword 必须与 storePassword 相同（PKCS12 不允许分开设置，
+# 而老版本 AGP 对 PKCS12 的 alias 处理有差异，这里保持 JKS 最稳）。
 keytool -genkeypair -v \
   -keystore "$STORE_FILE" \
+  -storetype JKS \
   -alias "$ALIAS" \
-  -keyalg RSA -keysize 2048 -validity 10000 \
+  -keyalg RSA -keysize 4096 -validity 10950 \
   -storepass "$STORE_PASS" -keypass "$STORE_PASS" \
-  -dname "CN=Taffy, C=CN"
+  -dname "$DN"
 
 chmod 600 "$STORE_FILE"
+base64 -w0 "$STORE_FILE" > "$B64_FILE" 2>/dev/null || base64 "$STORE_FILE" > "$B64_FILE"
 
 echo
 echo "已生成：$STORE_FILE"
+echo "base64：$B64_FILE"
 echo "别名：$ALIAS"
 echo
-echo "== 1. 在 GitHub 仓库 Settings → Secrets and variables → Actions 添加 =="
-echo "   RELEASE_STORE_BASE64   = 下面这行输出"
-echo "   RELEASE_STORE_PASSWORD = 你刚才输入的口令"
-echo "   RELEASE_KEY_ALIAS      = $ALIAS"
-echo "   RELEASE_KEY_PASSWORD   = 同上口令"
+echo "== 证书指纹（分发后可用 apksigner verify --print-certs 核对）=="
+keytool -list -v -keystore "$STORE_FILE" -storepass "$STORE_PASS" -alias "$ALIAS" \
+  | grep -iE "SHA256:|有效期|Valid" || true
 echo
-echo "----- base64（整行复制） -----"
-base64 -w0 "$STORE_FILE" 2>/dev/null || base64 "$STORE_FILE"
-echo
-echo "------------------------------"
-echo
-cat <<'YAML'
-== 2. 在 .github/workflows/build-apk.yml 的构建步骤前加 ==
 
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.RELEASE_STORE_BASE64 }}" | base64 -d > android/app/proxypin-release-v2.jks
-      - name: Build APK
-        env:
-          RELEASE_STORE_FILE: proxypin-release-v2.jks
-          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: flutter build apk --release
-YAML
+if [[ "$PUSH" == "1" ]]; then
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "错误：--push 需要 gh CLI（https://cli.github.com）" >&2
+    exit 1
+  fi
+  gh auth status >/dev/null 2>&1 || { echo "错误：请先 gh auth login" >&2; exit 1; }
+  gh secret set RELEASE_STORE_BASE64 < "$B64_FILE"
+  gh secret set RELEASE_STORE_PASSWORD --body "$STORE_PASS"
+  gh secret set RELEASE_KEY_PASSWORD --body "$STORE_PASS"
+  gh secret set RELEASE_KEY_ALIAS --body "$ALIAS"
+  echo "已写入 4 个仓库 Secret：RELEASE_STORE_BASE64 / RELEASE_STORE_PASSWORD /"
+  echo "  RELEASE_KEY_PASSWORD / RELEASE_KEY_ALIAS"
+  echo "下一次 CI 构建即使用新密钥（可用 apksigner 核对指纹）。"
+else
+  cat <<'TXT'
+== 手工设置（或用脚本的 --push 自动完成）==
+  仓库 Settings → Secrets and variables → Actions：
+    RELEASE_STORE_BASE64   = 上面 .b64 文件的整行内容
+    RELEASE_STORE_PASSWORD = 刚才输入的口令
+    RELEASE_KEY_ALIAS      = 别名
+    RELEASE_KEY_PASSWORD   = 同一口令
+
+  .github/workflows/build-apk.yml 已内置解码步骤，无需再改 workflow。
+TXT
+fi
+
 echo
-echo "== 3. 确认 CI 出包签名无误后 =="
-echo "   - 删除仓库内 android/key.properties 与 android/app/proxypin-release.jks"
-echo "   - 去掉 android/.gitignore 里的 !proxypin-release.jks"
-echo "   - 用 git filter-repo 清理历史（旧密钥仍可从历史提交恢复）"
-echo "   - 已上架商店需走「上传密钥重置」流程"
+cat <<'TXT'
+== 收尾 ==
+  - 私钥与 b64 文件不要提交（android/.gitignore 已忽略 *.jks）
+  - 旧 keystore 已在 public 仓库历史中，按已泄露处理；彻底清除用 git filter-repo
+  - 已安装的旧版本无法覆盖升级；已上架商店需走「上传密钥重置」流程
+TXT

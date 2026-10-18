@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.67.26 (2026-10-18)
+
+### 安全：发布签名迁出 public 仓库
+
+仓库是 public，此前 `android/key.properties`（明文口令）与 `android/app/proxypin-release.jks`
+随代码提交，`build-apk.yml` 里还写死 `-storepass`。等于公开了发布私钥：任何人都能签出
+与正式包同签名的 APK 覆盖安装。
+
+- 生成新发布密钥（RSA 4096 / 10950 天 / CN=proxypin），只存入 GitHub Actions Secrets；
+- `build-apk.yml`：从 `RELEASE_STORE_BASE64` 解码到 `$RUNNER_TEMP`，缺 Secret 直接失败；
+  新增 `apksigner verify --print-certs` 校验每个 APK 的签名主体与指纹；
+- 删除仓库内 `android/app/proxypin-release.jks` 与 `android/key.properties`，
+  `android/.gitignore` 恢复 `*.jks` / `key.properties` 忽略；
+- `scripts/rotate_signing_key.sh` 支持 `--push`（gh CLI 直接写 4 个 Secret），口令强度与
+  密钥规格同步升级；`docs/signing.md` 重写为现状说明 + 指纹 + 轮换/历史清理步骤。
+
+> 旧密钥已在公开历史中，按已泄露处理、已作废。已安装的旧版本无法覆盖升级（签名不同）。
+
 ## v1.67.25 (2026-10-18)
 
 ### 修复：v1.67.24 的 h2 回归（提前 return 跳过 message emit）

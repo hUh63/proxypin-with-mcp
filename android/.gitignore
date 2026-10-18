@@ -6,12 +6,11 @@ gradle-wrapper.jar
 /local.properties
 GeneratedPluginRegistrant.java
 
-# 签名现状：jks 与 key.properties 仍随仓库提交（fork 既有配置，移除会让现有 CI
-# 无法出包）。迁移与轮换步骤见 docs/signing.md：优先用环境变量
-# RELEASE_STORE_FILE / RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS / RELEASE_KEY_PASSWORD
-# 注入，确认 CI secrets 生效后再删除仓库内的 jks / key.properties。
-# key.properties
-# **/*.keystore
-# **/*.jks
-!proxypin-release.jks
+# 签名材料绝不入库：本仓库是 public，提交 jks / key.properties 等于公开私钥。
+# CI 从仓库 Secrets 解码（RELEASE_STORE_BASE64 等），本地构建请自建
+# android/key.properties 并放在本地不入库。流程见 docs/signing.md。
+key.properties
+**/*.keystore
+**/*.jks
+
 /app/.cxx/

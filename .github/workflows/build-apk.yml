@@ -16,6 +16,12 @@ jobs:
     name: Build Android APK
     runs-on: ubuntu-latest
 
+    env:
+      # 签名材料只存在于仓库 Secrets（仓库为 public，绝不能提交 jks / 口令）。
+      RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v5
@@ -45,11 +51,24 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Verify fixed signing key (CN=Taffy, C=CN)
+      - name: Decode signing keystore from Secrets
+        env:
+          RELEASE_STORE_BASE64: ${{ secrets.RELEASE_STORE_BASE64 }}
         run: |
-          test -f android/app/proxypin-release.jks
-          test -f android/key.properties
-          keytool -list -v -keystore android/app/proxypin-release.jks -storepass taffy2024 -alias proxypin | grep -i "Taffy"
+          if [ -z "$RELEASE_STORE_BASE64" ]; then
+            echo "::error::RELEASE_STORE_BASE64 secret is not configured"
+            exit 1
+          fi
+          if [ -z "$RELEASE_STORE_PASSWORD" ] || [ -z "$RELEASE_KEY_ALIAS" ]; then
+            echo "::error::RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS secret is not configured"
+            exit 1
+          fi
+          echo "$RELEASE_STORE_BASE64" | base64 -d > "$RUNNER_TEMP/proxypin-release.jks"
+          test -s "$RUNNER_TEMP/proxypin-release.jks"
+          echo "RELEASE_STORE_FILE=$RUNNER_TEMP/proxypin-release.jks" >> "$GITHUB_ENV"
+          keytool -list -keystore "$RUNNER_TEMP/proxypin-release.jks" \
+            -storepass "$RELEASE_STORE_PASSWORD" -alias "$RELEASE_KEY_ALIAS" > /dev/null
+          echo "keystore decoded, alias=$RELEASE_KEY_ALIAS"
 
       - name: Build Universal APK (all architectures)
         run: flutter build apk --release
@@ -74,6 +93,15 @@ jobs:
           for f in build/app/outputs/flutter-apk/app-*-release.apk; do
             abi=$(echo "$f" | sed -E 's/.*app-(.*)-release\.apk/\1/')
             mv "$f" "build/app/outputs/flutter-apk/proxypin-${VER}-${abi}.apk"
+          done
+
+      - name: Verify every APK is signed with the release key
+        run: |
+          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner | sort -V | tail -1)
+          echo "using $APKSIGNER"
+          for apk in build/app/outputs/flutter-apk/proxypin-*.apk; do
+            echo "== $apk"
+            "$APKSIGNER" verify --print-certs "$apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
           done
 
       - name: List all built APKs
