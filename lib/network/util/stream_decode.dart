@@ -200,7 +200,20 @@ String decodeBytesToText(List<int> bytes, String? charsetName) {
   final name = (charsetName ?? 'utf-8').toLowerCase();
   if (name == 'utf-8' || name == 'utf8') {
     // allowMalformed：截断/损坏的 UTF-8 不应该抛异常把整段内容变成字节直转。
-    return utf8.decode(bytes, allowMalformed: true);
+    final text = utf8.decode(bytes, allowMalformed: true);
+    // 声明缺失/声明成 UTF-8 但实际是 GBK 的内容（企业内网老系统、部分国产设备
+    // 的接口很常见）：UTF-8 解出来是一大串 U+FFFD。这里试探性用 GBK 再解一次，
+    // 只有「替换字符显著减少」才采用，避免把正常 UTF-8 判成 GBK。
+    if (bytes.length <= 512 * 1024) {
+      final bad = _replacementCount(text);
+      if (bad >= 3 && bad * 100 > text.length) {
+        final gbkText = _tryDecode('gbk', bytes);
+        if (gbkText != null && _replacementCount(gbkText) * 2 < bad) {
+          return gbkText;
+        }
+      }
+    }
+    return text;
   }
   // 非 UTF-8（gbk/gb2312/big5/shift_jis…）以前是 `String.fromCharCodes`，
   // 把双字节编码当单字节处理，中文必然乱码；这里用真正的解码器。
@@ -213,4 +226,19 @@ String decodeBytesToText(List<int> bytes, String? charsetName) {
     logger.w('按 charset=$name 解码失败，退回字节直转', error: e);
   }
   return String.fromCharCodes(bytes);
+}
+
+int _replacementCount(String text) {
+  // 快路径：绝大多数内容没有替换字符，contains 比 allMatches 便宜得多。
+  if (!text.contains('\uFFFD')) return 0;
+  return '\uFFFD'.allMatches(text).length;
+}
+
+String? _tryDecode(String name, List<int> bytes) {
+  try {
+    final encoding = charset.Charset.getByName(name);
+    return encoding?.decode(bytes);
+  } catch (_) {
+    return null;
+  }
 }

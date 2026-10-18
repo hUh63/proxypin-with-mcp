@@ -139,7 +139,15 @@ abstract class HttpMessage {
     if (mediaType == null) {
       return 'utf-8';
     }
-    return mediaType.charset ?? MediaType.defaultCharset(mediaType);
+    final declared = mediaType.charset;
+    if (declared != null && declared.isNotEmpty) {
+      return declared;
+    }
+    // 未声明 charset：HTTP 规范默认 ISO-8859-1，但现实互联网上的 text/* 几乎
+    // 都是 UTF-8。按 latin1 解 UTF-8 中文必然乱码；反过来按 UTF-8 解 latin1
+    // 只是个别字符异常（allowMalformed 不会抛）。所以统一按 UTF-8 处理，
+    // 真正的 GBK 由 decodeBytesToText 的探测分支兜底。
+    return 'utf-8';
   }
 
   ///获取消息

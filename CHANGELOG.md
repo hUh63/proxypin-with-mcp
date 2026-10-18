@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.67.45 (2026-10-19)
+
+### 未声明 charset 的页面按 UTF-8 解析，GBK 内容自动探测
+
+- `HttpMessage.charset` 以前在 `Content-Type` 没写 charset 时回退到媒体类型的规范默认值
+  （`text/*` → ISO-8859-1）。现实互联网上这种页面几乎都是 UTF-8，按 latin1 解中文必然乱码；
+  现在统一按 UTF-8 处理。
+- 真正是 GBK 但没声明的接口（企业内网老系统很常见）：UTF-8 解出来是大串 U+FFFD 时，
+  用 GBK 再解一次，只有替换字符显著减少才采用，避免把正常 UTF-8 误判。
+
+### 修复
+
+- `xhr.dart` 的通用请求分支用错了 header API（`Map.add` → `addAll`），编译失败。
+
 ## v1.67.44 (2026-10-19)
 
 ### 非标准 HTTP 方法不再断连接（WebDAV / 自定义方法）

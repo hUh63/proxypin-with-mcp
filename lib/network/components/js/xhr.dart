@@ -389,7 +389,7 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
               // 以前没有 default，脚本用这些方法发 XHR 会静默拿到空响应。
               final generic = http.Request(
                   (pendingCall.method ?? 'GET').toUpperCase(), Uri.parse(pendingCall.url!));
-              pendingCall.headers.forEach(generic.headers.add);
+              generic.headers.addAll(pendingCall.headers);
               if (pendingCall.body != null) generic.body = pendingCall.body!;
               response = await http.Response.fromStream(await httpClient!.send(generic));
               break;
