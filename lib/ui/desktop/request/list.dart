@@ -112,7 +112,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   /// 恢复自动跟随：把暂停期间挂起的请求按到达顺序补进当前视图。
   void _resumeFollow() {
-    if (!_followPaused) return;
+    if (!_followPaused || !mounted) return;
     final pending = List<HttpRequest>.of(_pausedRequests);
     _pausedRequests.clear();
     setState(() => _followPaused = false);
@@ -430,6 +430,8 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   }
 
   void search(SearchModel searchModel) {
+    // 搜索要覆盖暂停期间挂起的请求：先补回视图，否则搜不到它们。
+    if (_followPaused) _resumeFollow();
     domainListKey.currentState?.search(searchModel);
     requestSequenceKey.currentState?.search(searchModel);
   }
