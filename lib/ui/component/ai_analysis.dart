@@ -452,6 +452,10 @@ class _AiChatPageState extends State<AiChatPage> {
       if (saved != true || !AiAnalyzer.isConfigured) return;
     }
 
+    // 设置对话框/网络等待期间页面可能已经关闭，此时 setState 会抛
+    // "setState() called after dispose"。
+    if (!mounted) return;
+
     final attachments = List<_Attachment>.from(_attachments);
     // 捕获当前会话对象：异步等待期间切换/删除会话，本次消息仍归属原会话
     final conv = _conversations[_activeConversation];
@@ -477,6 +481,8 @@ class _AiChatPageState extends State<AiChatPage> {
         final reply = await AiAnalyzer.chat(apiMessages,
             agentMode: _agentMode && round < maxRounds);
 
+        // 多轮 agent 循环可能跑很久，页面中途关闭时不能再 setState。
+        if (!mounted) return;
         final calls = _agentMode ? _parseToolCalls(reply) : const <_ToolCall>[];
         setState(() {
           conv.messages.add(_ChatMessage(

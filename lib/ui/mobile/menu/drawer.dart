@@ -265,7 +265,7 @@ class _SettingPageState extends State<_SettingPage> {
                   borderRadius: BorderRadius.circular(10)),
               child: Column(children: [
                 PortWidget(
-                    proxyServer: proxyServer,
+                    proxyServer: widget.proxyServer,
                     title: '${localizations.proxy}${isCN ? '' : ' '}${localizations.port}',
                     textStyle: const TextStyle(fontSize: 16)),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
@@ -365,7 +365,7 @@ class _SettingPageState extends State<_SettingPage> {
                 title: Text(localizations.preference),
                 trailing: const Icon(Icons.keyboard_arrow_right),
                 onTap: () =>
-                    navigator(context, Preference(proxyServer: proxyServer, appConfiguration: appConfiguration))),
+                    navigator(context, Preference(proxyServer: widget.proxyServer, appConfiguration: widget.appConfiguration))),
             Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
             ListTile(
                 title: Text(localizations.about),

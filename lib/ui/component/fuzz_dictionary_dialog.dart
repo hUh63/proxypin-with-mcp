@@ -92,6 +92,7 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
       builder: (_) => _DictionaryEditorDialog(dictionary: dictionary),
     );
     if (result == null) return;
+    if (!mounted) return;
     setState(() {
       final index = _custom.indexWhere((e) => e.name == dictionary?.name);
       if (index >= 0) {

@@ -64,17 +64,6 @@ class ConfigPage extends StatefulWidget {
 }
 
 class _ConfigPageState extends State<ConfigPage> {
-  /// 与 drawer 里的设置页同理：controller 不能建在 build() 里，
-  /// 否则每次重建都会重置输入内容并泄漏监听器。
-  late final TextEditingController textEditingController =
-      TextEditingController(text: widget.proxyServer.configuration.proxyPassDomains);
-
-  @override
-  void dispose() {
-    textEditingController.dispose();
-    super.dispose();
-  }
-
   late ProxyServer proxyServer = widget.proxyServer;
   late HistoryTask historyTask;
 
@@ -212,15 +201,30 @@ void navigator(BuildContext context, Widget widget) async {
   }
 }
 
-class SettingPage extends StatelessWidget {
+class SettingPage extends StatefulWidget {
   final ProxyServer proxyServer;
-  final AppConfiguration appConfiguration;
+  final AppConfiguration widget.appConfiguration;
 
   const SettingPage({super.key, required this.proxyServer, required this.appConfiguration});
 
   @override
+  State<SettingPage> createState() => _SettingPageState();
+}
+
+class _SettingPageState extends State<SettingPage> {
+  /// 控制器必须由 State 持有：建在 build() 里每次重建都会重置输入并泄漏监听器。
+  late final TextEditingController textEditingController =
+      TextEditingController(text: widget.proxyServer.configuration.proxyPassDomains);
+
+  @override
+  void dispose() {
+    textEditingController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final configuration = proxyServer.configuration;
+    final configuration = widget.proxyServer.configuration;
 
     AppLocalizations localizations = AppLocalizations.of(context)!;
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
@@ -246,12 +250,12 @@ class SettingPage extends StatelessWidget {
             ListTile(
                 title: Text(localizations.httpsProxy),
                 trailing: const Icon(Icons.keyboard_arrow_right),
-                onTap: () => navigator(context, MobileSslWidget(proxyServer: proxyServer))),
+                onTap: () => navigator(context, MobileSslWidget(proxyServer: widget.proxyServer))),
             Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
             ListTile(
                 title: Text(localizations.filter),
                 trailing: const Icon(Icons.keyboard_arrow_right),
-                onTap: () => navigator(context, FilterMenu(proxyServer: proxyServer))),
+                onTap: () => navigator(context, FilterMenu(proxyServer: widget.proxyServer))),
           ]),
           const SizedBox(height: 12),
           // Port and switches
@@ -263,7 +267,7 @@ class SettingPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10)),
               child: Column(children: [
                 PortWidget(
-                    proxyServer: proxyServer,
+                    proxyServer: widget.proxyServer,
                     title: '${localizations.proxy}${isCN ? '' : ' '}${localizations.port}',
                     textStyle: const TextStyle(fontSize: 16)),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
@@ -275,7 +279,7 @@ class SettingPage extends StatelessWidget {
                           scale: 0.8,
                           onChanged: (value) {
                             configuration.enableSystemProxy = value;
-                            proxyServer.configuration.flushConfig();
+                            widget.proxyServer.configuration.flushConfig();
                           })),
                 if (Platform.isAndroid)
                   Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
@@ -286,7 +290,7 @@ class SettingPage extends StatelessWidget {
                         scale: 0.8,
                         onChanged: (value) {
                           configuration.enableSocks5 = value;
-                          proxyServer.configuration.flushConfig();
+                          widget.proxyServer.configuration.flushConfig();
                         })),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
                 ListTile(
@@ -296,7 +300,7 @@ class SettingPage extends StatelessWidget {
                         scale: 0.8,
                         onChanged: (value) {
                           configuration.enabledHttp2 = value;
-                          proxyServer.configuration.flushConfig();
+                          widget.proxyServer.configuration.flushConfig();
                         })),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
                 ListTile(
@@ -305,7 +309,7 @@ class SettingPage extends StatelessWidget {
                     onTap: () {
                       showDialog(
                           context: context,
-                          builder: (_) => ExternalProxyDialog(configuration: proxyServer.configuration));
+                          builder: (_) => ExternalProxyDialog(configuration: widget.proxyServer.configuration));
                     }),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
 
@@ -339,7 +343,7 @@ class SettingPage extends StatelessWidget {
                         controller: textEditingController,
                         onSubmitted: (_) {
                           configuration.proxyPassDomains = textEditingController.text;
-                          proxyServer.configuration.flushConfig();
+                          widget.proxyServer.configuration.flushConfig();
                         },
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.all(10),
@@ -378,7 +382,7 @@ class SettingPage extends StatelessWidget {
                 title: Text(localizations.setting),
                 trailing: const Icon(Icons.keyboard_arrow_right),
                 onTap: () =>
-                    navigator(context, Preference(proxyServer: proxyServer, appConfiguration: appConfiguration))),
+                    navigator(context, Preference(proxyServer: widget.proxyServer, appConfiguration: widget.appConfiguration))),
             Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
             ListTile(
                 title: Text(localizations.about),

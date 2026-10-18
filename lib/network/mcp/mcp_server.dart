@@ -50,6 +50,8 @@ import 'package:proxypin/native/mcp_screen.dart';
 import 'package:proxypin/native/vpn.dart';
 import 'package:flutter/material.dart';
 
+part 'mcp_tools_defs.dart';
+
 /// MCP 客户端（尤其是 LLM）经常把布尔值传成 `"true"` / `"1"` / `1`，
 /// 直接 `as bool?` 会抛类型错误让整个工具调用失败。这里做宽容解析。
 bool? mcpAsBool(Object? value) {
@@ -72,7 +74,6 @@ int? mcpAsInt(Object? value) {
 }
 
 
-part 'mcp_tools_defs.dart';
 
 class McpServer {
   static final McpServer _instance = McpServer._internal();

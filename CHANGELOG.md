@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.67.39 (2026-10-18)
+
+### 修复 v1.67.38 的编译错误
+
+- `mcp_server.dart` 的 `mcpAsBool/mcpAsInt` 被插在 `part` 指令之前 → `directive_after_declaration`；
+  已移到 `part 'mcp_tools_defs.dart';` 之后；
+- `SettingPage`（移动端设置页）与 `_SettingPage`（抽屉设置页）改 Stateful 后，命名参数被批量替换
+  成了 `widget.proxyServer:` / `widget.appConfiguration:`（非法），已改回 `proxyServer:`；
+  `_SettingPageState` 内的裸引用补上 `widget.` 前缀。
+
+### 另外补的 setState-after-dispose 保护
+
+以下位置在 `await` 之后直接 `setState`，页面/对话框在等待期间关闭就会抛
+`setState() called after dispose`：
+
+- `ai_analysis.dart`（设置对话框返回后、agent 多轮循环每轮回复后）；
+- `driver_setup_dialog.dart`（文件选择返回后）；
+- `fuzz_dictionary_dialog.dart`（编辑弹窗返回后）；
+- `mcp_task_manager_page.dart`（`_manager.init()` 之后）。
+
 ## v1.67.38 (2026-10-18)
 
 ### 深度排查（第三轮）：设置页输入框会被自己打断

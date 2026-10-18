@@ -40,6 +40,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
   Future<void> _loadTasks() async {
     setState(() => _isLoading = true);
     await _manager.init();
+    if (!mounted) return;
     setState(() {
       _tasks = _manager.tasks;
       _isLoading = false;
