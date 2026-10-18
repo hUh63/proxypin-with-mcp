@@ -80,6 +80,12 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   final List<HttpRequest> _pausedRequests = [];
   final Map<String, Channel> _pausedChannels = {};
 
+  /// 暂停期间到达的响应：请求还没进视图，直接 setResponse 会丢，恢复时补上。
+  final Map<String, (ChannelContext, HttpResponse)> _pausedResponses = {};
+
+  /// 选中集合监听（ListenableList 需要事件对象，不能用裸函数）。
+  late final OnchangeListEvent<String> _selectionEvent = OnchangeListEvent<String>(_onSelectionChanged);
+
   // 选择控制器
   final MultiSelectController selectionController = MultiSelectController();
 
@@ -91,7 +97,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     if (widget.list != null) {
       container = widget.list!;
     }
-    selectionController.selectedIds.addListener(_onSelectionChanged);
+    selectionController.selectedIds.addListener(_selectionEvent);
   }
 
   /// 选中任意请求（用户正在查看详情）时停止自动跟随。
@@ -115,8 +121,15 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       if (channel == null) continue;
       domainListKey.currentState?.add(channel, request);
       requestSequenceKey.currentState?.add(request);
+      // 请求进了视图才能挂响应，否则响应会丢（暂停期间的请求看起来一直 pending）。
+      final cached = _pausedResponses.remove(request.requestId);
+      if (cached != null) {
+        domainListKey.currentState?.addResponse(cached.$1, cached.$2);
+        requestSequenceKey.currentState?.addResponse(cached.$2);
+      }
     }
     _pausedChannels.clear();
+    _pausedResponses.clear();
     _trimOverflow();
   }
 
@@ -127,7 +140,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   @override
   void dispose() {
-    selectionController.selectedIds.removeListener(_onSelectionChanged);
+    selectionController.selectedIds.removeListener(_selectionEvent);
     RequestWidget.removeAutoReadByIds(container.map((request) => request.requestId));
     selectionController.clear();
     super.dispose();
@@ -382,6 +395,13 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   ///添加响应
   void addResponse(ChannelContext channelContext, HttpResponse response) {
+    // 暂停期间该请求尚未进入视图，先缓存响应，恢复时与请求一起补进去。
+    final requestId = response.request?.requestId ?? response.requestId;
+    if (_followPaused && requestId != null && _pausedChannels.containsKey(requestId)) {
+      _pausedResponses[requestId] = (channelContext, response);
+      return;
+    }
+
     domainListKey.currentState?.addResponse(channelContext, response);
     requestSequenceKey.currentState?.addResponse(response);
   }
@@ -424,6 +444,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     setState(() {
       _pausedRequests.clear();
       _pausedChannels.clear();
+      _pausedResponses.clear();
       _followPaused = false;
       RequestWidget.removeAutoReadByIds(container.map((request) => request.requestId));
       container.clear();

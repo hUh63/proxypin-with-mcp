@@ -121,9 +121,15 @@ class DomainListState extends State<DomainList> with AutomaticKeepAliveClientMix
   }
 
   void addResponse(HttpResponse response) {
-    HostAndPort? hostAndPort = response.request!.hostAndPort;
+    // 异常链路（连接未建立就失败）上 response.request 可能没有挂上，
+    // 强解包会直接抛空指针，把整条响应处理打断。
+    final request = response.request;
+    if (request == null) {
+      return;
+    }
+    HostAndPort? hostAndPort = request.hostAndPort;
     if (response.isWebSocket) {
-      add(response.request!);
+      add(request);
     }
 
     if (showHostAndPort == hostAndPort) {

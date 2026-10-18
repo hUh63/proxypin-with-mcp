@@ -269,7 +269,12 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
 
   ///添加响应
   void addResponse(ChannelContext channelContext, HttpResponse response) {
-    String domain = response.request?.hostAndPort?.domain ?? channelContext.host!.domain;
+    // channelContext.host 在异常链路（连接未建立就失败）上可能为 null，
+    // 这里以前是强解包，会直接抛空指针把整个响应处理打断。
+    String? domain = response.request?.hostAndPort?.domain ?? channelContext.host?.domain;
+    if (domain == null) {
+      return;
+    }
     DomainRequests? domainRequests = containerMap[domain];
     var pathRow = domainRequests?.getRequest(response);
     pathRow?.setResponse(response);

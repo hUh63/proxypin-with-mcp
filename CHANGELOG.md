@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.67.31 (2026-10-18)
+
+### 修复 v1.67.30 的编译错误与两处空断言
+
+- `selectedIds.addListener` 需要 `ListenerListEvent` 事件对象而不是裸函数
+  （v1.67.30 的 analyze 因此报 `argument_type_not_assignable`），改用
+  `OnchangeListEvent<String>` 并在 dispose 里移除同一实例；
+- 暂停自动滚动期间到达的响应会被丢弃（请求还没进视图 → `setResponse` 拿不到行），
+  现在按 requestId 缓存，恢复时与请求一起补进列表；
+- `DomainList.addResponse` / 移动端 `DomainList.addResponse` 去掉
+  `channelContext.host!` / `response.request!` 强解包：连接未建立就失败的链路上
+  这两个字段可能为 null，以前会抛空指针打断整条响应处理。
+
 ## v1.67.30 (2026-10-18)
 
 ### 修复上游 #969：外部代理 + 客户端 h2 时 CONNECT 应答被 h2 解码器吞掉
