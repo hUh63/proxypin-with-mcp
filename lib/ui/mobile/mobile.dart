@@ -662,7 +662,10 @@ class _MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
         if (response.bodyAsString == 'pong') {
           remoteDevice.value = device.copyWith(connect: true);
           if (context.mounted) {
-            FlutterToastr.show(localizations.connected, context);
+            // 与远程设备页保持一致：没开抓包时提示用户还需要启动 VPN/抓包。
+            CustomToast.success(
+                    '${localizations.connectSuccess}${Vpn.isVpnStarted ? '' : ', ${localizations.remoteConnectSuccessTips}'}')
+                .show(context);
           }
           return;
         }
