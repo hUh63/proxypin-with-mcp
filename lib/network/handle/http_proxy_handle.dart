@@ -393,7 +393,7 @@ Future<void> runResponseInterceptors(
       r = await interceptor.onResponse(request, r!);
     } catch (e, s) {
       // 同请求方向：单个拦截器异常不应吞掉整条响应（此前会让客户端收不到任何数据）。
-      log.e('响应拦截器执行失败: ${interceptor.runtimeType}', error: e, stackTrace: s);
+      logger.e('响应拦截器执行失败: ${interceptor.runtimeType}', error: e, stackTrace: s);
       continue;
     }
     if (r == null) break;

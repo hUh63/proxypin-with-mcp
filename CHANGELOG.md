@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.67.37 (2026-10-18)
+
+### 修复 v1.67.35 的编译错误
+
+`runResponseInterceptors` 是顶层函数，里面用了 `ChannelHandler` 的实例字段 `log` →
+analyze 报 `Undefined name 'log'`（所有构建与单测一起失败）。改用 `logger`。
+
 ## v1.67.36 (2026-10-18)
 
 ### 修复：h2 HEADERS 分片被 RST_STREAM 中断时的内存泄漏
