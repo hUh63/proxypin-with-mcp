@@ -33,6 +33,8 @@
 library;
 
 import 'dart:convert';
+
+import 'package:charset/charset.dart' as charset;
 import 'dart:io';
 
 import 'package:proxypin/network/bin/configuration.dart';
@@ -194,9 +196,21 @@ class StreamDecoder {
 
 /// 供有界解码结果做文本转换：截断可能切断多字节字符，
 /// 因此必须 allowMalformed，不能像全长解码那样抛异常。
-String decodeBytesToText(List<int> bytes, String? charset) {
-  if (charset == null || charset == 'utf-8' || charset == 'utf8') {
+String decodeBytesToText(List<int> bytes, String? charsetName) {
+  final name = (charsetName ?? 'utf-8').toLowerCase();
+  if (name == 'utf-8' || name == 'utf8') {
+    // allowMalformed：截断/损坏的 UTF-8 不应该抛异常把整段内容变成字节直转。
     return utf8.decode(bytes, allowMalformed: true);
+  }
+  // 非 UTF-8（gbk/gb2312/big5/shift_jis…）以前是 `String.fromCharCodes`，
+  // 把双字节编码当单字节处理，中文必然乱码；这里用真正的解码器。
+  try {
+    final encoding = charset.Charset.getByName(name);
+    if (encoding != null) {
+      return encoding.decode(bytes);
+    }
+  } catch (e) {
+    logger.w('按 charset=$name 解码失败，退回字节直转', error: e);
   }
   return String.fromCharCodes(bytes);
 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.67.43 (2026-10-19)
+
+### 非 UTF-8 响应体真正解码（GBK 页面不再满屏乱码）
+
+- `bodyAsString` 之前固定 `getBodyString(charset: 'utf-8')`，**忽略响应头声明的 charset**；
+  改为按 `Content-Type` 声明的编码解码；
+- `decodeBytesToText()`（普通/有界/zstd 三条解码路径的公共出口）对非 UTF-8 内容原来是
+  `String.fromCharCodes` —— 把双字节编码当单字节，GBK/GB2312/Big5/Shift_JIS 必然乱码。
+  现在走 `charset` 包真实解码，失败才退回原行为；
+- UTF-8 分支改为 `utf8.decode(..., allowMalformed: true)`：截断/损坏的字节不再抛异常
+  （以前会整段退化成字节直转）。
+
 ## v1.67.42 (2026-10-19)
 
 ### SSL 绕过脚本再补「代理检测绕过」

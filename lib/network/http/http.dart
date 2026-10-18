@@ -143,8 +143,11 @@ abstract class HttpMessage {
   }
 
   ///获取消息
+  ///
+  /// 不再硬编码 utf-8：旧实现固定传 `charset: 'utf-8'`，把响应头已声明的
+  /// charset（GBK/GB2312/Big5 等）直接忽略，中文老站点在列表/详情里全是乱码。
   String get bodyAsString {
-    return getBodyString(charset: 'utf-8');
+    return getBodyString();
   }
 
   String getBodyString({String? charset}) {
@@ -169,9 +172,7 @@ abstract class HttpMessage {
         rawBody = zlibDecode(body!);
       }
 
-      final result = (charset == 'utf-8' || charset == 'utf8')
-          ? utf8.decode(rawBody)
-          : String.fromCharCodes(rawBody);
+      final result = decodeBytesToText(rawBody, charset);
 
       // 性能：缓存默认（UTF-8）解码结果，避免每次调用重复解压/解码大响应体
       if (isDefaultCharset && _bodyString == null) {
@@ -197,11 +198,7 @@ abstract class HttpMessage {
       rawBody = await zstdDecode(body!) ?? [];
       // 解压后的内容不保证是合法 UTF-8（GBK 页面、二进制附件），
       // 这里没有外层 try/catch，直接 utf8.decode 会抛到 UI / 脚本层。
-      try {
-        _bodyString = (charset == 'utf-8' || charset == 'utf8') ? utf8.decode(rawBody) : String.fromCharCodes(rawBody);
-      } catch (_) {
-        _bodyString = String.fromCharCodes(rawBody);
-      }
+      _bodyString = decodeBytesToText(rawBody, charset);
       return _bodyString!;
     }
 
