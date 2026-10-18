@@ -4593,5 +4593,14 @@
   "cmdPaletteHint": "Type a command…",
   "cmdGroupNav": "Navigate",
   "cmdGroupAction": "Actions",
-  "cmdGroupSetting": "Settings"
+  "cmdGroupSetting": "Settings",
+  "newRequestsPaused": "{count} new requests · tap to resume auto-scroll",
+  "@newRequestsPaused": {
+    "description": "Shown above the desktop request list when auto-scroll is paused",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

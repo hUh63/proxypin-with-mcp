@@ -28,6 +28,21 @@ import 'package:proxypin/network/util/byte_buf.dart';
 import 'http.dart';
 import 'http_headers.dart';
 
+/// 选择用于 HTTP/2 分流的 ALPN 结果。
+///
+/// [hasDecodingChannel] 表示是否知道「正在解码哪条连接」。知道时**必须**用它自己的
+/// 协商结果——包括「没有协商出 h2」（null）这种情况，绝不能回退到客户端通道的 h2。
+/// 上游 #969：MITM + 外部代理时，上游明文通道的解码器若按客户端 h2 分流，
+/// `HTTP/1.1 200 Connection established` 会被交给 h2 解码器吞掉，CONNECT 等待超时。
+/// 只有确实拿不到通道信息（纯单元调用）时才退回 [clientProtocol]。
+String? resolveDecodeProtocol({
+  required bool hasDecodingChannel,
+  String? decodingProtocol,
+  String? clientProtocol,
+}) {
+  return hasDecodingChannel ? decodingProtocol : clientProtocol;
+}
+
 class ParserException implements Exception {
   final String message;
   final String? source;
@@ -98,7 +113,13 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
 
   @override
   DecoderResult<T> decode(ChannelContext channelContext, ByteBuf data) {
-    var protocol = channelContext.clientChannel?.selectedProtocol;
+    // 优先用「正在解码的这条连接」的 ALPN 结果，只在拿不到时退回客户端通道。
+    // 用 clientChannel 会让上游通道的解码器按客户端协议走 h2（上游 #969）。
+    final decodingChannel = channelContext.decodingChannel;
+    var protocol = resolveDecodeProtocol(
+        hasDecodingChannel: decodingChannel != null,
+        decodingProtocol: decodingChannel?.selectedProtocol,
+        clientProtocol: channelContext.clientChannel?.selectedProtocol);
 
     if (this is HttpRequestCodec &&
         _state == State.readInitial &&

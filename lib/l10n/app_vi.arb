@@ -2656,5 +2656,6 @@
   "cmdPaletteHint": "Nhap lenh…",
   "cmdGroupNav": "Dieu huong",
   "cmdGroupAction": "Hanh dong",
-  "cmdGroupSetting": "Cai dat"
+  "cmdGroupSetting": "Cai dat",
+  "newRequestsPaused": "{count} yêu cầu mới · chạm để tiếp tục cuộn tự động"
 }

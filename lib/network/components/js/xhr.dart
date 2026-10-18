@@ -337,8 +337,11 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
       // for each pending call, calls the remote http service
       pendingCalls.forEach((element) async {
         XhrPendingCall pendingCall = element as XhrPendingCall;
-        HttpMethod eMethod = HttpMethod.values
-            .firstWhere((e) => e.toString().toLowerCase() == ("HttpMethod.${pendingCall.method}".toLowerCase()));
+        HttpMethod eMethod = HttpMethod.values.firstWhere(
+            (e) => e.toString().toLowerCase() == ("HttpMethod.${pendingCall.method}".toLowerCase()),
+            // 脚本里写了非标准方法时不能抛 StateError：这是 forEach 的异步回调，
+            // 异常会逃逸成未捕获错误并中断整批 pending 调用。
+            orElse: () => HttpMethod.get);
         late http.Response response;
         try {
           switch (eMethod) {

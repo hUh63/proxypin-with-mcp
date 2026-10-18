@@ -179,6 +179,9 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
           return;
         }
 
+        // 告诉编解码器「这条消息属于哪个通道」，HTTP/2 分流据此取 ALPN（上游 #969）。
+        // decode 是同步的，紧接着读取不会与另一条连接的读事件交错。
+        channelContext.decodingChannel = channel;
         var decodeResult = decoder.decode(channelContext, buffer);
 
         //If the body does not support parsing, forward directly

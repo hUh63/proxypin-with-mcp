@@ -152,7 +152,10 @@ enum RequestMapType {
   const RequestMapType(this.label);
 
   static RequestMapType fromName(String name) {
-    return values.firstWhere((element) => element.name == name || element.label == name);
+    return values.firstWhere((element) => element.name == name || element.label == name, orElse: () {
+      logger.w('未知的请求映射类型: $name，回退到 ${values.first.name}');
+      return values.first;
+    });
   }
 }
 

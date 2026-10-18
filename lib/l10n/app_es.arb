@@ -2656,5 +2656,6 @@
   "cmdPaletteHint": "Escribe un comando…",
   "cmdGroupNav": "Navegar",
   "cmdGroupAction": "Acciones",
-  "cmdGroupSetting": "Ajustes"
+  "cmdGroupSetting": "Ajustes",
+  "newRequestsPaused": "{count} solicitudes nuevas · toca para reanudar el desplazamiento automático"
 }

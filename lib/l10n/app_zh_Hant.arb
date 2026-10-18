@@ -4457,5 +4457,6 @@
   "cmdPaletteHint": "輸入指令…",
   "cmdGroupNav": "導覽",
   "cmdGroupAction": "操作",
-  "cmdGroupSetting": "設定"
+  "cmdGroupSetting": "設定",
+  "newRequestsPaused": "有 {count} 條新請求 · 點擊恢復自動捲動"
 }

@@ -106,10 +106,23 @@ class HttpClients {
       return channel;
     }
 
-    ChannelHandler handler = channel.dispatcher.handler;
+    final dispatcher = channel.dispatcher;
+    ChannelHandler handler = dispatcher.handler;
+
+    // 上游 #969：本通道可能由裸 codec 构造（MITM + 外部代理用
+    // HttpClientCodec 以外的编解码器），此时 HttpClientCodec.encode() 不会执行，
+    // pendingConnectResponse 必须在这里显式置位，否则「200 Connection established」
+    // 会被当作普通响应按无 Content-Length 处理、进 raw relay，隧道直接失效。
+    final HttpResponseCodec? responseCodec = switch (dispatcher.decoder) {
+      HttpResponseCodec c => c,
+      HttpClientCodec c => c.responseCodec,
+      _ => null,
+    };
+    responseCodec?.pendingConnectResponse = true;
+
     //代理 发送connect请求
     var httpResponseHandler = HttpResponseHandler();
-    channel.dispatcher.handler = httpResponseHandler;
+    dispatcher.handler = httpResponseHandler;
 
     HttpRequest proxyRequest = HttpRequest(HttpMethod.connect, '${hostAndPort.host}:${hostAndPort.port}');
     proxyRequest.headers.set(HttpHeaders.HOST, '${hostAndPort.host}:${hostAndPort.port}');
@@ -120,18 +133,31 @@ class HttpClients {
       proxyRequest.headers.set(HttpHeaders.PROXY_AUTHORIZATION, 'Basic $auth');
     }
 
-    // 编码 CONNECT 时 HttpClientCodec 会自行标记下一个响应无 body，无需在此设置上下文
-    await channel.write(channelContext, proxyRequest);
-    var response = await httpResponseHandler.getResponse(const Duration(seconds: 5));
+    bool consumed = false;
+    try {
+      await channel.write(channelContext, proxyRequest);
+      var response = await httpResponseHandler.getResponse(const Duration(seconds: 5));
+      // 解码器在应答读完时会自行清除标记，这里只记录「已消费」。
+      consumed = true;
 
-    channel.dispatcher.handler = handler;
+      if (!response.status.isSuccessful()) {
+        throw Exception("$hostAndPort Proxy failed to establish tunnel "
+            "(${response.status.code} ${response.status.reasonPhrase})");
+      }
 
-    if (!response.status.isSuccessful()) {
-      throw Exception("$hostAndPort Proxy failed to establish tunnel "
-          "(${response.status.code} ${response..status.reasonPhrase})");
+      return channel;
+    } finally {
+      // 只有当前 handler 仍是本次临时设置的那个才还原：relay() /
+      // notSupportedForward() 可能已经把它换成 RelayHandler，还原回去会让
+      // 后续数据送错地方（上游 #969：异常路径曾残留 HttpResponseHandler）。
+      if (identical(dispatcher.handler, httpResponseHandler)) {
+        dispatcher.handler = handler;
+      }
+      // 超时/写失败时标记未被消费，必须清除，否则下一条响应会被误判为无 body。
+      if (!consumed) {
+        responseCodec?.pendingConnectResponse = false;
+      }
     }
-
-    return channel;
   }
 
   /// 建立连接

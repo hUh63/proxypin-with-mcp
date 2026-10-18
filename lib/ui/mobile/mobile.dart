@@ -56,6 +56,7 @@ import 'package:proxypin/ui/mobile/widgets/pip.dart';
 import 'package:proxypin/ui/mobile/widgets/remote_device.dart';
 import 'package:proxypin/utils/ip.dart';
 import 'package:proxypin/utils/lang.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proxypin/utils/listenable_list.dart';
 import 'package:proxypin/utils/navigator.dart';
 
@@ -625,6 +626,54 @@ class _MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
     });
   }
 
+  /// 上游 #967-2：一键连接电脑。
+  ///
+  /// 有历史配对记录时直接 ping 最近 5 台，成功即建立连接（等价于扫码连接）；
+  /// 没有记录或全部失败才打开远程设备页让用户手动处理，避免静默失败。
+  Future<void> _onConnectComputer(BuildContext context, AppLocalizations localizations) async {
+    void openDevicePage() {
+      if (!context.mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => RemoteDevicePage(proxyServer: proxyServer, remoteDevice: remoteDevice)));
+    }
+
+    if (remoteDevice.value.connect) {
+      openDevicePage();
+      return;
+    }
+
+    List<RemoteModel> history = const [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      history = (prefs.getStringList('remoteDeviceList') ?? [])
+          .map((e) => RemoteModel.fromJson(jsonDecode(e) as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      logger.w('读取远程设备记录失败', error: e);
+    }
+
+    for (final device in history) {
+      final host = device.host;
+      final port = device.port;
+      if (host == null || port == null) continue;
+      try {
+        final response =
+            await HttpClients.get('http://$host:$port/ping', timeout: const Duration(milliseconds: 1500));
+        if (response.bodyAsString == 'pong') {
+          remoteDevice.value = device.copyWith(connect: true);
+          if (context.mounted) {
+            FlutterToastr.show(localizations.connected, context);
+          }
+          return;
+        }
+      } catch (_) {
+        // 这台没响应，继续下一台
+      }
+    }
+
+    openDevicePage();
+  }
+
   @override
   Size get preferredSize => const Size.fromHeight(42);
 
@@ -647,6 +696,17 @@ class _MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               tooltip: localizations.clear,
               icon: const Icon(Icons.delete_outline),
               onPressed: () => _onClear(context, localizations)),
+          const SizedBox(width: 2),
+          // 上游 #967：不用每次都「菜单 → 远程设备 → 选电脑 → 返回 → 开始抓包」。
+          // 已连接时打开设备页；否则直接重连最近一次配对过的电脑，连不上才进设备页。
+          ValueListenableBuilder<RemoteModel>(
+            valueListenable: remoteDevice,
+            builder: (context, device, _) => IconButton(
+                tooltip: localizations.remoteDevice,
+                icon: Icon(device.connect ? Icons.computer : Icons.computer_outlined,
+                    color: device.connect ? Colors.green : null),
+                onPressed: () => _onConnectComputer(context, localizations)),
+          ),
           const SizedBox(width: 2),
           MoreMenu(proxyServer: proxyServer, remoteDevice: remoteDevice),
           const SizedBox(width: 10),

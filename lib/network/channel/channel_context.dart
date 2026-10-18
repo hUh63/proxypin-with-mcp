@@ -28,6 +28,17 @@ class ChannelContext {
   int? connectTimeMs;
   int? tlsTimeMs;
 
+  /// 当前正在执行 [Decoder.decode] 的通道。
+  ///
+  /// 编解码器本身不知道它服务的是哪条连接，而 HTTP/2 分流必须按「这条连接」
+  /// 自己的 ALPN 结果判断：客户端通道协商为 h2 时，上游明文通道
+  /// （ProxyPin → 外部代理）收到的 `HTTP/1.1 200 Connection established`
+  /// 绝不能被交给 h2 解码器，否则应答被吞掉、CONNECT 等待 5 秒超时（上游 #969）。
+  ///
+  /// 由 [ChannelDispatcher.channelRead] 在每次同步 decode 之前写入；
+  /// decode 内部没有 await，因此不存在两个通道交错覆盖的窗口。
+  Channel? decodingChannel;
+
   // 明文连接没有ALPN，识别完整前置帧后由两端编解码器共用此状态。
   bool isHttp2PriorKnowledge = false;
   final BytesBuilder _pendingHttp2Frames = BytesBuilder();

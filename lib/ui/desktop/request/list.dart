@@ -72,6 +72,14 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   bool sortDesc = true;
 
+  /// 上游 #967：用户手动滚动或选中某条请求后，暂停「自动跟随最新」。
+  /// 新请求只累加计数并显示提示条，当前视图保持不动；点击提示条恢复。
+  /// 旧行为是每来一条新请求就重建列表，用户正在看的内容会被不断顶走，
+  /// 表现为「自动滚动到最新」。
+  bool _followPaused = false;
+  final List<HttpRequest> _pausedRequests = [];
+  final Map<String, Channel> _pausedChannels = {};
+
   // 选择控制器
   final MultiSelectController selectionController = MultiSelectController();
 
@@ -83,6 +91,33 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     if (widget.list != null) {
       container = widget.list!;
     }
+    selectionController.selectedIds.addListener(_onSelectionChanged);
+  }
+
+  /// 选中任意请求（用户正在查看详情）时停止自动跟随。
+  void _onSelectionChanged() {
+    if (selectionController.selectedIds.isNotEmpty) _pauseFollow();
+  }
+
+  void _pauseFollow() {
+    if (_followPaused || !mounted) return;
+    setState(() => _followPaused = true);
+  }
+
+  /// 恢复自动跟随：把暂停期间挂起的请求按到达顺序补进当前视图。
+  void _resumeFollow() {
+    if (!_followPaused) return;
+    final pending = List<HttpRequest>.of(_pausedRequests);
+    _pausedRequests.clear();
+    setState(() => _followPaused = false);
+    for (final request in pending) {
+      final channel = _pausedChannels.remove(request.requestId);
+      if (channel == null) continue;
+      domainListKey.currentState?.add(channel, request);
+      requestSequenceKey.currentState?.add(request);
+    }
+    _pausedChannels.clear();
+    _trimOverflow();
   }
 
   bool get isSelectionMode => selectionController.isSelectionMode;
@@ -92,6 +127,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   @override
   void dispose() {
+    selectionController.selectedIds.removeListener(_onSelectionChanged);
     RequestWidget.removeAutoReadByIds(container.map((request) => request.requestId));
     selectionController.clear();
     super.dispose();
@@ -137,6 +173,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
                   body: Padding(
                       padding: const EdgeInsets.only(right: 5),
                       child: Column(children: [
+                        if (_followPaused && _pausedRequests.isNotEmpty) _followPausedBanner(),
                         Obx(() => selectionController.selectionMode.value
                             ? SelectionActionBar(
                                 selectionController: selectionController,
@@ -158,7 +195,15 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
                                 onDelete: deleteSelected)
                             : SizedBox()),
                         Expanded(
-                            child: TabBarView(physics: const NeverScrollableScrollPhysics(), children: [
+                            child: NotificationListener<ScrollNotification>(
+                                onNotification: (notification) {
+                                  // 用户自己拖动列表即视为「正在阅读」，停止自动跟随。
+                                  if (notification is ScrollStartNotification && notification.dragDetails != null) {
+                                    _pauseFollow();
+                                  }
+                                  return false;
+                                },
+                                child: TabBarView(physics: const NeverScrollableScrollPhysics(), children: [
                           DomainList(
                             key: domainListKey,
                             list: container,
@@ -191,7 +236,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
                               }
                             },
                           ),
-                        ])),
+                        ]))),
                       ])));
             })));
   }
@@ -278,10 +323,28 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   ///添加请求
   void add(Channel channel, HttpRequest request) {
     container.add(request);
+
+    // 上游 #967：暂停期间不往当前视图插入，避免把用户正在看的内容顶走。
+    if (_followPaused) {
+      _pausedRequests.add(request);
+      _pausedChannels[request.requestId] = channel;
+      // 挂起队列也要有上限：用户长时间不点恢复时不能无限制占内存。
+      const maxPaused = 2000;
+      if (_pausedRequests.length > maxPaused) {
+        final dropped = _pausedRequests.removeAt(0);
+        _pausedChannels.remove(dropped.requestId);
+      }
+      if (mounted) setState(() {});
+      return;
+    }
+
     domainListKey.currentState?.add(channel, request);
     requestSequenceKey.currentState?.add(request);
+    _trimOverflow();
+  }
 
-    // 上游 #899：与移动端保持一致，超出上限自动丢弃最旧请求
+  /// 超出上限时丢弃最旧请求（上游 #899）。
+  void _trimOverflow() {
     final maxCount = AppConfiguration.current?.maxRequestCount ?? 0;
     if (maxCount > 0 && container.length > maxCount) {
       final overflow = container.length - maxCount;
@@ -293,6 +356,28 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       selectionController.prune(container.map((request) => request.requestId));
       MemoryCleanupMonitor.releaseAll(removed);
     }
+  }
+
+  /// 暂停自动跟随时的提示条：点击把挂起的请求补进列表。
+  Widget _followPausedBanner() {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.secondaryContainer,
+      child: InkWell(
+        onTap: _resumeFollow,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(children: [
+            Icon(Icons.arrow_upward, size: 15, color: scheme.onSecondaryContainer),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(localizations.newRequestsPaused(_pausedRequests.length),
+                  style: TextStyle(fontSize: 12, color: scheme.onSecondaryContainer)),
+            ),
+          ]),
+        ),
+      ),
+    );
   }
 
   ///添加响应
@@ -337,6 +422,9 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   void clean() {
     final removed = container.source.toList();
     setState(() {
+      _pausedRequests.clear();
+      _pausedChannels.clear();
+      _followPaused = false;
       RequestWidget.removeAutoReadByIds(container.map((request) => request.requestId));
       container.clear();
       domainListKey.currentState?.clean();

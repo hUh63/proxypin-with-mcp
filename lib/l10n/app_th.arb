@@ -2656,5 +2656,6 @@
   "cmdPaletteHint": "พิมพ์คำสั่ง…",
   "cmdGroupNav": "นำทาง",
   "cmdGroupAction": "การทำงาน",
-  "cmdGroupSetting": "การตั้งค่า"
+  "cmdGroupSetting": "การตั้งค่า",
+  "newRequestsPaused": "มีคำขอใหม่ {count} รายการ · แตะเพื่อเลื่อนอัตโนมัติต่อ"
 }

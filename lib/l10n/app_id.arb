@@ -2656,5 +2656,6 @@
   "cmdPaletteHint": "Ketik perintah…",
   "cmdGroupNav": "Navigasi",
   "cmdGroupAction": "Tindakan",
-  "cmdGroupSetting": "Pengaturan"
+  "cmdGroupSetting": "Pengaturan",
+  "newRequestsPaused": "{count} permintaan baru · ketuk untuk melanjutkan gulir otomatis"
 }

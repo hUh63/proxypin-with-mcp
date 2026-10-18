@@ -272,7 +272,10 @@ class JavaScriptEngine {
   //http request
   static HttpRequest convertHttpRequest(HttpRequest request, Map<dynamic, dynamic> map) {
     request.headers.clear();
-    request.method = http.HttpMethod.values.firstWhere((element) => element.name == map['method']);
+    // 脚本里可能塞进自定义方法名（PROPFIND/PURGE…）。以前这里会抛 StateError，
+    // 直接把用户脚本打断；现在保留原方法并记一条警告。
+    request.method = http.HttpMethod.values
+        .firstWhere((element) => element.name == map['method'], orElse: () => request.method);
     String query = UriUtils.mapToQuery(map['queries']);
 
     var requestUri = request.requestUri!.replace(path: map['path'], query: query);

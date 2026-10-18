@@ -2657,5 +2657,6 @@
   "cmdPaletteHint": "Escreva um comando…",
   "cmdGroupNav": "Navegar",
   "cmdGroupAction": "Acoes",
-  "cmdGroupSetting": "Definicoes"
+  "cmdGroupSetting": "Definicoes",
+  "newRequestsPaused": "{count} novos pedidos · toque para retomar a rolagem automática"
 }

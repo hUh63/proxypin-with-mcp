@@ -16,6 +16,7 @@
 
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
 import 'package:proxypin/utils/lang.dart';
 
@@ -39,7 +40,12 @@ enum RuleType {
       };
 
   static RuleType fromName(String name) {
-    return values.firstWhere((element) => element.name == name);
+    // 旧版本 / 外部导入的配置里可能带着已不存在的类型名，回退而不是抛
+    // StateError —— 否则整份重写规则加载失败，表现为「规则全没了」。
+    return values.firstWhere((element) => element.name == name, orElse: () {
+      logger.w('未知的重写规则类型: $name，回退到 ${values.first.name}');
+      return values.first;
+    });
   }
 }
 
@@ -293,7 +299,10 @@ enum RewriteType {
       };
 
   static RewriteType fromName(String name) {
-    return values.firstWhere((element) => element.name == name);
+    return values.firstWhere((element) => element.name == name, orElse: () {
+      logger.w('未知的重写动作类型: $name，回退到 ${values.first.name}');
+      return values.first;
+    });
   }
 
   String getDescribe(AppLocalizations loc) => label(loc);

@@ -1,5 +1,45 @@
 # Changelog
 
+## v1.67.30 (2026-10-18)
+
+### 修复上游 #969：外部代理 + 客户端 h2 时 CONNECT 应答被 h2 解码器吞掉
+
+客户端 App ↔ ProxyPin 协商 h2、ProxyPin → 外部代理是明文 HTTP/1.1 时，上游通道的
+`HttpResponseCodec` 按 **客户端** 的 ALPN 判定走 h2，`HTTP/1.1 200 Connection established`
+被交给 h2 解码器后永远产不出响应，CONNECT 等 5 秒超时。三处一起修：
+
+- `HttpCodec.decode()` 改为按「正在解码的那条连接」取 ALPN（`ChannelContext.decodingChannel`
+  由 dispatcher 在每次同步 decode 前写入），只有拿不到通道信息时才回退客户端通道；
+  抽成 `resolveDecodeProtocol()` 便于单测锁死「已知明文时不回退 h2」；
+- `HttpClients.connectRequest()` 不再依赖 `HttpClientCodec.encode()` 置位
+  `pendingConnectResponse`（裸 codec 链路上它根本不执行），改为发送前显式置位，
+  超时/写失败时清除残留标记；
+- 临时替换的 `HttpResponseHandler` 用 `try/finally` 还原，且只在「当前 handler 仍是
+  它自己」时还原，避免覆盖 `relay()` / `notSupportedForward()` 已换上的 RelayHandler。
+- 新增 `test/connect_response_h2_test.dart`（裸 codec 建连 → CONNECT 成功、失败路径 handler 还原）。
+
+### 修复上游 #967：桌面请求列表不再强制滚动到最新
+
+- 用户手动拖动列表或选中某条请求后暂停「自动跟随」，新请求只累加计数，
+  顶部显示「N 条新请求 · 点击恢复自动滚动」，点击后按到达顺序补进视图；
+- 挂起队列上限 2000 条，清空列表时一并复位，避免长时间暂停占内存。
+
+### 新增上游 #967：手机端一键连接电脑
+
+主页垃圾桶旁新增电脑图标按钮：已连接时打开设备页；否则依次 ping 最近 5 台配对记录，
+成功即连上并提示，全部失败才进设备页（不再需要「菜单 → 远程设备 → 选电脑 → 返回」）。
+
+### 健壮性：坏配置/非法脚本不再抛 StateError
+
+- `RuleType/RewriteType/RequestMapType.fromName()` 加 `orElse` 回退并记警告
+  （旧版本或外部导入的配置带未知类型名时，以前会让整份规则加载失败）；
+- `script_engine` 改写请求方法时保留原方法而不是 `firstWhere` 抛异常；
+- `xhr` 的 pending 调用遇到非标准方法按 GET 处理（该处异常会逃逸成未捕获错误，
+  中断整批调用）。
+
+> 上游 #965（某第三方 App 抓不到 m3u8）不是本项目的缺陷：QUIC 阻断默认已开启，
+> 抓不到的原因在客户端 App 的证书固定/私有协议侧，见 issue 讨论。
+
 ## v1.67.29 (2026-10-18)
 
 ### 修复：v1.67.28 把 pubspec.yaml 推成了 0 字节
