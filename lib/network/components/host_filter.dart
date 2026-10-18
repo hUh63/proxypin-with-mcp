@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import 'package:proxypin/network/util/logger.dart';
+
 /// @author wanghongen
 /// 2023/7/26
 class HostFilter {
@@ -71,6 +73,22 @@ abstract class HostList {
   final List<RegExp> list = [];
   bool enabled = false;
 
+  /// 编译一条规则。
+  ///
+  /// 非法正则（用户手写 `[` 之类、或旧版本写坏的数据）不能抛：`load()` 是在
+  /// 配置初始化链路里调用的，抛出去会让整份配置回退默认值 —— 用户所有设置一起丢。
+  RegExp? _compile(String? pattern) {
+    if (pattern == null || pattern.isEmpty) {
+      return null;
+    }
+    try {
+      return RegExp(pattern);
+    } catch (e) {
+      logger.w('忽略非法的过滤规则: $pattern', error: e);
+      return null;
+    }
+  }
+
   ///加载配置
   void load(Map<String, dynamic>? map) {
     if (map == null) {
@@ -79,13 +97,19 @@ abstract class HostList {
     List? list = map['list'];
     this.list.clear();
     list?.forEach((element) {
-      this.list.add(RegExp(element));
+      final regexp = _compile(element?.toString());
+      if (regexp != null) {
+        this.list.add(regexp);
+      }
     });
     enabled = map['enabled'] == true;
   }
 
   void add(String reg) {
-    var regExp = RegExp(reg.replaceAll("*", ".*"));
+    final regExp = _compile(reg.replaceAll("*", ".*"));
+    if (regExp == null) {
+      return;
+    }
     list.removeWhere((element) => element.pattern == regExp.pattern);
     list.add(regExp);
   }
@@ -95,8 +119,11 @@ abstract class HostList {
   }
 
   void removeIndex(List<int> index) {
-    for (var element in index) {
-      list.removeAt(element);
+    // 必须倒序删除：正序删掉前面的元素后，后面的下标整体前移，
+    // 删到的是错的规则甚至越界（list.removeAt 抛 RangeError）。
+    final targets = index.where((i) => i >= 0 && i < list.length).toSet().toList()..sort();
+    for (var i = targets.length - 1; i >= 0; i--) {
+      list.removeAt(targets[i]);
     }
   }
 

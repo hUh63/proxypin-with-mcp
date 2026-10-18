@@ -217,7 +217,13 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       }
 
       for (var interceptor in interceptors) {
-        var response = await interceptor.execute(request!);
+        HttpResponse? response;
+        try {
+          response = await interceptor.execute(request!);
+        } catch (e, s) {
+          log.e('本地 mock 拦截器执行失败: ${interceptor.runtimeType}', error: e, stackTrace: s);
+          continue;
+        }
         if (response != null) {
           listener?.onResponse(channelContext, response);
           channel.writeAndClose(channelContext, response);
@@ -475,7 +481,14 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
     }
     //拦截器
     for (var interceptor in interceptors) {
-      response = await interceptor.onResponse(request, response!);
+      try {
+        response = await interceptor.onResponse(request, response!);
+      } catch (e, s) {
+        // 单个脚本/规则异常不能让整条响应失败（异常冒到 dispatcher 会直接关连接，
+        // 客户端什么都收不到）。这是主转发路径，#956 的 close-delimited 路径已单独兜底。
+        log.e('响应拦截器执行失败: ${interceptor.runtimeType}', error: e, stackTrace: s);
+        continue;
+      }
       if (response == null) {
         logger.d("[${clientChannel.id}] Interceptor returned null, stopping processing");
         // Interceptor returned null, stopping processing
@@ -503,7 +516,12 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
   void exceptionCaught(ChannelContext channelContext, Channel channel, error, {StackTrace? trace}) {
     super.exceptionCaught(channelContext, channel, error, trace: trace);
     for (var interceptor in interceptors) {
-      interceptor.onError(channelContext.currentRequest, error, trace);
+      try {
+        interceptor.onError(channelContext.currentRequest, error, trace);
+      } catch (e) {
+        // 错误回调本身再抛异常会变成未捕获异步错误。
+        log.w('拦截器 onError 回调失败: ${interceptor.runtimeType}', error: e);
+      }
     }
   }
 }

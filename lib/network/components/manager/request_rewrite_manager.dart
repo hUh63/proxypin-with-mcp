@@ -164,8 +164,11 @@ class RequestRewriteManager {
   }
 
   Future<void> removeIndex(List<int> indexes) async {
-    for (var i in indexes) {
-      var rule = rules.removeAt(i);
+    // 倒序删除：正序删除后，后面元素的下标会整体前移，删到的是错的规则甚至越界
+    //（list.removeAt 抛 RangeError）。多选删除时用户会丢错规则。
+    final targets = indexes.where((i) => i >= 0 && i < rules.length).toSet().toList()..sort();
+    for (var pos = targets.length - 1; pos >= 0; pos--) {
+      var rule = rules.removeAt(targets[pos]);
       rewriteItemsCache.remove(rule); //删除缓存
       if (rule.rewritePath != null) {
         File home = await FileRead.homeDir();

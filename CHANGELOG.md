@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.67.41 (2026-10-19)
+
+### 深度排查（第四轮）：规则匹配链路
+
+- `HostList.removeIndex` / `RequestRewriteManager.removeIndex` 正序删除下标：删掉前一项后，
+  后面元素下标整体前移，多选删除会**删错规则**、末尾项还会 `RangeError`。改为去重 + 倒序删除；
+- `HostFilter.load()` 直接 `RegExp(element)`：用户手写过非法正则（或旧数据）时抛异常，
+  它跑在配置初始化链路上 → 整份配置回退默认值，**用户所有设置一起丢**。现逐条容错并记日志；
+- `UrlPattern.toHostRegExp` / `toRegExp`：非法规则在**每条请求**的匹配路径上抛异常，
+  现退化为「永不匹配」并记一次警告。
+
+### 拦截器异常隔离补齐
+
+上一轮只给 close-delimited 路径（`runResponseInterceptors`）加了保护，主转发路径仍在裸奔：
+
+- `HttpResponseProxyHandler.channelRead` 的响应拦截器循环 —— 单个脚本抛异常会让客户端
+  **收不到任何响应**（异常冒到 dispatcher 直接关连接）；
+- `exceptionCaught` 里的 `interceptor.onError` 回调 —— 错误处理本身再抛会变成未捕获异步错误；
+- 本地 mock 的 `interceptor.execute` —— 一条 mock 规则报错会让该请求失败。
+
+三处都改为逐条 try/catch + 日志。
+
+### SSL Pinning 脚本对齐成熟模块的能力
+
+对照用户提供的 LSPosed 模块（`com.example.sslbypass`），Frida 脚本补了三个原来没有的 hook 点：
+
+- `android.security.net.config.NetworkSecurityConfig.getTrustManager`
+  —— App 只在 `network_security_config` 里声明 `<pin-set>`、不自定义 TrustManager 时，
+    原来的 Conscrypt/SSLContext/OkHttp 三处都拦不到；
+- 默认 `HostnameVerifier`（`HttpsURLConnection` 走这条，不经过 OkHttp）；
+- `WebViewClient.onReceivedSslError` —— 内嵌 H5/登录页的证书错误。
+
 ## v1.67.40 (2026-10-18)
 
 ### 修复 v1.67.39 残留的字段声明错误

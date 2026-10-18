@@ -222,6 +222,8 @@ class PinningHelper {
  */
 Java.perform(function () {
     var TAG = '[proxypin] ';
+    // 全放行的 TrustManager，供 SSLContext.init 与 NetworkSecurityConfig 复用
+    var trustAllManager = null;
 
     function log(msg) {
         console.log(TAG + msg);
@@ -262,7 +264,8 @@ Java.perform(function () {
                 getAcceptedIssuers: function () { return []; }
             }
         });
-        var trustManagers = [TrustAll.$new()];
+        trustAllManager = TrustAll.$new();
+        var trustManagers = [trustAllManager];
         var init = SSLContext.init.overload(
             '[Ljavax.net.ssl.KeyManager;', '[Ljavax.net.ssl.TrustManager;', 'java.security.SecureRandom');
         init.implementation = function (km, tm, sr) {
@@ -309,6 +312,55 @@ Java.perform(function () {
         var CertificateException = Java.use('java.security.cert.CertificateException');
         log('CertificateException present (no hook needed)');
     } catch (e) {
+    }
+
+    // 6) Android 7+ 声明式网络安全配置（network_security_config 的 <pin-set>）
+    //    App 只声明 pin-set、不自定义 TrustManager 时，上面几段都拦不到；
+    //    OkHttp/系统默认都会从这里取 trustManager。
+    try {
+        if (trustAllManager === null) {
+            log('NetworkSecurityConfig skipped: trust-all manager unavailable');
+        } else {
+            var NSC = Java.use('android.security.net.config.NetworkSecurityConfig');
+            NSC.getTrustManager.overloads.forEach(function (overload) {
+                overload.implementation = function () {
+                    log('bypass NetworkSecurityConfig.getTrustManager');
+                    return trustAllManager;
+                };
+            });
+        }
+    } catch (e) {
+        log('NetworkSecurityConfig.getTrustManager not hooked: ' + e);
+    }
+
+    // 7) 默认 HostnameVerifier（HttpsURLConnection 走这条，不经过 OkHttp 那套）
+    try {
+        var HostnameVerifier = Java.use('javax.net.ssl.HostnameVerifier');
+        var AllowAllHostnameVerifier = Java.registerClass({
+            name: 'com.proxypin.AllowAllHostnameVerifier',
+            implements: [HostnameVerifier],
+            methods: {
+                verify: function (hostname, session) { return true; }
+            }
+        });
+        var HttpsURLConnection = Java.use('javax.net.ssl.HttpsURLConnection');
+        HttpsURLConnection.setDefaultHostnameVerifier(AllowAllHostnameVerifier.$new());
+        HttpsURLConnection.getDefaultHostnameVerifier.implementation = function () {
+            return AllowAllHostnameVerifier.$new();
+        };
+    } catch (e) {
+        log('default HostnameVerifier not hooked: ' + e);
+    }
+
+    // 8) WebView 里的证书错误（内嵌 H5 / 广告页 / 登录页常见）
+    try {
+        var WebViewClient = Java.use('android.webkit.WebViewClient');
+        WebViewClient.onReceivedSslError.implementation = function (view, handler, error) {
+            log('bypass WebView onReceivedSslError');
+            handler.proceed();
+        };
+    } catch (e) {
+        log('WebViewClient.onReceivedSslError not hooked: ' + e);
     }
 
     log('pinning bypass loaded');
