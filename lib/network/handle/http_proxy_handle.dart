@@ -12,6 +12,7 @@ import 'package:proxypin/network/components/request_rewrite.dart';
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
+import 'package:proxypin/network/http/connection_pool.dart';
 import 'package:proxypin/network/http/http_headers.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
@@ -146,7 +147,14 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
 
       //拦截器
       for (var interceptor in interceptors) {
-        request = await interceptor.onRequest(request!);
+        try {
+          request = await interceptor.onRequest(request!);
+        } catch (e, s) {
+          // 单个脚本/重写规则抛异常不能让整条请求挂掉（异常会冒到 dispatcher，
+          // 直接关闭客户端连接，表现为「一开脚本所有请求都失败」）。
+          log.e('请求拦截器执行失败: ${interceptor.runtimeType}', error: e, stackTrace: s);
+          continue;
+        }
         if (request == null) {
           listener?.onRequest(channel, httpRequest);
           channel.close();
@@ -381,7 +389,13 @@ Future<void> runResponseInterceptors(
   if (interceptors.isEmpty) return;
   HttpResponse? r = response;
   for (var interceptor in interceptors) {
-    r = await interceptor.onResponse(request, r!);
+    try {
+      r = await interceptor.onResponse(request, r!);
+    } catch (e, s) {
+      // 同请求方向：单个拦截器异常不应吞掉整条响应（此前会让客户端收不到任何数据）。
+      log.e('响应拦截器执行失败: ${interceptor.runtimeType}', error: e, stackTrace: s);
+      continue;
+    }
     if (r == null) break;
   }
 }
@@ -401,10 +415,25 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
   Future<void> interceptUnsupportedResponse(HttpRequest request, HttpResponse response) =>
       runResponseInterceptors(interceptors, request, response);
 
+  /// 上报性能统计（性能面板的请求量 / 成功率 / 平均耗时 / QPS 全依赖它）。
+  ///
+  /// 早先这些数字只由 [ConnectionPool.execute] 累加，而转发走的是自研网络层、
+  /// execute() 从未被调用，面板因此长期显示 0。
+  void _recordTraffic(HttpRequest? request, HttpResponse response) {
+    try {
+      final start = request?.requestTime;
+      final elapsed = start == null ? 0 : response.responseTime.difference(start).inMilliseconds;
+      ConnectionPool.instance.recordTraffic(elapsedMs: elapsed, statusCode: response.status?.code);
+    } catch (e) {
+      log.w('record traffic failed', error: e);
+    }
+  }
+
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, HttpResponse msg) async {
     var request = msg.request ?? channelContext.currentRequest;
     request?.response = msg;
+    _recordTraffic(request, msg);
 
     // 响应就绪后评估 MCP 规则引擎（此时 request/response 字段齐全，
     // 可匹配 URL、方法、状态码、耗时、大小等全部条件）。

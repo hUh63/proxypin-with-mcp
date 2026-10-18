@@ -305,7 +305,12 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       data.hostAndPort = data.hostAndPort?.copyWith(host: data.headers.host!);
     }
     await _fixAndroidVpnPort(channelContext, channel, data);
-    data.processInfo ??= await ProcessInfoUtils.getProcessByPort(channel.remoteSocketAddress, data.remoteDomain()!);
+    // processInfo 只是给列表加进程图标；域名解析不出来时不该让整条请求失败
+    //（remoteDomain() 可返回 null，这里以前是强解包）。
+    final domain = data.remoteDomain();
+    if (domain != null) {
+      data.processInfo ??= await ProcessInfoUtils.getProcessByPort(channel.remoteSocketAddress, domain);
+    }
   }
 
   /// 修正 Android VPN 透明代理明文 HTTP 请求的目标端口。
@@ -334,8 +339,12 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
   }
 
   void onError(ChannelContext channelContext, Channel channel, dynamic error, {StackTrace? trace}) {
+    // 只打印缓冲区前缀：出错的连接可能已经攒了几 MB 二进制 body，
+    // 整段转字符串既慢又可能把日志/内存打爆（而且对定位没有帮助）。
+    const previewLimit = 512;
+    final preview = buffer.length > previewLimit ? buffer.bytes.sublist(0, previewLimit) : buffer.bytes;
     logger.e(
-        "[${channelContext.clientChannel?.id}] channelRead error isSsl:${channel.isSsl} client: ${channelContext.clientChannel?.selectedProtocol} server: ${channelContext.serverChannel?.selectedProtocol} ${String.fromCharCodes(buffer.bytes)}",
+        "[${channelContext.clientChannel?.id}] channelRead error isSsl:${channel.isSsl} client: ${channelContext.clientChannel?.selectedProtocol} server: ${channelContext.serverChannel?.selectedProtocol} bytes:${buffer.length} ${String.fromCharCodes(preview)}",
         error: error,
         stackTrace: trace);
     buffer.clear();

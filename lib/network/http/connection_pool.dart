@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:collection';
+import 'package:proxypin/network/channel/connection_registry.dart';
 import 'package:proxypin/network/util/logger.dart';
 
 /// 连接配置
@@ -112,11 +113,54 @@ class _PooledConnection {
 class ConnectionPool {
   static final ConnectionPool instance = ConnectionPool();
 
+  /// 最近请求发生时刻（毫秒），用于算实时 QPS
+  final List<int> _recentRequestAt = <int>[];
+  static const int _qpsWindowMs = 5000;
+
+  /// 上报一次真实流量。
+  ///
+  /// `execute()` 在本项目里没有调用点（转发走自研网络层），统计如果只挂在它上面，
+  /// 性能面板会永远是 0。改由响应处理链路上报。
+  void recordTraffic({required int elapsedMs, int? statusCode}) {
+    final failed = statusCode == null || statusCode >= 400;
+    _stats.totalRequests++;
+    if (failed) {
+      _stats.failedRequests++;
+    } else {
+      _stats.successfulRequests++;
+    }
+    _stats.totalResponseTime += Duration(milliseconds: elapsedMs < 0 ? 0 : elapsedMs);
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _recentRequestAt.add(now);
+    _trimQpsWindow(now);
+  }
+
+  void _trimQpsWindow(int now) {
+    var drop = 0;
+    while (drop < _recentRequestAt.length && now - _recentRequestAt[drop] > _qpsWindowMs) {
+      drop++;
+    }
+    if (drop > 0) {
+      _recentRequestAt.removeRange(0, drop);
+    }
+  }
+
+  /// 5 秒窗口内的实时 QPS（旧实现用「总请求数 / 进程运行秒数」，只会越跑越小）
+  double get currentQps {
+    _trimQpsWindow(DateTime.now().millisecondsSinceEpoch);
+    if (_recentRequestAt.isEmpty) return 0;
+    return _recentRequestAt.length / (_qpsWindowMs / 1000);
+  }
+
   /// 获取连接池统计信息
   Map<String, dynamic> getStats() {
-    _stats.activeConnections = _totalActive;
+    // 活跃连接取真实连接注册表，而不是从未被 execute() 累加过的计数器。
+    _stats.activeConnections = ConnectionRegistry.instance.count;
     _stats.idleConnections = _pools.values.fold<int>(0, (sum, q) => sum + q.length);
-    return _stats.toJson();
+    final json = _stats.toJson();
+    json['qps'] = currentQps;
+    return json;
   }
 
   final ConnectionConfig _config;

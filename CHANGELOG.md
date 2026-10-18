@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.67.35 (2026-10-18)
+
+### 深度排查：性能面板一直是 0（假数据）
+
+「性能监控」里的请求量 / 成功率 / 平均耗时 / QPS / 连接池全部来自
+`ConnectionPool.getStats()`，而这些数字只由 `ConnectionPool.execute()` 累加 ——
+转发走的是自研网络层，`execute()` **没有任何调用点**，所以面板永远显示 0。
+
+- 新增 `recordTraffic()`，由 `HttpResponseProxyHandler` 在每条响应上调用，统计变成真实流量；
+- `activeConnections` 改用 `ConnectionRegistry.count`（真实活跃连接），不再是未累加的计数器；
+- QPS 换成 5 秒滑动窗口（旧公式是「总请求数 / 进程运行秒数」，只会越跑越小）；
+- 新增 `test/connection_pool_stats_test.dart` 锁定口径（成功/失败、3xx、负耗时、QPS）。
+
+### 深度排查：历史记录写入的并发与空指针
+
+- `Timer.periodic` 不等待上一轮 async 写完成：数据多/磁盘慢时两轮同时
+  `removeFirst` 并写同一文件 → 行交错甚至半行截断。加 `_writing` 标记跳过重叠轮次；
+- `writeTask` 里 `open?.writeString` 静默跳过但继续 `history!` 强解包，`cancelTask()`
+  （停止抓包）在 await 期间把两者置空 → 空指针。改为先取局部变量并判空。
+
+### 深度排查：其他健壮性问题
+
+- `runResponseInterceptors` / 请求拦截器循环：单个脚本或重写规则抛异常会让整条
+  请求/响应失败（异常冒到 dispatcher 直接关连接）。现在逐条 try/catch 并记日志；
+- zstd 响应体解码没有兜底：解压后非 UTF-8（GBK 页面/二进制）时 `utf8.decode` 会抛到
+  UI 与脚本层，现回退 `String.fromCharCodes`；
+- `channelRead` 的错误日志把整个 buffer 转成字符串打印，出错连接可能已攒几 MB 二进制，
+  现只打印前 512 字节与前缀长度；
+- `prepareRequest` 的 `remoteDomain()!` 强解包：域名解析失败（畸形请求/无 Host）会让
+  请求直接失败，现仅在拿到域名时才补进程信息。
+
 ## v1.67.34 (2026-10-18)
 
 ### 修复：Channel.close() 的未捕获异步异常

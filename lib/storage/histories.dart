@@ -275,6 +275,13 @@ class HistoryTask extends ListenerListEvent<HttpRequest> {
   bool locked = false;
   int _idleTicks = 0;
 
+  /// 写入串行化标记。
+  ///
+  /// `Timer.periodic` 不会等待上一次 async 回调结束：数据量大或磁盘慢时上一轮
+  /// 还没写完下一轮就进来了，两个 while 循环同时 `removeFirst` 并写同一个文件，
+  /// 行会交错甚至半行截断。这里用标记跳过重叠轮次。
+  bool _writing = false;
+
   static HistoryTask? _instance;
 
   final Configuration configuration;
@@ -376,6 +383,16 @@ class HistoryTask extends ListenerListEvent<HttpRequest> {
 
   //写入任务
   Future<void> writeTask() async {
+    if (_writing) return;
+    _writing = true;
+    try {
+      await _writeTaskBody();
+    } finally {
+      _writing = false;
+    }
+  }
+
+  Future<void> _writeTaskBody() async {
     if (writeList.isEmpty) {
       // 空闲自动暂停：连续 6 次（约 30 秒）无新数据时释放定时器与文件句柄，
       // 避免代理停止后 timer/句柄长期驻留（资源泄漏）。有数据时 onAdd 自动恢复。
@@ -394,20 +411,33 @@ class HistoryTask extends ListenerListEvent<HttpRequest> {
     _idleTicks = 0;
     bool changed = false;
     while (writeList.isNotEmpty && !locked) {
+      // cancelTask() 可能在 await 期间把 open/history 置空（停止抓包），
+      // 之前这里用 `open?.` 静默跳过写入、却继续 `history!` 强解包 → 空指针。
+      final writer = open;
+      final current = history;
+      if (writer == null || current == null) {
+        return;
+      }
+
       var request = writeList.removeFirst();
       var har = Har.toHar(request);
 
-      await open?.writeString("${jsonEncode(har)},\n");
+      await writer.writeString("${jsonEncode(har)},\n");
 
-      history!.requestLength++;
+      current.requestLength++;
       changed = true;
     }
 
     if (!changed) return;
-    history!.fileSize = await open!.length();
-    history!.requests = null;
+    final writer = open;
+    final current = history;
+    if (writer == null || current == null) {
+      return;
+    }
+    current.fileSize = await writer.length();
+    current.requests = null;
     var historyStorage = await HistoryStorage.instance;
-    historyStorage.updateHistory(historyStorage.getIndex(history!), history!);
+    historyStorage.updateHistory(historyStorage.getIndex(current), current);
   }
 }
 

@@ -195,9 +195,11 @@ abstract class HttpMessage {
     List<int> rawBody = body!;
     if (headers.contentEncoding == 'zstd') {
       rawBody = await zstdDecode(body!) ?? [];
-      if (charset == 'utf-8' || charset == 'utf8') {
-        _bodyString = utf8.decode(rawBody);
-      } else {
+      // 解压后的内容不保证是合法 UTF-8（GBK 页面、二进制附件），
+      // 这里没有外层 try/catch，直接 utf8.decode 会抛到 UI / 脚本层。
+      try {
+        _bodyString = (charset == 'utf-8' || charset == 'utf8') ? utf8.decode(rawBody) : String.fromCharCodes(rawBody);
+      } catch (_) {
         _bodyString = String.fromCharCodes(rawBody);
       }
       return _bodyString!;
