@@ -244,16 +244,29 @@ class Channel {
   }
 
   ///关闭此channel
+  ///
+  /// 注意：这是 `void` 方法（调用点很多都不 await），所以内部必须自己吞掉
+  /// 关闭过程中的异常——对端已经 RST、socket 已销毁时 `cancel()` / `close()`
+  /// 都会抛，async void 里抛出的异常是未捕获异步错误，会直接冒到 Zone。
   void close() async {
     if (isClosed) {
       return;
     }
 
     isOpen = false;
-    // 先取消读订阅，确保不会再收到数据事件
-    _socketSubscription?.cancel();
+    final subscription = _socketSubscription;
     _socketSubscription = null;
-    await _socket.close();
+    // 先取消读订阅，确保不会再收到数据事件
+    try {
+      await subscription?.cancel();
+    } catch (e) {
+      logger.w('[$id] cancel socket subscription failed', error: e);
+    }
+    try {
+      await _socket.close();
+    } catch (e) {
+      logger.w('[$id] close socket failed', error: e);
+    }
   }
 
   ///返回此channel是否打开

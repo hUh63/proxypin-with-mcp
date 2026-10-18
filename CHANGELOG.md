@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.67.34 (2026-10-18)
+
+### 修复：Channel.close() 的未捕获异步异常
+
+`Channel.close()` 是 `void close() async`，而关闭时对端往往已经 RST —— `subscription.cancel()`
+与 `socket.close()` 都可能抛。async void 里抛出的异常属于未捕获异步错误，会直接冒到 Zone：
+表现为抓包/停止时偶发红屏或进程级错误。现在两步各自 try/catch 并记日志。
+
 ## v1.67.33 (2026-10-18)
 
 ### 一键连接电脑的提示与设备页对齐
