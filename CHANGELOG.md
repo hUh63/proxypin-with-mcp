@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.67.27 (2026-10-18)
+
+### CI：签名校验步骤改为输出全量证书信息
+
+v1.67.26 的 `apksigner verify --print-certs ... | grep` 在 `bash -e` 下一旦 grep 不命中就整步失败，
+且失败时日志里看不到 apksigner 的真实输出。现在先捕获输出、完整打印，再用 `CN=proxypin`
+判定并通过 `fail` 变量汇总退出码。
+
 ## v1.67.26 (2026-10-18)
 
 ### 安全：发布签名迁出 public 仓库

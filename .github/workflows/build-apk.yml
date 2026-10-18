@@ -99,10 +99,17 @@ jobs:
         run: |
           APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner | sort -V | tail -1)
           echo "using $APKSIGNER"
+          fail=0
           for apk in build/app/outputs/flutter-apk/proxypin-*.apk; do
             echo "== $apk"
-            "$APKSIGNER" verify --print-certs "$apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
+            out=$("$APKSIGNER" verify --print-certs "$apk" 2>&1) || fail=1
+            echo "$out"
+            echo "$out" | grep -q "CN=proxypin" || {
+              echo "::error::$apk is NOT signed with the release key (CN=proxypin)"
+              fail=1
+            }
           done
+          exit $fail
 
       - name: List all built APKs
         run: ls -lh build/app/outputs/flutter-apk/proxypin-*.apk
