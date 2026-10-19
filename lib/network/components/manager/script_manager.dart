@@ -172,10 +172,23 @@ async function onResponse(context, request, response) {
       if (content.isEmpty) {
         return;
       }
-      var config = jsonDecode(content);
-      enabled = config['enabled'] == true;
-      for (var entry in config['list']) {
-        scripts.add(ScriptItem.fromJson(entry));
+      // 配置损坏时不能让脚本功能整体起不来：逐条容错 + 缺字段按默认处理。
+      try {
+        var config = jsonDecode(content);
+        // 缺 enabled 字段（更早版本的配置文件）时按「开启」处理。
+        enabled = config['enabled'] != false;
+        final items = config['list'];
+        if (items is List) {
+          for (var entry in items) {
+            try {
+              if (entry is Map) scripts.add(ScriptItem.fromJson(entry));
+            } catch (e) {
+              logger.w('跳过无法解析的脚本: $e');
+            }
+          }
+        }
+      } catch (e) {
+        logger.e('脚本配置解析失败，按空配置处理', error: e);
       }
     }
     list = scripts;
@@ -286,7 +299,13 @@ async function onResponse(context, request, response) {
     }
 
     final home = await Paths.homePath();
-    var script = await File(home + item.scriptPath!).readAsString();
+    final scriptFile = File(home + (item.scriptPath ?? ''));
+    // 脚本文件被手工删掉/移动时以前直接抛，异常会冒到每条命中该规则的请求上。
+    if (!await scriptFile.exists()) {
+      logger.w('脚本文件不存在: ${scriptFile.path}');
+      return null;
+    }
+    var script = await scriptFile.readAsString();
     _scriptMap[item] = script;
     return script;
   }

@@ -19,6 +19,7 @@ import 'dart:io';
 
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 请求屏蔽
@@ -56,12 +57,26 @@ class RequestBlockManager {
   Future<void> _load() async {
     var json = await _storageFile.readAsString();
     if (json.isEmpty) return;
-    var config = jsonDecode(json);
-    enabled = config['enabled'] == true;
-    list.clear();
-    config['list']?.forEach((element) {
-      list.add(RequestBlockItem.fromJson(element));
-    });
+    // 配置文件被写坏/手工改过时不能让整个屏蔽功能起不来（以前 jsonDecode 一抛，
+    // instance 每次访问都抛异常，请求屏蔽直接不可用）。逐条容错 + 保留默认值。
+    try {
+      var config = jsonDecode(json);
+      // 缺 enabled 字段（更早版本的配置文件）时按「开启」处理。
+      enabled = config['enabled'] != false;
+      list.clear();
+      final items = config['list'];
+      if (items is List) {
+        for (final element in items) {
+          try {
+            if (element is Map) list.add(RequestBlockItem.fromJson(element));
+          } catch (e) {
+            logger.w('跳过无法解析的屏蔽规则: $e');
+          }
+        }
+      }
+    } catch (e) {
+      logger.e('请求屏蔽配置解析失败，按空配置处理', error: e);
+    }
   }
 
   addBlockRequest(RequestBlockItem item) {

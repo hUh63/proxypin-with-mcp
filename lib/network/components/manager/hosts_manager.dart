@@ -66,23 +66,41 @@ class HostsManager {
     var json = await (await configFile).readAsString();
     if (json.isEmpty) return;
 
-    var config = jsonDecode(json);
-    enabled = config['enabled'] == true;
-    list.clear();
-    config['list']?.forEach((element) {
-      var hostsItem = HostsItem.fromJson(element);
+    // 配置损坏时不能让 Hosts 功能整体起不来（以前 jsonDecode 一抛，instance
+    // 每次访问都抛异常）。逐条容错，坏记录跳过。
+    try {
+      var config = jsonDecode(json);
+      // 缺 enabled 字段（更早版本的配置文件）时按「开启」处理，与字段默认值一致；
+      // 旧实现 `== true` 会让升级后的用户规则集体失效。
+      enabled = config['enabled'] != false;
+      list.clear();
+      // 重复 load 时若不清，文件夹里的子项会不断累积。
+      _folderMap.clear();
+      final items = config['list'];
+      if (items is List) {
+        for (final element in items) {
+          try {
+            if (element is! Map) continue;
+            var hostsItem = HostsItem.fromJson(element);
 
-      if (hostsItem.parent != null) {
-        var children = _folderMap[hostsItem.parent!] ??= [];
-        children.add(hostsItem);
-        return;
-      }
+            if (hostsItem.parent != null) {
+              var children = _folderMap[hostsItem.parent!] ??= [];
+              children.add(hostsItem);
+              continue;
+            }
 
-      if (hostsItem.isFolder) {
-        _folderMap[hostsItem.id] ??= [];
+            if (hostsItem.isFolder) {
+              _folderMap[hostsItem.id] ??= [];
+            }
+            list.add(hostsItem);
+          } catch (e) {
+            logger.w('跳过无法解析的 Hosts 规则: $e');
+          }
+        }
       }
-      list.add(hostsItem);
-    });
+    } catch (e) {
+      logger.e('Hosts 配置解析失败，按空配置处理', error: e);
+    }
   }
 
   /// Save
