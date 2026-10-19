@@ -106,6 +106,17 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
         return result;
       }
 
+      // 帧长度上限保护：对端只要在帧头里声明一个巨大的 length 却不真的发数据，
+      // 下面 _readFramePayload 就会一直返回 null，byteBuf 只进不出地涨到那个长度
+      //（单帧最大 16MB，多条连接叠加足以吃穿内存）。
+      // 我们自己在 SETTINGS 里声明的 maxFrameSize 是对端必须遵守的上限，
+      // 这里留 64 倍余量，避免误杀不规范但无害的实现。
+      final settingsMax = channelContext.setting?.maxFrameSize ?? maxFrameSize;
+      final frameLimit = (settingsMax < maxFrameSize ? maxFrameSize : settingsMax) * 64;
+      if (frameHeader.length > frameLimit) {
+        throw FormatException('HTTP/2 frame too large: ${frameHeader.length} > $frameLimit');
+      }
+
       List<int>? framePayload = FrameReader._readFramePayload(byteBuf, frameHeader.length);
       if (framePayload == null) {
         result.isDone = false;
@@ -581,11 +592,19 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     //  DATA 帧格式
     int padLength = 0;
     if (frameHeader.hasPaddedFlag) {
+      // 畸形帧：声明了 PADDED 但载荷里连 Pad Length 字节都没有。
+      // 以前 readByte() 直接抛 RangeError → 整条连接被关掉。
+      if (payload.readableBytes() < 1) {
+        return DataFrame(frameHeader, 0, Uint8List(0));
+      }
       padLength = payload.readByte();
     }
 
     //读取数据
+    // padLength 大于剩余字节同样是畸形帧：以前会算出负数长度交给 readBytes，
+    // 抛 RangeError 把连接带走。这里按「无数据」处理，帧仍由上层原样转发。
     int dataLength = payload.readableBytes() - padLength;
+    if (dataLength < 0) dataLength = 0;
     var data = payload.readBytes(dataLength);
 
     // Regular body accumulation.
@@ -644,6 +663,9 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     int padLength = 0;
     //如果帧头部有PADDED标志位，则需要读取PADDED长度
     if (frameHeader.hasPaddedFlag) {
+      if (payload.readableBytes() < 1) {
+        throw const FormatException('Invalid HEADERS frame: missing Pad Length');
+      }
       padLength = payload.readByte();
     }
 

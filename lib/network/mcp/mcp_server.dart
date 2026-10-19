@@ -73,6 +73,47 @@ int? mcpAsInt(Object? value) {
   return null;
 }
 
+/// 同上：接受 `"0.5"` 这种字符串形式的小数。
+double? mcpAsDouble(Object? value) {
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value.trim());
+  return null;
+}
+
+/// 同上：LLM 常把数字/布尔当字符串参数传（`{"status_code": 200}`），
+/// 直接 `as String?` 会抛类型错误让整个工具调用失败。
+String? mcpAsString(Object? value) {
+  if (value == null) return null;
+  if (value is String) return value;
+  return value.toString();
+}
+
+/// 同上：参数可能是 Map，也可能是 LLM 直接塞进来的 JSON 字符串。
+Map<String, dynamic>? mcpAsMap(Object? value) {
+  if (value == null) return null;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  if (value is String) {
+    final text = value.trim();
+    if (text.startsWith('{')) {
+      try {
+        final decoded = jsonDecode(text);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/// 必填字符串参数：缺失时抛 [ToolException]（可读的工具错误），而不是 TypeError。
+String mcpRequireString(Object? value, String name) {
+  final v = mcpAsString(value);
+  if (v == null || v.isEmpty) throw ToolException('$name is required');
+  return v;
+}
+
 
 
 class McpServer {
@@ -1622,9 +1663,9 @@ class McpServer {
   /// 命令集就是 adb shell 语义（deviceidle / appops / am），通过 Shizuku、root 或
   /// Dhizuku 任一通道执行；不安装任何额外组件，也不需要重启设备。
   Future<Map<String, dynamic>> _handleKeepAlive(Map<String, dynamic> args) async {
-    final action = (args['action'] as String? ?? 'status').toLowerCase();
-    final mode = (args['mode'] as String?)?.toLowerCase();
-    final pkgArg = (args['package'] as String?)?.trim();
+    final action = (mcpAsString(args['action']) ?? 'status').toLowerCase();
+    final mode = (mcpAsString(args['mode']))?.toLowerCase();
+    final pkgArg = (mcpAsString(args['package']))?.trim();
     final target = (pkgArg == null || pkgArg.isEmpty) ? _appPackage : pkgArg;
     final config = await Configuration.instance;
 
@@ -1825,15 +1866,15 @@ class McpServer {
 
       case 'search_requests':
         final limit = _clampLimit(args['limit'], 20);
-        final query = args['query'] as String?;
-        final method = args['method'] as String?;
-        final statusCode = args['status_code'] as String?;
-        final domain = args['domain'] as String?;
-        final headerSearch = args['header_search'] as String?;
-        final requestBodySearch = args['request_body_search'] as String?;
-        final responseBodySearch = args['response_body_search'] as String?;
-        final minDuration = (args['min_duration'] as num?)?.toInt();
-        final maxDuration = (args['max_duration'] as num?)?.toInt();
+        final query = mcpAsString(args['query']);
+        final method = mcpAsString(args['method']);
+        final statusCode = mcpAsString(args['status_code']);
+        final domain = mcpAsString(args['domain']);
+        final headerSearch = mcpAsString(args['header_search']);
+        final requestBodySearch = mcpAsString(args['request_body_search']);
+        final responseBodySearch = mcpAsString(args['response_body_search']);
+        final minDuration = mcpAsInt(args['min_duration']);
+        final maxDuration = mcpAsInt(args['max_duration']);
 
         try {
           // 委托给 McpBridge 的增强过滤方法
@@ -1912,7 +1953,7 @@ class McpServer {
         return McpBridge.requestToJson(req, includeBody: true, redact: _redactEnabled);
 
       case 'start_proxy':
-        int port = (args['port'] as num?)?.toInt() ?? 9099;
+        int port = mcpAsInt(args['port']) ?? 9099;
         var config = await Configuration.instance;
         config.port = port;
         if (ProxyServer.current?.isRunning == true) {
@@ -1942,7 +1983,7 @@ class McpServer {
 
       case 'get_quic_sessions':
         // QUIC 连接概览：会话元数据 + 10 分钟时间轴 + 密钥日志状态 + 已解密流预览
-        final quicHostFilter = (args['host_filter'] as String?)?.toLowerCase();
+        final quicHostFilter = (mcpAsString(args['host_filter']))?.toLowerCase();
         final quicLimit = _clampLimit(args['limit'], 50);
         final quicNow = DateTime.now();
         final allQuic = QuicProbe.instance.sessions
@@ -2016,8 +2057,8 @@ class McpServer {
         // 对已抓流量跑被动安全自检（只读：不发送请求、不投递载荷）
         final auditRequests = McpBridge().source.toList();
         final auditLimit = _clampLimit(args['limit'], 100);
-        final auditSeverity = args['severity'] as String?;
-        final auditCategoryArg = args['category'] as String?;
+        final auditSeverity = mcpAsString(args['severity']);
+        final auditCategoryArg = mcpAsString(args['category']);
         final auditCategories = (auditCategoryArg == null || auditCategoryArg.trim().isEmpty)
             ? null
             : auditCategoryArg
@@ -2104,7 +2145,7 @@ class McpServer {
 
       case 'get_mcp_audit':
         final auditLimit = _clampLimit(args['limit'], 50);
-        final auditTool = args['tool'] as String?;
+        final auditTool = mcpAsString(args['tool']);
         final auditOnlyFailed = mcpAsBool(args['only_failed']);
         final records = McpAuditLog.instance.recent(
           limit: auditLimit,
@@ -2214,27 +2255,27 @@ class McpServer {
         };
 
       case 'get_history_requests':
-        final historyId = (args['history_id'] as num?)?.toInt();
+        final historyId = mcpAsInt(args['history_id']);
         if (historyId == null) {
           return {'error': 'history_id is required (call list_histories for valid ids)'};
         }
         final hLimit = _clampLimit(args['limit'], 20);
-        final hOffset = (args['offset'] as num?)?.toInt() ?? 0;
-        final hKeyword = args['keyword'] as String?;
+        final hOffset = mcpAsInt(args['offset']) ?? 0;
+        final hKeyword = mcpAsString(args['keyword']);
         final hStore = _getHistoryStore();
         List<HttpRequest> hFlows;
         try {
           hFlows = (hKeyword != null && hKeyword.isNotEmpty)
               ? await hStore.historySearch(historyId, hKeyword,
-                  side: args['side'] as String? ?? 'both', limit: hLimit)
+                  side: mcpAsString(args['side']) ?? 'both', limit: hLimit)
               : await hStore.historyQuery(historyId,
                   limit: hLimit,
                   offset: hOffset,
-                  host: args['host'] as String?,
-                  method: args['method'] as String?,
-                  statusFrom: (args['status_from'] as num?)?.toInt(),
-                  statusTo: (args['status_to'] as num?)?.toInt(),
-                  sinceMs: (args['since_ms'] as num?)?.toInt());
+                  host: mcpAsString(args['host']),
+                  method: mcpAsString(args['method']),
+                  statusFrom: mcpAsInt(args['status_from']),
+                  statusTo: mcpAsInt(args['status_to']),
+                  sinceMs: mcpAsInt(args['since_ms']));
         } on ArgumentError catch (_) {
           return {'error': 'history not found: $historyId (call list_histories for valid ids)'};
         }
@@ -2248,13 +2289,13 @@ class McpServer {
 
       case 'get_recent_requests':
         final limit = _clampLimit(args['limit'], 20);
-        final page = (args['page'] as num?)?.toInt() ?? 0;
-        final urlFilter = args['url_filter'] as String?;
-        final method = args['method'] as String?;
-        final domain = args['domain'] as String?;
+        final page = mcpAsInt(args['page']) ?? 0;
+        final urlFilter = mcpAsString(args['url_filter']);
+        final method = mcpAsString(args['method']);
+        final domain = mcpAsString(args['domain']);
         final compact = args['compact'] == true;
-        final since = _parseTimeArg(args['since_time'] as String?);
-        final until = _parseTimeArg(args['end_time'] as String?);
+        final since = _parseTimeArg(mcpAsString(args['since_time']));
+        final until = _parseTimeArg(mcpAsString(args['end_time']));
 
         // 取到目标页所需的最大条数，再按时间范围过滤 + 分页（借鉴 MCP4HttpCanary 的 AI 友好输出）
         var requests = McpBridge().getRecentRequests(
@@ -2335,7 +2376,7 @@ class McpServer {
         };
 
       case 'find_similar_requests':
-        final refId = args['request_id'] as String;
+        final refId = mcpRequireString(args['request_id'], 'request_id');
         final limit = _clampLimit(args['limit'], 10);
 
         final refReq = McpBridge().getRequestById(refId);
@@ -2421,7 +2462,7 @@ class McpServer {
       case 'find_sensitive_data':
         // 在请求/响应中搜索敏感数据（密钥、密码、手机号、身份证等）
         try {
-          final requestId = args['request_id'] as String?;
+          final requestId = mcpAsString(args['request_id']);
           final searchBody = mcpAsBool(args['search_body']) ?? true;
           final requests = requestId != null
               ? McpBridge().source
@@ -2533,8 +2574,8 @@ class McpServer {
       case 'get_cookie_info':
         // 分析某个域的 Cookie（名称、值、过期时间、HttpOnly 等）
         try {
-          final domain = args['domain'] as String?;
-          final requestId = args['request_id'] as String?;
+          final domain = mcpAsString(args['domain']);
+          final requestId = mcpAsString(args['request_id']);
 
           var requests = McpBridge().source;
           if (requestId != null) {
@@ -2639,7 +2680,7 @@ class McpServer {
       case 'get_domain_summary':
         // 汇总某个域名的请求统计（方法分布、状态码、平均耗时、数据量）
         try {
-          final domain = args['domain'] as String?;
+          final domain = mcpAsString(args['domain']);
           if (domain == null || domain.isEmpty) {
             return {'error': 'domain parameter is required'};
           }
@@ -2714,7 +2755,7 @@ class McpServer {
         }
         try {
           var clickableOnly = mcpAsBool(args['clickable_only']) ?? false;
-          var packageFilter = args['package_filter'] as String?;
+          var packageFilter = mcpAsString(args['package_filter']);
           var uiJson = await McpScreen.dumpUi(
             clickableOnly: clickableOnly,
             packageFilter: packageFilter,
@@ -2729,8 +2770,8 @@ class McpServer {
           return {'error': 'Device control is only available on Android'};
         }
         try {
-          var x = (args['x'] as num).toInt();
-          var y = (args['y'] as num).toInt();
+          var x = mcpAsInt(args['x']) ?? 0;
+          var y = mcpAsInt(args['y']) ?? 0;
           var success = await McpScreen.tap(x, y);
           return {'success': success};
         } catch (e) {
@@ -2742,9 +2783,9 @@ class McpServer {
           return {'error': 'Device control is only available on Android'};
         }
         try {
-          var x = (args['x'] as num).toInt();
-          var y = (args['y'] as num).toInt();
-          var duration = (args['duration'] as num?)?.toInt() ?? 50;
+          var x = mcpAsInt(args['x']) ?? 0;
+          var y = mcpAsInt(args['y']) ?? 0;
+          var duration = mcpAsInt(args['duration']) ?? 50;
           var success = await McpScreen.click(x, y, duration: duration);
           return {'success': success};
         } catch (e) {
@@ -2756,11 +2797,11 @@ class McpServer {
           return {'error': 'Device control is only available on Android'};
         }
         try {
-          var x1 = (args['x1'] as num).toInt();
-          var y1 = (args['y1'] as num).toInt();
-          var x2 = (args['x2'] as num).toInt();
-          var y2 = (args['y2'] as num).toInt();
-          var duration = (args['duration'] as num?)?.toInt() ?? 300;
+          var x1 = mcpAsInt(args['x1']) ?? 0;
+          var y1 = mcpAsInt(args['y1']) ?? 0;
+          var x2 = mcpAsInt(args['x2']) ?? 0;
+          var y2 = mcpAsInt(args['y2']) ?? 0;
+          var duration = mcpAsInt(args['duration']) ?? 300;
           var success = await McpScreen.swipe(
             x1,
             y1,
@@ -2778,7 +2819,7 @@ class McpServer {
           return {'error': 'Device control is only available on Android'};
         }
         try {
-          var keycode = (args['keycode'] as num).toInt();
+          var keycode = mcpAsInt(args['keycode']) ?? 0;
           var success = await McpScreen.keyEvent(keycode);
           return {'success': success};
         } catch (e) {
@@ -2790,7 +2831,7 @@ class McpServer {
           return {'error': 'Device control is only available on Android'};
         }
         try {
-          var text = args['text'] as String;
+          var text = mcpRequireString(args['text'], 'text');
           var success = await McpScreen.inputText(text);
           return {'success': success};
         } catch (e) {
@@ -2824,10 +2865,10 @@ class McpServer {
           return {'error': 'Device control is only available on Android'};
         }
         try {
-          var command = args['command'] as String;
+          var command = mcpRequireString(args['command'], 'command');
           var useSu = mcpAsBool(args['use_su']) ?? false;
-          var mode = args['mode'] as String?;
-          var timeoutMs = (args['timeout_ms'] as num?)?.toInt() ?? 10000;
+          var mode = mcpAsString(args['mode']);
+          var timeoutMs = mcpAsInt(args['timeout_ms']) ?? 10000;
           return await McpScreen.shell(
             command,
             useSu: useSu,
@@ -2866,8 +2907,8 @@ class McpServer {
 
       case 'approve_intercept':
         try {
-          final requestId = args['request_id'] as String;
-          final modifier = args['modifier'] as Map<String, dynamic>?;
+          final requestId = mcpRequireString(args['request_id'], 'request_id');
+          final modifier = mcpAsMap(args['modifier']);
           final interceptor = RequestBreakpointInterceptor.instance;
 
           if (interceptor.isRequestPaused(requestId)) {
@@ -2935,8 +2976,8 @@ class McpServer {
 
       case 'reject_intercept':
         try {
-          final requestId = args['request_id'] as String;
-          final reason = args['reason'] as String? ?? 'Rejected by user';
+          final requestId = mcpRequireString(args['request_id'], 'request_id');
+          final reason = mcpAsString(args['reason']) ?? 'Rejected by user';
           final interceptor = RequestBreakpointInterceptor.instance;
 
           if (interceptor.isResponsePaused(requestId)) {
@@ -2984,8 +3025,8 @@ class McpServer {
 
       case 'resume_websocket_message':
         try {
-          final frameId = args['frame_id'] as String;
-          final payload = args['payload'] as String?;
+          final frameId = mcpRequireString(args['frame_id'], 'frame_id');
+          final payload = mcpAsString(args['payload']);
           final result = await McpBridge().resumeWebSocketMessage(frameId, payload: payload);
           return {
             'status': result ? 'resumed' : 'failed',
@@ -2998,8 +3039,8 @@ class McpServer {
 
       case 'abort_websocket_message':
         try {
-          final frameId = args['frame_id'] as String;
-          final reason = args['reason'] as String? ?? 'Aborted by user';
+          final frameId = mcpRequireString(args['frame_id'], 'frame_id');
+          final reason = mcpAsString(args['reason']) ?? 'Aborted by user';
           final result = await McpBridge().abortWebSocketMessage(frameId, reason: reason);
           return {
             'status': result ? 'aborted' : 'failed',
@@ -3014,8 +3055,8 @@ class McpServer {
       // ==================== Weak Network Simulation Tools (1.3.1+) ====================
       case 'add_weak_network_rule':
         try {
-          final urlPattern = args['url_pattern'] as String;
-          final profileId = args['profile_id'] as String;
+          final urlPattern = mcpRequireString(args['url_pattern'], 'url_pattern');
+          final profileId = mcpRequireString(args['profile_id'], 'profile_id');
           final enabled = mcpAsBool(args['enabled']) ?? true;
 
           var manager = await NetworkConditionManager.instance;
@@ -3052,15 +3093,15 @@ class McpServer {
 
       case 'add_custom_network_profile':
         try {
-          final name = args['name'] as String;
-          final uploadKbps = (args['upload_kbps'] as num?)?.toInt();
-          final downloadKbps = (args['download_kbps'] as num?)?.toInt();
+          final name = mcpRequireString(args['name'], 'name');
+          final uploadKbps = mcpAsInt(args['upload_kbps']);
+          final downloadKbps = mcpAsInt(args['download_kbps']);
           final requestLatencyMs =
-              (args['request_latency_ms'] as num?)?.toInt() ?? 0;
+              mcpAsInt(args['request_latency_ms']) ?? 0;
           final responseLatencyMs =
-              (args['response_latency_ms'] as num?)?.toInt() ?? 0;
-          final jitterMs = (args['jitter_ms'] as num?)?.toInt() ?? 0;
-          final lossRate = (args['loss_rate'] as num?)?.toDouble() ?? 0.0;
+              mcpAsInt(args['response_latency_ms']) ?? 0;
+          final jitterMs = mcpAsInt(args['jitter_ms']) ?? 0;
+          final lossRate = mcpAsDouble(args['loss_rate']) ?? 0.0;
           final offline = mcpAsBool(args['offline']) ?? false;
 
           var manager = await NetworkConditionManager.instance;
@@ -3109,7 +3150,7 @@ class McpServer {
 
       case 'remove_weak_network_rule':
         try {
-          final urlPattern = args['url_pattern'] as String;
+          final urlPattern = mcpRequireString(args['url_pattern'], 'url_pattern');
           var manager = await NetworkConditionManager.instance;
           manager.rules.removeWhere((r) => r.url == urlPattern);
           await manager.flushConfig();
@@ -3160,9 +3201,9 @@ class McpServer {
 
       case 'set_environment_variable':
         try {
-          final key = args['key'] as String;
-          final value = args['value'] as String?;
-          final environmentId = args['environment_id'] as String?;
+          final key = mcpRequireString(args['key'], 'key');
+          final value = mcpAsString(args['value']);
+          final environmentId = mcpAsString(args['environment_id']);
           final enabled = mcpAsBool(args['enabled']) ?? true;
 
           var manager = await EnvironmentManager.instance;
@@ -3220,7 +3261,7 @@ class McpServer {
 
       case 'create_environment':
         try {
-          final name = args['name'] as String;
+          final name = mcpRequireString(args['name'], 'name');
           var manager = await EnvironmentManager.instance;
           var env = Environment(id: RandomUtil.randomString(8), name: name);
           manager.upsertEnvironment(env);
@@ -3240,7 +3281,7 @@ class McpServer {
 
       case 'set_active_environment':
         try {
-          final environmentId = args['environment_id'] as String?;
+          final environmentId = mcpAsString(args['environment_id']);
           var manager = await EnvironmentManager.instance;
 
           if (environmentId == null || environmentId.isEmpty) {
@@ -3272,7 +3313,7 @@ class McpServer {
 
       case 'remove_environment':
         try {
-          final environmentId = args['environment_id'] as String;
+          final environmentId = mcpRequireString(args['environment_id'], 'environment_id');
           var manager = await EnvironmentManager.instance;
 
           // Prevent removing Global
@@ -3399,8 +3440,8 @@ class McpServer {
 
       case 'set_host':
         try {
-          final action = (args['action'] as String? ?? 'add').toLowerCase();
-          final host = (args['host'] as String? ?? '').trim();
+          final action = (mcpAsString(args['action']) ?? 'add').toLowerCase();
+          final host = (mcpAsString(args['host']) ?? '').trim();
           if (host.isEmpty) return {'error': 'host is required'};
           final port = mcpAsInt(args['port']);
           var manager = await HostsManager.instance;
@@ -3436,7 +3477,7 @@ class McpServer {
             case 'update':
               final item = find();
               if (item == null) return {'error': 'No rule found for $host'};
-              final toAddress = (args['to_address'] as String? ?? '').trim();
+              final toAddress = (mcpAsString(args['to_address']) ?? '').trim();
               if (toAddress.isEmpty) return {'error': 'to_address is required for update'};
               item.toAddress = toAddress;
               if (args.containsKey('port')) item.port = port;
@@ -3451,7 +3492,7 @@ class McpServer {
 
             case 'add':
             default:
-              final toAddress = (args['to_address'] as String? ?? '').trim();
+              final toAddress = (mcpAsString(args['to_address']) ?? '').trim();
               if (toAddress.isEmpty) return {'error': 'to_address is required for add'};
               final existing = find();
               if (existing != null) {
@@ -3509,7 +3550,7 @@ class McpServer {
 
       case 'set_reverse_proxy':
         try {
-          final action = (args['action'] as String? ?? 'list').toLowerCase();
+          final action = (mcpAsString(args['action']) ?? 'list').toLowerCase();
           var conf = Configuration.loaded;
           if (conf == null) return {'error': 'Configuration not loaded yet'};
 
@@ -3542,7 +3583,7 @@ class McpServer {
             return {'status': 'success', 'enabled': enabled};
           }
 
-          final prefix = (args['prefix'] as String? ?? '').trim();
+          final prefix = (mcpAsString(args['prefix']) ?? '').trim();
           if (prefix.isEmpty) return {'error': 'prefix is required for $action'};
           final normalized = ReverseProxyRule.normalizePrefix(prefix);
 
@@ -3578,12 +3619,12 @@ class McpServer {
           }
 
           // add / update
-          final target = (args['target'] as String? ?? '').trim();
+          final target = (mcpAsString(args['target']) ?? '').trim();
           if (target.isEmpty) return {'error': 'target is required for $action'};
           final uri = Uri.tryParse(target);
           if (uri == null || uri.host.isEmpty) return {'error': 'Invalid target URL: $target'};
           final stripPrefix = mcpAsBool(args['strip_prefix']) ?? false;
-          final hostHeader = (args['host_header'] as String? ?? '').trim();
+          final hostHeader = (mcpAsString(args['host_header']) ?? '').trim();
           final enabled = mcpAsBool(args['enabled']) ?? true;
 
           final list = List<ReverseProxyRule>.from(conf.reverseProxyRules);

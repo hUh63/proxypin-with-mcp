@@ -376,7 +376,9 @@ class McpActions {
             name: a['name']?.toString(),
             type: RequestMapType.local,
           );
-          var headers = (a['headers'] as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
+          var headers = (a['headers'] is Map)
+              ? (a['headers'] as Map).map<String, String>((k, v) => MapEntry(k.toString(), v.toString()))
+              : null;
           var item = RequestMapItem(
             statusCode: _int(a['status_code']) ?? 200,
             headers: headers,
@@ -439,7 +441,9 @@ class McpActions {
           if (a['name'] != null) rule.name = a['name'].toString();
           if (a['status_code'] != null) item.statusCode = _int(a['status_code']);
           if (a['headers'] is Map) {
-            item.headers = (a['headers'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
+            item.headers = (a['headers'] is Map)
+                ? (a['headers'] as Map).map<String, String>((k, v) => MapEntry(k.toString(), v.toString()))
+                : {};
           }
           if (a['body'] != null) item.body = a['body'].toString();
           if (a['enabled'] is bool) rule.enabled = a['enabled'] as bool;
@@ -608,7 +612,9 @@ class McpActions {
       case RewriteType.replaceRequestHeader:
       case RewriteType.replaceResponseHeader:
         if (op['headers'] is Map) {
-          item.headers = (op['headers'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
+          item.headers = (op['headers'] is Map)
+              ? (op['headers'] as Map).map<String, String>((k, v) => MapEntry(k.toString(), v.toString()))
+              : {};
         }
         break;
       case RewriteType.replaceRequestBody:
@@ -628,7 +634,9 @@ class McpActions {
 
   static List<RewriteItem> _parseRewriteOps(dynamic ops) {
     if (ops is! List) throw ToolException('operations must be a list of operation objects');
-    return ops.map((e) => _rewriteItemFromArgs((e as Map).cast<String, dynamic>())).toList();
+    // 元素类型不对（字符串/数字）时以前会抛 TypeError；这里跳过它们，
+    // 让其余合法操作照常生效。
+    return ops.whereType<Map>().map((e) => _rewriteItemFromArgs(e.cast<String, dynamic>())).toList();
   }
 
   static Map<String, dynamic> _rewriteItemToJson(RewriteItem item) {
@@ -1155,7 +1163,8 @@ class McpActions {
             if (url == null || url.isEmpty) throw ToolException('url or curl is required');
             var method = HttpMethod.valueOf(a['method']?.toString() ?? 'GET');
             request = HttpRequest(method, url);
-            (a['headers'] as Map?)?.forEach((k, v) => request.headers.add(k.toString(), v.toString()));
+            if (a['headers'] is Map)
+              (a['headers'] as Map).forEach((k, v) => request.headers.add(k.toString(), v.toString()));
             var body = a['body']?.toString();
             if (body != null) request.body = utf8.encode(body);
           }

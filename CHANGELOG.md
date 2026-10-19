@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.67.47 (2026-10-19)
+
+### MCP 工具参数全面宽容
+
+LLM 客户端经常把参数类型传错（`{"status_code": 200}`、`{"port": "8080"}`、
+`{"limit": 1}`、headers 传成字符串……），原来 `as String` / `as num` / `as Map`
+会抛 TypeError，整个工具调用直接失败并回一段栈信息。
+
+- 新增 `mcpAsString` / `mcpAsDouble` / `mcpAsMap` / `mcpRequireString`：
+  70 处参数读取从强转改为宽容解析（含 Map 与 JSON 字符串互认）。
+- 改写操作的 `operations` 列表里混入非对象元素时跳过该元素，不再整批失败。
+
+### HTTP/2 畸形帧不再打崩连接
+
+- DATA 帧声明 `PADDED` 但载荷里没有 Pad Length 字节、或 pad 长度大于剩余字节时，
+  以前算出负数长度交给 `readBytes` 抛 RangeError，整条连接被关掉；现在按「无数据」处理。
+- 帧头声明的 `length` 超过本端 `SETTINGS_MAX_FRAME_SIZE` 的 64 倍时直接判协议错误：
+  对端只报长度不发数据会让缓冲区涨到 16MB/帧，多连接叠加能吃穿内存。
+
 ## v1.67.46 (2026-10-19)
 
 ### 断点/改写规则：非法方法名仍按「不按方法过滤」处理
