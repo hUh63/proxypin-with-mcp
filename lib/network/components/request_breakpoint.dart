@@ -28,11 +28,26 @@ class RequestBreakpointInterceptor extends Interceptor {
   RequestBreakpointInterceptor._() {
     _pausedRequests = ExpiringCache(
       duration: Duration(minutes: 10),
-      onExpire: (id, _) => _pausedRequestDetails.remove(id),
+      onExpire: (id, completer) {
+        final detail = _pausedRequestDetails.remove(id);
+        // 超时必须放行：只清详情不完成 Completer 的话，onRequest 里的
+        // completer.future 永不返回，这条请求（连同连接、已读入的 buffer）
+        // 会一直挂着，客户端看到的是「无响应」而不是超时。
+        if (!completer.isCompleted) {
+          logger.w('断点请求 $id 超过 10 分钟未处理，自动放行');
+          completer.complete(detail);
+        }
+      },
     );
     _pausedResponses = ExpiringCache(
       duration: Duration(minutes: 10),
-      onExpire: (id, _) => _pausedResponseDetails.remove(id),
+      onExpire: (id, completer) {
+        final detail = _pausedResponseDetails.remove(id);
+        if (!completer.isCompleted) {
+          logger.w('断点响应 $id 超过 10 分钟未处理，自动放行');
+          completer.complete(detail);
+        }
+      },
     );
   }
 

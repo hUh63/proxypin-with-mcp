@@ -76,8 +76,16 @@ class NetworkConditionManager extends ChangeNotifier {
   }
 
   /// 默认预设：新建规则时用作初始选择。
-  NetworkConditionProfile get defaultProfile =>
-      NetworkConditionProfile.builtin.firstWhere((p) => p.id == _defaultBuiltinId);
+  ///
+  /// 配置里存的内置 profile id 可能已经不存在（升级后预设被调整、配置文件
+  /// 被手工改过）。以前这里 firstWhere 直接抛 StateError，而它跑在 resolve() 里
+  /// ——每条请求都会抛。现在回落到第一个内置预设。
+  NetworkConditionProfile get defaultProfile {
+    for (final p in NetworkConditionProfile.builtin) {
+      if (p.id == _defaultBuiltinId) return p;
+    }
+    return NetworkConditionProfile.builtin.first;
+  }
 
   Future<void> _load() async {
     var json = await _storageFile.readAsString();

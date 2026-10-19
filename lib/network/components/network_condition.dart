@@ -51,10 +51,17 @@ class NetworkConditionInterceptor extends Interceptor {
     return v < 0 ? 0 : v;
   }
 
+  /// 单个方向限速引入的最大延迟，避免 1kbps + 大 body 把连接挂到超时。
+  static const int _maxThrottleMs = 60 * 1000;
+
   /// 根据带宽估算 body 的传输耗时。kbps 视作 kilobits/s（1 kbps = 125 B/s）。
   int _throttleMs(int bytes, int? kbps) {
     if (kbps == null || kbps <= 0 || bytes <= 0) return 0;
-    return (bytes * 8 / kbps).ceil();
+    // bytes*8 是 bit；bit / (kilobit per second) 得到的是**秒**，要再 *1000 换成毫秒。
+    // 旧实现漏了这步：100KB 的 body 限速 100kbps 只延迟 8ms（正确是 8s），
+    // 等于下行/上行限速根本没生效。
+    final ms = (bytes * 8 / kbps * 1000).ceil();
+    return ms > _maxThrottleMs ? _maxThrottleMs : ms;
   }
 
   @override
