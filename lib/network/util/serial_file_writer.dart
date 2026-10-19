@@ -38,4 +38,14 @@ class SerialFileWriter {
     _queues[key] = next.catchError((Object _) {});
     return next;
   }
+
+  /// 需要在写入过程中自己控制 I/O（大文件逐条写、复用 IOSink 缓冲）时用这个：
+  /// 同一文件的 [action] 会按顺序串行执行。
+  static Future<void> run(File file, Future<void> Function(File file) action) {
+    final key = file.path;
+    final previous = _queues[key] ?? Future<void>.value();
+    final next = previous.catchError((Object _) {}).then<void>((_) => action(file));
+    _queues[key] = next.catchError((Object _) {});
+    return next;
+  }
 }

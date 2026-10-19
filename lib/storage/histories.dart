@@ -29,6 +29,7 @@ import 'package:proxypin/utils/har.dart';
 import 'package:proxypin/utils/saz.dart';
 import 'package:proxypin/utils/listenable_list.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 ///历史存储
 ///@Author WangHongEn
@@ -194,11 +195,21 @@ class HistoryStorage {
     final homePath = await _homePath();
     String path = '$homePath${Platform.pathSeparator}${Files.getName(history.path)}';
     var file = File(path);
-    for (int i = 0; i < requests.length; i++) {
-      var request = requests[i];
-      var har = Har.toHar(request);
-      await file.writeAsString("${jsonEncode(har)},\n", mode: i == 0 ? FileMode.write : FileMode.append);
-    }
+    // 以前每条请求一次 writeAsString（open/truncate/close 各一次）：上万条的历史
+    // 要写上万次文件，慢到几十秒；并发保存还会互相截断。改成单个 IOSink 顺序写，
+    // 并按路径串行执行。
+    await SerialFileWriter.run(file, (f) async {
+      final sink = f.openWrite();
+      try {
+        for (final request in requests) {
+          sink.write(jsonEncode(Har.toHar(request)));
+          sink.write(',\n');
+        }
+        await sink.flush();
+      } finally {
+        await sink.close();
+      }
+    });
 
     history.requestLength = requests.length;
     await file.length().then((size) => history.fileSize = size);
