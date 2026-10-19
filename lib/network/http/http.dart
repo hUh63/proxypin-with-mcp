@@ -268,7 +268,10 @@ abstract class HttpMessage {
   void addMessage(WebSocketFrame frame) {
     messages.add(frame);
     if (messages.length > maxMessages) {
-      messages.removeRange(0, messages.length - maxMessages);
+      // 只删一条的话，到达上限后每来一帧都要搬动 20000 个元素（O(n)）；高频 WS
+      // 连接（每秒几百帧）会持续占满主 isolate。一次裁到 90%，把搬移均摊掉。
+      final keep = (maxMessages * 0.9).floor();
+      messages.removeRange(0, messages.length - keep);
     }
   }
 }
