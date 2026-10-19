@@ -24,6 +24,7 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 规则优先级
 enum RulePriority { low, normal, high, critical }
@@ -688,7 +689,7 @@ class McpRuleEngine {
     try {
       final file = await Paths.getPath('mcp_rules.json');
       final data = _rules.map((r) => r.toJson()).toList();
-      await file.writeAsString(jsonEncode(data));
+      await SerialFileWriter.writeString(file, jsonEncode(data));
     } catch (e, st) {
       logger.e('保存规则失败', error: e, stackTrace: st);
     }

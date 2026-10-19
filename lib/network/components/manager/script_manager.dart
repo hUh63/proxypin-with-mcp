@@ -30,6 +30,7 @@ import 'package:proxypin/ui/component/device.dart';
 import 'package:http/http.dart' as http;
 
 import '../js/script_engine.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// @author wanghongen
 /// 2023/10/06
@@ -325,7 +326,7 @@ async function onResponse(context, request, response) {
     String scriptPath = "${separator}scripts$separator${RandomUtil.randomString(16)}.js";
     var file = File(path + scriptPath);
     await file.create(recursive: true);
-    file.writeAsString(script);
+    await SerialFileWriter.writeString(file, script);
     item.scriptPath = scriptPath;
     list.add(item);
     _scriptMap[item] = script;
@@ -344,7 +345,7 @@ async function onResponse(context, request, response) {
     }
 
     final home = await Paths.homePath();
-    File(home + item.scriptPath!).writeAsString(script);
+    await SerialFileWriter.writeString(File(home + item.scriptPath!), script);
     _scriptMap[item] = script;
   }
 
@@ -373,7 +374,8 @@ async function onResponse(context, request, response) {
 
   ///刷新配置
   Future<void> flushConfig() async {
-    await _path.then((value) => value.writeAsString(jsonEncode({'enabled': enabled, 'list': list})));
+    final path = await _path;
+    await SerialFileWriter.writeString(path, jsonEncode({'enabled': enabled, 'list': list}));
   }
 
   Map<dynamic, dynamic> scriptSession = {};

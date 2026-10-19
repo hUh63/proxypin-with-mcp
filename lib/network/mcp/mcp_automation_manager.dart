@@ -29,6 +29,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import '../components/manager/script_manager.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// MCP 自动化任务触发器类型
 enum AutomationTriggerType {
@@ -764,7 +765,7 @@ class MCPAutomationManager {
         filePath = '${dir.path}/mcp_automation_export_${DateTime.now().millisecondsSinceEpoch}.$extension';
       }
       
-      await io.File(filePath).writeAsString(content);
+      await SerialFileWriter.writeString(io.File(filePath), content);
       logger.i('[MCP Automation] Exported data to: $filePath for task: ${task.name}');
     } catch (e) {
       logger.e('[MCP Automation] Failed to export data: $e');

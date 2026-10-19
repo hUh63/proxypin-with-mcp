@@ -6,6 +6,7 @@ import 'package:proxypin/storage/path.dart';
 import '../../util/logger.dart';
 import '../../util/random.dart';
 import '../../util/url_pattern.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 class RequestMapManager {
   static RequestMapManager? _instance;
@@ -37,7 +38,7 @@ class RequestMapManager {
     var file = File(path + itemPath);
     await file.create(recursive: true);
     final itemJson = jsonEncode(item.toJson());
-    file.writeAsString(itemJson);
+    await SerialFileWriter.writeString(file, itemJson);
 
     rule.itemPath = itemPath;
     _mapItemsCache[rule] = item;
@@ -52,7 +53,7 @@ class RequestMapManager {
     if (rule.itemPath != null) {
       final path = await Paths.homePath();
       var file = File('$path${rule.itemPath}');
-      await file.writeAsString(jsonEncode(item.toJson()));
+      await SerialFileWriter.writeString(file, jsonEncode(item.toJson()));
     }
     _mapItemsCache[rule] = item;
     await flushConfig();
@@ -137,7 +138,7 @@ class RequestMapManager {
       'list': rules.map((e) => e.toJson()).toList(),
     };
 
-    await file.writeAsString(jsonEncode(config));
+    await SerialFileWriter.writeString(file, jsonEncode(config));
   }
 }
 

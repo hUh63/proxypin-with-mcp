@@ -22,6 +22,7 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/file_read.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/random.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// @author wanghongen
 /// 2023/7/26
@@ -121,7 +122,7 @@ class RequestRewriteManager {
     }
     var json = jsonEncode(toJson());
     logger.i('刷新请求重写配置文件 ${file.path}');
-    await file.writeAsString(json);
+    await SerialFileWriter.writeString(file, json);
   }
 
   ///添加规则
@@ -131,7 +132,7 @@ class RequestRewriteManager {
     String rewritePath = "${separator}rewrite$separator${RandomUtil.randomString(16)}.json";
     var file = File(home.path + rewritePath);
     await file.create(recursive: true);
-    file.writeAsString(jsonEncode(items.map((e) => e.toJson()).toList()));
+    await SerialFileWriter.writeString(file, jsonEncode(items.map((e) => e.toJson()).toList()));
     rule.rewritePath = rewritePath;
 
     rules.add(rule);
@@ -159,7 +160,7 @@ class RequestRewriteManager {
       await file.create(recursive: true);
     }
 
-    await file.writeAsString(jsonEncode(items.map((e) => e.toJson()).toList()));
+    await SerialFileWriter.writeString(file, jsonEncode(items.map((e) => e.toJson()).toList()));
     rewriteItemsCache[rule] = items;
   }
 

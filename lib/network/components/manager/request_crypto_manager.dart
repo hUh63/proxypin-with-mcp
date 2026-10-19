@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/file_read.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 class RequestCryptoManager {
   static String separator = Platform.pathSeparator;
@@ -75,7 +76,7 @@ class RequestCryptoManager {
     }
     final json = jsonEncode(toJson());
     logger.i('刷新请求加解密配置文件 ${file.path}');
-    await file.writeAsString(json);
+    await SerialFileWriter.writeString(file, json);
   }
 
   /// Get the first matching rule for the given URL and optional field name

@@ -20,6 +20,7 @@ import 'dart:io';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// Hosts manager
 /// @author wanghongen
@@ -95,7 +96,8 @@ class HostsManager {
       'enabled': enabled,
       'list': config.map((e) => e.toJson()).toList(),
     });
-    (await configFile).writeAsString(json);
+    // 以前没 await：写入失败静默、且紧接着的读可能拿到旧/空内容。
+    await SerialFileWriter.writeString(await configFile, json);
   }
 
   List<HostsItem> getFolderList(String parent) {

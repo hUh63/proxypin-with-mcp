@@ -22,6 +22,7 @@ import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/host_filter.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 采集方案（借鉴 proxypin-mcp-workbench 的 Capture Plan 思路）。
 ///
@@ -418,7 +419,7 @@ class CapturePlanManager extends ChangeNotifier {
   Future<void> _save() async {
     try {
       final file = await Paths.getPath(_fileName);
-      await file.writeAsString(jsonEncode(_plans.map((plan) => plan.toJson()).toList(growable: false)));
+      await SerialFileWriter.writeString(file, jsonEncode(_plans.map((plan) => plan.toJson()).toList(growable: false)));
     } catch (e) {
       logger.e('采集方案保存失败', error: e);
     }

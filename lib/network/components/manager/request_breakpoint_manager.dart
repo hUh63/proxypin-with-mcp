@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 class RequestBreakpointRule {
   bool enabled;
@@ -117,7 +118,7 @@ class RequestBreakpointManager {
         'enabled': enabled,
         'list': list.map((e) => e.toJson()).toList(),
       };
-      await file.writeAsString(jsonEncode(json));
+      await SerialFileWriter.writeString(file, jsonEncode(json));
     } catch (e) {
       logger.e('Failed to save request breakpoint config', error: e);
     }

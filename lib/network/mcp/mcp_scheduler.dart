@@ -20,6 +20,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/cron_expression.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 无参数无返回值的回调类型
 typedef VoidCallback = void Function();
@@ -226,7 +227,7 @@ class McpScheduler {
           .where((t) => t.actionList.isNotEmpty && !t.isCancelled)
           .map((t) => t.toJson())
           .toList();
-      await file.writeAsString(jsonEncode(data));
+      await SerialFileWriter.writeString(file, jsonEncode(data));
     } catch (e, st) {
       logger.e('保存定时任务失败', error: e, stackTrace: st);
     }

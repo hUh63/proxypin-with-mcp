@@ -15,6 +15,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 弱网模拟配置管理
 ///
@@ -183,7 +184,7 @@ class NetworkConditionManager extends ChangeNotifier {
   }
 
   Future<void> flushConfig() async {
-    await _storageFile.writeAsString(jsonEncode(toJson()));
+    await SerialFileWriter.writeString(_storageFile, jsonEncode(toJson()));
     notifyListeners();
   }
 

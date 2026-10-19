@@ -18,6 +18,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/lang.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 单个环境变量:key/value/enabled
 class EnvironmentVariable {
@@ -190,7 +191,7 @@ class EnvironmentManager extends ChangeNotifier {
         'activeId': activeId,
         'environments': environments.map((e) => e.toJson()).toList(),
       });
-      await file.writeAsString(json);
+      await SerialFileWriter.writeString(file, json);
     } catch (e, s) {
       logger.e('EnvironmentManager flush failed', error: e, stackTrace: s);
     }

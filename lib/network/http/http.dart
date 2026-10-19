@@ -163,11 +163,13 @@ abstract class HttpMessage {
       return "";
     }
 
-    if (_bodyString != null) {
+    // 调用方显式指定了非 UTF-8 编码时不能走缓存——缓存里存的是默认编码的
+    // 解码结果，直接返回会让「切换编码」看起来完全没生效。
+    final bool isDefaultCharset = charset == null || charset == 'utf-8' || charset == 'utf8';
+    if (_bodyString != null && isDefaultCharset) {
       return _bodyString!;
     }
 
-    final bool isDefaultCharset = charset == null || charset == 'utf-8' || charset == 'utf8';
     charset ??= this.charset;
     try {
       List<int> rawBody = body!;

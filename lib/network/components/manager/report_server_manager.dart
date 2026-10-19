@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../storage/path.dart';
 import '../../util/logger.dart';
 import '../../util/url_pattern.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 class ReportServerManager {
   static ReportServerManager? _instance;
@@ -79,7 +80,7 @@ class ReportServerManager {
   Future<void> _flush() async {
     final file = await Paths.getPath("report_servers.json");
     final list = servers;
-    await file.writeAsString(jsonEncode(list.map((e) => e.toJson()).toList()));
+    await SerialFileWriter.writeString(file, jsonEncode(list.map((e) => e.toJson()).toList()));
   }
 }
 

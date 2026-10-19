@@ -19,6 +19,7 @@ import 'dart:io';
 
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 请求屏蔽
 /// @author wanghongen
@@ -90,7 +91,7 @@ class RequestBlockManager {
 
   ///刷新配置
   Future<void> flushConfig() async {
-    await _storageFile.writeAsString(jsonEncode({'enabled': enabled, 'list': list}));
+    await SerialFileWriter.writeString(_storageFile, jsonEncode({'enabled': enabled, 'list': list}));
   }
 }
 
