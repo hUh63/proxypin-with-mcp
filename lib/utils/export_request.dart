@@ -636,7 +636,10 @@ Future<void> exportRequestsCsv(
     ].join(','));
   }
   try {
-    await FilePicker.saveFile(fileName: fileName, bytes: utf8.encode(buffer.toString()));
+    // 加 UTF-8 BOM：Windows 版 Excel 打开「无 BOM 的 UTF-8 CSV」会按本地代码页
+    // （简中就是 GBK）解码，中文全成乱码——这是最常见的「导出后打不开」抱怨。
+    final csvBytes = <int>[0xEF, 0xBB, 0xBF, ...utf8.encode(buffer.toString())];
+    await FilePicker.saveFile(fileName: fileName, bytes: csvBytes);
     onSuccess?.call();
     if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
   } catch (e) {

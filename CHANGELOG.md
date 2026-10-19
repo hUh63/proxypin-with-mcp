@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.67.51 (2026-10-19)
+
+### CSV 导出加 UTF-8 BOM
+
+Windows 版 Excel 打开「无 BOM 的 UTF-8 CSV」会按本地代码页（简中是 GBK）解码，
+中文全是乱码。这是「导出后打不开」最常见的抱怨，导出时补 `EF BB BF`。
+
+### 脚本运行时「排队超时」不再误伤正在跑的脚本
+
+`JavaScriptEngine.synchronized` 等锁超时会抛 `TimeoutException`，而脚本池把它当成
+「运行时执行超时」处理——直接把那个 **正在被别的脚本使用中** 的运行时从池里摘掉并
+dispose。并发多个请求 + 某个脚本较慢（例：脚本里发起 20s 的 XHR）时，会连带把别人
+正在用的运行时销毁。
+
+现在区分两种超时：新增 `JavaScriptRuntimeBusy`（只是没排上队），池里遇到它换一个
+runtime 重试一次，不销毁正在执行的那个。
+
+### AI 分析摘要里的方法名
+
+`'${request.method}'` 打印的是枚举的 `toString()`，prompt 里出现 `HttpMethod.get`
+而不是 `GET`。改用 `methodLabel`。
+
 ## v1.67.50 (2026-10-19)
 
 ### 保存历史会话（flushRequests）逐条写文件

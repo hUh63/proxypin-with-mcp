@@ -109,7 +109,7 @@ class AiAnalyzer {
   /// 生成请求+响应的分析摘要（供 AI 输入与对话页附加展示）
   static String requestSummary(HttpRequest request) {
     final buf = StringBuffer();
-    buf.writeln('${request.method} ${request.requestUrl}');
+    buf.writeln('${request.methodLabel} ${request.requestUrl}');
     try {
       buf.writeln('请求头:');
       request.headers.forEach((k, v) => buf.writeln('  $k: ${_truncate(v.toString(), 200)}'));

@@ -25,7 +25,7 @@ class JavaScriptRuntimePool {
 
   JavaScriptRuntimePool({required int size, this.consoleLog}) : size = size < 1 ? 1 : size;
 
-  Future<T> run<T>(Future<T> Function(JavascriptRuntime flutterJs) action) async {
+  Future<T> run<T>(Future<T> Function(JavascriptRuntime flutterJs) action, {bool retried = false}) async {
     final runtime = _selectRuntime();
     runtime.pending++;
     try {
@@ -35,6 +35,14 @@ class JavaScriptRuntimePool {
         throw error!;
       });
       return await JavaScriptEngine.synchronized(flutterJs, () => action(flutterJs));
+    } on JavaScriptRuntimeBusy catch (e) {
+      // 只是没排上队：不要销毁正在执行的那个 runtime，换一个再试一次。
+      if (!retried && _runtimes.length > 1) {
+        logger.w('$e，换一个 runtime 重试');
+        return run(action, retried: true);
+      }
+      logger.e('$e，放弃执行本次脚本');
+      rethrow;
     } on TimeoutException catch (e) {
       _runtimes.remove(runtime);
       _releaseRuntime(runtime);
@@ -92,6 +100,19 @@ class _PooledJavaScriptRuntime {
   _PooledJavaScriptRuntime(this.flutterJs);
 }
 
+/// 运行时被别的脚本占着、等到超时还没轮到。
+///
+/// 必须和「脚本自身执行超时」区分开：前者只是没排上队，运行时报废会误伤
+/// 正在跑的那个脚本；后者才是真的要销毁 runtime。
+class JavaScriptRuntimeBusy implements Exception {
+  final String message;
+
+  JavaScriptRuntimeBusy(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class JavaScriptEngine {
   static final _runtimeLocks = Expando<Future<void>>('javascriptRuntimeLocks');
 
@@ -100,7 +121,12 @@ class JavaScriptEngine {
 
   static Future<T> synchronized<T>(JavascriptRuntime flutterJs, Future<T> Function() action) async {
     while (_runtimeLocks[flutterJs] != null) {
-      await _runtimeLocks[flutterJs]!.timeout(runtimeTimeout);
+      try {
+        await _runtimeLocks[flutterJs]!.timeout(runtimeTimeout);
+      } on TimeoutException {
+        throw JavaScriptRuntimeBusy(
+            'JavaScript 运行时繁忙：上一个脚本执行已超过 ${runtimeTimeout.inSeconds}s');
+      }
     }
 
     final completer = Completer<void>();
