@@ -104,6 +104,11 @@ class WebSocketFrame {
 
 ///websocket 解码器
 class WebSocketDecoder {
+  /// 单帧上限。127 长度形式允许对端声明到 4GB：只发一个帧头、payload 慢慢发，
+  /// 解码器就会一直等、buffer 线性增长（抓包工具遇到异常/恶意服务端时会直接把
+  /// 内存吃穿）。超过上限即判定该方向不可解析并丢弃。
+  static const int maxFrameLength = 64 * 1024 * 1024;
+
   ByteBuffer buffer = ByteBuffer();
 
   /// 已判定为非法流（保留 opcode / 帧边界错位）。此后丢弃输入，
@@ -115,6 +120,12 @@ class WebSocketDecoder {
     if (invalid) return null;
     buffer.putBytes(newData);
     int? frameLen = _tryFrameLength(buffer.bytes);
+    if (frameLen == -1) {
+      invalid = true;
+      logger.w('WebSocket 帧声明长度超过 ${maxFrameLength ~/ (1024 * 1024)}MB，停止解析该方向');
+      buffer.removeBytes(buffer.bytes.length);
+      return null;
+    }
     if (frameLen == null) {
       final bytes = buffer.bytes;
       if (bytes.length >= 2 && (bytes[0] & 0x0f) > 0xA) {
@@ -161,6 +172,10 @@ class WebSocketDecoder {
       if (data.length < 10) return null;
       payloadLength = reader.getUint64(2);
       payloadStart += 8;
+    }
+
+    if (payloadLength > maxFrameLength) {
+      return -1; // 交由 decode 判定为非法流
     }
 
     if (mask == 1) {

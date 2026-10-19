@@ -181,6 +181,8 @@ class RequestRewriteManager {
         rule.rewritePath = null;
       }
     }
+    // 以前删完不落盘：rules 只在内存里移除，重启后规则全部复活。
+    await flushRequestRewriteConfig();
   }
 
   RequestRewriteRule getRequestRewriteRule(HttpRequest request, RuleType type) {

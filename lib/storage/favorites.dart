@@ -22,6 +22,7 @@ import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/har.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// 收藏存储
 /// @author WangHongEn
@@ -82,7 +83,13 @@ class FavoriteStorage {
 
   static Favorite _snapshotFavorite(HttpRequest request) {
     final copiedRequest = request.copy();
+    // copy() 里 messages 是同一个 List 引用：收藏后原请求继续收 WS 帧，
+    // 收藏内容会跟着变；trim 也会作用在共享列表上。这里给快照一份独立列表。
+    copiedRequest.messages = List.of(request.messages);
     final copiedResponse = request.response?.copy();
+    if (copiedResponse != null) {
+      copiedResponse.messages = List.of(request.response!.messages);
+    }
     return Favorite(copiedRequest, response: copiedResponse);
   }
 
@@ -95,7 +102,10 @@ class FavoriteStorage {
   //刷新配置
   static Future<void> flushConfig() async {
     var list = await favorites;
-    await Paths.getPath("favorites.json").then((file) => file.writeAsString(toJson(list)));
+    // 收藏可以被连续点星标触发多次保存（addFavorite 里并不 await），
+    // 直接 writeAsString 会互相截断，文件写坏后收藏全丢。按路径排队。
+    final file = await Paths.getPath("favorites.json");
+    await SerialFileWriter.writeString(file, toJson(list));
   }
 
   static String toJson(Queue<Favorite> list) {

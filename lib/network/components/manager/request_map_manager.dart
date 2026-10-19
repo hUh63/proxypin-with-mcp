@@ -61,9 +61,23 @@ class RequestMapManager {
 
   //删除规则
   Future<void> deleteRule(int index) async {
+    if (index < 0 || index >= rules.length) return;
     var item = rules.removeAt(index);
-    final home = await Paths.homePath();
-    File(home + item.itemPath!).delete();
+    // 缓存里还挂着这个规则对应的映射内容，不清掉会一直占内存，
+    // 而且下次新增规则若复用同一对象会读到陈旧内容。
+    _mapItemsCache.remove(item);
+    final itemPath = item.itemPath;
+    if (itemPath != null && itemPath.isNotEmpty) {
+      try {
+        final home = await Paths.homePath();
+        final file = File(home + itemPath);
+        if (await file.exists()) await file.delete();
+      } catch (e) {
+        logger.w('删除请求映射文件失败: $itemPath', error: e);
+      }
+    }
+    // 以前删完不落盘：rules 只在内存里移除，重启后规则全部复活。
+    await flushConfig();
   }
 
   //根据url和类型查找匹配的规则
@@ -87,9 +101,15 @@ class RequestMapManager {
       if (await file.exists()) {
         var content = await file.readAsString();
         if (content.isNotEmpty) {
-          var item = RequestMapItem.fromJson(jsonDecode(content));
-          _mapItemsCache[rule] = item;
-          return item;
+          try {
+            var item = RequestMapItem.fromJson(jsonDecode(content));
+            _mapItemsCache[rule] = item;
+            return item;
+          } catch (e) {
+            // 映射文件被写坏/手工改过时不要让整条请求失败，按「无映射」处理。
+            logger.e('请求映射文件解析失败: ${file.path}', error: e);
+            return null;
+          }
         }
       }
     }

@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.67.49 (2026-10-19)
+
+### 删除规则不落盘，重启后「复活」
+
+- 请求映射（`request_map`）：`deleteRule` 只从内存列表移除、删了映射文件，却**没有写回
+  `request_map.json`**——重启后规则全部回来。同时缓存里的映射项没清（内存泄漏 +
+  复用对象时读到陈旧内容），`itemPath!` 空指针与未 await 的 `File.delete()` 也一并修掉。
+- 请求重写（`rewrite`）：`removeIndex` 同样只改内存不落盘。
+
+### 收藏快照与原文共享 WS 帧列表
+
+`HttpRequest.copy()` 里 `messages` 是同一个 List 引用。收藏之后原请求继续收 WS 帧，
+收藏内容会跟着变；`trimFavoriteMessages` 也作用在共享列表上。收藏快照现在持有独立列表。
+
+另外 `favorites.flushConfig` 改走 `SerialFileWriter`：连续点星标会并发写同一个
+`favorites.json`，以前可能互相截断把收藏写坏。
+
+### 请求映射文件损坏不再拖垮请求
+
+`getMapItem` 里 `jsonDecode` 没有 try，映射文件被写坏/手工改过时异常会冒到请求处理路径；
+现在按「无映射」处理并记日志。
+
+### WebSocket 单帧上限
+
+`payloadLength == 127` 形式允许对端声明到 4GB：只发帧头、payload 慢慢发，解码器就会
+一直等、buffer 线性增长。超过 64MB 即判定该方向不可解析并丢弃。
+
 ## v1.67.48 (2026-10-19)
 
 ### 配置文件并发写不再互相截断
