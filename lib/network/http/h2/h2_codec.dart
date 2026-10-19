@@ -188,6 +188,16 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
         final pendingBlock = _pendingHeaderBlocks[frameHeader.streamIdentifier];
         if (pendingBlock != null) {
           pendingBlock.add(framePayload);
+          // header block 跨帧累积没有天然上限：对端可以无限发 CONTINUATION，
+          // 让 BytesBuilder 一路涨到 OOM。超过 1MB 判定为协议错误（正常 header
+          // 块远小于此，HTTP/2 的头压缩后通常只有几 KB）。
+          if (pendingBlock.length > 1024 * 1024) {
+            _pendingHeaderBlocks.remove(frameHeader.streamIdentifier);
+            _pendingHeaderFrames.remove(frameHeader.streamIdentifier);
+            _pendingHeaderForward.remove(frameHeader.streamIdentifier);
+            throw FormatException(
+                'HTTP/2 header block too large on stream ${frameHeader.streamIdentifier}');
+          }
           _pendingHeaderForward[frameHeader.streamIdentifier]!
             ..addAll(frameHeader.encode())
             ..addAll(framePayload);

@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.67.53 (2026-10-20)
+
+### 开了「内容上限」后压缩响应不再整条消失
+
+`CaptureBodyLimiter` 以前对超过上限的 gzip/br/deflate 响应直接 `releaseBody()`——
+理由是截断压缩流会导致解压失败。但现实中几乎所有网页响应都是 gzip，等于用户一旦
+开启内容上限，**网页正文一条都看不到了**。
+
+现在改为本地**有界解压**（只解到上限字节），把明文前缀存进 body，并标记新增的
+`HttpMessage.bodyDecoded`——后续解码路径（`getBodyString` / `decodeBodyString` /
+`bodyPreview`）看到该标记就跳过 Content-Encoding。转发早已完成，本地解码不影响报文。
+zstd（只有异步 API）或解码失败时仍退回原来的整体释放。
+
+`bodyDecoded` 会随历史文件持久化，避免重新加载后把明文又当压缩流解一遍。
+
+### 请求头 / HTTP2 header block 总长上限
+
+单行 header 有 100KB 限制，但「很多行」没有：对端可以发几十万条短 header 把 buffer
+和 `HttpHeaders` 一起撑爆。HTTP/1.1 现在累计超过 512KB 判协议错误；HTTP/2 跨帧累积的
+header block 超过 1MB 同样判错并清理 pending 状态。
+
 ## v1.67.52 (2026-10-19)
 
 ### 修复

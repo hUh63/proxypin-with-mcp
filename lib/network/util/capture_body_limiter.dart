@@ -29,6 +29,7 @@ library;
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/stream_decode.dart';
 
 class CaptureBodyLimiter {
   /// 在转发完成后裁剪 [message] 的消息体。
@@ -52,10 +53,20 @@ class CaptureBodyLimiter {
     final compressed = (message.headers.contentEncoding ?? '').isNotEmpty;
 
     if (compressed) {
-      // 压缩体一旦截断就无法再解压，宁可整体释放
-      message.releaseBody();
+      // 压缩体不能直接截断（截断后无法解压，正文就彻底看不到了）。
+      // 这里在本地做**有界解压**，只保留前 maxBytes 的明文，并标记 bodyDecoded，
+      // 让后续解码路径跳过 Content-Encoding。转发早已完成，本地解码不影响报文。
+      final decoded = StreamDecoder.decode(body, message.headers.contentEncoding ?? '',
+          maxBytes: maxBytes);
+      if (!decoded.failed && decoded.bytes.isNotEmpty) {
+        message.body = decoded.bytes;
+        message.bodyDecoded = true;
+      } else {
+        // zstd（只有异步 API）或解码失败：整体释放，避免留下无法解码的压缩流。
+        message.releaseBody();
+      }
     } else {
-      message.body = List<int>.from(body.sublist(0, maxBytes));
+      message.body = body.sublist(0, maxBytes);
     }
     message.bodyTruncated = true;
     message.originalBodyLength = originalLength;

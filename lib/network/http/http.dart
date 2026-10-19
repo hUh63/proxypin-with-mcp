@@ -84,6 +84,13 @@ abstract class HttpMessage {
   /// 裁剪前的原始 body 长度（[bodyTruncated] 为 true 时有效）
   int? originalBodyLength;
 
+  /// [body] 已经是解码后的明文（不再需要按 Content-Encoding 解压）。
+  ///
+  /// 抓包内容上限裁剪压缩体时，会本地解压出前 N 字节保存（直接截断压缩流会
+  /// 让正文彻底不可读），此时响应头里的 gzip/br 已经「用过了」，后续解码路径
+  /// 必须跳过解压，否则会解压失败退化成乱码。
+  bool bodyDecoded = false;
+
   /// 响应体读取完成的时间（用于计算「接收」阶段耗时，仅响应会设置）。
   DateTime? completeTime;
 
@@ -174,12 +181,14 @@ abstract class HttpMessage {
     try {
       List<int> rawBody = body!;
 
-      if (headers.isGzip) {
-        rawBody = gzipDecode(body!);
-      } else if (headers.contentEncoding == 'br') {
-        rawBody = brDecode(body!);
-      } else if (headers.contentEncoding == 'deflate') {
-        rawBody = zlibDecode(body!);
+      if (!bodyDecoded) {
+        if (headers.isGzip) {
+          rawBody = gzipDecode(body!);
+        } else if (headers.contentEncoding == 'br') {
+          rawBody = brDecode(body!);
+        } else if (headers.contentEncoding == 'deflate') {
+          rawBody = zlibDecode(body!);
+        }
       }
 
       final result = decodeBytesToText(rawBody, charset);
@@ -204,7 +213,7 @@ abstract class HttpMessage {
     }
 
     List<int> rawBody = body!;
-    if (headers.contentEncoding == 'zstd') {
+    if (!bodyDecoded && headers.contentEncoding == 'zstd') {
       rawBody = await zstdDecode(body!) ?? [];
       // 解压后的内容不保证是合法 UTF-8（GBK 页面、二进制附件），
       // 这里没有外层 try/catch，直接 utf8.decode 会抛到 UI / 脚本层。
@@ -229,7 +238,8 @@ abstract class HttpMessage {
     if (_bodyString != null) return _bodyString!;
 
     charset ??= this.charset;
-    final result = StreamDecoder.decode(body!, headers.contentEncoding ?? '', maxBytes: maxBytes);
+    final result = StreamDecoder.decode(body!, bodyDecoded ? '' : (headers.contentEncoding ?? ''),
+        maxBytes: maxBytes);
     bodyDecodeTruncated = result.truncated || result.skipped;
     return decodeBytesToText(result.bytes, charset);
   }
@@ -240,7 +250,8 @@ abstract class HttpMessage {
     if (body == null || body?.isEmpty == true) return '';
     if (_bodyString != null) return _bodyString!;
 
-    final result = await StreamDecoder.decodeAsync(body!, headers.contentEncoding ?? '', maxBytes: maxBytes);
+    final result = await StreamDecoder.decodeAsync(body!, bodyDecoded ? '' : (headers.contentEncoding ?? ''),
+        maxBytes: maxBytes);
     bodyDecodeTruncated = result.truncated || result.skipped;
     return decodeBytesToText(result.bytes, charset);
   }
@@ -450,6 +461,7 @@ class HttpRequest extends HttpMessage {
       'uri': requestUrl,
       'method': method.name,
       'methodRaw': rawMethod,
+      'bodyDecoded': bodyDecoded ? true : null,
       'protocolVersion': protocolVersion,
       'packageSize': packageSize,
       'headers': headers.toJson(),
@@ -481,6 +493,7 @@ class HttpRequest extends HttpMessage {
           .toList();
     }
     request.packageSize = json['packageSize'];
+    request.bodyDecoded = json['bodyDecoded'] == true;
     return request;
   }
 
@@ -539,6 +552,7 @@ class HttpResponse extends HttpMessage {
           .toList();
     }
     httpResponse.packageSize = json['packageSize'];
+    httpResponse.bodyDecoded = json['bodyDecoded'] == true;
     httpResponse._requestUrl = json['requestUrl'];
     return httpResponse;
   }
@@ -557,6 +571,7 @@ class HttpResponse extends HttpMessage {
       'headers': headers.toJson(),
       'body': body == null ? null : String.fromCharCodes(body!),
       'responseTime': responseTime.millisecondsSinceEpoch,
+      'bodyDecoded': bodyDecoded ? true : null,
       'messages': messages.map((e) => e.toJson()).toList(),
     };
   }

@@ -96,6 +96,11 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
   Http2Codec<T>? _h2Codec;
   State _state = State.readInitial;
 
+  /// 本条消息已解析的 header 字节数。单行有 [HttpParse.defaultMaxLength] 限制，
+  /// 但「很多行」没有：对端可以发几十万条短 header 把 buffer 与 HttpHeaders 一起撑爆。
+  static const int maxHeaderBlockBytes = 512 * 1024;
+  int _headerBytes = 0;
+
   late DecoderResult<T> result;
 
   BodyReader? bodyReader;
@@ -193,6 +198,7 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
         result.data!.completeTime = DateTime.now();
         _state = State.readInitial;
         pendingConnectResponse = false; // CONNECT 应答已读完，自动消费
+        _headerBytes = 0;
         result.isDone = true;
         return result;
       }
@@ -206,6 +212,7 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
 
   void init() {
     bodyReader = null;
+    _headerBytes = 0;
     result = DecoderResult(isDone: false);
   }
 
@@ -266,11 +273,19 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
 
   //读取请求头
   void _readHeader(ByteBuf data, T message, ChannelContext channelContext) {
+    final before = data.readerIndex;
     if (_httpParse.parseHeaders(data, message.headers)) {
       _state = State.body;
       // 超过解析上限时可降级为"原样转发"的前提：客户端通道与上游通道都已建立（上游 #701）
       bodyReader = BodyReader(message,
           canRelay: channelContext.clientChannel != null && channelContext.serverChannel != null);
+      return;
+    }
+
+    // header 还没读完：累计已消费字节，防止「很多条短 header」无限累积。
+    _headerBytes += data.readerIndex - before;
+    if (_headerBytes > maxHeaderBlockBytes) {
+      throw FormatException('HTTP header block too large: $_headerBytes bytes');
     }
   }
 
