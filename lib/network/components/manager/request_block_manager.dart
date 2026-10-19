@@ -68,7 +68,7 @@ class RequestBlockManager {
       if (items is List) {
         for (final element in items) {
           try {
-            if (element is Map) list.add(RequestBlockItem.fromJson(element));
+            if (element is Map) list.add(RequestBlockItem.fromJson(Map<String, dynamic>.from(element)));
           } catch (e) {
             logger.w('跳过无法解析的屏蔽规则: $e');
           }

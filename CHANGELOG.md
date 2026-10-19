@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.67.55 (2026-10-20)
+
+### 修复
+
+- v1.67.54 编译失败：`HostsItem.fromJson` / `RequestBlockItem.fromJson` 要
+  `Map<String, dynamic>`，逐条容错时传了裸 `Map`；`hosts_manager.dart` 缺 `logger` import。
+
 ## v1.67.54 (2026-10-20)
 
 ### 规则配置损坏时不再让整个功能起不来

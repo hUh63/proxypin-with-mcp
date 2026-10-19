@@ -20,6 +20,7 @@ import 'dart:io';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/serial_file_writer.dart';
 
 /// Hosts manager
@@ -81,7 +82,7 @@ class HostsManager {
         for (final element in items) {
           try {
             if (element is! Map) continue;
-            var hostsItem = HostsItem.fromJson(element);
+            var hostsItem = HostsItem.fromJson(Map<String, dynamic>.from(element));
 
             if (hostsItem.parent != null) {
               var children = _folderMap[hostsItem.parent!] ??= [];
