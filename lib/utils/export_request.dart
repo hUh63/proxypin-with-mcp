@@ -598,8 +598,15 @@ String _maskSensitiveInUrl(String url) {
 }
 
 /// CSV 字段转义（含逗号 / 引号 / 换行时加引号并转义内部引号）
+///
+/// 另外防 CSV 注入：以 `=` `+` `-` `@` 开头的单元格会被 Excel/Sheets 当公式执行
+/// （抓到一条 URL 是 `=cmd|'/c calc'!A1` 的请求，打开导出文件就中招）。
+/// 这类内容前面加一个单引号，Excel 会按文本显示。
 String _csvCell(String? value) {
-  final s = value ?? '';
+  var s = value ?? '';
+  if (s.isNotEmpty && ('=+-@'.contains(s[0]) || s[0] == '\t' || s[0] == '\r')) {
+    s = "'$s";
+  }
   if (s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r')) {
     return '"${s.replaceAll('"', '""')}"';
   }
@@ -638,7 +645,7 @@ Future<void> exportRequestsCsv(
   try {
     // 加 UTF-8 BOM：Windows 版 Excel 打开「无 BOM 的 UTF-8 CSV」会按本地代码页
     // （简中就是 GBK）解码，中文全成乱码——这是最常见的「导出后打不开」抱怨。
-    final csvBytes = <int>[0xEF, 0xBB, 0xBF, ...utf8.encode(buffer.toString())];
+    final csvBytes = Uint8List.fromList(<int>[0xEF, 0xBB, 0xBF, ...utf8.encode(buffer.toString())]);
     await FilePicker.saveFile(fileName: fileName, bytes: csvBytes);
     onSuccess?.call();
     if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);

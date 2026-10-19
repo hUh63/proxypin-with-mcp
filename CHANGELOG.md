@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.67.52 (2026-10-19)
+
+### 修复
+
+- v1.67.51 的 CSV BOM 写成了 `List<int>`，`FilePicker.saveFile(bytes:)` 要 `Uint8List`，
+  编译失败（全平台红）。
+
+### 新增
+
+- CSV 导出防注入：以 `=` `+` `-` `@` 开头的单元格前面补单引号。抓到一条 URL 是
+  `=cmd|'/c calc'!A1` 的请求时，旧实现导出的 CSV 用 Excel 打开会直接执行公式。
+
 ## v1.67.51 (2026-10-19)
 
 ### CSV 导出加 UTF-8 BOM
