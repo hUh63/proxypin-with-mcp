@@ -739,7 +739,7 @@ Future<void> exportRequestsPcapng(
       final clientIp = const [10, 0, 0, 1];
       final serverIp = PcapNg.parseIpv4(resp?.remoteHost) ??
           PcapNg.parseIpv4(r.remoteHost) ??
-          PcapNg.parseIpv4(r.domain) ??
+          PcapNg.parseIpv4(r.hostAndPort?.host) ??
           const [10, 0, 0, 2];
       final requestBytes = utf8.encode(copyRawRequest(r));
       List<int> responseBytes = const [];
