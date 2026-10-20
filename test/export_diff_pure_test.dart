@@ -156,7 +156,7 @@ void main() {
       final reqFrame = _parseFrame(reqFrameBytes);
       expect(reqFrame.srcIp, [192, 168, 1, 10]);
       expect(reqFrame.dstIp, [93, 184, 216, 34]);
-      expect(reqFrame.srcPort, 51234);
+      expect(reqFrame.srcPort, 40000, reason: '源端口由 build 统一分配（remotePort 是服务端端口，不能复用）');
       expect(reqFrame.dstPort, 443);
       expect(reqFrame.seq, 1);
       expect(reqFrame.ack, 1);
@@ -175,6 +175,30 @@ void main() {
       expect(respFrame.seq, 1);
       expect(respFrame.ack, 1 + requestBytes.length);
       expect(respFrame.payload, responseBytes);
+    });
+
+    test('同一服务端复用连接：源端口一致、seq 在连接内累计', () {
+      final now = DateTime.utc(2026, 2, 3, 4, 5, 6);
+      PcapSession mk(String path) => PcapSession(
+            clientIp: const [10, 0, 0, 1],
+            clientPort: 0,
+            serverIp: const [93, 184, 216, 34],
+            serverPort: 443,
+            requestBytes: utf8.encode('GET $path HTTP/1.1\r\n\r\n'),
+            responseBytes: utf8.encode('HTTP/1.1 200 OK\r\n\r\n'),
+            requestTime: now,
+            responseTime: now.add(const Duration(milliseconds: 10)),
+          );
+
+      final blocks = _readBlocks(PcapNg.build([mk('/one'), mk('/two')]));
+      final frames = blocks
+          .where((b) => b.type == 6)
+          .map((b) => _parseFrame(b.bytes.sublist(20, 20 + _u32(b.bytes, 12))))
+          .toList();
+      expect(frames.length, 4);
+      expect(frames[0].srcPort, frames[2].srcPort, reason: '同一服务端应复用同一条伪连接');
+      expect(frames[2].seq, 1 + frames[0].payload.length, reason: '第二条请求的 seq 必须接着第一条');
+      expect(frames[3].seq, 1 + frames[1].payload.length, reason: '响应侧 seq 同样累计');
     });
 
     test('build：只有请求（无响应时间）时只写一个 EPB；空输入只有 SHB+IDB', () {
