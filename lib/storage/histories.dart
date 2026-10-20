@@ -273,7 +273,10 @@ class HistoryStorage {
   Future<HistoryItem> addSazFile(XFile file) async {
     final bytes = await file.readAsBytes();
     final entries = SazParser.parse(bytes);
-    final list = entries.map((e) => Har.toRequest(e)).toList();
+    // 与 addHarFile 对齐，走 readEntries 的逐条容错：SAZ 里只要有一条 entry
+    // 的字段类型不对（status 是字符串、startedDateTime 非法…），裸 map 会让
+    // 整包导入失败，用户拿不到任何一条记录。
+    final list = Har.readEntries(entries);
 
     var base = file.name.split(RegExp(r'[\\/]')).last;
     if (base.toLowerCase().endsWith('.saz')) base = base.substring(0, base.length - 4);

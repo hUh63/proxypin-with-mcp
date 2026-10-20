@@ -345,6 +345,41 @@ class MCPAutomationManager {
     await prefs.setString(_tasksKey, tasksJson);
   }
 
+  /// 执行计数的落盘节流句柄（见 [_scheduleSaveTasks]）。
+  Timer? _saveTasksDebounce;
+
+  /// 把「执行次数 + 最后执行时间」的落盘合并成最多每 3 秒一次。
+  ///
+  /// 旧实现每次任务执行完都 `SharedPreferences.getInstance()` + 整表
+  /// jsonEncode + 写盘。onRequest 类任务命中高频接口时（每秒几十次请求）
+  /// 这等于每个请求都重写一遍任务表，转发链路被磁盘 IO 拖慢。
+  /// 内存里的计数仍然立即更新，丢的只是最多 3 秒的统计。
+  void _scheduleSaveTasks() {
+    if (_saveTasksDebounce?.isActive == true) return;
+    _saveTasksDebounce = Timer(const Duration(seconds: 3), () {
+      _saveTasksDebounce = null;
+      unawaited(_saveTasksNow());
+    });
+  }
+
+  Future<void> _saveTasksNow() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await _saveTasks(prefs);
+    } catch (e) {
+      logger.w('[MCP Automation] 保存任务表失败', error: e);
+    }
+  }
+
+  /// 立即落盘挂起的执行计数（如 App 进入后台时调用）。
+  Future<void> flushPendingSave() async {
+    if (_saveTasksDebounce?.isActive == true) {
+      _saveTasksDebounce?.cancel();
+      _saveTasksDebounce = null;
+      await _saveTasksNow();
+    }
+  }
+
   /// 上一轮 tick 是否仍在执行：Timer.periodic 不会等上一轮结束，
   /// 慢任务会让检查叠加，同一任务被并发重复触发。
   bool _tickBusy = false;
@@ -602,15 +637,14 @@ class MCPAutomationManager {
       }
     }
     
-    // 更新执行计数
+    // 更新执行计数（内存立即生效，落盘走节流）
     final index = _tasks.indexWhere((t) => t.id == task.id);
     if (index != -1) {
       _tasks[index] = _tasks[index].copyWith(
         executionCount: _tasks[index].executionCount + 1,
         lastExecutedAt: DateTime.now(),
       );
-      final prefs = await SharedPreferences.getInstance();
-      await _saveTasks(prefs);
+      _scheduleSaveTasks();
     }
   }
 

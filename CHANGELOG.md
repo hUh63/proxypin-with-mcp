@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.67.64 (2026-10-21)
+
+### SAZ 导入：一条坏记录让整包失败
+
+- `addSazFile` 用的是裸 `entries.map((e) => Har.toRequest(e)).toList()`，而 HAR 路径早
+  已换成逐条容错的 `Har.readEntries`。SAZ 里只要有一条 entry 字段类型不对（status 是
+  字符串、时间非法…），整包导入直接失败，一条记录都拿不到。现在两条路径对齐。
+
+### HAR 导入：缺 httpVersion / status 是字符串就让记录消失
+
+- `HttpRequest` / `HttpResponse` 的 `protocolVersion` 是**非空** String，而 `toRequest`
+  直接透传 `request['httpVersion']`、`response['httpVersion']`。第三方 HAR（浏览器、
+  Fiddler、Charles 的部分版本）经常省略这个字段 → 传 null 触发 TypeError → 整条 entry
+  被丢掉。现在缺省回落 `HTTP/1.1`。
+- `status` 在第三方 HAR 里可能是字符串 `"200"`、`statusText` 可能是数字；原来直接
+  传给 `HttpStatus.newStatus(int, String?)` 会抛 TypeError。现在先解析成 int/String。
+- `startedDateTime` 非法时 `DateTime.parse` 抛 FormatException（整条记录丢失），改
+  `tryParse`，解析失败就保留当前时间。
+- `_app` 不是 Map 时 `ProcessInfo.fromJson` 抛 TypeError，现在忽略。
+- 缺 `request.url` 时给出可读的 `FormatException`（而不是 `null is not a subtype`）。
+
+### MCP 自动化：执行计数每请求写一次盘
+
+- `_executeTask` 每次执行完都 `SharedPreferences.getInstance()` + 整表 `jsonEncode` +
+  写盘。onRequest 类任务命中高频接口（每秒几十次请求）时，这等于每个请求都重写一遍
+  任务表，转发链路被磁盘 IO 拖慢。现在内存计数立即更新，落盘合并成最多每 3 秒一次
+  （新增 `flushPendingSave()` 供后台切换时手动兜底）。
+
 ## v1.67.63 (2026-10-20)
 
 ### MCP 自动化：条件类型不符时整条规则静默失效

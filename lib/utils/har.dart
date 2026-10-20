@@ -297,12 +297,22 @@ class Har {
     final method = request['method']?.toString() ?? 'GET';
     final headers = request['headers'] is List ? request['headers'] as List : const [];
 
+    final url = request['url']?.toString();
+    if (url == null || url.trim().isEmpty) {
+      throw const FormatException('invalid HAR entry: missing request.url');
+    }
+    // 第三方 HAR 里 httpVersion 常缺失：HttpRequest 的 protocolVersion 是非空 String，
+    // 直接透传 dynamic null 会抛 TypeError，整条 entry 被丢掉。
+    final protocol = request['httpVersion']?.toString() ?? 'HTTP/1.1';
+
     final parsedMethod = HttpMethod.valueOf(method);
-    final httpRequest = HttpRequest(parsedMethod, request['url'],
-        protocolVersion: request['httpVersion'],
+    final httpRequest = HttpRequest(parsedMethod, url,
+        protocolVersion: protocol,
         rawMethod: parsedMethod == HttpMethod.unknown ? method : null);
     if (har.containsKey("_id")) httpRequest.requestId = har['_id'].toString(); // 页面标识
-    httpRequest.processInfo = har['_app'] == null ? null : ProcessInfo.fromJson(har['_app']);
+    final appInfo = har['_app'];
+    httpRequest.processInfo =
+        appInfo is Map ? ProcessInfo.fromJson(Map<String, dynamic>.from(appInfo)) : null;
 
     // HAR 1.2 用 postData.encoding == 'base64' 标明 text 是 base64；
     // 忽略它会把 base64 文本当正文（体积膨胀 33%，重放/另存全错）。
@@ -330,9 +340,15 @@ class Har {
     }
     final response = har['response'];
     HttpResponse? httpResponse;
-    if (response is Map && response['status'] != null) {
-      httpResponse = HttpResponse(HttpStatus.newStatus(response['status'], response['statusText']),
-          protocolVersion: response['httpVersion']);
+    // status 在第三方 HAR 里可能是字符串 "200"，statusText 可能是数字；
+    // 一律先解析成 int/String 再构造，避免 TypeError 丢整条记录。
+    final rawStatus = response is Map ? response['status'] : null;
+    final statusCode = rawStatus is num ? rawStatus.toInt() : int.tryParse('$rawStatus'.trim());
+    if (response is Map && statusCode != null) {
+      final rawStatusText = response['statusText'];
+      httpResponse = HttpResponse(
+          HttpStatus.newStatus(statusCode, rawStatusText == null ? null : '$rawStatusText'),
+          protocolVersion: response['httpVersion']?.toString() ?? 'HTTP/1.1');
       final responseHeaders = response['headers'] is List ? response['headers'] as List : const [];
       for (final element in responseHeaders) {
         if (element is! Map) continue;
@@ -364,8 +380,9 @@ class Har {
     httpResponse?.remoteHost = har['serverIPAddress']; // 服务器IP地址
 
     //请求时间
-    if (har['startedDateTime'] != null) {
-      httpRequest.requestTime = DateTime.parse(har['startedDateTime']).toLocal();
+    final startedAt = har['startedDateTime'] == null ? null : DateTime.tryParse('${har['startedDateTime']}');
+    if (startedAt != null) {
+      httpRequest.requestTime = startedAt.toLocal();
     }
     if (har['time'] != null) {
       // 第三方 HAR 里 time 可能是 -1（未完成/未知）或非数字：直接换算会得到
