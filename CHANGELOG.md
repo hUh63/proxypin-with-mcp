@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.67.59 (2026-10-20)
+
+### 改写非 UTF-8 页面的 body 会写坏报文
+
+`_updateMessage` / `replaceBody` 里，非 UTF-8 分支写的是 `text.codeUnits`：
+
+```dart
+message.body = message.charset == 'utf-8'
+    ? utf8.encode(body)
+    : body.codeUnits;      // 中文码点 > 0xFF → 存成 UTF-16 码元
+```
+
+String 里的中文码点远超 `0xFF`，`codeUnits` 得到的是 UTF-16 码元，写回去客户端
+必然是乱码。对 GBK/GB2312 站点改写一个中文串，整条请求就废了。
+
+现在按报文声明的字符集真正编码（`charset` 包的 `Charset.getByName`），不支持的字符集
+退回 UTF-8——比写 UTF-16 码元安全。
+
 ## v1.67.58 (2026-10-20)
 
 ### 导入的会话时间不对（全是「今天」）

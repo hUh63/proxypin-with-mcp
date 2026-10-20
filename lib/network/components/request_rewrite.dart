@@ -17,6 +17,7 @@
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:charset/charset.dart' as charset;
 import 'package:proxypin/network/components/interceptor.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/components/manager/request_rewrite_manager.dart';
@@ -314,6 +315,23 @@ class RequestRewriteInterceptor extends Interceptor {
     await _updateMessage(request, item);
   }
 
+  /// 按报文声明的字符集把改写后的文本编码回字节。
+  ///
+  /// 以前非 UTF-8 分支写的是 `text.codeUnits`——String 里的中文码点 > 0xFF，
+  /// codeUnits 得到的是 UTF-16 码元，写回去客户端必然是乱码（GBK 站点上改写
+  /// 一个中文串就坏一条请求）。
+  static List<int> _encodeText(String text, String? charsetName) {
+    final name = (charsetName ?? 'utf-8').toLowerCase();
+    if (name == 'utf-8' || name == 'utf8') return utf8.encode(text);
+    try {
+      final encoding = charset.Charset.getByName(name);
+      if (encoding != null) return encoding.encode(text);
+    } catch (_) {
+      // 未知/不支持的字符集，退回 UTF-8：比写 UTF-16 码元安全。
+    }
+    return utf8.encode(text);
+  }
+
   //修改消息
   Future<void> _updateMessage(HttpMessage message, RewriteItem item) async {
     if (item.type == RewriteType.updateBody && message.body != null) {
@@ -322,9 +340,7 @@ class RequestRewriteInterceptor extends Interceptor {
         (match) => _expandRegexGroups(item.value ?? '', match),
       );
 
-      message.body = message.charset == 'utf-8' || message.charset == 'utf8'
-          ? utf8.encode(body)
-          : body.codeUnits;
+      message.body = _encodeText(body, message.charset);
 
       message.headers.remove(HttpHeaders.CONTENT_ENCODING);
       message.headers.contentLength = message.body!.length;
@@ -431,9 +447,7 @@ class RequestRewriteInterceptor extends Interceptor {
       }
 
       if (item.body != null) {
-        message.body = message.charset == 'utf-8' || message.charset == 'utf8'
-            ? utf8.encode(item.body!)
-            : item.body?.codeUnits;
+        message.body = _encodeText(item.body!, message.charset);
         message.headers.contentLength = message.body!.length;
         message.headers.remove(HttpHeaders.CONTENT_ENCODING);
       }
