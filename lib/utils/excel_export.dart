@@ -94,7 +94,21 @@ class ExcelExport {
   static String _safeSheetName(String name) {
     var s = name.replaceAll(RegExp(r'[\[\]:*?/\\]'), '_');
     if (s.isEmpty) s = 'ProxyPin';
-    if (s.length > 31) s = s.substring(0, 31);
+    if (s.length > 31) {
+      var end = 31;
+      // 别把代理对劈成两半，否则会留下孤立代理项。
+      final unit = s.codeUnitAt(end - 1);
+      if (unit >= 0xD800 && unit <= 0xDBFF) end -= 1;
+      s = s.substring(0, end);
+    }
+    // Excel 不允许工作表名以单引号开头/结尾。
+    while (s.startsWith("'")) {
+      s = s.substring(1);
+    }
+    while (s.endsWith("'")) {
+      s = s.substring(0, s.length - 1);
+    }
+    if (s.isEmpty) s = 'ProxyPin';
     return s;
   }
 
@@ -109,8 +123,18 @@ class ExcelExport {
     return String.fromCharCodes(sb.toString().codeUnits.reversed);
   }
 
+  /// XML 1.0 不允许出现的字符：0x00-0x08 / 0x0B / 0x0C / 0x0E-0x1F / 0xFFFE / 0xFFFF。
+  /// 抓包数据里的请求头、URL、进程名经常带这些原始控制字节，混进 sheet1.xml 后
+  /// Excel / WPS 会报「发现不可读取的内容」并拒绝打开整个文件。
+  static final RegExp _xmlInvalidChars =
+      RegExp('[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]');
+
   static String _xmlEscape(String value) {
-    return value
+    var v = value;
+    if (v.contains(_xmlInvalidChars)) {
+      v = v.replaceAll(_xmlInvalidChars, '');
+    }
+    return v
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')

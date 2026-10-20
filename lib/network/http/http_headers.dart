@@ -179,7 +179,12 @@ class HttpHeaders {
     if (value == null) {
       return null;
     }
-    return int.parse(value);
+    final trimmed = value.trim();
+    // 重复头会被合并成 "100, 100"（RFC 7230 允许），只取第一段；
+    // 非数字值（畸形服务端 / 被篡改的响应）返回 null，不能抛 FormatException ——
+    // 这里在解码热路径上，抛异常会让整条响应解码失败、用户什么也看不到。
+    final first = trimmed.contains(',') ? trimmed.split(',').first.trim() : trimmed;
+    return int.tryParse(first);
   }
 
   bool getBool(String name) {

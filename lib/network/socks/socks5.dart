@@ -138,7 +138,20 @@ class SocksServerHandler extends ChannelHandler<Uint8List> {
     out.addByte(bndAddrType);
 
     if (bndAddr != null) {
-      out.add(Int8List.fromList(bndAddr.split('.').map((e) => int.parse(e)).toList()));
+      // 只接受 IPv4 字面量；域名/畸形值一律回落成 0.0.0.0，避免 int.parse 抛异常中断握手。
+      final parts = bndAddr.split('.');
+      final bytes = <int>[];
+      if (parts.length == 4) {
+        for (final p in parts) {
+          final v = int.tryParse(p);
+          if (v == null || v < 0 || v > 255) {
+            bytes.clear();
+            break;
+          }
+          bytes.add(v);
+        }
+      }
+      out.add(Int8List.fromList(bytes.length == 4 ? bytes : [0, 0, 0, 0]));
     } else {
       out.add(Int8List.fromList([0, 0, 0, 0]));
     }

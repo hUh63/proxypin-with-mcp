@@ -734,17 +734,24 @@ Future<void> exportRequestsPcapng(
     final sessions = <PcapSession>[];
     for (final r in requests) {
       final resp = r.response;
-      final clientIp = PcapNg.parseIpv4(r.remoteHost) ?? const [10, 0, 0, 1];
-      final serverIp = PcapNg.parseIpv4(resp?.remoteHost) ?? const [10, 0, 0, 2];
+      // remoteHost 是**连接对端**（服务端）地址，不能拿来当客户端 IP；客户端地址在
+      // 代理层拿不到真实值，统一用占位地址。服务端优先用解析出的 IP，退而求其次用域名。
+      final clientIp = const [10, 0, 0, 1];
+      final serverIp = PcapNg.parseIpv4(resp?.remoteHost) ??
+          PcapNg.parseIpv4(r.remoteHost) ??
+          PcapNg.parseIpv4(r.domain) ??
+          const [10, 0, 0, 2];
       final requestBytes = utf8.encode(copyRawRequest(r));
       List<int> responseBytes = const [];
       if (resp != null) {
         responseBytes = utf8.encode(await copyRawResponse(resp));
       }
-      var serverPort = r.hostAndPort?.port ?? 80;
+      // hostAndPort.port 已按 scheme 补默认值（https→443）；这里只兜底没有 hostAndPort 的场景。
+      final scheme = r.hostAndPort?.scheme ?? '';
+      final serverPort = r.hostAndPort?.port ?? (scheme.startsWith('https') || scheme.startsWith('wss') ? 443 : 80);
       sessions.add(PcapSession(
         clientIp: clientIp,
-        clientPort: r.remotePort ?? 0,
+        clientPort: 0, // 由 PcapNg.build 按连接分配，remotePort 是服务端端口不能复用
         serverIp: serverIp,
         serverPort: serverPort,
         requestBytes: requestBytes,

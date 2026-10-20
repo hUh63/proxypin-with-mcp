@@ -47,6 +47,11 @@ class PcapSession {
 ///
 /// 注意事项：合成帧里 HTTPS 流量的端口仍是 443，但内容是明文，Wireshark 默认会按
 /// TLS 解析而显示为乱码，需要右键 → Decode As → HTTP。
+///
+/// 连接语义（v1.67.62）：同一条「服务端 IP:端口」的多个请求被合进**同一条**伪 TCP
+/// 连接（Linux 客户端侧源端口从 40000 起自增，seq 在连接内累加）。此前每条请求都从
+/// seq=1 开始且复用同一组 ip:port，Wireshark 会把后一条当成前一条的重传/乱序，
+/// 重组出来的 HTTP 报文互相污染。
 class PcapNg {
   static const List<int> _clientMac = [0x02, 0x00, 0x00, 0x00, 0x00, 0x01];
   static const List<int> _serverMac = [0x02, 0x00, 0x00, 0x00, 0x00, 0x02];
@@ -56,9 +61,21 @@ class PcapNg {
     _sectionHeader(out);
     _interfaceDescription(out);
 
+    // 同一「服务端 ip:port」复用一个伪连接，保证 seq 连续、源端口不冲突。
+    final conns = <String, _PcapConn>{};
+    var nextClientPort = 40000;
+
     for (final s in sessions) {
-      var clientSeq = 1;
-      var serverSeq = 1;
+      final key = '${s.serverIp.join(".")}:${s.serverPort}';
+      final conn = conns.putIfAbsent(key, () {
+        final port = nextClientPort++;
+        if (nextClientPort > 60000) nextClientPort = 40000;
+        return _PcapConn(clientPort: port);
+      });
+      final clientPort = conn.clientPort;
+
+      var clientSeq = conn.clientSeq;
+      var serverSeq = conn.serverSeq;
 
       if (s.requestBytes.isNotEmpty) {
         final frame = _ethernet(
@@ -66,7 +83,7 @@ class PcapNg {
           dstMac: _serverMac,
           srcIp: s.clientIp,
           dstIp: s.serverIp,
-          srcPort: s.clientPort,
+          srcPort: clientPort,
           dstPort: s.serverPort,
           seq: clientSeq,
           ack: serverSeq,
@@ -74,6 +91,7 @@ class PcapNg {
         );
         _enhancedPacket(out, s.requestTime, frame);
         clientSeq += s.requestBytes.length;
+        conn.clientSeq = clientSeq;
       }
 
       final respTime = s.responseTime;
@@ -84,13 +102,14 @@ class PcapNg {
           srcIp: s.serverIp,
           dstIp: s.clientIp,
           srcPort: s.serverPort,
-          dstPort: s.clientPort,
+          dstPort: clientPort,
           seq: serverSeq,
           ack: clientSeq,
           payload: s.responseBytes,
         );
         _enhancedPacket(out, respTime, frame);
         serverSeq += s.responseBytes.length;
+        conn.serverSeq = serverSeq;
       }
     }
     return out.toBytes();
@@ -269,4 +288,12 @@ class PcapNg {
     }
     return out;
   }
+}
+
+class _PcapConn {
+  final int clientPort;
+  int clientSeq = 1;
+  int serverSeq = 1;
+
+  _PcapConn({required this.clientPort});
 }

@@ -340,7 +340,8 @@ class HttpRequestCodec extends HttpCodec<HttpRequest> {
 class HttpResponseCodec extends HttpCodec<HttpResponse> {
   @override
   HttpResponse createMessage(List<String> reqLine) {
-    var httpStatus = HttpStatus(int.parse(reqLine[1]), reqLine[2]);
+    // 状态码缺失/非数字（畸形或非标准服务端）不能让整条连接解码失败
+    var httpStatus = HttpStatus(int.tryParse(reqLine[1].trim()) ?? 0, reqLine[2]);
     return HttpResponse(httpStatus, protocolVersion: reqLine[0]);
   }
 

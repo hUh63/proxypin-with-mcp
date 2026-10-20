@@ -906,7 +906,7 @@ class Http2ResponseDecoder extends Http2Codec<HttpResponse> {
     if (statusValues == null || statusValues.isEmpty) {
       throw FormatException('Invalid HTTP/2 response headers, missing :status pseudo-header: $headers');
     }
-    var httpResponse = HttpResponse(HttpStatus.valueOf(int.parse(statusValues.first)),
+    var httpResponse = HttpResponse(HttpStatus.valueOf(int.tryParse(statusValues.first.trim()) ?? 0),
         protocolVersion: headers[":version"]?.firstOrNull ?? 'HTTP/2');
     final requestId = channelContext.getStreamRequest(frameHeader.streamIdentifier)?.requestId;
     if (requestId != null) {
