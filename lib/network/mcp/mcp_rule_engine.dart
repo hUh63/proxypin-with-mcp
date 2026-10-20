@@ -229,7 +229,10 @@ class Condition {
 
     // 兼容旧版：按 context 中的 type 推断
     if (context is Map) {
-      final typeStr = context['type'] as String?;
+      // 不能 `as String?` 强转：context 由调用方构造，type 偶尔会是非字符串值，
+      // 强转会在响应热路径上抛 TypeError 打断整轮规则评估。
+      final rawType = context['type'];
+      final typeStr = rawType is String ? rawType : (rawType == null ? null : '$rawType');
       if (typeStr != null) {
         final detectedType = _enumByName(ConditionType.values, typeStr, ConditionType.custom);
         if (detectedType != ConditionType.httpRequest && detectedType != ConditionType.custom) {
@@ -340,7 +343,21 @@ class Condition {
     if (a is DateTime && b is DateTime) {
       return a.compareTo(b);
     }
-    return a.toString().compareTo(b.toString());
+    // 数值条件常以字符串形式保存（"200" / "1.5"）。纯字典序比较会把 "1000" 判成
+    // 小于 "200"，`bodySize > 200` 这类条件结果直接反了。
+    final na = _asDouble(a);
+    final nb = _asDouble(b);
+    if (na != null && nb != null) {
+      return na.compareTo(nb);
+    }
+    return '$a'.compareTo('$b');
+  }
+
+  /// 尽量把任意值解析成 double；解析不出返回 null。
+  double? _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
   }
 }
 
@@ -571,7 +588,16 @@ dynamic _encodeValue(dynamic value) {
 /// 反序列化条件值
 dynamic _decodeValue(dynamic value) {
   if (value is Map && value.containsKey('__regexp__')) {
-    return RegExp(value['__regexp__'] as String);
+    final rawPattern = value['__regexp__'];
+    final pattern = rawPattern is String ? rawPattern : '$rawPattern';
+    try {
+      return RegExp(pattern);
+    } on FormatException {
+      // 用户手填的非法正则（"(" / "[a-" / "*foo"）：降级成普通字符串，
+      // 交给 evaluate 里 matches 分支的 try/catch 处理。否则反序列化阶段就抛异常，
+      // 整条规则会被 loadRules 的逐条容错静默丢弃（用户配的规则凭空消失）。
+      return pattern;
+    }
   }
   if (value is List) {
     return value.map(_decodeValue).toList();

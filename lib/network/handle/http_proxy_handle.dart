@@ -174,14 +174,17 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         log.e('MCP triggerHttpRequest 失败', error: e, stackTrace: s);
       }
 
+      // MCP 自动化任务与「拦截请求」动作共用同一份请求描述。
+      // 以前两处各构造一次（含 headers.toMap() 全量复制），每条请求白付两倍开销。
+      final reqMap = <String, dynamic>{
+        'url': request!.requestUrl ?? '',
+        'method': request.methodLabel,
+        'headers': request.headers.toMap(),
+      };
+
       // 触发 MCP 自动化任务（onRequest 触发器，按 URL/方法/Header 条件匹配）。
       // 未注册任务时为空操作，不阻塞代理转发。
       try {
-        final reqMap = <String, dynamic>{
-          'url': request!.requestUrl ?? '',
-          'method': request.methodLabel,
-          'headers': request.headers.toMap(),
-        };
         unawaited(MCPAutomationManager().onRequest(reqMap).catchError((e, s) {
           log.e('MCP 自动化 onRequest 触发失败', error: e, stackTrace: s);
           // 必须返回与 Future 同类型的值：onRequest 是 Future<List<String>>，
@@ -196,12 +199,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       // MCP 自动化「拦截请求」动作：命中 onRequest 触发器 + blockRequest 动作的任务时，
       // 在真实发出请求前短路返回 403，不再转发。
       try {
-        final blockMap = <String, dynamic>{
-          'url': request!.requestUrl ?? '',
-          'method': request.methodLabel,
-          'headers': request.headers.toMap(),
-        };
-        if (await MCPAutomationManager().shouldBlockRequest(blockMap)) {
+        if (await MCPAutomationManager().shouldBlockRequest(reqMap)) {
           log.i('[MCP Automation] Blocked request by automation rule: ${request.requestUrl}');
           final blockResp = HttpResponse(HttpStatus.newStatus(403, 'Blocked by MCP Automation'),
               protocolVersion: request.protocolVersion)

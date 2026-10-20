@@ -121,25 +121,41 @@ class McpEventAutomation {
   }
 
   /// 触发 HTTP 请求事件
+  /// 已编译的事件正则缓存（eventName -> RegExp；非法正则为 null）。
+  ///
+  /// 这个方法在**每条请求**的转发路径上，旧实现每次都 `RegExp(patternStr)`
+  /// 重新编译，监听器一多就是每条请求 N 次正则编译。
+  final Map<String, RegExp?> _requestPatternCache = {};
+
   void triggerHttpRequest(HttpRequest request) {
-    // 触发所有 HTTP 请求监听器
-    _listeners.forEach((eventName, callbacks) {
-      if (eventName.startsWith('http_request:')) {
-        final patternStr = eventName.substring('http_request:'.length);
+    if (_listeners.isEmpty) return;
+    // 先快照：回调里可能调用 offHttpRequest/removeListener 改动 _listeners，
+    // 直接 forEach 会抛 ConcurrentModificationError 并中断后面的监听器。
+    final entries = _listeners.entries.toList();
+    final url = request.requestUrl ?? '';
+    for (final entry in entries) {
+      final eventName = entry.key;
+      if (!eventName.startsWith('http_request:')) continue;
+      final patternStr = eventName.substring('http_request:'.length);
+      final pattern = _requestPatternCache.putIfAbsent(patternStr, () {
         try {
-          final pattern = RegExp(patternStr);
-          // 修复：使用 request.requestUrl 替代 request.url
-          final url = request.requestUrl?.toString() ?? '';
-          if (pattern.hasMatch(url)) {
-            for (final callback in callbacks) {
-              callback(request);
-            }
-          }
+          return RegExp(patternStr);
         } catch (e) {
           logger.w('无效的正则表达式：$patternStr', error: e);
+          return null;
+        }
+      });
+      if (pattern == null || !pattern.hasMatch(url)) continue;
+      // 回调列表同样快照，并逐条隔离异常：一个监听器抛错不应让同一次请求
+      // 的其它监听器全部失效。
+      for (final callback in List<EventCallback>.from(entry.value)) {
+        try {
+          callback(request);
+        } catch (e, st) {
+          logger.e('HTTP 请求事件回调异常：$eventName', error: e, stackTrace: st);
         }
       }
-    });
+    }
   }
 
   /// 监听特定 API 路径的请求

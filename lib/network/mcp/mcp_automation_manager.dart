@@ -105,54 +105,90 @@ class MCPAutomationTask {
        updatedAt = updatedAt ?? DateTime.now();
 
   /// 检查请求是否匹配条件
+  ///
+  /// 条件值来自 MCP 工具入参 / 持久化 JSON，类型并不可靠（用户可能写成 "80" 字符串、
+  /// 或把 methods 写成逗号分隔字符串）。这里全部**宽容解析**，解析不出的条件按
+  /// 「不匹配」处理 —— 不能用 `as String` / `as List` 强转：强转会在转发热路径上抛
+  /// TypeError，外层 catch 只打一条日志，规则就此静默失效且没有任何提示。
   bool matchesRequest(Map<String, dynamic> request) {
     if (triggerType != AutomationTriggerType.onRequest) return false;
-    
-    // URL 匹配
-    if (conditions.containsKey('urlPattern')) {
-      final pattern = conditions['urlPattern'] as String;
-      final url = request['url'] as String?;
-      if (url == null || !url.contains(pattern)) return false;
+
+    // URL 匹配（子串匹配，空串视为不过滤）
+    final urlCondition = conditions['urlPattern'];
+    if (urlCondition != null) {
+      final pattern = '$urlCondition'.trim();
+      final url = request['url'];
+      if (pattern.isNotEmpty && (url == null || !'$url'.contains(pattern))) return false;
     }
-    
-    // 方法匹配
-    if (conditions.containsKey('methods')) {
-      final methods = conditions['methods'] as List;
-      final method = request['method'] as String?;
-      if (method == null || !methods.contains(method)) return false;
+
+    // 方法匹配（支持 List，也兼容 "GET,POST" 这种写法）
+    final methodsCondition = conditions['methods'];
+    if (methodsCondition != null) {
+      final List<String> allowed;
+      if (methodsCondition is List) {
+        allowed = methodsCondition.map((e) => '$e'.trim().toUpperCase()).toList();
+      } else if (methodsCondition is String) {
+        allowed = methodsCondition.split(',').map((e) => e.trim().toUpperCase()).toList();
+      } else {
+        // 配置本身坏掉时宁可不命中：若当成「不过滤」，用户写错一次条件就会
+        // 意外拦下（或改写）全部请求。
+        return false;
+      }
+      final method = request['method'];
+      if (method == null || !allowed.contains('$method'.trim().toUpperCase())) return false;
     }
-    
-    // Header 匹配
-    if (conditions.containsKey('headers')) {
-      final headers = conditions['headers'] as Map;
-      final reqHeaders = request['headers'] as Map?;
-      if (reqHeaders == null) return false;
-      for (final entry in headers.entries) {
-        if (reqHeaders[entry.key] != entry.value) return false;
+
+    // Header 匹配（头名大小写不敏感 —— HTTP 头本来就不区分大小写）
+    final headersCondition = conditions['headers'];
+    if (headersCondition != null) {
+      if (headersCondition is! Map) return false;
+      final reqHeaders = request['headers'];
+      if (reqHeaders is! Map) return false;
+      for (final entry in headersCondition.entries) {
+        final actual = _headerValue(reqHeaders, '${entry.key}');
+        if (actual == null || actual != '${entry.value}') return false;
       }
     }
-    
+
     return true;
   }
 
-  /// 检查响应是否匹配条件
+  /// 取头部值：忽略大小写（先直接命中，再线性兜底）。
+  static String? _headerValue(Map headers, String name) {
+    final direct = headers[name];
+    if (direct != null) return '$direct';
+    final lower = name.toLowerCase();
+    for (final entry in headers.entries) {
+      if ('${entry.key}'.toLowerCase() == lower) return '${entry.value}';
+    }
+    return null;
+  }
+
+  /// 把任意条件值解析成 int；解析不出返回 null。
+  static int? _asInt(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse('$value'.trim());
+  }
+
+  /// 检查响应是否匹配条件（同样宽容解析，见 [matchesRequest] 的说明）
   bool matchesResponse(Map<String, dynamic> response) {
     if (triggerType != AutomationTriggerType.onResponse) return false;
-    
+
     // 状态码匹配
-    if (conditions.containsKey('statusCode')) {
-      final statusCode = conditions['statusCode'] as int;
-      final respStatus = response['statusCode'] as int?;
-      if (respStatus == null || respStatus != statusCode) return false;
+    final statusCondition = conditions['statusCode'];
+    if (statusCondition != null) {
+      final expected = _asInt(statusCondition);
+      if (expected != null && _asInt(response['statusCode']) != expected) return false;
     }
-    
+
     // URL 匹配
-    if (conditions.containsKey('urlPattern')) {
-      final pattern = conditions['urlPattern'] as String;
-      final url = response['url'] as String?;
-      if (url == null || !url.contains(pattern)) return false;
+    final urlCondition = conditions['urlPattern'];
+    if (urlCondition != null) {
+      final pattern = '$urlCondition'.trim();
+      final url = response['url'];
+      if (pattern.isNotEmpty && (url == null || !'$url'.contains(pattern))) return false;
     }
-    
+
     return true;
   }
 
@@ -463,7 +499,8 @@ class MCPAutomationManager {
     unawaited(_ensureLoaded());
     final executedActions = <String>[];
     
-    for (final task in enabledTasks) {
+    for (final task in _tasks) {
+      if (!task.enabled) continue;
       if (task.matchesRequest(request)) {
         await _executeTask(task, {'request': request});
         executedActions.add(task.id);
@@ -478,7 +515,8 @@ class MCPAutomationManager {
   Future<bool> shouldBlockRequest(Map<String, dynamic> request) async {
     // 后台懒加载，不等（转发链路上同步等 IO 会卡住所有请求）
     unawaited(_ensureLoaded());
-    for (final task in enabledTasks) {
+    for (final task in _tasks) {
+      if (!task.enabled) continue;
       if (task.triggerType != AutomationTriggerType.onRequest) continue;
       if (!task.actions.contains(AutomationActionType.blockRequest)) continue;
       if (task.matchesRequest(request)) return true;
@@ -491,7 +529,8 @@ class MCPAutomationManager {
     unawaited(_ensureLoaded());
     final executedActions = <String>[];
     
-    for (final task in enabledTasks) {
+    for (final task in _tasks) {
+      if (!task.enabled) continue;
       if (task.matchesResponse(response)) {
         await _executeTask(task, {'response': response});
         executedActions.add(task.id);

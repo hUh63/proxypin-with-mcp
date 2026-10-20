@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.67.63 (2026-10-20)
+
+### MCP 自动化：条件类型不符时整条规则静默失效
+
+- `MCPAutomationTask.matchesRequest / matchesResponse` 里 `conditions['urlPattern'] as String`、
+  `['methods'] as List`、`['headers'] as Map`、`['statusCode'] as int` 全是硬强转。
+  条件值来自 MCP 工具入参和持久化 JSON，写成 `"80"`、`"404"`、`"GET,POST"` 都很常见，
+  一旦类型不符就在**转发热路径**上抛 TypeError —— 外层只 `log.e` 一句，规则从此不生效，
+  界面上没有任何提示。现在全部宽容解析：方法支持 List 与逗号分隔字符串、状态码支持
+  num 与数字字符串、URL 条件支持任意可字符串化值；配置本身坏掉时按「不命中」处理
+  （而不是当成不过滤，避免写错一次条件就拦下全部请求）。
+- Header 条件原来是大小写敏感匹配（`reqHeaders[entry.key]`），而 HTTP 头名本来不区分
+  大小写 —— 用户填 `content-type` 永远匹配不上 `Content-Type`。现在忽略大小写。
+- `onRequest / onResponse / shouldBlockRequest` 改用 `_tasks` 原地遍历，不再每条请求
+  分配一次 `enabledTasks` 新列表。
+
+### MCP 规则引擎：非法正则让整条规则被丢弃
+
+- `_decodeValue` 反序列化 `{"__regexp__": "("}` 时直接 `RegExp(...)`：非法正则抛
+  FormatException，`loadRules` 的逐条容错把**整条规则**跳过（用户配的规则凭空消失）。
+  现在降级为普通字符串，交给 evaluate 里 matches 分支的 try/catch 处理。
+- `_compare` 对数字字符串走字典序：`"1000" < "200"` 为真，`bodySize > 200` 这类条件
+  结果直接反了。现在先按 double 解析再比较。
+- `_getFieldValue` 里 `context['type'] as String?` 改宽容取值。
+
+### MCP 事件自动化：每条请求重新编译正则 + 回调互相打断
+
+- `triggerHttpRequest` 每个监听器、每条请求都 `RegExp(patternStr)` 重新编译一次。
+  现在按 eventName 缓存编译结果（含非法正则的 null 缓存）。
+- 回调里调用 `offHttpRequest` 会改动 `_listeners`，直接 `forEach` 抛
+  ConcurrentModificationError 并中断后面的监听器；`callback` 抛异常也会连累同批其它
+  监听器。现在对监听器表与回调列表各做一次快照，并逐条隔离异常。
+
+### 转发路径少复制一次请求描述
+
+- `http_proxy_handle` 里 MCP 自动化触发与「拦截请求」检查各自构造一份 reqMap
+  （含 `headers.toMap()` 全量复制），现在共用一份。
+
 ## v1.67.62 (2026-10-20)
 
 ### PCAPNG 导出：多条请求被合成同一条「自环」TCP 流
