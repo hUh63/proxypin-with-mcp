@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.67.65 (2026-10-21)
+
+### MCP 自动化：「修改请求」「修改响应」动作一直是完全无效的
+
+- 转发管道给 `onRequest` / `onResponse` 传的 Map 只有 `url / method / headers` 与
+  `url / statusCode`，而 `_modifyRequest` 读的是 `request['id']`、`_modifyResponse`
+  读的是 `response['requestId']` —— 两个动作一进函数就 `return`，**从来没有生效过**，
+  界面上也没有任何提示。现在管道会带上 `requestId`，两处读取兼容 `id` / `requestId`
+  两种键名；拿不到 id 时打一条日志而不是静默返回。
+- `_replayRequest` / `_blockRequest` 等另外三处同样读 `request['id']`，一并修正。
+- `actionParams` 里的 `headers` / `body` / `format` / `path` 原来用 `as Map` /
+  `as String` 强转，值类型不符会抛 TypeError（动作直接失效且只留一行日志）。
+  现在宽容解析。
+
 ## v1.67.64 (2026-10-21)
 
 ### SAZ 导入：一条坏记录让整包失败

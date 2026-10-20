@@ -658,8 +658,10 @@ class MCPAutomationManager {
       return;
     }
     
-    final requestId = request['id'] as String?;
-    if (requestId == null) return;
+    // 兼容两种键名（model 早先只用 id，转发管道现在传 requestId）
+    final rawRequestId = request['requestId'] ?? request['id'];
+    final requestId = rawRequestId == null ? '' : '$rawRequestId';
+    if (requestId.isEmpty) return;
     
     final bridge = McpBridge();
     final httpRequest = bridge.getRequestById(requestId);
@@ -668,19 +670,19 @@ class MCPAutomationManager {
       return;
     }
     
-    // 修改请求头
-    if (params.containsKey('headers')) {
-      final headers = params['headers'] as Map;
-      for (final entry in headers.entries) {
-        httpRequest.headers.set(entry.key as String, entry.value as String);
+    // 修改请求头（actionParams 来自工具入参/持久化 JSON，类型不可靠）
+    final reqHeaderParams = params['headers'];
+    if (reqHeaderParams is Map) {
+      for (final entry in reqHeaderParams.entries) {
+        httpRequest.headers.set('${entry.key}', '${entry.value}');
       }
       logger.i('[MCP Automation] Modified request headers for task: ${task.name}');
     }
     
     // 修改请求体
-    if (params.containsKey('body')) {
-      final body = params['body'] as String;
-      httpRequest.body = utf8.encode(body);
+    final bodyParam = params['body'];
+    if (bodyParam != null) {
+      httpRequest.body = utf8.encode(bodyParam is String ? bodyParam : '$bodyParam');
       logger.i('[MCP Automation] Modified request body for task: ${task.name}');
     }
   }
@@ -695,8 +697,9 @@ class MCPAutomationManager {
       return;
     }
     
-    final requestId = response['requestId'] as String?;
-    if (requestId == null) return;
+    final rawRequestId = response['requestId'] ?? response['id'];
+    final requestId = rawRequestId == null ? '' : '$rawRequestId';
+    if (requestId.isEmpty) return;
     
     final bridge = McpBridge();
     final httpRequest = bridge.getRequestById(requestId);
@@ -707,11 +710,11 @@ class MCPAutomationManager {
     
     final httpResponse = httpRequest!.response!;
     
-    // 修改响应头
-    if (params.containsKey('headers')) {
-      final headers = params['headers'] as Map;
-      for (final entry in headers.entries) {
-        httpResponse.headers.set(entry.key as String, entry.value as String);
+    // 修改响应头（同样宽容解析）
+    final respHeaderParams = params['headers'];
+    if (respHeaderParams is Map) {
+      for (final entry in respHeaderParams.entries) {
+        httpResponse.headers.set('${entry.key}', '${entry.value}');
       }
       logger.i('[MCP Automation] Modified response headers for task: ${task.name}');
     }
@@ -745,8 +748,10 @@ class MCPAutomationManager {
       return;
     }
     
-    final requestId = request['id'] as String?;
-    if (requestId == null) return;
+    // 兼容两种键名（model 早先只用 id，转发管道现在传 requestId）
+    final rawRequestId = request['requestId'] ?? request['id'];
+    final requestId = rawRequestId == null ? '' : '$rawRequestId';
+    if (requestId.isEmpty) return;
     
     final bridge = McpBridge();
     final httpRequest = bridge.getRequestById(requestId);
@@ -770,8 +775,10 @@ class MCPAutomationManager {
       return;
     }
     
-    final requestId = request['id'] as String?;
-    if (requestId == null) return;
+    // 兼容两种键名（model 早先只用 id，转发管道现在传 requestId）
+    final rawRequestId = request['requestId'] ?? request['id'];
+    final requestId = rawRequestId == null ? '' : '$rawRequestId';
+    if (requestId.isEmpty) return;
     
     final bridge = McpBridge();
     final httpRequest = bridge.getRequestById(requestId);
@@ -807,8 +814,10 @@ class MCPAutomationManager {
   /// 实现导出数据逻辑
   Future<void> _exportData(MCPAutomationTask task, Map<String, dynamic> context) async {
     final params = task.actionParams;
-    final exportFormat = params['format'] as String? ?? 'json';
-    final exportPath = params['path'] as String?;
+    final rawFormat = params['format'];
+    final exportFormat = rawFormat == null ? 'json' : '$rawFormat';
+    final rawPath = params['path'];
+    final exportPath = rawPath == null ? null : '$rawPath';
     
     final bridge = McpBridge();
     final requests = bridge.source;

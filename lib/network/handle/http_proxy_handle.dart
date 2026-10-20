@@ -177,7 +177,10 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       // MCP 自动化任务与「拦截请求」动作共用同一份请求描述。
       // 以前两处各构造一次（含 headers.toMap() 全量复制），每条请求白付两倍开销。
       final reqMap = <String, dynamic>{
-        'url': request!.requestUrl ?? '',
+        // requestId 是「修改请求/响应」动作回查活对象的唯一凭据，之前漏传，
+        // 导致 _modifyRequest/_modifyResponse 一进函数就 return，动作静默无效。
+        'requestId': request!.requestId,
+        'url': request.requestUrl ?? '',
         'method': request.methodLabel,
         'headers': request.headers.toMap(),
       };
@@ -450,6 +453,8 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
       // 未注册任务时为空操作，不阻塞转发。
       try {
         final respMap = <String, dynamic>{
+          // 同 reqMap：modifyResponse 靠它回查活对象
+          'requestId': request.requestId,
           'url': request.requestUrl ?? '',
           'statusCode': msg.status?.code ?? 0,
         };
