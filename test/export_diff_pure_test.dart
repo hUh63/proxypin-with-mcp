@@ -171,7 +171,7 @@ void main() {
       expect(respFrame.srcIp, [93, 184, 216, 34]);
       expect(respFrame.dstIp, [192, 168, 1, 10]);
       expect(respFrame.srcPort, 443);
-      expect(respFrame.dstPort, 51234);
+      expect(respFrame.dstPort, 40000, reason: '响应帧回指同一个客户端端口');
       expect(respFrame.seq, 1);
       expect(respFrame.ack, 1 + requestBytes.length);
       expect(respFrame.payload, responseBytes);
