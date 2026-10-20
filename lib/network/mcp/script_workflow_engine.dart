@@ -50,7 +50,11 @@ class ScriptExecutionResult {
   });
 
   bool get isSuccess => status == ScriptExecutionStatus.success;
-  bool get isFailed => status == ScriptExecutionStatus.failed;
+
+  /// 失败包含超时：超时节点以前既不是 success 也不是 failed，下游依赖检查
+  /// 看到 isFailed=false 就当成功继续跑——超时的脚本被当成「一切正常」。
+  bool get isFailed =>
+      status == ScriptExecutionStatus.failed || status == ScriptExecutionStatus.timeout;
 
   Map<String, dynamic> toJson() {
     return {
@@ -419,10 +423,10 @@ class ScriptWorkflowEngine {
     // 检查依赖是否成功
     for (final depId in node.dependencies) {
       final depResult = context.nodeResults[depId];
-      if (depResult == null || depResult.isFailed) {
-        // 依赖失败、但该依赖自己声明了 continueOnError：视为「可继续」。
-        // 这是 continueOnError 唯一真正生效的地方（此前它被错用在 status 赋值上，
-        // 结果既没让下游继续、又把状态留在 running）。
+      // 只有「成功」才放行；以前只拦 isFailed，导致被 skipped 的上游（它自己的
+      // 依赖失败了）也会让下游继续执行，整条链一路跑下去。
+      if (depResult == null || !depResult.isSuccess) {
+        // 依赖失败/超时、但该依赖自己声明了 continueOnError：视为「可继续」。
         WorkflowNode? depNode;
         for (final n in workflow.nodes) {
           if (n.id == depId) {

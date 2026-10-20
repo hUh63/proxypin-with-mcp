@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.67.60 (2026-10-20)
+
+### 工作流：超时节点被当成成功
+
+`ScriptExecutionResult.isFailed` 只判 `failed`，而超时的状态是 `timeout`——下游依赖检查
+看到 `isFailed == false` 就当成成功继续跑，超时的脚本被当作「一切正常」。
+
+同时依赖检查从「只拦 failed」改成「只放行 success」：被 skipped 的上游（它自己的依赖
+失败了）以前也会让下游继续执行，整条链一路跑下去。
+
+### HAR 导出：二进制响应缺 encoding，文本响应没删 Content-Encoding
+
+- `content.text` 对二进制响应是 base64，但没写 `encoding: "base64"`（请求侧 `postData`
+  一直有）。Chrome DevTools / Charles 会把图片、字体当文本显示成乱码。
+- 文本响应导出的是**已解码**的 `bodyAsString`，但头里仍带着 `Content-Encoding: gzip`
+  （旧实现只跳过了 `br`）。这份 HAR 再导入回来时，正文会被当成压缩流再解压一次，
+  直接变乱码——导出→导入的往返就坏了。现在文本 body 会移除 Content-Encoding，
+  二进制 body 保留。
+
 ## v1.67.59 (2026-10-20)
 
 ### 改写非 UTF-8 页面的 body 会写坏报文

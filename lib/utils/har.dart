@@ -76,6 +76,10 @@ class Har {
         "size": _bodySize(request.response?.body, request.response?.originalBodyLength), // 响应体大小
         "mimeType": _getContentType(request.response?.headers.contentType), // 响应体类型
         "text": _getResponseText(request.response),
+        // HAR 规范：text 是 base64 时必须显式声明 encoding（请求侧的 postData 一直
+        // 有，响应侧漏了）。少了它，Chrome DevTools / Charles 会把二进制响应当文本，
+        // 图片/字体全成乱码。
+        if (request.response?.contentType.isBinary == true) "encoding": "base64",
       },
       "redirectURL": '', // 重定向地址
       "headersSize": -1, // 响应头大小
@@ -134,6 +138,7 @@ class Har {
           "size": _bodySize(request.response?.body, request.response?.originalBodyLength),
           "mimeType": _getContentType(request.response?.headers.contentType),
           "text": _getResponseText(request.response),
+          if (request.response?.contentType.isBinary == true) "encoding": "base64",
         },
         "redirectURL": '',
         "headersSize": -1,
@@ -251,10 +256,15 @@ class Har {
     var headers = <Map<String, String>>[];
     var contentEncodingName = message?.headers.getOriginalName(HttpHeaders.CONTENT_ENCODING);
 
+    // 文本 body 导出的是 bodyAsString（**已解码**）。头里还留着 Content-Encoding
+    // 的话，导入方（包括我们自己）会再解压一次：gzip 响应「导出→导入」后正文
+    // 直接变乱码。二进制 body 导出的是原始字节（base64），保留头才是对的。
+    // 旧实现只跳过了 br，gzip/deflate 全留着。
+    final textBody = message?.contentType.isBinary != true;
+
     message?.headers.forEach((name, values) {
       for (var element in values) {
-        //body已经解码 删除编码
-        if (name == contentEncodingName && element == 'br') {
+        if (textBody && contentEncodingName != null && name == contentEncodingName) {
           continue;
         }
         headers.add({'name': name, 'value': element});
