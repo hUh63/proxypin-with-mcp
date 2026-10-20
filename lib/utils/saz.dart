@@ -76,32 +76,48 @@ class SazParser {
     final entries = <Map<String, dynamic>>[];
     var seq = 0;
     for (final id in ids) {
-      final req = _parseMessage(reqs[id]!);
-      if (req == null || req.startLine.isEmpty) continue;
+      // 单条损坏（gzip 解压失败、chunked 畸形…）不应该让整个 .saz 导入失败：
+      // _decodedBody 是会抛的，以前一抛整个 parse 就结束了。
+      try {
+        final entry = _buildEntry(id, seq, reqs[id]!, resps[id], metas[id]);
+        if (entry != null) {
+          entries.add(entry);
+          seq++;
+        }
+      } catch (e) {
+        io.stderr.writeln('SAZ entry #$id skipped: $e');
+      }
+    }
+    return entries;
+  }
+
+  /// 构造单条 HAR entry；返回 null 表示该条应跳过（CONNECT 隧道、空起始行等）。
+  static Map<String, dynamic>? _buildEntry(int id, int seq, Uint8List reqBytes, Uint8List? respBytes, String? meta) {
+      final req = _parseMessage(reqBytes);
+      if (req == null || req.startLine.isEmpty) return null;
 
       final parts = req.startLine.split(' ');
       final method = parts.isNotEmpty ? parts[0].toUpperCase() : '';
-      if (method.isEmpty || method == 'CONNECT') continue; // 隧道握手不导出
+      if (method.isEmpty || method == 'CONNECT') return null; // 隧道握手不导出
       final rawTarget = parts.length > 1 ? parts[1] : '/';
       final version = parts.length > 2 ? parts[2] : 'HTTP/1.1';
 
       final hostHeader = req.header('host') ?? '';
-      final scheme = _schemeFor(rawTarget, hostHeader, metas[id]);
+      final scheme = _schemeFor(rawTarget, hostHeader, meta);
       final url = _buildUrl(rawTarget, hostHeader, scheme);
 
-      final resp = resps[id] == null ? null : _parseMessage(resps[id]!);
+      final resp = respBytes == null ? null : _parseMessage(respBytes);
 
-      entries.add(_entry(
+      return _entry(
         id: id,
-        seq: seq++,
+        seq: seq,
         method: method,
         url: url,
         version: version,
         req: req,
         resp: resp,
-      ));
-    }
-    return entries;
+        startedAt: _startedAtOf(meta),
+      );
   }
 
   static Map<String, dynamic> _entry({
@@ -112,6 +128,7 @@ class SazParser {
     required String version,
     required _RawMessage req,
     required _RawMessage? resp,
+    DateTime? startedAt,
   }) {
     final reqBody = _decodedBody(req);
     final reqCt = _contentType(req);
@@ -141,8 +158,14 @@ class SazParser {
     }
 
     return {
-      'startedDateTime': DateTime.now().add(Duration(milliseconds: seq)).toUtc().toIso8601String(),
-      'time': -1,
+      // 有真实抓包时间就用它（Charles 的 _m.xml 里有）；没有则用「导入时刻 + 序号」
+      // 保持顺序。以前一律用导入时刻，导入别人的会话后时间全是今天。
+      'startedDateTime': (startedAt ?? DateTime.now().add(Duration(milliseconds: seq)))
+          .toUtc()
+          .toIso8601String(),
+      // 以前写 -1：导入方（包括我们自己）会算出「响应比请求早 1ms」的负耗时。
+      // SAZ 里没有可靠的耗时字段，写 0 表示同刻完成。
+      'time': 0,
       '_id': 'saz-$id',
       'request': {
         'method': method,
@@ -323,6 +346,20 @@ class SazParser {
         t.contains('application/x-font') ||
         t.contains('application/vnd.ms-') ||
         t.contains('application/x-msdownload');
+  }
+
+  /// Charles 的 `raw/N_m.xml` 里带抓包时间（不同版本写法不同：元素形式
+  /// `<startTime>2024-05-01T10:20:30.123+08:00</startTime>` 或属性形式）。
+  /// 提取不到返回 null，由调用方用「导入时刻 + 序号」兜底。
+  static final RegExp _startTimeRe = RegExp(
+      r'startTime[^0-9]{0,20}([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+(?:Z|[+-][0-9:]{2,5})?)',
+      caseSensitive: false);
+
+  static DateTime? _startedAtOf(String? meta) {
+    if (meta == null) return null;
+    final m = _startTimeRe.firstMatch(meta);
+    if (m == null) return null;
+    return DateTime.tryParse(m.group(1)!)?.toLocal();
   }
 
   static int? _portOf(String host) {

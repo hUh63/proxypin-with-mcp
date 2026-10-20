@@ -358,8 +358,13 @@ class Har {
       httpRequest.requestTime = DateTime.parse(har['startedDateTime']).toLocal();
     }
     if (har['time'] != null) {
-      httpRequest.response?.responseTime =
-          httpRequest.requestTime.add(Duration(milliseconds: double.parse(har['time'].toString()).toInt()));
+      // 第三方 HAR 里 time 可能是 -1（未完成/未知）或非数字：直接换算会得到
+      // 「响应早于请求」的负耗时，列表里显示 -1ms。只接受 >= 0 的耗时。
+      final timeMs = double.tryParse(har['time'].toString())?.toInt();
+      if (timeMs != null && timeMs >= 0) {
+        httpRequest.response?.responseTime =
+            httpRequest.requestTime.add(Duration(milliseconds: timeMs));
+      }
     }
     return httpRequest;
   }
