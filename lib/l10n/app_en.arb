@@ -4602,5 +4602,17 @@
         "type": "int"
       }
     }
+  },
+  "wsTrafficAuth": "Require access token",
+  "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
+  "wsTrafficToken": "Access token",
+  "@wsTrafficAuth": {
+    "description": "Require access token for ws traffic push"
+  },
+  "@wsTrafficAuthDesc": {
+    "description": "Explain the risk of disabling token auth"
+  },
+  "@wsTrafficToken": {
+    "description": "Label of the access token"
   }
 }

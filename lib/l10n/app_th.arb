@@ -2657,5 +2657,8 @@
   "cmdGroupNav": "นำทาง",
   "cmdGroupAction": "การทำงาน",
   "cmdGroupSetting": "การตั้งค่า",
-  "newRequestsPaused": "มีคำขอใหม่ {count} รายการ · แตะเพื่อเลื่อนอัตโนมัติต่อ"
+  "newRequestsPaused": "มีคำขอใหม่ {count} รายการ · แตะเพื่อเลื่อนอัตโนมัติต่อ",
+  "wsTrafficAuth": "Require access token",
+  "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
+  "wsTrafficToken": "Access token"
 }

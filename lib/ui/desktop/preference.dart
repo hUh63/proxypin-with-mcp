@@ -239,7 +239,47 @@ class _PreferenceState extends State<Preference> {
                       value: configuration.wsTrafficEnabled,
                       onChanged: (value) => _toggleWsTraffic(value)),
                   onTap: () => _toggleWsTraffic(!configuration.wsTrafficEnabled)),
-              if (configuration.wsTrafficEnabled)
+              if (configuration.wsTrafficEnabled) ...[
+                ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(localizations.wsTrafficAuth, style: titleStyle),
+                    subtitle: Text(localizations.wsTrafficAuthDesc, style: subtitleStyle),
+                    trailing: SwitchWidget(
+                        scale: 0.75,
+                        value: configuration.wsTrafficAuthEnabled,
+                        onChanged: (value) {
+                          setState(() => configuration.wsTrafficAuthEnabled = value);
+                          configuration.flushConfig();
+                        }),
+                    onTap: () {
+                      setState(() => configuration.wsTrafficAuthEnabled = !configuration.wsTrafficAuthEnabled);
+                      configuration.flushConfig();
+                    }),
+                if (configuration.wsTrafficAuthEnabled)
+                  ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(localizations.wsTrafficToken, style: titleStyle),
+                      subtitle: SelectableText(
+                        configuration.wsTrafficToken ?? '-',
+                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                      ),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        IconButton(
+                            tooltip: localizations.copy,
+                            icon: const Icon(Icons.copy, size: 18),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: configuration.wsTrafficToken ?? ''));
+                              FlutterToastr.show(localizations.copied, context);
+                            }),
+                        IconButton(
+                            tooltip: localizations.reset,
+                            icon: const Icon(Icons.refresh, size: 18),
+                            onPressed: () {
+                              setState(() => configuration.wsTrafficToken = WsTrafficServer.generateToken());
+                              configuration.flushConfig();
+                              FlutterToastr.show(localizations.reset, context);
+                            }),
+                      ])),
                 ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(localizations.wsTrafficHistory, style: titleStyle),
@@ -257,6 +297,7 @@ class _PreferenceState extends State<Preference> {
                       configuration.flushConfig();
                       WsTrafficServer.instance.broadcastConfig();
                     }),
+              ],
               // 上游 #756：端口此前只能改配置文件（被占用时开关无法开启），这里提供图形化修改入口
               ListTile(
                   contentPadding: EdgeInsets.zero,

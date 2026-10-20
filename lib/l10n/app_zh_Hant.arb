@@ -4458,5 +4458,8 @@
   "cmdGroupNav": "導覽",
   "cmdGroupAction": "操作",
   "cmdGroupSetting": "設定",
-  "newRequestsPaused": "有 {count} 條新請求 · 點擊恢復自動捲動"
+  "newRequestsPaused": "有 {count} 條新請求 · 點擊恢復自動捲動",
+  "wsTrafficAuth": "要求存取權杖",
+  "wsTrafficAuthDesc": "關閉後同一區域網路內任何裝置都能讀取你的即時流量",
+  "wsTrafficToken": "存取權杖"
 }

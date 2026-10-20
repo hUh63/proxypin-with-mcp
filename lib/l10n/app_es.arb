@@ -2657,5 +2657,8 @@
   "cmdGroupNav": "Navegar",
   "cmdGroupAction": "Acciones",
   "cmdGroupSetting": "Ajustes",
-  "newRequestsPaused": "{count} solicitudes nuevas · toca para reanudar el desplazamiento automático"
+  "newRequestsPaused": "{count} solicitudes nuevas · toca para reanudar el desplazamiento automático",
+  "wsTrafficAuth": "Require access token",
+  "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
+  "wsTrafficToken": "Access token"
 }

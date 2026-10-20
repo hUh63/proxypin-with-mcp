@@ -4458,5 +4458,8 @@
   "cmdGroupNav": "导航",
   "cmdGroupAction": "操作",
   "cmdGroupSetting": "设置",
-  "newRequestsPaused": "有 {count} 条新请求 · 点击恢复自动滚动"
+  "newRequestsPaused": "有 {count} 条新请求 · 点击恢复自动滚动",
+  "wsTrafficAuth": "要求访问令牌",
+  "wsTrafficAuthDesc": "关闭后同一局域网内任何设备都能读取你的实时流量",
+  "wsTrafficToken": "访问令牌"
 }

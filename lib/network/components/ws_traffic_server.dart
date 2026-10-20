@@ -23,6 +23,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:math' as math;
 
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/listener.dart';
@@ -53,10 +54,37 @@ class WsTrafficServer implements EventListener {
 
   Configuration? get _configuration => Configuration.loaded;
 
+  /// 生成 48 位十六进制访问令牌（与 MCP 的令牌格式一致）。
+  static String generateToken() {
+    final random = math.Random.secure();
+    return List.generate(24, (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// 请求鉴权：服务监听 0.0.0.0，而推送内容含 Authorization / Cookie 等凭据，
+  /// 没有令牌等于把整个局域网的人都当成合法客户端。
+  /// 支持 `Authorization: Bearer <token>` 与 `?token=<token>`（与 MCP 一致）。
+  bool _authorized(io.HttpRequest request) {
+    final config = _configuration;
+    if (config == null) return true;
+    if (!config.wsTrafficAuthEnabled) return true;
+    final expected = config.wsTrafficToken;
+    if (expected == null || expected.isEmpty) return true;
+    final auth = request.headers.value('authorization') ?? '';
+    final bearer = auth.toLowerCase().startsWith('bearer ') ? auth.substring(7).trim() : '';
+    final query = request.uri.queryParameters['token'] ?? '';
+    return bearer == expected || query == expected;
+  }
+
   /// 启动（端口被占用等异常仅记录日志，不影响抓包主流程）
   Future<void> start(Configuration configuration) async {
     if (_server != null) {
       return;
+    }
+    // 令牌必须在服务起来之前就位：没有令牌只能放行所有人，或者谁都连不上。
+    if ((configuration.wsTrafficToken ?? '').isEmpty) {
+      configuration.wsTrafficToken = generateToken();
+      logger.i('生成流量共享访问令牌');
+      await configuration.flushConfig();
     }
     final server = await io.HttpServer.bind(
       io.InternetAddress.anyIPv4,
@@ -97,6 +125,19 @@ class WsTrafficServer implements EventListener {
   }
 
   Future<void> _handleRequest(io.HttpRequest request) async {
+    // 升级请求必须带正确的令牌（说明页不含数据，放行便于自检）。
+    if (io.WebSocketTransformer.isUpgradeRequest(request) && !_authorized(request)) {
+      logger.w('WsTrafficServer 拒绝未授权连接: ${request.uri.path}');
+      request.response
+        ..statusCode = io.HttpStatus.unauthorized
+        ..headers.contentType = io.ContentType('application', 'json', charset: 'utf-8')
+        ..write(jsonEncode({
+          'error': 'Unauthorized: send Authorization: Bearer <token> or use ?token=<token>',
+        }));
+      await request.response.close();
+      return;
+    }
+
     if (!io.WebSocketTransformer.isUpgradeRequest(request)) {
       // 便于浏览器/工具自检：非升级请求给出简短说明
       request.response

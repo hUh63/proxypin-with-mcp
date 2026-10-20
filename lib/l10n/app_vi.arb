@@ -2657,5 +2657,8 @@
   "cmdGroupNav": "Dieu huong",
   "cmdGroupAction": "Hanh dong",
   "cmdGroupSetting": "Cai dat",
-  "newRequestsPaused": "{count} yêu cầu mới · chạm để tiếp tục cuộn tự động"
+  "newRequestsPaused": "{count} yêu cầu mới · chạm để tiếp tục cuộn tự động",
+  "wsTrafficAuth": "Require access token",
+  "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
+  "wsTrafficToken": "Access token"
 }

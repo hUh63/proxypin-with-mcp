@@ -132,6 +132,16 @@ class Configuration {
   int wsTrafficPort = 12080;
   bool wsTrafficHistoryEnabled = true; // 是否允许客户端查询历史记录
 
+  /// 流量共享的访问令牌（自动生成）。开启鉴权时，客户端须带
+  /// `Authorization: Bearer <token>` 或连接地址里的 `?token=<token>`。
+  ///
+  /// 抓包内容含 Authorization / Cookie 等凭据，而这个服务监听 0.0.0.0：
+  /// 没有令牌等于把整个局域网的人都当成合法客户端。
+  String? wsTrafficToken;
+
+  /// 是否要求访问令牌（默认开启）。关闭后同一局域网内任何设备都能读取实时流量。
+  bool wsTrafficAuthEnabled = true;
+
   //双向认证 mTLS（与上游服务器 TLS 握手时提供客户端证书，上游 #366）
   bool mtlsEnabled = false;
   String? mtlsChainPath; // 客户端证书链 PEM
@@ -196,6 +206,9 @@ class Configuration {
     wsTrafficEnabled = config['wsTrafficEnabled'] ?? false;
     wsTrafficPort = config['wsTrafficPort'] ?? 12080;
     wsTrafficHistoryEnabled = config['wsTrafficHistoryEnabled'] ?? true;
+    wsTrafficToken = config['wsTrafficToken'] as String?;
+    // 老配置里没有这个键：默认按「开启鉴权」处理（缺键时保持安全默认值）。
+    wsTrafficAuthEnabled = config['wsTrafficAuthEnabled'] != false;
     mtlsEnabled = config['mtlsEnabled'] ?? false;
     mtlsChainPath = config['mtlsChainPath'];
     mtlsKeyPath = config['mtlsKeyPath'];
@@ -332,6 +345,8 @@ class Configuration {
       'wsTrafficEnabled': wsTrafficEnabled,
       'wsTrafficPort': wsTrafficPort,
       'wsTrafficHistoryEnabled': wsTrafficHistoryEnabled,
+      if (wsTrafficToken != null) 'wsTrafficToken': wsTrafficToken,
+      'wsTrafficAuthEnabled': wsTrafficAuthEnabled,
       'mtlsEnabled': mtlsEnabled,
       if (mtlsChainPath != null) 'mtlsChainPath': mtlsChainPath,
       if (mtlsKeyPath != null) 'mtlsKeyPath': mtlsKeyPath,

@@ -722,6 +722,47 @@ class _PreferenceState extends State<Preference> {
             if (configuration.wsTrafficEnabled) ...[
               Divider(height: 0, thickness: 0.3, color: dividerColor),
               ListTile(
+                title: Text(localizations.wsTrafficAuth),
+                subtitle: Text(localizations.wsTrafficAuthDesc, style: const TextStyle(fontSize: 12)),
+                trailing: SwitchWidget(
+                  value: configuration.wsTrafficAuthEnabled,
+                  scale: 0.8,
+                  onChanged: (value) {
+                    setState(() => configuration.wsTrafficAuthEnabled = value);
+                    configuration.flushConfig();
+                  },
+                ),
+                onTap: () {
+                  setState(() => configuration.wsTrafficAuthEnabled = !configuration.wsTrafficAuthEnabled);
+                  configuration.flushConfig();
+                },
+              ),
+              if (configuration.wsTrafficAuthEnabled)
+                ListTile(
+                  title: Text(localizations.wsTrafficToken),
+                  subtitle: SelectableText(
+                    configuration.wsTrafficToken ?? '-',
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  ),
+                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(
+                        tooltip: localizations.copy,
+                        icon: const Icon(Icons.copy, size: 18),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: configuration.wsTrafficToken ?? ''));
+                          FlutterToastr.show(localizations.copied, context);
+                        }),
+                    IconButton(
+                        tooltip: localizations.reset,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        onPressed: () {
+                          setState(() => configuration.wsTrafficToken = WsTrafficServer.generateToken());
+                          configuration.flushConfig();
+                          FlutterToastr.show(localizations.reset, context);
+                        }),
+                  ]),
+                ),
+              ListTile(
                 title: Text(localizations.wsTrafficHistory),
                 subtitle: Text(localizations.wsTrafficHistoryDesc, style: const TextStyle(fontSize: 12)),
                 trailing: SwitchWidget(

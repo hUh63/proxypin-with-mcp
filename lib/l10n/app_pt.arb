@@ -2658,5 +2658,8 @@
   "cmdGroupNav": "Navegar",
   "cmdGroupAction": "Acoes",
   "cmdGroupSetting": "Definicoes",
-  "newRequestsPaused": "{count} novos pedidos · toque para retomar a rolagem automática"
+  "newRequestsPaused": "{count} novos pedidos · toque para retomar a rolagem automática",
+  "wsTrafficAuth": "Require access token",
+  "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
+  "wsTrafficToken": "Access token"
 }
