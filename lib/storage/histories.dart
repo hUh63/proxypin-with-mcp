@@ -359,15 +359,36 @@ class HistoryTask extends ListenerListEvent<HttpRequest> {
 
   Future<void> resetList() async {
     locked = true;
-    await open?.lock().timeout(Duration(seconds: 3), onTimeout: () => open!.unlock());
-    open = await open?.truncate(0);
-    await open?.setPosition(0);
-    history?.requestLength = 0;
-    history?.requests = null;
-    writeList.clear();
-    writeList.addAll(sourceList.source);
-    locked = false;
-    open?.unlock();
+    try {
+      final file = open;
+      if (file != null) {
+        try {
+          await file.lock().timeout(const Duration(seconds: 3));
+        } on TimeoutException {
+          // 加锁超时（另一个写入者卡住）：不要盲目 unlock —— 那会把别人的锁放掉。
+          // 直接放弃本轮重建，等下一次列表变化时再试。
+          logger.w('历史文件加锁超时，跳过本次重建');
+          return;
+        }
+        open = await file.truncate(0);
+        await open?.setPosition(0);
+      }
+      history?.requestLength = 0;
+      history?.requests = null;
+      writeList.clear();
+      writeList.addAll(sourceList.source);
+    } catch (e) {
+      // 文件被删/磁盘满等：不能把 locked 留成 true —— 那样 startTask 会
+      // 永远早退，历史记录从此不再写入，直到重启 App。
+      logger.e('重建历史写入队列失败', error: e);
+    } finally {
+      try {
+        await open?.unlock();
+      } catch (_) {
+        // 已经关闭/未加锁时 unlock 会抛，忽略
+      }
+      locked = false;
+    }
   }
 
   void cancelTask() {
@@ -386,19 +407,26 @@ class HistoryTask extends ListenerListEvent<HttpRequest> {
     if (locked) return;
     locked = true;
 
-    if (history == null) {
-      HistoryStorage storage = await HistoryStorage.instance;
-      var name = formatDate(DateTime.now(), [mm, '-', d, ' ', HH, ':', nn, ':', ss]);
-      File file = await HistoryStorage.openFile("${DateTime.now().millisecondsSinceEpoch}.txt");
-      history = await storage.addHistory(name, file, 0);
-      writeList.clear();
-      writeList.addAll(sourceList.source);
-    } else if (open == null) {
-      // 空闲暂停后恢复：重新打开已有历史文件，继续追加
-      open = await File(history!.path).open(mode: FileMode.append);
+    try {
+      if (history == null) {
+        HistoryStorage storage = await HistoryStorage.instance;
+        var name = formatDate(DateTime.now(), [mm, '-', d, ' ', HH, ':', nn, ':', ss]);
+        File file = await HistoryStorage.openFile("${DateTime.now().millisecondsSinceEpoch}.txt");
+        history = await storage.addHistory(name, file, 0);
+        writeList.clear();
+        writeList.addAll(sourceList.source);
+      } else if (open == null) {
+        // 空闲暂停后恢复：重新打开已有历史文件，继续追加
+        open = await File(history!.path).open(mode: FileMode.append);
+      }
+    } catch (e) {
+      // 磁盘满 / 文件被删等：不能把 locked 留成 true —— 那会让后续所有
+      // startTask 直接早退，历史记录功能一直失效到重启。
+      logger.e('启动历史写入任务失败', error: e);
+      return;
+    } finally {
+      locked = false;
     }
-
-    locked = false;
 
     timer ??= Timer.periodic(const Duration(seconds: 5), (it) => writeTask());
   }
@@ -409,6 +437,9 @@ class HistoryTask extends ListenerListEvent<HttpRequest> {
     _writing = true;
     try {
       await _writeTaskBody();
+    } catch (e, st) {
+      // 这个函数跑在 Timer 回调里，异常没人接会变成未捕获的 zone 错误
+      logger.e('写入历史记录失败', error: e, stackTrace: st);
     } finally {
       _writing = false;
     }

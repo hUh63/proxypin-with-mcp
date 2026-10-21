@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.67.73 (2026-10-22)
+
+### 历史记录的写入队列可能被一次文件异常永久卡死
+
+`HistoryTask` 用 `locked` 标记串行化「重建写入队列」与「写任务启动」，但两处都没有
+`finally` 兜底：
+
+- `resetList()`：`lock()` 超时后 `onTimeout: () => open!.unlock()` 会把**别人的锁**放掉
+  （超时恰恰说明锁在别处），随后 `truncate/setPosition` 抛异常时 `locked` 停在 `true`。
+- `startTask()`：`HistoryStorage.instance` / `openFile` / `open` 任一抛异常（磁盘满、
+  广告历史文件被外部删掉），`locked` 同样停在 `true`。
+
+`locked == true` 之后 `startTask()` 每次都会早退 —— **历史记录从此不再写入，直到重启
+App**，而且没有任何提示。现在两处都加了 `try/finally`，加锁超时改为「跳过本轮、不盲
+目 unlock」，异常打日志。
+
+### 定时写任务里的异常没有任何地方接收
+
+`writeTask()` 跑在 `Timer.periodic` 回调里，`_writeTaskBody()` 抛异常时只复位了
+`_writing`，异常本身变成未捕获的 zone 错误（控制台红字/上报噪音）。现在记日志处理。
+
 ## v1.67.72 (2026-10-22)
 
 ### MCP 并发闸：超时与名额交接竞态会让名额永久缩水
