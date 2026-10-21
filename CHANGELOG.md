@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.67.66 (2026-10-21)
+
+### MCP `import_har` 与界面导入结果不一致
+
+- `mcp_server` 里有一份 `_parseHarEntry` 的**重复实现**，与 `Har.toRequest` 早已分叉：
+  它忽略 `postData.encoding == 'base64'` 与 `content.encoding == 'base64'`（base64 文本
+  被当成正文，体积膨胀 33% 且内容全错）、用 `utf8.encode` 处理 body（旧版按字节映射的
+  数据会二次编码）、`DateTime.parse` 遇非法时间抛异常导致整条记录丢失。
+  现在 `import_har` 直接走 `Har.readEntries`，与界面导入完全一致，重复实现删除。
+
+### `set_host` 只按 host 匹配，同 host 不同端口会改错规则
+
+- 查找规则时只比较 `host`。而「同域名不同端口映射到不同 IP」是合法配置
+  （`a.com:8080 → 1.1.1.1`、`a.com:9090 → 2.2.2.2`）：`update` / `remove` 会命中第一条，
+  `add` 也永远覆盖第一条、无法新增第二条。现在传入 `port` 时一并匹配端口。
+
+### `export_har` 的 `request_ids`
+
+- 参数声明是数组，但 LLM 常写成 `"id1,id2"` 字符串。旧实现直接 `String.contains(id)`，
+  退化成子串匹配（`abc` 会命中 `abcdef`），导出的条目可能包含无关请求。现在数组与
+  逗号分隔字符串都按 ID 精确匹配。
+
 ## v1.67.65 (2026-10-21)
 
 ### MCP 自动化：「修改请求」「修改响应」动作一直是完全无效的

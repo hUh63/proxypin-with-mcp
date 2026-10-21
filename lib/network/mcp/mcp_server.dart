@@ -41,6 +41,7 @@ import 'package:proxypin/network/util/security_rule_store.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';
 import 'package:proxypin/network/util/quic/quic_keylog.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
+import 'package:proxypin/utils/har.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/network/http/http.dart';
@@ -1834,11 +1835,18 @@ class McpServer {
 
       case 'export_har':
         final limit = _clampLimit(args['limit'], 100);
-        final requestIds = args['request_ids'];
+        // request_ids 可能是数组，也可能被 LLM 写成逗号分隔字符串；
+        // 直接 contains 在字符串上会退化成子串匹配（"abc" 命中 "abcdef"）。
+        final rawIds = args['request_ids'];
+        final Set<String>? requestIdSet = rawIds is List
+            ? rawIds.map((e) => '$e').toSet()
+            : (rawIds is String && rawIds.trim().isNotEmpty
+                ? rawIds.split(',').map((e) => e.trim()).toSet()
+                : null);
 
         var list = McpBridge().source;
-        if (requestIds != null) {
-          list = list.where((r) => requestIds.contains(r.requestId)).toList();
+        if (requestIdSet != null) {
+          list = list.where((r) => requestIdSet.contains(r.requestId)).toList();
         } else {
           // 默认导出最近的
           list = list.reversed.take(limit).toList();
@@ -1849,17 +1857,20 @@ class McpServer {
       case 'import_har':
         final content = args['har_content'];
         try {
-          var json = jsonDecode(content);
-          var entries = json['log']['entries'] as List;
-          int count = 0;
-          for (var entry in entries) {
-            var req = _parseHarEntry(entry);
-            if (req != null) {
-              McpBridge().addRequest(req);
-              count++;
-            }
+          // 与 UI 的 HAR 导入走同一条解析路径（Har.readEntries）：
+          // 之前这里有一份重复实现，忽略 base64 编码、非法时间直接丢弃整条，
+          // 同一份 HAR 用 MCP 导入和用界面导入结果不一致。
+          final decoded = jsonDecode(content is String ? content : '$content');
+          final log = decoded is Map ? decoded['log'] : null;
+          final entries = log is Map ? log['entries'] : null;
+          if (entries is! List) {
+            return {'error': 'Invalid HAR: missing log.entries'};
           }
-          return {'status': 'success', 'imported_count': count};
+          final parsed = Har.readEntries(entries);
+          for (final req in parsed) {
+            McpBridge().addRequest(req);
+          }
+          return {'status': 'success', 'imported_count': parsed.length};
         } catch (e) {
           return {'error': 'Failed to import HAR: $e'};
         }
@@ -3446,9 +3457,14 @@ class McpServer {
           final port = mcpAsInt(args['port']);
           var manager = await HostsManager.instance;
 
+          // 带上端口匹配：同 host 不同端口的规则是合法的（a.com:8080 与 a.com:9090），
+          // 只按 host 找会永远命中第一条，导致 update/remove 改错规则、
+          // add 也无法新增第二条同 host 不同端口的映射。
           HostsItem? find() {
             for (var it in manager.list) {
-              if (!it.isFolder && it.host == host) return it;
+              if (it.isFolder || it.host != host) continue;
+              if (port != null && it.port != port) continue;
+              return it;
             }
             return null;
           }
@@ -3944,73 +3960,6 @@ class McpServer {
         "entries": entries,
       },
     };
-  }
-
-  HttpRequest? _parseHarEntry(Map<String, dynamic> entry) {
-    try {
-      var requestJson = entry['request'];
-      var url = requestJson['url'];
-      var method = requestJson['method'];
-      final parsedMethod = HttpMethod.valueOf(method.toString());
-      var req = HttpRequest(parsedMethod, url,
-          rawMethod: parsedMethod == HttpMethod.unknown ? method.toString() : null);
-
-      if (entry['startedDateTime'] != null) {
-        req.requestTime = DateTime.parse(entry['startedDateTime']);
-      }
-
-      // Headers
-      if (requestJson['headers'] != null) {
-        for (var h in requestJson['headers']) {
-          req.headers.add(h['name'], h['value']);
-        }
-      }
-
-      // Body
-      if (requestJson['postData'] != null &&
-          requestJson['postData']['text'] != null) {
-        req.body = utf8.encode(requestJson['postData']['text']);
-      }
-
-      // Response
-      var responseJson = entry['response'];
-      if (responseJson != null) {
-        var status = responseJson['status'];
-        var statusText = responseJson['statusText'];
-        var res = HttpResponse(
-          HttpStatus(
-            status is num
-                ? status.toInt()
-                : (int.tryParse(status.toString()) ?? 0),
-            statusText?.toString() ?? "",
-          ),
-        );
-
-        if (responseJson['headers'] != null) {
-          for (var h in responseJson['headers']) {
-            res.headers.add(h['name'], h['value']);
-          }
-        }
-
-        if (responseJson['content'] != null &&
-            responseJson['content']['text'] != null) {
-          res.body = utf8.encode(responseJson['content']['text']);
-        }
-
-        res.request = req;
-        // Calculate response time from duration
-        var time = entry['time'] ?? 0;
-        res.responseTime = req.requestTime.add(
-          Duration(milliseconds: time is num ? time.toInt() : 0),
-        );
-        req.response = res;
-      }
-
-      return req;
-    } catch (e) {
-      logger.e("Failed to parse HAR entry", error: e);
-      return null;
-    }
   }
 
   Future<dynamic> _readResource(String uri) async {
