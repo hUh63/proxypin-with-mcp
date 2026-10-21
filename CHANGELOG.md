@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.67.70 (2026-10-21)
+
+### 脚本改环境变量：每个请求写一次配置文件
+
+- 脚本里 `context.env.token = x` 是很常见的写法。`applyScriptEnvChanges` 一有变化就
+  `flushConfig()`，也就是**整份 environments.json 覆盖写**；命中高频接口时等于每个请求
+  都写一次盘，磁盘写放大 + 转发链路被 IO 拖慢。现在合并成最多每 2 秒一次（新增
+  `scheduleFlush()` / `flushPendingSave()`），UI 保存等主动操作仍立即落盘。
+
+### 配置写入改为原子替换
+
+- `SerialFileWriter.writeString` 直接 `file.writeAsString` —— 这是「截断 + 写」。
+  写的过程中若被读取（UI 刷新、MCP 查询、另一个模块 reload），读到的可能是空文件或
+  **半截 JSON**；半截 JSON 解析失败后该模块退回默认值，下次保存又把默认值写回磁盘，
+  用户的配置就永久丢了。现在先写 `<path>.tmp` 再 rename，失败时退回直接覆盖。
+
 ## v1.67.69 (2026-10-21)
 
 ### 响应重写出错时，把 Dart 异常当成响应体返回给客户端

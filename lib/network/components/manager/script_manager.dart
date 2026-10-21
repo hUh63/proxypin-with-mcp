@@ -420,7 +420,8 @@ async function onResponse(context, request, response) {
     if (mgr == null || !mgr.enabled) return;
     final changed = mgr.applyScriptEnvChanges(envBefore, envAfter);
     if (changed) {
-      await mgr.flushConfig();
+      // 节流落盘：脚本命中高频接口时，按请求 flush 等于每请求写一次配置文件
+      mgr.scheduleFlush();
     }
   }
 

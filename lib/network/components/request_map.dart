@@ -128,7 +128,8 @@ class RequestMapInterceptor extends Interceptor {
       final mgr = EnvironmentManager.instanceOrNull;
       if (mgr != null && mgr.enabled) {
         if (mgr.applyScriptEnvChanges(envBefore, scriptCtx['env'] as Map)) {
-          await mgr.flushConfig();
+          // 脚本每个请求都可能改 env，直接 flush 会造成每请求一次配置写盘
+          mgr.scheduleFlush();
         }
       }
     }

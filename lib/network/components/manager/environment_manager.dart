@@ -8,8 +8,8 @@
  *      https://www.apache.org/licenses/LICENSE-2.0
  */
 
+import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'dart:io';
 import 'dart:math';
 
@@ -180,6 +180,29 @@ class EnvironmentManager extends ChangeNotifier {
   void _ensureGlobal() {
     if (!environments.any((e) => e.isGlobal)) {
       environments.insert(0, Environment(id: 'global', name: 'Global', isGlobal: true));
+    }
+  }
+
+  /// 脚本改 env 后的落盘节流句柄。
+  Timer? _flushDebounce;
+
+  /// 合并「脚本写变量」触发的落盘：脚本里 `context.env.token = x` 这种写法
+  /// 很常见，命中高频接口时每个请求都会改一次 -> 每请求一次完整配置写盘。
+  /// 这里合并成最多每 2 秒一次；UI 保存等主动操作仍用 [flushConfig] 立即写。
+  void scheduleFlush() {
+    if (_flushDebounce?.isActive == true) return;
+    _flushDebounce = Timer(const Duration(seconds: 2), () {
+      _flushDebounce = null;
+      unawaited(flushConfig());
+    });
+  }
+
+  /// 立即落盘挂起的变动（如 App 进入后台）。
+  Future<void> flushPendingSave() async {
+    if (_flushDebounce?.isActive == true) {
+      _flushDebounce?.cancel();
+      _flushDebounce = null;
+      await flushConfig();
     }
   }
 
