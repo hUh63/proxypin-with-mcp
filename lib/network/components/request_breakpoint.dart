@@ -135,6 +135,16 @@ class RequestBreakpointInterceptor extends Interceptor {
     }
   }
 
+  static bool _bytesEqual(List<int>? a, List<int>? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   @override
   Future<HttpRequest?> onRequest(HttpRequest request) async {
     RequestBreakpointManager requestBreakpointManager = await manager;
@@ -179,13 +189,21 @@ class RequestBreakpointInterceptor extends Interceptor {
           request.headers.clear();
           request.headers.addAll(req.headers);
           _renderHeadersInPlace(request.headers);
-          request.headers.remove(HttpHeaders.CONTENT_ENCODING);
 
-          request.body = _renderBody(
+          final originalBody = request.body;
+          final newBody = _renderBody(
             req.body,
             request.charset,
             contentType: request.headers.contentType,
           );
+          request.body = newBody;
+          // 只在请求体真的被改写后才摘掉 Content-Encoding。
+          // 旧实现无条件移除：用户开断点、什么都不改直接放行时，body 仍是原始
+          // gzip/deflate 字节，头却被删了 —— 服务端会把压缩字节当明文解析，
+          // 请求体损坏、接口直接返回 400。
+          if (!_bytesEqual(originalBody, newBody)) {
+            request.headers.remove(HttpHeaders.CONTENT_ENCODING);
+          }
           logger.d(
             'Resuming request ${request.requestId} with modified request',
           );
@@ -232,13 +250,20 @@ class RequestBreakpointInterceptor extends Interceptor {
           response.headers.clear();
           response.headers.addAll(res.headers);
           _renderHeadersInPlace(response.headers);
-          response.headers.remove(HttpHeaders.CONTENT_ENCODING);
 
-          response.body = _renderBody(
+          final originalRespBody = response.body;
+          final newRespBody = _renderBody(
             res.body,
             response.charset,
             contentType: response.headers.contentType,
           );
+          response.body = newRespBody;
+          // body 已是明文（bodyDecoded）或本次被改写时，必须摘掉 Content-Encoding，
+          // 否则客户端会拿明文去 gunzip；反之 body 仍是原始压缩字节（未解码路径）
+          // 就必须保留这个头，否则客户端把 gzip 当明文解析，响应体损坏。
+          if (response.bodyDecoded || !_bytesEqual(originalRespBody, newRespBody)) {
+            response.headers.remove(HttpHeaders.CONTENT_ENCODING);
+          }
 
           logger.d(
             'Resuming response for request ${request.requestId} with modified response',

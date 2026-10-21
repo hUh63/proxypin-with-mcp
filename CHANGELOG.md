@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.67.67 (2026-10-21)
+
+### 断点放行（什么都不改）会把 gzip 请求体写坏
+
+- `RequestBreakpointInterceptor.onRequest` 在恢复请求时**无条件**
+  `request.headers.remove(CONTENT_ENCODING)`。用户开了断点、原样放行时，body 仍是原始
+  gzip/deflate 字节，头却被删掉 —— 服务端把压缩字节当明文解析，请求体损坏、接口返回
+  400。现在只在 body 真的被改写后才摘头。
+- 响应侧同样改为条件化：body 已解压成明文（`bodyDecoded`）或本次被改写时摘掉
+  `Content-Encoding`；body 仍是压缩字节（未解码路径）时保留，否则客户端会把 gzip
+  当明文解析。
+
+### Webhook 动作：忽略 method、无超时、头类型不符就失败
+
+- `actionParams['method']` 声明了却从未使用，永远发 POST。现在按配置的方法发送
+  （GET / PUT / PATCH / DELETE 都可用）。
+- `http.post(...)` 没有任何超时：webhook 挂住时，`onRequest` / `onResponse` 的后续动作
+  永远不执行，interval 任务还会一直占着在飞名额不再触发。现在 15 秒超时。
+- `url` / `headers` 的 `as String?` / `as Map` 强转改宽容解析；URL 非法时打日志返回，
+  不再抛到外层只留一行 `Error executing action`。
+
 ## v1.67.66 (2026-10-21)
 
 ### MCP `import_har` 与界面导入结果不一致

@@ -992,50 +992,64 @@ class MCPAutomationManager {
   }
 
   /// 实现调用 Webhook 逻辑
+  /// Webhook 超时上限：没有超时的 http 请求会一直挂着，
+  /// 让 onRequest/onResponse 的后续动作永远不执行（interval 任务还会一直占着在飞名额）。
+  static const Duration _webhookTimeout = Duration(seconds: 15);
+
   Future<void> _callWebhook(MCPAutomationTask task, Map<String, dynamic> context) async {
     final params = task.actionParams;
-    final url = params['webhookUrl'] as String?;
-    final method = params['method'] as String? ?? 'POST';
-    final headers = params['headers'] as Map?;
-    final body = params['body'] as Map?;
-    
-    if (url == null || url.isEmpty) {
+    final rawUrl = params['webhookUrl'];
+    final url = rawUrl == null ? '' : '$rawUrl'.trim();
+    // method 之前声明了却完全没用，永远发 POST
+    final rawMethod = params['method'];
+    final method = (rawMethod == null ? 'POST' : '$rawMethod').trim().toUpperCase();
+    final rawHeaders = params['headers'];
+    final body = params['body'];
+
+    if (url.isEmpty) {
       logger.w('[MCP Automation] No webhook URL provided');
       return;
     }
-    
+
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme) {
+      logger.w('[MCP Automation] Invalid webhook URL: $url');
+      return;
+    }
+
     try {
       logger.i('[MCP Automation] Calling webhook: $url for task: ${task.name}');
-      
+
       // 准备请求体
       String? bodyData;
-      if (body != null) {
+      if (body is Map) {
         // 添加上下文信息
         final enrichedBody = Map<String, dynamic>.from(body);
         enrichedBody['taskName'] = task.name;
         enrichedBody['taskId'] = task.id;
         enrichedBody['timestamp'] = DateTime.now().toIso8601String();
-        
+
         if (context.containsKey('request')) {
           enrichedBody['request'] = context['request'];
         }
         if (context.containsKey('response')) {
           enrichedBody['response'] = context['response'];
         }
-        
+
         bodyData = jsonEncode(enrichedBody);
       }
-      
-      // 发送 HTTP 请求
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          if (headers != null) ...Map<String, String>.from(headers),
-        },
-        body: bodyData,
-      );
-      
+
+      final request = http.Request(method, uri);
+      request.headers['Content-Type'] = 'application/json';
+      if (rawHeaders is Map) {
+        for (final entry in rawHeaders.entries) {
+          request.headers['${entry.key}'] = '${entry.value}';
+        }
+      }
+      if (bodyData != null) request.body = bodyData;
+
+      final streamed = await request.send().timeout(_webhookTimeout);
+      final response = await http.Response.fromStream(streamed).timeout(_webhookTimeout);
       logger.i('[MCP Automation] Webhook response: ${response.statusCode}');
     } catch (e) {
       logger.e('[MCP Automation] Failed to call webhook: $e');
