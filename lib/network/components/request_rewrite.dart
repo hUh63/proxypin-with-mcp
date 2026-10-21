@@ -142,7 +142,8 @@ class RequestRewriteInterceptor extends Interceptor {
       var url = request.requestUrl;
       await responseRewrite(url, response);
     } catch (e, t) {
-      response.body = "$e".codeUnits;
+      // 不要把异常信息写进响应体：客户端会收到 "FormatException: ..." 之类
+      // 的 Dart 异常文本，真实响应内容直接丢失，比不改写还糟。
       logger.e('[${request.requestId}] 响应重写异常 ', error: e, stackTrace: t);
     }
     return response;
@@ -392,9 +393,12 @@ class RequestRewriteInterceptor extends Interceptor {
   Future<void> _replaceRequest(HttpRequest request, RewriteItem item) async {
     if (item.type == RewriteType.replaceRequestLine) {
       request.method = item.method ?? request.method;
-      Uri uri = Uri.parse(
-        request.requestUrl,
-      ).replace(path: item.path, query: item.queryParam);
+      final baseUri = Uri.tryParse(request.requestUrl);
+      if (baseUri == null) {
+        logger.w('重写请求行失败：URL 无法解析 (${request.requestUrl})');
+        return;
+      }
+      var uri = baseUri.replace(path: item.path, query: item.queryParam);
       if (uri.isScheme('https')) {
         request.uri = uri.path + (uri.hasQuery ? "?${uri.query}" : "");
       } else {
@@ -440,8 +444,17 @@ class RequestRewriteInterceptor extends Interceptor {
       if (item.bodyType == ReplaceBodyType.file.name) {
         if (item.bodyFile == null) return;
 
-        message.body = await FileRead.readFile(item.bodyFile!);
-        message.headers.contentLength = message.body!.length;
+        // 文件被删/路径失效时 readFile 会抛 PathNotFoundException；旧实现让它
+        // 冒到 onResponse 的 catch，于是响应体被替换成异常文本。
+        List<int>? bytes;
+        try {
+          bytes = await FileRead.readFile(item.bodyFile!);
+        } catch (e) {
+          logger.w('重写用的文件读取失败，保留原始报文: ${item.bodyFile}', error: e);
+          return;
+        }
+        message.body = bytes;
+        message.headers.contentLength = bytes.length;
         message.headers.remove(HttpHeaders.CONTENT_ENCODING);
         return;
       }

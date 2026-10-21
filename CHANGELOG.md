@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.67.69 (2026-10-21)
+
+### 响应重写出错时，把 Dart 异常当成响应体返回给客户端
+
+- `RequestRewriteInterceptor.onResponse` 的 catch 里写着
+  `response.body = "$e".codeUnits;` —— 重写规则写错（正则非法、文件丢失、类型不符）
+  时，客户端收到的不是原页面，而是 `FormatException: ...` / `type 'Null' is not a
+  subtype ...` 这样的 Dart 异常文本，真实响应内容直接丢失。现在只记日志，保留原响应。
+- 重写用到的本地文件被删/路径失效时，`File.readAsBytes()` 抛
+  `PathNotFoundException`，同样冒到上面那个 catch，整个响应体变成异常文本。现在单独
+  try/catch，读不到就保留原始报文并打日志。
+- 「替换请求行」里 `Uri.parse(request.requestUrl)` 在 URL 无法解析时抛异常，会让整条
+  请求被中断。改 `Uri.tryParse` + 日志返回（请求按原样继续发送）。
+
 ## v1.67.68 (2026-10-21)
 
 ### 请求映射：配置缺 `enabled` 字段时整组规则静默失效
