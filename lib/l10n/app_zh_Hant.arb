@@ -4461,5 +4461,15 @@
   "newRequestsPaused": "有 {count} 條新請求 · 點擊恢復自動捲動",
   "wsTrafficAuth": "要求存取權杖",
   "wsTrafficAuthDesc": "關閉後同一區域網路內任何裝置都能讀取你的即時流量",
-  "wsTrafficToken": "存取權杖"
+  "wsTrafficToken": "存取權杖",
+  "toolboxCertCheck": "憑證檢測",
+  "toolboxCertCheckTip": "檢查伺服器憑證是否由已被攻破的 CA 簽發",
+  "certCheckHint": "網域或 URL，如 example.com",
+  "certCheckRun": "檢測",
+  "certCheckSafe": "未發現已知問題",
+  "certCheckWarning": "需要注意",
+  "certCheckCritical": "CA 已被攻破",
+  "certCheckNoIssues": "沒有發現問題",
+  "certCheckFailed": "檢測失敗",
+  "certCheckNote": "僅用於防禦性檢查：讀取憑證以標記已知有問題或弱金鑰的 CA，不推導私鑰、不簽發憑證。"
 }

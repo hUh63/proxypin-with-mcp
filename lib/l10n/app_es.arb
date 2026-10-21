@@ -2660,5 +2660,15 @@
   "newRequestsPaused": "{count} solicitudes nuevas · toca para reanudar el desplazamiento automático",
   "wsTrafficAuth": "Require access token",
   "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
-  "wsTrafficToken": "Access token"
+  "wsTrafficToken": "Access token",
+  "toolboxCertCheck": "Verificar certificado",
+  "toolboxCertCheckTip": "Comprueba si el certificado lo emitió una CA comprometida",
+  "certCheckHint": "Dominio o URL, p. ej. example.com",
+  "certCheckRun": "Comprobar",
+  "certCheckSafe": "Sin problemas conocidos",
+  "certCheckWarning": "Requiere atención",
+  "certCheckCritical": "CA comprometida",
+  "certCheckNoIssues": "Sin hallazgos",
+  "certCheckFailed": "Error al comprobar",
+  "certCheckNote": "Solo comprobación defensiva: lee el certificado para marcar CA debilitadas o rotas. No deriva claves ni emite certificados."
 }

@@ -33,6 +33,7 @@ import 'package:proxypin/ui/component/log_viewer_page.dart';
 import 'package:proxypin/utils/platform.dart';
 
 import 'cert_hash.dart';
+import 'cert_check_page.dart';
 import 'cipher_page.dart';
 import 'sign_page.dart';
 import 'device_profile_page.dart';
@@ -340,6 +341,19 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.key_outlined,
                       text: localizations.certHashName,
                       tooltip: localizations.certHashName),
+                  IconText(
+                      onTap: () async {
+                        if (Platforms.isMobile()) {
+                          Navigator.of(context)
+                              .push(MaterialPageRoute(builder: (context) => const CertCheckPage()));
+                          return;
+                        }
+                        MultiWindow.openWindow(localizations.toolboxCertCheck, 'CertCheckPage',
+                            size: const Size(720, 640));
+                      },
+                      icon: Icons.verified_user_outlined,
+                      text: localizations.toolboxCertCheck,
+                      tooltip: localizations.toolboxCertCheckTip),
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {

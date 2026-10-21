@@ -2661,5 +2661,15 @@
   "newRequestsPaused": "{count} novos pedidos · toque para retomar a rolagem automática",
   "wsTrafficAuth": "Require access token",
   "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
-  "wsTrafficToken": "Access token"
+  "wsTrafficToken": "Access token",
+  "toolboxCertCheck": "Verificar certificado",
+  "toolboxCertCheckTip": "Verifica se o certificado foi emitido por uma CA comprometida",
+  "certCheckHint": "Domínio ou URL, ex. example.com",
+  "certCheckRun": "Verificar",
+  "certCheckSafe": "Sem problemas conhecidos",
+  "certCheckWarning": "Requer atenção",
+  "certCheckCritical": "CA comprometida",
+  "certCheckNoIssues": "Sem ocorrências",
+  "certCheckFailed": "Falha na verificação",
+  "certCheckNote": "Apenas verificação defensiva: lê o certificado para sinalizar CAs fracas ou comprometidas. Não deriva chaves nem emite certificados."
 }

@@ -4461,5 +4461,15 @@
   "newRequestsPaused": "有 {count} 条新请求 · 点击恢复自动滚动",
   "wsTrafficAuth": "要求访问令牌",
   "wsTrafficAuthDesc": "关闭后同一局域网内任何设备都能读取你的实时流量",
-  "wsTrafficToken": "访问令牌"
+  "wsTrafficToken": "访问令牌",
+  "toolboxCertCheck": "证书检测",
+  "toolboxCertCheckTip": "检查服务器证书是否由已被攻破的 CA 签发",
+  "certCheckHint": "域名或 URL，如 example.com",
+  "certCheckRun": "检测",
+  "certCheckSafe": "未发现已知问题",
+  "certCheckWarning": "需要注意",
+  "certCheckCritical": "CA 已被攻破",
+  "certCheckNoIssues": "没有发现问题",
+  "certCheckFailed": "检测失败",
+  "certCheckNote": "仅用于防御性检查：读取证书以标记已知有问题或弱口令的 CA，不推导私钥、不签发证书。"
 }

@@ -2660,5 +2660,15 @@
   "newRequestsPaused": "มีคำขอใหม่ {count} รายการ · แตะเพื่อเลื่อนอัตโนมัติต่อ",
   "wsTrafficAuth": "Require access token",
   "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
-  "wsTrafficToken": "Access token"
+  "wsTrafficToken": "Access token",
+  "toolboxCertCheck": "ตรวจสอบใบรับรอง",
+  "toolboxCertCheckTip": "ตรวจสอบว่าใบรับรองออกโดย CA ที่ถูกเจาะแล้วหรือไม่",
+  "certCheckHint": "โดเมนหรือ URL เช่น example.com",
+  "certCheckRun": "ตรวจสอบ",
+  "certCheckSafe": "ไม่พบปัญหาที่ทราบ",
+  "certCheckWarning": "ต้องให้ความสนใจ",
+  "certCheckCritical": "CA ถูกเจาะแล้ว",
+  "certCheckNoIssues": "ไม่พบข้อบกพร่อง",
+  "certCheckFailed": "การตรวจสอบล้มเหลว",
+  "certCheckNote": "ใช้เพื่อการตรวจสอบเชิงป้องกันเท่านั้น: อ่านใบรับรองเพื่อระบุ CA ที่อ่อนแอหรือถูกเจาะ ไม่ได้คำนวณกุญแจหรือออกใบรับรอง"
 }

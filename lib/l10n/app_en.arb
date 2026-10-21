@@ -4614,5 +4614,45 @@
   },
   "@wsTrafficToken": {
     "description": "Label of the access token"
+  },
+  "toolboxCertCheck": "Cert Check",
+  "@toolboxCertCheck": {
+    "description": "Certificate risk check (toolbox entry)."
+  },
+  "toolboxCertCheckTip": "Check whether a server certificate is issued by a compromised CA",
+  "@toolboxCertCheckTip": {
+    "description": "Tooltip for the certificate check tool."
+  },
+  "certCheckHint": "Domain or URL, e.g. example.com",
+  "@certCheckHint": {
+    "description": "Placeholder for the domain/URL input."
+  },
+  "certCheckRun": "Check",
+  "@certCheckRun": {
+    "description": "Button label to start the check."
+  },
+  "certCheckSafe": "No known issue",
+  "@certCheckSafe": {
+    "description": "Result label: nothing wrong found."
+  },
+  "certCheckWarning": "Needs attention",
+  "@certCheckWarning": {
+    "description": "Result label: needs attention."
+  },
+  "certCheckCritical": "Compromised CA",
+  "@certCheckCritical": {
+    "description": "Result label: issued by a compromised CA."
+  },
+  "certCheckNoIssues": "No findings",
+  "@certCheckNoIssues": {
+    "description": "Shown when there are no findings."
+  },
+  "certCheckFailed": "Check failed",
+  "@certCheckFailed": {
+    "description": "Prefix for the error message."
+  },
+  "certCheckNote": "Defensive check only: it reads the certificate to flag known-broken or weak CAs. It does not derive keys or issue certificates.",
+  "@certCheckNote": {
+    "description": "Footnote explaining this is a defensive-only check."
   }
 }

@@ -2660,5 +2660,15 @@
   "newRequestsPaused": "{count} permintaan baru · ketuk untuk melanjutkan gulir otomatis",
   "wsTrafficAuth": "Require access token",
   "wsTrafficAuthDesc": "Off: any device on the same LAN can read your live traffic",
-  "wsTrafficToken": "Access token"
+  "wsTrafficToken": "Access token",
+  "toolboxCertCheck": "Periksa Sertifikat",
+  "toolboxCertCheckTip": "Periksa apakah sertifikat diterbitkan CA yang sudah dibobol",
+  "certCheckHint": "Domain atau URL, mis. example.com",
+  "certCheckRun": "Periksa",
+  "certCheckSafe": "Tidak ada masalah diketahui",
+  "certCheckWarning": "Perlu perhatian",
+  "certCheckCritical": "CA sudah dibobol",
+  "certCheckNoIssues": "Tidak ada temuan",
+  "certCheckFailed": "Pemeriksaan gagal",
+  "certCheckNote": "Hanya pemeriksaan defensif: membaca sertifikat untuk menandai CA lemah/rusak. Tidak menurunkan kunci atau menerbitkan sertifikat."
 }
