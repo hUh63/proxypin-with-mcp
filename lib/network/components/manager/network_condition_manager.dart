@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
 import 'package:proxypin/network/util/serial_file_writer.dart';
+import 'package:proxypin/network/util/logger.dart';
 
 /// 弱网模拟配置管理
 ///
@@ -98,7 +99,15 @@ class NetworkConditionManager extends ChangeNotifier {
       final profilesRaw = config['customProfiles'];
       if (profilesRaw is List) {
         for (var e in profilesRaw) {
-          customProfiles.add(NetworkConditionProfile.fromJson(e as Map<String, dynamic>));
+          if (e is! Map) continue;
+          // 逐条容错：一条坏 profile 不能把后面的规则也一起吞掉
+          // （旧实现整段裸强转，任意一条异常就让 rules 全部丢失，且下次保存会把
+          // 残缺配置写回磁盘，用户的原配置永久没了）。
+          try {
+            customProfiles.add(NetworkConditionProfile.fromJson(Map<String, dynamic>.from(e)));
+          } catch (err) {
+            logger.w('跳过无法解析的网络条件 profile', error: err);
+          }
         }
       }
 
@@ -129,7 +138,12 @@ class NetworkConditionManager extends ChangeNotifier {
       final list = config['rules'];
       if (list is List) {
         for (var e in list) {
-          rules.add(_ruleFromJson(e as Map<String, dynamic>, fallbackProfileId: legacyGlobalProfileId));
+          if (e is! Map) continue;
+          try {
+            rules.add(_ruleFromJson(Map<String, dynamic>.from(e), fallbackProfileId: legacyGlobalProfileId));
+          } catch (err) {
+            logger.w('跳过无法解析的网络条件规则', error: err);
+          }
         }
       }
 
@@ -141,8 +155,8 @@ class NetworkConditionManager extends ChangeNotifier {
 
       final needFlush = hasLegacyGlobalFields || legacyPresetId != null;
       if (needFlush) await flushConfig();
-    } catch (_) {
-      // ignore corrupted config
+    } catch (e) {
+      logger.w('[NetworkCondition] 配置解析失败，本次保留默认值', error: e);
     }
   }
 

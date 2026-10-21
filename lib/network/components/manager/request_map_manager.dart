@@ -136,10 +136,24 @@ class RequestMapManager {
       if (content.isEmpty) {
         return;
       }
-      var config = jsonDecode(content);
-      enabled = config['enabled'] == true;
-      for (var entry in config['list']) {
-        list.add(RequestMapRule.fromJson(entry));
+      final config = jsonDecode(content);
+      if (config is! Map) {
+        logger.w('request_map.json 格式异常（不是对象），本次不加载');
+        return;
+      }
+      // 旧版本保存的配置可能没有 enabled 字段：缺省视为启用，
+      // 否则升级后所有映射规则会静默失效（与 hosts/重写规则的约定保持一致）。
+      enabled = config['enabled'] != false;
+      final rawList = config['list'];
+      if (rawList is List) {
+        for (final entry in rawList) {
+          if (entry is! Map) continue;
+          try {
+            list.add(RequestMapRule.fromJson(entry));
+          } catch (e) {
+            logger.w('跳过无法解析的请求映射规则', error: e);
+          }
+        }
       }
     }
     rules = list;
@@ -201,12 +215,17 @@ class RequestMapRule {
 
   /// 从json中创建
   factory RequestMapRule.fromJson(Map<dynamic, dynamic> map) {
+    final url = map['url'];
+    if (url is! String || url.isEmpty) {
+      throw const FormatException('request map rule missing url');
+    }
     return RequestMapRule(
-        enabled: map['enabled'] == true,
-        name: map['name'],
-        url: map['url'],
-        type: RequestMapType.fromName(map['type']),
-        itemPath: map['itemPath']);
+        // 缺 enabled 字段视为启用（旧版本不写这个键）
+        enabled: map['enabled'] != false,
+        name: map['name']?.toString(),
+        url: url,
+        type: RequestMapType.fromName('${map['type']}'),
+        itemPath: map['itemPath']?.toString());
   }
 
   void updatePathReg() {
@@ -241,13 +260,26 @@ class RequestMapItem {
 
   /// 从json中创建
   factory RequestMapItem.fromJson(Map<dynamic, dynamic> map) {
+    // 映射文件可能被手工编辑过：statusCode 写成 "200"、headers 值写成数字
+    // 都很常见，裸强转会抛 TypeError 让整条映射失效（请求直接打到真实后端）。
+    final rawStatus = map['statusCode'];
+    final statusCode = rawStatus is num ? rawStatus.toInt() : int.tryParse('${rawStatus ?? ''}');
+    Map<String, String>? headers;
+    final rawHeaders = map['headers'];
+    if (rawHeaders is Map) {
+      headers = {};
+      rawHeaders.forEach((k, v) {
+        final value = v is List ? v.join(',') : '${v ?? ''}';
+        headers!['$k'] = value;
+      });
+    }
     return RequestMapItem(
-      script: map['script'],
-      statusCode: map['statusCode'],
-      headers: (map['headers'] as Map?)?.cast<String, String>(),
-      body: map['body'],
-      bodyType: map['bodyType'],
-      bodyFile: map['bodyFile'],
+      script: map['script']?.toString(),
+      statusCode: statusCode,
+      headers: headers,
+      body: map['body']?.toString(),
+      bodyType: map['bodyType']?.toString(),
+      bodyFile: map['bodyFile']?.toString(),
     );
   }
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.67.68 (2026-10-21)
+
+### 请求映射：配置缺 `enabled` 字段时整组规则静默失效
+
+- `RequestMapManager.reloadConfig` 读的是 `enabled = config['enabled'] == true`，而
+  `RequestMapRule.fromJson` 同样判断 `map['enabled'] == true`：旧版本写入 / 手工编辑过的
+  配置只要缺这个键，映射功能整体被判定为「关闭」，界面上规则还在、就是不生效。
+  现在两处都改成 `!= false`（缺省视为启用），与 hosts / 重写规则的约定一致。
+- `for (var entry in config['list'])`：`list` 缺失或不是数组时抛 NoSuchMethodError，
+  而它在单例初始化里 —— 请求映射功能直接不可用。现在格式异常打日志返回，规则逐条
+  容错（一条坏规则不再连带丢掉后面的）。
+- `RequestMapRule.fromJson` 的 `url` / `type` / `itemPath`、`RequestMapItem.fromJson` 的
+  `statusCode` / `headers` 原来是裸强转：映射文件被手工改过（`"statusCode": "200"`、
+  headers 值是数组或数字）就抛 TypeError，整条映射按「不存在」处理 —— 请求静默打到
+  真实后端。现在宽容解析（headers 数组值按 `a,b` 合并）。
+
+### 网络条件（限速/丢包）：一条坏 profile 吞掉全部规则
+
+- `_load()` 用整段 `try { ... } catch (_) { /* ignore */ }` 包住：`customProfiles` 或
+  `rules` 里任意一条解析失败，后面的规则全部不加载，且**一行日志都没有**；更糟的是
+  之后的保存会把这份残缺配置写回磁盘，用户原有的限速规则永久丢失。现在逐条容错 +
+  外层异常打日志。
+
 ## v1.67.67 (2026-10-21)
 
 ### 断点放行（什么都不改）会把 gzip 请求体写坏
