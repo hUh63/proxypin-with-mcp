@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.67.72 (2026-10-22)
+
+### MCP 并发闸：超时与名额交接竞态会让名额永久缩水
+
+`McpGate.run` 排队分支里，`await completer.future.timeout(waitTimeout)` 抛
+`TimeoutException` 时**无条件**把占位从队列摘掉并抛 busy。但存在一个窄竞态：另一个任务
+结束的瞬间 `_releaseNext()` 恰好把名额交给了这个 waiter（`complete()` 已生效），而
+timeout 的定时器同时也触发了 —— 此时名额已经算给它，却仍被当成「等待超时」丢弃。
+
+后果是 `_running` 与真实在跑的任务数脱节，名额越来越少，反复命中后 MCP 服务器会对
+**所有**工具调用返回 `busy`。现在先判 `completer.isCompleted`：已交接就继续执行，
+只有真的没等到名额才拒绝。
+
+新增 `test/mcp_gate_test.dart`：并发上限、排队与释放、排队超时、队列满拒绝、任务抛异常
+归还名额，以及「连续 5 次超时后闸门仍可用」的回归用例。
+
 ## v1.67.71 (2026-10-22)
 
 ### 工具箱新增「证书检测」（防御性）

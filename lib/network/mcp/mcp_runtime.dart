@@ -245,11 +245,17 @@ class McpGate {
       try {
         await completer.future.timeout(waitTimeout);
       } on TimeoutException {
-        // 等待超时：把占位从队列里摘掉，避免名额泄漏
-        _waiters.remove(completer);
-        _queued--;
-        throw McpBusyException(
-            'MCP server is busy: waited ${waitTimeout.inSeconds}s for a free slot.');
+        // 竞态：_releaseNext 可能恰好在这一刻把名额交给了本 waiter（complete 已生效，
+        // 但 timeout 的定时器同时也触发了）。此时名额已经算给自己，必须继续执行 ——
+        // 旧实现无条件把它从队列摘掉并抛 busy，那个名额就凭空消失了。反复命中会让
+        // 闸门持续缩水（_running 长期偏高、名额越来越少），最终所有调用都返回 busy。
+        if (!completer.isCompleted) {
+          // 确实是等待超时：把占位从队列里摘掉，避免名额泄漏
+          _waiters.remove(completer);
+          _queued--;
+          throw McpBusyException(
+              'MCP server is busy: waited ${waitTimeout.inSeconds}s for a free slot.');
+        }
       }
       _queued--;
       _running++;
