@@ -498,8 +498,17 @@ class _ScriptEditState extends State<ScriptEdit> {
         FlutterToastr.show("Fetch failed: HTTP ${resp.statusCode}", context, position: FlutterToastr.top);
         return;
       }
-      final content = utf8.decode(resp.bodyBytes);
+      final content = utf8.decode(resp.bodyBytes, allowMalformed: true);
       script.text = content;
+      // 已有脚本项时，下载内容立即写进缓存文件（#973）：不用再点「保存」，
+      // 运行时会话与下次启动都能直接用到最新版本。
+      final item = widget.scriptItem;
+      if (item != null && item.isRemote) {
+        try {
+          final manager = await ScriptManager.instance;
+          await manager.updateScript(item, content);
+        } catch (_) {}
+      }
       if (mounted) {
         setState(() {});
       }

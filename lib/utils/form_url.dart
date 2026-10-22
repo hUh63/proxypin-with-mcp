@@ -39,6 +39,19 @@ class FormUrl {
     return utf8.encode(pairs.join('&'));
   }
 
+  /// 解码单个 key/value。
+  ///
+  /// `Uri.decodeQueryComponent` 遇到非法百分号转义（`discount=50%`、
+  /// 手工拼的 body）会抛 ArgumentError —— 这里在编辑请求体的路径上，
+  /// 抛出去整张表单就打不开，退化成原样返回更合理。
+  static String _decodeComponent(String s) {
+    try {
+      return Uri.decodeQueryComponent(s);
+    } catch (_) {
+      return s;
+    }
+  }
+
   /// 解析 x-www-form-urlencoded body 为 [FormBody]
   static FormBody parse(List<int> body) {
     final form = FormBody();
@@ -51,8 +64,8 @@ class FormUrl {
       final key = idx == -1 ? pair : pair.substring(0, idx);
       final value = idx == -1 ? '' : pair.substring(idx + 1);
       form.parts.add(FormPart(
-        name: Uri.decodeQueryComponent(key),
-        value: Uri.decodeQueryComponent(value),
+        name: _decodeComponent(key),
+        value: _decodeComponent(value),
       ));
     }
     return form;
