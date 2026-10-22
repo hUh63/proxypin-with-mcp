@@ -79,14 +79,15 @@ class RequestBlockManager {
     }
   }
 
-  addBlockRequest(RequestBlockItem item) {
+  Future<void> addBlockRequest(RequestBlockItem item) async {
     list.add(item);
-    flushConfig();
+    await flushConfig();
   }
 
-  removeBlockRequest(int index) {
+  Future<void> removeBlockRequest(int index) async {
+    if (index < 0 || index >= list.length) return;
     list.removeAt(index);
-    flushConfig();
+    await flushConfig();
   }
 
   /// 是否启用
@@ -139,7 +140,15 @@ class RequestBlockItem {
   }
 
   factory RequestBlockItem.fromJson(Map<String, dynamic> json) {
-    return RequestBlockItem(json['enabled'], json['url'], BlockType.nameOf(json['type']));
+    final url = json['url']?.toString() ?? '';
+    // 空 URL 规则会匹配到几乎所有请求（等于「屏蔽全部」），必须当坏数据跳过。
+    if (url.trim().isEmpty) {
+      throw const FormatException('request block rule missing url');
+    }
+    // enabled 缺省视为启用（更早版本不写这个键）；写成 "true"/1 也容忍。
+    final rawEnabled = json['enabled'];
+    final enabled = rawEnabled is bool ? rawEnabled : '$rawEnabled' != 'false';
+    return RequestBlockItem(enabled, url, BlockType.nameOf('${json['type']}'));
   }
 
   Map<String, dynamic> toJson() {

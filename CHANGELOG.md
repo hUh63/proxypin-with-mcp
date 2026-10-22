@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.67.74 (2026-10-22)
+
+### 请求屏蔽：一条空 URL 规则可能屏蔽掉所有请求
+
+- `RequestBlockItem.fromJson` 里 `json['enabled']` / `json['url']` 是裸强转：
+  `enabled` 写成 `"true"`、或者缺 `url` 时抛 TypeError，规则被 `_load` 的逐条容错丢掉
+  （用户配的屏蔽规则凭空消失）。现在 `enabled` 缺省视为启用、字符串/数字容忍。
+- 更重要的是：`url` 为空时如果被解析成 `""`，`UrlPattern.toHostRegExp('')` 生成的规则
+  会命中几乎所有请求 —— 等于「屏蔽全部」。现在空 URL 直接当坏数据跳过。
+- `removeBlockRequest` 加了索引越界保护；`add/remove` 改为 `async` 并 `await flushConfig()`，
+  避免刚添加的规则在进程退出前还没落盘。
+
 ## v1.67.73 (2026-10-22)
 
 ### 历史记录的写入队列可能被一次文件异常永久卡死
