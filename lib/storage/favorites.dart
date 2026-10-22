@@ -76,7 +76,8 @@ class FavoriteStorage {
     final favorite = _snapshotFavorite(request);
     trimFavoriteMessages(favorite);
     favorites.addFirst(favorite);
-    flushConfig();
+    // 必须 await：不等待写入就返回时，用户星标后立刻退出 App 会丢掉这条收藏。
+    await flushConfig();
     //通知
     addNotifier?.call();
   }
@@ -96,7 +97,7 @@ class FavoriteStorage {
   static Future<void> removeFavorite(Favorite favorite) async {
     var list = await favorites;
     list.remove(favorite);
-    flushConfig();
+    await flushConfig();
   }
 
   //刷新配置

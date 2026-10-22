@@ -359,12 +359,15 @@ async function onResponse(context, request, response) {
       return;
     }
 
-    if (_scriptMap[item] == script) {
+    final home = await Paths.homePath();
+    final file = File(home + item.scriptPath!);
+    // 内容没变也必须在文件缺失时补写：scripts 目录被清理/迁移后，内存里还有
+    // 脚本内容，磁盘上却没有 —— 下次启动脚本就变成空的了。
+    if (_scriptMap[item] == script && await file.exists()) {
       return;
     }
 
-    final home = await Paths.homePath();
-    await SerialFileWriter.writeString(File(home + item.scriptPath!), script);
+    await SerialFileWriter.writeString(file, script);
     _scriptMap[item] = script;
   }
 
@@ -375,7 +378,14 @@ async function onResponse(context, request, response) {
 
     if (item.scriptPath != null) {
       final home = await Paths.homePath();
-      File(home + item.scriptPath!).delete();
+      // 未 await 的 delete() 失败（文件已被外部清理）会变成未捕获的异步异常，
+      // 而且函数返回时文件可能还在。
+      try {
+        final file = File(home + item.scriptPath!);
+        if (await file.exists()) await file.delete();
+      } catch (e) {
+        logger.w('删除脚本文件失败: ${item.scriptPath}', error: e);
+      }
     }
   }
 
@@ -385,7 +395,12 @@ async function onResponse(context, request, response) {
       var item = list.removeLast();
       if (item.scriptPath != null) {
         final home = await Paths.homePath();
-        File(home + item.scriptPath!).delete();
+        try {
+          final file = File(home + item.scriptPath!);
+          if (await file.exists()) await file.delete();
+        } catch (e) {
+          logger.w('删除脚本文件失败: ${item.scriptPath}', error: e);
+        }
       }
     }
     await flushConfig();
