@@ -140,6 +140,12 @@ class SystemProxy {
 }
 
 class MacSystemProxy implements SystemProxy {
+  /// 取 `Key: value` 输出行里第一个冒号之后的内容（IPv6 地址里还有冒号）。
+  static String _valueAfterColon(String line) {
+    final idx = line.indexOf(':');
+    return idx < 0 ? '' : line.substring(idx + 1).trim();
+  }
+
   static String? _hardwarePort;
 
   // Helper to safely quote a string for sh (single-quote and escape any internal single quotes)
@@ -186,10 +192,12 @@ class MacSystemProxy implements SystemProxy {
       return null;
     }
 
-    var proxyServer = serverLine.trim().split(RegExp(r":\s*"))[1];
-    var proxyPort = portLine.trim().split(RegExp(r":\s*"))[1];
-    if (proxyEnable == 'Yes' && proxyServer.isNotEmpty) {
-      return ProxyInfo.of(proxyServer, int.parse(proxyPort));
+    // 不能直接 split(RegExp(r":\s*"))[1]：Server 行写 IPv6（`Server: ::1`）时
+    // 切出来是空串，端口行被系统清空时 int.parse('') 直接抛 FormatException。
+    final proxyServer = _valueAfterColon(serverLine);
+    final proxyPort = int.tryParse(_valueAfterColon(portLine));
+    if (proxyEnable == 'Yes' && proxyServer.isNotEmpty && proxyPort != null) {
+      return ProxyInfo.of(proxyServer, proxyPort);
     }
     return null;
   }
@@ -340,6 +348,49 @@ class MacSystemProxy implements SystemProxy {
 }
 
 class WindowsSystemProxy extends SystemProxy {
+  /// 解析注册表里的 ProxyServer 值。
+  ///
+  /// 形如 `127.0.0.1:8080`、`[::1]:8080`、`http=127.0.0.1:8080;https=...`（后者由调用方
+  /// 先拆开）。不能简单 `split(":")[1]`：IPv6 会切出空串，没有端口时直接 RangeError。
+  static (String, int)? _splitHostPort(String raw) {
+    var value = raw.trim();
+    if (value.isEmpty) {
+      return null;
+    }
+    // 分协议写法 `http=host:port` 只取第一个
+    final eq = value.indexOf('=');
+    if (eq > 0 && !value.startsWith('[')) {
+      value = value.substring(eq + 1);
+      final semi = value.indexOf(';');
+      if (semi > 0) {
+        value = value.substring(0, semi);
+      }
+      value = value.trim();
+    }
+    if (value.startsWith('[')) {
+      final close = value.indexOf(']');
+      if (close < 0) {
+        return null;
+      }
+      final host = value.substring(1, close);
+      final rest = value.substring(close + 1);
+      if (!rest.startsWith(':')) {
+        return null;
+      }
+      final port = int.tryParse(rest.substring(1).trim());
+      return port == null ? null : (host, port);
+    }
+    final idx = value.lastIndexOf(':');
+    if (idx <= 0) {
+      return null;
+    }
+    final port = int.tryParse(value.substring(idx + 1).trim());
+    if (port == null) {
+      return null;
+    }
+    return (value.substring(0, idx), port);
+  }
+
   ///设置windows代理是否启用
   @override
   Future<void> _setProxyEnable(bool proxyEnable, bool sslSetting) async {
@@ -372,10 +423,13 @@ class WindowsSystemProxy extends SystemProxy {
         proxyLine = proxyLine.replaceFirst("http://", "").replaceFirst("https:///", "");
       }
 
-      var proxyServer = proxyLine.split(":")[0];
-      var proxyPort = proxyLine.split(":")[1];
-      logger.d("$proxyServer:$proxyPort");
-      return ProxyInfo.of(proxyServer, int.parse(proxyPort));
+      final parsed = _splitHostPort(proxyLine);
+      if (parsed == null) {
+        logger.w('无法解析系统代理地址: $proxyLine');
+        return null;
+      }
+      logger.d("${parsed.$1}:${parsed.$2}");
+      return ProxyInfo.of(parsed.$1, parsed.$2);
     }).catchError((e) {
       logger.e('getSystemProxy error', error: e, stackTrace: StackTrace.current);
       return null;
@@ -444,8 +498,9 @@ class LinuxSystemProxy extends SystemProxy {
       return Future.wait([hostFuture, portFuture]).then((value) {
         var host = Strings.trimWrap(value[0], "'");
         var port = Strings.trimWrap(value[1], "'");
-        if (host.isNotEmpty && port.isNotEmpty) {
-          return ProxyInfo.of(host, int.parse(port));
+        final portValue = int.tryParse(port);
+        if (host.isNotEmpty && portValue != null && portValue > 0) {
+          return ProxyInfo.of(host, portValue);
         }
         return null;
       });

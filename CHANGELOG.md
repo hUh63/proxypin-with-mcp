@@ -1,5 +1,40 @@
 # Changelog
 
+## v1.67.76 (2026-10-22)
+
+### 白名单打开但没规则时，一个包都抓不到
+
+`HostFilter.filter` 在白名单启用后执行 `whitelist.list.every(...)`，空列表的 `every`
+恒为 true —— 等于把所有请求都过滤掉。用户刚点开白名单开关、还没填规则（或填的规则
+被判定为非法正则丢弃后列表变空）时，表现为「抓包突然全没了」，界面没有任何提示。
+现在白名单为空时不参与过滤。
+
+### 恢复备份后界面还是旧数据
+
+`BackupService.restore` 把脚本、请求映射、请求改写、加密规则这些**独立文件**写回磁盘后，
+内存里的管理器没有重新读盘：用户点完「恢复」，脚本列表/改写规则仍是恢复前的内容，
+必须重启 App 才看得到。现在恢复完成后统一重载这四个管理器（单个失败不影响其它）。
+
+### 恢复系统代理的端口解析
+
+- macOS：`networksetup` 输出按 `split(RegExp(r":\s*"))[1]` 取值，Server 行写 IPv6
+  （`Server: ::1`）时切出空串；端口行被清空时 `int.parse('')` 直接抛异常。改为取首个
+  冒号之后的内容 + `int.tryParse`。
+- Windows：注册表 `ProxyServer` 简单 `split(":")[1]`，`[::1]:8080` 会切出空串，没有端口
+  时直接 RangeError。新增解析：兼容 `[IPv6]:port`、`http=host:port;https=...` 写法。
+- Linux：`gsettings` 未设置时 port 为 `0`，原来会构造出 `host:0` 的代理。
+
+### 离开「远程设备」页后心跳还在跑
+
+`_RemoteDevicePageState` 没有 `dispose()`：页面关闭后 `_heartbeatTimer` 继续每 10 秒
+ping 一次远程设备（也会让「已断开」的判断失效）。已补 dispose 并取消定时器。
+
+### 其它容错
+
+- `Operation.of`（跨窗口 IPC 传来的操作名）、`ColorMapping.getColorName`（不在预设色板
+  的颜色）两处 `firstWhere` 补 `orElse`，不再抛 `Bad state: No element`。
+- 移动端老格式配置恢复：`config.flushConfig()` 补 `await`。
+
 ## v1.67.75 (2026-10-22)
 
 ### 脚本：磁盘上的脚本文件丢了就补写，删除失败不再抛未捕获异常

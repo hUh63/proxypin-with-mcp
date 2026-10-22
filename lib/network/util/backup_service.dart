@@ -17,6 +17,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/components/manager/request_crypto_manager.dart';
+import 'package:proxypin/network/components/manager/request_map_manager.dart';
+import 'package:proxypin/network/components/manager/request_rewrite_manager.dart';
+import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -278,6 +282,15 @@ class BackupService {
       }
     }
 
+    // 3) 让内存里的各管理器重新读盘
+    //
+    // 备份里恢复的是脚本 / 请求映射 / 改写 / 加密规则这些**独立文件**，applyJson 只
+    // 处理配置对象（白名单、反向代理已在 applyJson 里 load）。不重载的话，用户点完
+    // 「恢复」界面上的脚本列表、改写规则还是旧的，必须重启 App 才看到恢复的内容。
+    if (restored > 0) {
+      await _reloadFileManagers();
+    }
+
     logger.i('[Backup] restored $restored files (failed=$failed, config=$configApplied)');
     return BackupRestoreResult(
       restored: restored,
@@ -295,6 +308,30 @@ class BackupService {
     } catch (e) {
       logger.e('[Backup] remove failed: $e');
     }
+  }
+
+  /// 逐个重载文件型管理器；单个失败不影响其它（备份内容可能缺某个文件）。
+  static Future<void> _reloadFileManagers() async {
+    Future<void> safe(String name, Future<void> Function() action) async {
+      try {
+        await action();
+      } catch (e) {
+        logger.w('[Backup] reload $name failed: $e');
+      }
+    }
+
+    await safe('script', () async {
+      await (await ScriptManager.instance).reloadScript();
+    });
+    await safe('requestMap', () async {
+      await (await RequestMapManager.instance).reloadConfig();
+    });
+    await safe('rewrite', () async {
+      await (await RequestRewriteManager.instance).reloadRequestRewrite();
+    });
+    await safe('crypto', () async {
+      await (await RequestCryptoManager.instance).reloadConfig();
+    });
   }
 
   // ---------- 自动备份 ----------

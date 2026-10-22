@@ -44,7 +44,11 @@ class ColorMapping {
   }
 
   static String getColorName(Color color) {
-    return colors.entries.firstWhere((entry) => entry.value == color).key;
+    // 颜色表的 key 会写进配置文件（高亮关键字），传进来的若不是表里的预设色
+    // （自定义色板、旧版本颜色），firstWhere 无 orElse 会抛 Bad state。
+    return colors.entries
+        .firstWhere((entry) => entry.value == color, orElse: () => const MapEntry("Blue", Colors.blue))
+        .key;
   }
 }
 

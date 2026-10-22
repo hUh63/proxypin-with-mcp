@@ -57,6 +57,12 @@ class HostFilter {
 
     //如果白名单不为空，不在白名单里都是黑名单
     if (whitelist.enabled) {
+      // 白名单打开但一条有效规则都没有（刚打开开关还没填、或规则全被判定为非法
+      // 正则丢弃）时，every 对空列表返回 true —— 等于把**所有**请求都过滤掉，
+      // 表现为「打开白名单后一个包都抓不到」，且界面没有任何提示。
+      if (whitelist.list.isEmpty) {
+        return false;
+      }
       return whitelist.list.every((element) => !ruleMatches(element, assumePathHit: true));
     }
 

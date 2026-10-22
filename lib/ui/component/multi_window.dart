@@ -249,7 +249,9 @@ enum Operation {
   reorder;
 
   static Operation of(String name) {
-    return values.firstWhere((element) => element.name == name);
+    // name 来自跨窗口 IPC 参数，版本升级删改枚举值后旧窗口可能传来未知名字，
+    // firstWhere 无 orElse 会抛 Bad state 并中断整条消息处理。
+    return values.firstWhere((element) => element.name == name, orElse: () => refresh);
   }
 }
 

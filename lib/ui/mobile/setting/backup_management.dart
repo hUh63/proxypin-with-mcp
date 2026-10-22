@@ -296,7 +296,7 @@ class _BackupManagementState extends State<BackupManagement> {
       config.applyJson(newConfig.toJson());
 
       // 刷新配置
-      config.flushConfig();
+      await config.flushConfig();
 
       if (mounted) {
         FlutterToastr.show(

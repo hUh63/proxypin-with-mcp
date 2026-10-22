@@ -117,6 +117,15 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
   Timer? _heartbeatTimer;
   int _heartbeatFailures = 0;
 
+  @override
+  void dispose() {
+    // 离开页面必须停掉心跳：定时器持有 State，页面关掉后仍会每 10 秒 ping 一次
+    // 远程设备（连接一直「在线」的假象），回调里的 setState 也已失效。
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+    super.dispose();
+  }
+
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatFailures = 0;
