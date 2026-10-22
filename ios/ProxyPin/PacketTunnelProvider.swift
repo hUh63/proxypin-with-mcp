@@ -130,6 +130,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
+        // 记录断开原因（上游 #970：用户反馈「VPN 自己关了」）。
+        // iOS 会在扩展内存超限、provider 异常、系统回收时主动 stopTunnel，
+        // App 侧只看到状态变 off；带上 reason 才能在 Console 里区分是手动关闭、
+        // provider 失败还是系统资源回收（reason=1 userInitiated / 4 providerFailed …）。
+        NSLog("[ProxyPin] stopTunnel reason=%ld", reason.rawValue)
         proxyVpnService?.stop()
         proxyVpnService = nil
         completionHandler()

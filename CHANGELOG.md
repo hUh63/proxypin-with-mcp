@@ -1,5 +1,84 @@
 # Changelog
 
+## v1.67.77 (2026-10-23)
+
+### 远程脚本不再每次重启都变空（上游 #973）
+
+用 `remoteUrl` 的脚本以前只有 15 分钟的内存缓存、**从不写盘**：重启后脚本又变成空/默认模板，
+必须手动「下载」+「保存」一遍；缓存过期后每个命中请求还要重新走一次没有超时的 HTTP GET，
+远端一慢就把请求拖死。现在：
+
+- 下载内容落到 `scripts/` 缓存文件；编辑器打开直接显示缓存（不再空白），运行时优先用缓存。
+- 命中缓存后异步刷新（每个地址 10 分钟最多一次），失败保留旧内容，不阻塞请求。
+- 首次使用没有缓存时才会同步下载，带 15 秒超时、校验 HTTP 状态码与空内容。
+- 编辑器保存/「下载」的内容都会写进缓存文件；导出脚本也带上缓存内容。
+
+### HTTP/2 站点上本地映射、屏蔽、mock 全部失效或打断整条连接
+
+- `request_map` 合成的响应用默认 `HTTP/1.1`，而编码器按 `protocolVersion` 决定走 h2 帧还是
+  明文 —— 命中映射规则的 h2 站点会把明文写进二进制流，客户端 `ERR_HTTP2_PROTOCOL_ERROR`，
+  同连接其它流一起被重置。现在合成响应继承请求的协议版本。
+- mock / MCP 阻断 / 反向代理 502 三条本地应答路径都是「写完就关整条 socket」，h2 下会把同一
+  连接上其它正在进行的请求一起打断。现在只对 HTTP/1.1 关闭，h2 只结束该 stream。
+- 响应拦截器返回 null（屏蔽响应）以前只关上游、客户端什么都不发：请求挂到自身超时，而
+  `serverChannel` 仍指向已关闭的通道，后续 keep-alive 请求被写进死通道（整条连接变黑洞）。
+  现在清空 `serverChannel`，HTTP/1.1 直接断开客户端，h2 给该流回 502 收尾。
+
+### 请求体被清空后残留 Content-Length（串包风险）
+
+`HttpCodec.encode` 只在 `body != null` 时校正长度：断点里清空请求体、或 `copy()` 后丢掉 body
+时，头里还会留着原来的 `Content-Length`，发出去就是「声明 N 字节、实际 0 字节」—— 上游等
+body 超时，或在 keep-alive 上把下一个请求的字节当成本次的 body。现在 `body == null` 时统一
+清掉 `Content-Length` / `Transfer-Encoding`（h2 分支本来就是这么做的）。
+
+### 任务队列可能永久停摆
+
+`SequentialTaskQueue.runAllTask` 没有 try/finally：任务的 `onError` 回调自己抛异常时
+`_isProcessing` 永远停在 true，这一队任务再也不会被处理，`waitForAll()` 永久挂起 ——
+该连接的读事件彻底停止（关闭连接时也会卡在 `await waitForAll()`）。现在用 finally 兜底，
+并把 `onError` 单独 try/catch。
+
+### 定时任务重复执行、一条坏数据带走全部任务
+
+- `Timer.periodic(10s)` 不等 async 回调结束，而 `executeAt` 要等 `await _runTask()` 之后才推进：
+  动作耗时超过 10 秒（webhook / 导出 / 批量重放）时同一个任务会被再执行一遍。加防重入锁。
+- `loadTasks` 整段一个 try：配置文件里一条记录坏掉，后面的任务全部不加载、检查定时器也不启动
+  （到点不执行且无提示）。改为逐条容错，定时器放 finally 必启动。
+
+### 历史文件内容重复
+
+空闲 30 秒后句柄会被释放（`open = null`）。此时删除/清空历史触发 `resetList()`，截断逻辑被
+跳过、列表却照常重灌，恢复写入又是 append 模式 → 历史文件里「旧全量 + 新全量」重复。
+现在句柄为空时自己以覆盖模式打开，截断正常执行。
+
+### 单例并发初始化
+
+`HistoryStorage.instance` / `WorkspaceStorage.instance` 是「判空 → await → 赋值」，并发首访会
+各自初始化一遍：历史会话在内存里翻倍并写回磁盘；工作区则出现两个各自持 `_items` 的实例，
+后一个保存时会把前一个刚建的工作区从索引里抹掉。改为缓存 in-flight Future。
+
+工作区索引 `index.json` 也改为原子写（半截 JSON 会让所有工作区在界面上消失）。
+
+### 其它
+
+- 复制为 cURL：header / URL / `--data` 都没有转义单引号，body 里出现 `'`（O'Brien、SQL）时
+  命令被 shell 提前闭合引号，请求发错甚至可被注入。统一走 shell 单引号转义。
+- 「导出 pcapng」大报文直接塞进一个 IPv4 包，超过 65535 字节长度字段回绕、校验和不符，
+  Wireshark 报 malformed。现在按 65495 字节分段，seq 连续累加。
+- Android MCP 的 uiautomator 解析用 `(\w+)="..."`，而 `\w` 不含 `-`：`resource-id` 被解析成
+  `id`、`content-desc` 成 `desc`，走 root/Shizuku 通道时这两个字段恒为空，按资源 id 定位永远
+  失败（无障碍通道却正常）。修正正则。
+- Android MCP `shell` 工具无输出上限（`cat` 大文件 / `logcat` 会把整段读进内存再跨通道复制
+  一次）：改为 1MB 上限并标记截断。
+- Android VPN 服务 `connect()` 不先停旧线程：重复点击开启、系统重投递 start 时会出现两条线程
+  读同一个 tun、旧 fd 被覆盖后再也关不掉。改为幂等（连接前先 disconnect），`disconnect()` 里
+  把线程引用置空。
+- iOS 网络扩展 `stopTunnel` 记录断开原因（#970「VPN 自己关了」排查用）。
+- 「MCP 自动化」编辑任务时 URL 匹配规则输入框不回显已有规则。
+- WebSocket 拦截管理页三处 await 后 setState 未检查 mounted；编码/解码页 controller 未释放；
+  Headers 文本模式每次 build 都新建 SearchTextController（泄漏 + 查找状态被重置）；
+  证书哈希页选文件返回后未检查 mounted。
+
 ## v1.67.76 (2026-10-22)
 
 ### 白名单打开但没规则时，一个包都抓不到

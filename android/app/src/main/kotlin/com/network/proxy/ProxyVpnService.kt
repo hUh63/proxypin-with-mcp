@@ -242,6 +242,9 @@ class ProxyVpnService : VpnService(), ProtectSocket {
         vpnInterface?.close()
         stopForeground(STOP_FOREGROUND_REMOVE)
         vpnInterface = null
+        // 必须置空：否则重新 connect 时旧线程引用被覆盖，stop/join 再也拿不到它，
+        // 「是否已在运行」也无从判断。
+        vpnThread = null
         isRunning = false
     }
 
@@ -253,6 +256,14 @@ class ProxyVpnService : VpnService(), ProtectSocket {
         setSystemProxy: Boolean = true,
         proxyPassDomains: ArrayList<String>? = null
     ) {
+        // 幂等：onStartCommand 每次收到非 DISCONNECT 的 intent（重复点「开启」、
+        // 冷启动重放 start、系统 START_STICKY 重投递）都会走到这里。不先停掉旧的
+        // 线程/tun，就会出现两条线程读同一个 VPN 接口、旧 ParcelFileDescriptor
+        // 被新值覆盖后再也关不掉（fd 泄漏），表现为流量重复上报、停止后仍抓流。
+        if (vpnThread != null || vpnInterface != null) {
+            disconnect()
+        }
+
         localProxy = isLocalProxyHost(proxyHost)
         Log.i(
             "ProxyVpnService",

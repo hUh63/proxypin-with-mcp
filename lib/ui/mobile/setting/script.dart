@@ -492,7 +492,8 @@ class _ScriptEditState extends State<ScriptEdit> {
 
     try {
       _fetchingRemoteScript.value = true;
-      final resp = await http.get(uri);
+      // 没有超时的话，远端不响应时「下载」按钮会一直转圈
+      final resp = await http.get(uri).timeout(const Duration(seconds: 20));
       if (resp.statusCode < 200 || resp.statusCode >= 300) {
         FlutterToastr.show("Fetch failed: HTTP ${resp.statusCode}", context, position: FlutterToastr.top);
         return;
@@ -1075,9 +1076,9 @@ class _ScriptListState extends State<ScriptList> {
     if (index != null) {
       var scriptManager = await ScriptManager.instance;
       var scriptItem = widget.scripts[index];
-      if (scriptItem.remoteUrl == null || scriptItem.remoteUrl?.isEmpty == true) {
-        script = await scriptManager.getScript(scriptItem);
-      }
+      // 远程脚本也要显示本地缓存（#973）：以前这里刻意跳过远程脚本，编辑器
+      // 每次都是空白，用户只能先点「下载」再点「保存」，重启后又回到空白。
+      script = await scriptManager.readCachedScript(scriptItem);
     }
     if (!mounted) {
       return;
@@ -1105,8 +1106,10 @@ class _ScriptListState extends State<ScriptList> {
       var item = widget.scripts[idx];
       var map = item.toJson();
       map.remove("scriptPath");
-      if (item.remoteUrl == null || item.remoteUrl!.trim().isEmpty) {
-        map['script'] = await scriptManager.getScript(item);
+      // 用缓存而不是 getScript：导出不该为远程脚本发起网络请求。
+      final cached = await scriptManager.readCachedScript(item);
+      if (cached != null) {
+        map['script'] = cached;
       }
       json.add(map);
     }

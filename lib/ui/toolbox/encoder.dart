@@ -80,6 +80,9 @@ class _EncoderState extends State<EncoderWidget> with SingleTickerProviderStateM
   @override
   void dispose() {
     tabController.dispose();
+    // outputTextController 之前从未释放：反复打开编码/解码页（含桌面多窗口子窗口）
+    // 每次都泄漏一个 controller 及其监听器。
+    outputTextController.dispose();
     HardwareKeyboard.instance.removeHandler(onKeyEvent);
     super.dispose();
   }

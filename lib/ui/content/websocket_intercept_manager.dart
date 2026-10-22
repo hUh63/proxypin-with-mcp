@@ -52,6 +52,9 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
 
   Future<void> _initRuleManager() async {
     await _ruleManager.init();
+    // 读盘是异步的：用户点开页面后立刻返回时 State 已经销毁，直接 setState 会抛
+    // "setState() called after dispose()"。
+    if (!mounted) return;
     setState(() {
       _globalEnabled = _ruleManager.globalEnabled;
     });
@@ -59,6 +62,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
   }
 
   void _loadPausedMessages() {
+    if (!mounted) return;
     setState(() {
       _pausedMessages = McpBridge().getPausedWebSocketMessages();
     });
@@ -66,6 +70,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
 
   Future<void> _toggleGlobalEnabled(bool enabled) async {
     await _ruleManager.setGlobalEnabled(enabled);
+    if (!mounted) return;
     setState(() {
       _globalEnabled = enabled;
     });

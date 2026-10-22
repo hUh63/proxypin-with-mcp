@@ -29,16 +29,25 @@ class SequentialTaskQueue {
   }
 
   runAllTask() async {
-    if (!_isProcessing) {
-      _isProcessing = true;
-      _completer ??= Completer<void>();
+    if (_isProcessing) {
+      return;
+    }
+    _isProcessing = true;
+    _completer ??= Completer<void>();
+    try {
       while (_tasks.isNotEmpty) {
         final currentTask = _tasks.removeFirst();
         await runTask(currentTask);
       }
+    } finally {
+      // 任何未预期的异常都不能把 _isProcessing 留在 true：那样这一队任务
+      // 再也不会被处理，waitForAll() 也会永久挂起（连接读事件彻底停摆）。
       _isProcessing = false;
-      _completer?.complete();
+      final completer = _completer;
       _completer = null;
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+      }
     }
   }
 
@@ -52,7 +61,11 @@ class SequentialTaskQueue {
       try {
         await task.task();
       } catch (error, stackTrace) {
-        task.onError?.call(error, stackTrace);
+        try {
+          task.onError?.call(error, stackTrace);
+        } catch (_) {
+          // onError 自己抛异常时不能把整条队列带停
+        }
       } finally {
         _markCompleted(task.id);
       }

@@ -18,6 +18,7 @@ import 'dart:io';
 
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/serial_file_writer.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/utils/har.dart';
 
@@ -87,11 +88,31 @@ class WorkspaceStorage {
 
   WorkspaceStorage._();
 
+  /// 初始化中的 Future：并发首次访问共用同一次 _load。
+  ///
+  /// 老写法会各自 _load 出一个独立实例：调用方拿到 A 后新建的工作区只进了 A 的
+  /// _items，B 的下一次 _saveIndex() 会把刚建的工作区从索引里抹掉（目录成孤儿）。
+  static Future<WorkspaceStorage>? _loading;
+
   static Future<WorkspaceStorage> get instance async {
     final cached = _instance;
     if (cached != null) {
       return cached;
     }
+    final loading = _loading;
+    if (loading != null) {
+      return loading;
+    }
+    final future = _create();
+    _loading = future;
+    try {
+      return await future;
+    } finally {
+      _loading = null;
+    }
+  }
+
+  static Future<WorkspaceStorage> _create() async {
     final storage = WorkspaceStorage._();
     await storage._load();
     _instance = storage;
@@ -152,7 +173,9 @@ class WorkspaceStorage {
   Future<void> _saveIndex() async {
     try {
       final file = await _indexFile();
-      await file.writeAsString(json.encode(_items.map((e) => e.toJson()).toList()));
+      // 原子写：裸 writeAsString 是「截断 + 写」，两次并发保存会互相截断成半截
+      // JSON，_load 解析失败后 _items 为空 → 所有工作区在界面上消失。
+      await SerialFileWriter.writeString(file, json.encode(_items.map((e) => e.toJson()).toList()));
     } catch (e) {
       logger.e('[Workspace] save index failed: $e');
     }

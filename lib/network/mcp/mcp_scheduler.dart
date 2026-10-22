@@ -38,6 +38,9 @@ class McpScheduler {
 
   final List<ScheduledTask> _tasks = [];
   Timer? _checkTimer;
+
+  /// 是否正在执行一轮检查（防重入，见 [_checkTasks]）
+  bool _checking = false;
   TaskActionExecutor? _executor;
 
   /// 注册动作执行器（UI 层启动时调用一次）
@@ -92,8 +95,25 @@ class McpScheduler {
     logger.d('定时任务检查器已启动');
   }
 
-  /// 检查并执行到期的任务
+  /// 检查并执行到期的任务。
+  ///
+  /// 必须防重入：`Timer.periodic` 不会等 async 回调结束，而任务的 [executeAt] 要等
+  /// 本轮 `await _runTask(...)` 之后才推进 —— 动作耗时超过 10 秒（webhook、导出、
+  /// 批量重放、脚本）时，下一轮 tick 会把**同一个任务**再执行一遍：webhook 重复调用、
+  /// HAR 重复导出、executedCount 跳变并把还没跑完的重复任务提前结束。
   Future<void> _checkTasks() async {
+    if (_checking) {
+      return;
+    }
+    _checking = true;
+    try {
+      await _runDueTasks();
+    } finally {
+      _checking = false;
+    }
+  }
+
+  Future<void> _runDueTasks() async {
     final now = DateTime.now();
 
     // 遍历期间 await _runTask（可能是一次很长的网络调用）；用户此刻新增/取消任务
@@ -240,10 +260,26 @@ class McpScheduler {
       if (!await file.exists()) return;
       final content = await file.readAsString();
       if (content.trim().isEmpty) return;
-      final list = jsonDecode(content) as List<dynamic>;
+      final decoded = jsonDecode(content);
+      if (decoded is! List) {
+        logger.w('定时任务配置不是数组，忽略');
+        _startCheckTimer();
+        return;
+      }
       final now = DateTime.now();
-      for (final e in list) {
-        final t = ScheduledTask.fromJson(e as Map<String, dynamic>);
+      for (final e in decoded) {
+        if (e is! Map) {
+          continue;
+        }
+        final ScheduledTask t;
+        try {
+          // 一条坏记录不能带走整份任务列表（以前整段 try，一条类型错误就
+          // 让后面的任务全部不加载、检查定时器也不启动）
+          t = ScheduledTask.fromJson(Map<String, dynamic>.from(e));
+        } catch (err) {
+          logger.w('跳过无法解析的定时任务: $err');
+          continue;
+        }
         if (t.isCancelled) continue;
         final isRepeating = t.repeatMode != 'none';
         // 重复任务过期（应用停用一段时间后）推进到下一个执行点，避免永不执行；
@@ -279,10 +315,12 @@ class McpScheduler {
         }
         _tasks.add(t);
       }
-      _startCheckTimer();
       logger.i('已加载 ${_tasks.length} 个持久化定时任务');
     } catch (e, st) {
       logger.e('加载定时任务失败', error: e, stackTrace: st);
+    } finally {
+      // 无论加载成功与否都要启动检查器：否则一次读取失败之后所有定时任务永久停摆
+      _startCheckTimer();
     }
   }
 }

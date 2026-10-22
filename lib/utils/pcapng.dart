@@ -78,37 +78,41 @@ class PcapNg {
       var serverSeq = conn.serverSeq;
 
       if (s.requestBytes.isNotEmpty) {
-        final frame = _ethernet(
-          srcMac: _clientMac,
-          dstMac: _serverMac,
-          srcIp: s.clientIp,
-          dstIp: s.serverIp,
-          srcPort: clientPort,
-          dstPort: s.serverPort,
-          seq: clientSeq,
-          ack: serverSeq,
-          payload: s.requestBytes,
-        );
-        _enhancedPacket(out, s.requestTime, frame);
-        clientSeq += s.requestBytes.length;
+        for (final chunk in _segments(s.requestBytes)) {
+          final frame = _ethernet(
+            srcMac: _clientMac,
+            dstMac: _serverMac,
+            srcIp: s.clientIp,
+            dstIp: s.serverIp,
+            srcPort: clientPort,
+            dstPort: s.serverPort,
+            seq: clientSeq,
+            ack: serverSeq,
+            payload: chunk,
+          );
+          _enhancedPacket(out, s.requestTime, frame);
+          clientSeq += chunk.length;
+        }
         conn.clientSeq = clientSeq;
       }
 
       final respTime = s.responseTime;
       if (s.responseBytes.isNotEmpty && respTime != null) {
-        final frame = _ethernet(
-          srcMac: _serverMac,
-          dstMac: _clientMac,
-          srcIp: s.serverIp,
-          dstIp: s.clientIp,
-          srcPort: s.serverPort,
-          dstPort: clientPort,
-          seq: serverSeq,
-          ack: clientSeq,
-          payload: s.responseBytes,
-        );
-        _enhancedPacket(out, respTime, frame);
-        serverSeq += s.responseBytes.length;
+        for (final chunk in _segments(s.responseBytes)) {
+          final frame = _ethernet(
+            srcMac: _serverMac,
+            dstMac: _clientMac,
+            srcIp: s.serverIp,
+            dstIp: s.clientIp,
+            srcPort: s.serverPort,
+            dstPort: clientPort,
+            seq: serverSeq,
+            ack: clientSeq,
+            payload: chunk,
+          );
+          _enhancedPacket(out, respTime, frame);
+          serverSeq += chunk.length;
+        }
         conn.serverSeq = serverSeq;
       }
     }
@@ -157,6 +161,25 @@ class PcapNg {
       b.addByte(0);
     }
     _u32(b, total);
+  }
+
+  /// 单个 IPv4 报文允许的最大 TCP 载荷：65535 - 20(IP 头) - 20(TCP 头)。
+  ///
+  /// IPv4 的 total length 是 16 位，超过就静默回绕成小值 —— 之前把整条 HTTP
+  /// 报文塞进一个包，响应体 >≈64 KB 时导出的 pcapng 会被 Wireshark 判为
+  /// malformed（长度字段与 TCP 校验和都对不上），HTTP 重组直接失败。
+  static const int _maxSegment = 65535 - 40;
+
+  /// 把一条报文切成若干个不超过 [_maxSegment] 的 TCP 段。
+  static Iterable<List<int>> _segments(List<int> data) sync* {
+    if (data.length <= _maxSegment) {
+      yield data;
+      return;
+    }
+    for (var i = 0; i < data.length; i += _maxSegment) {
+      final end = i + _maxSegment < data.length ? i + _maxSegment : data.length;
+      yield data.sublist(i, end);
+    }
   }
 
   // ---------- frame builders ----------

@@ -50,6 +50,30 @@ import android.os.IBinder
  * Falls back to root (su) commands when the accessibility service is not available.
  */
 class McpPlugin : FlutterPlugin {
+    /**
+     * MCP shell 类工具单次返回的最大字符数。
+     *
+     * shell 命令由 MCP 客户端任意指定（`cat 大文件`、`logcat`、`uiautomator dump`
+     * 一次性几十 MB 输出都很常见），无上限地把整段读进 StringBuilder 再经
+     * MethodChannel 复制一遍会直接把 App 内存打爆。
+     */
+    private val maxShellOutput = 1 shl 20
+
+    /** 有上限地读文本，超出后停止读取并追加截断提示。 */
+    private fun readLimited(reader: java.io.Reader): String {
+        val sb = StringBuilder()
+        val buf = CharArray(8192)
+        while (true) {
+            val n = reader.read(buf)
+            if (n <= 0) break
+            sb.append(buf, 0, n)
+            if (sb.length >= maxShellOutput) {
+                sb.append("\n…(输出超过 ${maxShellOutput / 1024} KB，已截断)")
+                break
+            }
+        }
+        return sb.toString()
+    }
 
     companion object {
         private const val CHANNEL_NAME = "com.proxy/mcpScreen"
@@ -378,7 +402,10 @@ class McpPlugin : FlutterPlugin {
     private fun parseUiautomatorXml(xml: String, clickableOnly: Boolean, packageFilter: String?): JSONArray {
         val jsonArray = JSONArray()
         val nodeRegex = Regex("<node\\s+([^>]+?)(?:/>|>)")
-        val attrRegex = Regex("(\\w+)=\"([^\"]*)\"")
+        // 属性名里有连字符（resource-id / content-desc / bounds 除外），
+        // Java/Kotlin 的 \w 不含 '-'：用 (\w+) 会把 resource-id 解析成 "id"、
+        // content-desc 解析成 "desc"，导致这两个字段恒为空、按资源 id 定位永远失败。
+        val attrRegex = Regex("([\\w\\-:]+)=\"([^\"]*)\"")
         val boundsRegex = Regex("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]")
 
         for (match in nodeRegex.findAll(xml)) {
@@ -598,10 +625,10 @@ class McpPlugin : FlutterPlugin {
             // timeoutMs 完全失效（su 授权框无人确认时线程永久阻塞）；
             // 且 stderr 缓冲区写满后子进程阻塞，stdout 也读不完 → 死锁。
             val tOut = Thread {
-                runCatching { process.inputStream.bufferedReader().use { stdout.append(it.readText()) } }
+                runCatching { process.inputStream.bufferedReader().use { stdout.append(readLimited(it)) } }
             }
             val tErr = Thread {
-                runCatching { process.errorStream.bufferedReader().use { stderr.append(it.readText()) } }
+                runCatching { process.errorStream.bufferedReader().use { stderr.append(readLimited(it)) } }
             }
             tOut.start()
             tErr.start()

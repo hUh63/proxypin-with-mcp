@@ -42,6 +42,13 @@ String copyAsFetch(HttpRequest request) {
   return sb.toString();
 }
 
+/// 把任意字符串安全地放进 shell 单引号里（`'` → `'\''`）。
+///
+/// 以前 header 和 --data 都是直接拼 `'...'`：body/头里只要出现一个单引号
+/// （JSON 里的 O'Brien、SQL、带引号的 UA 都很常见），生成的命令就会被 shell
+/// 提前闭合引号 —— 轻则请求体被截断、变成多出来的参数，重则被注入执行。
+String _shQuote(String s) => "'${s.replaceAll("'", "'\\''")}'";
+
 ///复制cURL请求
 String curlRequest(HttpRequest request) {
   String contentType = request.headers.contentType;
@@ -65,14 +72,14 @@ String curlRequest(HttpRequest request) {
         String filtered =
             val.split(',').map((e) => e.trim()).where((e) => !e.toLowerCase().startsWith('br')).join(', ');
         if (filtered.isNotEmpty) {
-          headers.add("  -H '$key: $filtered' ");
+          headers.add("  -H ${_shQuote('$key: $filtered')} ");
         }
       }
       return;
     }
 
     for (var val in values) {
-      headers.add("  -H '$key: $val' ");
+      headers.add("  -H ${_shQuote('$key: $val')} ");
     }
   });
 
@@ -83,10 +90,10 @@ String curlRequest(HttpRequest request) {
     // multipart 但 body 缺失（如大文件流式未缓存）：给个占位符提示
     body = "  --data-binary '@<PATH_TO_FILE>' \\\n";
   } else if (request.bodyAsString.isNotEmpty) {
-    body = "  --data '${request.bodyAsString}' \\\n";
+    body = "  --data ${_shQuote(request.bodyAsString)} \\\n";
   }
 
-  return "curl -X ${request.methodLabel} '${request.requestUrl}' \\\n"
+  return "curl -X ${request.methodLabel} ${_shQuote(request.requestUrl)} \\\n"
       "${headers.join('\\\n')} \\\n $body  --compressed";
 }
 

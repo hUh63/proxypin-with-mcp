@@ -45,14 +45,37 @@ class HistoryStorage {
 
   static final ListenableList<HistoryItem> _histories = ListenableList();
 
+  /// 初始化中的 Future：并发首次访问共用同一次初始化
+  ///
+  /// 判空 → await → 赋值的老写法在并发首访时会各自初始化一遍，_histories 是静态
+  /// 列表，两次 _init 会把同一批历史会话重复 add（随后 refresh 写回磁盘 → 重启仍重复）。
+  static Future<HistoryStorage>? _loading;
+
   ///单例
   static Future<HistoryStorage> get instance async {
-    if (_instance == null) {
-      var file = await Paths.getPath("histories.json");
-      _instance = HistoryStorage._internal(file);
-      await _instance!._init();
+    final cached = _instance;
+    if (cached != null) {
+      return cached;
     }
-    return _instance!;
+    final loading = _loading;
+    if (loading != null) {
+      return loading;
+    }
+    final future = _create();
+    _loading = future;
+    try {
+      return await future;
+    } finally {
+      _loading = null;
+    }
+  }
+
+  static Future<HistoryStorage> _create() async {
+    var file = await Paths.getPath("histories.json");
+    final storage = HistoryStorage._internal(file);
+    await storage._init();
+    _instance = storage;
+    return storage;
   }
 
   //初始化
@@ -360,7 +383,14 @@ class HistoryTask extends ListenerListEvent<HttpRequest> {
   Future<void> resetList() async {
     locked = true;
     try {
-      final file = open;
+      var file = open;
+      if (file == null && history != null) {
+        // 空闲暂停后文件句柄已关闭（open == null）。这时不能跳过截断：下面的
+        // writeList 会被重新灌满整份列表，而恢复写入走 FileMode.append ——
+        // 结果是「旧文件全量 + 重灌的全量」，历史文件内容默认翻倍、删掉的记录
+        // 又冒出来。这里自己以覆盖模式打开，后面的 truncate 才有句柄可用。
+        open = file = await File(history!.path).open(mode: FileMode.write);
+      }
       if (file != null) {
         try {
           await file.lock().timeout(const Duration(seconds: 3));

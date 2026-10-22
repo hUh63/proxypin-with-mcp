@@ -236,14 +236,21 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
     // re-frame as Content-Length. For streaming responses (body == null,
     // e.g. SSE/video handoff), keep Transfer-Encoding: chunked so the header
     // stays consistent with the chunk-framed bytes we relay afterwards.
-    if (body != null) {
+    if (body == null) {
+      // body 为 null（断点里把请求体清空、copy() 后丢失 body）时，头里可能还留着
+      // 原来的 Content-Length / chunked：发出去就是「声明 N 字节、实际 0 字节」，
+      // 上游会一直等 body，或在 keep-alive 上把下一个请求的字节当成本次的 body。
       message.headers.remove(HttpHeaders.TRANSFER_ENCODING);
-    }
-
-    if (body != null && (body.isNotEmpty || isChunked)) {
-      message.headers.contentLength = body.length;
-    } else if (body != null && message.contentLength != 0) {
-      message.headers.remove(HttpHeaders.CONTENT_LENGTH);
+      if (message.contentLength != 0) {
+        message.headers.remove(HttpHeaders.CONTENT_LENGTH);
+      }
+    } else {
+      message.headers.remove(HttpHeaders.TRANSFER_ENCODING);
+      if (body.isNotEmpty || isChunked) {
+        message.headers.contentLength = body.length;
+      } else if (message.contentLength != 0) {
+        message.headers.remove(HttpHeaders.CONTENT_LENGTH);
+      }
     }
 
     message.headers.forEach((key, values) {

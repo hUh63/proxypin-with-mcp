@@ -60,6 +60,10 @@ class _HeadersWidgetState extends State<HeadersWidget> {
   // 当前实例展开状态
   late bool _expanded;
 
+  /// 文本模式查找框的控制器。以前在 buildTextMode 里 new 一个交给子组件，
+  /// 每次重建都会新建且无人释放（泄漏 + 查找状态被重置）。
+  final SearchTextController _search = SearchTextController();
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +74,7 @@ class _HeadersWidgetState extends State<HeadersWidget> {
 
   @override
   void dispose() {
+    _search.dispose();
     super.dispose();
   }
 
@@ -146,7 +151,7 @@ class _HeadersWidgetState extends State<HeadersWidget> {
       HighlightTextWidget(
         text: text,
         language: 'http',
-        searchController: SearchTextController(),
+        searchController: _search,
         contextMenuBuilder: contextMenu,
       ),
     ];

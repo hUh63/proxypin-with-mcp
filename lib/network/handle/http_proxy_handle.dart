@@ -37,6 +37,18 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
 
   HttpProxyChannelHandler({this.listener, required this.interceptors, this.reverseProxy = false});
 
+  /// 本地合成的响应写回客户端。
+  ///
+  /// HTTP/2 客户端连接是多路复用的：写完这条流立刻 close() 会把同一连接上其它
+  /// 正在进行的请求一起打断（h2 编码器已经给该流带上 END_STREAM，不需要关连接）；
+  /// HTTP/1.1 才需要在写完后关闭，避免客户端继续复用一条没有上游的连接。
+  Future<void> _writeLocalResponse(ChannelContext channelContext, Channel channel, HttpResponse resp) async {
+    await channel.write(channelContext, resp);
+    if (resp.protocolVersion != 'HTTP/2') {
+      channel.close();
+    }
+  }
+
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, HttpRequest msg) async {
     //下载证书
@@ -59,7 +71,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
           ..headers.contentType = 'text/plain; charset=utf-8'
           ..headers.contentLength = body.length;
         listener?.onResponse(channelContext, resp);
-        channel.writeAndClose(channelContext, resp);
+        await _writeLocalResponse(channelContext, channel, resp);
         return;
       }
     }
@@ -209,7 +221,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
             ..request = request;
           blockResp.headers.set('X-ProxyPin-MCP-Blocked', 'true');
           listener?.onResponse(channelContext, blockResp);
-          channel.writeAndClose(channelContext, blockResp);
+          await _writeLocalResponse(channelContext, channel, blockResp);
           remoteChannel?.close();
           return;
         }
@@ -227,7 +239,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         }
         if (response != null) {
           listener?.onResponse(channelContext, response);
-          channel.writeAndClose(channelContext, response);
+          await _writeLocalResponse(channelContext, channel, response);
           // 上游连接在 forward 开头就建好了。本地 mock / 阻断短路时必须关掉：
           // Channel.close() 会先 cancel 读订阅，onDone 不再触发，channelInactive
           // 里的兜底也随之失效 → 每条被 mock 的请求都留一条无人回收的 socket。
@@ -493,10 +505,25 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
         continue;
       }
       if (response == null) {
+        // 拦截器返回 null = 丢弃这条响应（屏蔽响应 / 脚本拦下）。
+        //
+        // 以前这里只关上游通道：客户端既收不到响应也不会被断开，请求一直挂到
+        // 自己的超时才失败；而且 channelContext.serverChannel 仍指向这条已关闭
+        // 的通道，后续 keep-alive 请求会被写进死通道（整条连接变黑洞）。
         logger.d("[${clientChannel.id}] Interceptor returned null, stopping processing");
-        // Interceptor returned null, stopping processing
         listener?.onResponse(channelContext, msg);
+        channelContext.serverChannel = null;
         channel.close();
+        final isHttp2 = (request?.protocolVersion ?? msg.protocolVersion) == 'HTTP/2';
+        if (isHttp2) {
+          // h2 不能整条关掉（其它流还在用），给这条流回一个响应收尾
+          final dropped = HttpResponse(HttpStatus.newStatus(502, 'Response dropped by ProxyPin'),
+              protocolVersion: 'HTTP/2')
+            ..request = request;
+          await clientChannel.write(channelContext, dropped);
+        } else {
+          clientChannel.close();
+        }
         return;
       }
     }

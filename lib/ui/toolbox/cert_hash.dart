@@ -89,6 +89,9 @@ class _CertHashPageState extends State<CertHashPage> {
 
                   File file = File(picked.path!);
                   var bytes = await file.readAsBytes();
+                  // 文件选择器是另一个窗口/Activity，返回时本页可能已被关闭：
+                  // 对已 dispose 的 controller 赋值会抛异常。
+                  if (!mounted) return;
                   input.text = tryDerFormat(bytes) ?? String.fromCharCodes(bytes);
                   getSubjectName();
                 },

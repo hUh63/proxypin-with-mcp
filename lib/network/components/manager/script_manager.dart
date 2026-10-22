@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -219,7 +220,8 @@ async function onResponse(context, request, response) {
     for (final item in list) {
       if (!item.enabled) continue;
       try {
-        final script = await getScript(item);
+        // 探测只读缓存，不能为了一段正则去下载远程脚本
+        final script = await readCachedScript(item);
         if (script != null && _wsHookPattern.hasMatch(script)) {
           found = true;
           break;
@@ -283,47 +285,129 @@ async function onResponse(context, request, response) {
     return file;
   }
 
+  /// 远程脚本缓存与刷新参数（上游 #973）。
+  static const Duration remoteCacheTtl = Duration(minutes: 10);
+  static const Duration remoteFetchTimeout = Duration(seconds: 15);
+
+  /// 每个远程地址上次尝试刷新的时间（热路径上的节流，避免反复重试）
+  final Map<String, DateTime> _remoteRefreshAt = {};
+
   Future<String?> getScript(ScriptItem item) async {
-    // Local script (existing behavior)
     if (_scriptMap.containsKey(item)) {
       return _scriptMap[item]!;
     }
 
-    // Remote script
-    if (item.remoteUrl != null && item.remoteUrl!.trim().isNotEmpty) {
-      var script = await _fetchRemoteScript(item);
-      if (script != null) {
-        _scriptMap[item] = script;
+    // 远程脚本：有磁盘缓存就先用缓存，刷新丢到后台，不阻塞当前请求
+    if (item.isRemote) {
+      final cached = await readCachedScript(item);
+      if (cached != null) {
+        _scriptMap[item] = cached;
+        _refreshRemoteInBackground(item);
+        return cached;
       }
-      return script;
+      // 首次使用且没有任何缓存：同步取一次（带超时），取到后落盘
+      return await downloadRemoteScript(item, persist: true);
     }
 
-    final home = await Paths.homePath();
-    final scriptFile = File(home + (item.scriptPath ?? ''));
-    // 脚本文件被手工删掉/移动时以前直接抛，异常会冒到每条命中该规则的请求上。
-    if (!await scriptFile.exists()) {
-      logger.w('脚本文件不存在: ${scriptFile.path}');
+    final cached = await readCachedScript(item);
+    if (cached == null) {
       return null;
     }
-    var script = await scriptFile.readAsString();
-    _scriptMap[item] = script;
-    return script;
+    _scriptMap[item] = cached;
+    return cached;
   }
 
-  Future<String?> _fetchRemoteScript(ScriptItem item) async {
-    final url = item.remoteUrl!.trim();
-    if (!_isHttpUrl(url)) {
+  /// 只读缓存（内存 → 磁盘），**不联网**。
+  ///
+  /// 脚本编辑器打开、以及「是否存在 onWebSocket」这类探测都走它：远程脚本在
+  /// 这些场景下不应该发起网络请求（以前编辑器打开时干脆跳过，导致永远空白）。
+  Future<String?> readCachedScript(ScriptItem item) async {
+    final mem = _scriptMap[item];
+    if (mem != null) {
+      return mem;
+    }
+    final path = item.scriptPath;
+    if (path == null || path.isEmpty) {
       return null;
     }
+    try {
+      final home = await Paths.homePath();
+      final file = File(home + path);
+      // 脚本文件被手工删掉/移动时以前直接抛，异常会冒到每条命中该规则的请求上。
+      if (!await file.exists()) {
+        logger.w('脚本文件不存在: ${file.path}');
+        return null;
+      }
+      return await file.readAsString();
+    } catch (e) {
+      logger.w('读取脚本文件失败: $path', error: e);
+      return null;
+    }
+  }
 
-    final resp = await http.get(Uri.parse(url));
+  /// 下载远程脚本。成功时更新内存缓存，[persist] 为 true 时同时写盘缓存。
+  Future<String?> downloadRemoteScript(ScriptItem item, {bool persist = true}) async {
+    final url = item.remoteUrl?.trim();
+    if (url == null || !_isHttpUrl(url)) {
+      return null;
+    }
+    _remoteRefreshAt[url] = DateTime.now();
+    try {
+      final resp = await http.get(Uri.parse(url)).timeout(remoteFetchTimeout);
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        logger.w('远程脚本下载失败 HTTP ${resp.statusCode}: $url');
+        return null;
+      }
+      final content = utf8.decode(resp.bodyBytes, allowMalformed: true);
+      if (content.trim().isEmpty) {
+        logger.w('远程脚本内容为空: $url');
+        return null;
+      }
+      _scriptMap[item] = content;
+      if (persist) {
+        await _writeCache(item, content);
+      }
+      return content;
+    } catch (e) {
+      logger.w('远程脚本下载异常: $url', error: e);
+      return null;
+    }
+  }
 
-    final bytes = resp.bodyBytes;
+  /// 后台刷新（stale-while-revalidate）：命中缓存后异步拉最新内容，失败保持旧缓存。
+  void _refreshRemoteInBackground(ScriptItem item) {
+    final url = item.remoteUrl?.trim();
+    if (url == null || url.isEmpty) {
+      return;
+    }
+    final last = _remoteRefreshAt[url];
+    if (last != null && DateTime.now().difference(last) < remoteCacheTtl) {
+      return;
+    }
+    _remoteRefreshAt[url] = DateTime.now();
+    unawaited(downloadRemoteScript(item).catchError((Object e) {
+      logger.w('远程脚本后台刷新失败: $url', error: e);
+      return null;
+    }));
+  }
 
-    final content = utf8.decode(bytes);
-    _scriptMap[item] = content;
-
-    return content;
+  /// 写脚本缓存文件。远程脚本第一次写时顺便分配 scriptPath 并把配置落盘，
+  /// 否则重启后 item 没有路径，缓存文件变成孤儿、脚本又变回空的。
+  Future<void> _writeCache(ScriptItem item, String content) async {
+    try {
+      var path = item.scriptPath;
+      if (path == null || path.isEmpty) {
+        path = "${separator}scripts${separator}${RandomUtil.randomString(16)}.js";
+        item.scriptPath = path;
+        unawaited(flushConfig());
+      }
+      final home = await Paths.homePath();
+      final file = File(home + path);
+      await file.create(recursive: true);
+      await SerialFileWriter.writeString(file, content);
+    } catch (e) {
+      logger.w('写入脚本缓存失败: ${item.name}', error: e);
+    }
   }
 
   bool _isHttpUrl(String url) {
@@ -334,9 +418,13 @@ async function onResponse(context, request, response) {
 
   ///添加脚本
   Future<void> addScript(ScriptItem item, String? script) async {
-    // Remote script: script is treated as initial cache (optional)
-    if (item.remoteUrl != null && item.remoteUrl!.trim().isNotEmpty) {
+    // 远程脚本：编辑器里的内容当作初始缓存落盘（#973，重启后不再变空）
+    if (item.isRemote) {
       list.add(item);
+      if (script != null && script.trim().isNotEmpty) {
+        _scriptMap[item] = script;
+        await _writeCache(item, script);
+      }
       return;
     }
 
@@ -353,9 +441,10 @@ async function onResponse(context, request, response) {
 
   ///更新脚本
   Future<void> updateScript(ScriptItem item, String script) async {
-    // Remote scripts: update cache file (treat as local override of cache)
-    if (item.remoteUrl != null && item.remoteUrl!.trim().isNotEmpty) {
+    // 远程脚本：编辑/下载得到的内容写进缓存文件，不能只留在内存（#973）
+    if (item.isRemote) {
       _scriptMap[item] = script;
+      await _writeCache(item, script);
       return;
     }
 
@@ -599,6 +688,9 @@ class ScriptItem {
       : urls = urls is String
             ? (urls.contains(',') ? urls.split(',').map((e) => e.trim()).toList() : [urls])
             : (urls is List<String> ? urls : <String>[]);
+
+  /// 是否远程脚本（配置了 remoteUrl）
+  bool get isRemote => remoteUrl != null && remoteUrl!.trim().isNotEmpty;
 
   // 匹配url，任意一个规则匹配即可
   bool match(String url) {

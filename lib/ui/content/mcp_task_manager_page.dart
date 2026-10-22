@@ -167,6 +167,9 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
     AutomationTriggerType selectedTrigger = task?.triggerType ?? AutomationTriggerType.onRequest;
     List<AutomationActionType> selectedActions = task?.actions ?? [];
     String urlPattern = task?.conditions['urlPattern'] as String? ?? '';
+    // 编辑已有任务时输入框必须回显原规则：以前只靠 onChanged 更新局部变量，
+    // 弹窗打开时输入框是空的，用户看不出当前生效的 URL 匹配规则。
+    final urlPatternController = TextEditingController(text: urlPattern);
     
     await showDialog(
       context: context,
@@ -210,6 +213,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
                 if (selectedTrigger == AutomationTriggerType.onRequest || selectedTrigger == AutomationTriggerType.onResponse) ...[
                   const SizedBox(height: 12),
                   TextField(
+                    controller: urlPatternController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.urlPattern,
                       prefixIcon: Icon(Icons.link),
@@ -274,6 +278,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
     
     nameController.dispose();
     descController.dispose();
+    urlPatternController.dispose();
   }
 
   void _showTaskDetails(MCPAutomationTask task) {

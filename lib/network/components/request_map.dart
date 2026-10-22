@@ -80,6 +80,11 @@ class RequestMapInterceptor extends Interceptor {
 
     response.request = request;
     request.response = response;
+    // 必须继承请求的协议版本：本地映射/脚本合成的是「一条响应」，编码时
+    // HttpCodec.encode 靠 protocolVersion 决定走 h2 帧还是 HTTP/1.1 文本。
+    // 漏了这行，命中映射规则的 h2 站点会把明文 HTTP/1.1 写进 h2 二进制流，
+    // 客户端直接 ERR_HTTP2_PROTOCOL_ERROR，并连带重置同连接的其它流。
+    response.protocolVersion = request.protocolVersion;
     return response;
   }
 
