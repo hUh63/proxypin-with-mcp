@@ -63,31 +63,6 @@ class BodyReader {
   /// 已判定超过解析上限（上游 #701）：此后不再解析，交给上层原样转发
   bool _oversize = false;
 
-  /// 无 Content-Length、无 Transfer-Encoding: chunked、且非 flv/SSE 的响应，
-  /// body 由连接关闭定界。此类 body 先缓冲，待上游关闭时经 [finish] 产出完整
-  /// 内容，以便继续参与响应拦截器链（issue #956）。
-  ///
-  /// 惰性判定：不在构造器求值，而是首次读取 body 时计算——能走到 body 解析
-  /// 本身就说明 headers 已解析完整。
-  bool? _closeDelimited;
-
-  bool get closeDelimited => _closeDelimited ??= _isCloseDelimited();
-
-  bool _isCloseDelimited() {
-    final msg = message;
-    return msg is HttpResponse &&
-        msg.status.code >= 200 &&
-        msg.status.code != 204 &&
-        msg.status.code != 304 &&
-        msg.status.code != 205 &&
-        msg.headers.get(HttpHeaders.CONTENT_LENGTH) == null &&
-        !msg.headers.isChunked &&
-        msg.headers.contentType != 'video/x-flv' &&
-        !msg.headers.contentType.startsWith('text/event-stream') &&
-        // CONNECT 的 "200 Connection established" 之后是隧道，没有 body
-        msg.request?.method != HttpMethod.connect;
-  }
-
   BodyReader(this.message, {this.canRelay = false})
       : _chunkedDecoder = message.headers.isChunked ? ChunkedDecoder() : null;
 
@@ -125,23 +100,25 @@ class BodyReader {
     }
 
     // 响应既没有 Content-Length 也没有 Transfer-Encoding: chunked 时，按
-    // HTTP 语义 body 由连接关闭定界。缓冲起来，等上游关闭时由
-    // [finish] 产出完整响应（这样响应拦截器/脚本对这类响应同样生效，
-    // issue #956）；超过解析上限则退回「原样转发」，不把巨量 body 攒在内存里。
-    if (closeDelimited) {
-      final total = _bodyBuffer.length + data.length;
-      if (total > Codec.maxBodyLength) {
-        _bodyBuffer.clear();
-        _oversize = true;
-        message.bodyTruncated = true;
-        message.originalBodyLength = total;
-        return Result(false, supportedParse: false, body: data);
-      }
-      if (data.isNotEmpty) {
-        _bodyBuffer.add(data);
-      }
-      // 未结束：body 长度未知，只有对端关闭连接才知道完整内容。
-      return Result(false);
+    // HTTP 语义 body 由连接关闭定界。这里不缓冲、不解析，直接原样转发
+    // （保留原始定界，把上游的关闭信号传给客户端）——否则流式响应要等到
+    // 连接关闭才能收到第一个字节，客户端一直等不到完整响应（issue #844）。
+    //
+    // 与上游 v1.4.0 的差异（有意）：上游把这类 body 缓冲到连接关闭再一次性
+    // 交给响应拦截器（issue #956），代价是流式响应被卡住；本 fork 优先保证
+    // 流式体验，代价是此类响应不参与 onResponse 改写。
+    var msg = message;
+    if (msg is HttpResponse &&
+        msg.status.code >= 200 &&
+        msg.status.code != 204 &&
+        msg.status.code != 304 &&
+        msg.status.code != 205 &&
+        msg.headers.get(HttpHeaders.CONTENT_LENGTH) == null &&
+        !msg.headers.isChunked &&
+        msg.headers.contentType != 'video/x-flv' &&
+        !msg.headers.contentType.startsWith('text/event-stream') &&
+        msg.request?.method != HttpMethod.connect) {
+      return Result(false, supportedParse: false, body: data);
     }
 
     // 两条路径都按「本次实际属于本条消息的字节数」精确回报，剩余字节由 codec
@@ -160,17 +137,6 @@ class BodyReader {
     }
 
     return Result(false, consumedBytes: consumed);
-  }
-
-  /// 上游连接关闭时调用，产出缓冲中的完整 close-delimited body。
-  Result finish() {
-    if (!closeDelimited || _oversize) {
-      return Result(false);
-    }
-    _done = true;
-    var body = _bodyBuffer.toBytes();
-    _bodyBuffer.clear();
-    return Result(true, body: body);
   }
 
   /// 按 Content-Length 读取固定长度 body，返回本次实际消费的字节数。

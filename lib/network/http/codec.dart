@@ -79,14 +79,6 @@ abstract interface class Decoder<T> {
   DecoderResult<T> decode(ChannelContext channelContext, ByteBuf byteBuf);
 }
 
-/// 支持在连接关闭时收尾 close-delimited（无 Content-Length / 无 chunked）
-/// 响应体的解码器。此类响应 body 由连接关闭定界：解码器先缓冲，待上游关闭后
-/// 由 [ChannelDispatcher.channelInactive] 调用本方法产出完整响应，
-/// 使其照常进入响应拦截器链（上游 v1.4.0 / issue #956）。
-abstract interface class CloseDelimitedBodyFinalizer {
-  DecoderResult? finishCloseDelimitedBody();
-}
-
 /// 编码
 abstract interface class Encoder<T> {
   List<int> encode(ChannelContext channelContext, T data);
@@ -99,7 +91,7 @@ abstract class Codec<D, E> implements Decoder<D>, Encoder<E> {
 }
 
 /// http编解码
-abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T>, CloseDelimitedBodyFinalizer {
+abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
   final HttpParse _httpParse = HttpParse();
   Http2Codec<T>? _h2Codec;
   State _state = State.readInitial;
@@ -306,30 +298,6 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T>, CloseDel
     if (_headerBytes > maxHeaderBlockBytes) {
       throw FormatException('HTTP header block too large: $_headerBytes bytes');
     }
-  }
-
-  /// 上游连接关闭时调用：把缓冲中的 close-delimited body 产出为完整消息。
-  ///
-  /// 返回 null 表示当前不在 body 阶段（没有需要收尾的响应）。
-  @override
-  DecoderResult<T>? finishCloseDelimitedBody() {
-    var reader = bodyReader;
-    if (reader == null || _state != State.body) {
-      return null;
-    }
-    var r = reader.finish();
-    if (!r.isDone) {
-      return null;
-    }
-    result.data!.body = _convertBody(r.body);
-    result.data!.completeTime = DateTime.now();
-    result.forward = null;
-    result.supportedParse = true;
-    result.isDone = true;
-    _state = State.readInitial;
-    pendingConnectResponse = false;
-    _headerBytes = 0;
-    return result;
   }
 
   //转换body

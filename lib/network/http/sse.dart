@@ -97,7 +97,7 @@ class SseDecoder {
           // 这类「数字下标 + 冒号 + 正文」。原实现整行丢弃 → SSE 面板一片空白。
           // 只认纯数字字段名：标准 SSE 里的未知字段（`unknown: x`）仍按规范忽略。
           if (RegExp(r'^\d+$').hasMatch(field)) {
-            frames.add(_textFrame(value.isEmpty ? line : value));
+            frames.add(_textFrame(line));
           }
           break;
       }
