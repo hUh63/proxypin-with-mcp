@@ -201,7 +201,8 @@ class HttpHeaders {
 
   String? get contentEncoding => get(HttpHeaders.CONTENT_ENCODING)?.toLowerCase();
 
-  bool get isGzip => contentEncoding == "gzip";
+  /// `Content-Encoding` 里是否包含 gzip（兼容 `gzip, br` 多重编码与 `x-gzip`）
+  bool get isGzip => contentEncoding?.contains('gzip') == true;
 
   bool get isChunked {
     // 旧实现要求整串严格等于 "chunked"：`chunked `（尾空格）、`gzip, chunked`、

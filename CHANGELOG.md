@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.67.80 (2026-10-23)
+
+### `Content-Encoding: deflate` 的响应体一直是乱码
+
+`zlibDecode` 只用了 `ZLibDecoder(raw: true)`，也就是只认 RFC1951 的**裸 deflate**。而绝大多数服务器发的是
+RFC1950 的 **zlib 包装**（0x78 开头）—— 解不出来就原样返回压缩字节，抓包列表里这类响应体永远是乱码。
+现在两种格式都试（先 zlib 包装，失败再裸 deflate），与 SAZ 导入里的处理保持一致。
+
+### 多重编码 / 非标准写法的 `Content-Encoding` 完全不生效
+
+`bodyAsString` 用 `== "gzip"`、`== "br"`、`== "deflate"` 严格相等判断，`StreamDecoder` 同样。于是：
+
+- 多重编码（`Content-Encoding: gzip, br`，CDN 常见）
+- 非标准别名（`x-gzip`）
+- 带参数写法
+
+全部落到「未知编码」分支 —— 不解码，直接把压缩字节当文本展示。改为按子串判断（gzip → br → deflate 优先级），
+`HttpHeaders.isGzip` 同步放宽。
+
+### 另外 5 个管理器的单例并发初始化
+
+延续上一版（改写/映射/Hosts）的修复：`RequestBreakpointManager`、`RequestCryptoManager`、
+`ReportServerManager`、`EnvironmentManager`、`CapturePlanManager` 也是「判空 → await 读盘 → 赋值」，
+并发首访会各自初始化一遍（后者覆盖 `_instance`，前者手里那份已被清空）。统一改为缓存 in-flight Future。
+
 ## v1.67.79 (2026-10-23)
 
 ### 规则匹配：通配符里第二个 `?` 没被转义

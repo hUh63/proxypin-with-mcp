@@ -182,11 +182,14 @@ abstract class HttpMessage {
       List<int> rawBody = body!;
 
       if (!bodyDecoded) {
-        if (headers.isGzip) {
+        // 用 contains 而不是严格相等：`Content-Encoding: gzip, br` 这类多重编码、
+        // 以及非标准的 `x-gzip` 以前全部匹配不上 → 直接把压缩字节当文本展示。
+        final ce = headers.contentEncoding ?? '';
+        if (ce.contains('gzip')) {
           rawBody = gzipDecode(body!);
-        } else if (headers.contentEncoding == 'br') {
+        } else if (ce.contains('br')) {
           rawBody = brDecode(body!);
-        } else if (headers.contentEncoding == 'deflate') {
+        } else if (ce.contains('deflate')) {
           rawBody = zlibDecode(body!);
         }
       }

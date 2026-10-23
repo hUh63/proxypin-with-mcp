@@ -80,12 +80,35 @@ class RequestBreakpointManager {
 
   RequestBreakpointManager._();
 
+  /// 初始化中的 Future：并发首次访问共用同一次加载
+  ///
+  /// 「判空 → await 读盘 → 赋值」在并发首访时会各自初始化一遍：后者覆盖
+  /// _instance，前者手里那份已被 clear() 过 → 规则时有时无、刚加的规则不生效。
+  static Future<RequestBreakpointManager>? _loading;
+
   static Future<RequestBreakpointManager> get instance async {
-    if (_instance == null) {
-      _instance = RequestBreakpointManager._();
-      await _instance!.load();
+    final cached = _instance;
+    if (cached != null) {
+      return cached;
     }
-    return _instance!;
+    final loading = _loading;
+    if (loading != null) {
+      return loading;
+    }
+    final future = _create();
+    _loading = future;
+    try {
+      return await future;
+    } finally {
+      _loading = null;
+    }
+  }
+
+  static Future<RequestBreakpointManager> _create() async {
+    final manager = RequestBreakpointManager._();
+    await manager.load();
+    _instance = manager;
+    return manager;
   }
 
   bool enabled = true;

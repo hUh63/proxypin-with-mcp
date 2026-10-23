@@ -90,13 +90,14 @@ class StreamDecoder {
     if (input.isEmpty) return const BoundedDecodeResult([]);
     if (enc.isEmpty || enc == 'identity') return _prefix(input, limit);
 
-    if (enc == 'gzip' || enc == 'x-gzip') {
+    // 严格相等会漏判多重编码（`gzip, br`）与带参数的写法，直接不解码 → 预览是乱码
+    if (enc.contains('gzip')) {
       final result = inflateBounded(input, gzip: true, maxBytes: limit);
       // inflate 失败时按旧行为退回原始字节前缀
       return result.failed ? _prefix(input, limit, error: result.error) : result;
     }
 
-    if (enc == 'deflate') {
+    if (enc.contains('deflate')) {
       // 规范上 deflate = zlib 包装，但不少服务端实际发的是 raw deflate（旧实现也按 raw 处理）。
       // 先按 raw 解，解不出来再试 zlib 包装。
       final rawResult = inflateBounded(input, gzip: false, raw: true, maxBytes: limit);
@@ -107,7 +108,7 @@ class StreamDecoder {
       return _prefix(input, limit, error: rawResult.error ?? zlibResult.error);
     }
 
-    if (enc == 'br' || enc == 'brotli') {
+    if (enc.contains('br') || enc.contains('brotli')) {
       if (input.length > limit) {
         // 无法增量解压：宁可不猜，也不冒一次性巨量分配的风险
         return _prefix(input, limit, skipped: true);
@@ -127,7 +128,7 @@ class StreamDecoder {
   static Future<BoundedDecodeResult> decodeAsync(List<int> input, String encoding, {int? maxBytes}) async {
     final limit = maxBytes ?? limitBytes;
     final enc = encoding.trim().toLowerCase();
-    if (enc != 'zstd') return decode(input, encoding, maxBytes: limit);
+    if (!enc.contains('zstd')) return decode(input, encoding, maxBytes: limit);
 
     if (input.isEmpty) return const BoundedDecodeResult([]);
     if (input.length > limit) return _prefix(input, limit, skipped: true);

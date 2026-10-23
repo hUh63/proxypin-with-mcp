@@ -44,12 +44,20 @@ Future<List<int>?> zstdDecode(List<int> byteBuffer) async {
 
 
 ///zlib
+///
+/// `Content-Encoding: deflate` 实际有两种写法：RFC1950 的 zlib 包装（0x78 开头，
+/// 绝大多数服务器）与 RFC1951 的裸 deflate（部分 IIS/老服务）。
+/// 旧实现只试 `ZLibDecoder(raw: true)`（裸 deflate）→ 标准 zlib 数据解不出来，
+/// 抓包列表里这类响应体一直是乱码/原始压缩字节。这里两种都试。
 List<int> zlibDecode(List<int> byteBuffer) {
   try {
-    final rawDeflateDecoder = ZLibDecoder(raw: true);
-    return rawDeflateDecoder.convert(byteBuffer);
-  } catch (e) {
-    logger.e("zlibDecode error: $e");
-    return byteBuffer;
+    return ZLibCodec().decode(byteBuffer);
+  } catch (_) {
+    try {
+      return ZLibDecoder(raw: true).convert(byteBuffer);
+    } catch (e) {
+      logger.e("zlibDecode error: $e");
+      return byteBuffer;
+    }
   }
 }

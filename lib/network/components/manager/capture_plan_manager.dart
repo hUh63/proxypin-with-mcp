@@ -357,13 +357,35 @@ class CapturePlanManager extends ChangeNotifier {
 
   final List<CapturePlan> _plans = [];
 
+  /// 初始化中的 Future：并发首次访问共用同一次加载
+  ///
+  /// 「判空 → await 读盘 → 赋值」在并发首访时会各自初始化一遍：后者覆盖
+  /// _instance，前者手里那份已被 clear() 过 → 规则时有时无、刚加的规则不生效。
+  static Future<CapturePlanManager>? _loading;
+
   static Future<CapturePlanManager> instanceOf(AppLocalizations loc) async {
-    if (_instance == null) {
-      final manager = CapturePlanManager._internal();
-      await manager._load(loc);
-      _instance = manager;
+    final cached = _instance;
+    if (cached != null) {
+      return cached;
     }
-    return _instance!;
+    final loading = _loading;
+    if (loading != null) {
+      return loading;
+    }
+    final future = _create(loc);
+    _loading = future;
+    try {
+      return await future;
+    } finally {
+      _loading = null;
+    }
+  }
+
+  static Future<CapturePlanManager> _create(AppLocalizations loc) async {
+    final manager = CapturePlanManager._internal();
+    await manager._load(loc);
+    _instance = manager;
+    return manager;
   }
 
   CapturePlanManager._internal();
