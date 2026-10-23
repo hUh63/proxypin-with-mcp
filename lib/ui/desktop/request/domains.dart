@@ -211,6 +211,13 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
     domainRequests.addRequest(request.requestId, request, sortDesc);
     //搜索视图
     if (searchModel?.isNotEmpty == true && searchModel?.filter(request, null) == true) {
+      // 该域名此前没有命中项时 searchView 里没有条目，以前直接 `?.` 跳过 ——
+      // 搜索态下新到达的请求（尤其按状态码/大小之类只有响应到达才成立的
+      // 条件）就永远不显示。这里补建一个空 body 的条目。
+      if (!searchView.containsKey(host)) {
+        searchView[host] = domainRequests.copy(body: const <RequestWidget>[]);
+        setState(() {});
+      }
       searchView[host]?.addRequest(request.requestId, request, sortDesc);
     }
 
@@ -284,11 +291,18 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
 
     //搜索视图
     if (searchModel?.isNotEmpty == true && searchModel?.filter(pathRow.request, response) == true) {
+      // 同 add：域名此前没命中过时条目不存在，响应到达后才成立的条件
+      // （状态码/大小/耗时）必须能把请求补进搜索结果里。
       var requests = searchView[domain];
-      if (requests?.getRequest(response) == null) {
-        requests?.addRequest(response.requestId, pathRow.request, sortDesc);
+      if (requests == null) {
+        requests = domainRequests!.copy(body: const <RequestWidget>[]);
+        searchView[domain] = requests;
+        setState(() {});
       }
-      requests?.getRequest(response)?.setResponse(response);
+      if (requests.getRequest(response) == null) {
+        requests.addRequest(response.requestId, pathRow.request, sortDesc);
+      }
+      requests.getRequest(response)?.setResponse(response);
     }
   }
 
