@@ -561,6 +561,27 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     if (_pendingReads.isNotEmpty) {
       logger.w("[$channel] channelInactive pending reads wait timeout, close anyway");
     }
+
+    // 上游关闭：冲刷被缓冲的 close 定界响应（无 Content-Length / 无 chunked），
+    // 使其照常进入响应拦截器链，而不是被 raw relay 绕过（issue #956）。
+    if (identical(channel, channelContext.serverChannel) && decoder is CloseDelimitedBodyFinalizer) {
+      var finalized = (decoder as CloseDelimitedBodyFinalizer).finishCloseDelimitedBody();
+      var data = finalized?.data;
+      if (data is HttpResponse) {
+        data.packageSize ??= buffer.length;
+        data.remoteHost = channel.remoteSocketAddress.host;
+        data.remotePort = channel.remoteSocketAddress.port;
+        data.request ??= channelContext.currentRequest;
+        data.requestId = data.request?.requestId ?? data.requestId;
+        buffer.clear();
+        try {
+          await handler.channelRead(channelContext, channel, data);
+        } catch (error, trace) {
+          onError(channelContext, channel, error, trace: trace);
+        }
+      }
+    }
+
     channel.isOpen = false;
     handler.channelInactive(channelContext, channel);
   }

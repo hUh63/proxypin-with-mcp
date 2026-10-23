@@ -93,9 +93,12 @@ class SseDecoder {
           _retry = int.tryParse(value);
           break;
         default:
-          // 不少 AI 聊天接口的事件流不用 `data:` 前缀（如 `15:{...}`、`0:"token"`），
-          // 整行就是正文。原实现直接丢弃 → SSE 面板一片空白（上游 v1.4.0 修复）。
-          frames.add(_textFrame(line));
+          // 不少 AI 聊天接口的事件流不用 `data:` 前缀，而是 `15:{...}` / `0:"token"`
+          // 这类「数字下标 + 冒号 + 正文」。原实现整行丢弃 → SSE 面板一片空白。
+          // 只认纯数字字段名：标准 SSE 里的未知字段（`unknown: x`）仍按规范忽略。
+          if (RegExp(r'^\d+$').hasMatch(field)) {
+            frames.add(_textFrame(value.isEmpty ? line : value));
+          }
           break;
       }
     }
