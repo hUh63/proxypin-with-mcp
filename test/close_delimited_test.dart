@@ -151,7 +151,10 @@ void main() {
     // 本 fork 有意保留「原样转发」：客户端拿到的是服务端原始字节，
     // 拦截器不会看到这条响应（上游 v1.4.0 通过缓冲修复，代价是流式被卡住）。
     expect(text.contains(originBody), isTrue, reason: 'client must receive the raw body');
-    expect(interceptedUrls.isEmpty, isTrue, reason: 'close-delimited is raw relayed in this fork');
+    // 本 fork：拦截器链仍会被调用（脚本能感知这条响应），但字节已原样转发，
+    // 改写无法写回客户端 —— 这是「保留流式体验」的已知取舍。
+    expect(interceptedUrls.length, 1, reason: 'onResponse interceptors still run');
+    expect(text.contains('ProxyPin_Script_Fired'), isFalse, reason: 'rewritten body cannot reach client');
 
     socket.destroy();
     await proxy.stop();
