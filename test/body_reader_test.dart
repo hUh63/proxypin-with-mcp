@@ -108,26 +108,22 @@ void main() {
   });
 
   group('BodyReader close-delimited detection (issue #844)', () {
-    test('no Content-Length and no chunked -> buffered, finalized on finish()', () {
+    test('no Content-Length and no chunked -> raw relay (not parsed)', () {
+      // 本 fork 有意与上游 v1.4.0 不同：close-delimited 响应不缓冲、不解析，
+      // 直接原样转发（supportedParse=false）——流式响应不必等到连接关闭，
+      // 也不会把整个 body 攒在内存里。代价是列表里看不到 body。
       final resp = HttpResponse(HttpStatus(200, 'OK'))..headers.contentType = 'text/plain';
       final r = BodyReader(resp);
       final result = r.readBody(_b('hello'));
-      expect(result.supportedParse, isTrue);
-      expect(result.isDone, isFalse);
-      expect(result.body, isNull);
-      final done = r.finish();
-      expect(done.isDone, isTrue);
-      expect(utf8.decode(done.body!), 'hello');
+      expect(result.supportedParse, isFalse);
+      expect(utf8.decode(result.body!), 'hello');
     });
 
-    test('close-delimited accumulates across reads and finalizes on finish', () {
+    test('close-delimited stays raw relayed across reads', () {
       final resp = HttpResponse(HttpStatus(200, 'OK'))..headers.contentType = 'text/plain';
       final r = BodyReader(resp);
-      expect(r.readBody(_b('hel')).isDone, isFalse);
-      expect(r.readBody(_b('lo')).isDone, isFalse);
-      final done = r.finish();
-      expect(done.isDone, isTrue);
-      expect(utf8.decode(done.body!), 'hello');
+      expect(r.readBody(_b('hel')).supportedParse, isFalse);
+      expect(r.readBody(_b('lo')).supportedParse, isFalse);
     });
 
     test('explicit Content-Length: 0 is NOT close-delimited', () {
@@ -164,15 +160,14 @@ void main() {
       expect(utf8.decode(result.body!), 'hello');
     });
 
-    test('Transfer-Encoding: gzip (without chunked) is close-delimited', () {
+    test('Transfer-Encoding: gzip (without chunked) is not treated as chunked', () {
       final resp = HttpResponse(HttpStatus(200, 'OK'));
       resp.headers.set(HttpHeaders.TRANSFER_ENCODING, 'gzip');
       final r = BodyReader(resp);
       final result = r.readBody(_b('hello'));
-      expect(result.supportedParse, isTrue);
-      expect(result.isDone, isFalse);
-      final done = r.finish();
-      expect(utf8.decode(done.body!), 'hello');
+      // gzip 不是最后一个 coding=chunked，不能按 chunked 帧解析，走 raw relay
+      expect(result.supportedParse, isFalse);
+      expect(utf8.decode(result.body!), 'hello');
     });
 
     test('multiple Transfer-Encoding header lines are combined before judging chunked', () {

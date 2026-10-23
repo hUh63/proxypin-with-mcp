@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
-import 'package:proxypin/mcp/mcp_service.dart';
+import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/components/host_filter.dart';
 import 'package:proxypin/network/components/manager/hosts_manager.dart';
@@ -176,7 +176,7 @@ final settingQuickTools = <QuickTool>[
       id: 'mcpService',
       icon: 'mcp',
       name: (l) => l.mcpService,
-      isActive: (_) async => McpService.instance.isRunning,
+      isActive: (_) async => McpServer().isRunning,
       launch: (context, proxyServer) async {
         await McpServiceDialog.show(context, proxyServer);
       }),
