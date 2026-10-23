@@ -76,6 +76,10 @@ class ReplayTask extends ChangeNotifier {
   final DateTime createdAt;
 
   int executedCount = 0;
+
+  /// 最近一次发包失败的原因（action 抛异常时记录，不影响后续 tick）
+  String? lastError;
+
   ReplayTaskStatus status = ReplayTaskStatus.waiting;
   DateTime? nextRunAt;
 
@@ -147,7 +151,15 @@ class ReplayTask extends ChangeNotifier {
     if (!isActive) return;
 
     status = ReplayTaskStatus.running;
-    action();
+    // action 抛异常绝不能逃出 Timer 回调（会变成未捕获异步错误），
+    // 也不能让任务卡在 running 状态不再调度——记录原因后照常进入下一跳。
+    try {
+      action();
+      lastError = null;
+    } catch (e) {
+      lastError = '$e';
+      debugPrint('replay task $id action failed: $e');
+    }
     executedCount++;
 
     if (executedCount >= totalCount) {
@@ -171,7 +183,8 @@ class ReplayTask extends ChangeNotifier {
     if (span <= 0) {
       return minInterval;
     }
-    return minInterval + Random().nextInt(span);
+    // +1 让 maxInterval 也能取到（nextInt 上界是开区间，原写法永远取不到 max）
+    return minInterval + Random().nextInt(span + 1);
   }
 
   /// 取消任务,已调度但未发送的请求不再发出

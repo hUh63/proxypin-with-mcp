@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.67.85 (2026-10-24) — 合并后的第一批缺陷修复
+
+- **客户端证书（mTLS）**：`ClientCertItem.match` 的正则缓存判据写成了
+  `host != _hostReg?.pattern`（UrlPattern 转换后会加锚点，两者永远不等）→
+  每个请求都重新编译正则；改为按 host 源字符串缓存，并对非法模式兜底为
+  「永不匹配」（不能把异常抛进 TLS 握手路径）。
+- **客户端证书**：`_load` 里 `entry as Map` 裸强转，一条坏记录会带走整份列表 →
+  逐条容错；`SecurityContext.use*Bytes` 改用 `utf8.encode`（原来传
+  `String.codeUnits`，是 UTF-16 码元，PEM 带 BOM/非 ASCII 头会解析失败）。
+- **桌面请求列表（域名分组）**：`getDomainRequests` 强解包 `remoteDomain()!`，
+  而 `clean()` 会遍历全量请求重建分组 → 任一条 hostAndPort 为空的记录
+  （异常链路 / MQTT / h2 早到响应）都会抛异常，导致分组表只重建一半；
+  改为 `?? 'unknown'` 归组。
+- **重放任务**：`_tick` 里 `action()` 没有异常保护——一次发包失败就变成
+  未捕获异步错误，并且任务永远停在 running 不再调度；现在记录 `lastError`
+  后照常进入下一跳。随机间隔改为 `nextInt(span + 1)`（原写法取不到上界）。
+
 ## v1.67.84 (2026-10-23) — 合并上游 v1.4.0-beta
 
 ### 合并范围

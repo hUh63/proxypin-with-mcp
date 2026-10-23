@@ -229,7 +229,10 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
   }
 
   DomainRequests getDomainRequests(HttpRequest request) {
-    var host = request.remoteDomain()!;
+    // 不能强解包：hostAndPort 为空的请求（异常链路、MQTT/WS 容器、h2 早到的
+    // 响应）真实存在，clean() 会遍历全量请求调用这里，一条这样的记录就抛异常，
+    // 让整个分组表重建中断（只重建了一半，列表看起来"缺了一截"）。
+    var host = request.remoteDomain() ?? 'unknown';
     DomainRequests? domainRequests = containerMap[host];
     if (domainRequests == null) {
       domainRequests = DomainRequests(

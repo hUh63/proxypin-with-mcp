@@ -109,8 +109,17 @@ class ClientCertManager {
       final config = jsonDecode(content);
       enabled = config['enabled'] != false;
       list.clear();
-      for (var entry in (config['list'] as List? ?? [])) {
-        list.add(ClientCertItem.fromJson(entry as Map<String, dynamic>));
+      final raw = config['list'];
+      if (raw is List) {
+        for (var entry in raw) {
+          // 逐条容错：手工改过配置文件时不能让一条坏记录带走整份列表。
+          if (entry is! Map) continue;
+          try {
+            list.add(ClientCertItem.fromJson(Map<String, dynamic>.from(entry)));
+          } catch (e) {
+            logger.w('skip invalid client cert entry', error: e);
+          }
+        }
       }
     } catch (e, st) {
       logger.e('load client cert config error', error: e, stackTrace: st);
@@ -192,6 +201,11 @@ class ClientCertItem {
   int? notAfter;
 
   RegExp? _hostReg;
+
+  /// 已编译正则对应的 host 模式。以前用 `host != _hostReg?.pattern` 判断，
+  /// 但 UrlPattern 转换后会加锚点，字符串永远不等 → 每次请求都重建正则。
+  String? _hostRegSource;
+
   SecurityContext? _context;
 
   ClientCertItem({String? id, required this.host, this.name, this.enabled = true, this.certName, this.notAfter})
@@ -212,9 +226,17 @@ class ClientCertItem {
   }
 
   bool match(String domain) {
-    if (host != _hostReg?.pattern) _hostReg = null;
-    _hostReg ??= UrlPattern.toHostRegExp(host);
-    return _hostReg!.hasMatch(domain);
+    if (_hostRegSource != host) {
+      _hostRegSource = host;
+      try {
+        _hostReg = UrlPattern.toHostRegExp(host);
+      } catch (e) {
+        // 非法/空模式：永不匹配，不能让它抛到 TLS 握手路径上
+        _hostReg = null;
+        logger.w('client cert host pattern invalid: $host', error: e);
+      }
+    }
+    return _hostReg?.hasMatch(domain) ?? false;
   }
 
   /// 证书是否已过期
@@ -244,9 +266,11 @@ class ClientCertItem {
       final key = await keyFile();
       if (!await cert.exists() || !await key.exists()) return null;
 
+      // usePrivateKeyBytes 需要的是 UTF-8 字节；String.codeUnits 是 UTF-16
+      // 码元，对纯 ASCII 的 PEM 侥幸等价，一旦带 BOM/非 ASCII 头就会解析失败。
       final context = SecurityContext(withTrustedRoots: false)
-        ..usePrivateKeyBytes((await key.readAsString()).codeUnits)
-        ..useCertificateChainBytes((await cert.readAsString()).codeUnits);
+        ..usePrivateKeyBytes(utf8.encode(await key.readAsString()))
+        ..useCertificateChainBytes(utf8.encode(await cert.readAsString()));
 
       _context = context;
       return context;
