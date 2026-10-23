@@ -78,6 +78,13 @@ class AppConfiguration {
   //是否显示更新内容公告
   bool upgradeNoticeV32 = true;
 
+  /// 1.4.0 新功能公告（上游 v1.4.0）
+  bool upgradeNoticeV40 = true;
+
+  /// 桌面端工具栏已固定的快捷功能 id 列表（上游 v1.4.0 Quick Tools）
+  static const List<String> defaultToolbarPins = ['requestRewrite', 'requestMap', 'script'];
+  final ValueNotifier<List<String>> toolbarPins = ValueNotifier(defaultToolbarPins);
+
   /// 是否启用画中画
   ValueNotifier<bool> pipEnabled = ValueNotifier(Platform.isAndroid);
 
@@ -280,6 +287,11 @@ class AppConfiguration {
       _theme.color = config['themeColor'] ?? "Blue";
 
       upgradeNoticeV32 = config['upgradeNoticeV32'] ?? true;
+      upgradeNoticeV40 = config['upgradeNoticeV40'] ?? true;
+      var pins = config['toolbarPins'];
+      if (pins is List) {
+        toolbarPins.value = pins.map((e) => e.toString()).toList();
+      }
       _language = config['language'] == null
           ? null
           : Locale.fromSubtags(
@@ -368,6 +380,8 @@ class AppConfiguration {
       'themeColor': _theme.color,
       'useMaterial3': _theme.useMaterial3,
       'upgradeNoticeV32': upgradeNoticeV32,
+      'upgradeNoticeV40': upgradeNoticeV40,
+      if (Platforms.isDesktop()) 'toolbarPins': toolbarPins.value,
       "language": _language?.languageCode,
       "languageScript": _language?.scriptCode,
       "headerViewMode": headerViewMode,

@@ -426,7 +426,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Container(
-        decoration: BoxDecoration(border: Border.all(color: Colors.black12)),
+        decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor)),
         child: CodeForge(
           key: ValueKey('json-editor-${SmartCompletion.enabled.value}-$_wrap'),
           controller: _controller,

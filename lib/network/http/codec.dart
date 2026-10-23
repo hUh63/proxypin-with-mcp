@@ -124,7 +124,11 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
     var protocol = resolveDecodeProtocol(
         hasDecodingChannel: decodingChannel != null,
         decodingProtocol: decodingChannel?.selectedProtocol,
-        clientProtocol: channelContext.clientChannel?.selectedProtocol);
+        // 兜底按通道角色取：响应解码看上游、请求解码看客户端。一律用客户端
+        // 协议会让上游字节被当 h2 帧解析（上游 v1.4.0 的同名修复）。
+        clientProtocol: this is HttpResponseCodec
+            ? channelContext.serverChannel?.selectedProtocol
+            : channelContext.clientChannel?.selectedProtocol);
 
     if (this is HttpRequestCodec &&
         _state == State.readInitial &&

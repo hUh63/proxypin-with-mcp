@@ -37,6 +37,7 @@ import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
 import 'package:proxypin/network/mcp/script_workflow_engine.dart';
 import 'package:proxypin/network/reverse/reverse_proxy.dart';
 import 'package:proxypin/network/reverse/reverse_proxy_server.dart';
+import 'package:proxypin/network/components/manager/client_cert_manager.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/components/js/script_engine.dart';
 import 'package:proxypin/network/util/crts.dart';
@@ -148,6 +149,13 @@ class ProxyServer {
 
       //初始化证书
       CertificateManager.initCAConfig();
+
+      // 预热客户端证书（mTLS）管理器，避免首个请求命中时才做磁盘 IO（上游 v1.4.0）
+      try {
+        await ClientCertManager.preload();
+      } catch (e, s) {
+        logger.e('预加载客户端证书失败', error: e, stackTrace: s);
+      }
       // 加载已持久化的 MCP 规则 + 触发代理启动事件
       try {
         await McpRuleEngine().loadRules();

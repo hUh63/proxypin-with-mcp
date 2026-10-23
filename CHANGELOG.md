@@ -1,5 +1,52 @@
 # Changelog
 
+## v1.67.84 (2026-10-23) — 合并上游 v1.4.0-beta
+
+### 合并范围
+
+**协议与网络层**
+- **MQTT 抓包**（上游新特性）：`lib/network/mqtt/` 协议嗅探 + 报文解析 + relay handler，
+  配合 `ProtocolSniffer` 自动识别 1883/8883 及明文 MQTT。
+- **客户端证书（mTLS）按域名匹配**：新增 `ClientCertManager`（p12/pfx，URL 模式匹配），
+  上游 TLS 握手时优先取匹配证书；未匹配时回退本 fork 原有的全局 PEM 配置（`Mtls`）。
+  TCP 直连路径（`Network.connect`）与 MITM 路径（`Channel.secureSocket`）都已接入，
+  代理启动时预热。
+- **h2 → h1 协议转换**：上游 v1.4.0 的完整实现已合入代码（`ChannelContext` 的
+  `beginTranslatedRequest` / `H2ToH1FrameStripper` 等），但**默认关闭**
+  （`ChannelContext.enableHttp2Translation = false`）——它与本 fork 的 #969 修复
+  （`decodingChannel`）、读事件串行队列、写背压耦合很深，尚未真机验证。
+- **ALPN 兜底**：客户端协商 h2 时向上游提议 `["h2", "http/1.1"]`，h1-only 服务器
+  能显式选择而不是握手失败。
+- **1xx 中间响应不再带 END_STREAM**（RFC 9110 §15.2）：否则 100 Continue / 103
+  Early Hints 之后的最终响应会被客户端判为协议错误。
+- **SSE 修复**：非标准事件流（`15:{...}` / `0:"token"` 这类 AI 聊天格式）整行当正文，
+  以前整条丢弃导致面板空白；流结束时 `flush()` 补齐没有空行结尾的最后一条事件
+  （h2 侧 END_STREAM 也会 flush）；`Content-Encoding` 为 gzip/br/deflate/zstd 的
+  压缩事件流改为先解压再解析。
+- **`Transfer-Encoding` 判定收紧**：只有最后一个 coding 是 `chunked` 才算 chunked
+  （`gzip, chunked` 合法，`chunked, gzip` 非法），多条同名头按 RFC 9110 §5.2 合并。
+- **响应解码协议按通道角色取**：拿不到解码通道时，响应看上游连接、请求看客户端连接，
+  不再一律用客户端 ALPN。
+
+**UI / 数据层**
+- 新增设计稿配色 token（`DarkPalette` / `chromeBorderColor` / `okColor` / `warnBadge*`），
+  主题按设计稿注入结构色（浅色 `#F5F6F8` 底、`#E4E6EB` 描边；暗黑 `#1B1D22` / `#36393F`）。
+- 新增页面与组件（本版先随包落地，入口在下一版接入）：回放任务（桌面/移动）、
+  规则总览、快捷工具栏（`toolbarPins` 持久化）、状态栏、客户端证书管理页、
+  代理忽略域名页、MQTT 消息视图、`SvgIcon` 图标组件（`assets/icons/*.svg`）。
+- **Python 代码生成**重写：支持 multipart 文件 / json / data 三种 body 形态，
+  自动去掉会被 requests 处理的 `Content-Type`，非标准方法走通用 `request()`。
+- `messagesText`：SSE / WebSocket 帧按行拼出可读文本。
+
+### 依赖
+- 新增 `flutter_svg ^2.2.1`（SvgIcon）、`mime ^2.1.0`（multipart）。
+- 升级 `shared_preferences ^2.5.6`、`cupertino_icons ^2.0.0`。
+
+### 本 fork 保留
+- 白名单空规则、h2 本地响应、远程脚本缓存、deflate 多重编码、8 个管理器的
+  in-flight 初始化、读事件串行队列、写背压、PCAPNG/Excel/CSV 导出加固、
+  MCP 69 个工具等全部既有修复均保留，冲突按「保留本 fork 加固 + 吸收上游语义」处理。
+
 ## v1.67.83 (2026-10-23)
 
 ### 桌面端：搜索状态下新抓到的请求不显示

@@ -2030,7 +2030,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Container(
-        decoration: BoxDecoration(border: Border.all(color: Colors.black12)),
+        decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor)),
         child: CodeForge(
           // CodeForge 的 language / lineWrap 是 late final，切换得新 key 重建；
           // controller / findController / undoController 在文档对象持有，重建不丢数据。

@@ -277,6 +277,12 @@ abstract class HttpMessage {
       messages.removeRange(0, messages.length - keep);
     }
   }
+
+  /// SSE / WebSocket 的帧不在 [body] 里，这里按行拼出可读文本（上游 v1.4.0）。
+  String? get messagesText {
+    if (messages.isEmpty || (!isWebSocket && contentType != ContentType.sse)) return null;
+    return messages.map((e) => e.payloadDataAsString).join('\n');
+  }
 }
 
 ///HTTP请求。

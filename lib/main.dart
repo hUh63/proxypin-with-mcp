@@ -35,6 +35,7 @@ import 'package:proxypin/network/rules/websocket_rule_manager.dart';
 import 'package:proxypin/network/util/root_proxy.dart';
 import 'package:proxypin/ui/component/chinese_font.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
+import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/component/splash_banner.dart';
 import 'package:proxypin/ui/configuration.dart';
@@ -328,6 +329,28 @@ class FluentApp extends StatelessWidget {
       surfaceContainerHigh: surfaceContainer,
     );
 
+    // 结构色按设计稿 token 注入（上游 v1.4.0）：
+    // 浅色 --bg #F5F6F8 / --panel #FFF / --border #E4E6EB，暗黑见 DarkPalette。
+    if (!isDark) {
+      colorScheme = colorScheme.copyWith(
+        surface: Colors.white,
+        onSurface: const Color(0xFF1F2329),
+        outlineVariant: const Color(0xFFE4E6EB),
+        surfaceContainerLow: const Color(0xFFF5F6F8),
+      );
+    } else {
+      colorScheme = colorScheme.copyWith(
+        primary: appConfiguration.themeColor == const Color(0xFF4A6CF7) ? DarkPalette.primary : null,
+        surface: DarkPalette.panel,
+        onSurface: DarkPalette.text1,
+        onSurfaceVariant: DarkPalette.text2,
+        outlineVariant: DarkPalette.border,
+        surfaceContainer: DarkPalette.panel,
+        surfaceContainerHigh: DarkPalette.panel,
+        surfaceContainerLow: DarkPalette.bg,
+      );
+    }
+
     // 预测性返回：开启时使用 Material 3 预测返回页面转场（Android 14+ 生效，其他平台回退默认转场）
     final pageTransitions = appConfiguration.predictiveBackEnabled && !Platform.isWindows
         ? const PageTransitionsTheme(builders: {
@@ -342,6 +365,16 @@ class FluentApp extends StatelessWidget {
       // 仅开启预测性返回时覆盖 Android 页面转场；关闭时不设置，保留主题默认转场
       pageTransitionsTheme: pageTransitions,
     );
+
+    if (!isDark) {
+      themeData = themeData.copyWith(
+        // 手机端全纯白；桌面端保留设计稿 #F5F6F8 窗口灰底
+        scaffoldBackgroundColor: Platforms.isMobile() ? Colors.white : const Color(0xFFF5F6F8),
+        dividerColor: const Color(0xFFE4E6EB),
+      );
+    } else {
+      themeData = themeData.copyWith(scaffoldBackgroundColor: DarkPalette.bg, dividerColor: DarkPalette.border);
+    }
 
     if (!appConfiguration.useMaterial3) {
       themeData = themeData.copyWith(

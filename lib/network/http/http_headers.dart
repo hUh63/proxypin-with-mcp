@@ -208,9 +208,20 @@ class HttpHeaders {
     // 旧实现要求整串严格等于 "chunked"：`chunked `（尾空格）、`gzip, chunked`、
     // 以及重复头（get() 只取第一条）都会漏判 → body 不走 chunked 分支，整段
     // chunk 编码被当「下一条 HTTP 消息」解析，轻则关连接，重则请求走私。
+    //
+    // RFC 9112 §6.3：只有**最后一个** coding 是 chunked 时才按 chunked 定界
+    // （`gzip, chunked` 是合法的；`chunked, gzip` 非法，不能当 chunked 解）。
+    // 上游 v1.4.0 的同名修正：多条同名头按 RFC 9110 §5.2 等价于逗号拼接。
     final values = getList(HttpHeaders.TRANSFER_ENCODING);
     if (values == null || values.isEmpty) return false;
-    return values.any((value) => value.split(',').any((e) => e.trim().toLowerCase() == 'chunked'));
+    final tokens = <String>[];
+    for (final value in values) {
+      for (final token in value.split(',')) {
+        final t = token.trim().toLowerCase();
+        if (t.isNotEmpty) tokens.add(t);
+      }
+    }
+    return tokens.isNotEmpty && tokens.last == 'chunked';
   }
 
   List<String> get cookies => getList(Cookie) ?? [];

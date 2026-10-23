@@ -22,6 +22,7 @@ import 'dart:typed_data';
 
 import 'package:proxypin/network/channel/channel_context.dart';
 import 'package:proxypin/network/channel/host_port.dart';
+import 'package:proxypin/network/components/manager/client_cert_manager.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/mtls.dart';
 import 'package:proxypin/network/util/socket_address.dart';
@@ -141,7 +142,9 @@ class Channel {
       socket,
       host: host,
       supportedProtocols: supportedProtocols,
-      context: Mtls.securityContext,
+      // 按域名匹配的客户端证书（上游 v1.4.0 ClientCertManager）优先，
+      // 未匹配时回退到本 fork 的全局 PEM 客户端证书配置（Mtls）。
+      context: await ClientCertManager.securityContextForHost(host) ?? Mtls.securityContext,
       onBadCertificate: (certificate) => true,
     );
 
@@ -161,7 +164,9 @@ class Channel {
       socket,
       host: host,
       supportedProtocols: supportedProtocols,
-      context: Mtls.securityContext,
+      // 按域名匹配的客户端证书（上游 v1.4.0 ClientCertManager）优先，
+      // 未匹配时回退到本 fork 的全局 PEM 客户端证书配置（Mtls）。
+      context: await ClientCertManager.securityContextForHost(host) ?? Mtls.securityContext,
       onBadCertificate: (certificate) => true,
     );
 

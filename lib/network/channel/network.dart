@@ -270,6 +270,10 @@ class Server extends Network {
 
       if (remoteChannel != null && !remoteChannel.isSsl) {
         var supportProtocols = configuration.enabledHttp2 ? TLS.supportProtocols(data) : ['http/1.1'];
+        // 与转发路径一致：含 h2 时带上 http/1.1 兜底，让 h1-only 上游显式选择
+        if (supportProtocols?.contains('h2') == true && supportProtocols?.contains('http/1.1') == false) {
+          supportProtocols = [...supportProtocols!, 'http/1.1'];
+        }
         if (supportProtocols?.isEmpty == true) supportProtocols = null;
         final tlsStart = DateTime.now();
         await remoteChannel.startSecureSocket(channelContext, host: serviceName, supportedProtocols: supportProtocols);

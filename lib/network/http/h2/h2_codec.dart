@@ -456,10 +456,16 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
 
     var emptyBody = data.body == null || data.body!.isEmpty;
 
+    // 1xx 信息响应（100 Continue / 103 Early Hints）只是中间响应，之后还有最终响应，
+    // HEADERS 不能带 END_STREAM（RFC 9110 §15.2）——否则客户端认为流已终结，
+    // 同一 stream 上的最终响应帧就是协议错误（上游 v1.4.0 修复）。
+    var interimResponse = data is HttpResponse && data.status.code >= 100 && data.status.code < 200;
+
     //headers
     var headers = encodeHeaders(data);
 
-    writeHeadersFrame(bytesBuilder, channelContext, data.streamId!, headers, endStream: emptyBody);
+    writeHeadersFrame(bytesBuilder, channelContext, data.streamId!, headers,
+        endStream: emptyBody && !interimResponse);
 
     //body
     if (!emptyBody) {
@@ -592,6 +598,13 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
     }
 
     if (frameHeader.hasEndStreamFlag) {
+      // 流结束时补齐最后一条没有空行结尾的事件，否则最后一条消息永久丢失。
+      final tail = decoder.flush();
+      for (final WebSocketFrame frame in tail) {
+        frame.isFromClient = false; // server -> client
+        message.addMessage(frame);
+        channelContext.listener?.onMessage(channelContext.clientChannel!, message, frame);
+      }
       sseDecoders.remove(frameHeader.streamIdentifier);
       channelContext.removeStream(frameHeader.streamIdentifier);
     }

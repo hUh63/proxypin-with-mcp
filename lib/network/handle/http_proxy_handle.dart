@@ -352,7 +352,10 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         if (clientChannel.isSsl) {
           await HttpClients.connectRequest(channelContext, hostAndPort, proxyChannel, proxyInfo: proxyInfo);
           await proxyChannel.secureSocket(channelContext,
-              host: hostAndPort.host, supportedProtocols: httpRequest.protocolVersion == "HTTP/2" ? ["h2"] : null);
+              // h2 客户端也提供 http/1.1 兜底：h1-only 上游能显式选择，
+              // 避免严苛 ALPN 配置的服务器直接握手失败。
+              host: hostAndPort.host,
+              supportedProtocols: httpRequest.protocolVersion == "HTTP/2" ? ["h2", "http/1.1"] : null);
         }
       }
 
@@ -370,6 +373,20 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       remoteAddress = await interceptor.preConnect(remoteAddress);
     }
 
+  /// 连上游时需要提议的 ALPN 协议列表。
+  ///
+  /// 客户端协商了 h2 时不能只给 ["h2"]：h1-only 服务器/中间盒会因为没有共同
+  /// 协议直接握手失败（上游 v1.4.0 修复）。给 ["h2", "http/1.1"] 让上游显式
+  /// 选择；客户端本身是 h1 时保持原样透传。
+  List<String>? _upstreamAlpnProtocols(ChannelContext channelContext) {
+    final clientProtocol = channelContext.clientChannel?.selectedProtocol;
+    if (clientProtocol == null) return null;
+    if (clientProtocol == 'h2' || clientProtocol == 'h2-14') {
+      return const ['h2', 'http/1.1'];
+    }
+    return [clientProtocol];
+  }
+
     final proxyChannel = await connectRemote(channelContext, clientChannel, remoteAddress);
     // 是否对上游做 TLS：反向代理必须看 target 的 scheme（旧实现只看
     // clientChannel.isSsl —— 明文反代到 https:// 上游会把明文 HTTP 打进 443，
@@ -379,9 +396,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
     if (needsTls) {
       await proxyChannel.secureSocket(channelContext,
           host: hostAndPort.host,
-          supportedProtocols: channelContext.clientChannel?.selectedProtocol == null
-              ? null
-              : [channelContext.clientChannel!.selectedProtocol!]);
+          supportedProtocols: _upstreamAlpnProtocols(channelContext));
     }
 
     //https代理新建连接请求
