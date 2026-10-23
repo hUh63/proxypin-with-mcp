@@ -67,6 +67,11 @@ Future<String> networkName() {
     interfaces.sort((a, b) {
       return weight(a) - weight(b);
     });
+    // 飞行模式 / 只有 IPv6 / 网卡刚断开时列表可能是空的：以前直接 .first 会抛
+    // StateError（macOS 读系统代理的 hardwarePort() 会连带失败）。
+    if (interfaces.isEmpty) {
+      return '';
+    }
     return interfaces.first.name;
   });
 }

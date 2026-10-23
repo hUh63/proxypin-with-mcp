@@ -45,7 +45,10 @@ class FileRead {
       var uuidPattern = RegExp(r'/Application/([0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})/');
       var match = uuidPattern.firstMatch(applicationPath);
 
-      _uuid = match?.group(1);
+      // 取不到 UUID 时空串兜底：以前返回 `_uuid!` 会抛异常，而且因为 _uuid 仍是
+      // null，每次调用都重新算并再抛一次 —— iOS 上「按文件保存的映射/脚本体」
+      // 直接读不到内容。空串表示「不需要也没法替换」，调用方据此跳过替换。
+      _uuid = match?.group(1) ?? '';
     }
     return _uuid!;
   }
@@ -53,9 +56,11 @@ class FileRead {
   static Future<Uint8List> readFile(String path) async {
     if (Platform.isIOS) {
       var uuid = await iosUuid;
-      //ios替换uuid
-      var uuidPattern = RegExp(r'/Application/[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/');
-      path = path.replaceAll(uuidPattern, '/Application/$uuid/');
+      //ios替换uuid（uuid 为空说明当前路径里本来就没有可替换的容器 UUID）
+      if (uuid.isNotEmpty) {
+        var uuidPattern = RegExp(r'/Application/[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/');
+        path = path.replaceAll(uuidPattern, '/Application/$uuid/');
+      }
     }
 
     return File(path).readAsBytes();

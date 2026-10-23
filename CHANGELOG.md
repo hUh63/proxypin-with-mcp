@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.67.81 (2026-10-23)
+
+### iOS：按文件保存的脚本/映射/改写体读不到内容
+
+`FileRead.iosUuid` 用 `/Application/<UUID>/` 从沙盒路径里抠容器 UUID，抠不到时返回 `_uuid!` ——
+直接抛异常，而且因为 `_uuid` 仍是 null，**每次调用都会重算并再抛一次**。所有「bodyFile / 脚本文件 /
+映射文件」的读取都会失败（表现为这些功能在 iOS 上一律空白）。现在取不到时以空串兜底并跳过路径替换。
+
+### macOS：无 IPv4 网卡时读系统代理直接抛异常
+
+`networkName()` 对 `NetworkInterface.list` 的结果直接 `.first`，飞行模式 / 只有 IPv6 / 网卡刚断开时
+列表为空 → `StateError: No element`，连带 macOS 的 `hardwarePort()`（读系统代理状态）失败。补空列表兜底。
+
 ## v1.67.80 (2026-10-23)
 
 ### `Content-Encoding: deflate` 的响应体一直是乱码
