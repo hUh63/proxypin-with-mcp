@@ -186,8 +186,23 @@ class TransparentCapture {
       });
       _from = ready;
 
-      return await completer.future.timeout(const Duration(seconds: 8),
+      final result = await completer.future.timeout(const Duration(seconds: 8),
           onTimeout: () => TransparentCaptureStart.failed);
+      if (result != TransparentCaptureStart.ok) {
+        // 启动失败或 8 秒内没 ready：必须把 isolate 与端口一起收掉。
+        // 以前只 complete(failed) 就走人，isolate 仍在跑并持有 WinDivert 句柄，
+        // 而 _isolate 仍为 null（后续 stop() 杀不掉它）→ 用户重试 start 会因为
+        // 驱动句柄被占而一直失败，直到进程退出。
+        _isolate?.kill(priority: Isolate.immediate);
+        _isolate = null;
+        _to = null;
+        try {
+          await sub.cancel();
+        } catch (_) {}
+        ready.close();
+        _from = null;
+      }
+      return result;
     } catch (e) {
       stats.lastError = '$e';
       return TransparentCaptureStart.failed;

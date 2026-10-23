@@ -87,7 +87,9 @@ class ListenableList<T> extends Iterable<T> {
 
   void addAll(Iterable<T> items) {
     source.addAll(items);
-    for (var element in _listeners) {
+    // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
       for (var item in items) {
         element.onAdd(item);
       }
@@ -102,7 +104,9 @@ class ListenableList<T> extends Iterable<T> {
 
     final removed = source.sublist(start, normalizedEnd);
     source.removeRange(start, normalizedEnd);
-    for (var element in _listeners) {
+    // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
       element.clear(removed);
     }
     return removed;
@@ -110,14 +114,18 @@ class ListenableList<T> extends Iterable<T> {
 
   void update(int index, T item) {
     source[index] = item;
-    for (var element in _listeners) {
+    // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
       element.onUpdate(item);
     }
   }
 
   void add(T item) {
     source.add(item);
-    for (var element in _listeners) {
+    // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
       element.onAdd(item);
     }
   }
@@ -125,7 +133,9 @@ class ListenableList<T> extends Iterable<T> {
   bool remove(T item) {
     var remove = source.remove(item);
     if (remove) {
-      for (var element in _listeners) {
+      // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
         element.onRemove(item);
       }
     }
@@ -135,7 +145,9 @@ class ListenableList<T> extends Iterable<T> {
   T removeAt(int index) {
     var item = source.removeAt(index);
     if (item != null) {
-      for (var element in _listeners) {
+      // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
         element.onRemove(item);
       }
     }
@@ -145,7 +157,9 @@ class ListenableList<T> extends Iterable<T> {
   void clear() {
     final removed = List<T>.from(source);
     source.clear();
-    for (var element in _listeners) {
+    // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
       element.clear(removed);
     }
   }
@@ -161,7 +175,9 @@ class ListenableList<T> extends Iterable<T> {
     });
     if (list.isEmpty) return;
 
-    for (var element in _listeners) {
+    // 快照后再遍历：监听器回调里可能会 removeListener（页面销毁、切换视图），
+    // 直接遍历 _listeners 会抛 ConcurrentModificationError，且中断后续监听器的通知。
+    for (var element in List<ListenerListEvent<T>>.of(_listeners)) {
       element.onBatchRemove(list);
     }
   }

@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.67.82 (2026-10-23)
+
+### 内核抓包（Windows / WinDivert）：启动失败后驱动句柄泄漏，重试必然失败
+
+`TransparentCapture.start()` 里如果 isolate 报错、或 8 秒内没等到 ready，只把结果标成 failed 就返回：
+isolate 仍在运行并持有 WinDivert 句柄，而 `_isolate` 字段一直是 null —— 后续 `stop()` 杀不掉它。
+用户看到「启动失败」后重试，会因为驱动句柄被占而持续失败，直到退出 App。现在失败/超时会一并 kill isolate、
+关闭 ReceivePort。
+
+### 请求列表的监听器遍历未做快照
+
+`ListenableList` 在 add/remove/clear/removeWhere 里直接 `for (var element in _listeners)`。监听器回调里
+调 `removeListener`（页面销毁、切换视图、关闭窗口）时会抛 `ConcurrentModificationError`，且后续监听器
+收不到这次通知 —— 表现为「新请求偶发不显示」。改为先 `List.of` 快照再遍历（8 处）。
+
 ## v1.67.81 (2026-10-23)
 
 ### iOS：按文件保存的脚本/映射/改写体读不到内容
