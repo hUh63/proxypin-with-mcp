@@ -72,7 +72,20 @@ class WsTrafficServer implements EventListener {
     final auth = request.headers.value('authorization') ?? '';
     final bearer = auth.toLowerCase().startsWith('bearer ') ? auth.substring(7).trim() : '';
     final query = request.uri.queryParameters['token'] ?? '';
-    return bearer == expected || query == expected;
+    return _constantTimeEquals(bearer, expected) || _constantTimeEquals(query, expected);
+  }
+
+  /// 常量时间字符串比较：`==` 会在第一个不同字符处提前返回，逐字符暴露前缀
+  /// 匹配长度（时序侧信道）。
+  static bool _constantTimeEquals(String a, String b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return diff == 0;
   }
 
   /// 启动（端口被占用等异常仅记录日志，不影响抓包主流程）

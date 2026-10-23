@@ -309,6 +309,13 @@ class ProxyServer {
         // 单包即发即断：数据可能拆包，防抖合并后交给解析器
         final buffer = BytesBuilder();
         Timer? t;
+        // 兜底关闭：本端口虽只监听 loopback，但连上不发数据的连接以前会一直挂着
+        // （既不触发 onDone 也没有定时器），socket 只增不减。
+        final idle = Timer(const Duration(seconds: 30), () {
+          try {
+            client.close();
+          } catch (_) {}
+        });
         client.listen((chunk) {
           buffer.add(chunk);
           t?.cancel();
@@ -321,6 +328,7 @@ class ProxyServer {
           });
         }, onDone: () {
           t?.cancel();
+          idle.cancel();
           try {
             if (buffer.length > 0) {
               QuicProbe.instance

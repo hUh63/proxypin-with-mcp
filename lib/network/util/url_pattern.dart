@@ -26,7 +26,10 @@ class UrlPattern {
   /// without wrapping it in [RegExp] — useful when callers
   /// need to cache or compare the raw string.
   static String toRegExpString(String pattern) {
-    return pattern.replaceAll("*", ".*").replaceFirst('?', '\\?');
+    // 注意必须 replaceAll：旧实现只转义**第一个** `?`，规则里再出现问号
+    // （`example.com/search?a=1&b=2?` 之类手工写的完整 URL）时，第二个 `?`
+    // 会留在正则里变成「前一项可选」的量词，匹配结果完全错乱。
+    return pattern.replaceAll("*", ".*").replaceAll('?', '\\?');
   }
 
   /// Simpler variant used by host / domain matching where only

@@ -38,13 +38,37 @@ class RequestRewriteManager {
 
   RequestRewriteManager._();
 
+  /// 初始化中的 Future：并发首次访问共用同一次加载
+  ///
+  /// 「判空 → await 读盘 → 赋值」在并发首访时会各自初始化一遍：后一个实例覆盖
+  /// 前一个，而调用方可能已经拿到旧实例 —— 表现为规则列表被清空/重复、刚加的
+  /// 规则时有时无（这些 getter 都跑在每条请求的匹配路径上）。
+  static Future<RequestRewriteManager>? _loading;
+
   static Future<RequestRewriteManager> get instance async {
-    if (_instance == null) {
-      var config = await _loadRequestRewriteConfig();
-      _instance = RequestRewriteManager._();
-      await _instance!.reload(config);
+    final cached = _instance;
+    if (cached != null) {
+      return cached;
     }
-    return _instance!;
+    final loading = _loading;
+    if (loading != null) {
+      return loading;
+    }
+    final future = _create();
+    _loading = future;
+    try {
+      return await future;
+    } finally {
+      _loading = null;
+    }
+  }
+
+  static Future<RequestRewriteManager> _create() async {
+    var config = await _loadRequestRewriteConfig();
+    final manager = RequestRewriteManager._();
+    await manager.reload(config);
+    _instance = manager;
+    return manager;
   }
 
   bool enabled = true;

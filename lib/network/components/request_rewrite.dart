@@ -127,8 +127,14 @@ class RequestRewriteInterceptor extends Interceptor {
   @override
   Future<HttpRequest?> onRequest(HttpRequest request) async {
     //重写请求
-    var url = request.requestUrl;
-    await requestRewrite(url, request);
+    try {
+      var url = request.requestUrl;
+      await requestRewrite(url, request);
+    } catch (e, t) {
+      // 单条规则出错（正则写坏、变量渲染失败、文件读取失败）不能让整条请求失败：
+      // 记录后按「未改写」继续转发，与 onResponse 的处理保持一致。
+      logger.e('[${request.requestId}] 请求重写异常 ', error: e, stackTrace: t);
+    }
     return request;
   }
 

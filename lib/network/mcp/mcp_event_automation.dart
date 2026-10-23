@@ -68,16 +68,35 @@ class McpEventAutomation {
     if (_listeners[eventName]?.isEmpty == true) {
       _listeners.remove(eventName);
     }
+    _prunePatternCache();
   }
 
   /// 移除所有监听器
   void removeAllListeners(String eventName) {
     _listeners.remove(eventName);
+    _prunePatternCache();
   }
 
   /// 清除所有监听器
   void clearAllListeners() {
     _listeners.clear();
+    _requestPatternCache.clear();
+  }
+
+  /// 清掉已经没有监听器的事件所对应的正则缓存。
+  ///
+  /// 缓存按事件名（`http_request:<pattern>`）只增不减：用户反复创建/删除不同 URL
+  /// 模式的自动化后，这些 RegExp 会一直留在内存里。
+  void _prunePatternCache() {
+    if (_requestPatternCache.isEmpty) return;
+    const prefix = 'http_request:';
+    final alive = <String>{};
+    for (final name in _listeners.keys) {
+      if (name.startsWith(prefix)) {
+        alive.add(name.substring(prefix.length));
+      }
+    }
+    _requestPatternCache.removeWhere((key, _) => !alive.contains(key));
   }
 
   /// 触发事件
