@@ -184,7 +184,7 @@ class ProxyServer {
           if (scriptType == 'javascript' && scriptContent.isNotEmpty) {
             return await ScriptManager.flutterJsPool.run((flutterJs) async {
               final jsResult = await flutterJs.evaluateAsync(
-                'var context = ${parameters is Map ? parameters.toString() : '{}'}; $scriptContent\n  onRequest(context, {})');
+                'var context = ${parameters.toString()}; $scriptContent\n  onRequest(context, {})');
               return await JavaScriptEngine.jsResultResolve(flutterJs, jsResult);
             });
           }
@@ -202,8 +202,11 @@ class ProxyServer {
       }
       // 触发 MCP 自动化任务（onProxyStart 触发器）
       try {
+        // catchError 的 handler 必须返回 Future 的元素类型（List<String>），
+        // 否则新的 TypeError 会从 catchError 逃逸成未捕获异步错误。
         unawaited(MCPAutomationManager().onProxyStart().catchError((e, s) {
           logger.e('MCP 自动化 onProxyStart 触发失败', error: e, stackTrace: s);
+          return <String>[];
         }));
       } catch (_) {}
       // 代理启动时也评估规则引擎（proxyStatus 条件）
@@ -293,6 +296,7 @@ class ProxyServer {
     try {
       unawaited(MCPAutomationManager().onProxyStop().catchError((e, s) {
         logger.e('MCP 自动化 onProxyStop 触发失败', error: e, stackTrace: s);
+        return <String>[];
       }));
     } catch (_) {}
     // 代理停止时评估规则引擎

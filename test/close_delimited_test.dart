@@ -130,7 +130,7 @@ void main() {
       channel.dispatcher.handle(
         HttpRequestCodec(),
         HttpResponseCodec(),
-        HttpResponseProxyHandler(listener: null, interceptors: [
+        HttpResponseProxyHandler(channel, [
           _ReplaceBodyInterceptor('{"rewritten":"ProxyPin_Script_Fired"}', interceptedUrls.add),
         ]),
       );
