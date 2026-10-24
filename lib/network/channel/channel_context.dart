@@ -9,6 +9,7 @@ import 'package:proxypin/network/http/h2/setting.dart';
 import 'package:proxypin/network/http/h2/request_queue.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/attribute_keys.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/process_info.dart';
 import 'package:proxypin/utils/lang.dart';
 
