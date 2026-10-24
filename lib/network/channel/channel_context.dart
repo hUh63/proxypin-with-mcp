@@ -337,6 +337,18 @@ class ChannelContext {
     http2Requests.cancel(streamId);
     markStreamCancelled(streamId);
     removeStream(streamId);
+
+    // 协议转换下被取消的正是当前正在转发的那个请求：立刻释放串行屏障，
+    // 否则后面的 stream 要一直等到 waitTranslatedResponse 的 60s 兜底超时。
+    if (_pendingTranslatedRequest?.streamId == streamId) {
+      completeTranslatedResponse();
+    }
+    // 已经按 chunked 发过请求体却中途取消：上游拿到的是没有终止块的不完整 body，
+    // 这条连接不能再复用（否则下一个请求会被当成该 body 的续写 → 串包）。
+    if (forwarded && h2ToH1FrameStripper.chunked) {
+      h2ToH1FrameStripper.chunked = false;
+      serverChannel?.close();
+    }
     return forwarded;
   }
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.67.89 (2026-10-25) — 翻译模式的三处收尾
+
+- **取消 h2 流时立即释放串行屏障**：协议转换下被 RST_STREAM 取消的正是当前在转发的
+  请求时，此前 `_translatedResponseDone` 不会释放，后面排队的 stream 要一直等到
+  `waitTranslatedResponse` 的 60s 兜底超时才被放行（表现为取消一个请求后整条连接卡住）。
+  现在取消时立刻 `completeTranslatedResponse()`。
+- **chunked 请求体中途被取消 → 关掉上游连接**：上游收到的是没有终止块的不完整
+  chunked body，这条连接复用会让下一个请求被当成该 body 的续写（串包）。取消时把
+  `h2ToH1FrameStripper.chunked` 复位并关闭 serverChannel。
+- **翻译模式下「不支持解析」的响应改回 502**：上游 body 走 `notSupportedForward`
+  原本是原样 relay，但这些字节是 HTTP/1.1 语义（可能带 chunk 分帧），灌进 h2 客户端
+  连接会让对端解析失败、整条连接断开。现在翻译模式下回一个 h2 编码的 502 并关闭该
+  上游连接，不再把不兼容字节写给客户端。
+
 ## v1.67.88 (2026-10-25) — UI 视觉层合上游 + 规则总览入口 + 翻译模式流式请求体
 
 ### UI 视觉层（上游 v1.4.0 设计稿）

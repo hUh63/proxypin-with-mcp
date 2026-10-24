@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert' show latin1;
+import 'dart:convert' show latin1, utf8;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -464,6 +464,34 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       final handled = await _tryRewriteUnsupportedResponse(
           channelContext, channel, decodeResult.data as HttpResponse, currentHandler);
       if (handled) return;
+    }
+
+    // 协议转换（客户端 h2 / 上游 h1）：上游字节是 HTTP/1.1 语义（可能带 chunk 分帧），
+    // 原样写进 h2 客户端连接会让对端解析失败并整条断开。这里回一个 h2 502 并关掉
+    // 这条上游连接（不复用），而不是把垃圾字节灌给客户端。
+    if (channelContext.isHttp2Translation && identical(channel, channelContext.serverChannel)) {
+      final request = channelContext.pendingTranslatedRequest ?? channelContext.currentRequest;
+      final body = utf8.encode('Unsupported response body framing under HTTP/2 translation');
+      final resp = HttpResponse(HttpStatus.newStatus(502, 'Unsupported response framing'),
+          protocolVersion: 'HTTP/2')
+        ..request = request
+        ..streamId = request?.streamId
+        ..body = body
+        ..headers.contentType = 'text/plain; charset=utf-8'
+        ..headers.contentLength = body.length;
+      if (request != null) resp.requestId = request.requestId;
+      final client = channelContext.clientChannel;
+      if (client != null) {
+        try {
+          await client.write(channelContext, resp);
+        } catch (e) {
+          logger.w('[$channel] write 502 for unsupported translated response failed', error: e);
+        }
+        channelContext.listener?.onResponse(channelContext, resp);
+      }
+      channelContext.completeTranslatedResponse();
+      channel.close();
+      return;
     }
 
     // Fallback: generic relay for unsupported body types.
