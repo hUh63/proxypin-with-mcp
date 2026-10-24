@@ -48,6 +48,7 @@ import 'package:proxypin/ui/desktop/left_menus/history.dart';
 import 'package:proxypin/ui/desktop/left_menus/navigation.dart';
 import 'package:proxypin/ui/desktop/request/list.dart';
 import 'package:proxypin/ui/desktop/toolbar/toolbar.dart';
+import 'package:proxypin/ui/desktop/widgets/status_bar.dart';
 import 'package:proxypin/ui/desktop/widgets/windows_toolbar.dart';
 import 'package:proxypin/utils/listenable_list.dart';
 import 'package:proxy_manager/proxy_manager.dart';
@@ -236,6 +237,8 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
               ? Toolbar(proxyServer, requestListStateKey)
               : WindowsToolbar(title: Toolbar(proxyServer, requestListStateKey)),
         )),
+        bottomNavigationBar:
+            DesktopStatusBar(proxyServer: proxyServer, container: container, requestListStateKey: requestListStateKey),
         body: Row(
           children: [
             LeftNavigationBar(

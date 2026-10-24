@@ -42,6 +42,7 @@ import 'package:proxypin/ui/mobile/setting/request_block.dart';
 import 'package:proxypin/ui/mobile/setting/request_crypto.dart';
 import 'package:proxypin/ui/mobile/setting/request_rewrite.dart';
 import 'package:proxypin/ui/mobile/setting/script.dart';
+import 'package:proxypin/ui/mobile/setting/proxy_ignore_domain.dart';
 import 'package:proxypin/ui/mobile/setting/ssl.dart';
 import 'package:proxypin/ui/mobile/widgets/about.dart';
 import 'package:proxypin/ui/mobile/setting/request_breakpoint.dart';
@@ -312,45 +313,14 @@ class _SettingPageState extends State<SettingPage> {
                           builder: (_) => ExternalProxyDialog(configuration: widget.proxyServer.configuration));
                     }),
                 Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
+                // 忽略域名改为独立编辑页（上游 v1.4.0：卡内嵌输入在手机上体验差）
+                ListTile(
+                    title: Text(localizations.proxyIgnoreDomain),
+                    trailing: const Icon(Icons.keyboard_arrow_right),
+                    onTap: () => navigator(
+                        context, ProxyIgnoreDomainPage(configuration: widget.proxyServer.configuration))),
+                Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),
 
-                Padding(
-                    padding: const EdgeInsets.only(left: 15),
-                    child: Row(children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(localizations.proxyIgnoreDomain, style: const TextStyle(fontSize: 14)),
-                          const SizedBox(height: 3),
-                          Text(localizations.navBarMultiSeparatorHint,
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                        ],
-                      ),
-                      Padding(
-                          padding: const EdgeInsets.only(left: 35),
-                          child: TextButton(
-                            child: Text(localizations.reset),
-                            onPressed: () {
-                              textEditingController.text = SystemProxy.proxyPassDomains;
-                            },
-                          ))
-                    ])),
-                const SizedBox(height: 5),
-                Padding(
-                    padding: const EdgeInsets.only(left: 15, right: 5),
-                    child: TextField(
-                        textInputAction: TextInputAction.done,
-                        style: const TextStyle(fontSize: 13),
-                        controller: textEditingController,
-                        onSubmitted: (_) {
-                          configuration.proxyPassDomains = textEditingController.text;
-                          widget.proxyServer.configuration.flushConfig();
-                        },
-                        decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.all(10),
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 5,
-                        minLines: 1)),
                 // const SizedBox(height: 10),
               ])),
           const SizedBox(height: 12),

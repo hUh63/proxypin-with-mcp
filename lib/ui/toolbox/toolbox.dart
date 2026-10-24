@@ -39,6 +39,9 @@ import 'sign_page.dart';
 import 'device_profile_page.dart';
 import 'encoder.dart';
 import 'hash_page.dart';
+import 'package:proxypin/ui/desktop/left_menus/replay_tasks.dart' as replay_desktop;
+import 'package:proxypin/ui/mobile/request/replay_tasks.dart';
+
 import 'rsa_page.dart';
 import 'js_run.dart';
 import 'json_viewer.dart';
@@ -182,6 +185,19 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.auto_fix_high_outlined,
                       text: localizations.jsRestore,
                       tooltip: localizations.jsRestoreTips),
+                  IconText(
+                      onTap: () async {
+                        // 上游 v1.4.0：可查看/暂停/取消的重放任务
+                        if (Platforms.isMobile()) {
+                          Navigator.of(context)
+                              .push(MaterialPageRoute(builder: (context) => const ReplayTasksPage()));
+                          return;
+                        }
+                        await replay_desktop.showReplayTasksDialog(context);
+                      },
+                      icon: Icons.schedule_outlined,
+                      text: localizations.replayTasks,
+                      tooltip: localizations.replayTasks),
                 ],
               ),
               const Divider(thickness: 0.3),

@@ -453,9 +453,15 @@ class HttpServerCodec extends Codec<HttpRequest, HttpResponse> {
   }
 }
 
-class HttpClientCodec extends Codec<HttpResponse, HttpRequest> {
+class HttpClientCodec extends Codec<HttpResponse, HttpRequest> implements CloseDelimitedBodyFinalizer {
   HttpRequestCodec requestCodec = HttpRequestCodec();
   HttpResponseCodec responseCodec = HttpResponseCodec();
+
+  /// 上游连接用的就是这个 codec（`channelHandle(HttpClientCodec(), handler)`），
+  /// 解码器本身不是 HttpCodec 子类，必须显式转发到内部的响应解码器，
+  /// 否则 close-delimited 的收尾在真实链路里永远不会被触发。
+  @override
+  DecoderResult? finishCloseDelimitedBody() => responseCodec.finishCloseDelimitedBody();
 
   @override
   DecoderResult<HttpResponse> decode(ChannelContext channelContext, ByteBuf byteBuf) {
