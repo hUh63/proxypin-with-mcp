@@ -271,7 +271,14 @@ class ChannelContext {
       await remote.write(this, request);
       return;
     }
-    final streamId = request.streamId!;
+    final streamId = request.streamId;
+    if (streamId == null) {
+      // 没有 streamId 却标着 HTTP/2：按普通 h1 请求发出去，总好过在这里崩溃
+      // （强解包会抛异常，异常冒到 dispatcher 会直接关掉整条连接）。
+      logger.w('h2 request without streamId, fallback to plain write: ${request.requestUrl}');
+      await remote.write(this, request);
+      return;
+    }
     if (!http2Requests.canForward(streamId)) return;
 
     // h2 -> h1 协议转换：请求会以 HTTP/1.1 编码（见 HttpCodec.encode），
