@@ -35,9 +35,25 @@ class FavoriteStorage {
 
   static Function()? addNotifier;
 
+  /// 首次加载的 in-flight Future。
+  ///
+  /// 详情面板每次 build 都会读一次收藏状态，首次访问若并发（面板 + 收藏页同时打开）
+  /// 会各自进入下面的初始化，重复读同一份 favorites.json 并产生两个 ListQueue。
+  static Future<Queue<Favorite>>? _loading;
+
   /// 获取收藏列表
-  static Future<Queue<Favorite>> get favorites async {
-    if (list == null) {
+  static Future<Queue<Favorite>> get favorites {
+    final cached = list;
+    if (cached != null) return Future.value(cached);
+    // 完成后清空：成功时 list 已就绪（下次直接命中缓存），失败时不留一个
+    // 永远 reject 的 Future 把后续读取全毒化。
+    return _loading ??= _load().whenComplete(() => _loading = null);
+  }
+
+  static Future<Queue<Favorite>> _load() async {
+    final cached = list;
+    if (cached != null) return cached;
+    {
       list = ListQueue();
       var file = await Paths.getPath("favorites.json");
       if (await file.exists()) {

@@ -18,6 +18,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:proxypin/ui/component/html_preview.dart';
+import 'package:proxypin/ui/component/svg_icon.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -435,10 +436,7 @@ class HttpBodyState extends State<HttpBodyWidget> {
         ],
       );
       // 格式分段第二行（改版把分段并入标题行后加密分支丢了切换入口，且一行放不下）
-      if (widget.httpMessage?.contentType == ContentType.html) {
-      actions.add(previewBtn);
-    }
-    if (tabs != null && tabs.list.length > 1) {
+      if (tabs != null && tabs.list.length > 1) {
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           row,
           Row(children: _fmtChips(context, tabs)),
@@ -469,6 +467,10 @@ class HttpBodyState extends State<HttpBodyWidget> {
     }
     if (cryptoToggle != null) {
       actions.add(cryptoToggle);
+    }
+    // fork：HTML 正文的内置渲染预览入口
+    if (widget.httpMessage?.contentType == ContentType.html) {
+      actions.add(previewBtn);
     }
 
     // 手机端两行布局（旧版行为）：第一行 标签+操作图标，第二行 格式分段——合并一行手机上放不下
