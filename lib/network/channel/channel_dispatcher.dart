@@ -7,6 +7,7 @@ import 'package:proxypin/native/process_info.dart';
 import 'package:proxypin/network/channel/channel.dart';
 import 'package:proxypin/network/channel/channel_context.dart';
 import 'package:proxypin/network/channel/connection_registry.dart';
+import 'package:proxypin/network/components/interceptor.dart';
 import 'package:proxypin/network/handle/relay_handle.dart';
 import 'package:proxypin/network/mqtt/mqtt_relay_handler.dart';
 import 'package:proxypin/network/channel/host_port.dart';
@@ -182,6 +183,11 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
         // 告诉编解码器「这条消息属于哪个通道」，HTTP/2 分流据此取 ALPN（上游 #969）。
         // decode 是同步的，紧接着读取不会与另一条连接的读事件交错。
         channelContext.decodingChannel = channel;
+        // close-delimited 响应是否要缓冲到连接关闭，取决于当前 handler 有没有
+        // 响应拦截器：有则缓冲（拿完整 body 才能改写并写回，issue #956），
+        // 没有则原样转发（流式响应立刻可见）。
+        _updateCloseDelimitedPolicy(channelContext);
+
         var decodeResult = decoder.decode(channelContext, buffer);
 
         //If the body does not support parsing, forward directly
@@ -194,7 +200,16 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
           buffer.clearRead();
 
           if (remoteChannel != null) {
-            await remoteChannel.writeBytes(decodeResult.forward!);
+            var forwardBytes = decodeResult.forward!;
+            // h2 -> h1 协议转换：客户端原始 h2 帧只透传 DATA 载荷给 h1 上游，
+            // 连接前言 / SETTINGS / PING / WINDOW_UPDATE 等控制帧没有 h1 对应物，
+            // 必须剥离丢弃（否则上游会收到一堆二进制垃圾）。
+            if (identical(channel, channelContext.clientChannel) && channelContext.isHttp2Translation) {
+              forwardBytes = channelContext.h2ToH1FrameStripper.strip(forwardBytes);
+            }
+            if (forwardBytes.isNotEmpty) {
+              await remoteChannel.writeBytes(forwardBytes);
+            }
           } else if (channelContext.isHttp2PriorKnowledge && identical(channel, channelContext.clientChannel)) {
             channelContext.bufferHttp2Frames(decodeResult.forward!);
             await channelContext.sendInitialHttp2Settings();
@@ -373,15 +388,29 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
   /// SSE 处理 (text/event-stream)
   void onSseHandle(ChannelContext channelContext, Channel channel, HttpResponse response, List<int>? initialBody) {
     Channel remoteChannel = channelContext.getAttribute(channel.id);
-    channelContext.currentRequest?.response = response;
-    response.request ??= channelContext.currentRequest;
+
+    // h2 -> h1 协议转换：响应要关联到串行化槽位里的请求（currentRequest 在并发
+    // h2 stream 下可能已错配），并按 h2 HEADERS(END_STREAM=0) + DATA 帧写回客户端。
+    final translation = channelContext.isHttp2Translation;
+    final pending = translation ? channelContext.pendingTranslatedRequest : null;
+    final request = pending ?? response.request ?? channelContext.currentRequest;
+    request?.response = response;
+    response.request = request;
+    if (pending != null) {
+      response.streamId = pending.streamId;
+      response.requestId = pending.requestId;
+      // h2 编码只写 HEADERS（END_STREAM=0），后续事件由 SseChannelHandler
+      // 包成 DATA 帧写回；否则流会被第一个 HEADERS 终结，客户端收不到事件。
+      response.streamingBody = true;
+    }
     channelContext.listener?.onResponse(channelContext, response);
 
     remoteChannel.write(channelContext, response);
 
     // Switch to raw streaming: server->client uses SseChannelHandler; client->server just relays
     var rawCodec = RawCodec();
-    channel.dispatcher.channelHandle(rawCodec, SseChannelHandler(remoteChannel, response));
+    channel.dispatcher
+        .channelHandle(rawCodec, SseChannelHandler(remoteChannel, response, wrapHttp2Data: translation));
     remoteChannel.dispatcher.channelHandle(rawCodec, RelayHandler(channel));
 
     // Flush any initial body bytes that were already read alongside the
@@ -451,6 +480,17 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       }
       channelContext.listener?.onResponse(channelContext, response);
     }
+  }
+
+  void _updateCloseDelimitedPolicy(ChannelContext channelContext) {
+    final h = handler;
+    List<Interceptor>? interceptors;
+    if (h is HttpProxyChannelHandler) {
+      interceptors = h.interceptors;
+    } else if (h is HttpResponseProxyHandler) {
+      interceptors = h.interceptors;
+    }
+    channelContext.bufferCloseDelimited = interceptors?.isNotEmpty == true;
   }
 
   /// #956 受限放开：尝试对「不支持解析」的响应做缓冲-改写-回写。
@@ -560,6 +600,31 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     }
     if (_pendingReads.isNotEmpty) {
       logger.w("[$channel] channelInactive pending reads wait timeout, close anyway");
+    }
+
+    // 上游关闭：冲刷被缓冲的 close 定界响应（无 Content-Length / 无 chunked），
+    // 让它照常进入响应拦截器链并被写回客户端（issue #956）。
+    if (identical(channel, channelContext.serverChannel) && decoder is CloseDelimitedBodyFinalizer) {
+      final finalized = (decoder as CloseDelimitedBodyFinalizer).finishCloseDelimitedBody();
+      final data = finalized?.data;
+      if (data is HttpResponse) {
+        data.packageSize ??= buffer.length;
+        data.remoteHost = channel.remoteSocketAddress.host;
+        data.remotePort = channel.remoteSocketAddress.port;
+        data.request ??= channelContext.currentRequest;
+        data.requestId = data.request?.requestId ?? data.requestId;
+        buffer.clear();
+        try {
+          await handler.channelRead(channelContext, channel, data);
+        } catch (error, trace) {
+          onError(channelContext, channel, error, trace: trace);
+        }
+      }
+    }
+
+    // 连接结束：释放 h2↔h1 协议转换的串行屏障，避免排队的 stream 永久等待。
+    if (channelContext.isHttp2Translation || channelContext.wasHttp2Translation) {
+      channelContext.completeTranslatedResponse();
     }
 
     channel.isOpen = false;

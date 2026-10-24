@@ -40,6 +40,13 @@ class ChannelContext {
   /// decode 内部没有 await，因此不存在两个通道交错覆盖的窗口。
   Channel? decodingChannel;
 
+  /// close-delimited 响应（无 Content-Length、无 chunked）是否缓冲到连接关闭。
+  ///
+  /// 由 [ChannelDispatcher] 按「当前 handler 是否有响应拦截器」设置：
+  ///  - 有拦截器/脚本：必须拿到完整 body 才能改写并写回客户端（issue #956）；
+  ///  - 没有拦截器：原样转发，流式响应不必等连接关闭就有第一个字节。
+  bool bufferCloseDelimited = false;
+
   // 明文连接没有ALPN，识别完整前置帧后由两端编解码器共用此状态。
   bool isHttp2PriorKnowledge = false;
   final BytesBuilder _pendingHttp2Frames = BytesBuilder();
@@ -53,10 +60,13 @@ class ChannelContext {
   /// 是否启用 h2 ↔ HTTP/1.1 协议转换（上游 v1.4.0 引入）。
   ///
   /// 该特性把 h2 客户端的多 stream 请求串行翻译成 h1 发往上游，再把 h1 响应
-  /// 编码回 h2。实现与 #969 修复（decodingChannel）、读事件串行队列、
-  /// 写背压三块加固耦合很深，尚未在真机验证；关闭时会话按原有路径处理
-  /// （旧行为：h2 客户端 + h1 上游仍可正常收发，只是没有 stream 串行化保障）。
-  static const bool enableHttp2Translation = false;
+  /// 编码回 h2。上游 v1.4.0 的实现，本 fork 已完成配套改造（dispatcher 帧剥离、
+  /// 编码侧协议版本 override 与 Host 头补齐、响应按串行化槽位关联、连接关闭时
+  /// 释放屏障、SSE 走 h2 DATA 帧），默认启用。
+  ///
+  /// 适用范围仅 TLS ALPN（客户端 h2 + 上游未选 h2）；明文 h2c prior-knowledge
+  /// 仍走原样转发。
+  static const bool enableHttp2Translation = true;
 
   /// 客户端 ALPN 协商了 h2，但上游 TLS 未选择 h2（h1-only 服务器或中间盒），
   /// 需要 h2 ↔ HTTP/1.1 协议转换。仅适用于 TLS ALPN 场景；
@@ -116,7 +126,19 @@ class ChannelContext {
     _translatedResponseDone = Completer<void>();
   }
 
-  Future<void> waitTranslatedResponse() => _translatedResponseDone?.future ?? Future.value();
+  /// 等待本 stream 的响应写回完成。
+  ///
+  /// 加超时兜底：响应方若因上游异常一直不返回，这里无限等待会让该 h2 stream
+  /// （以及排在后面的所有 stream）永久挂起，客户端表现为只转圈不报错。
+  Future<void> waitTranslatedResponse({Duration timeout = const Duration(seconds: 60)}) async {
+    final done = _translatedResponseDone?.future;
+    if (done == null) return;
+    try {
+      await done.timeout(timeout);
+    } catch (_) {
+      completeTranslatedResponse();
+    }
+  }
 
   /// 响应完整写回客户端（或连接关闭/出错）后释放屏障，放行下一个 stream。
   void completeTranslatedResponse() {

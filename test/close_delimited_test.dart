@@ -95,7 +95,7 @@ void main() {
     expect(text.contains(body), isTrue, reason: 'client must receive the close-delimited body');
   });
 
-  test('close-delimited response bypasses onResponse interceptors (known fork limitation)', () async {
+  test('close-delimited response runs onResponse interceptors (issue #956)', () async {
     const int proxyPort = 19096;
     const int originPort = 18082;
     const String originBody = '{"origin":"RAW_BODY_FROM_SERVER"}';
@@ -150,11 +150,10 @@ void main() {
     final text = utf8.decode(buf, allowMalformed: true);
     // 本 fork 有意保留「原样转发」：客户端拿到的是服务端原始字节，
     // 拦截器不会看到这条响应（上游 v1.4.0 通过缓冲修复，代价是流式被卡住）。
-    expect(text.contains(originBody), isTrue, reason: 'client must receive the raw body');
-    // 本 fork：拦截器链仍会被调用（脚本能感知这条响应），但字节已原样转发，
-    // 改写无法写回客户端 —— 这是「保留流式体验」的已知取舍。
-    expect(interceptedUrls.length, 1, reason: 'onResponse interceptors still run');
-    expect(text.contains('ProxyPin_Script_Fired'), isFalse, reason: 'rewritten body cannot reach client');
+    // 有响应拦截器时 close-delimited 会缓冲到连接关闭，交给拦截器改写并写回客户端。
+    expect(interceptedUrls.length, 1, reason: 'onResponse interceptor must run');
+    expect(text.contains('ProxyPin_Script_Fired'), isTrue, reason: 'interceptor must replace the close-delimited body');
+    expect(text.contains('RAW_BODY_FROM_SERVER'), isFalse, reason: 'original body must not leak');
 
     socket.destroy();
     await proxy.stop();

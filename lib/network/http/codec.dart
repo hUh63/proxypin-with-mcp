@@ -79,6 +79,11 @@ abstract interface class Decoder<T> {
   DecoderResult<T> decode(ChannelContext channelContext, ByteBuf byteBuf);
 }
 
+/// 支持在连接关闭时收尾 close-delimited 响应体的解码器。
+abstract interface class CloseDelimitedBodyFinalizer {
+  DecoderResult? finishCloseDelimitedBody();
+}
+
 /// 编码
 abstract interface class Encoder<T> {
   List<int> encode(ChannelContext channelContext, T data);
@@ -91,7 +96,7 @@ abstract class Codec<D, E> implements Decoder<D>, Encoder<E> {
 }
 
 /// http编解码
-abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
+abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T>, CloseDelimitedBodyFinalizer {
   final HttpParse _httpParse = HttpParse();
   Http2Codec<T>? _h2Codec;
   State _state = State.readInitial;
@@ -109,6 +114,12 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
   /// "200 Connection established" 应答，没有 body。解码器在响应完成时自行
   /// 消费清除，不依赖调用方设置 currentRequest，也无需调用方还原。
   bool pendingConnectResponse = false;
+
+  /// h2 → h1 协议转换时，请求行里的协议版本要写成 HTTP/1.1（消息对象本身保持
+  /// HTTP/2，抓包数据照原样展示）。
+  String? _encodeProtocolVersionOverride;
+
+  String protocolVersionOf(T message) => _encodeProtocolVersionOverride ?? message.protocolVersion;
 
   T createMessage(List<String> reqLine);
 
@@ -224,13 +235,31 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
 
   @override
   List<int> encode(ChannelContext channelContext, T message) {
-    if (message.protocolVersion == "HTTP/2") {
+    // h2 -> h1 协议转换：客户端 ALPN 协商了 h2，但上游 TLS 未选择 h2。
+    // 请求按 HTTP/1.1 编码发往上游（上游 v1.4.0）。
+    final bool translateH2ToH1 =
+        this is HttpRequestCodec && message.protocolVersion == "HTTP/2" && channelContext.isHttp2Translation;
+    // h1 -> h2：上游的 HTTP/1.1 响应按 h2 帧写回客户端（streamId 由响应处理器挂上）。
+    final bool translateH1ToH2 = this is HttpResponseCodec &&
+        message.protocolVersion != "HTTP/2" &&
+        message.streamId != null &&
+        channelContext.isHttp2Translation;
+
+    if (message.protocolVersion == "HTTP/2" && !translateH2ToH1) {
+      return getH2Codec().encode(channelContext, message);
+    }
+    if (translateH1ToH2) {
       return getH2Codec().encode(channelContext, message);
     }
 
     BytesBuilder builder = BytesBuilder();
     //请求行
-    initialLine(builder, message);
+    if (translateH2ToH1) _encodeProtocolVersionOverride = HttpMessage.http1Version;
+    try {
+      initialLine(builder, message);
+    } finally {
+      _encodeProtocolVersionOverride = null;
+    }
 
     List<int>? body = message.body;
 
@@ -254,6 +283,23 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
         message.headers.contentLength = body.length;
       } else if (message.contentLength != 0) {
         message.headers.remove(HttpHeaders.CONTENT_LENGTH);
+      }
+    }
+
+    // h2 请求没有 Host 头（主机在 :authority 里），HTTP/1.1 上游要求 Host。
+    // 直接写入字节流，不改动消息对象（保持抓包数据原样）。
+    if (translateH2ToH1 && message is HttpRequest && message.headers.host == null) {
+      final hostAndPort = message.hostAndPort;
+      if (hostAndPort != null) {
+        final defaultPort = hostAndPort.scheme == HostAndPort.httpScheme ? 80 : 443;
+        final authority = hostAndPort.port == defaultPort ? hostAndPort.host : '${hostAndPort.host}:${hostAndPort.port}';
+        builder
+          ..add(HttpHeaders.HOST.codeUnits)
+          ..addByte(HttpConstants.colon)
+          ..addByte(HttpConstants.sp)
+          ..add(authority.codeUnits)
+          ..addByte(HttpConstants.cr)
+          ..addByte(HttpConstants.lf);
       }
     }
 
@@ -289,7 +335,8 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
       _state = State.body;
       // 超过解析上限时可降级为"原样转发"的前提：客户端通道与上游通道都已建立（上游 #701）
       bodyReader = BodyReader(message,
-          canRelay: channelContext.clientChannel != null && channelContext.serverChannel != null);
+          canRelay: channelContext.clientChannel != null && channelContext.serverChannel != null,
+          bufferCloseDelimited: channelContext.bufferCloseDelimited);
       return;
     }
 
@@ -298,6 +345,28 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T> {
     if (_headerBytes > maxHeaderBlockBytes) {
       throw FormatException('HTTP header block too large: $_headerBytes bytes');
     }
+  }
+
+  /// 上游连接关闭时调用：把缓冲中的 close-delimited body 产出为完整消息。
+  @override
+  DecoderResult<T>? finishCloseDelimitedBody() {
+    var reader = bodyReader;
+    if (reader == null || _state != State.body) {
+      return null;
+    }
+    var r = reader.finish();
+    if (!r.isDone) {
+      return null;
+    }
+    result.data!.body = _convertBody(r.body);
+    result.data!.completeTime = DateTime.now();
+    result.forward = null;
+    result.supportedParse = true;
+    result.isDone = true;
+    _state = State.readInitial;
+    pendingConnectResponse = false;
+    _headerBytes = 0;
+    return result;
   }
 
   //转换body
@@ -341,7 +410,7 @@ class HttpRequestCodec extends HttpCodec<HttpRequest> {
       ..addByte(HttpConstants.sp)
       ..add(uri.codeUnits)
       ..addByte(HttpConstants.sp)
-      ..add(message.protocolVersion.codeUnits)
+      ..add(protocolVersionOf(message).codeUnits)
       ..addByte(HttpConstants.cr)
       ..addByte(HttpConstants.lf);
   }

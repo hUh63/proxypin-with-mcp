@@ -151,7 +151,9 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       // log.d(
       //     "[${channel.id}] streamId:${httpRequest.streamId ?? ''} ${httpRequest.protocolVersion}  ${httpRequest.methodLabel} ${httpRequest.requestUrl}");
       if (HostFilter.filter(httpRequest.hostAndPort?.host, path: httpRequest.pathAndQuery)) {
-        await remoteChannel?.write(channelContext, httpRequest);
+        // 走 channelContext：h2 stream 需要在这里登记/串行化（协议转换时还要
+        // 等上一个 stream 的响应写完才放行下一个）。
+        if (remoteChannel != null) await channelContext.writeForwardedRequest(remoteChannel, httpRequest);
         return;
       }
 
@@ -263,7 +265,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         final requestUri = request.requestUri!;
         request.uri = "${requestUri.path}${requestUri.hasQuery ? '?${requestUri.query}' : ''}";
       }
-      await remoteChannel?.write(channelContext, request);
+      if (remoteChannel != null) await channelContext.writeForwardedRequest(remoteChannel, request);
       // 转发完成后按「抓包内容上限」裁剪请求体（上游 #773）
       if (request != null) CaptureBodyLimiter.limit(request);
     }
@@ -464,7 +466,28 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
   }
 
   @override
+  @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, HttpResponse msg) async {
+    // h2 -> h1 协议转换：响应关联以串行化槽位为准（currentRequest 在并发 h2
+    // stream 下可能已被覆盖而错配），并挂上原 h2 streamId 供编码回客户端。
+    final pendingTranslated = channelContext.isHttp2Translation ? channelContext.pendingTranslatedRequest : null;
+    if (pendingTranslated != null) {
+      msg.request = pendingTranslated;
+      msg.streamId = pendingTranslated.streamId;
+      msg.requestId = pendingTranslated.requestId;
+    }
+
+    try {
+      await _channelRead(channelContext, channel, msg);
+    } finally {
+      // 1xx（100 Continue / 103 Early Hints）之后还有最终响应，不能释放屏障。
+      if (pendingTranslated != null && (msg.status.code < 100 || msg.status.code >= 200)) {
+        channelContext.completeTranslatedResponse();
+      }
+    }
+  }
+
+  Future<void> _channelRead(ChannelContext channelContext, Channel channel, HttpResponse msg) async {
     var request = msg.request ?? channelContext.currentRequest;
     request?.response = msg;
     _recordTraffic(request, msg);

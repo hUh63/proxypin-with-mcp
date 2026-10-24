@@ -63,8 +63,26 @@ class BodyReader {
   /// 已判定超过解析上限（上游 #701）：此后不再解析，交给上层原样转发
   bool _oversize = false;
 
-  BodyReader(this.message, {this.canRelay = false})
+  /// close-delimited 响应是否缓冲（false 时原样转发，见 [ChannelContext.bufferCloseDelimited]）
+  final bool bufferCloseDelimited;
+
+  BodyReader(this.message, {this.canRelay = false, this.bufferCloseDelimited = false})
       : _chunkedDecoder = message.headers.isChunked ? ChunkedDecoder() : null;
+
+  /// 无 Content-Length、无 chunked、非 flv/SSE 的响应：body 由连接关闭定界。
+  bool get closeDelimited {
+    final msg = message;
+    return msg is HttpResponse &&
+        msg.status.code >= 200 &&
+        msg.status.code != 204 &&
+        msg.status.code != 304 &&
+        msg.status.code != 205 &&
+        msg.headers.get(HttpHeaders.CONTENT_LENGTH) == null &&
+        !msg.headers.isChunked &&
+        msg.headers.contentType != 'video/x-flv' &&
+        !msg.headers.contentType.startsWith('text/event-stream') &&
+        msg.request?.method != HttpMethod.connect;
+  }
 
   Result readBody(Uint8List data) {
     if (_oversize) {
@@ -107,18 +125,23 @@ class BodyReader {
     // 与上游 v1.4.0 的差异（有意）：上游把这类 body 缓冲到连接关闭再一次性
     // 交给响应拦截器（issue #956），代价是流式响应被卡住；本 fork 优先保证
     // 流式体验，代价是此类响应不参与 onResponse 改写。
-    var msg = message;
-    if (msg is HttpResponse &&
-        msg.status.code >= 200 &&
-        msg.status.code != 204 &&
-        msg.status.code != 304 &&
-        msg.status.code != 205 &&
-        msg.headers.get(HttpHeaders.CONTENT_LENGTH) == null &&
-        !msg.headers.isChunked &&
-        msg.headers.contentType != 'video/x-flv' &&
-        !msg.headers.contentType.startsWith('text/event-stream') &&
-        msg.request?.method != HttpMethod.connect) {
-      return Result(false, supportedParse: false, body: data);
+    if (closeDelimited) {
+      if (!bufferCloseDelimited) {
+        // 没有响应拦截器：原样转发，客户端立刻拿到字节，不必等到连接关闭。
+        return Result(false, supportedParse: false, body: data);
+      }
+      // 有拦截器：缓冲到连接关闭，由 [finish] 产出完整响应交给拦截器链，
+      // 这样脚本/重写对这类响应同样生效（issue #956）。超过解析上限时回退原样转发。
+      final total = _bodyBuffer.length + data.length;
+      if (total > Codec.maxBodyLength) {
+        _bodyBuffer.clear();
+        _oversize = true;
+        message.bodyTruncated = true;
+        message.originalBodyLength = total;
+        return Result(false, supportedParse: false, body: data);
+      }
+      if (data.isNotEmpty) _bodyBuffer.add(data);
+      return Result(false);
     }
 
     // 两条路径都按「本次实际属于本条消息的字节数」精确回报，剩余字节由 codec
@@ -137,6 +160,17 @@ class BodyReader {
     }
 
     return Result(false, consumedBytes: consumed);
+  }
+
+  /// 上游连接关闭时调用，产出缓冲中的完整 close-delimited body。
+  Result finish() {
+    if (!closeDelimited || !bufferCloseDelimited || _oversize) {
+      return Result(false);
+    }
+    _done = true;
+    var body = _bodyBuffer.toBytes();
+    _bodyBuffer.clear();
+    return Result(true, body: body);
   }
 
   /// 按 Content-Length 读取固定长度 body，返回本次实际消费的字节数。
