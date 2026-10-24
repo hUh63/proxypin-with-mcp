@@ -36,6 +36,7 @@ class MobileClientCertPage extends StatefulWidget {
 class _MobileClientCertPageState extends State<MobileClientCertPage> {
   ClientCertManager? _manager;
   bool _loading = true;
+  String? _error;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -46,10 +47,18 @@ class _MobileClientCertPageState extends State<MobileClientCertPage> {
   }
 
   Future<void> _load() async {
-    final manager = await ClientCertManager.instance;
+    ClientCertManager? manager;
+    Object? error;
+    try {
+      manager = await ClientCertManager.instance;
+    } catch (e) {
+      error = e;
+    }
     if (!mounted) return;
+    // 加载失败也结束 loading 态：否则页面永远停在转圈，用户既看不到原因也无法重试。
     setState(() {
       _manager = manager;
+      _error = error == null ? null : '$error';
       _loading = false;
     });
   }
@@ -137,7 +146,9 @@ class _MobileClientCertPageState extends State<MobileClientCertPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _manager!.list.isEmpty
+          : _manager == null
+              ? Center(child: Text(_error ?? '', style: TextStyle(color: Theme.of(context).colorScheme.error)))
+              : _manager!.list.isEmpty
               ? Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.verified_user_outlined, size: 52, color: Colors.grey.withValues(alpha: 0.5)),

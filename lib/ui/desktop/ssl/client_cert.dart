@@ -45,6 +45,7 @@ class ClientCertDialog extends StatefulWidget {
 class _ClientCertDialogState extends State<ClientCertDialog> {
   ClientCertManager? _manager;
   bool _loading = true;
+  String? _error;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -55,10 +56,18 @@ class _ClientCertDialogState extends State<ClientCertDialog> {
   }
 
   Future<void> _load() async {
-    final manager = await ClientCertManager.instance;
+    ClientCertManager? manager;
+    Object? error;
+    try {
+      manager = await ClientCertManager.instance;
+    } catch (e) {
+      error = e;
+    }
     if (!mounted) return;
+    // 加载失败也结束 loading 态：否则页面永远停在转圈，用户既看不到原因也无法重试。
     setState(() {
       _manager = manager;
+      _error = error == null ? null : '$error';
       _loading = false;
     });
   }
@@ -86,7 +95,9 @@ class _ClientCertDialogState extends State<ClientCertDialog> {
         height: 480,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
-            : Column(children: [
+            : _manager == null
+                ? Center(child: Text(_error ?? '', style: TextStyle(color: Theme.of(context).colorScheme.error)))
+                : Column(children: [
                 Row(children: [
                   Container(width: 15),
                   Text(localizations.enable),

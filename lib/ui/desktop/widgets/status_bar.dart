@@ -71,10 +71,25 @@ class _DesktopStatusBarState extends State<DesktopStatusBar> {
   /// 每秒统计一次上下行速率（按列表内请求/响应包大小的增量近似）
   void _tick() {
     int up = 0, down = 0;
-    for (var request in widget.container) {
-      up += request.packageSize ?? 0;
-      down += request.response?.packageSize ?? 0;
+    try {
+      // 按索引遍历底层 List：ListenableList 的迭代器在遍历中被 add 会抛
+      // ConcurrentModificationError —— 状态栏每秒一跑，活跃抓包时必然撞上，
+      // 异常从 Timer 回调逃逸后整条状态栏就停更了。
+      final list = widget.container.source;
+      final n = list.length;
+      for (var i = 0; i < n; i++) {
+        final request = list[i];
+        up += request.packageSize ?? 0;
+        down += request.response?.packageSize ?? 0;
+      }
+    } catch (_) {
+      return;
     }
+
+    // 列表被清空/裁剪后总量会变小：重置基线，否则差值长期为负、速率永远显示 0
+    if (up < _lastUpBytes) _lastUpBytes = 0;
+    if (down < _lastDownBytes) _lastDownBytes = 0;
+
     var upRate = _lastUpBytes == 0 ? 0 : (up - _lastUpBytes).clamp(0, 1 << 62);
     var downRate = _lastDownBytes == 0 ? 0 : (down - _lastDownBytes).clamp(0, 1 << 62);
     _lastUpBytes = up;

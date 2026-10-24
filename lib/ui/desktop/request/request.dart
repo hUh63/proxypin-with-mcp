@@ -118,7 +118,25 @@ class _RequestWidgetState extends State<RequestWidget> {
     autoReadRequests.removeAll(requestIds);
   }
 
-  Color? highlightColor; //高亮颜色
+  /// 关键字（URL 规则）命中的高亮色：由请求内容决定，实例内缓存即可。
+  Color? _keywordHighlight;
+
+  /// 右键手动标记的高亮色，按 requestId 共享存储。
+  ///
+  /// 以前存在 State 实例字段上：行被回收、域名收起/展开、滚出屏幕重建后
+  /// 高亮就丢了（用户标了颜色再滚动一下全没了）。上游 v1.4.0 的修法。
+  static final LruCache<String, Color> manualHighlights = LruCache<String, Color>(1000);
+
+  Color? get highlightColor => manualHighlights.get(request.requestId);
+
+  set highlightColor(Color? color) {
+    final id = request.requestId;
+    if (color == null) {
+      manualHighlights.remove(id);
+    } else {
+      manualHighlights.set(id, color);
+    }
+  }
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -232,13 +250,16 @@ class _RequestWidgetState extends State<RequestWidget> {
   }
 
   Color? color(String url) {
-    if (highlightColor != null) {
-      return highlightColor;
+    // 手动标记优先；关键字高亮单独缓存，避免「清除高亮」把关键字色一起写进
+    // 手动标记表（也会让重算逻辑依赖实例状态）。
+    final manual = highlightColor;
+    if (manual != null) {
+      return manual;
     }
 
-    highlightColor = KeywordHighlights.getHighlightColor(url);
-    if (highlightColor != null) {
-      return highlightColor;
+    final keyword = _keywordHighlight ??= KeywordHighlights.getHighlightColor(url);
+    if (keyword != null) {
+      return keyword;
     }
 
     return autoReadRequests.contains(widget.request.requestId) ? Colors.grey : null;
