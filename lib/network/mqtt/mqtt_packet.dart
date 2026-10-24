@@ -118,6 +118,14 @@ class MqttPacketFramer {
   final List<int> _pending = [];
   int _skipRemaining = 0;
 
+  /// 头部解析完成后已知的整包长度（含固定头部）；-1 表示还没收齐头部。
+  ///
+  /// 旧实现每加入一个字节就把 remaining length 整体重算一遍，一个 4MB 的
+  /// PUBLISH 会做上千万次循环。现在只在头部阶段逐字节累积，之后按已知长度
+  /// 批量拷贝。
+  int _expectedLength = -1;
+  int _headerLength = 0;
+
   MqttPacketFramer(this.fromClient);
 
   List<MqttPacket> add(List<int> chunk) {
@@ -131,45 +139,70 @@ class MqttPacketFramer {
         continue;
       }
 
-      _pending.add(chunk[offset++]);
-      if (_pending.length < 2) continue;
+      // 头部阶段：逐字节累积，直到 remaining length 的续位结束
+      if (_expectedLength < 0) {
+        _pending.add(chunk[offset++]);
+        if (_pending.length < 2) continue;
 
-      var multiplier = 1;
-      var remaining = 0;
-      var index = 1;
-      while (index < _pending.length && index <= 4) {
-        final digit = _pending[index];
-        remaining += (digit & 0x7f) * multiplier;
-        index++;
-        if ((digit & 0x80) == 0) break;
-        multiplier *= 128;
-      }
-      if ((_pending[index - 1] & 0x80) != 0) {
-        if (index == 5) {
-          throw const FormatException(
-            'MQTT remaining length exceeds four bytes',
-          );
+        var multiplier = 1;
+        var remaining = 0;
+        var index = 1;
+        while (index < _pending.length && index <= 4) {
+          final digit = _pending[index];
+          remaining += (digit & 0x7f) * multiplier;
+          index++;
+          if ((digit & 0x80) == 0) break;
+          multiplier *= 128;
+        }
+        if ((_pending[index - 1] & 0x80) != 0) {
+          if (index == 5) {
+            throw const FormatException(
+              'MQTT remaining length exceeds four bytes',
+            );
+          }
+          continue;
+        }
+
+        _headerLength = index;
+        _expectedLength = index + remaining;
+        if (_expectedLength > maxCapturedPacketLength) {
+          // 超大报文：只转发不抓包，跳过剩余字节（内存有界）
+          _skipRemaining = _expectedLength - _pending.length;
+          _pending.clear();
+          _expectedLength = -1;
+          continue;
+        }
+        if (_pending.length == _expectedLength) {
+          packets.add(MqttPacket(
+            Uint8List.fromList(_pending),
+            fromClient,
+            _headerLength,
+            _expectedLength - _headerLength,
+          ));
+          _pending.clear();
+          _expectedLength = -1;
         }
         continue;
       }
 
-      final packetLength = index + remaining;
-      if (packetLength > maxCapturedPacketLength) {
-        _skipRemaining = packetLength - _pending.length;
-        _pending.clear();
+      // 已知整包长度：一次拷贝够用多少就拷多少
+      final need = _expectedLength - _pending.length;
+      final available = chunk.length - offset;
+      if (need > available) {
+        _pending.addAll(chunk.sublist(offset));
+        offset = chunk.length;
         continue;
       }
-      if (_pending.length == packetLength) {
-        packets.add(
-          MqttPacket(
-            Uint8List.fromList(_pending),
-            fromClient,
-            index,
-            remaining,
-          ),
-        );
-        _pending.clear();
-      }
+      _pending.addAll(chunk.sublist(offset, offset + need));
+      offset += need;
+      packets.add(MqttPacket(
+        Uint8List.fromList(_pending),
+        fromClient,
+        _headerLength,
+        _expectedLength - _headerLength,
+      ));
+      _pending.clear();
+      _expectedLength = -1;
     }
     return packets;
   }

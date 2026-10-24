@@ -202,17 +202,30 @@ class SearchConditionsState extends State<SearchConditions> {
             ),
           ),
 
-          // response type
-          row(
-            Text('${localizations.responseType}:'),
-            DropdownMenu<String>(
-              initialValue: Maps.getKey(responseContentMap, searchModel.responseContentType) ?? localizations.all,
-              items: [DropdownMenuEntry(value: localizations.all, label: localizations.all), ...responseContentMap.keys.map((k) => DropdownMenuEntry(value: k, label: k))],
-              onSelected: (String value) {
-                searchModel.responseContentType = responseContentMap[value];
-              },
-            ),
-          ),
+          // response type（多选：点选切换，可同时筛 JSON + HTML 等；不选=不过滤）
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${localizations.responseType}:', style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 2),
+            Wrap(spacing: 6, runSpacing: -6, children: [
+              for (final entry in responseContentMap.entries)
+                if (entry.value != null)
+                  FilterChip(
+                    label: Text(entry.key, style: const TextStyle(fontSize: 12)),
+                    selected: searchModel.responseContentTypes.contains(entry.value),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          searchModel.responseContentTypes.add(entry.value!);
+                        } else {
+                          searchModel.responseContentTypes.remove(entry.value);
+                        }
+                      });
+                    },
+                  ),
+            ]),
+          ]),
           const SizedBox(height: 10),
 
           // status code range

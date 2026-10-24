@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.67.90 (2026-10-25) — 桌面 MCP 改 HTTP 接入 + 搜索响应类型多选 + MQTT 分帧 O(n)
+
+### 桌面 MCP 面板：统一走 Streamable HTTP
+- 接入命令与配置文件从 stdio（`--mcp-stdio` 桥）改为 HTTP 端点
+  `http://127.0.0.1:<port>/mcp`：Claude Code / Codex / Kimi 用
+  `--transport http`，Cursor / Gemini / Cherry / Copilot 写
+  `{"type":"http","url":...}`。McpServer 本来就实现了 `/mcp` 单端点
+  （POST JSON-RPC + GET SSE），不再需要 stdio 桥进程。
+- 只支持 stdio 的 IDE 客户端（通义灵码 / 豆包）仍给 `app --mcp-stdio`。
+- 面板新增「接入地址」行：可复制、可改端口（复用 `PortEditDialog`，写回
+  `Configuration.mcpPort` 并在运行中时重启服务）。服务未启动时显示配置端口
+  而不是 `McpServer.port` 的兜底值 9010。
+- 吸收上游的 Windows CLI shim 修复：npm 装的 `claude` / `codex` 实际是 `.cmd`
+  批处理，`Process.run` 直接启动会报「系统找不到指定的文件」，统一经 `cmd /c`。
+
+### 搜索：响应类型支持多选
+- `SearchModel.responseContentType`（单选）→ `responseContentTypes: Set<ContentType>`，
+  空集合表示不过滤；匹配逻辑、`clone`、`isEmpty`、`toString` 同步调整。
+- 搜索条件面板的响应类型从下拉改为 FilterChip 多选（可同时筛 JSON + HTML 等），
+  桌面搜索框右侧的快捷筛选仍写单元素集合。
+
+### MQTT 分帧性能
+- `MqttPacketFramer` 原来每加入一个字节就把 remaining length 整体重算一遍，
+  一个 4MB 的 PUBLISH 会做上千万次循环。现在只在头部阶段逐字节累积，之后按
+  已知整包长度批量拷贝；超大报文（>4MB）依旧只转发不抓包、内存有界。
+- 新增 `test/mqtt_framer_test.dart`：逐字节分片、同块多包、尾巴留帧、
+  remaining length 超四字节、超上限跳过、1MB 报文整包到达等 9 个用例。
+
+### 清理
+- 删除随上游合入但本仓库无使用场景的 `ui/component/context_menu_region.dart`
+  （请求行的右键菜单沿用既有 `onSecondaryTapDown` + `showMenu`）。
+
 ## v1.67.89 (2026-10-25) — 翻译模式的三处收尾
 
 - **取消 h2 流时立即释放串行屏障**：协议转换下被 RST_STREAM 取消的正是当前在转发的

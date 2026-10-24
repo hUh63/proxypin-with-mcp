@@ -111,7 +111,7 @@ class SearchState extends State<Search> {
               }),
           hintText: 'Search',
           suffixIcon: ContentTypeSelect(onSelected: (contentType) {
-            searchModel.responseContentType = contentType;
+            searchModel.responseContentTypes = contentType == null ? {} : {contentType};
             widget.onSearch?.call(searchModel);
           }),
         ),
