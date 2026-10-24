@@ -2729,5 +2729,9 @@
   "pinnedDragSort": "Pinned (drag to reorder)",
   "pinToolsHint": "All tools (tap + to pin to toolbar)",
   "image": "Image",
-  "filtered": "Filtered"
+  "filtered": "Filtered",
+  "clientAddress": "ที่อยู่ไคลเอนต์",
+  "toolboxGroupDebug": "ดีบักและความปลอดภัย",
+  "toolboxGroupExtend": "เพิ่มเติม",
+  "rules": "กฎ"
 }

@@ -286,6 +286,21 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T>, CloseDel
       }
     }
 
+    // h2 -> h1：h2 客户端可以把请求体拆成多个 DATA 帧陆续发来，转发 HEADERS 时
+    // message.body 还是空的；而 HTTP/1.1 上游必须知道 body 边界，不声明 framing 的话
+    // 后续 DATA 字节会被当成「下一个请求」（400 / 串包）。此时改声明 chunked，
+    // 由 H2ToH1FrameStripper 逐帧包 chunk、在 END_STREAM 补终止块。
+    if (translateH2ToH1 && message is HttpRequest) {
+      // body 未到但 HEADERS 没带 END_STREAM（含客户端不带 content-length 的流式上传）
+      final streamingBody =
+          message.body == null && (channelContext.pendingHttp2RequestBody || message.headers.contentLength > 0);
+      channelContext.h2ToH1FrameStripper.chunked = streamingBody;
+      if (streamingBody) {
+        message.headers.remove(HttpHeaders.CONTENT_LENGTH);
+        message.headers.set(HttpHeaders.TRANSFER_ENCODING, 'chunked');
+      }
+    }
+
     // h2 请求没有 Host 头（主机在 :authority 里），HTTP/1.1 上游要求 Host。
     // 直接写入字节流，不改动消息对象（保持抓包数据原样）。
     if (translateH2ToH1 && message is HttpRequest && message.headers.host == null) {

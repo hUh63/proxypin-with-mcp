@@ -185,18 +185,8 @@ class HttpBodyState extends State<HttpBodyWidget> {
 
     //TabBar
     List<Widget> list = [
-      widget.inNewWindow ? const SizedBox() : titleWidget(),
+      widget.inNewWindow ? const SizedBox() : titleWidget(tabs: tabs),
       const SizedBox(height: 3),
-      SizedBox(
-          height: 36,
-          child: TabBar(
-              labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              labelPadding: const EdgeInsets.only(left: 3, right: 5),
-              tabs: tabs.tabList(),
-              onTap: (index) {
-                tabIndex = index;
-                bodyKey.currentState?.changeState(widget.httpMessage, tabs.list[tabIndex]);
-              })),
       Padding(
           padding: const EdgeInsets.all(10),
           child: _Body(
@@ -236,17 +226,14 @@ class HttpBodyState extends State<HttpBodyWidget> {
             },
           ),
         },
-        child: DefaultTabController(
-            initialIndex: tabIndex,
-            length: tabs.list.length,
-            child: widget.inNewWindow
-                ? ListView(children: list)
-                : Column(crossAxisAlignment: CrossAxisAlignment.start, children: list)));
+        child: widget.inNewWindow
+            ? ListView(children: list)
+            : Column(crossAxisAlignment: CrossAxisAlignment.start, children: list));
 
     //在新窗口打开
     if (widget.inNewWindow) {
       return Scaffold(
-          appBar: AppBar(title: titleWidget(inNewWindow: true), toolbarHeight: Platform.isWindows ? 36 : null),
+          appBar: AppBar(title: titleWidget(inNewWindow: true, tabs: tabs), toolbarHeight: Platform.isWindows ? 36 : null),
           body: tabController);
     }
     return tabController;
@@ -271,21 +258,63 @@ class HttpBodyState extends State<HttpBodyWidget> {
     showHtmlPreview(context, body);
   }
 
+  /// 设计稿 .fmt 分段小胶囊：选中 primary-soft 底 + primary 字，未选中灰色
+  List<Widget> _fmtChips(BuildContext context, Tabs? tabs) {
+    if (tabs == null || tabs.list.length <= 1) {
+      return [const SizedBox()];
+    }
+    var theme = Theme.of(context);
+    var text3 = theme.brightness == Brightness.light ? const Color(0xFF8F959E) : DarkPalette.text3;
+    return [
+      for (var i = 0; i < tabs.list.length; i++)
+        Padding(
+            padding: const EdgeInsets.only(right: 4),
+            // 选中底色由 Material 绘制，InkWell 的 hover/水波纹才能显示在底色之上
+            child: Material(
+                color: i == tabIndex ? primarySoftBg(theme, lightAlpha: 0.12) : Colors.transparent,
+                borderRadius: BorderRadius.circular(5),
+                child: InkWell(
+                    borderRadius: BorderRadius.circular(5),
+                    // 设计稿小控件 hover：浅色 #F0F1F3，暗黑 --hover
+                    hoverColor: theme.brightness == Brightness.light ? const Color(0xFFF0F1F3) : DarkPalette.hover,
+                    onTap: () {
+                      setState(() => tabIndex = i);
+                      bodyKey.currentState?.changeState(widget.httpMessage, tabs.list[i]);
+                    },
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        child: Text(tabs.list[i].title,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: i == tabIndex ? FontWeight.w500 : FontWeight.w400,
+                                color: i == tabIndex ? theme.colorScheme.primary : text3)))))),
+    ];
+  }
+
   /// 标题
-  Widget titleWidget({bool inNewWindow = false}) {
+  Widget titleWidget({bool inNewWindow = false, Tabs? tabs}) {
     var type = widget.httpMessage is HttpRequest ? "Request" : "Response";
 
     bool isImage = widget.httpMessage?.contentType == ContentType.image;
-    VisualDensity visualDensity = Platforms.isMobile() ? VisualDensity.compact : VisualDensity.standard;
+    const visualDensity = VisualDensity.compact;
 
     final isMobile = Platforms.isMobile();
 
+    // 操作图标与工具栏同色：onSurfaceVariant 淡灰（设计稿 .mini text-3）
+    final iconColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
     // Build common actions as widgets so we can either display them inline (desktop)
     // or move them into an overflow menu (mobile) to avoid hiding important buttons.
-    final searchBtn = InkWell(
+    // IconButton：获得 hover 光晕/水波纹/焦点环（原 InkWell 热区只有 19px，反馈几乎不可见）
+    // 图标统一用设计稿同套 stroke SVG（与 mini 按钮一致），避免 Material 字形活区大小不一
+    final searchBtn = IconButton(
       key: searchIconKey,
-      child: const Icon(Icons.search, size: 20),
-      onTap: () {
+      visualDensity: visualDensity,
+      iconSize: 15,
+      splashRadius: 14,
+      icon: SvgIcon('search', size: 15, color: iconColor),
+      tooltip: localizations.search,
+      onPressed: () {
         if (searchController.isSearchOverlayVisible) {
           searchController.removeSearchOverlay();
         } else {
@@ -300,8 +329,8 @@ class HttpBodyState extends State<HttpBodyWidget> {
         ? downloadImageButton()
         : IconButton(
             visualDensity: visualDensity,
-            iconSize: 16,
-            icon: const Icon(Icons.copy),
+            iconSize: 15,
+            icon: SvgIcon('copy', size: 15, color: iconColor),
             tooltip: localizations.copy,
             onPressed: () async {
               var body = await bodyKey.currentState?.getBody();
@@ -312,27 +341,19 @@ class HttpBodyState extends State<HttpBodyWidget> {
             },
           );
 
-    final previewBtn = IconButton(
-      visualDensity: visualDensity,
-      iconSize: 16,
-      icon: const Icon(Icons.visibility_outlined),
-      tooltip: localizations.htmlPreview,
-      onPressed: _openHtmlPreview,
-    );
-
     final rewriteBtn = IconButton(
       visualDensity: visualDensity,
-      iconSize: 16,
-      icon: Obx(() => Icon(Icons.edit_document,
-          color: rewriteEnabled.value ? Colors.deepOrangeAccent : null)),
+      iconSize: 15,
+      icon: Obx(() => SvgIcon('pencil', size: 15,
+          color: rewriteEnabled.value ? Colors.deepOrangeAccent : iconColor)),
       tooltip: localizations.requestRewrite,
       onPressed: showRequestRewrite,
     );
 
     final encodeBtn = IconButton(
         visualDensity: visualDensity,
-        iconSize: 20,
-        icon: const Icon(Icons.text_format),
+        iconSize: 15,
+        icon: SvgIcon('encode', size: 15, color: iconColor),
         tooltip: localizations.encode,
         onPressed: () async {
           var body = await bodyKey.currentState?.getBody();
@@ -343,10 +364,19 @@ class HttpBodyState extends State<HttpBodyWidget> {
 
     final openNewBtn = IconButton(
         visualDensity: visualDensity,
-        iconSize: 16,
-        icon: const Icon(Icons.open_in_new),
+        iconSize: 15,
+        icon: SvgIcon('arrow_out', size: 15, color: iconColor),
         tooltip: localizations.newWindow,
         onPressed: () => openNew());
+
+    // fork：HTML 正文的内置渲染预览入口
+    final previewBtn = IconButton(
+      visualDensity: visualDensity,
+      iconSize: 15,
+      icon: SvgIcon('code', size: 15, color: iconColor),
+      tooltip: localizations.htmlPreview,
+      onPressed: _openHtmlPreview,
+    );
 
     Widget? cryptoToggle;
     if (decoded != null) {
@@ -367,9 +397,6 @@ class HttpBodyState extends State<HttpBodyWidget> {
     //   the crypto toggle visible.
     if (isMobile && cryptoToggle != null) {
       final overflowItems = <PopupMenuEntry<String>>[];
-      if (widget.httpMessage?.contentType == ContentType.html) {
-        overflowItems.add(PopupMenuItem(value: 'preview', child: Text(localizations.htmlPreview)));
-      }
       if (!widget.hideRequestRewrite) {
         overflowItems.add(PopupMenuItem(
             value: 'rewrite',
@@ -381,11 +408,10 @@ class HttpBodyState extends State<HttpBodyWidget> {
         overflowItems.add(PopupMenuItem(value: 'new_window', child: Text(localizations.newWindow)));
       }
 
-      return Row(
+      final row = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('$type Body', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          if (truncatedBadge() != null) ...[const SizedBox(width: 6), truncatedBadge()!],
           const SizedBox(width: 8),
           searchBtn,
           const SizedBox(width: 4),
@@ -396,7 +422,6 @@ class HttpBodyState extends State<HttpBodyWidget> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, size: 20),
               onSelected: (v) {
-                if (v == 'preview') _openHtmlPreview();
                 if (v == 'rewrite') showRequestRewrite();
                 if (v == 'encode') {
                   bodyKey.currentState?.getBody().then((body) {
@@ -409,34 +434,71 @@ class HttpBodyState extends State<HttpBodyWidget> {
             ),
         ],
       );
+      // 格式分段第二行（改版把分段并入标题行后加密分支丢了切换入口，且一行放不下）
+      if (widget.httpMessage?.contentType == ContentType.html) {
+      actions.add(previewBtn);
+    }
+    if (tabs != null && tabs.list.length > 1) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          row,
+          Row(children: _fmtChips(context, tabs)),
+        ]);
+      }
+      return row;
     }
 
-    // Default (desktop + mobile without crypto): keep the previous full inline actions
-    // (horizontal scroll when needed).
-    final list = <Widget>[
-      Text('$type Body', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-      if (truncatedBadge() != null) ...[const SizedBox(width: 8), truncatedBadge()!],
-      const SizedBox(width: 18),
+    // 设计稿 .d-sec + .fmt：11px 灰色分区标签（请求体/响应体）+ 格式分段胶囊 + 紧凑操作图标
+    final theme = Theme.of(context);
+    final text3 = theme.brightness == Brightness.light ? const Color(0xFF8F959E) : DarkPalette.text3;
+    // 标签不再带「· JSON」类型后缀：格式分段已按类型默认选中
+    var label = widget.httpMessage is HttpRequest ? localizations.requestBody : localizations.responseBody;
+
+    final labelWidget = Text(label, style: TextStyle(fontSize: 14, height: 1.5, letterSpacing: 0.3, color: text3));
+
+    final actions = <Widget>[
       searchBtn,
-      const SizedBox(width: 4),
+      const SizedBox(width: 2),
       copyBtn,
-      if (widget.httpMessage?.contentType == ContentType.html) previewBtn,
     ];
-
     if (!widget.hideRequestRewrite) {
-      list.add(rewriteBtn);
+      actions.add(rewriteBtn);
     }
-    list.add(encodeBtn);
+    actions.add(encodeBtn);
     if (!inNewWindow) {
-      list.add(openNewBtn);
+      actions.add(openNewBtn);
     }
     if (cryptoToggle != null) {
-      list.add(cryptoToggle);
+      actions.add(cryptoToggle);
     }
 
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: list));
+    // 手机端两行布局（旧版行为）：第一行 标签+操作图标，第二行 格式分段——合并一行手机上放不下
+    if (isMobile) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          labelWidget,
+          if (truncatedBadge() != null) ...[const SizedBox(width: 6), truncatedBadge()!],
+          const SizedBox(width: 8),
+          ...actions
+        ]),
+        if (tabs != null && tabs.list.length > 1) Row(children: _fmtChips(context, tabs)),
+      ]);
+    }
+
+    final list = <Widget>[
+      labelWidget,
+      if (truncatedBadge() != null) ...[const SizedBox(width: 6), truncatedBadge()!],
+      const SizedBox(width: 12),
+      ..._fmtChips(context, tabs),
+      const SizedBox(width: 8),
+      ...actions,
+    ];
+
+    return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: list));
   }
 
+  ///下载图片
   /// 「抓包内容上限」裁剪提示（上游 #773）：body 被裁剪时在标题栏给出提示
   Widget? truncatedBadge() {
     final message = widget.httpMessage;

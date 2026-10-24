@@ -54,6 +54,7 @@ class _LeftNavigationBarState extends State<LeftNavigationBar> {
             (icon: 'star', label: localizations.favorites),
             (icon: 'clock', label: localizations.history),
             (icon: 'wrench', label: localizations.toolbox),
+            (icon: 'sliders', label: localizations.rules),
           ];
 
           return Container(

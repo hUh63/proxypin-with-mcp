@@ -68,21 +68,57 @@ class Toolbox extends StatefulWidget {
 class _ToolboxState extends State<Toolbox> {
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
+  /// 手机端宫格横向收紧（间距 4、项水平 padding 8、按内容定宽），保证 4 项一行整屏放下；桌面端不变
+  bool get mobile => Platforms.isMobile();
+
+  /// 分组容器：手机端 = 设计稿 p-sec2 小灰标题 + p-tbcard 白卡宫格（与配置/设置页白卡同一语言）；
+  /// 桌面端 = Divider + 14px 标题 + 裸宫格（首组无标题，[desktopHeader] 控制）
+  Widget _group(String label, List<Widget> items, {bool desktopHeader = true}) {
+    var theme = Theme.of(context);
+    if (mobile) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 5),
+            child: Text(label,
+                style:
+                    TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurfaceVariant))),
+        Container(
+            // start 对齐的 Column 里必须显式拉满，否则 Wrap 按内容收缩、4 列变 3 列
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 2),
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 8),
+            decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border.all(color: theme.dividerColor.withValues(alpha: 0.55)),
+                borderRadius: BorderRadius.circular(10)),
+            child: Wrap(children: items)),
+      ]);
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (desktopHeader) ...[
+        const Divider(thickness: 0.3),
+        // 设计稿 .tb-sec：12px 灰标签
+        Text(label,
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurfaceVariant)),
+      ],
+      Wrap(spacing: 6, children: items),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return IconTheme(
-        data: IconTheme.of(context).copyWith(color: IconTheme.of(context).color?.withValues(alpha: 0.65), size: 22),
+        // 设计稿 .tb-item svg：20px（全局 IconTheme 统一，移动端共用）
+        data: IconTheme.of(context).copyWith(color: IconTheme.of(context).color?.withValues(alpha: 0.65), size: 20),
         child: SingleChildScrollView(
             child: Container(
-          padding: const EdgeInsets.all(10),
+          // 手机端卡片/标题自带水平留白（桌面端保持 10）
+          padding: mobile ? EdgeInsets.zero : const EdgeInsets.all(10),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top quick actions
-              Wrap(
-                spacing: 6,
-                children: [
+              _group(localizations.request, [
                   IconText(
                     icon: Icons.http,
                     text: "HTTP",
@@ -131,6 +167,8 @@ class _ToolboxState extends State<Toolbox> {
               Wrap(
                 spacing: 6,
                 children: [
+              ]),
+              _group(localizations.view, [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -205,6 +243,8 @@ class _ToolboxState extends State<Toolbox> {
               Wrap(
                 spacing: 6,
                 children: [
+              ]),
+              _group(localizations.encode, [
                   IconText(
                     onTap: () => encodeWindow(EncoderType.url, context),
                     icon: Icons.link,
@@ -259,6 +299,8 @@ class _ToolboxState extends State<Toolbox> {
                     text: localizations.toolboxUrlParams,
                     tooltip: localizations.toolboxUrlParamsTip,
                   ),
+              ]),
+              _group(localizations.cipher, [
                   IconText(
                     onTap: () => encodeWindow(EncoderType.md5, context),
                     icon: Icons.tag_outlined,
@@ -334,6 +376,8 @@ class _ToolboxState extends State<Toolbox> {
               Wrap(
                 spacing: 6,
                 children: [
+              ]),
+              _group(localizations.other, [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -410,6 +454,8 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.cast_connected,
                       text: 'MCP',
                       tooltip: localizations.toolboxNavMcpTip),
+              ]),
+              _group(localizations.toolboxGroupDebug, [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -547,6 +593,8 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.lock_open_outlined,
                       text: localizations.toolboxSslPinning,
                       tooltip: localizations.toolboxNavPinningTip),
+              ]),
+              _group(localizations.toolboxGroupExtend, [
                   IconText(
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) =>
@@ -588,12 +636,12 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.psychology_outlined,
                       text: localizations.aiTitle,
                       tooltip: localizations.toolboxNavAiTip),
-                ],
-              ),
+              ]),
             ],
           ),
         )));
   }
+
 
   Future<void> httpRequest() async {
     if (Platforms.isMobile()) {
@@ -623,10 +671,13 @@ class IconText extends StatelessWidget {
   final String text;
   final String? tooltip;
 
+  /// 图标着色（设计稿按工具类别配色），为空时跟随 IconTheme
+  final Color? color;
+
   /// Called when the user taps this part of the material.
   final GestureTapCallback? onTap;
 
-  const IconText({super.key, required this.icon, required this.text, this.onTap, this.tooltip});
+  const IconText({super.key, required this.icon, required this.text, this.onTap, this.tooltip, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -648,7 +699,7 @@ class IconText extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon),
+                Icon(icon, color: color),
                 const SizedBox(height: 6),
                 Text(label, style: const TextStyle(fontSize: 14)),
               ],

@@ -141,7 +141,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   @override
   void dispose() {
     selectionController.selectedIds.removeListener(_selectionEvent);
-    RequestWidget.removeAutoReadByIds(container.map((request) => request.requestId));
+    RequestWidget.removeRowStatesByIds(container.map((request) => request.requestId));
     selectionController.clear();
     super.dispose();
   }
@@ -365,7 +365,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       // 上游 #839 Bug 3：与移动端同理，改用增量 remove 避免每次都全量重建。
       domainListKey.currentState?.remove(removed);
       requestSequenceKey.currentState?.remove(removed);
-      RequestWidget.removeAutoReadByIds(removed.map((request) => request.requestId));
+      RequestWidget.removeRowStatesByIds(removed.map((request) => request.requestId));
       selectionController.prune(container.map((request) => request.requestId));
       MemoryCleanupMonitor.releaseAll(removed);
     }
@@ -410,14 +410,14 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     container.removeWhere((element) => list.contains(element));
     domainListKey.currentState?.remove(list);
     requestSequenceKey.currentState?.remove(list);
-    RequestWidget.removeAutoReadByIds(list.map((request) => request.requestId));
+    RequestWidget.removeRowStatesByIds(list.map((request) => request.requestId));
   }
 
   ///移除
   void domainListRemove(List<HttpRequest> list) {
     container.removeWhere((element) => list.contains(element));
     requestSequenceKey.currentState?.remove(list);
-    RequestWidget.removeAutoReadByIds(list.map((request) => request.requestId));
+    RequestWidget.removeRowStatesByIds(list.map((request) => request.requestId));
     selectionController.prune(container.map((request) => request.requestId));
   }
 
@@ -425,7 +425,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   void sequenceRemove(List<HttpRequest> list) {
     container.removeWhere((element) => list.contains(element));
     domainListKey.currentState?.remove(list);
-    RequestWidget.removeAutoReadByIds(list.map((request) => request.requestId));
+    RequestWidget.removeRowStatesByIds(list.map((request) => request.requestId));
     selectionController.prune(container.map((request) => request.requestId));
   }
 
@@ -448,7 +448,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       _pausedChannels.clear();
       _pausedResponses.clear();
       _followPaused = false;
-      RequestWidget.removeAutoReadByIds(container.map((request) => request.requestId));
+      RequestWidget.removeRowStatesByIds(container.map((request) => request.requestId));
       container.clear();
       domainListKey.currentState?.clean();
       requestSequenceKey.currentState?.clean();
@@ -471,7 +471,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     domainListKey.currentState?.remove(removeRange);
     requestSequenceKey.currentState?.remove(removeRange);
 
-    RequestWidget.removeAutoReadByIds(removeRange.map((request) => request.requestId));
+    RequestWidget.removeRowStatesByIds(removeRange.map((request) => request.requestId));
     selectionController.prune(container.map((request) => request.requestId));
     // 上游 #899：被清理的请求立刻释放字节数据
     MemoryCleanupMonitor.releaseAll(removeRange);

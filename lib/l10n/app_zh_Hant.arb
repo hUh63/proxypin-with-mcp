@@ -4530,5 +4530,9 @@
   "mcpOneClick": "One-click setup on your computer",
   "mcpOneClickHint": "Copy the matching command and run it on the computer: Terminal for macOS/Linux, PowerShell for Windows. It auto-detects installed AI clients (Claude Code, Codex, Cursor, Gemini CLI) and configures them over Wi-Fi.",
   "mcpRegenerateToken": "Reset token",
-  "statusStopped": "Stopped"
+  "statusStopped": "Stopped",
+  "clientAddress": "客戶端地址",
+  "toolboxGroupDebug": "偵錯與安全",
+  "toolboxGroupExtend": "更多",
+  "rules": "規則總覽"
 }

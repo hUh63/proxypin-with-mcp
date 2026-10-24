@@ -2729,5 +2729,9 @@
   "pinnedDragSort": "Pinned (drag to reorder)",
   "pinToolsHint": "All tools (tap + to pin to toolbar)",
   "image": "Image",
-  "filtered": "Filtered"
+  "filtered": "Filtered",
+  "clientAddress": "Alamat klien",
+  "toolboxGroupDebug": "Debug & Keamanan",
+  "toolboxGroupExtend": "Lainnya",
+  "rules": "Aturan"
 }

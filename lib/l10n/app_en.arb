@@ -4751,5 +4751,9 @@
   "pinnedDragSort": "Pinned (drag to reorder)",
   "pinToolsHint": "All tools (tap + to pin to toolbar)",
   "image": "Image",
-  "filtered": "Filtered"
+  "filtered": "Filtered",
+  "clientAddress": "Client Address",
+  "toolboxGroupDebug": "Debug & Security",
+  "toolboxGroupExtend": "More",
+  "rules": "Rules"
 }

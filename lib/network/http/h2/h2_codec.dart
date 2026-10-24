@@ -743,6 +743,10 @@ abstract class Http2Codec<T extends HttpMessage> implements Codec<T, T> {
   void _afterHeaders(ChannelContext channelContext, FrameHeader frameHeader,
       HeadersFrame headersFrame, DecoderResult<T> result, List<int> forwarded) {
     result.isDone = frameHeader.hasEndStreamFlag && frameHeader.hasEndHeadersFlag;
+    // 请求体是否还会以 DATA 帧到达（翻译模式据此决定 h1 侧是否用 chunked 定界）
+    if (this is Http2RequestDecoder) {
+      channelContext.pendingHttp2RequestBody = !frameHeader.hasEndStreamFlag;
+    }
     if (headersFrame.streamDependency != null) {
       headersFrame.headerBlockFragment = [];
       channelContext.put(frameHeader.streamIdentifier, headersFrame);

@@ -230,11 +230,7 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
         buffer.clearRead();
 
         var data = decodeResult.data;
-        if (data is HttpMessage) {
-          data.packageSize ??= length;
-          data.remoteHost = channel.remoteSocketAddress.host;
-          data.remotePort = channel.remoteSocketAddress.port;
-        }
+        _fillMessageMeta(channelContext, channel, data, length);
 
         if (data is HttpRequest) {
           if (data.protocolVersion == 'HTTP/2') {
@@ -337,6 +333,19 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
   ///
   /// SSL / HTTP2 走 SNI 嗅探或 `:authority`，已经拿到正确端口；
   /// 其它明文情况（绝对 URI / Host 头自带端口）[getHostAndPort] 也能处理。
+  /// 补齐消息的展示/关联元数据（包大小、对端地址、响应→请求关联）。
+  /// 不覆盖已有值：解码器或响应处理器可能已填得更准。
+  void _fillMessageMeta(ChannelContext channelContext, Channel channel, Object? data, int length) {
+    if (data is! HttpMessage) return;
+    data.packageSize ??= length;
+    data.remoteHost = channel.remoteSocketAddress.host;
+    data.remotePort = channel.remoteSocketAddress.port;
+    if (data is HttpResponse) {
+      data.request ??= channelContext.currentRequest;
+      data.requestId = data.request?.requestId ?? data.requestId;
+    }
+  }
+
   Future<void> _fixAndroidVpnPort(ChannelContext channelContext, Channel channel, HttpRequest data) async {
     if (!Platform.isAndroid ||
         channel.isSsl ||
@@ -608,11 +617,7 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
       final finalized = (decoder as CloseDelimitedBodyFinalizer).finishCloseDelimitedBody();
       final data = finalized?.data;
       if (data is HttpResponse) {
-        data.packageSize ??= buffer.length;
-        data.remoteHost = channel.remoteSocketAddress.host;
-        data.remotePort = channel.remoteSocketAddress.port;
-        data.request ??= channelContext.currentRequest;
-        data.requestId = data.request?.requestId ?? data.requestId;
+        _fillMessageMeta(channelContext, channel, data, buffer.length);
         buffer.clear();
         try {
           await handler.channelRead(channelContext, channel, data);

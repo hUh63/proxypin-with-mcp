@@ -4530,5 +4530,9 @@
   "pinnedDragSort": "已固定（拖拽排序）",
   "pinToolsHint": "全部功能（点 + 固定到工具栏）",
   "image": "图片",
-  "filtered": "过滤"
+  "filtered": "过滤",
+  "clientAddress": "客户端地址",
+  "toolboxGroupDebug": "调试与安全",
+  "toolboxGroupExtend": "更多",
+  "rules": "规则总览"
 }

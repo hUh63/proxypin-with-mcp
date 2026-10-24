@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.67.88 (2026-10-25) — UI 视觉层合上游 + 规则总览入口 + 翻译模式流式请求体
+
+### UI 视觉层（上游 v1.4.0 设计稿）
+- **请求/响应面板**：概览改用上游 Overview 卡片（状态码按语义色、耗时/大小归一化文案、
+  响应体预览卡 + JSON/Raw/Preview 分段）；同时补回 fork 的「客户端地址」行与桌面端
+  分阶段耗时（TCP/TLS/等待/接收）行。Request/Response 两个 tab 的滚动控制器仍由 State
+  持有（上游每次 build 新建、从不释放，高频刷新时持续泄漏）。
+- **Body**：格式切换改上游 `.fmt` 分段胶囊（选中 primary-soft 底 + primary 字），
+  桌面单行 / 手机两行；保留 fork 的 HTML 预览入口与「抓包内容上限」裁剪徽标。
+- **Headers**：上游 `.kv` 设计（130px 头名列 + 等宽值 + 细线分隔）与表格/文本模式切换、
+  复制按钮；文本模式的查找控制器改由 State 持有并释放（上游每次 build 新建且不释放）。
+- **工具箱**：改为上游分组卡片（请求 / 查看 / 编码 / 加密 / 其它 + fork 的调试与安全 / 更多），
+  手机端小灰标题 + 白卡宫格，桌面端 Divider + 灰色标签；`IconText` 支持图标着色。
+- **桌面设置菜单**：图表图标改同套 stroke SVG（`gear`）、32×32 点击盒，并补 Esc 关闭
+  （独立 `MenuAnchor` 缺 SDK 的 `DismissMenuAction`，此前按 Esc 关不掉）。
+- **移动端底栏菜单**：改为上游 `menuCard` / `menuTile` 卡片行（含流量控制行尾状态摘要、
+  未开启/规则数），图标按类别着色；保留 fork 的日志查看 / 使用指南 / AI 分析入口。
+- 其余 70+ 个 `lib/ui/**` 文件与上游 v1.4.0 做三方合并（无冲突的自动吸收）。
+
+### 规则总览页接入
+- 桌面左栏新增第 5 项「规则总览」（`sliders` 图标），命令面板新增 `nav.rules`；
+  一屏查看请求屏蔽 / 重写 / 映射 / 加密 / 脚本 / 断点的开关状态与规则数，点击直达对应管理页。
+
+### h2 → HTTP/1.1 协议转换：流式请求体定界
+- 翻译模式下，h2 请求体如果跨多个 DATA 帧陆续到达（HEADERS 转发时 `body` 还是空的），
+  此前只透传 DATA 载荷给上游、请求头里没有任何 framing —— 上游会把这些字节当成「下一个
+  请求」（400 / 串包）。现在改声明 `Transfer-Encoding: chunked`，由
+  `H2ToH1FrameStripper` 逐帧包 chunk 并在 END_STREAM 补终止块；判据用 h2 HEADERS 是否
+  带 END_STREAM + `content-length`，不带 content-length 的流式上传同样覆盖。
+
+### 其它修复
+- `RequestWidget` 新增 `removeRowStatesByIds`：请求从容器删除/清空时同时清理「已读」与
+  「手动高亮」两份静态缓存（改为静态 LruCache 后，删除路径只清了已读）。
+- dispatcher 抽出 `_fillMessageMeta`：统一补齐包大小、对端地址，以及响应→请求的关联
+  （`response.request` / `requestId`），close-delimited 收尾路径复用同一套逻辑。
+
 ## v1.67.87 (2026-10-24)
 
 - 桌面快捷工具栏：各工具的「启用态」检查（`isActive`）失败时异常会逃逸成未捕获

@@ -98,6 +98,12 @@ class RequestWidget extends StatefulWidget {
   static void removeAutoReadByIds(Iterable<String> requestIds) {
     _RequestWidgetState.removeAutoReadByIds(requestIds);
   }
+
+  /// 清理行的全部共享状态（已读 + 手动高亮），请求从容器删除/清空时调用
+  static void removeRowStatesByIds(Iterable<String> requestIds) {
+    _RequestWidgetState.removeAutoReadByIds(requestIds);
+    _RequestWidgetState.removeManualHighlightByIds(requestIds);
+  }
 }
 
 class _RequestWidgetState extends State<RequestWidget> {
@@ -116,6 +122,12 @@ class _RequestWidgetState extends State<RequestWidget> {
 
   static void removeAutoReadByIds(Iterable<String> requestIds) {
     autoReadRequests.removeAll(requestIds);
+  }
+
+  static void removeManualHighlightByIds(Iterable<String> requestIds) {
+    for (final id in requestIds) {
+      manualHighlights.remove(id);
+    }
   }
 
   /// 关键字（URL 规则）命中的高亮色：由请求内容决定，实例内缓存即可。

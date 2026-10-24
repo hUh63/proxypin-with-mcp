@@ -41,6 +41,13 @@ class ChannelContext {
   /// decode 内部没有 await，因此不存在两个通道交错覆盖的窗口。
   Channel? decodingChannel;
 
+  /// 当前 h2 请求的 HEADERS 未带 END_STREAM，即请求体还会以 DATA 帧陆续到达。
+  ///
+  /// 协议转换（h2→h1）时要在请求头里声明 chunked，否则上游会把后续 DATA 字节
+  /// 当成下一个请求（400 / 串包）。翻译模式下同一时刻只有一个流转发，用连接级
+  /// 标志即可（h2 解码器在 HEADERS 处理时写入）。
+  bool pendingHttp2RequestBody = false;
+
   /// close-delimited 响应（无 Content-Length、无 chunked）是否缓冲到连接关闭。
   ///
   /// 由 [ChannelDispatcher] 按「当前 handler 是否有响应拦截器」设置：
@@ -391,6 +398,14 @@ class H2ToH1FrameStripper {
   bool _prefaceConsumed = false;
   final BytesBuilder _leftover = BytesBuilder();
 
+  /// 是否把透传的 DATA 载荷包装成 HTTP/1.1 chunk。
+  ///
+  /// h2 请求体可以跨多个 DATA 帧陆续到达，转成 h1 后上游必须靠 chunked 才能确定
+  /// body 边界（由 HttpCodec.encode 在「body 未完整」时置位）。
+  bool chunked = false;
+
+  static final List<int> _chunkEnd = "0\r\n\r\n".codeUnits;
+
   List<int> strip(List<int> bytes) {
     var input = BytesBuilder(copy: false)
       ..add(_leftover.takeBytes())
@@ -415,8 +430,22 @@ class H2ToH1FrameStripper {
       int length = (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
       int type = data[offset + 3];
       if (data.length - offset - 9 < length) break; // 不完整，留到下次
-      if (type == _dataFrameType && length > 0) {
-        out.add(data.sublist(offset + 9, offset + 9 + length));
+      if (type == _dataFrameType) {
+        final payload = data.sublist(offset + 9, offset + 9 + length);
+        if (chunked) {
+          if (payload.isNotEmpty) {
+            out.add(payload.length.toRadixString(16).codeUnits);
+            out.add(const [0x0d, 0x0a]);
+            out.add(payload);
+            out.add(const [0x0d, 0x0a]);
+          }
+          // flags 在帧头第 5 字节：0x1 = END_STREAM，收尾写终止块
+          if ((data[offset + 4] & 0x1) != 0) {
+            out.add(_chunkEnd);
+          }
+        } else if (payload.isNotEmpty) {
+          out.add(payload);
+        }
       }
       offset += 9 + length;
     }
