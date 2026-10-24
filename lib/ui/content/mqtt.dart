@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/mqtt/mqtt_packet.dart';
@@ -25,10 +23,9 @@ class MqttMessages extends StatelessWidget {
         final message = messages[index];
         MqttPacket? packet;
         try {
-          packet = MqttPacket.fromBytes(
-            Uint8List.fromList(message.payloadData),
-            message.isFromClient,
-          );
+          // payloadData 本身已是 Uint8List，别再复制一份（4MB 报文每帧重建
+          // 都会整块拷贝，滚动时尤其明显）
+          packet = MqttPacket.fromBytes(message.payloadData, message.isFromClient);
         } on FormatException {
           // History files can contain older or truncated message data.
         }

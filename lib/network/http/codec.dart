@@ -291,13 +291,21 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T>, CloseDel
     // 后续 DATA 字节会被当成「下一个请求」（400 / 串包）。此时改声明 chunked，
     // 由 H2ToH1FrameStripper 逐帧包 chunk、在 END_STREAM 补终止块。
     if (translateH2ToH1 && message is HttpRequest) {
-      // body 未到但 HEADERS 没带 END_STREAM（含客户端不带 content-length 的流式上传）
-      final streamingBody =
-          message.body == null && (channelContext.pendingHttp2RequestBody || message.headers.contentLength > 0);
+      // body 还没到、而 HEADERS 没带 END_STREAM → 请求体稍后以 DATA 帧到达
+      // （含客户端不带 content-length 的流式上传）
+      final streamingBody = message.body == null && channelContext.pendingHttp2RequestBody;
       channelContext.h2ToH1FrameStripper.chunked = streamingBody;
       if (streamingBody) {
         message.headers.remove(HttpHeaders.CONTENT_LENGTH);
-        message.headers.set(HttpHeaders.TRANSFER_ENCODING, 'chunked');
+        // 不改消息对象里的头：抓包详情与「重放」都用这份 headers，塞进
+        // Transfer-Encoding 会让重放的定长 body 被上游按 chunked 解析。
+        // 只在下面写出头时补一行字节。
+        builder.add(HttpHeaders.TRANSFER_ENCODING.codeUnits)
+          ..addByte(HttpConstants.colon)
+          ..addByte(HttpConstants.sp)
+          ..add('chunked'.codeUnits)
+          ..addByte(HttpConstants.cr)
+          ..addByte(HttpConstants.lf);
       }
     }
 

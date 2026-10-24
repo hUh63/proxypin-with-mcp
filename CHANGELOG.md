@@ -27,6 +27,12 @@
   已知整包长度批量拷贝；超大报文（>4MB）依旧只转发不抓包、内存有界。
 - 新增 `test/mqtt_framer_test.dart`：逐字节分片、同块多包、尾巴留帧、
   remaining length 超四字节、超上限跳过、1MB 报文整包到达等 9 个用例。
+- MQTT 详情页不再对每一帧 payload 做一次 `Uint8List` 复制（4MB 报文滚动时反复拷贝）。
+
+### 翻译模式补充
+- `Transfer-Encoding: chunked` 不再写进消息对象（抓包详情与「重放」都用这份
+  headers，塞进去会让重放时的定长 body 被上游按 chunked 解析），只在写给上游的
+  字节流里补这一行；流式判定改用 h2 HEADERS 的 END_STREAM 标记。
 
 ### 清理
 - 删除随上游合入但本仓库无使用场景的 `ui/component/context_menu_region.dart`

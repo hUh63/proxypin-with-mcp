@@ -180,7 +180,7 @@ Future<String> _setupClaude(String url, AppLocalizations l) async {
     ['mcp', 'remove', McpClientNames.legacy, '-s', 'user'],
     ['mcp', 'remove', McpClientNames.legacy, '-s', 'local'],
   ]);
-  return _runCli('claude', ['mcp', 'add', _serverName, '-s', 'user', '--transport', 'http', app], l);
+  return _runCli('claude', ['mcp', 'add', _serverName, '-s', 'user', '--transport', 'http', url], l);
 }
 
 Future<String> _setupCodex(String url, AppLocalizations l) async {
