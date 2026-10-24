@@ -469,7 +469,9 @@ class ChannelDispatcher extends ChannelHandler<Uint8List> {
     // 协议转换（客户端 h2 / 上游 h1）：上游字节是 HTTP/1.1 语义（可能带 chunk 分帧），
     // 原样写进 h2 客户端连接会让对端解析失败并整条断开。这里回一个 h2 502 并关掉
     // 这条上游连接（不复用），而不是把垃圾字节灌给客户端。
-    if (channelContext.isHttp2Translation && identical(channel, channelContext.serverChannel)) {
+    // 用粘性标记兜底：上游关闭后 selectedProtocol 读不到，isHttp2Translation 会失真。
+    if ((channelContext.isHttp2Translation || channelContext.wasHttp2Translation) &&
+        identical(channel, channelContext.serverChannel)) {
       final request = channelContext.pendingTranslatedRequest ?? channelContext.currentRequest;
       final body = utf8.encode('Unsupported response body framing under HTTP/2 translation');
       final resp = HttpResponse(HttpStatus.newStatus(502, 'Unsupported response framing'),
