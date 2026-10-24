@@ -271,11 +271,68 @@ class MultiWindow {
     });
   }
 
+  /// 只允许开一个实例的子窗口：已存在时聚焦而不是再开一个（上游 v1.4.0）。
+  static const Set<String> _singletonWidgets = {
+    'RequestRewriteWidget',
+    'RequestMapPage',
+    'RequestCryptoPage',
+    'ScriptWidget',
+    'RequestBreakpointPage',
+    'ScriptConsoleWidget',
+  };
+
+  /// 正在创建中的单例窗口：createWindow 要启动新 engine，耗时数百毫秒，
+  /// 期间原生窗口注册表里还查不到，连点会重复开。
+  static final Set<String> _openingWidgets = {};
+
+  /// 查找已存在的单例子窗口并前置。
+  ///
+  /// 窗口销毁后原生注册表可能短暂残留已注销 channel 的条目：focus 失败时跳过
+  /// 继续扫描（异常中断循环会让已存在的单例窗口被重复创建），整体异常返回 null
+  /// 由调用方回落到新建。
+  static Future<WindowController?> _focusSingletonWindow(String widgetName) async {
+    try {
+      for (var window in await WindowController.getAll()) {
+        String? name;
+        try {
+          var decoded = jsonDecode(window.arguments);
+          if (decoded is Map<String, dynamic>) {
+            name = decoded['name'] as String?;
+          }
+        } catch (_) {
+          continue; // 主窗口等无 JSON 参数的窗口
+        }
+        if (name != widgetName) continue;
+        try {
+          // 用 show() 把已有窗口重新显示/前置（WindowController 无跨平台 focus()，
+          // 原生侧也没实现 window_focus 方法）。
+          await window.show();
+          return window;
+        } catch (e) {
+          logger.d('skip focusing stale window ${window.windowId} (likely closed): $e');
+          continue;
+        }
+      }
+    } catch (e) {
+      logger.w('focus singleton window $widgetName failed, fallback to create new: $e');
+    }
+    return null;
+  }
+
   static Future<WindowController> openWindow(String title, String widgetName,
       {Size size = const Size(800, 680), Map<String, dynamic>? args}) async {
     if (Platform.isAndroid || Platform.isIOS) {
       onOpenWindow?.call(widgetName, args);
       return WindowController.fromWindowId('0'); // Dummy controller
+    }
+
+    // 单例子窗口：已存在则聚焦，正在创建则忽略本次点击
+    if (_singletonWidgets.contains(widgetName)) {
+      final existing = await _focusSingletonWindow(widgetName);
+      if (existing != null) return existing;
+      if (!_openingWidgets.add(widgetName)) {
+        return WindowController.fromWindowId('0');
+      }
     }
 
     var ratio = 1.0;
@@ -290,9 +347,13 @@ class MultiWindow {
     if (!Platform.isMacOS) {
       window.setTitle(title);
     }
-    await window.center();
-    await window.setSize(Size(size.width * ratio, size.height * ratio));
-    await window.show();
+    try {
+      await window.center();
+      await window.setSize(Size(size.width * ratio, size.height * ratio));
+      await window.show();
+    } finally {
+      _openingWidgets.remove(widgetName);
+    }
 
     return window;
   }

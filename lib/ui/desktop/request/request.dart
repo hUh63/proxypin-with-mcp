@@ -127,10 +127,10 @@ class _RequestWidgetState extends State<RequestWidget> {
   /// 高亮就丢了（用户标了颜色再滚动一下全没了）。上游 v1.4.0 的修法。
   static final LruCache<String, Color> manualHighlights = LruCache<String, Color>(1000);
 
-  Color? get highlightColor => manualHighlights.get(request.requestId);
+  Color? get highlightColor => manualHighlights.get(widget.request.requestId);
 
   set highlightColor(Color? color) {
-    final id = request.requestId;
+    final id = widget.request.requestId;
     if (color == null) {
       manualHighlights.remove(id);
     } else {
