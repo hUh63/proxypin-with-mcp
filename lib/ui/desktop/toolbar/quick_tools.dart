@@ -240,11 +240,16 @@ class _QuickToolbarState extends State<QuickToolbar> {
         _active[id] = true; // 无状态检查的工具恒高亮（当前没有此类工具）
         continue;
       }
-      checker(widget.proxyServer).then((active) {
-        if (mounted && _active[id] != active) {
-          setState(() => _active[id] = active);
-        }
-      });
+      // 状态检查失败不能让异常逃逸成未捕获异步错误（管理器加载失败时工具栏会刷屏
+      // 报错，且异常堆栈淹没真正的日志）。
+      checker(widget.proxyServer).then(
+        (active) {
+          if (mounted && _active[id] != active) {
+            setState(() => _active[id] = active);
+          }
+        },
+        onError: (Object e) {},
+      );
     }
   }
 
