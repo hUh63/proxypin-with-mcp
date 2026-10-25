@@ -693,9 +693,13 @@ class CodeLint {
 
       if (_isDigit(c)) {
         i++;
+        // 只吃 ASCII 字母数字（0x1F、1e3、1_000）：不能用 _isIdPart，
+        // 它把 >0x7f 也算进去，中文输入法的全角标点会被当成数字尾巴吃掉。
         while (i < n) {
           final ch = src.codeUnitAt(i);
-          if (_isIdPart(ch) || ch == 0x2e) {
+          final ascii =
+              (ch >= 0x30 && ch <= 0x39) || (ch >= 0x61 && ch <= 0x7a) || (ch >= 0x41 && ch <= 0x5a) || ch == 0x5f;
+          if (ascii || ch == 0x2e) {
             i++;
           } else {
             break;
