@@ -4760,5 +4760,21 @@
   "exportWsFramesDesc": "Save every WS frame as a zip: frames.jsonl index, raw .bin payloads (protobuf ready), plus a readable transcript",
   "exportWsFramesEmpty": "No WebSocket frames in the selected requests",
   "vpnHttpProxyNotice": "VPN advertises HTTP proxy",
-  "vpnHttpProxyNoticeDesc": "Turn off for app clones / multi-user (user 999): those apps cannot reach the loopback proxy port and hang in SYN_SENT. With it off the VPN runs as pure TUN and tunnels TLS itself - capture still works."
+  "vpnHttpProxyNoticeDesc": "Turn off for app clones / multi-user (user 999): those apps cannot reach the loopback proxy port and hang in SYN_SENT. With it off the VPN runs as pure TUN and tunnels TLS itself - capture still works.",
+  "editorLint": "Syntax check",
+  "editorLintIssues": "Problems",
+  "editorLintClean": "No problems found",
+  "editorLintChecking": "Checking…",
+  "editorLintSkipped": "Text is too large, syntax check skipped",
+  "editorLintFix": "Fix",
+  "editorLintFixAll": "Fix all",
+  "editorConsole": "Console",
+  "editorConsoleClear": "Clear",
+  "editorConsoleHint": "Type an expression below and press Enter",
+  "editorConsoleInputHint": "Type code, Enter to run",
+  "editorConsoleNoRuntime": "This language has no local runtime, only static checks are available. Switch to JavaScript to execute code.",
+  "editorConsoleBackend": "Runtime",
+  "editorConsoleRun": "Run",
+  "editorConsoleRunDocument": "Run document",
+  "editorConsoleError": "Execution failed"
 }

@@ -120,7 +120,7 @@ Future<Map<String, dynamic>?> generateExportFileData(
   int index,
 ) async {
   var host = request.hostAndPort?.host ?? 'unknown';
-  var safeHost = host.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+  var safeHost = _safeNamePart(host);
   var prefix = '${index + 1}_$safeHost';
 
   switch (type) {
@@ -255,7 +255,7 @@ Future<void> exportRequestsAsFiles(
         try {
           var request = requests[i];
           var host = request.hostAndPort?.host ?? 'unknown';
-          var safeHost = host.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+          var safeHost = _safeNamePart(host);
           var prefix = '${i + 1}_$safeHost';
 
           switch (type) {
@@ -816,7 +816,10 @@ Future<void> exportWsFrames(
       for (final session in sessions) {
         index++;
         final zip = WsExport.buildZip(session);
-        final name = 'ws-${index}_${session.hostAndPort?.host ?? 'session'}.zip';
+        // zip 内的文件名要能在 Windows 资源管理器里解出来：IPv6 主机带 [::1]，
+        // 冒号与方括号都是 Windows 的非法文件名字符，统一替换掉。
+        final host = _safeNamePart(session.hostAndPort?.host ?? 'session');
+        final name = 'ws-${index}_$host.zip';
         archive.addFile(ArchiveFile(name, zip.length, zip));
       }
       bytes = Uint8List.fromList(ZipEncoder().encode(archive));
@@ -830,4 +833,12 @@ Future<void> exportWsFrames(
       FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
     }
   }
+}
+
+/// 文件名片段消毒：Windows / macOS 都不接受的字符统一换成 `_`。
+///
+/// 注意 IPv6 主机名长这样 `[::1]`，冒号与方括号都是非法字符——旧实现漏了方括号，
+/// 于是 `[...]` 形式的文件名在 Windows 上解压/保存会失败。
+String _safeNamePart(String value) {
+  return value.replaceAll(RegExp(r'[<>:"/\\|?*\[\]]'), '_');
 }

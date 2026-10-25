@@ -21,6 +21,15 @@ List<Map<String, dynamic>> _nativeToolsJson() {
               'type': 'boolean',
               'description': 'Enable/Disable SSL capture (MITM)',
             },
+            'vpn_http_proxy_notice': {
+              'type': 'boolean',
+              'description':
+                  'Android only: whether the VPN advertises itself as an HTTP proxy. Disable it '
+                      '(pure TUN) when apps inside a secondary user / app clone (work profile) '
+                      'lose all network while the VPN is on - the system blocks those profiles '
+                      'from reaching 127.0.0.1. HTTPS capture still works because the tunnel is '
+                      're-established with CONNECT.',
+            },
           },
         },
       },

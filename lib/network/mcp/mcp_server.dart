@@ -1905,11 +1905,22 @@ class McpServer {
           changed = true;
         }
 
+        if (args.containsKey('vpn_http_proxy_notice')) {
+          final enable = mcpAsBool(args['vpn_http_proxy_notice']) ?? config.vpnHttpProxyNotice;
+          config.vpnHttpProxyNotice = enable;
+          // 通告方式只在建立 VPN 时生效，VPN 已在跑就重启一次。
+          if (Platforms.isAndroid && Vpn.isVpnStarted) {
+            Vpn.restartVpn("127.0.0.1", ProxyServer.current!.port, config);
+          }
+          changed = true;
+        }
+
         if (changed) await config.flushConfig();
         return {
           'status': 'success',
           'system_proxy': config.enableSystemProxy,
           'ssl_capture': config.enableSsl,
+          'vpn_http_proxy_notice': config.vpnHttpProxyNotice,
         };
 
       case 'export_har':

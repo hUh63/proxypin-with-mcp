@@ -49,3 +49,22 @@ Android 16/17 上，**应用分身**（或工作资料等非 user 0 profile）�
 | `ProxyVpnService.createVpnInterface` | `setSystemProxy` 为 false 时不调用 `setHttpProxy` |
 | `ConnectionHandler.initProxyConnect` | TLS 首包先补 `CONNECT` 建隧道 |
 | `Connection.addReceivedData` | 吞掉代理的 CONNECT 响应头 |
+
+## IPv6 与 UDP：纯 TUN 模式下不受影响
+
+排查时确认过两件事，免得再被怀疑成缺陷：
+
+- **IPv6**：VPN 只 `addAddress(VIRTUAL_HOST, 32)` + `addRoute("0.0.0.0", 0)`，
+  没有配置 IPv6 地址与路由，系统不会把 IPv6 流量送进 tun —— 它走物理网络，
+  既不抓包也不会被黑洞。`handlePacket` 只解析 IPv4 头是与此一致的，不是遗漏。
+  真的需要抓 IPv6 时才需要补 `addAddress` / `addRoute("::", 0)` 与
+  `IP6Header` 解析（`IPPacketFactory` 目前只有 IPv4）。
+- **UDP**：`ConnectionHandler.handleUDPPacket` 已经有完整的 UDP 会话转发
+  （`ConnectionManager.createUDPConnection` + `protect()` 直连），QUIC 元数据
+  探测与 `blockQuic` 丢弃也都在。纯 TUN 不改这段逻辑，所以 QUIC 仍按开关处理。
+
+## 超时兜底
+
+`proxyTunnelPending` 有 10 秒超时（`proxyTunnelStart`）：代理一直不回响应头时
+（端口填错、对端不是我们的代理），`Connection.addReceivedData` 会放弃吞头、
+把已收到的字节原样透传，避免客户端 TLS 握手一直挂着。

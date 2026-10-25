@@ -4539,5 +4539,21 @@
   "exportWsFramesDesc": "Save every WS frame as a zip: frames.jsonl index, raw .bin payloads (protobuf ready), plus a readable transcript",
   "exportWsFramesEmpty": "No WebSocket frames in the selected requests",
   "vpnHttpProxyNotice": "VPN advertises HTTP proxy",
-  "vpnHttpProxyNoticeDesc": "Turn off for app clones / multi-user (user 999): those apps cannot reach the loopback proxy port and hang in SYN_SENT. With it off the VPN runs as pure TUN and tunnels TLS itself - capture still works."
+  "vpnHttpProxyNoticeDesc": "Turn off for app clones / multi-user (user 999): those apps cannot reach the loopback proxy port and hang in SYN_SENT. With it off the VPN runs as pure TUN and tunnels TLS itself - capture still works.",
+  "editorLint": "语法检查",
+  "editorLintIssues": "问题",
+  "editorLintClean": "没有发现问题",
+  "editorLintChecking": "正在检查…",
+  "editorLintSkipped": "文本太大，已跳过语法检查",
+  "editorLintFix": "修复",
+  "editorLintFixAll": "全部修复",
+  "editorConsole": "控制台",
+  "editorConsoleClear": "清空",
+  "editorConsoleHint": "在下面输入表达式，回车执行",
+  "editorConsoleInputHint": "输入代码，回车执行",
+  "editorConsoleNoRuntime": "该语言没有本地运行时，只能做静态语法检查；需要执行代码请切换到 JavaScript",
+  "editorConsoleBackend": "运行后端",
+  "editorConsoleRun": "执行",
+  "editorConsoleRunDocument": "运行整篇",
+  "editorConsoleError": "执行出错"
 }

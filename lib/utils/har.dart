@@ -21,6 +21,7 @@ import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_headers.dart';
+import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/process_info.dart';
 import 'package:proxypin/ui/configuration.dart';
@@ -414,7 +415,60 @@ class Har {
             httpRequest.requestTime.add(Duration(milliseconds: timeMs));
       }
     }
+
+    // WebSocket 会话帧（Chrome DevTools 的事实标准）。只导出不导入的话，
+    // 同一个 HAR 在别的工具里能看 WS 会话、导回 ProxyPin 却是空的。
+    _readWebSocketMessages(har, httpRequest);
     return httpRequest;
+  }
+
+  /// 解析 `_webSocketMessages`（DevTools 格式）到 [HttpRequest.messages]。
+  ///
+  /// type: send/receive；opcode: 1/2/8/9/10；data: 文本帧是原文、二进制帧是 base64；
+  /// time: 秒（浮点）。第三方工具可能把 data 一律写成 base64 或把 type 写成
+  /// client/server，这里都按宽容方式处理，解不出来就退回 utf8 字节。
+  static void _readWebSocketMessages(Map har, HttpRequest request) {
+    final raw = har['_webSocketMessages'];
+    if (raw is! List || raw.isEmpty) return;
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final rawOpcode = item['opcode'];
+      final opcode =
+          rawOpcode is num ? rawOpcode.toInt() : int.tryParse('${rawOpcode ?? ''}'.trim()) ?? 0x1;
+      final data = item['data']?.toString() ?? '';
+
+      var payload = Uint8List(0);
+      if (data.isNotEmpty) {
+        if (opcode == 0x1) {
+          payload = Uint8List.fromList(utf8.encode(data));
+        } else {
+          try {
+            payload = Uint8List.fromList(base64Decode(data));
+          } catch (_) {
+            // 有些工具把二进制帧也写成可读文本
+            payload = Uint8List.fromList(utf8.encode(data));
+          }
+        }
+      }
+
+      final type = '${item['type'] ?? ''}'.toLowerCase();
+      final seconds = double.tryParse('${item['time'] ?? ''}');
+      final time = seconds == null
+          ? request.requestTime
+          : DateTime.fromMillisecondsSinceEpoch((seconds * 1000).round());
+
+      final frame = WebSocketFrame(
+        fin: item['fin'] != false,
+        opcode: opcode,
+        mask: false,
+        payloadLength: payload.length,
+        maskingKey: 0,
+        payloadData: payload,
+        time: time,
+      );
+      frame.isFromClient = type == 'send' || type == 'client' || type == 'sent';
+      request.addMessage(frame);
+    }
   }
 
   static List<Map<String, String>> _getQueryString(HttpRequest request) {

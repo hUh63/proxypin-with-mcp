@@ -38,6 +38,8 @@ import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/ui/toolbox/editor_console.dart';
 import 'package:proxypin/utils/custom_lang.dart';
 import 'package:proxypin/utils/lang_meta.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
@@ -186,6 +188,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool _readOnly = false;
   bool _showAscii = false;
   bool _showUnicode = false;
+
+  // 语法检查 + 控制台。
+  LintReport? _lint;
+  bool _lintChecking = false;
+  Timer? _lintTimer;
+  bool _lintEnabled = true;
+  bool _inLint = false;
+  bool _consoleOpen = false;
+  EditorConsoleTab _consoleTab = EditorConsoleTab.problems;
   bool _dirty = false;
   int? _gutterAnchorLine;
 
@@ -257,6 +268,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void dispose() {
     _navTimer?.cancel();
     _fileWatchTimer?.cancel();
+    _lintTimer?.cancel();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
@@ -350,6 +362,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     doc.controller.addListener(_onControllerChanged);
     doc.undoController.addListener(_onUndoChanged);
     _restartFileWatch();
+    _lint = null;
+    _scheduleLint();
   }
 
   // ---------- 外部改动 / 删除检测 ----------
@@ -401,6 +415,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (text != _lastText) {
       _lastText = text;
       if (!_dirty) setState(() => _dirty = true);
+      // 只有内容变化才重跑检查：光标移动、选区变化不触发。
+      _scheduleLint();
     }
 
     // 光标移动防抖后记录位置，供「上一处 / 下一处位置」使用。
@@ -414,6 +430,181 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       if (_prefs.magnifier && mounted) setState(() {});
     }
+  }
+
+  // ---------- 语法检查 / 控制台 ----------
+
+  /// 当前语言是否能真跑代码（手机端只有内置 JS 引擎）。
+  bool get _jsBackend {
+    final key = _lang.key;
+    return key == 'javascript' || key == 'typescript' || key == 'coffeescript';
+  }
+
+  void _scheduleLint() {
+    if (!_lintEnabled) return;
+    // 流畅模式刻意关掉了高亮/折叠，再挂一层全量扫描等于白费力气；
+    // 这种情况下只在打开「问题」面板时按需检查。
+    if (_smooth && !_consoleOpen) return;
+    _lintTimer?.cancel();
+    _lintTimer = Timer(const Duration(milliseconds: 650), _runLint);
+  }
+
+  void _runLint() {
+    final doc = _doc;
+    if (doc == null || !mounted || _inLint) return;
+    final text = doc.text;
+    if (text.length > CodeLint.maxCheckLength) {
+      setState(() {
+        _lint = null;
+        _lintChecking = false;
+      });
+      _clearLintDecorations();
+      return;
+    }
+    _inLint = true;
+    // 纯 CPU 线性扫描，2MB 以内几十毫秒，同步跑即可（省掉跨 isolate 拷贝整份文本）。
+    final report = CodeLint.check(text, langLabel: doc.langLabel, langKey: _lang.key);
+    _inLint = false;
+    if (!mounted) return;
+    setState(() {
+      _lint = report;
+      _lintChecking = false;
+    });
+    // 换完装饰会 notifyListeners，必须放在 setState 之后、且不能再次触发检查。
+    _applyLintDecorations(report);
+  }
+
+  void _openConsole(EditorConsoleTab tab) {
+    setState(() {
+      _consoleOpen = true;
+      _consoleTab = tab;
+    });
+    if (_lintEnabled && _lint == null) _runLint();
+  }
+
+  void _clearLintDecorations() {
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    controller.clearLineDecorations();
+    controller.clearGutterDecorations();
+    controller.notifyListeners();
+  }
+
+  void _applyLintDecorations(LintReport report) {
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    controller.clearLineDecorations();
+    controller.clearGutterDecorations();
+    if (report.diagnostics.isEmpty) {
+      controller.notifyListeners();
+      return;
+    }
+
+    // 同一行有多条诊断时只按最严重的那条染色。
+    final worstByLine = <int, LintSeverity>{};
+    for (final d in report.diagnostics) {
+      final line = d.line - 1;
+      if (line < 0) continue;
+      final current = worstByLine[line];
+      if (current == null || d.severity.index < current.index) worstByLine[line] = d.severity;
+    }
+
+    final decos = <LineDecoration>[];
+    final gutters = <GutterDecoration>[];
+    worstByLine.forEach((line, severity) {
+      final color = severity == LintSeverity.error
+          ? Colors.red
+          : severity == LintSeverity.warning
+              ? Colors.orange
+              : Colors.blueGrey;
+      decos.add(LineDecoration(
+        id: 'lint-bg-$line',
+        startLine: line,
+        endLine: line,
+        type: LineDecorationType.background,
+        color: color.withValues(alpha: 0.12),
+      ));
+      gutters.add(GutterDecoration(
+        id: 'lint-gutter-$line',
+        startLine: line,
+        endLine: line,
+        type: GutterDecorationType.colorBar,
+        color: color,
+      ));
+    });
+    controller.addLineDecorations(decos);
+    controller.addGutterDecorations(gutters);
+    controller.notifyListeners();
+  }
+
+  void _jumpToDiagnostic(LintDiagnostic d) {
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final start = d.start.clamp(0, text.length);
+    final end = (d.start + d.length).clamp(start, text.length);
+    controller.selection = TextSelection(baseOffset: start, extentOffset: end);
+    controller.scrollToLine(d.line - 1);
+  }
+
+  void _fixDiagnostic(LintDiagnostic d) {
+    final controller = _doc?.controller;
+    final replacement = d.replacement;
+    if (controller == null || replacement == null) return;
+    final text = controller.text;
+    if (d.start < 0 || d.start + d.length > text.length) return;
+    controller.replaceRange(d.start, d.start + d.length, replacement);
+    _runLint();
+  }
+
+  void _fixAllDiagnostics() {
+    final controller = _doc?.controller;
+    final report = _lint;
+    if (controller == null || report == null) return;
+    final fixed = CodeLint.applyFixes(controller.text, report.diagnostics);
+    if (fixed == controller.text) return;
+    controller.text = fixed;
+    _runLint();
+  }
+
+  void _setLintEnabled(bool value) {
+    setState(() => _lintEnabled = value);
+    if (!value) {
+      _lintTimer?.cancel();
+      setState(() => _lint = null);
+      _clearLintDecorations();
+    } else {
+      // 手动打开开关时立刻检查一次（流畅模式下自动检查是关掉的，
+      // 只排定时器会看起来「点了没反应」）。
+      _runLint();
+    }
+  }
+
+  Widget _lintButton(Color color) {
+    final report = _lint;
+    final count = report?.diagnostics.length ?? 0;
+    final worst = report?.worst;
+    final tint = worst == LintSeverity.error
+        ? Colors.red
+        : worst == LintSeverity.warning
+            ? Colors.orange
+            : worst == LintSeverity.info
+                ? Colors.blueGrey
+                : null;
+    return InkWell(
+      onTap: () => _openConsole(EditorConsoleTab.problems),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(count > 0 ? Icons.report_problem_outlined : Icons.check_circle_outline,
+              size: 16, color: tint ?? color),
+          if (count > 0) ...[
+            const SizedBox(width: 2),
+            Text('$count', style: TextStyle(fontSize: 10.5, color: tint ?? color)),
+          ],
+        ]),
+      ),
+    );
   }
 
   // ---------- 光标导航历史 ----------
@@ -1392,6 +1583,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
           if (_prefs.shortcutBar) _snippetBar(),
+          if (_consoleOpen && doc != null)
+            EditorConsolePanel(
+              report: _lint,
+              checking: _lintChecking,
+              language: doc.langLabel,
+              langKey: _lang.key,
+              jsBackend: _jsBackend,
+              readDocument: () => doc.text,
+              onJump: _jumpToDiagnostic,
+              onFix: _fixDiagnostic,
+              onFixAll: (_lint?.fixableCount ?? 0) > 0 ? _fixAllDiagnostics : null,
+              onClose: () => setState(() => _consoleOpen = false),
+              initialTab: _consoleTab,
+            ),
           if (doc != null)
             AnimatedBuilder(
               animation: doc.findController,
@@ -1568,6 +1773,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             onChanged: (v) {
               if (v == null || v == _lang || _doc == null) return;
               setState(() => _doc!.langLabel = v.label);
+              _lint = null;
+              _scheduleLint();
             },
           ),
           const Spacer(),
@@ -1600,6 +1807,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 tint: _wrap ? color : null),
             _iconBtn(Icons.copy, localizations.copy, _copy),
             _iconBtn(Icons.delete_outline, localizations.clear, _clear),
+            if (_lintEnabled) _lintButton(color),
             _moreMenu(color),
           ],
         ),
@@ -1647,6 +1855,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _showSpecialReport();
           case 'replaceLine':
             _replaceCurrentLine();
+          case 'lint':
+            _setLintEnabled(!_lintEnabled);
+          case 'lintIssues':
+            _openConsole(EditorConsoleTab.problems);
+          case 'console':
+            _openConsole(EditorConsoleTab.console);
           case 'minify':
             _minify();
           case 'minifyAggressive':
@@ -1726,6 +1940,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ),
         PopupMenuItem(value: 'report', child: Text(localizations.editorSpecialReport)),
         PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
+        const PopupMenuDivider(),
+        CheckedPopupMenuItem(
+          value: 'lint',
+          checked: _lintEnabled,
+          child: Text(localizations.editorLint),
+        ),
+        PopupMenuItem(value: 'lintIssues', child: Text(localizations.editorLintIssues)),
+        PopupMenuItem(value: 'console', child: Text(localizations.editorConsole)),
+        const PopupMenuDivider(),
         PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
         PopupMenuItem(value: 'minifyAggressive', child: Text(localizations.editorMinifyAggressive)),
         const PopupMenuDivider(),

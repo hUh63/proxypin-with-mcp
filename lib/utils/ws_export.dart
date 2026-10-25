@@ -108,9 +108,9 @@ class WsExport {
       final clipped = payload.length > maxFrameBytes;
       final data = clipped ? payload.sublist(0, maxFrameBytes) : payload;
 
-      // 非文本帧（binary / ping / pong / close 的 payload）落成独立 .bin，
-      // Protobuf 之类的原始字节可以直接拿去解码
-      if (frame.opcode != 0x1 && data.isNotEmpty) {
+      // 每一帧（含文本帧）都落成独立 .bin：文本帧写原始 UTF-8 字节，
+      // 这样带非法字节序列 / BOM 的文本也能原样还原，而不只依赖 jsonl 里的转义。
+      if (data.isNotEmpty) {
         final name = 'frames/${seq.toString().padLeft(4, '0')}_$dir.bin';
         archive.addFile(ArchiveFile(name, data.length, data));
       }
@@ -131,8 +131,9 @@ class WsExport {
         'frames.jsonl   one JSON object per frame:\n'
         '               {seq, dir(client|server), opcode, opcodeName, fin, time,\n'
         '                length, encoding(utf8|base64), data, [clipped, returned]}\n'
-        'frames/*.bin   raw payload of every non-text frame (protobuf goes here as-is);\n'
-        '               decode with e.g. `protoc --decode_raw < frames/0001_client.bin`\n'
+        'frames/*.bin   raw payload of every frame, text frames as raw UTF-8 bytes\n'
+        '               (protobuf goes here as-is); decode with e.g.\n'
+        '               `protoc --decode_raw < frames/0001_client.bin`\n'
         'frames.txt     human readable transcript\n'
         '\n'
         'Frames larger than ${maxFrameBytes ~/ (1024 * 1024)}MB are clipped and marked in jsonl.\n');
