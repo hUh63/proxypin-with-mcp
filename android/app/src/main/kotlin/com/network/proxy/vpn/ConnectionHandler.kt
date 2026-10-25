@@ -404,6 +404,21 @@ class ConnectionHandler(
             nioService.registerSession(connection)
 
             if (proxyAddress == manager.proxyAddress) {
+                // 透明代理（VPN 未通告 HttpProxy，例如应用分身/多用户场景，或 App 忽略系统代理）：
+                // TLS 首包不是合法 HTTP 请求行，直接丢给本地代理会被当成畸形请求。
+                // 先替客户端发一条 CONNECT 建隧道，后续 TLS 字节原样透传；
+                // 代理回的 200 响应头由 Connection.addReceivedData 负责吞掉。
+                if (isTLSClientHello(clientPacketData)) {
+                    val host = intToIPAddress(destinationIP)
+                    // 用 char code 拼 CRLF，避免多层转义把 \r\n 写成字面量
+                    val crlf = String(charArrayOf(13.toChar(), 10.toChar()))
+                    val head = "CONNECT " + host + ":" + destinationPort + " HTTP/1.1" + crlf +
+                            "Host: " + host + ":" + destinationPort + crlf + crlf
+                    connection.proxyTunnelPending = true
+                    connection.proxyTunnelStart = System.currentTimeMillis()
+                    connection.setSendingData(ByteBuffer.wrap(head.toByteArray(Charsets.US_ASCII)))
+                    Log.d(TAG, "proxy tunnel CONNECT $host:$destinationPort")
+                }
                 //获取进程信息
                 ProcessInfoManager.instance.setConnectionOwnerUid(connection)
                 Log.d(

@@ -4534,5 +4534,10 @@
   "clientAddress": "客户端地址",
   "toolboxGroupDebug": "调试与安全",
   "toolboxGroupExtend": "更多",
-  "rules": "规则总览"
+  "rules": "规则总览",
+  "exportWsFrames": "Export WebSocket session",
+  "exportWsFramesDesc": "Save every WS frame as a zip: frames.jsonl index, raw .bin payloads (protobuf ready), plus a readable transcript",
+  "exportWsFramesEmpty": "No WebSocket frames in the selected requests",
+  "vpnHttpProxyNotice": "VPN advertises HTTP proxy",
+  "vpnHttpProxyNoticeDesc": "Turn off for app clones / multi-user (user 999): those apps cannot reach the loopback proxy port and hang in SYN_SENT. With it off the VPN runs as pure TUN and tunnels TLS itself - capture still works."
 }

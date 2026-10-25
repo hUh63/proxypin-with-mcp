@@ -85,6 +85,27 @@ class Har {
       "headersSize": -1, // 响应头大小
       "bodySize": _bodySize(request.response?.body, request.response?.originalBodyLength), // 响应体大小
     };
+
+    // WebSocket / SSE 会话：HAR 规范没有这部分，但 Chrome DevTools 的
+    // `_webSocketMessages` 已是事实标准（DevTools / Charles / 各类 HAR 工具都认）。
+    // 二进制帧（opcode=2，例如 protobuf）的 data 按 base64 给，配合 opcode 足以还原。
+    // 单帧超大时截断：一个几十 MB 的帧会把 HAR 撑到没法打开。
+    if (request.messages.isNotEmpty) {
+      const maxFrame = 1024 * 1024;
+      har['_webSocketMessages'] = request.messages.map((frame) {
+        final payload = frame.payloadData;
+        final clipped = payload.length > maxFrame;
+        final data = clipped ? payload.sublist(0, maxFrame) : payload;
+        return {
+          'type': frame.isFromClient ? 'send' : 'receive',
+          // DevTools 的 time 是「秒」浮点
+          'time': frame.time.millisecondsSinceEpoch / 1000.0,
+          'opcode': frame.opcode,
+          'data': frame.isText ? utf8.decode(data, allowMalformed: true) : base64Encode(data),
+          if (clipped) '_truncated': true,
+        };
+      }).toList();
+    }
     return har;
   }
 

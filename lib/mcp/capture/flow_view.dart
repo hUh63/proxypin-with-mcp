@@ -165,14 +165,18 @@ class FlowView {
 
     var items = <Map<String, dynamic>>[];
     var budget = maxWsPayloadBytes;
-    // 倒序挑选后再正序输出，保证最新的帧优先获得字节预算
+    // 倒序挑选后再正序输出，保证最新的帧优先获得字节预算。
+    // 预算按 UTF-8 **字节**算：按字符算时中文帧实际字节是预算的 3 倍，
+    // 一百多帧下来能把上下文撑爆。
     for (var i = end - 1; i >= offset; i--) {
       var frame = frames[i];
       var text = frame.isText ? frame.payloadDataAsString : '<binary frame ${frame.payloadLength} bytes>';
-      if (text.length > budget) {
-        text = text.substring(0, budget.clamp(0, text.length));
+      var cost = frame.isText ? utf8.encode(text).length : text.length;
+      if (cost > budget) {
+        text = frame.isText ? _truncateToBytes(text, budget) : text;
+        cost = utf8.encode(text).length;
       }
-      budget -= text.length;
+      budget -= cost;
       items.insert(0, {
         'index': i,
         'from': frame.isFromClient ? 'client' : 'server',
@@ -222,6 +226,20 @@ class FlowView {
         mime.contains('zip') ||
         mime.contains('pdf') ||
         mime.contains('protobuf');
+  }
+
+  /// 按 UTF-8 字节上限截断字符串（不劈开多字节字符）。
+  static String _truncateToBytes(String text, int maxBytes) {
+    if (maxBytes <= 0) return '';
+    var used = 0;
+    var end = 0;
+    for (final rune in text.runes) {
+      final size = utf8.encode(String.fromCharCode(rune)).length;
+      if (used + size > maxBytes) break;
+      used += size;
+      end++;
+    }
+    return String.fromCharCodes(text.runes.take(end));
   }
 
   static String? _sha256(List<int>? bytes) {

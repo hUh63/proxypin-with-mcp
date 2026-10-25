@@ -461,6 +461,70 @@ class McpBridge implements EventListener {
     };
   }
   
+  /// 与 [requestToJson] 相同，但 body 用「解码后」的内容。
+  ///
+  /// 原来直接吐原始 body 字节：gzip / br / zstd 压缩过的响应会变成乱码文本或一大段
+  /// base64，模型既读不懂也不知道要自己解压。这里统一走有界解码（解压 + 文本化），
+  /// 超过 [maxInlineBodyBytes] 的部分只给前缀并标记，剩余用 `get_request_details`
+  /// 的 `body_offset` / `body_limit` 翻页取。
+  static Future<Map<String, dynamic>> requestToJsonWithBody(HttpRequest request,
+      {bool redact = true}) async {
+    final json = requestToJson(request, includeBody: false, redact: redact);
+    json['request'] = {
+      'headers': _headersToJson(request.headers, redact),
+      ...await _decodedBody(request),
+    };
+    final response = request.response;
+    json['response'] = response == null
+        ? null
+        : {
+            'statusCode': response.status.code,
+            'statusText': response.status.reasonPhrase,
+            'headers': _headersToJson(response.headers, redact),
+            ...await _decodedBody(response),
+          };
+    return json;
+  }
+
+  static Future<Map<String, dynamic>> _decodedBody(HttpMessage message) async {
+    final size = message.originalBodyLength ?? message.body?.length ?? 0;
+    final meta = <String, dynamic>{'bodySize': size};
+    if (message.bodyTruncated && message.originalBodyLength != null) {
+      meta['originalBodySize'] = message.originalBodyLength;
+      meta['bodyTruncated'] = true;
+    }
+    final body = message.body;
+    if (body == null || body.isEmpty) {
+      return {...meta, 'body': null, 'bodyEncoding': 'none'};
+    }
+
+    // 二进制（图片 / 音视频 / protobuf / 压缩包…）不做文本解码，给前缀的 base64
+    if (message.contentType.isBinary) {
+      final clipped = body.length > maxInlineBodyBytes;
+      final data = clipped ? body.sublist(0, maxInlineBodyBytes) : body;
+      meta['body'] = base64Encode(data);
+      meta['bodyEncoding'] = 'base64';
+      if (clipped) _markClipped(meta);
+      return meta;
+    }
+
+    final text = await message.decodeBodyStringBounded(maxBytes: maxInlineBodyBytes);
+    meta['body'] = text;
+    meta['bodyEncoding'] = 'utf8';
+    // bounded 解码到上限就停：把「其实是截断过的」告诉调用方
+    if (message.bodyDecodeTruncated || utf8.encode(text).length >= maxInlineBodyBytes) {
+      _markClipped(meta);
+    }
+    return meta;
+  }
+
+  static void _markClipped(Map<String, dynamic> meta) {
+    meta['bodyClipped'] = true;
+    meta['bodyClippedAt'] = maxInlineBodyBytes;
+    meta['bodyHint'] = 'body exceeds the 64KB inline limit; call get_request_details with '
+        'body_offset/body_limit to page through the rest';
+  }
+
   /// 对 headers 打码后转 JSON，形状与 [HttpHeaders.toMap] 一致（单值字符串 / 多值数组）。
   static Map<String, dynamic> _headersToJson(HttpHeaders headers, bool redact) {
     final json = <String, dynamic>{};

@@ -1,5 +1,44 @@
 # Changelog
 
+## v1.67.94 (2026-10-25) — 修上游 #975（应用分身断网）/ #976（WS 二进制导出）
+
+### 上游 #975：应用分身 / 多用户里的 App 一开 VPN 就断网
+- 根因是两层叠加：VPN 用 `setHttpProxy` 通告 `127.0.0.1:<port>`，分身（user 999）里的
+  App 于是去连**本机回环端口**；而新系统在 netd/BPF 层限制跨 profile 访问 loopback
+  （`USE_LOOPBACK_INTERFACE` 是 readonly aconfig，加权限重签也无效），于是连接一直
+  `SYN_SENT`，表现不是「抓不到」而是「完全没网」。
+- 新增配置 **VPN 通告 HTTP 代理**（默认开）。关掉后 `Builder` 不再调用 `setHttpProxy`，
+  VPN 变成纯 TUN：App 不再连回环端口，也就不会断网。
+- 纯 TUN 下的 TLS 由内置 TCP 栈接管：tun 里的连接照旧转给本地代理端口，但 TLS 首包
+  不是合法 HTTP 请求行，所以 `ConnectionHandler` 先替客户端发一条
+  `CONNECT host:port HTTP/1.1` 建隧道，代理回的 `HTTP/1.1 200 ...` 由
+  `Connection.addReceivedData` 吞掉（10 秒内没等到就放弃吞头、退回原样透传），
+  之后 TLS 字节原样透传 —— **关掉通告之后 HTTPS 仍然能抓**。
+- 设置页开关改动后若 VPN 正在运行会立即重启 VPN（否则要手动关开才生效）。
+- 排查结论与用法写在 `docs/android-multiuser-vpn.md`。
+
+### 上游 #976：WebSocket 会话导出（含 Protobuf 二进制）
+- 新增导出项「导出 WebSocket 会话」（选中项里有 WS 帧时才出现）：打包成 zip，内含
+  - `frames.jsonl`：每帧一行（seq / dir / opcode / time / length / encoding / data，
+    二进制帧给 base64）；
+  - `frames/NNNN_{client,server}.bin`：每个非文本帧的**原始 payload**
+    （protobuf 可直接 `protoc --decode_raw`）；
+  - `frames.txt`：可读转录；`README.txt`：格式说明。多选时每条会话一个子 zip。
+  单帧上限 8MB，超出只保留前缀并标 `clipped`。
+- HAR 导出补上 `_webSocketMessages`（Chrome DevTools 的事实标准）：type / time(秒) /
+  opcode / data（文本按 UTF-8、二进制按 base64），单帧超 1MB 标 `_truncated`。
+  此前 WS 会话在 HAR 里完全丢失。
+
+### MCP 与抓包细节
+- `get_history_requests` 的**搜索模式**现在也支持 `offset`：此前传了 keyword 时 offset
+  被忽略，模型翻页只能拿到同一批结果；`_searchIn` 在命中集上做 offset。
+- `historyQuery` 命中窗口但结果不足 `limit` 时回退全量：窗口只含最新的 2000 条，
+  条件把窗口内条目滤掉时页会不满，而更早的请求里其实还有匹配项。
+- MCP 详情 / 对比工具返回的 body 改为**解码后**的文本（`requestToJsonWithBody`）：
+  此前直接吐原始字节，gzip/br 压缩的响应在 AI 看到的是乱码或一大段 base64。
+- `FlowView.messages` 的帧预算改按 **UTF-8 字节**核算：此前按字符算，中文帧实际
+  字节是预算的 3 倍，一百多帧就能把上下文撑爆。
+
 ## v1.67.93 (2026-10-25) — 历史窗口缓存 + 统计进 isolate + #N 全局序号 + MCP 大 body 分页
 
 ### MCP：历史会话不再整份驻留内存

@@ -41,6 +41,14 @@ class Configuration {
   //是否设置系统代理
   bool enableSystemProxy = true;
 
+  /// VPN 是否向系统通告 HttpProxy（即 setHttpProxy）。
+  ///
+  /// 默认开启：App 走系统代理，HTTPS 才有明文 CONNECT 可抓。
+  /// 关掉后 VPN 变成纯 TUN 透明模式——应用分身 / 多用户（user 999）下的 App 连不上
+  /// 本机回环端口（netd 层拦截，表现为 SYN_SENT，上游 #975），此时只能靠 tun 接管，
+  /// 由内置 TCP 栈替客户端补 CONNECT 建隧道。
+  bool vpnHttpProxyNotice = true;
+
   //代理忽略域名
   String proxyPassDomains = SystemProxy.proxyPassDomains;
 
@@ -213,6 +221,8 @@ class Configuration {
     mtlsChainPath = config['mtlsChainPath'];
     mtlsKeyPath = config['mtlsKeyPath'];
     enableSystemProxy = config['enableSystemProxy'] ?? (config['enableDesktop'] ?? true);
+    // 缺键按「通告」处理：旧配置升级上来行为不变
+    vpnHttpProxyNotice = config['vpnHttpProxyNotice'] != false;
     enableSocks5 = config['enableSocks5'] ?? true;
     enabledHttp2 = config['enabledHttp2'] ?? false;
 
@@ -351,6 +361,7 @@ class Configuration {
       if (mtlsChainPath != null) 'mtlsChainPath': mtlsChainPath,
       if (mtlsKeyPath != null) 'mtlsKeyPath': mtlsKeyPath,
       'enableSystemProxy': enableSystemProxy,
+      'vpnHttpProxyNotice': vpnHttpProxyNotice,
       'enableSocks5': enableSocks5,
       'proxyPassDomains': proxyPassDomains,
       'externalProxy': externalProxy?.toJson(),

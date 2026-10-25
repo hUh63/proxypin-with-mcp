@@ -16,6 +16,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/components/host_filter.dart';
@@ -278,6 +279,23 @@ class _SettingPageState extends State<_SettingPage> {
                           onChanged: (value) {
                             configuration.enableSystemProxy = value;
                             widget.proxyServer.configuration.flushConfig();
+                          })),
+                if (Platform.isAndroid)
+                  ListTile(
+                      title: Text(localizations.vpnHttpProxyNotice),
+                      subtitle: Text(localizations.vpnHttpProxyNoticeDesc,
+                          style: const TextStyle(fontSize: 11)),
+                      trailing: SwitchWidget(
+                          value: configuration.vpnHttpProxyNotice,
+                          scale: 0.8,
+                          onChanged: (value) {
+                            configuration.vpnHttpProxyNotice = value;
+                            widget.proxyServer.configuration.flushConfig();
+                            // 通告方式只在建立 VPN 时生效：VPN 已在跑就重启一次，
+                            // 否则这个开关看起来「点了没反应」。
+                            if (Vpn.isVpnStarted) {
+                              Vpn.restartVpn('127.0.0.1', widget.proxyServer.port, configuration);
+                            }
                           })),
                 if (Platform.isAndroid)
                   Divider(height: 0, thickness: 0.3, color: Theme.of(context).dividerColor.withValues(alpha: 0.22)),

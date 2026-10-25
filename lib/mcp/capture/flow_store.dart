@@ -228,7 +228,7 @@ class FlowStore extends EventListener {
     var window = await _historyWindow(historyId);
     var need = (offset < 0 ? 0 : offset) + limit;
     if (need <= window.items.length) {
-      return _filter(window.items,
+      final page = _filter(window.items,
           limit: limit,
           offset: offset,
           host: host,
@@ -237,6 +237,11 @@ class FlowStore extends EventListener {
           statusTo: statusTo,
           keyword: keyword,
           sinceMs: sinceMs);
+      // 窗口只覆盖最新的若干条：若条件把窗口内的条目滤掉，页可能不满，
+      // 而更早的请求里还有匹配项——这时必须回退全量，否则表现为「翻到某页就空了」。
+      if (page.length >= limit || window.total <= window.items.length) {
+        return page;
+      }
     }
     var all = await _historyAll(historyId);
     return _filter(all,
@@ -251,10 +256,11 @@ class FlowStore extends EventListener {
   }
 
   Future<List<HttpRequest>> historySearch(int historyId, String keyword,
-      {String side = 'both', int limit = 20, int maxSearchBytes = 2 * 1024 * 1024}) async {
+      {String side = 'both', int limit = 20, int offset = 0, int maxSearchBytes = 2 * 1024 * 1024}) async {
     // body 搜索必须扫全量（需要逐条解码），这里读一次不缓存
     var requests = await _historyAll(historyId);
-    return await _searchIn(requests, keyword, side: side, limit: limit, maxSearchBytes: maxSearchBytes);
+    return await _searchIn(requests, keyword,
+        side: side, limit: limit, offset: offset, maxSearchBytes: maxSearchBytes);
   }
 
   /// 按条件查询抓包，按时间倒序（最新在前）返回，应用 limit/offset。
@@ -328,11 +334,13 @@ class FlowStore extends EventListener {
 
   /// 在给定请求集合上做 body 子串搜索，实时缓冲与历史会话共用同一口径。
   Future<List<HttpRequest>> _searchIn(List<HttpRequest> source, String keyword,
-      {required String side, required int limit, required int maxSearchBytes}) async {
+      {required String side, required int limit, int offset = 0, required int maxSearchBytes}) async {
     keyword = keyword.toLowerCase();
     if (keyword.isEmpty) return const [];
     limit = limit.clamp(1, 100);
+    offset = offset < 0 ? 0 : offset;
     var matched = <HttpRequest>[];
+    var skipped = 0;
 
     for (var i = source.length - 1; i >= 0; i--) {
       if (matched.length >= limit) break;
@@ -344,7 +352,13 @@ class FlowStore extends EventListener {
       if (!hit && side != 'request' && await _bodyContains(request, keyword, maxSearchBytes, requestSide: false)) {
         hit = true;
       }
-      if (hit) matched.add(request);
+      if (!hit) continue;
+      // offset 在「命中集」上生效：搜索也支持翻页，否则模型每次拿到同一批结果
+      if (skipped < offset) {
+        skipped++;
+        continue;
+      }
+      matched.add(request);
     }
     return matched;
   }

@@ -2063,7 +2063,7 @@ class McpServer {
           };
         }
 
-        return McpBridge.requestToJson(req, includeBody: true, redact: _redactEnabled);
+        return await McpBridge.requestToJsonWithBody(req, redact: _redactEnabled);
 
       case 'start_proxy':
         int port = mcpAsInt(args['port']) ?? 9099;
@@ -2380,7 +2380,7 @@ class McpServer {
         try {
           hFlows = (hKeyword != null && hKeyword.isNotEmpty)
               ? await hStore.historySearch(historyId, hKeyword,
-                  side: mcpAsString(args['side']) ?? 'both', limit: hLimit)
+                  side: mcpAsString(args['side']) ?? 'both', limit: hLimit, offset: hOffset)
               : await hStore.historyQuery(historyId,
                   limit: hLimit,
                   offset: hOffset,
@@ -2464,9 +2464,13 @@ class McpServer {
           req2.response?.bodyAsString ?? '',
         );
 
+        // body 走解码后的文本（gzip/br 压缩体不再吐乱码或大段 base64）
+        final json1 = await McpBridge.requestToJsonWithBody(req1, redact: _redactEnabled);
+        final json2 = await McpBridge.requestToJsonWithBody(req2, redact: _redactEnabled);
+
         return {
-          'request_1': McpBridge.requestToJson(req1, includeBody: true, redact: _redactEnabled),
-          'request_2': McpBridge.requestToJson(req2, includeBody: true, redact: _redactEnabled),
+          'request_1': json1,
+          'request_2': json2,
           'comparison': {
             'same_url': req1.requestUrl == req2.requestUrl,
             'same_method': req1.method == req2.method,

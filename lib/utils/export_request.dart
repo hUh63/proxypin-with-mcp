@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,7 @@ import 'package:proxypin/utils/excel_export.dart';
 import 'package:proxypin/utils/pcapng.dart';
 import 'package:proxypin/utils/har.dart';
 import 'package:proxypin/utils/platform.dart';
+import 'package:proxypin/utils/ws_export.dart';
 import 'package:share_plus/share_plus.dart';
 
 enum ExportType {
@@ -549,6 +551,22 @@ void showExportDialog(
                 );
               },
             ),
+            // 上游 #976：WebSocket 会话导出（含 protobuf 之类的二进制帧）
+            if (requests.any((r) => r.isWebSocket || r.messages.isNotEmpty))
+              ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: Text(localizations.exportWsFrames),
+                subtitle: Text(localizations.exportWsFramesDesc, style: const TextStyle(fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(context);
+                  exportWsFrames(
+                    requests,
+                    '$folderName-ws.zip',
+                    context: ctx,
+                    onSuccess: onExportSuccess,
+                  );
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.copy_all_outlined),
               title: Text(localizations.exportCopyPasscode),
@@ -766,6 +784,48 @@ Future<void> exportRequestsPcapng(
     if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
   } catch (e, st) {
     logger.e('Export pcapng error: ', error: e, stackTrace: st);
+    if (context.mounted) {
+      FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
+    }
+  }
+}
+
+/// 导出 WebSocket 会话（上游 #976）。
+///
+/// 选中项里可能有多个 WS 连接：每条写成 zip 内的 `ws-<n>/` 目录；只有一条时
+/// 直接平铺在根目录，方便找。帧的原始二进制（protobuf 等）落成 `frames/*.bin`。
+Future<void> exportWsFrames(
+  List<HttpRequest> requests,
+  String fileName, {
+  required BuildContext context,
+  VoidCallback? onSuccess,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  final sessions = requests.where((r) => r.messages.isNotEmpty).toList();
+  if (sessions.isEmpty) {
+    FlutterToastr.show(localizations.exportWsFramesEmpty, context, backgroundColor: Colors.red);
+    return;
+  }
+  try {
+    final Uint8List bytes;
+    if (sessions.length == 1) {
+      bytes = WsExport.buildZip(sessions.first);
+    } else {
+      final archive = Archive();
+      var index = 0;
+      for (final session in sessions) {
+        index++;
+        final zip = WsExport.buildZip(session);
+        final name = 'ws-${index}_${session.hostAndPort?.host ?? 'session'}.zip';
+        archive.addFile(ArchiveFile(name, zip.length, zip));
+      }
+      bytes = Uint8List.fromList(ZipEncoder().encode(archive));
+    }
+    await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+    onSuccess?.call();
+    if (context.mounted) FlutterToastr.show(localizations.exportSuccess, context);
+  } catch (e, st) {
+    logger.e('Export websocket frames error: ', error: e, stackTrace: st);
     if (context.mounted) {
       FlutterToastr.show('${localizations.exportFailed}: $e', context, backgroundColor: Colors.red);
     }

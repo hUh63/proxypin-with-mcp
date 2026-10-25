@@ -36,6 +36,27 @@ class Connection(
      */
     var isInitConnect = false
 
+    /**
+     * 透明代理隧道是否还没建立完。
+     *
+     * VPN 没有通告 HttpProxy（应用分身/多用户场景必须这样）时，App 的 TLS 首包会直接
+     * 进 tun。这类字节不是合法 HTTP 请求行，本地代理无法解析，所以 [ConnectionHandler]
+     * 先替客户端发一条 `CONNECT host:port`，这里负责把代理回的那段
+     * `HTTP/1.1 200 Connection established\r\n...\r\n\r\n` 吞掉，
+     * 免得它被当成隧道数据回给客户端、把 TLS 流打乱。
+     */
+    @Volatile
+    var proxyTunnelPending = false
+
+    /** 发 CONNECT 的时刻：代理一直不回时不能无限吞上游数据，超时后放弃吞头。 */
+    @Volatile
+    var proxyTunnelStart = 0L
+
+    private val proxyTunnelHeader = ByteArrayOutputStream()
+
+    /** 代理 CONNECT 响应头的最大长度：超过说明对端不是我们的代理，放弃吞头 */
+    private val maxProxyTunnelHeader = 8 * 1024
+
     //指示三向握手是否已完成
     var isConnected = false
 
@@ -102,11 +123,68 @@ class Connection(
 
     @Synchronized
     fun addReceivedData(data: ByteArray?) {
+        if (data == null || data.isEmpty()) {
+            return
+        }
+        var payload = data
+        if (proxyTunnelPending) {
+            // 代理 10 秒还不回响应头（超时/对端不是我们的代理）：放弃吞头，
+            // 把已收字节透传，免得客户端 TLS 握手一直挂着。
+            if (proxyTunnelStart > 0 && System.currentTimeMillis() - proxyTunnelStart > 10_000) {
+                Log.w(TAG, "proxy CONNECT response timeout, fallback to raw passthrough")
+                proxyTunnelPending = false
+                val buffered = proxyTunnelHeader.toByteArray()
+                proxyTunnelHeader.reset()
+                if (buffered.isNotEmpty()) {
+                    try {
+                        receivingStream.write(buffered)
+                    } catch (e: IOException) {
+                        Log.e(TAG, e.toString())
+                    }
+                }
+                receivingStream.write(payload)
+                return
+            }
+            proxyTunnelHeader.write(data)
+            val buffered = proxyTunnelHeader.toByteArray()
+            val end = indexOfHeaderEnd(buffered)
+            if (end < 0) {
+                if (buffered.size <= maxProxyTunnelHeader) {
+                    // 响应头还没收齐，继续等（这一段不能给客户端）
+                    return
+                }
+                // 对端不是我们的代理：放弃吞头，把已收的字节原样透传
+                proxyTunnelPending = false
+                proxyTunnelHeader.reset()
+            } else {
+                proxyTunnelPending = false
+                val head = String(buffered, 0, end, Charsets.ISO_8859_1)
+                if (!head.startsWith("HTTP/1.1 2") && !head.startsWith("HTTP/1.0 2")) {
+                    Log.w(TAG, "proxy CONNECT failed: " + head.lineSequence().firstOrNull())
+                }
+                val rest = buffered.copyOfRange(end, buffered.size)
+                proxyTunnelHeader.reset()
+                if (rest.isEmpty()) return
+                payload = rest
+            }
+        }
         try {
-            receivingStream.write(data)
+            receivingStream.write(payload)
         } catch (e: IOException) {
             Log.e(TAG, e.toString())
         }
+    }
+
+    /** 找 `\r\n\r\n` 之后的下标；没有返回 -1。 */
+    private fun indexOfHeaderEnd(bytes: ByteArray): Int {
+        for (i in 0..bytes.size - 4) {
+            if (bytes[i] == 13.toByte() && bytes[i + 1] == 10.toByte() &&
+                bytes[i + 2] == 13.toByte() && bytes[i + 3] == 10.toByte()
+            ) {
+                return i + 4
+            }
+        }
+        return -1
     }
 
     /**
