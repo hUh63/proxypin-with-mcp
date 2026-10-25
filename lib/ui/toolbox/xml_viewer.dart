@@ -90,6 +90,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
               documentText: ctx.documentText,
               linePrefix: ctx.linePrefix,
               prefix: ctx.prefix,
+              cursorOffset: ctx.cursorOffset,
             )
         : null;
   }

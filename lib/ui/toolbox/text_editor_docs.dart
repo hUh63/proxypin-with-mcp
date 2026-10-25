@@ -48,6 +48,9 @@ class EditorDocument {
   /// 最近一次语法检查结果（切换文档时直接恢复标记，不用重跑）。
   LintReport? lint;
 
+  /// 产生 [lint] 时的文本快照（增量检查要拿它和新文本比）。
+  String? lintText;
+
   EditorDocument({
     required this.id,
     required this.name,

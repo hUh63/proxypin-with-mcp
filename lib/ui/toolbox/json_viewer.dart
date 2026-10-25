@@ -95,6 +95,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
               documentText: ctx.documentText,
               linePrefix: ctx.linePrefix,
               prefix: ctx.prefix,
+              cursorOffset: ctx.cursorOffset,
             )
         : null;
   }

@@ -27,6 +27,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/code_lint.dart';
@@ -75,6 +76,19 @@ class EditorConsolePanel extends StatefulWidget {
 
   final EditorConsoleTab initialTab;
 
+  /// 当前语言是不是「编程语言」。非编程语言（JSON / YAML / Markdown / 纯文本…）
+  /// 不给控制台入口 —— 它们没有运行时概念，给个能算表达式的框只会让人困惑。
+  final bool programming;
+
+  /// 被关掉的规则（不产出诊断）。
+  final Set<String> disabledRules;
+
+  /// 打开规则开关面板。
+  final VoidCallback? onOpenRules;
+
+  /// 把一段文本插入到编辑器（控制台的「插入」）。
+  final ValueChanged<String>? onInsertText;
+
   const EditorConsolePanel({
     super.key,
     required this.report,
@@ -89,6 +103,10 @@ class EditorConsolePanel extends StatefulWidget {
     this.onFixAll,
     required this.onClose,
     this.initialTab = EditorConsoleTab.problems,
+    this.programming = false,
+    this.disabledRules = const <String>{},
+    this.onOpenRules,
+    this.onInsertText,
   });
 
   @override
@@ -96,7 +114,8 @@ class EditorConsolePanel extends StatefulWidget {
 }
 
 class _EditorConsolePanelState extends State<EditorConsolePanel> {
-  late EditorConsoleTab _tab = widget.initialTab;
+  late EditorConsoleTab _tab =
+      widget.programming ? widget.initialTab : EditorConsoleTab.problems;
   late ConsoleBackend _backend = widget.jsBackend ? ConsoleBackend.js : ConsoleBackend.expr;
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
@@ -105,6 +124,12 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   int _historyCursor = -1;
   JavascriptRuntime? _rt;
   bool _running = false;
+
+  /// 表达式后端的会话（`a = 1+2` 之后可以直接用 `a`）。
+  final ExprSession _session = ExprSession();
+
+  /// 最近一次成功的结果（「插入到编辑器」用）。
+  String? _lastResult;
 
   /// 0=全部 1=仅错误 2=错误+警告
   int _filter = 0;
@@ -116,10 +141,14 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   void didUpdateWidget(covariant EditorConsolePanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialTab != widget.initialTab) {
-      setState(() => _tab = widget.initialTab);
+      setState(() => _tab = widget.programming ? widget.initialTab : EditorConsoleTab.problems);
     }
     if (!widget.jsBackend && _backend == ConsoleBackend.js) {
       _backend = ConsoleBackend.expr;
+    }
+    // 语言从编程语言切到数据格式（例如 .json）：控制台页签直接收起。
+    if (!widget.programming && _tab == EditorConsoleTab.console) {
+      _tab = EditorConsoleTab.problems;
     }
   }
 
@@ -223,11 +252,13 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     setState(() => _running = true);
     try {
       if (_backend == ConsoleBackend.expr) {
-        final result = ExprEval.evaluate(_withSelection(source));
+        final result = _session.eval(_withSelection(source));
         if (result.isError) {
           _append(result.error!, Colors.red);
         } else {
-          _append('=> ${ExprEval.format(result.value)}', Theme.of(context).colorScheme.primary);
+          final formatted = ExprEval.format(result.value);
+          _lastResult = formatted;
+          _append('=> $formatted', Theme.of(context).colorScheme.primary);
         }
         return;
       }
@@ -252,6 +283,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       } else {
         final value = result.stringResult;
         if (value != null && value.isNotEmpty && value != 'undefined' && value != 'null') {
+          _lastResult = value;
           _append('=> $value', Theme.of(context).colorScheme.primary);
         }
       }
@@ -260,6 +292,46 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     } finally {
       if (mounted) setState(() => _running = false);
     }
+  }
+
+  Future<void> _copyText(String text, String hint) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(hint), duration: const Duration(milliseconds: 1200)),
+    );
+  }
+
+  Future<void> _copyOutput() async {
+    if (_out.isEmpty) return;
+    await _copyText(_out.map((e) => e.text).join('\n'), localizations.copied);
+  }
+
+  /// 把问题列表导出成 Markdown（贴 issue / 发给同事都方便），直接进剪贴板。
+  Future<void> _copyReport() async {
+    final report = widget.report;
+    if (report == null || report.diagnostics.isEmpty) return;
+    final buffer = StringBuffer()
+      ..writeln('# ${localizations.editorLintIssues}')
+      ..writeln()
+      ..writeln('- ${widget.language}: ${report.diagnostics.length}'
+          ' (${report.errorCount} error / ${report.warningCount} warning / ${report.infoCount} info)')
+      ..writeln()
+      ..writeln('| line | severity | rule | message |')
+      ..writeln('| --- | --- | --- | --- |');
+    for (final d in report.diagnostics) {
+      final message = (d.suggestion == null ? d.message : '${d.message} · ${d.suggestion}')
+          .replaceAll('|', '\\|');
+      buffer.writeln('| ${d.line}:${d.column} | ${d.severity.name} | `${d.code}` | $message |');
+    }
+    await _copyText(buffer.toString(), localizations.copied);
+  }
+
+  void _insertLast() {
+    final value = _lastResult;
+    final insert = widget.onInsertText;
+    if (value == null || insert == null) return;
+    insert(value);
   }
 
   void _recallHistory(bool forward) {
@@ -344,9 +416,22 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       child: Row(children: [
         tab(localizations.editorLintIssues, EditorConsoleTab.problems,
             problems > 0 ? '$problems' : null, badgeColor),
-        tab(localizations.editorConsole, EditorConsoleTab.console, null, null),
+        if (widget.programming)
+          tab(localizations.editorConsole, EditorConsoleTab.console, null, null),
         const Spacer(),
         if (_tab == EditorConsoleTab.problems) ...[
+          IconButton(
+            tooltip: localizations.editorLintRules,
+            onPressed: widget.onOpenRules,
+            icon: const Icon(Icons.tune, size: 16),
+            visualDensity: VisualDensity.compact,
+          ),
+          IconButton(
+            tooltip: localizations.editorLintReport,
+            onPressed: (widget.report?.diagnostics.isEmpty ?? true) ? null : _copyReport,
+            icon: const Icon(Icons.description_outlined, size: 16),
+            visualDensity: VisualDensity.compact,
+          ),
           _filterButton(),
           IconButton(
             tooltip: localizations.editorLintPrev,
@@ -466,7 +551,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     ];
     return Column(children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(10, 2, 8, 0),
+        padding: const EdgeInsets.fromLTRB(10, 2, 4, 0),
         child: Row(children: [
           Icon(_backend == ConsoleBackend.js ? Icons.bolt : Icons.functions,
               size: 12, color: _backend == ConsoleBackend.js ? Colors.green : Colors.blueGrey),
@@ -488,19 +573,29 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
               setState(() {
                 _backend = v;
                 _out.clear();
+                _lastResult = null;
               });
             },
           ),
           const Spacer(),
-          if (_out.isNotEmpty)
-            InkWell(
-              onTap: () => setState(_out.clear),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(localizations.editorConsoleClear,
-                    style: const TextStyle(fontSize: 10.5, color: Colors.grey)),
-              ),
+          if (_out.isNotEmpty) ...[
+            IconButton(
+              tooltip: localizations.editorConsoleCopyAll,
+              onPressed: _copyOutput,
+              icon: const Icon(Icons.copy_all_outlined, size: 16),
+              visualDensity: VisualDensity.compact,
             ),
+            IconButton(
+              tooltip: localizations.editorConsoleClear,
+              onPressed: () => setState(() {
+                _out.clear();
+                _lastResult = null;
+                _session.reset();
+              }),
+              icon: const Icon(Icons.delete_outline, size: 16),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
         ]),
       ),
       Expanded(
@@ -517,29 +612,36 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
                   ),
                 ),
               )
-            : Scrollbar(
-                controller: _scroll,
-                child: ListView.builder(
+            : SelectionArea(
+                child: Scrollbar(
                   controller: _scroll,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  itemCount: _out.length,
-                  itemBuilder: (context, i) {
-                    final o = _out[i];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1),
-                      child: Text(o.text,
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              fontFamily: 'monospace',
-                              color: o.color,
-                              fontWeight: o.prompt ? FontWeight.w600 : FontWeight.w400)),
-                    );
-                  },
+                  child: SingleChildScrollView(
+                    controller: _scroll,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final o in _out)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 1),
+                              child: Text(o.text,
+                                  style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontFamily: 'monospace',
+                                      color: o.color,
+                                      fontWeight: o.prompt ? FontWeight.w600 : FontWeight.w400)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
       ),
       Padding(
-        padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
+        padding: const EdgeInsets.fromLTRB(8, 2, 4, 6),
         child: Row(children: [
           Expanded(
             child: SizedBox(
@@ -567,6 +669,13 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
             icon: const Icon(Icons.history, size: 16),
             visualDensity: VisualDensity.compact,
           ),
+          if (widget.onInsertText != null)
+            IconButton(
+              tooltip: localizations.editorConsoleInsert,
+              onPressed: _lastResult == null ? null : _insertLast,
+              icon: const Icon(Icons.input, size: 16),
+              visualDensity: VisualDensity.compact,
+            ),
           IconButton(
             tooltip: localizations.editorConsoleRunDocument,
             onPressed: () => unawaited(_run(widget.readDocument(), echo: true)),

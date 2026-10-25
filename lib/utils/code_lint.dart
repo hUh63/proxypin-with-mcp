@@ -149,6 +149,12 @@ class LintProfile {
   /// 完全不做语法扫描（纯文本、Markdown 正文、HTTP 报文等）。
   final bool skipAll;
 
+  /// 是「编程语言」而不是数据格式 / 标记语言 / 配置文件 / 纯文本。
+  ///
+  /// 控制台只对编程语言开放：JSON、YAML、Markdown、纯文本这些没有「运行时」概念，
+  /// 给一个能算表达式的控制台只会让人困惑。
+  final bool programming;
+
   /// 只看代码围栏（Markdown）。
   final bool fenceCheck;
 
@@ -212,6 +218,7 @@ class LintProfile {
     this.strictMarkup = false,
     this.htmlTags = false,
     this.skipAll = false,
+    this.programming = false,
     this.fenceCheck = false,
     this.json = false,
     this.indented = false,
@@ -286,6 +293,9 @@ class CodeLint {
         family == LangFamily.sql || oneOf(['sql', 'lua', 'haskell', 'ada']);
     final slashComment = family == LangFamily.c || family == LangFamily.lisp;
 
+    final yamlLikeKeys = oneOf(['yaml', 'yml']);
+    final iniLikeKeys = oneOf(['ini', 'properties', 'conf', 'dotenv', 'toml']);
+
     (String, String)? blockComment;
     if (family == LangFamily.c) blockComment = ('/*', '*/');
     if (family == LangFamily.xml) blockComment = ('<!--', '-->');
@@ -306,12 +316,25 @@ class CodeLint {
     if (indented) traits.add('indent');
     if (_pairRules.containsKey(key)) traits.add('blocks');
 
+    final cssDecls = oneOf(['css', 'scss', 'less', 'sass', 'stylus']);
+    final programming = !(json ||
+        markup ||
+        skipAll ||
+        yamlLikeKeys ||
+        iniLikeKeys ||
+        key == 'makefile' ||
+        cssDecls ||
+        plain) &&
+        (key.isNotEmpty ||
+            !(label.contains('text') || label.contains('plain') || label.contains('log')));
+
     return LintProfile(
       key: key,
       markup: markup,
       strictMarkup: strictMarkup,
       htmlTags: htmlTags,
       skipAll: skipAll,
+      programming: programming,
       fenceCheck: fenceCheck,
       json: json,
       indented: indented,
@@ -322,9 +345,9 @@ class CodeLint {
       rustApostrophe: key == 'rust',
       atVerbatim: key == 'csharp' || key == 'cs',
       jsRegex: key == 'javascript' || key == 'typescript' || key == 'coffeescript',
-      cssDecls: oneOf(['css', 'scss', 'less', 'sass', 'stylus']),
-      iniLike: oneOf(['ini', 'properties', 'conf', 'dotenv', 'toml']),
-      yamlLike: oneOf(['yaml', 'yml']),
+      cssDecls: cssDecls,
+      iniLike: iniLikeKeys,
+      yamlLike: yamlLikeKeys,
       makefileLike: key == 'makefile',
       hashComment: hashComment,
       sqlComment: sqlComment,
@@ -342,6 +365,7 @@ class CodeLint {
     required String langLabel,
     String? langKey,
     bool chinese = true,
+    Set<String> disabledRules = const <String>{},
   }) {
     final profile = profileOf(langLabel, langKey);
     final ctx = _Ctx(chinese);
@@ -369,6 +393,7 @@ class CodeLint {
       String? suggestion,
       String? replacement,
     }) {
+      if (disabledRules.contains(code)) return;
       final offset = start < 0 ? 0 : (start > source.length ? source.length : start);
       final line = index.lineOf(offset);
       out.add(LintDiagnostic(
@@ -417,6 +442,75 @@ class CodeLint {
       guard = d.start;
     }
     return out;
+  }
+
+  /// 增量检查：只在「纯追加」且文本已经很大时启用，其余走全量。
+  ///
+  /// 编辑器里最常见的改动是「在末尾继续打字」，而大文件全量重扫会越来越慢。
+  /// 这里保留旧诊断里未受影响的部分，只对新增片段再做一次检查；
+  /// 跨行的结论（括号未闭合、标签未闭合、块未闭合、JSON/XML 整体解析）
+  /// 在追加后可能失效，一律丢弃重算。
+  static LintReport checkIncremental({
+    required String previous,
+    required LintReport previousReport,
+    required String current,
+    required String langLabel,
+    String? langKey,
+    bool chinese = true,
+    Set<String> disabledRules = const <String>{},
+  }) {
+    LintReport full() => check(current,
+        langLabel: langLabel, langKey: langKey, chinese: chinese, disabledRules: disabledRules);
+    if (previous.length < 32768 ||
+        current.length < previous.length ||
+        !current.startsWith(previous)) {
+      return full();
+    }
+    const volatile = <String>{
+      'unclosed-bracket', 'unclosed-string', 'markup', 'json-header', 'tag-unclosed', //
+      'block-unclosed', 'fence-unclosed', 'extra-bracket',
+    };
+    final delta = current.substring(previous.length);
+    final tail = check(delta,
+        langLabel: langLabel, langKey: langKey, chinese: chinese, disabledRules: disabledRules);
+    final startLine = _lineNoOf(current, previous.length);
+
+    final merged = <LintDiagnostic>[];
+    for (final d in previousReport.diagnostics) {
+      if (d.start >= previous.length - 1) continue;
+      if (volatile.contains(d.code)) continue;
+      merged.add(d);
+    }
+    for (final d in tail.diagnostics) {
+      if (volatile.contains(d.code)) continue;
+      final offset = d.start + previous.length;
+      final line = startLine + d.line - 1;
+      merged.add(LintDiagnostic(
+        line: line,
+        column: d.column,
+        start: offset,
+        length: d.length,
+        severity: d.severity,
+        code: d.code,
+        message: d.message,
+        suggestion: d.suggestion,
+        replacement: d.replacement != null ? d.replacement : null,
+      ));
+    }
+    merged.sort((a, b) {
+      final byPos = a.start.compareTo(b.start);
+      return byPos != 0 ? byPos : a.severity.index.compareTo(b.severity.index);
+    });
+    return LintReport(diagnostics: merged, profile: profileOf(langLabel, langKey), language: langLabel);
+  }
+
+  static int _lineNoOf(String src, int offset) {
+    var line = 1;
+    final limit = offset < src.length ? offset : src.length;
+    for (var i = 0; i < limit; i++) {
+      if (src.codeUnitAt(i) == _lf) line++;
+    }
+    return line;
   }
 
   // ------------------------------ JSON / XML ------------------------------
@@ -1565,5 +1659,51 @@ class _LineIndex {
       }
     }
     return lo;
+  }
+}
+
+/// 一条可开关的检查规则。
+class LintRule {
+  final String code;
+  final String nameZh;
+  final String nameEn;
+
+  const LintRule(this.code, this.nameZh, this.nameEn);
+}
+
+/// 全部规则清单（设置面板按这个列出开关）。
+class LintRules {
+  static const List<LintRule> all = <LintRule>[
+    LintRule('unclosed-string', '字符串 / 块注释未闭合', 'Unterminated string or comment'),
+    LintRule('unclosed-bracket', '括号未闭合', 'Unclosed bracket'),
+    LintRule('extra-bracket', '多余的括号', 'Extra bracket'),
+    LintRule('bracket-mismatch', '括号类型不匹配', 'Mismatched bracket'),
+    LintRule('missing-semicolon', '缺少分号', 'Missing semicolon'),
+    LintRule('case-mismatch', '大小写可能写错', 'Possible casing mistake'),
+    LintRule('mixed-indent', '缩进混用空格与 tab', 'Mixed spaces and tabs'),
+    LintRule('block-indent', '缺少一级缩进', 'Missing indentation'),
+    LintRule('assign-in-condition', '条件里用了赋值', 'Assignment inside condition'),
+    LintRule('full-width', '代码里混入全角符号', 'Full-width character in code'),
+    LintRule('json-header', 'JSON 语法错误', 'JSON syntax error'),
+    LintRule('jsonc', 'JSONC（注释 / 尾逗号）', 'JSONC (comments / trailing comma)'),
+    LintRule('markup', 'XML 语法错误', 'XML syntax error'),
+    LintRule('tag-unmatched', '多余的闭合标签', 'Unmatched closing tag'),
+    LintRule('tag-mismatch', '标签不匹配', 'Mismatched tag'),
+    LintRule('tag-unclosed', '标签未闭合', 'Unclosed tag'),
+    LintRule('fence-unclosed', '代码围栏未闭合', 'Unclosed code fence'),
+    LintRule('ini-line', 'ini 行格式错误', 'Bad ini line'),
+    LintRule('ini-duplicate', 'ini 重复键', 'Duplicate ini key'),
+    LintRule('yaml-tab', 'YAML 用了 tab 缩进', 'YAML tab indentation'),
+    LintRule('makefile-tab', 'Makefile 命令行不是 tab', 'Makefile recipe not tab-indented'),
+    LintRule('css-semicolon', 'CSS 声明缺分号', 'CSS missing semicolon'),
+    LintRule('block-unclosed', '代码块未闭合（if/fi、begin/end…）', 'Unclosed block (if/fi, begin/end…)'),
+    LintRule('block-extra', '多余的块结尾', 'Extra block terminator'),
+  ];
+
+  static LintRule? byCode(String code) {
+    for (final rule in all) {
+      if (rule.code == code) return rule;
+    }
+    return null;
   }
 }

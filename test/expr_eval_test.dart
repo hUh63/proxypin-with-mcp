@@ -76,6 +76,16 @@ void main() {
     expect(ExprEval.evaluate('').isError, isTrue);
   });
 
+  test('session keeps variables', () {
+    final session = ExprSession();
+    expect(session.eval('a = 1+2').value, 3);
+    expect(session.eval('a*2').value, 6);
+    expect(session.eval('b = a + "x"').value, '3x');
+    expect(session.eval('a').value, 3);
+    session.reset();
+    expect(session.eval('a').isError, isTrue);
+  });
+
   test('format', () {
     expect(ExprEval.format(1.0), '1');
     expect(ExprEval.format(1.5), '1.5');

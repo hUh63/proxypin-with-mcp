@@ -4564,5 +4564,14 @@
   "editorLintFilteredEmpty": "该级别下没有问题",
   "editorConsoleExpr": "表达式",
   "editorConsoleExprHint": "输入表达式（如 1+2*3、max(1,5)、\"a\"+\"b\"）。$0 表示当前选中文本",
-  "editorConsoleHistory": "历史"
+  "editorConsoleHistory": "历史",
+  "editorLintRules": "检查规则",
+  "editorLintRulesHint": "关掉的规则不再提示问题；默认全部开启。",
+  "editorLintRulesAll": "全部开启",
+  "editorLintRulesNone": "全部关闭",
+  "editorLintReport": "复制报告（Markdown）",
+  "editorConsoleCopyAll": "复制输出",
+  "editorConsoleInsert": "把结果插入编辑器",
+  "diffSyntaxCheck": "检查两侧语法",
+  "diffSyntaxUnsupported": "这里只检查 JSON / XML 内容"
 }

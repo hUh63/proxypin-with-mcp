@@ -310,6 +310,73 @@ void main() {
     });
   });
 
+  group('programming languages get a console, formats do not', () {
+    test('code languages are programming', () {
+      expect(CodeLint.profileOf('C#', 'csharp').programming, isTrue);
+      expect(CodeLint.profileOf('Python', 'python').programming, isTrue);
+      expect(CodeLint.profileOf('Dart', 'dart').programming, isTrue);
+      expect(CodeLint.profileOf('Shell', 'bash').programming, isTrue);
+    });
+
+    test('data / markup / config / prose are not', () {
+      for (final pair in [
+        ['JSON', 'json'],
+        ['XML', 'xml'],
+        ['HTML', 'html'],
+        ['YAML', 'yaml'],
+        ['Markdown', 'markdown'],
+        ['Plain Text', 'plaintext'],
+        ['CSS', 'css'],
+        ['INI', 'ini'],
+      ]) {
+        expect(CodeLint.profileOf(pair[0], pair[1]).programming, isFalse, reason: pair[0]);
+      }
+    });
+  });
+
+  group('rule switches', () {
+    test('disabled rule stops producing diagnostics', () {
+      final report = CodeLint.check('class A {\n  int x = 1\n}\n',
+          langLabel: 'C#', langKey: 'csharp', disabledRules: {'missing-semicolon'});
+      expect(report.diagnostics.where((e) => e.code == 'missing-semicolon'), isEmpty);
+    });
+  });
+
+  group('incremental check', () {
+    test('appending keeps the old diagnostics and adds the new one', () {
+      final padded = 'class A {\n  int x = 1\n}\n' + ('// pad\n' * 6000);
+      final previous = CodeLint.check(padded, langLabel: 'C#', langKey: 'csharp');
+      expect(previous.diagnostics.where((e) => e.code == 'missing-semicolon'), isNotEmpty);
+
+      final current = '${padded}  int y = 2\n';
+      final incremental = CodeLint.checkIncremental(
+        previous: padded,
+        previousReport: previous,
+        current: current,
+        langLabel: 'C#',
+        langKey: 'csharp',
+      );
+      final missing = incremental.diagnostics.where((e) => e.code == 'missing-semicolon').toList();
+      expect(missing.length, greaterThanOrEqualTo(1));
+      // 新诊断的行号应落在追加的那一行（不在文件开头）
+      expect(missing.map((e) => e.line).reduce((a, b) => a > b ? a : b), greaterThan(6000));
+    });
+
+    test('editing in the middle falls back to a full check', () {
+      final previousText = 'class A {\n  int x = 1\n}\n';
+      final previous = CodeLint.check(previousText, langLabel: 'C#', langKey: 'csharp');
+      final edited = 'class A {\n  int x = 1;\n}\n';
+      final report = CodeLint.checkIncremental(
+        previous: previousText,
+        previousReport: previous,
+        current: edited,
+        langLabel: 'C#',
+        langKey: 'csharp',
+      );
+      expect(report.diagnostics.where((e) => e.code == 'missing-semicolon'), isEmpty);
+    });
+  });
+
   group('applyFixes', () {
     test('fixes are applied from the end so offsets stay valid', () {
       const src = 'class A {\n  int x = 1\n  int y = 2\n}\n';

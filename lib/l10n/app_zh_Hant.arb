@@ -4564,5 +4564,14 @@
   "editorLintFilteredEmpty": "該層級下沒有問題",
   "editorConsoleExpr": "表達式",
   "editorConsoleExprHint": "輸入表達式（如 1+2*3、max(1,5)、\"a\"+\"b\"）。$0 表示目前選取的文字",
-  "editorConsoleHistory": "歷史"
+  "editorConsoleHistory": "歷史",
+  "editorLintRules": "檢查規則",
+  "editorLintRulesHint": "關掉的規則不再提示問題；預設全部開啟。",
+  "editorLintRulesAll": "全部開啟",
+  "editorLintRulesNone": "全部關閉",
+  "editorLintReport": "複製報告（Markdown）",
+  "editorConsoleCopyAll": "複製輸出",
+  "editorConsoleInsert": "把結果插入編輯器",
+  "diffSyntaxCheck": "檢查兩側語法",
+  "diffSyntaxUnsupported": "這裡只檢查 JSON / XML 內容"
 }

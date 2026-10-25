@@ -39,6 +39,7 @@ import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/ui/component/lint_rules_dialog.dart';
 import 'package:proxypin/ui/toolbox/editor_console.dart';
 import 'package:proxypin/utils/custom_lang.dart';
 import 'package:proxypin/utils/lang_meta.dart';
@@ -197,6 +198,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Timer? _lintTimer;
   bool _lintEnabled = true;
   bool _inLint = false;
+
+  /// 被用户关掉的规则（持久化在 prefs 里）。
+  Set<String> _disabledRules = <String>{};
+  static const String _kLintDisabled = 'code_lint_disabled_v1';
   bool _consoleOpen = false;
   EditorConsoleTab _consoleTab = EditorConsoleTab.problems;
   bool _dirty = false;
@@ -257,6 +262,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (mounted) setState(() {});
     });
     SmartCompletion.load();
+    unawaited(_loadLintRules());
     SmartCompletion.enabled.addListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.load();
     TextEditorPrefsStore.notifier.addListener(_onEditorPrefsChanged);
@@ -450,6 +456,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   // ---------- 语法检查 / 控制台 ----------
 
+  /// 当前语言是不是编程语言（决定「控制台」入不出现）。
+  bool get _programming {
+    final doc = _doc;
+    if (doc == null) return false;
+    return CodeLint.profileOf(doc.langLabel, _lang.key).programming;
+  }
+
   /// 当前语言是否能真跑代码（手机端只有内置 JS 引擎）。
   bool get _jsBackend {
     final key = _lang.key;
@@ -465,6 +478,49 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _lintTimer = Timer(const Duration(milliseconds: 650), _runLint);
   }
 
+  Future<void> _loadLintRules() async {
+    try {
+      final raw = await SharedPreferencesAsync().getStringList(_kLintDisabled);
+      if (!mounted) return;
+      if (raw == null) return;
+      setState(() => _disabledRules = raw.toSet());
+      _doc?.lint = null;
+      _scheduleLint();
+    } catch (_) {
+      // 偏好读取失败就按「全部规则开启」跑
+    }
+  }
+
+  Future<void> _saveLintRules() async {
+    try {
+      await SharedPreferencesAsync().setStringList(_kLintDisabled, _disabledRules.toList());
+    } catch (_) {
+      // 忽略
+    }
+  }
+
+  Future<void> _openLintRules() async {
+    final result = await showLintRulesDialog(context, _disabledRules);
+    if (result == null || !mounted) return;
+    setState(() => _disabledRules = result);
+    unawaited(_saveLintRules());
+    _doc?.lint = null;
+    _runLint();
+  }
+
+  /// 把控制台的结果插到光标处（替换选区）。
+  void _insertText(String text) {
+    if (text.isEmpty) return;
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final selection = controller.selection;
+    final length = controller.text.length;
+    final start = selection.start < 0 ? length : selection.start.clamp(0, length);
+    final end = selection.end < 0 ? start : selection.end.clamp(start, length);
+    controller.replaceRange(start, end, text);
+    controller.selection = TextSelection.collapsed(offset: start + text.length);
+  }
+
   void _runLint() {
     final doc = _doc;
     if (doc == null || !mounted || _inLint) return;
@@ -477,15 +533,34 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     _inLint = true;
     // 纯 CPU 线性扫描，2MB 以内几十毫秒，同步跑即可（省掉跨 isolate 拷贝整份文本）。
-    final report = CodeLint.check(
-      text,
-      langLabel: doc.langLabel,
-      langKey: _lang.key,
-      chinese: Localizations.localeOf(context).languageCode.startsWith('zh'),
-    );
+    final chinese = Localizations.localeOf(context).languageCode.startsWith('zh');
+    final previousText = doc.lintText;
+    final previousReport = doc.lint;
+    final LintReport report;
+    if (previousText != null && previousReport != null) {
+      // 大文件里「在末尾继续打字」是最常见的改动，只对新增部分做检查。
+      report = CodeLint.checkIncremental(
+        previous: previousText,
+        previousReport: previousReport,
+        current: text,
+        langLabel: doc.langLabel,
+        langKey: _lang.key,
+        chinese: chinese,
+        disabledRules: _disabledRules,
+      );
+    } else {
+      report = CodeLint.check(
+        text,
+        langLabel: doc.langLabel,
+        langKey: _lang.key,
+        chinese: chinese,
+        disabledRules: _disabledRules,
+      );
+    }
     _inLint = false;
     if (!mounted) return;
     doc.lint = report;
+    doc.lintText = text;
     _issueCursor = -1;
     setState(() => _lintChecking = false);
     // 换完装饰会 notifyListeners，必须放在 setState 之后、且不能再次触发检查。
@@ -493,9 +568,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _openConsole(EditorConsoleTab tab) {
+    // 非编程语言只能看问题，不能进控制台。
+    final target = _programming ? tab : EditorConsoleTab.problems;
     setState(() {
       _consoleOpen = true;
-      _consoleTab = tab;
+      _consoleTab = target;
     });
     if (_lintEnabled && _lint == null) _runLint();
   }
@@ -1586,7 +1663,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 documentText: ctx.documentText,
                 linePrefix: ctx.linePrefix,
                 prefix: ctx.prefix,
-              )
+              , cursorOffset: ctx.cursorOffset)
           : null;
     }
 
@@ -1638,6 +1715,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
               onFixAll: (_lint?.fixableCount ?? 0) > 0 ? _fixAllDiagnostics : null,
               onClose: () => setState(() => _consoleOpen = false),
               initialTab: _consoleTab,
+              programming: _programming,
+              disabledRules: _disabledRules,
+              onOpenRules: _openLintRules,
+              onInsertText: _insertText,
             ),
           if (doc != null)
             AnimatedBuilder(
@@ -1989,7 +2070,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           child: Text(localizations.editorLint),
         ),
         PopupMenuItem(value: 'lintIssues', child: Text(localizations.editorLintIssues)),
-        PopupMenuItem(value: 'console', child: Text(localizations.editorConsole)),
+        if (_programming)
+          PopupMenuItem(value: 'console', child: Text(localizations.editorConsole)),
         const PopupMenuDivider(),
         PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
         PopupMenuItem(value: 'minifyAggressive', child: Text(localizations.editorMinifyAggressive)),

@@ -27,6 +27,7 @@ import 'package:re_highlight/styles/atom-one-dark.dart';
 import 'package:re_highlight/styles/atom-one-light.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
@@ -744,8 +745,105 @@ class _TextDiffPageState extends State<TextDiffPage> {
             () => setState(() => _aligned = !_aligned),
             tint: _aligned ? color : null,
           ),
+          _iconBtn(Icons.fact_check_outlined, localizations.diffSyntaxCheck, _checkSyntax),
         ],
       ),
+    );
+  }
+
+  /// 对两侧文本做静态语法检查。
+  ///
+  /// 为什么不做行染色：diff 自己已经用 LineDecoration 标了增删改，
+  /// 再往上叠一层会互相盖掉。所以结果是列成清单弹出来，点一条跳到原位置。
+  Future<void> _checkSyntax() async {
+    final chinese = Localizations.localeOf(context).languageCode.startsWith('zh');
+    final left = _lintFor(_left.text, chinese);
+    final right = _lintFor(_right.text, chinese);
+    if (left == null && right == null) {
+      FlutterToastr.show(localizations.diffSyntaxUnsupported, context, duration: 2);
+      return;
+    }
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => DefaultTabController(
+        length: 2,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TabBar(
+            labelStyle: const TextStyle(fontSize: 13),
+            tabs: [
+              Tab(text: '${localizations.diffOriginal} ${left?.diagnostics.length ?? 0}'),
+              Tab(text: '${localizations.diffChanged} ${right?.diagnostics.length ?? 0}'),
+            ],
+          ),
+          SizedBox(
+            height: 320,
+            child: TabBarView(children: [
+              _lintList(ctx, left, (d) => _jumpSide(true, d)),
+              _lintList(ctx, right, (d) => _jumpSide(false, d)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  LintReport? _lintFor(String text, bool chinese) {
+    final trimmed = text.trimLeft();
+    String? key;
+    String label = 'Plain Text';
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      key = 'json';
+      label = 'JSON';
+    } else if (trimmed.startsWith('<')) {
+      key = 'xml';
+      label = 'XML';
+    }
+    if (key == null) return null;
+    return CodeLint.check(text, langLabel: label, langKey: key, chinese: chinese);
+  }
+
+  void _jumpSide(bool isLeft, LintDiagnostic d) {
+    final controller = isLeft ? _left : _right;
+    final length = controller.text.length;
+    final start = d.start.clamp(0, length);
+    final end = (d.start + d.length).clamp(start, length);
+    controller.selection = TextSelection(baseOffset: start, extentOffset: end);
+    controller.scrollToLine(d.line - 1);
+    Navigator.pop(context);
+  }
+
+  Widget _lintList(BuildContext ctx, LintReport? report, void Function(LintDiagnostic) onTap) {
+    if (report == null) {
+      return Center(child: Text(localizations.diffSyntaxUnsupported, style: const TextStyle(fontSize: 12)));
+    }
+    if (report.diagnostics.isEmpty) {
+      return Center(
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.check_circle_outline, size: 15, color: Colors.green),
+          const SizedBox(width: 6),
+          Text(localizations.editorLintClean, style: const TextStyle(fontSize: 12)),
+        ]),
+      );
+    }
+    return ListView.builder(
+      itemCount: report.diagnostics.length,
+      itemBuilder: (context, i) {
+        final d = report.diagnostics[i];
+        final color = switch (d.severity) {
+          LintSeverity.error => Colors.red,
+          LintSeverity.warning => Colors.orange,
+          LintSeverity.info => Colors.blueGrey,
+        };
+        return ListTile(
+          dense: true,
+          leading: Icon(Icons.circle, size: 10, color: color),
+          title: Text('${d.line}:${d.column}  ${d.message}', style: const TextStyle(fontSize: 12)),
+          subtitle: d.suggestion == null ? null : Text(d.suggestion!, style: const TextStyle(fontSize: 11)),
+          onTap: () => onTap(d),
+        );
+      },
     );
   }
 

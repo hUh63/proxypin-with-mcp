@@ -67,7 +67,14 @@ class SmartSuggestions {
     required String linePrefix,
     required String prefix,
     String key = '',
+    int cursorOffset = -1,
   }) {
+    // 「无输入联想」：光标处还没有正在输入的词（prefix 为空）时，不要给全量关键字表，
+    // 而是按上下文（上一行结构 / 缩进层级 / 这份文件里高频出现的行首词）给候选。
+    // 只在编程语言下启用——JSON/YAML/Markdown 有自己的结构提示。
+    if (prefix.isEmpty && CodeLint.profileOf(language ?? '', key).programming) {
+      return _contextual(documentText, linePrefix, cursorOffset, language ?? '', key);
+    }
     switch (language ?? '') {
       case 'JSON':
         return _json(documentText, linePrefix, prefix);
@@ -595,6 +602,110 @@ class SmartSuggestions {
       if (out.length > 200) break;
     }
     return out;
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // 无输入时的上下文联想
+  //
+  // 命中率远高于「把几百个关键字全列出来」：一份文件里最常出现的行首词，
+  // 通常就是下一句要写的东西；上一行以什么结尾，决定了这一行该以什么开头。
+  // ---------------------------------------------------------------------------
+
+  static List<String> _contextual(
+      String doc, String linePrefix, int cursorOffset, String language, String key) {
+    final tail = _tail(doc);
+    final words = CodeKeywords.forLanguage(language, key);
+    final frequent = _frequentLineHeads(tail, 10);
+    final literals = _literals(language, key);
+    final trimmed = linePrefix.trimRight();
+    final out = <String>[];
+
+    if (trimmed.isNotEmpty) {
+      // 行内：等号 / return / 逗号 / 冒号 / 逗号之后 → 值候选
+      if (RegExp(r'(^|[=(,]|\breturn|\bcase|\bthrow)\s*$').hasMatch(trimmed)) {
+        out.addAll(literals);
+      } else if (RegExp(r'(&&|\|\||==|!=|!|\?)\s*$').hasMatch(trimmed)) {
+        out.addAll(const <String>['true', 'false', 'null', 'True', 'False', 'None']);
+      } else if (RegExp(r'[(\[]\s*$').hasMatch(trimmed)) {
+        // 参数 / 数组元素：优先给这份文档里用过的变量名
+        out.addAll(_collect(tail, RegExp(r'\b([a-z_$][\w$]{1,20})\b'), 10));
+      } else if (RegExp(r'[+\-*/%]\s*$').hasMatch(trimmed)) {
+        out.addAll(frequent.take(5));
+      }
+    } else {
+      // 行首 / 空行：看上一行怎么结束的
+      final prev = _previousLine(doc, cursorOffset).trimRight();
+      if (prev.endsWith('{')) {
+        out.addAll(_statementWords);
+        out.addAll(frequent);
+      } else if (prev.endsWith(':')) {
+        // Python / YAML 风格：冒号后应该是新一层语句
+        out.addAll(_statementWords);
+      } else if (prev.endsWith('}')) {
+        out.addAll(const <String>['else', 'while', 'catch', 'finally', 'return']);
+        out.addAll(frequent);
+      } else if (prev.endsWith(')') || prev.endsWith(';')) {
+        out.addAll(const <String>['{', '.', ';']);
+        out.addAll(frequent);
+      } else if (prev.endsWith('//') || prev.endsWith('#') || prev.endsWith('*')) {
+        out.addAll(const <String>['// TODO: ', '// ', '# ']);
+      } else if (prev.endsWith('\n') || prev.isEmpty) {
+        out.addAll(frequent);
+      }
+    }
+
+    if (out.isEmpty) out.addAll(frequent);
+    if (out.isEmpty) out.addAll(words.take(12));
+    return _dedupe(out, '').take(20).toList();
+  }
+
+  /// 这份文件里「每行第一个标识符」的高频统计：作者习惯。
+  static List<String> _frequentLineHeads(String doc, int limit) {
+    final counts = <String, int>{};
+    final order = <String>[];
+    for (final line in doc.split('\n')) {
+      final t = line.trimLeft();
+      if (t.isEmpty) continue;
+      final m = RegExp(r'^([A-Za-z_$][\w$]*)').firstMatch(t);
+      if (m == null) continue;
+      final w = m.group(1)!;
+      if (w.length < 2) continue;
+      if (!counts.containsKey(w)) order.add(w);
+      counts[w] = (counts[w] ?? 0) + 1;
+    }
+    // 出现两次以上才当「习惯」；不够再按原顺序补位
+    final sorted = order.where((w) => (counts[w] ?? 0) >= 2).toList()
+      ..sort((a, b) => (counts[b] ?? 0).compareTo(counts[a] ?? 0));
+    for (final w in order) {
+      if (sorted.length >= limit) break;
+      if (!sorted.contains(w)) sorted.add(w);
+    }
+    return sorted.take(limit).toList();
+  }
+
+  /// 光标所在行的上一行（光标在行首时就是正上方那行）。
+  static String _previousLine(String doc, int cursorOffset) {
+    if (cursorOffset <= 0 || cursorOffset > doc.length) return '';
+    final before = doc.substring(0, cursorOffset);
+    final end = before.endsWith('\n') ? before.length - 1 : before.lastIndexOf('\n');
+    if (end <= 0) return '';
+    final start = before.lastIndexOf('\n', end - 1);
+    return before.substring(start + 1, end);
+  }
+
+  /// 各语言的字面量候选。
+  static List<String> _literals(String language, String key) {
+    final k = key.toLowerCase();
+    final lang = language.toLowerCase();
+    if (k == 'python' || lang.startsWith('python')) {
+      return const <String>['None', 'True', 'False', '0', '""', '[]', '{}'];
+    }
+    if (k == 'go') return const <String>['nil', 'true', 'false', '0', '""'];
+    if (k == 'ruby' || k == 'lua') return const <String>['nil', 'true', 'false', '0'];
+    if (k == 'sql') return const <String>['NULL', '0', "''"];
+    if (k == 'php') return const <String>['null', 'true', 'false', '0', '""', '[]'];
+    return const <String>['null', 'true', 'false', '0', '""', '[]', '{}'];
   }
 
   // ---------------------------------------------------------------------------

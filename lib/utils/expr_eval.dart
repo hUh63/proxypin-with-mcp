@@ -47,12 +47,15 @@ class ExprResult {
 
 /// 表达式求值。
 class ExprEval {
-  /// 求值一个表达式。
-  static ExprResult evaluate(String source) {
+  /// 求值一个表达式（无变量）。
+  static ExprResult evaluate(String source) => evaluateWith(source, const <String, Object?>{});
+
+  /// 求值一个表达式，可带变量表（[ExprSession] 用）。
+  static ExprResult evaluateWith(String source, Map<String, Object?> variables) {
     final text = source.trim();
     if (text.isEmpty) return const ExprResult.fail('empty expression');
     try {
-      final parser = _Parser(_tokenize(text));
+      final parser = _Parser(_tokenize(text), variables);
       final value = parser.parseExpression(0);
       if (!parser.atEnd) {
         return ExprResult.fail('unexpected "${parser.current.lexeme}" at ${parser.current.pos}');
@@ -285,9 +288,10 @@ const Map<String, int> _precedence = <String, int>{
 
 class _Parser {
   final List<_Tok> tokens;
+  final Map<String, Object?> variables;
   int index = 0;
 
-  _Parser(this.tokens);
+  _Parser(this.tokens, [this.variables = const <String, Object?>{}]);
 
   _Tok get current => tokens[index];
 
@@ -358,7 +362,8 @@ class _Parser {
         return value;
       case _T.ident:
         advance();
-        final name = '${tok.value}'.toLowerCase();
+        final rawName = '${tok.value}';
+        final name = rawName.toLowerCase();
         if (current.type == _T.lparen) {
           advance();
           final args = <Object?>[];
@@ -378,7 +383,8 @@ class _Parser {
         if (name == 'null') return null;
         if (name == 'pi') return 3.141592653589793;
         if (name == 'e') return 2.718281828459045;
-        throw _ExprError('unknown name "$name" at ${tok.pos}');
+        if (variables.containsKey(rawName)) return variables[rawName];
+        throw _ExprError('unknown name "$rawName" at ${tok.pos}');
       default:
         throw _ExprError('unexpected "${tok.lexeme.isEmpty ? tok.type.name : tok.lexeme}" at ${tok.pos}');
     }
@@ -559,4 +565,28 @@ class _Parser {
   }
 
   String _plain(Object? value) => value is String ? value : ExprEval.format(value);
+}
+
+/// 有状态的表达式会话：`a = 1+2` 之后可以直接用 `a*2`。
+///
+/// 控制台用这个而不是无状态的 [ExprEval.evaluate]，这样「先算一步、再拿结果继续算」
+/// 不用复制粘贴。变量表只存在面板生命周期内，关掉面板即丢弃。
+class ExprSession {
+  final Map<String, Object?> variables = <String, Object?>{};
+
+  void reset() => variables.clear();
+
+  /// 执行一行输入：`name = expr` 赋值，其余当表达式求值。
+  ExprResult eval(String source) {
+    final text = source.trim();
+    if (text.isEmpty) return const ExprResult.fail('empty expression');
+    final assign = RegExp(r'^([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$').firstMatch(text);
+    if (assign != null) {
+      final value = ExprEval.evaluateWith(assign.group(2)!, variables);
+      if (value.isError) return value;
+      variables[assign.group(1)!] = value.value;
+      return ExprResult.ok(value.value);
+    }
+    return ExprEval.evaluateWith(text, variables);
+  }
 }
