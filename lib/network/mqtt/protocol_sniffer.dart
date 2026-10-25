@@ -112,8 +112,13 @@ class ProtocolSniffer extends ChannelHandler<Uint8List> {
       if (needsListen) upstream.listen(channelContext);
     }
 
-    final firstBytes = Uint8List.fromList(_pending);
-    _pending.clear();
-    await channel.dispatcher.channelRead(channelContext, channel, firstBytes);
+    // 上面的 await 窗口（连上游 / TLS 握手 / 反查进程）里客户端可能继续发数据：
+    // 那些字节已被 `_pending.addAll` 收下但因 `_switching` 提前 return 没送出去。
+    // 这里循环送完，避免切换瞬间的报文永久留在 _pending 里（此前会静默丢包）。
+    while (_pending.isNotEmpty) {
+      final bytes = Uint8List.fromList(_pending);
+      _pending.clear();
+      await channel.dispatcher.channelRead(channelContext, channel, bytes);
+    }
   }
 }

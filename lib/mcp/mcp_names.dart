@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/// AI 客户端中注册的 MCP server 名称。桌面端（stdio）与手机端（LAN HTTP）
+/// AI 客户端中注册的 MCP server 名称。桌面端（本机 loopback HTTP）与手机端（LAN HTTP）
 /// 使用不同名称并存、互不覆盖，agent 据此区分两组工具命名空间。
 ///
 /// 下划线命名：Codex 的 config.toml 裸键不支持连字符。
@@ -23,7 +23,7 @@
 class McpClientNames {
   McpClientNames._();
 
-  /// 桌面 App：stdio，本机拉起
+  /// 桌面 App：Streamable HTTP，127.0.0.1
   static const String desktop = 'proxypin_desktop';
 
   /// 手机 App：局域网 Streamable HTTP + Bearer token

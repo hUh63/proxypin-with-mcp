@@ -172,7 +172,8 @@ Future<String> _runCli(String cli, List<String> args, AppLocalizations l) async 
   throw _SetupException('${l.mcpSetupFail}${result.stderr}');
 }
 
-/// 一键配置统一走 stdio（HTTP 会触发 OAuth 交互，不适合无人值守）。
+/// 一键配置统一走 Streamable HTTP（与面板展示的接入方式一致）。
+/// stdio 桥只留给仅支持 stdio 的 IDE（通义灵码 / 豆包）。
 /// 添加前先清理旧版注册名与当前名的残留，保证重复执行幂等。
 Future<String> _setupClaude(String url, AppLocalizations l) async {
   await _removeAll('claude', [
@@ -598,7 +599,7 @@ class _McpServiceDialogState extends State<McpServiceDialog> {
     var port = await PortEditDialog.show(context, initialPort: _mcpPortNow, defaultPort: 9010);
     if (port == null || port == _mcpPortNow) return;
     configuration.mcpPort = port;
-    configuration.flushConfig();
+    await configuration.flushConfig();
     setState(() => _busy = true);
     try {
       if (McpServer().isRunning) await McpServer().restart();

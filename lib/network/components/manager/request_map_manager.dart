@@ -119,25 +119,25 @@ class RequestMapManager {
       return _mapItemsCache[rule];
     }
 
-    if (rule.itemPath != null) {
+    final itemPath = rule.itemPath;
+    if (itemPath == null) return null;
+
+    // 整段包 try：文件被删、内容不是合法 UTF-8、homePath 解析失败都会抛异常，
+    // 而本方法跑在转发主路径上，抛出去等于让这条请求直接失败（应视为「无映射」）。
+    try {
       final path = await Paths.homePath();
-      var file = File('$path$separator${rule.itemPath}');
-      if (await file.exists()) {
-        var content = await file.readAsString();
-        if (content.isNotEmpty) {
-          try {
-            var item = RequestMapItem.fromJson(jsonDecode(content));
-            _mapItemsCache[rule] = item;
-            return item;
-          } catch (e) {
-            // 映射文件被写坏/手工改过时不要让整条请求失败，按「无映射」处理。
-            logger.e('请求映射文件解析失败: ${file.path}', error: e);
-            return null;
-          }
-        }
-      }
+      var file = File('$path$separator$itemPath');
+      if (!await file.exists()) return null;
+      var content = await file.readAsString();
+      if (content.isEmpty) return null;
+      var item = RequestMapItem.fromJson(jsonDecode(content));
+      _mapItemsCache[rule] = item;
+      return item;
+    } catch (e) {
+      // 映射文件被写坏/手工改过/读不出来时不要让整条请求失败，按「无映射」处理。
+      logger.e('请求映射文件读取或解析失败: $itemPath', error: e);
+      return null;
     }
-    return null;
   }
 
   static Future<File> get _path async {

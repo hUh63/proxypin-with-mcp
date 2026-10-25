@@ -484,6 +484,17 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
           '${token.isEmpty ? '' : ' --header "Authorization: Bearer $token"'}',
       'Codex': 'export PROXYPIN_MCP_TOKEN="$token"\n'
           'codex mcp add ${McpClientNames.mobile} --url $endpoint --bearer-token-env-var PROXYPIN_MCP_TOKEN',
+      // Cursor / Gemini CLI / Cherry Studio 等「JSON 配置文件」型客户端：
+      // 与桌面端 mcp_panel 生成的 mcpServers 结构一致，只是多带 Bearer 头。
+      'Cursor / Gemini / Cherry': const JsonEncoder.withIndent('  ').convert({
+        'mcpServers': {
+          McpClientNames.mobile: {
+            'type': 'http',
+            'url': endpoint,
+            if (token.isNotEmpty) 'headers': {'Authorization': 'Bearer $token'},
+          },
+        },
+      }),
       loc.mcpConnCurlSelfCheck: 'curl -s${token.isEmpty ? '' : ' -H "Authorization: Bearer $token"'} $endpoint '
           '-H "Content-Type: application/json" '
           '-d \'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\'',

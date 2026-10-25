@@ -15,7 +15,7 @@
  *   { "action": "ping" }
  *   { "action": "status" }
  *   { "action": "list_histories" }
- *   { "action": "get_history", "name": "<会话名>" }
+ *   { "action": "get_history", "name": "<会话名>" | "id": "<会话 id>", "offset": 0, "limit": 500 }
  *
  * 说明：为避免流量洪泛，实时推送只含元数据（不含请求/响应 body）；
  * WebSocket 帧仅在文本帧时输出 payload（截断至 [_maxPayloadChars]）。
@@ -219,7 +219,13 @@ class WsTrafficServer implements EventListener {
         await _listHistories(ws);
         break;
       case 'get_history':
-        await _getHistory(ws, message['name']?.toString());
+        await _getHistory(
+          ws,
+          message['name']?.toString(),
+          id: message['id']?.toString(),
+          offset: int.tryParse('${message['offset'] ?? 0}') ?? 0,
+          limit: int.tryParse('${message['limit'] ?? 500}') ?? 500,
+        );
         break;
       default:
         _send(ws, {'type': 'error', 'message': '未知命令: $action'});
@@ -247,6 +253,8 @@ class WsTrafficServer implements EventListener {
       final storage = await HistoryStorage.instance;
       final list = storage.histories
           .map((h) => {
+                // 会话名不保证唯一（用户可重名），id 用于精确指定
+                'id': h.path,
                 'name': h.name,
                 'requestLength': h.requestLength,
                 'fileSize': h.fileSize,
@@ -259,26 +267,42 @@ class WsTrafficServer implements EventListener {
     }
   }
 
-  Future<void> _getHistory(io.WebSocket ws, String? name) async {
+  /// 读取某个历史会话的请求列表。
+  ///
+  /// - 走 [HistoryStorage.readRequests]（不写入 `history.requests` 常驻缓存）：
+  ///   局域网流量共享常用来抽查大会话，若走 `getRequests` 会把整份历史永久驻留内存。
+  /// - 支持 offset/limit 分页，单次上限 500 条，避免一次吐出几十万条把接收端打爆。
+  Future<void> _getHistory(
+    io.WebSocket ws,
+    String? name, {
+    String? id,
+    int offset = 0,
+    int limit = 500,
+  }) async {
     if (!(_configuration?.wsTrafficHistoryEnabled ?? true)) {
       _send(ws, {'type': 'error', 'message': '历史访问已在偏好设置中关闭'});
       return;
     }
-    if (name == null || name.isEmpty) {
-      _send(ws, {'type': 'error', 'message': 'get_history 需要 name 参数'});
+    final hasId = id != null && id.isNotEmpty;
+    if ((name == null || name.isEmpty) && !hasId) {
+      _send(ws, {'type': 'error', 'message': 'get_history 需要 name 或 id 参数'});
       return;
     }
     try {
       final storage = await HistoryStorage.instance;
-      final matched = storage.histories.where((h) => h.name == name);
+      final matched = hasId
+          ? storage.histories.where((h) => h.path == id)
+          : storage.histories.where((h) => h.name == name);
       if (matched.isEmpty) {
-        _send(ws, {'type': 'error', 'message': '未找到历史会话: $name'});
+        _send(ws, {'type': 'error', 'message': '未找到历史会话: ${hasId ? id : name}'});
         return;
       }
       final item = matched.first;
-      final requests = await storage.getRequests(item);
-      final data = requests
-          .take(500) // 单次最多 500 条，避免响应过大
+      final requests = await storage.readRequests(item);
+      final start = offset < 0 ? 0 : (offset > requests.length ? requests.length : offset);
+      final max = limit < 1 ? 1 : (limit > 500 ? 500 : limit);
+      final page = requests.skip(start).take(max);
+      final data = page
           .map((r) => {
                 'id': r.requestId,
                 'method': r.methodLabel,
@@ -290,14 +314,18 @@ class WsTrafficServer implements EventListener {
       _send(ws, {
         'type': 'result',
         'action': 'get_history',
-        'name': name,
+        'id': item.path,
+        'name': item.name,
         'total': requests.length,
+        'offset': start,
+        'limit': max,
         'data': data,
       });
     } catch (e) {
       _send(ws, {'type': 'error', 'message': '读取会话失败: $e'});
     }
   }
+
 
   // ==================== 流量事件 ====================
 

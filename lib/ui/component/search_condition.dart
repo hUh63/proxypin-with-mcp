@@ -71,7 +71,14 @@ class SearchConditionsState extends State<SearchConditions> {
     requestContentMap[localizations.all] = null;
     responseContentMap[localizations.all] = null;
     Color primaryColor = ColorScheme.of(context).primary;
-    return Container(
+    // 响应类型改成多选后 chips 会换行，勾得多时面板比原来高不少；
+    // showMenu 的可用高度有限，这里显式限高并让内容自己滚动，
+    // 否则底部「搜索 / 重置」按钮会被挤出屏幕。
+    final maxPanelHeight = (MediaQuery.of(context).size.height * 0.8).clamp(220.0, 720.0).toDouble();
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxPanelHeight),
+      child: SingleChildScrollView(
+        child: Container(
       padding: widget.padding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -295,6 +302,8 @@ class SearchConditionsState extends State<SearchConditions> {
             ],
           ),
         ],
+      ),
+    )
       ),
     );
   }

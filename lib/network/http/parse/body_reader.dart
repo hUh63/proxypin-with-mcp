@@ -69,8 +69,14 @@ class BodyReader {
   BodyReader(this.message, {this.canRelay = false, this.bufferCloseDelimited = false})
       : _chunkedDecoder = message.headers.isChunked ? ChunkedDecoder() : null;
 
+  /// 惰性判定的缓存：`readBody` 每收一个 TCP 包都会问一次，而判定里含
+  /// `contentType.startsWith(...)` 这类字符串比较，高频响应下没必要反复算。
+  bool? _closeDelimited;
+
   /// 无 Content-Length、无 chunked、非 flv/SSE 的响应：body 由连接关闭定界。
-  bool get closeDelimited {
+  bool get closeDelimited => _closeDelimited ??= _computeCloseDelimited();
+
+  bool _computeCloseDelimited() {
     final msg = message;
     return msg is HttpResponse &&
         msg.status.code >= 200 &&

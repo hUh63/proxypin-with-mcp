@@ -1384,17 +1384,42 @@ class McpServer {
   FlowStore? _officialFlowStore;
   List<McpTool>? _officialToolCache;
 
+  /// 当前已挂载 [_officialFlowStore] 的 ProxyServer 实例。
+  ProxyServer? _flowStoreAttached;
+
+  /// 把官方 FlowStore 挂到「当前」的 ProxyServer 上（幂等，实例变了会先摘旧的）。
+  ///
+  /// `ProxyServer(config)` 的构造函数里会 `current = this`，而桌面/手机页面重建
+  /// 以及 MCP 的 `start_proxy` 都会新建实例且新实例的 listeners 是空表——
+  /// 只在首次构建时 addListener 一次的话，换实例后官方工具（list_flows 等）
+  /// 就再也收不到新请求，表现为「AI 说抓不到流量」。
+  void _ensureFlowStoreAttached() {
+    final store = _officialFlowStore;
+    if (store == null) return;
+    final server = ProxyServer.current;
+    if (identical(server, _flowStoreAttached)) return;
+    final previous = _flowStoreAttached;
+    if (previous != null) {
+      try {
+        previous.removeListener(store);
+      } catch (_) {}
+    }
+    try {
+      server?.addListener(store);
+    } catch (e) {
+      logger.w('MCP official FlowStore attach failed: $e');
+    }
+    _flowStoreAttached = server;
+  }
+
   /// 惰性构建官方工具源：抓包索引与 UI 同源（挂到同一个 [ProxyServer]）。
   List<McpTool> _officialTools() {
     if (_officialToolCache != null) return _officialToolCache!;
     if (_officialActions == null) {
       final store = _getHistoryStore();
       _officialFlowStore = store;
-      try {
-        ProxyServer.current?.addListener(store);
-      } catch (e) {
-        logger.w('MCP official FlowStore attach failed: $e');
-      }
+      _flowStoreAttached = null;
+      _ensureFlowStoreAttached();
       _officialActions = McpActions(
         store: store,
         onClearSession: () async => McpBridge().onClearUI?.call(),
@@ -1487,6 +1512,9 @@ class McpServer {
   }
 
   Future<dynamic> _executeOfficialTool(String name, Map<String, dynamic> args) async {
+    // ProxyServer 实例会被 UI 重建、也会被 start_proxy 新建（构造时改写 current），
+    // 每次调用官方工具前同步一次挂载，否则换了实例后官方工具永远看不到新流量。
+    _ensureFlowStoreAttached();
     for (final tool in _officialTools()) {
       if (tool.name == name) return await tool.handler(args);
     }
@@ -3584,7 +3612,7 @@ class McpServer {
             if (port == null || port < 1 || port > 65535) return {'error': 'Invalid port (1-65535)'};
             if (port == conf.port) return {'error': 'Port conflicts with the forward proxy port'};
             conf.reverseProxyPort = port;
-            conf.flushConfig();
+            await conf.flushConfig();
             ReverseProxy.load(enabled: conf.reverseProxyEnabled, port: port, rules: conf.reverseProxyRules);
             await ReverseProxyServer.apply(conf);
             return {'status': 'success', 'port': port};
@@ -3593,7 +3621,7 @@ class McpServer {
           if (action == 'enable') {
             final enabled = mcpAsBool(args['enabled']) ?? true;
             conf.reverseProxyEnabled = enabled;
-            conf.flushConfig();
+            await conf.flushConfig();
             ReverseProxy.load(enabled: enabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
             await ReverseProxyServer.apply(conf);
             return {'status': 'success', 'enabled': enabled};
@@ -3614,7 +3642,7 @@ class McpServer {
             final rule = find();
             if (rule == null) return {'error': 'No route found for $normalized'};
             conf.reverseProxyRules = List<ReverseProxyRule>.from(conf.reverseProxyRules)..remove(rule);
-            conf.flushConfig();
+            await conf.flushConfig();
             ReverseProxy.load(
                 enabled: conf.reverseProxyEnabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
             await ReverseProxyServer.apply(conf);
@@ -3628,7 +3656,7 @@ class McpServer {
             final list = List<ReverseProxyRule>.from(conf.reverseProxyRules);
             list[list.indexOf(rule)] = rule.copyWith(enabled: enabled);
             conf.reverseProxyRules = list;
-            conf.flushConfig();
+            await conf.flushConfig();
             ReverseProxy.load(
                 enabled: conf.reverseProxyEnabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
             return {'status': 'success', 'prefix': normalized, 'enabled': enabled};
@@ -3664,7 +3692,7 @@ class McpServer {
             ));
           }
           conf.reverseProxyRules = list;
-          conf.flushConfig();
+          await conf.flushConfig();
           ReverseProxy.load(
               enabled: conf.reverseProxyEnabled, port: conf.reverseProxyPort, rules: conf.reverseProxyRules);
           await ReverseProxyServer.apply(conf);

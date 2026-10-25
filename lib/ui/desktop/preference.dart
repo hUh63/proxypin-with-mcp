@@ -386,7 +386,7 @@ class _PreferenceState extends State<Preference> {
                       value: configuration.mcpAllowLan,
                       onChanged: (v) async {
                         setState(() => configuration.mcpAllowLan = v);
-                        configuration.flushConfig();
+                        await configuration.flushConfig();
                         try {
                           if (McpServer().isRunning) await McpServer().restart();
                         } catch (e) {

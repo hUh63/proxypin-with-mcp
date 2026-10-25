@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.67.91 (2026-10-25) — 上游 mcp 目录整合核对 + 面板限高 + 官方工具重挂载
+
+### 上游代码整合核对（无新增合并）
+- `lib/mcp/**`（capture/、protocol/mcp_actions、transport/setup_script、stdio_bridge）
+  早已被 `network/mcp/mcp_server.dart` 实际使用：`_officialActions = McpActions(...)`
+  提供上游 34 个官方工具，与自研 69 个原生工具合并分发，同名 3 个以 fork 为准。
+  上游另有 `mcp_service` / `protocol/mcp_server` / `transport/mcp_http_server` 三件套
+  （上游自己的一套服务器栈）未搬：本 fork 的实现是其功能超集，还多出 `/health`、
+  `/mcp/setup.sh|ps1`、会话管理、`MCP-Protocol-Version` 校验、OPTIONS 预检。
+- `body_reader._isCloseDelimited` 等价逻辑已在 `closeDelimited` getter 里，且额外排除
+  CONNECT 隧道；本轮只补上惰性缓存（`readBody` 每个 TCP 包都会问一次，判定里含
+  `contentType.startsWith`）。
+
+### MCP
+- `_ensureFlowStoreAttached()`：把官方工具用的 `FlowStore` 挂到「当前」的 ProxyServer 上。
+  `ProxyServer(config)` 构造会改写 `ProxyServer.current`，而桌面/手机页面重建、
+  MCP 的 `start_proxy` 都会新建实例（新实例 listeners 为空表）——此前只挂一次，
+  换实例后官方工具（`list_flows` 等）再也收不到新请求，表现为「AI 说抓不到流量」。
+- `set_reverse_proxy` 等 5 处 MCP 工具分支的 `conf.flushConfig()` 补 `await`，
+  工具返回 success 时配置已落盘。
+- 移动端接入命令补 `Cursor / Gemini / Cherry` 的 `mcpServers` JSON（带 Bearer 头），
+  与桌面面板口径一致；`McpClientNames` 注释同步（桌面端已不是 stdio）。
+
+### 搜索面板
+- 响应类型改多选后 chips 会换行，勾得多时面板比原来高：显式
+  `ConstrainedBox(maxHeight: 屏高 * 0.8) + SingleChildScrollView`，
+  避免底部「搜索/重置」按钮被 showMenu 的可用高度裁掉。
+
+### 网络层
+- `ProtocolSniffer`：协议切换的 `await` 窗口（连上游 / TLS 握手 / 反查进程）里到达的
+  字节会被 `_pending.addAll` 收下却因 `_switching` 提前 return 不再送出，此前会静默丢包；
+  改为循环 flush 直到 `_pending` 为空。
+- `RequestMapManager.getMapItem`：整段包 try —— `readAsString` 遇非 UTF-8 内容、
+  文件被删、`homePath` 解析失败都会抛，而它跑在转发主路径上，抛出去等于让该请求失败。
+- `Configuration.flushConfig()` 补 await 的三处「改端口/开关后立刻重启服务」路径：
+  `proxy_port_setting`、桌面偏好里的 MCP 局域网开关、MCP 面板改端口。
+
+### 局域网流量共享（WebSocket）
+- `get_history` 改用 `HistoryStorage.readRequests`（不写入 `history.requests` 常驻缓存）：
+  此前抽查一个大会话会把整份历史永久驻留内存。
+- `get_history` 支持 `offset` / `limit`（上限 500），返回 `total`/`offset`/`limit`；
+  `list_histories` 增加 `id`（`history.path`），重名会话也能精确指定。
+
 ## v1.67.90 (2026-10-25) — 桌面 MCP 改 HTTP 接入 + 搜索响应类型多选 + MQTT 分帧 O(n)
 
 ### 桌面 MCP 面板：统一走 Streamable HTTP

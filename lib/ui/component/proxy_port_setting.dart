@@ -42,11 +42,12 @@ class _PortState extends State<PortWidget> {
 
         widget.proxyServer.configuration.port = port;
 
+        // 先落盘再重启：重启期间用户切走页面（组件 dispose）也不会丢配置。
+        await widget.proxyServer.configuration.flushConfig();
         if (widget.proxyServer.isRunning) {
           String message = localizations.proxyPortRepeat(widget.proxyServer.port);
-          widget.proxyServer.restart().catchError((e) => FlutterToastr.show(message, context, duration: 3));
+          await widget.proxyServer.restart().catchError((e) => FlutterToastr.show(message, context, duration: 3));
         }
-        widget.proxyServer.configuration.flushConfig();
       }
     });
   }
