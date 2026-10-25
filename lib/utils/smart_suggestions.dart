@@ -17,6 +17,7 @@
 import 'dart:math' as math;
 
 import 'code_keywords.dart';
+import 'code_lint.dart';
 
 /// 「上下文 + 代码格式」感知的本地补全候选。
 ///

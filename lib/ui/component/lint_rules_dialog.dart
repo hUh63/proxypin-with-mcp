@@ -45,7 +45,6 @@ Future<Set<String>?> showLintRulesDialog(BuildContext context, Set<String> disab
             const SizedBox(height: 4),
             Expanded(
               child: ListView.builder(
-                dense: true,
                 itemCount: LintRules.all.length,
                 itemBuilder: (context, i) {
                   final rule = LintRules.all[i];

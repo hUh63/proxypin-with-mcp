@@ -1663,7 +1663,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 documentText: ctx.documentText,
                 linePrefix: ctx.linePrefix,
                 prefix: ctx.prefix,
-              , cursorOffset: ctx.cursorOffset)
+                cursorOffset: ctx.cursorOffset,
+              )
           : null;
     }
 
