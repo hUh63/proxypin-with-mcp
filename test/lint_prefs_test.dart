@@ -27,13 +27,17 @@ void main() {
   test('单独设置某语言后有自己的集合（C# 关分号不影响 Python）', () async {
     await LintPrefs.applyToAll({'missing-semicolon'});
     await LintPrefs.setFor('csharp', {'missing-semicolon'});
+    // 没单独设置过的语言仍继承默认
     expect(LintPrefs.disabledFor('python'), {'missing-semicolon'});
     expect(LintPrefs.hasOverride('csharp'), isTrue);
 
-    // 把默认改成「什么都不关」，c# 的独立设置必须保留
-    await LintPrefs.applyToAll(<String>{});
-    expect(LintPrefs.disabledFor('python'), isEmpty);
+    // 给 python 单独设成另一条规则：两者互不影响
+    await LintPrefs.setFor('python', {'unclosed-bracket'});
     expect(LintPrefs.disabledFor('csharp'), {'missing-semicolon'});
+    expect(LintPrefs.disabledFor('python'), {'unclosed-bracket'});
+    // 第三个语言继续继承默认
+    expect(LintPrefs.disabledFor('go'), {'missing-semicolon'});
+    expect(LintPrefs.hasOverride('go'), isFalse);
   });
 
   test('applyToAll 会清掉所有语言的独立设置', () async {
