@@ -842,7 +842,8 @@ class CodeLint {
     final cached = _knownCache[cacheKey];
     if (cached != null) return cached;
 
-    final words = CodeKeywords.forLanguage(langLabel, langKey);
+    // forLanguage 的 key 是非空 String（默认 ''），langKey 可能为 null。
+    final words = CodeKeywords.forLanguage(langLabel, langKey ?? '');
     final lower = <String, String>{};
     final dup = <String>{};
     for (final w in words) {

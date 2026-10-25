@@ -42,6 +42,8 @@
 - 控制台输出没有上限，一直 `console.log` 的脚本会把内存吃光（现在只留最近 500 行）。
 - 批量导出 WebSocket 会话时文件名直接用主机名，IPv6 的 `[::1]` 含冒号与方括号，
   在 Windows 上属于非法文件名、解压会失败（统一走 `_safeNamePart`）。
+- CI 首轮编译错误：`CodeKeywords.forLanguage` 的 key 参数是非空 `String`、
+  `Platforms.isAndroid` 是方法不是字段。
 
 ## v1.67.94 (2026-10-25) — 修上游 #975（应用分身断网）/ #976（WS 二进制导出）
 
