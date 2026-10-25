@@ -300,7 +300,8 @@ abstract class HttpCodec<T extends HttpMessage> implements Codec<T, T>, CloseDel
         // 不改消息对象里的头：抓包详情与「重放」都用这份 headers，塞进
         // Transfer-Encoding 会让重放的定长 body 被上游按 chunked 解析。
         // 只在下面写出头时补一行字节。
-        builder.add(HttpHeaders.TRANSFER_ENCODING.codeUnits)
+        builder
+          ..add(HttpHeaders.TRANSFER_ENCODING.codeUnits)
           ..addByte(HttpConstants.colon)
           ..addByte(HttpConstants.sp)
           ..add('chunked'.codeUnits)
