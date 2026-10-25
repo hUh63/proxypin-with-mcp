@@ -668,6 +668,18 @@ class CodeLint {
         continue;
       }
 
+      // 全角标点混进代码（中文输入法最容易踩的坑，扫描时才知道在不在字符串里）
+      final fullWidth = _fullWidthOf(c);
+      if (fullWidth != null) {
+        add(
+            i,
+            1,
+            LintSeverity.warning,
+            'full-width',
+            ctx.t('代码里混入了全角符号「$fullWidth」', 'full-width character "$fullWidth" in code'),
+            suggestion: ctx.t('换成半角符号', 'use the ASCII version'));
+      }
+
       // 标识符
       if (_isIdStart(c)) {
         final start = i;
@@ -723,18 +735,6 @@ class CodeLint {
         }
         i++;
         continue;
-      }
-
-      // 全角标点混进代码（中文输入法最容易踩的坑，扫描时才知道在不在字符串里）
-      final fullWidth = _fullWidthOf(c);
-      if (fullWidth != null) {
-        add(
-            i,
-            1,
-            LintSeverity.warning,
-            'full-width',
-            ctx.t('代码里混入了全角符号「$fullWidth」', 'full-width character "$fullWidth" in code'),
-            suggestion: ctx.t('换成半角符号', 'use the ASCII version'));
       }
 
       i++;
