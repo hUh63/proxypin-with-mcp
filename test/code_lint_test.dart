@@ -375,6 +375,49 @@ void main() {
       );
       expect(report.diagnostics.where((e) => e.code == 'missing-semicolon'), isEmpty);
     });
+
+    test('增量回退到行首：上一版末尾没有换行时不会重复报同一条', () {
+      // 末尾故意不留换行——这是「在文末继续打字」的真实状态。
+      final base = 'class A {\n' + ('// pad\n' * 6000) + '  int x = 1';
+      final previous = CodeLint.check(base, langLabel: 'C#', langKey: 'csharp');
+      final before = previous.diagnostics.where((e) => e.code == 'missing-semicolon').toList();
+      expect(before.length, 1);
+
+      final current = '$base\n  int y = 2;';
+      final report = CodeLint.checkIncremental(
+        previous: base,
+        previousReport: previous,
+        current: current,
+        langLabel: 'C#',
+        langKey: 'csharp',
+      );
+      final after = report.diagnostics.where((e) => e.code == 'missing-semicolon').toList();
+      // 「int x = 1」所在行被重算，不能因为边界判断而既保留旧的又报新的
+      expect(after.length, 1);
+      // 行号与偏移必须自洽：行号能由偏移算出来
+      for (final d in report.diagnostics) {
+        final line = '\n'.allMatches(current.substring(0, d.start)).length + 1;
+        expect(d.line, line);
+      }
+    });
+
+    test('增量结果的偏移都指向 current，不会越界', () {
+      final base = 'class A {\n' + ('// pad\n' * 6000) + '  int x = 1;\n';
+      final previous = CodeLint.check(base, langLabel: 'C#', langKey: 'csharp');
+      final current = '${base}  int z = 3\n';
+      final report = CodeLint.checkIncremental(
+        previous: base,
+        previousReport: previous,
+        current: current,
+        langLabel: 'C#',
+        langKey: 'csharp',
+      );
+      for (final d in report.diagnostics) {
+        expect(d.start, greaterThanOrEqualTo(0));
+        expect(d.start, lessThanOrEqualTo(current.length));
+      }
+      expect(report.diagnostics.where((e) => e.code == 'missing-semicolon'), isNotEmpty);
+    });
   });
 
   group('applyFixes', () {

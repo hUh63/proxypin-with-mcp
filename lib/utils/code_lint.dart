@@ -466,24 +466,36 @@ class CodeLint {
         !current.startsWith(previous)) {
       return full();
     }
+    // 只在「整篇结构」上才有意义的诊断：增量片段单独看必然报（缺右括号、标签没闭合、
+    // JSON 解析不了…），所以这些一律交给全量检查，增量里直接丢弃。
     const volatile = <String>{
-      'unclosed-bracket', 'unclosed-string', 'markup', 'json-header', 'tag-unclosed', //
-      'block-unclosed', 'fence-unclosed', 'extra-bracket',
+      'unclosed-bracket', 'unclosed-string', 'markup', 'json-header', 'jsonc', //
+      'tag-unclosed', 'tag-unmatched', 'tag-mismatch', 'extra-bracket',
+      'block-unclosed', 'fence-unclosed',
     };
-    final delta = current.substring(previous.length);
+    // 回退到**行首**再做增量。
+    //
+    // 直接 `substring(previous.length)` 几乎总是从某一行的中间切开的（上一版末尾
+    // 通常不是换行），而检查器是按「完整文档」写的：从半行开始会让缩进判断失去参照、
+    // 第一行的列号也对不上。对齐到行首后，被重算的那一行正好是「用户正在打的那行」，
+    // 前半部分的旧诊断丢弃，交给新结果统一给出。
+    var boundary = previous.lastIndexOf('\n');
+    boundary = boundary < 0 ? 0 : boundary + 1;
+    final delta = current.substring(boundary);
     final tail = check(delta,
         langLabel: langLabel, langKey: langKey, chinese: chinese, disabledRules: disabledRules);
-    final startLine = _lineNoOf(current, previous.length);
+    final startLine = _lineNoOf(current, boundary);
 
     final merged = <LintDiagnostic>[];
     for (final d in previousReport.diagnostics) {
-      if (d.start >= previous.length - 1) continue;
+      // 起点在重算区间内，或跨过边界的诊断，一律丢弃（会被下面重新算出来）。
+      if (d.start >= boundary || d.start + d.length > boundary) continue;
       if (volatile.contains(d.code)) continue;
       merged.add(d);
     }
     for (final d in tail.diagnostics) {
       if (volatile.contains(d.code)) continue;
-      final offset = d.start + previous.length;
+      final offset = d.start + boundary;
       final line = startLine + d.line - 1;
       merged.add(LintDiagnostic(
         line: line,
