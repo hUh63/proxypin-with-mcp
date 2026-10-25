@@ -41,6 +41,7 @@ import 'package:proxypin/utils/smart_completion.dart';
 import 'package:proxypin/utils/smart_suggestions.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:proxypin/utils/suggestion_stats.dart';
 
 /// JSON 查看 / 格式化工具
 /// @author Hongen Wang
@@ -89,15 +90,23 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
     final on = SmartCompletion.enabled.value;
     _controller.extraSuggestions = on ? CodeKeywords.json : const <String>[];
     _controller.contextSuggestionProvider = on
-        ? (ctx) => SmartSuggestions.suggest(
+        ? (ctx) {
+            final words = SmartSuggestions.suggest(
               language: 'JSON',
               key: 'json',
               documentText: ctx.documentText,
               linePrefix: ctx.linePrefix,
               prefix: ctx.prefix,
               cursorOffset: ctx.cursorOffset,
-            )
+            );
+            if (words.isEmpty) return words;
+            // 无输入时的联想曝光计数 + 按「这个人常用的词」重排。
+            if (ctx.prefix.isEmpty) SuggestionStats.recordShown('JSON', words);
+            return SuggestionStats.rank('JSON', words);
+          }
         : null;
+    _controller.onSuggestionAccepted =
+        on ? (accepted, _) => SuggestionStats.recordAccepted('JSON', accepted) : null;
   }
 
   @override

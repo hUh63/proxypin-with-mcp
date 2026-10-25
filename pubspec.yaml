@@ -2,7 +2,7 @@ name: proxypin
 description: ProxyPin
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.4.0+216
+version: 1.4.0+217
 
 environment:
   # 与 pubspec.lock 的 sdks 段保持一致（code_forge 10.14.0 起要求 Dart ^3.13.2）
@@ -116,4 +116,4 @@ dependency_overrides:
   code_forge:
     git:
       url: https://github.com/hUh63/code_forge.git
-      ref: 4ef3580f3e422699fee1392208227f6984753b7a
+      ref: 66f0b7243ab69ac042ad8fd7481159c3dccdf8b8

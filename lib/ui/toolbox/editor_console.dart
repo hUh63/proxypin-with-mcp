@@ -31,6 +31,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/ui/toolbox/console_state.dart';
 import 'package:proxypin/utils/expr_eval.dart';
 
 /// 底部面板的两个页签。
@@ -43,14 +44,6 @@ enum ConsoleBackend {
 
   /// 通用表达式求值（任何语言都能用）。
   expr,
-}
-
-/// 控制台一行输出。
-class _Out {
-  final String text;
-  final Color? color;
-  final bool prompt;
-  const _Out(this.text, {this.color, this.prompt = false});
 }
 
 /// 编辑器底部的「问题 / 控制台」面板。
@@ -89,6 +82,10 @@ class EditorConsolePanel extends StatefulWidget {
   /// 把一段文本插入到编辑器（控制台的「插入」）。
   final ValueChanged<String>? onInsertText;
 
+  /// 控制台状态。由文档持有，所以收起面板 / 切走文档再回来，
+  /// 输出、命令历史、定义过的变量都还在。
+  final ConsoleState state;
+
   const EditorConsolePanel({
     super.key,
     required this.report,
@@ -107,6 +104,7 @@ class EditorConsolePanel extends StatefulWidget {
     this.disabledRules = const <String>{},
     this.onOpenRules,
     this.onInsertText,
+    required this.state,
   });
 
   @override
@@ -119,17 +117,13 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   late ConsoleBackend _backend = widget.jsBackend ? ConsoleBackend.js : ConsoleBackend.expr;
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
-  final List<_Out> _out = <_Out>[];
-  final List<String> _history = <String>[];
-  int _historyCursor = -1;
   JavascriptRuntime? _rt;
   bool _running = false;
 
-  /// 表达式后端的会话（`a = 1+2` 之后可以直接用 `a`）。
-  final ExprSession _session = ExprSession();
+  /// 控制台状态（输出 / 命令历史 / 会话变量）——由文档持有。
+  ConsoleState get _state => widget.state;
 
-  /// 最近一次成功的结果（「插入到编辑器」用）。
-  String? _lastResult;
+  List<ConsoleLine> get _out => _state.lines;
 
   /// 0=全部 1=仅错误 2=错误+警告
   int _filter = 0;
@@ -198,7 +192,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       _rt = created;
       return created;
     } catch (e) {
-      _append('$e', Colors.red);
+      _append('$e', ConsoleLineKind.error);
       return null;
     }
   }
@@ -209,20 +203,19 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       final list = args as List<dynamic>;
       final level = list.isEmpty ? 'log' : '${list.removeAt(0)}';
       final text = list.map((e) => '$e').join(' ');
-      _append(text, level == 'error' ? Colors.red : (level == 'warn' ? Colors.orange : null));
+      _append(text,
+          level == 'error'
+              ? ConsoleLineKind.error
+              : (level == 'warn' ? ConsoleLineKind.warn : ConsoleLineKind.output));
     } catch (e) {
-      _append('$e', Colors.red);
+      _append('$e', ConsoleLineKind.error);
     }
     return null;
   }
 
-  void _append(String text, [Color? color, bool prompt = false]) {
+  void _append(String text, [ConsoleLineKind kind = ConsoleLineKind.output]) {
     if (!mounted) return;
-    setState(() {
-      _out.add(_Out(text, color: color, prompt: prompt));
-      // 一直 log 的脚本会把内存吃光：只保留最近 500 行。
-      if (_out.length > 500) _out.removeRange(0, _out.length - 500);
-    });
+    setState(() => _state.append(text, kind));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
       _scroll.jumpTo(_scroll.position.maxScrollExtent);
@@ -242,23 +235,19 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     final source = code.trim();
     if (source.isEmpty || _running) return;
     if (echo) {
-      _append('> $source', Colors.grey, true);
-      if (_history.isEmpty || _history.last != source) {
-        _history.add(source);
-        if (_history.length > 50) _history.removeAt(0);
-      }
-      _historyCursor = -1;
+      _append('> $source', ConsoleLineKind.prompt);
+      _state.remember(source);
     }
     setState(() => _running = true);
     try {
       if (_backend == ConsoleBackend.expr) {
-        final result = _session.eval(_withSelection(source));
+        final result = _state.session.eval(_withSelection(source));
         if (result.isError) {
-          _append(result.error!, Colors.red);
+          _append(result.error!, ConsoleLineKind.error);
         } else {
           final formatted = ExprEval.format(result.value);
-          _lastResult = formatted;
-          _append('=> $formatted', Theme.of(context).colorScheme.primary);
+          _state.lastResult = formatted;
+          _append('=> $formatted', ConsoleLineKind.result);
         }
         return;
       }
@@ -279,16 +268,16 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       }
       if (!mounted) return;
       if (result.isError) {
-        _append(result.stringResult ?? localizations.editorConsoleError, Colors.red);
+        _append(result.stringResult ?? localizations.editorConsoleError, ConsoleLineKind.error);
       } else {
         final value = result.stringResult;
         if (value != null && value.isNotEmpty && value != 'undefined' && value != 'null') {
-          _lastResult = value;
-          _append('=> $value', Theme.of(context).colorScheme.primary);
+          _state.lastResult = value;
+          _append('=> $value', ConsoleLineKind.result);
         }
       }
     } catch (e) {
-      _append('$e', Colors.red);
+      _append('$e', ConsoleLineKind.error);
     } finally {
       if (mounted) setState(() => _running = false);
     }
@@ -328,19 +317,20 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   }
 
   void _insertLast() {
-    final value = _lastResult;
+    final value = _state.lastResult;
     final insert = widget.onInsertText;
     if (value == null || insert == null) return;
     insert(value);
   }
 
   void _recallHistory(bool forward) {
-    if (_history.isEmpty) return;
-    var next = _historyCursor + (forward ? -1 : 1);
-    if (next < -1) next = _history.length - 1;
-    if (next >= _history.length) next = -1;
-    _historyCursor = next;
-    _input.text = next < 0 ? '' : _history[next];
+    final history = _state.history;
+    if (history.isEmpty) return;
+    var next = _state.historyCursor + (forward ? -1 : 1);
+    if (next < -1) next = history.length - 1;
+    if (next >= history.length) next = -1;
+    _state.historyCursor = next;
+    _input.text = next < 0 ? '' : history[next];
     _input.selection = TextSelection.collapsed(offset: _input.text.length);
   }
 
@@ -360,6 +350,24 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
         Expanded(child: _tab == EditorConsoleTab.problems ? _problems(theme) : _console(theme)),
       ]),
     );
+  }
+
+  /// 输出行的颜色（按行类型）。
+  Color? _lineColor(ThemeData theme, ConsoleLineKind kind) {
+    switch (kind) {
+      case ConsoleLineKind.error:
+        return Colors.red;
+      case ConsoleLineKind.warn:
+        return Colors.orange;
+      case ConsoleLineKind.prompt:
+        return Colors.grey;
+      case ConsoleLineKind.result:
+        return theme.colorScheme.primary;
+      case ConsoleLineKind.note:
+        return theme.textTheme.bodySmall?.color;
+      case ConsoleLineKind.output:
+        return null;
+    }
   }
 
   Widget _header(ThemeData theme) {
@@ -572,8 +580,8 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
               if (v == null) return;
               setState(() {
                 _backend = v;
-                _out.clear();
-                _lastResult = null;
+                _state.clearOutput();
+                _state.lastResult = null;
               });
             },
           ),
@@ -587,11 +595,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
             ),
             IconButton(
               tooltip: localizations.editorConsoleClear,
-              onPressed: () => setState(() {
-                _out.clear();
-                _lastResult = null;
-                _session.reset();
-              }),
+              onPressed: () => setState(_state.reset),
               icon: const Icon(Icons.delete_outline, size: 16),
               visualDensity: VisualDensity.compact,
             ),
@@ -630,8 +634,10 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
                                   style: TextStyle(
                                       fontSize: 11.5,
                                       fontFamily: 'monospace',
-                                      color: o.color,
-                                      fontWeight: o.prompt ? FontWeight.w600 : FontWeight.w400)),
+                                      color: _lineColor(theme, o.kind),
+                                      fontWeight: o.kind == ConsoleLineKind.prompt
+                                          ? FontWeight.w600
+                                          : FontWeight.w400)),
                             ),
                         ],
                       ),
@@ -672,7 +678,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
           if (widget.onInsertText != null)
             IconButton(
               tooltip: localizations.editorConsoleInsert,
-              onPressed: _lastResult == null ? null : _insertLast,
+              onPressed: _state.lastResult == null ? null : _insertLast,
               icon: const Icon(Icons.input, size: 16),
               visualDensity: VisualDensity.compact,
             ),

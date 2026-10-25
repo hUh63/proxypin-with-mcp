@@ -40,6 +40,7 @@ import 'package:proxypin/utils/smart_suggestions.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:xml/xml.dart';
+import 'package:proxypin/utils/suggestion_stats.dart';
 
 /// XML 查看 / 格式化工具
 /// 跟 [JsonViewerPage] 风格一致，但只有文本视图：
@@ -84,15 +85,23 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
     final on = SmartCompletion.enabled.value;
     _controller.extraSuggestions = on ? CodeKeywords.xml : const <String>[];
     _controller.contextSuggestionProvider = on
-        ? (ctx) => SmartSuggestions.suggest(
+        ? (ctx) {
+            final words = SmartSuggestions.suggest(
               language: 'XML / HTML',
               key: 'xml',
               documentText: ctx.documentText,
               linePrefix: ctx.linePrefix,
               prefix: ctx.prefix,
               cursorOffset: ctx.cursorOffset,
-            )
+            );
+            if (words.isEmpty) return words;
+            // 无输入时的联想曝光计数 + 按「这个人常用的词」重排。
+            if (ctx.prefix.isEmpty) SuggestionStats.recordShown('XML / HTML', words);
+            return SuggestionStats.rank('XML / HTML', words);
+          }
         : null;
+    _controller.onSuggestionAccepted =
+        on ? (accepted, _) => SuggestionStats.recordAccepted('XML / HTML', accepted) : null;
   }
 
   @override

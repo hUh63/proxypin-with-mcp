@@ -39,6 +39,7 @@ import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
 import 'package:proxypin/ui/toolbox/editor_console.dart';
 import 'package:proxypin/utils/custom_lang.dart';
@@ -48,6 +49,7 @@ import 'package:proxypin/ui/toolbox/text_editor_settings.dart';
 import 'package:proxypin/ui/toolbox/text_editor_menus.dart';
 import 'package:proxypin/utils/smart_completion.dart';
 import 'package:proxypin/utils/smart_suggestions.dart';
+import 'package:proxypin/utils/suggestion_stats.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/utils/text_special_chars.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
@@ -201,7 +203,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 被用户关掉的规则（持久化在 prefs 里）。
   Set<String> _disabledRules = <String>{};
-  static const String _kLintDisabled = 'code_lint_disabled_v1';
   bool _consoleOpen = false;
   EditorConsoleTab _consoleTab = EditorConsoleTab.problems;
   bool _dirty = false;
@@ -263,6 +264,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     });
     SmartCompletion.load();
     unawaited(_loadLintRules());
+    unawaited(SuggestionStats.ensureLoaded());
+    unawaited(LintPrefs.ensureLoaded());
     SmartCompletion.enabled.addListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.load();
     TextEditorPrefsStore.notifier.addListener(_onEditorPrefsChanged);
@@ -478,12 +481,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _lintTimer = Timer(const Duration(milliseconds: 650), _runLint);
   }
 
+  /// 规则开关的存储键：优先用 re_highlight 的 key（csharp / dart / python…），
+  /// 自定义语言没有 key 时用规范化后的 label。
+  String get _langRuleKey {
+    final key = _lang.key.trim().toLowerCase();
+    if (key.isNotEmpty) return key;
+    final label = _lang.label.trim().toLowerCase();
+    if (label.isEmpty) return LintPrefs.globalKey;
+    final slug = label.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return slug.isEmpty ? label : slug;
+  }
+
   Future<void> _loadLintRules() async {
     try {
-      final raw = await SharedPreferencesAsync().getStringList(_kLintDisabled);
+      await LintPrefs.ensureLoaded();
       if (!mounted) return;
-      if (raw == null) return;
-      setState(() => _disabledRules = raw.toSet());
+      final next = LintPrefs.disabledFor(_langRuleKey);
+      if (next.length == _disabledRules.length && next.containsAll(_disabledRules)) return;
+      setState(() => _disabledRules = next);
       _doc?.lint = null;
       _scheduleLint();
     } catch (_) {
@@ -491,19 +506,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
-  Future<void> _saveLintRules() async {
-    try {
-      await SharedPreferencesAsync().setStringList(_kLintDisabled, _disabledRules.toList());
-    } catch (_) {
-      // 忽略
-    }
-  }
-
   Future<void> _openLintRules() async {
-    final result = await showLintRulesDialog(context, _disabledRules);
+    final result = await showLintRulesDialog(
+      context,
+      disabled: _disabledRules,
+      languageLabel: _doc?.langLabel ?? '',
+      hasOverride: LintPrefs.hasOverride(_langRuleKey),
+    );
     if (result == null || !mounted) return;
-    setState(() => _disabledRules = result);
-    unawaited(_saveLintRules());
+    if (result.applyToAll) {
+      await LintPrefs.applyToAll(result.disabled);
+    } else {
+      await LintPrefs.setFor(_langRuleKey, result.disabled);
+    }
+    if (!mounted) return;
+    setState(() => _disabledRules = LintPrefs.disabledFor(_langRuleKey));
     _doc?.lint = null;
     _runLint();
   }
@@ -1657,15 +1674,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
               : <String>[..._lang.customWords, ...builtinWords])
           : const <String>[];
       doc.controller.contextSuggestionProvider = smart
-          ? (ctx) => SmartSuggestions.suggest(
+          ? (ctx) {
+              final words = SmartSuggestions.suggest(
                 language: doc.langLabel,
                 key: _lang.key,
                 documentText: ctx.documentText,
                 linePrefix: ctx.linePrefix,
                 prefix: ctx.prefix,
                 cursorOffset: ctx.cursorOffset,
-              )
+              );
+              if (words.isEmpty) return words;
+              // 只统计「无输入联想」的曝光——普通前缀补全每次都弹，记它没有意义。
+              if (ctx.prefix.isEmpty) SuggestionStats.recordShown(doc.langLabel, words);
+              // 按这个人平时真的会用的词重排（稳定排序，没学过的保持原位置）。
+              return SuggestionStats.rank(doc.langLabel, words);
+            }
           : null;
+      doc.controller.onSuggestionAccepted =
+          smart ? (accepted, _) => SuggestionStats.recordAccepted(doc.langLabel, accepted) : null;
     }
 
     return PopScope(
@@ -1720,6 +1746,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               disabledRules: _disabledRules,
               onOpenRules: _openLintRules,
               onInsertText: _insertText,
+              state: doc.consoleState,
             ),
           if (doc != null)
             AnimatedBuilder(
@@ -1898,6 +1925,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
               if (v == null || v == _lang || _doc == null) return;
               setState(() => _doc!.langLabel = v.label);
               _doc!.lint = null;
+              // 规则开关是按语言记的：切语言要换一份，并立刻重查。
+              unawaited(_loadLintRules());
               _scheduleLint();
             },
           ),

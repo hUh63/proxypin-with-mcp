@@ -661,28 +661,60 @@ class SmartSuggestions {
     return _dedupe(out, '').take(20).toList();
   }
 
+  /// 一次扫完所有「行首词」（`(?:^|\n)[ \t]*标识符`）。
+  ///
+  /// 早先是 `doc.split('\n')` 后每行再跑一次正则：120KB 的文档会切出几千个
+  /// 临时字符串、跑几千次正则匹配，而这在每次输入（200ms 防抖）都会发生。
+  /// 现在改成单次正则全匹配——一遍线性扫描，不产生任何中间数组。
+  static final RegExp _lineHeadRe = RegExp(r'(?:^|\n)[ \t]*([A-Za-z_$][\w$]*)');
+
+  /// 上一轮统计用的采样指纹 → 结果。同一份文本被反复补全时（连按方向键、
+  /// 上下移动光标）不必重算。
+  ///
+  /// 指纹取「长度 + 首/中/尾各 64 字符」：编辑器里同长度且这三段都相同、
+  /// 中间却改了，实际只可能是极小的一两处改动，此时沿用上一次的排序结果
+  /// 仍然合理——它只影响候选的先后，不会漏词。
+  static String? _headFingerprint;
+  static List<String>? _headCache;
+
+  static String _headKey(String doc) {
+    final n = doc.length;
+    if (n <= 192) return '${n}|$doc';
+    final mid = n ~/ 2;
+    return '$n|${doc.substring(0, 64)}|'
+        '${doc.substring(mid - 32, mid + 32)}|'
+        '${doc.substring(n - 64)}';
+  }
+
   /// 这份文件里「每行第一个标识符」的高频统计：作者习惯。
   static List<String> _frequentLineHeads(String doc, int limit) {
+    final key = _headKey(doc);
+    final cached = _headCache;
+    if (cached != null && _headFingerprint == key) {
+      return limit >= cached.length ? cached : cached.sublist(0, limit);
+    }
     final counts = <String, int>{};
     final order = <String>[];
-    for (final line in doc.split('\n')) {
-      final t = line.trimLeft();
-      if (t.isEmpty) continue;
-      final m = RegExp(r'^([A-Za-z_$][\w$]*)').firstMatch(t);
-      if (m == null) continue;
+    for (final m in _lineHeadRe.allMatches(doc)) {
       final w = m.group(1)!;
       if (w.length < 2) continue;
       if (!counts.containsKey(w)) order.add(w);
       counts[w] = (counts[w] ?? 0) + 1;
     }
     // 出现两次以上才当「习惯」；不够再按原顺序补位
-    final sorted = order.where((w) => (counts[w] ?? 0) >= 2).toList()
+    final seen = <String>{};
+    final sorted = <String>[];
+    final repeated = order.where((w) => (counts[w] ?? 0) >= 2).toList()
       ..sort((a, b) => (counts[b] ?? 0).compareTo(counts[a] ?? 0));
-    for (final w in order) {
-      if (sorted.length >= limit) break;
-      if (!sorted.contains(w)) sorted.add(w);
+    for (final w in repeated) {
+      if (seen.add(w)) sorted.add(w);
     }
-    return sorted.take(limit).toList();
+    for (final w in order) {
+      if (seen.add(w)) sorted.add(w);
+    }
+    _headFingerprint = key;
+    _headCache = sorted;
+    return limit >= sorted.length ? sorted : sorted.sublist(0, limit);
   }
 
   /// 光标所在行的上一行（光标在行首时就是正上方那行）。

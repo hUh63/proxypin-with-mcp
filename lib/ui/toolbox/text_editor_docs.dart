@@ -21,6 +21,7 @@ import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/utils/code_lint.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/ui/toolbox/console_state.dart';
 
 /// 一个打开的编辑文档。
 ///
@@ -50,6 +51,14 @@ class EditorDocument {
 
   /// 产生 [lint] 时的文本快照（增量检查要拿它和新文本比）。
   String? lintText;
+
+  /// 这份文档的控制台状态（输出 / 命令历史 / 会话变量）。
+  ///
+  /// 挂在文档上而不是面板上：收起面板、切到别的文件再回来，之前算过的东西还在。
+  ConsoleState? console;
+
+  /// 取控制台状态（首次访问时创建）。
+  ConsoleState get consoleState => console ??= ConsoleState();
 
   EditorDocument({
     required this.id,

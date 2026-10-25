@@ -4794,5 +4794,6 @@
   "editorConsoleCopyAll": "Copy output",
   "editorConsoleInsert": "Insert result into editor",
   "diffSyntaxCheck": "Check syntax of both sides",
-  "diffSyntaxUnsupported": "Only JSON / XML content can be checked here"
+  "diffSyntaxUnsupported": "Only JSON / XML content can be checked here",
+  "editorLintRulesApplyAll": "Apply to all languages"
 }

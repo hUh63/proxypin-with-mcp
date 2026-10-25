@@ -4573,5 +4573,6 @@
   "editorConsoleCopyAll": "复制输出",
   "editorConsoleInsert": "把结果插入编辑器",
   "diffSyntaxCheck": "检查两侧语法",
-  "diffSyntaxUnsupported": "这里只检查 JSON / XML 内容"
+  "diffSyntaxUnsupported": "这里只检查 JSON / XML 内容",
+  "editorLintRulesApplyAll": "应用到全部语言"
 }
