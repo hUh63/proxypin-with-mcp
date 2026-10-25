@@ -107,9 +107,10 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
   void initState() {
     super.initState();
     var container = widget.list;
+    var position = 0;
     for (var request in container.source) {
       DomainRequests domainRequests = getDomainRequests(request);
-      domainRequests.addRequest(request.requestId, request, sortDesc);
+      domainRequests.addRequest(request.requestId, request, sortDesc, index: position++);
     }
     highlightListener = () {
       //回调时机在高亮设置页面dispose之后。所以需要在下一帧刷新，否则会报错
@@ -198,7 +199,9 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
   }
 
   ///添加请求
-  void add(Channel channel, HttpRequest request) {
+  ///
+  /// [index] 该请求在整份抓包列表里的位置（由列表侧传入），用于 `#N` 序号。
+  void add(Channel channel, HttpRequest request, {int? index}) {
     String? host = request.remoteDomain();
     if (host == null) {
       return;
@@ -208,7 +211,7 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
     DomainRequests domainRequests = getDomainRequests(request);
     var isNew = domainRequests.body.isEmpty;
 
-    domainRequests.addRequest(request.requestId, request, sortDesc);
+    domainRequests.addRequest(request.requestId, request, sortDesc, index: index);
     //搜索视图
     if (searchModel?.isNotEmpty == true && searchModel?.filter(request, null) == true) {
       // 该域名此前没有命中项时 searchView 里没有条目，以前直接 `?.` 跳过 ——
@@ -218,7 +221,7 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
         searchView[host] = domainRequests.copy(body: const <RequestWidget>[]);
         setState(() {});
       }
-      searchView[host]?.addRequest(request.requestId, request, sortDesc);
+      searchView[host]?.addRequest(request.requestId, request, sortDesc, index: index);
     }
 
     if (isNew) {
@@ -464,12 +467,15 @@ class DomainRequests extends StatefulWidget {
       : headerState = headerState ?? DomainHeaderState(selected: selected, trailing: trailing);
 
   ///添加请求
-  void addRequest(String? requestId, HttpRequest request, bool sortDesc) {
+  ///
+  /// [index] 是「该请求在整份抓包列表里的位置」（创建时固定），用于列表里的 `#N` 序号。
+  /// 不传时退化为域名内序号——只有回填旧数据且拿不到全局位置时才会走到。
+  void addRequest(String? requestId, HttpRequest request, bool sortDesc, {int? index}) {
     if (requestMap.containsKey(requestId)) return;
 
     var requestWidget = RequestWidget(request,
         key: ValueKey(request.requestId),
-        index: body.length,
+        index: index ?? body.length,
         proxyServer: proxyServer,
         displayDomain: false,
         multiSelectController: selectionController,

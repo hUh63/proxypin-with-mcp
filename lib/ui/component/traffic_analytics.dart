@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
@@ -38,15 +39,45 @@ class _TrafficAnalyticsDialog extends StatefulWidget {
 }
 
 class _TrafficAnalyticsDialogState extends State<_TrafficAnalyticsDialog> {
-  /// 统计只在打开对话框时算一次。
+  /// 统计只在打开对话框时算一次，且放到 isolate 里跑。
   ///
-  /// 早先写在 build 里：10 万条请求的聚合（遍历 + 两次全量排序）会在每次重建时
+  /// 早先写在 build 里：几万条请求的聚合（遍历 + 两次全量排序）会在每次重建时
   /// 重跑一遍——滚动、主题切换、任何 setState 都会触发，表现是对话框卡死。
-  late final TrafficStats stats = TrafficStats.compute(widget.requests);
+  /// 现在只把轻量行（[TrafficRow]）拍平在主 isolate，排序/聚合交给后台 isolate。
+  TrafficStats? _stats;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final rows = TrafficStats.rowsOf(widget.requests);
+    TrafficStats stats;
+    try {
+      stats = await compute(TrafficStats.computeRows, rows);
+    } catch (_) {
+      // Web / 极端环境拿不到 isolate：退回同步计算，至少结果是对的
+      stats = TrafficStats.computeRows(rows);
+    }
+    if (!mounted) return;
+    setState(() => _stats = stats);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final stats = _stats;
+    if (stats == null) {
+      return AlertDialog(
+        title: Text(l.trafficAnalyticsTitle),
+        content: const SizedBox(
+          height: 120,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+        ),
+      );
+    }
 
     return AlertDialog(
       title: Text(l.trafficAnalyticsTitle),

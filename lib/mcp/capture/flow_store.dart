@@ -64,18 +64,28 @@ class FlowStore extends EventListener {
   /// 与实时缓冲一样防止长时间运行 / 连续翻阅多个大会话导致内存膨胀。
   static const int defaultMaxHistorySessions = 3;
 
-  /// 已加载的历史会话 LRU：稳定 history_id -> 该会话请求列表（由 [historyProvider] 懒加载）。
-  /// 用 LinkedHashMap 记录访问顺序，访问时移到末尾、从头部淘汰。
-  final LinkedHashMap<int, List<HttpRequest>> _historyCache = LinkedHashMap();
+  /// 每个历史会话在缓存里保留的**尾部窗口**条数（最新这些条）。
+  ///
+  /// 早先缓存的是整份会话的请求列表：一个 10 万条的会话本身就是几百 MB，
+  /// 再乘上 3 个 LRU 槽位，翻几个大会话就把内存吃光。现在只缓存最新的
+  /// [historyWindowSize] 条——AI 常见的「看最近 N 条 / 翻前几页」都命中窗口，
+  /// 大 offset 或 body 搜索这类确实需要全量的操作改为「读一次、不缓存」。
+  static const int defaultHistoryWindowSize = 2000;
+
+  /// history_id -> 尾部窗口（LinkedHashMap 记访问顺序，访问移末尾、从头部淘汰）
+  final LinkedHashMap<int, _HistoryWindow> _historyCache = LinkedHashMap();
 
   final int maxHistorySessions;
+
+  final int historyWindowSize;
 
   FlowStore(
       {this.maxEntries = defaultMaxEntries,
       this.maxFramesPerFlow = defaultMaxFramesPerFlow,
       this.maxFrameFlows = defaultMaxFrameFlows,
       this.historyProvider,
-      this.maxHistorySessions = defaultMaxHistorySessions});
+      this.maxHistorySessions = defaultMaxHistorySessions,
+      this.historyWindowSize = defaultHistoryWindowSize});
 
   @override
   void onRequest(Channel channel, HttpRequest request) {
@@ -147,23 +157,38 @@ class FlowStore extends EventListener {
   /// 全部历史会话元数据；未配置历史数据源时返回空。
   Future<List<HistoryMeta>> listHistories() async => await historyProvider?.list() ?? const [];
 
-  Future<List<HttpRequest>> _historyRequests(int historyId) async {
-    var cached = _historyCache.remove(historyId);
-    if (cached != null) {
-      // 命中则标记为最近使用（移到末尾）
-      _historyCache[historyId] = cached;
-      return cached;
-    }
+  /// 读取整份历史会话（**不写缓存**）。
+  ///
+  /// 只给「大 offset 分页 / body 搜索 / 按 id 精确找」这类确实需要全量的操作用，
+  /// 用完即可被 GC 回收——绝不能塞进 [_historyCache]，否则又回到整份驻留内存。
+  Future<List<HttpRequest>> _historyAll(int historyId) async {
     var provider = historyProvider;
     if (provider == null) throw ArgumentError('history not found: $historyId');
     var metas = await provider.list();
     if (!metas.any((m) => m.id == historyId)) {
       throw ArgumentError('history not found: $historyId');
     }
-    var requests = await provider.requests(historyId);
-    _historyCache[historyId] = requests;
+    return await provider.requests(historyId);
+  }
+
+  /// 取该会话的尾部窗口（最新 [historyWindowSize] 条），命中缓存则标记最近使用。
+  Future<_HistoryWindow> _historyWindow(int historyId) async {
+    var cached = _historyCache.remove(historyId);
+    if (cached != null) {
+      // 命中则标记为最近使用（移到末尾）
+      _historyCache[historyId] = cached;
+      return cached;
+    }
+    var all = await _historyAll(historyId);
+    var start = all.length > historyWindowSize ? all.length - historyWindowSize : 0;
+    var window = _HistoryWindow(
+      start > 0 ? all.sublist(start) : List<HttpRequest>.of(all),
+      all.length,
+    );
+    // 会话很大时 all 不再被引用，可立即回收
+    _historyCache[historyId] = window;
     _evictHistoryIfNeeded();
-    return requests;
+    return window;
   }
 
   /// 历史会话缓存超限时淘汰最久未访问的（LinkedHashMap 头部）。
@@ -174,8 +199,14 @@ class FlowStore extends EventListener {
   }
 
   Future<HttpRequest?> historyGetById(int historyId, String id) async {
-    var requests = await _historyRequests(historyId);
-    for (var request in requests) {
+    // 先查尾部窗口（AI 通常看最近的请求），未命中再读全量
+    var window = await _historyWindow(historyId);
+    for (var request in window.items) {
+      if (request.requestId == id) return request;
+    }
+    if (window.total <= window.items.length) return null;
+    var all = await _historyAll(historyId);
+    for (var request in all) {
       if (request.requestId == id) return request;
     }
     return null;
@@ -192,8 +223,23 @@ class FlowStore extends EventListener {
     String? keyword,
     int? sinceMs,
   }) async {
-    var requests = await _historyRequests(historyId);
-    return _filter(requests,
+    // 倒序遍历 = 从最新往前，所以「前 N 条」正好在尾部窗口里；
+    // 只有 offset+limit 越过窗口才需要读全量（且不缓存）。
+    var window = await _historyWindow(historyId);
+    var need = (offset < 0 ? 0 : offset) + limit;
+    if (need <= window.items.length) {
+      return _filter(window.items,
+          limit: limit,
+          offset: offset,
+          host: host,
+          method: method,
+          statusFrom: statusFrom,
+          statusTo: statusTo,
+          keyword: keyword,
+          sinceMs: sinceMs);
+    }
+    var all = await _historyAll(historyId);
+    return _filter(all,
         limit: limit,
         offset: offset,
         host: host,
@@ -206,7 +252,8 @@ class FlowStore extends EventListener {
 
   Future<List<HttpRequest>> historySearch(int historyId, String keyword,
       {String side = 'both', int limit = 20, int maxSearchBytes = 2 * 1024 * 1024}) async {
-    var requests = await _historyRequests(historyId);
+    // body 搜索必须扫全量（需要逐条解码），这里读一次不缓存
+    var requests = await _historyAll(historyId);
     return await _searchIn(requests, keyword, side: side, limit: limit, maxSearchBytes: maxSearchBytes);
   }
 
@@ -348,4 +395,13 @@ class FlowStore extends EventListener {
     }
     return true;
   }
+}
+
+/// 历史会话的尾部窗口：最新 [items] 条 + 会话总条数。
+class _HistoryWindow {
+  /// 正序尾部窗口（items[0] 之后还有 total - items.length 条更早的请求）
+  final List<HttpRequest> items;
+  final int total;
+
+  const _HistoryWindow(this.items, this.total);
 }

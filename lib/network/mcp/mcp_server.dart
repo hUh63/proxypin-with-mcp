@@ -24,6 +24,7 @@ import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/mcp/capture/cert_status.dart';
 import 'package:proxypin/mcp/capture/flow_store.dart';
+import 'package:proxypin/mcp/capture/flow_view.dart';
 import 'package:proxypin/mcp/capture/history_provider.dart';
 import 'package:proxypin/mcp/protocol/mcp_actions.dart';
 import 'package:proxypin/mcp/protocol/mcp_tool.dart';
@@ -946,6 +947,8 @@ class McpServer {
               'completions': {},
             },
             'serverInfo': {'name': 'ProxyPin MCP', 'version': appVersion},
+            // 工具有一百多个，靠这段说明让模型先按能力分组定位，别在 tools/list 里瞎猜：
+            'instructions': _serverInstructions(),
           });
 
         case 'notifications/initialized':
@@ -1487,6 +1490,8 @@ class McpServer {
     if (name.contains('weak') || name.contains('network_condition') || name.contains('profile')) {
       return 'network_condition';
     }
+    // 历史会话单独成组：list_histories 此前落到 other，与「读抓包」混在一起
+    if (name.contains('histories') || name.startsWith('get_history')) return 'history';
     if (name.contains('rewrite') ||
         name.contains('rule') ||
         name.contains('block') ||
@@ -1546,12 +1551,40 @@ class McpServer {
       _toolsListCache ??= _buildToolsList();
 
   List<Map<String, dynamic>> _buildToolsList() {
-    return [
+    final raw = <Map<String, dynamic>>[
       ..._nativeToolsJson(),
       // 官方工具源（同名者已在本表中提供，见 _nativeToolNames）
       ..._officialToolsJson(),
     ];
+    // 描述前面挂上能力分组（与 get_tool_catalog 的分组同一套判据）：
+    // 一百多个工具里，模型靠 `[rules]` / `[capture]` 这类前缀就能先筛出候选，
+    // 不必逐条读长描述。构建一次即缓存，不影响每次 tools/list 的开销。
+    return [
+      for (final tool in raw)
+        {
+          ...tool,
+          'description': '[${_toolGroup(tool['name'] as String? ?? '')}] ${tool['description'] ?? ''}'.trim(),
+        }
+    ];
   }
+
+  /// initialize 返回给模型的服务端说明。
+  ///
+  /// 工具一百多个，先把「按能力分组」和「读写优先级」讲清楚，模型才不会
+  /// 在 tools/list 里逐条猜，也更容易把 list_* 与 set_*/update_*/remove_* 配对使用。
+  static String _serverInstructions() =>
+      'ProxyPin exposes live HTTP(S) / WebSocket / SSE / MQTT capture plus control of the proxy itself. '
+      'Every tool description starts with its capability group in brackets: '
+      '[capture] read, search, export, compare or replay captured traffic; '
+      '[rules] hosts, block, rewrite, map-local, reverse-proxy and favorites rules; '
+      '[breakpoint] intercept rules and pending paused flows; '
+      '[scripts] scripts and workflows; [ssl] certificate and SSL proxying state; '
+      '[environment] script environment variables; [history] previously saved capture sessions; '
+      '[device] drive a connected Android device; [server] start/stop/status/config of the proxy; '
+      '[runtime] performance, diagnostics, QUIC and decode helpers; [meta] this MCP server itself. '
+      'Prefer read-only tools first. Before updating or removing a rule, list it and use its exact '
+      'id / name / url pattern; never guess an index. Large payloads are paginated - use offset/limit '
+      'instead of retrying with a bigger limit.';
 
   /// gRPC 解析：拆长度前缀帧 + protobuf wire format 盲解，不需要 .proto 也能看字段。
   ///
@@ -2006,6 +2039,29 @@ class McpServer {
 
         final req = McpBridge().getRequestById(id);
         if (req == null) return {'error': 'Request not found'};
+
+        final bodyOffset = mcpAsInt(args['body_offset']) ?? 0;
+        final bodyLimit = mcpAsInt(args['body_limit']);
+        // 大 body 分页：只取 [body_offset, body_offset + body_limit) 这一段。
+        // 内联 body 有 64KB 上限（见 McpBridge.maxInlineBodyBytes），超过的正文必须靠这里翻页，
+        // 否则模型只能拿到前缀、又没有任何办法取剩下的部分。
+        if (bodyOffset > 0 || bodyLimit != null) {
+          final window = (bodyLimit ?? FlowView.defaultPreviewBytes)
+              .clamp(1, FlowView.maxBodySliceBytes)
+              .toInt();
+          return {
+            'id': req.requestId,
+            'url': req.requestUrl,
+            'method': req.methodLabel,
+            'statusCode': req.response?.status.code,
+            'duration': req.response?.responseTime.difference(req.requestTime).inMilliseconds,
+            'requestHeaders': _headersJson(req.headers),
+            'requestBody': await FlowView.bodySlice(req, offset: bodyOffset, limit: window),
+            'responseHeaders': req.response == null ? null : _headersJson(req.response!.headers),
+            'responseBody':
+                req.response == null ? null : await FlowView.bodySlice(req.response, offset: bodyOffset, limit: window),
+          };
+        }
 
         return McpBridge.requestToJson(req, includeBody: true, redact: _redactEnabled);
 
@@ -3743,6 +3799,18 @@ class McpServer {
           return {'error': e.message, 'tool': name};
         }
     }
+  }
+
+  /// headers -> JSON（按脱敏开关处理敏感头），与 `McpBridge._headersToJson` 同一口径。
+  Map<String, dynamic> _headersJson(HttpHeaders headers) {
+    final json = <String, dynamic>{};
+    headers.forEach((name, values) {
+      // 单值给字符串、多值给数组（与 McpBridge/_headersToJson 一致，别把数组挤成 "[a, b]"）
+      json[name] = _redactEnabled && SensitiveData.isRedactedHeader(name)
+          ? SensitiveData.placeholder
+          : (values.length == 1 ? values.first : List<String>.from(values));
+    });
+    return json;
   }
 
   /// 分页/数量参数统一收敛。

@@ -45,6 +45,35 @@ class RequestEntry {
   });
 }
 
+/// 从 [HttpRequest] 拍平出来的轻量行：字段全是基础类型，可安全跨 isolate 传递。
+///
+/// 统计里真正贵的是「遍历 + 两次全量排序」，几万条时同步跑会卡住 UI 帧；
+/// 所以拆成两步：UI 侧 [TrafficStats.rowsOf] 取行（O(n)，无排序），
+/// 再把行丢进 isolate 跑 [TrafficStats.computeRows]。
+class TrafficRow {
+  final String method;
+  final String url;
+  final String host;
+  final String contentType;
+  final bool hasResponse;
+  final int status;
+  final int durationMs;
+  final int requestBytes;
+  final int responseBytes;
+
+  const TrafficRow({
+    required this.method,
+    required this.url,
+    required this.host,
+    required this.contentType,
+    required this.hasResponse,
+    required this.status,
+    required this.durationMs,
+    required this.requestBytes,
+    required this.responseBytes,
+  });
+}
+
 /// 抓包列表的流量聚合统计（纯计算，无 flutter 依赖，可单测）。
 ///
 /// 对标 HTTP Debugger Pro 的「流量报表」：总览、Top 域名 / 内容类型 / 状态码、
@@ -79,7 +108,28 @@ class TrafficStats {
     required this.largest,
   });
 
-  static TrafficStats compute(List<HttpRequest> requests, {int topN = 10}) {
+  /// 把请求列表拍平成轻量行（O(n)、不排序）。
+  static List<TrafficRow> rowsOf(List<HttpRequest> requests) {
+    final rows = <TrafficRow>[];
+    for (final r in requests) {
+      final resp = r.response;
+      rows.add(TrafficRow(
+        method: r.methodLabel,
+        url: r.requestUrl,
+        host: r.hostAndPort?.host ?? '',
+        contentType: _baseContentType(resp?.headers.contentType),
+        hasResponse: resp != null,
+        status: resp?.status.code ?? 0,
+        durationMs: resp == null ? 0 : resp.responseTime.difference(r.requestTime).inMilliseconds,
+        requestBytes: r.originalBodyLength ?? r.body?.length ?? 0,
+        responseBytes: resp?.originalBodyLength ?? resp?.body?.length ?? 0,
+      ));
+    }
+    return rows;
+  }
+
+  /// 聚合 + 排序（纯数据，可作为 isolate 入口）。
+  static TrafficStats computeRows(List<TrafficRow> rows, {int topN = 10}) {
     var success = 0;
     var fail = 0;
     var pending = 0;
@@ -94,46 +144,37 @@ class TrafficStats {
     final statusCount = <String, int>{};
     final entries = <RequestEntry>[];
 
-    for (final r in requests) {
-      final resp = r.response;
-      reqBytes += r.originalBodyLength ?? r.body?.length ?? 0;
+    for (final r in rows) {
+      reqBytes += r.requestBytes;
 
-      if (resp == null) {
+      if (!r.hasResponse) {
         pending++;
       } else {
-        final code = resp.status.code;
+        final code = r.status;
         if (code >= 400 || code == 0) {
           fail++;
         } else {
           success++;
         }
         statusCount['$code'] = (statusCount['$code'] ?? 0) + 1;
-
-        final rBytes = resp.originalBodyLength ?? resp.body?.length ?? 0;
-        respBytes += rBytes;
-
-        final duration = resp.responseTime.difference(r.requestTime).inMilliseconds;
-        durationSum += duration;
+        respBytes += r.responseBytes;
+        durationSum += r.durationMs;
         timedCount++;
-
-        final host = r.hostAndPort?.host ?? '';
         entries.add(RequestEntry(
-          method: r.methodLabel,
-          url: r.requestUrl,
-          host: host,
+          method: r.method,
+          url: r.url,
+          host: r.host,
           status: code,
-          durationMs: duration,
-          bytes: rBytes,
+          durationMs: r.durationMs,
+          bytes: r.responseBytes,
         ));
       }
 
-      final host = r.hostAndPort?.host ?? '';
-      hostCount[host] = (hostCount[host] ?? 0) + 1;
-      hostBytes[host] = (hostBytes[host] ?? 0) + (resp?.originalBodyLength ?? resp?.body?.length ?? 0);
+      hostCount[r.host] = (hostCount[r.host] ?? 0) + 1;
+      hostBytes[r.host] = (hostBytes[r.host] ?? 0) + r.responseBytes;
 
-      final type = _baseContentType(resp?.headers.contentType);
-      if (type.isNotEmpty) {
-        typeCount[type] = (typeCount[type] ?? 0) + 1;
+      if (r.contentType.isNotEmpty) {
+        typeCount[r.contentType] = (typeCount[r.contentType] ?? 0) + 1;
       }
     }
 
@@ -141,7 +182,7 @@ class TrafficStats {
     final largest = List<RequestEntry>.of(entries)..sort((a, b) => b.bytes.compareTo(a.bytes));
 
     return TrafficStats(
-      total: requests.length,
+      total: rows.length,
       success: success,
       fail: fail,
       pending: pending,
@@ -155,6 +196,11 @@ class TrafficStats {
       largest: largest.take(topN).toList(growable: false),
     );
   }
+
+  /// 同步便捷版（小列表 / 单测）。大列表请用
+  /// `compute(TrafficStats.computeRows, TrafficStats.rowsOf(list))` 放到 isolate。
+  static TrafficStats compute(List<HttpRequest> requests, {int topN = 10}) =>
+      computeRows(rowsOf(requests), topN: topN);
 
   static String _baseContentType(String? raw) {
     if (raw == null || raw.isEmpty) return '';

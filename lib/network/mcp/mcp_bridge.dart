@@ -471,6 +471,13 @@ class McpBridge implements EventListener {
     return json;
   }
 
+  /// 内联 body 的字节上限（解压前的原始字节）。
+  ///
+  /// 超过就只返回前缀并标记 `bodyClipped`：一个 4MB 的响应转 base64 会变成 5MB+
+  /// 的字符串塞进 MCP 响应，客户端（Claude Code / Codex 等）要么直接爆内存，
+  /// 要么把整个上下文撑满。完整内容让模型用分页的 body 工具按 offset/limit 取。
+  static const int maxInlineBodyBytes = 64 * 1024;
+
   /// 编码 body 并返回元数据（包含编码类型、大小、内容）
   static Map<String, dynamic> _encodeBodyWithMetadata(List<int>? body,
       {bool truncated = false, int? originalLength}) {
@@ -488,10 +495,19 @@ class McpBridge implements EventListener {
         ...meta,
       };
     }
-    
+
+    final clipped = body.length > maxInlineBodyBytes;
+    final data = clipped ? body.sublist(0, maxInlineBodyBytes) : body;
+    if (clipped) {
+      meta['bodyClipped'] = true;
+      meta['bodyClippedAt'] = maxInlineBodyBytes;
+      meta['bodyHint'] = 'body exceeds the 64KB inline limit; call get_request_details with '
+          'body_offset/body_limit to page through the rest';
+    }
+
     try {
-      // 尝试 UTF-8 解码
-      var text = utf8.decode(body, allowMalformed: false);
+      // 尝试 UTF-8 解码；被裁剪时末尾可能切在多字节字符中间，允许容错
+      var text = utf8.decode(data, allowMalformed: clipped);
       return {
         'body': text,
         'bodySize': size,
@@ -501,7 +517,7 @@ class McpBridge implements EventListener {
     } catch (e) {
       // 解码失败，说明是二进制数据，用 Base64 编码
       return {
-        'body': base64Encode(body),
+        'body': base64Encode(data),
         'bodySize': size,
         'bodyEncoding': 'base64',
         ...meta,

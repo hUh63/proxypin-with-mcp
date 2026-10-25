@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.67.93 (2026-10-25) — 历史窗口缓存 + 统计进 isolate + #N 全局序号 + MCP 大 body 分页
+
+### MCP：历史会话不再整份驻留内存
+- `FlowStore` 的历史缓存从「整个会话的请求列表」改为**尾部窗口**
+  （默认最新 2000 条 + 会话总条数）。一个 10 万条的会话本身就是几百 MB，
+  再乘 3 个 LRU 槽位，翻几个大会话就把内存吃光。
+- 分页语义不变：倒序遍历即从最新往前，所以「前 N 条」正好命中窗口；
+  `offset+limit` 越过窗口、body 搜索、按 id 精确查找这些确实要全量的操作改为
+  「读一次、不写缓存」，用完即可回收。`historicalQuery` / `historySearch` /
+  `historyGetById` 全部走这套。
+
+### MCP：大 body 可以分页取了
+- `McpBridge` 内联 body 加上限 64KB：此前一个 4MB 响应的 body 会原样（或 base64
+  后 5MB+）塞进 MCP 响应，客户端不是爆内存就是把上下文撑满。超出时只返回前缀并
+  标记 `bodyClipped` / `bodyClippedAt` / `bodyHint`。
+- `get_request_details` 新增 `body_offset` / `body_limit`：按段落取请求/响应 body，
+  返回 `total` / `returned` / `truncated` 可连续翻页。此前模型只能拿到被裁剪的前缀，
+  没有任何办法取剩下的部分（官方工具的 `get_flow` 也只有 preview）。
+
+### MCP：工具分组与模型指引
+- `initialize` 返回 `instructions`：说明各能力分组（capture / rules / breakpoint /
+  scripts / ssl / environment / history / device / server / runtime / meta）、
+  「先读后写」「改规则前先 list 拿准确 id」「大 payload 用 offset/limit 而不是加大 limit」。
+- `tools/list` 每条描述前面挂上分组标签（与 `get_tool_catalog` 同一套判据），
+  一百多个工具里模型可以先按 `[rules]` / `[capture]` 筛候选。
+- `_toolGroup` 补 `history` 分组：`list_histories` 此前落到 `other`，
+  和「读抓包」混在一起。
+
+### 桌面列表：`#N` 改为全局序号
+- 序号此前是「域名内第几条」，每个域名都从 `#0` 开始，跨域名重复、也没法用来指代。
+  现在由列表侧传入「该请求在整份抓包里的位置」，创建时固定、搜索后不变；
+  暂停跟随期间挂起的请求也记下这个位置，恢复补进时保持原值。
+
+### 性能
+- 流量分析的聚合统计（遍历 + 两次全量排序）移到后台 isolate：
+  主 isolate 只做 O(n) 的轻量行拍平，对话框期间显示 loading。
+  几万条时不再卡住 UI 帧。
+
 ## v1.67.92 (2026-10-25) — 分组头部去 GlobalKey + 帧索引与连接上限 + 大 body 分页解码
 
 ### 桌面分组列表：头部状态不再靠 GlobalKey 共享

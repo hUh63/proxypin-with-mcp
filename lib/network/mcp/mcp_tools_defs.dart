@@ -285,6 +285,10 @@ Body Encoding Rules:
 - bodyEncoding='base64': Binary data (images, files, etc.), decode with base64.b64decode() in Python
 - bodyEncoding='none': Empty body
 
+Inline bodies are capped at 64KB (see bodyClipped / bodyHint). For larger bodies page
+through them with body_offset/body_limit: each call returns a slice plus total/returned/
+truncated, so keep increasing body_offset until truncated is false.
+
 Call this when the user asks for the headers or body of one specific request; take the
 request_id from get_recent_requests or search_requests.''',
         'inputSchema': {
@@ -293,6 +297,18 @@ request_id from get_recent_requests or search_requests.''',
             'request_id': {
               'type': 'string',
               'description': 'The ID of the request',
+            },
+            'body_offset': {
+              'type': 'integer',
+              'minimum': 0,
+              'description': 'Byte offset into the body (request and response). '
+                  'Omit for the whole inline preview; use with body_limit to page a big body.',
+            },
+            'body_limit': {
+              'type': 'integer',
+              'minimum': 1,
+              'maximum': 65536,
+              'description': 'Max bytes per page when body_offset is used (default 16KB, max 64KB)',
             },
           },
           'required': ['request_id'],

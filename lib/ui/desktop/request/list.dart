@@ -80,6 +80,9 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   final List<HttpRequest> _pausedRequests = [];
   final Map<String, Channel> _pausedChannels = {};
 
+  /// 暂停期间挂起请求的「全局位置」，恢复补进视图时按原值给 `#N` 序号
+  final Map<String, int> _pausedIndexes = {};
+
   /// 暂停期间到达的响应：请求还没进视图，直接 setResponse 会丢，恢复时补上。
   final Map<String, (ChannelContext, HttpResponse)> _pausedResponses = {};
 
@@ -119,7 +122,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     for (final request in pending) {
       final channel = _pausedChannels.remove(request.requestId);
       if (channel == null) continue;
-      domainListKey.currentState?.add(channel, request);
+      domainListKey.currentState?.add(channel, request, index: _pausedIndexes[request.requestId]);
       requestSequenceKey.currentState?.add(request);
       // 请求进了视图才能挂响应，否则响应会丢（暂停期间的请求看起来一直 pending）。
       final cached = _pausedResponses.remove(request.requestId);
@@ -129,6 +132,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       }
     }
     _pausedChannels.clear();
+    _pausedIndexes.clear();
     _pausedResponses.clear();
     _trimOverflow();
   }
@@ -336,22 +340,26 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   ///添加请求
   void add(Channel channel, HttpRequest request) {
     container.add(request);
+    // 该请求在整份抓包列表里的位置：作为列表 `#N` 序号，创建时固定、搜索后不变
+    final position = container.length - 1;
 
     // 上游 #967：暂停期间不往当前视图插入，避免把用户正在看的内容顶走。
     if (_followPaused) {
       _pausedRequests.add(request);
       _pausedChannels[request.requestId] = channel;
+      _pausedIndexes[request.requestId] = position;
       // 挂起队列也要有上限：用户长时间不点恢复时不能无限制占内存。
       const maxPaused = 2000;
       if (_pausedRequests.length > maxPaused) {
         final dropped = _pausedRequests.removeAt(0);
         _pausedChannels.remove(dropped.requestId);
+        _pausedIndexes.remove(dropped.requestId);
       }
       if (mounted) setState(() {});
       return;
     }
 
-    domainListKey.currentState?.add(channel, request);
+    domainListKey.currentState?.add(channel, request, index: position);
     requestSequenceKey.currentState?.add(request);
     _trimOverflow();
   }
@@ -446,6 +454,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
     setState(() {
       _pausedRequests.clear();
       _pausedChannels.clear();
+      _pausedIndexes.clear();
       _pausedResponses.clear();
       _followPaused = false;
       RequestWidget.removeRowStatesByIds(container.map((request) => request.requestId));
