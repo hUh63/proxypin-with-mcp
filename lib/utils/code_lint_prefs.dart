@@ -106,6 +106,9 @@ class LintPrefs {
 
   /// 保存某语言的独立设置。
   static Future<void> setFor(String language, Set<String> disabled) async {
+    // 必须先把盘上的读进来：否则这里写出去的就是「只有本次会话这一份」，
+    // 把用户之前给别的语言做的设置整份覆盖掉。
+    await ensureLoaded();
     final key = normalize(language);
     if (key.isEmpty || key == globalKey) return;
     if (disabled.isEmpty) {
@@ -120,6 +123,7 @@ class LintPrefs {
 
   /// 把一份集合写成「默认」，并清掉所有语言的独立设置。
   static Future<void> applyToAll(Set<String> disabled) async {
+    await ensureLoaded();
     _map.clear();
     if (disabled.isNotEmpty) _map[globalKey] = Set<String>.from(disabled);
     await _save();
@@ -127,6 +131,7 @@ class LintPrefs {
 
   /// 清掉所有独立设置，只保留默认集合。
   static Future<void> clearOverrides() async {
+    await ensureLoaded();
     final keep = _map[globalKey];
     _map.clear();
     if (keep != null && keep.isNotEmpty) _map[globalKey] = keep;

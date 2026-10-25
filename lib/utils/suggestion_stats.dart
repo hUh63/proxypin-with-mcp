@@ -83,11 +83,14 @@ class SuggestionStats {
   }
 
   /// 逐条容错地读回来（一份坏记录不该让整份统计作废）。
+  ///
+  /// 读回来是**累加**而不是覆盖：载入前用户可能已经接受过几条候选，
+  /// 那些记录不能因为「晚一步读盘」就被抹掉。
   static void _readInto(Map<String, Map<String, int>> target, dynamic raw) {
     if (raw is! Map) return;
     raw.forEach((key, value) {
       if (key is! String || value is! Map) return;
-      final bucket = <String, int>{};
+      final bucket = target[key] ?? <String, int>{};
       value.forEach((k, v) {
         if (k is! String) return;
         if (v is int && v > 0) {
@@ -210,6 +213,11 @@ class SuggestionStats {
     _flushTimer?.cancel();
     _flushTimer = null;
     if (!_dirty) return;
+    // 没载入就写盘等于用「本次会话的几条」覆盖了盘上的全部统计。
+    if (!_loaded) {
+      await ensureLoaded();
+      if (!_dirty) return;
+    }
     _dirty = false;
     try {
       final prefs = await SharedPreferences.getInstance();
