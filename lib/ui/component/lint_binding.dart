@@ -22,6 +22,7 @@
 import 'dart:async';
 
 import 'package:code_forge/code_forge.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/utils/code_lint.dart';
 

@@ -185,9 +185,8 @@ List<_Tok> _tokenize(String src) {
               buf.write('\r');
             case '\\':
               buf.write('\\');
-            case quote:
-              buf.write(quote);
             default:
+              // \" 与 \' 等都按「字面字符」处理
               buf.write(next);
           }
           i += 2;
