@@ -38,6 +38,9 @@ class FlowView {
   /// 单次 body 分页硬上限
   static const int maxBodySliceBytes = 64 * 1024;
 
+  /// 走「有界解码」的窗口上限：窗口超过它就退回完整解码（此时必然是用户在翻大 body 尾部）
+  static const int _maxBoundedDecodeBytes = 512 * 1024;
+
   /// WebSocket 帧最多返回条数
   static const int maxWsFrames = 200;
 
@@ -122,8 +125,13 @@ class FlowView {
       };
     }
 
-    var full = await message.decodeBodyString();
-    var bytes = Uint8List.fromList(utf8.encode(full));
+    // 只解出 offset+limit 这一小段（bounded）：此前每次都把完整 body 解压 + 全量
+    // UTF-8 编码 + 再复制一份字节，几十 MB 的响应翻几页就有几十 MB 内存抖动。
+    final window = offset + limit;
+    var full = window <= _maxBoundedDecodeBytes
+        ? await message.decodeBodyStringBounded(maxBytes: window)
+        : await message.decodeBodyString();
+    var bytes = utf8.encode(full);
     var total = bytes.length;
     if (offset > total) {
       offset = total;
@@ -138,7 +146,10 @@ class FlowView {
       'offset': offset,
       'returned': end - offset,
       'total': total,
-      'truncated': end < total,
+      // bounded 解码在窗口处截断时，total 只代表「已解出的字节数」而非真实长度
+      'totalExact': !message.bodyDecodeTruncated,
+      'rawBodyBytes': message.body?.length ?? 0,
+      'truncated': end < total || message.bodyDecodeTruncated,
       'text': slice,
     };
   }
@@ -168,7 +179,7 @@ class FlowView {
         'opcode': frame.opcode,
         'time': frame.time.toUtc().toIso8601String(),
         'payloadLength': frame.payloadLength,
-        'truncated': text.length < (frame.isText ? frame.payloadDataAsString.length : 0),
+        'truncated': frame.isText && text.length < frame.payloadDataAsString.length,
         'text': text,
       });
       if (budget <= 0) break;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:proxypin/network/http/websocket.dart';
@@ -154,7 +155,13 @@ class McpServer {
   static const bool statelessEnabled = true;
 
   // Streamable HTTP 会话管理（sessionId -> 该会话的 SSE 输出流）
-  final Map<String, _StreamableSession> _streamSessions = {};
+  /// Streamable HTTP 会话表：LinkedHashMap 记创建顺序，超出 [maxStreamSessions] 时淘汰最旧的。
+  /// 会话此前只有 1 小时过期的 Timer，没有数量上限 —— 局域网暴露（或关掉鉴权）时
+  /// 客户端反复 initialize 就能把会话对象和 Timer 堆到无上限。
+  final LinkedHashMap<String, _StreamableSession> _streamSessions = LinkedHashMap();
+
+  /// 内存中同时保留的 Streamable HTTP 会话上限
+  static const int maxStreamSessions = 256;
 
   // SSE 连接池 — 使用 List 的 copy-then-iterate 模式保证并发安全
   final List<io.HttpResponse> _sseConnections = [];
@@ -791,6 +798,17 @@ class McpServer {
       _streamSessions.remove(sessionId);
     });
     _streamSessions[sessionId] = session;
+    // 数量上限：淘汰最早创建（最久未刷新）的会话，其 SSE 输出流一并关闭
+    while (_streamSessions.length > maxStreamSessions) {
+      final oldestId = _streamSessions.keys.first;
+      final oldest = _streamSessions.remove(oldestId);
+      oldest?.expiry?.cancel();
+      final stream = oldest?.stream;
+      if (stream != null) {
+        unawaited(stream.close().catchError((_) {}));
+      }
+      logger.i('MCP streamable HTTP session evicted: $oldestId');
+    }
     return sessionId;
   }
 

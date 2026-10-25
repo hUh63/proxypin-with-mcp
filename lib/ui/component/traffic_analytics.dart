@@ -28,15 +28,25 @@ void showTrafficAnalytics(BuildContext context, List<HttpRequest> requests) {
   );
 }
 
-class _TrafficAnalyticsDialog extends StatelessWidget {
+class _TrafficAnalyticsDialog extends StatefulWidget {
   final List<HttpRequest> requests;
 
   const _TrafficAnalyticsDialog({required this.requests});
 
   @override
+  State<_TrafficAnalyticsDialog> createState() => _TrafficAnalyticsDialogState();
+}
+
+class _TrafficAnalyticsDialogState extends State<_TrafficAnalyticsDialog> {
+  /// 统计只在打开对话框时算一次。
+  ///
+  /// 早先写在 build 里：10 万条请求的聚合（遍历 + 两次全量排序）会在每次重建时
+  /// 重跑一遍——滚动、主题切换、任何 setState 都会触发，表现是对话框卡死。
+  late final TrafficStats stats = TrafficStats.compute(widget.requests);
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final stats = TrafficStats.compute(requests);
 
     return AlertDialog(
       title: Text(l.trafficAnalyticsTitle),

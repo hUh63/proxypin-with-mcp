@@ -49,7 +49,16 @@ class FlowStore extends EventListener {
 
   /// 每流的有界帧索引：不裁剪共享的 message.messages（App UI 也在用），
   /// 而是单独维护，避免影响界面展示。
-  final Map<String, List<WebSocketFrame>> _wsFrames = {};
+  ///
+  /// 用 LinkedHashMap 记访问顺序：既按「每流帧数」截断，也按「流数量」淘汰最久未活跃的流。
+  /// 只按帧数限制是不够的——一条 WS 长连接的 request 被 1000 条新请求挤出 [_byId] 后，
+  /// 后续帧仍会命中 putIfAbsent 重新建表，几十条被淘汰的流各自攒到 5000 帧就无界增长了。
+  final LinkedHashMap<String, List<WebSocketFrame>> _wsFrames = LinkedHashMap();
+
+  /// 帧索引最多保留的流数量（与抓包条数上限同量级，足够覆盖活跃长连接）
+  static const int defaultMaxFrameFlows = 128;
+
+  final int maxFrameFlows;
 
   /// 最多在内存中同时保留的历史会话数，超出淘汰最久未访问的，
   /// 与实时缓冲一样防止长时间运行 / 连续翻阅多个大会话导致内存膨胀。
@@ -64,6 +73,7 @@ class FlowStore extends EventListener {
   FlowStore(
       {this.maxEntries = defaultMaxEntries,
       this.maxFramesPerFlow = defaultMaxFramesPerFlow,
+      this.maxFrameFlows = defaultMaxFrameFlows,
       this.historyProvider,
       this.maxHistorySessions = defaultMaxHistorySessions});
 
@@ -84,10 +94,16 @@ class FlowStore extends EventListener {
   @override
   void onMessage(Channel channel, HttpMessage message, WebSocketFrame frame) {
     var id = message.requestId;
-    var list = _wsFrames.putIfAbsent(id, () => []);
+    // remove + 重新插入 = 把该流标记为最近活跃（LinkedHashMap 的插入顺序即淘汰顺序）
+    var list = _wsFrames.remove(id);
+    list ??= <WebSocketFrame>[];
     list.add(frame);
     if (list.length > maxFramesPerFlow) {
       list.removeRange(0, list.length - maxFramesPerFlow);
+    }
+    _wsFrames[id] = list;
+    while (_wsFrames.length > maxFrameFlows) {
+      _wsFrames.remove(_wsFrames.keys.first);
     }
   }
 

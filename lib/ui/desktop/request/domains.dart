@@ -181,7 +181,7 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
     containerMap.forEach((key, domainRequests) {
       var body = domainRequests.search(searchModel);
       if (body.isNotEmpty) {
-        result[key] = domainRequests.copy(body: body, selected: searchView[key]?.currentSelected);
+        result[key] = domainRequests.copy(body: body);
       }
     });
 
@@ -413,6 +413,21 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
   }
 }
 
+/// 域名分组头部的共享状态（展开/折叠 + 右侧 trailing）。
+///
+/// 搜索态下渲染的是 [DomainRequests.copy] 生成的副本，主对象并不在 widget 树上。
+/// 早先靠「副本复用同一个 GlobalKey」让 `selected` / `changeState()` 作用到挂树实例上，
+/// 一旦两份同时挂载就是 duplicate GlobalKey 崩溃，且切换视图时 State 生命周期很难捉摸。
+/// 现在改成共享这个纯数据对象：主对象与副本读写同一份展开状态，
+/// 需要重建时通过 [onChange]（= 当前挂树实例的 changeState）回调。
+class DomainHeaderState {
+  bool selected;
+  Widget? trailing;
+  VoidCallback? onChange;
+
+  DomainHeaderState({this.selected = false, this.trailing});
+}
+
 ///标题和内容布局 标题是域名 内容是域名下请求
 class DomainRequests extends StatefulWidget {
   //请求ID和请求的映射
@@ -425,8 +440,8 @@ class DomainRequests extends StatefulWidget {
   //请求列表
   final Queue<RequestWidget> body = Queue();
 
-  //是否选中
-  final bool selected;
+  //头部共享状态（展开/折叠 + trailing），搜索视图副本与主对象共用同一份
+  final DomainHeaderState headerState;
 
   //移除回调
   final Function(String host)? onDelete;
@@ -436,8 +451,9 @@ class DomainRequests extends StatefulWidget {
   final MultiSelectController selectionController;
 
   DomainRequests(this.domain,
-      {GlobalKey? key,
-      this.selected = false,
+      {super.key,
+      bool selected = false,
+      DomainHeaderState? headerState,
       this.onDelete,
       this.onExportHar,
       required this.proxyServer,
@@ -445,7 +461,7 @@ class DomainRequests extends StatefulWidget {
       required this.selectionHandlers,
       this.trailing,
       required this.selectionController})
-      : super(key: key ?? GlobalKey<_DomainRequestsState>());
+      : headerState = headerState ?? DomainHeaderState(selected: selected, trailing: trailing);
 
   ///添加请求
   void addRequest(String? requestId, HttpRequest request, bool sortDesc) {
@@ -474,8 +490,10 @@ class DomainRequests extends StatefulWidget {
   }
 
   void setTrailing(Widget? trailing) {
-    var state = key as GlobalKey<_DomainRequestsState>;
-    state.currentState?.trailing = trailing;
+    if (identical(headerState.trailing, trailing)) return;
+    headerState.trailing = trailing;
+    // 挂树实例存在时立刻重建；不在树上（搜索态下的主对象）只改数据，下次挂树生效
+    headerState.onChange?.call();
   }
 
   void _remove(RequestWidget requestWidget) {
@@ -533,12 +551,11 @@ class DomainRequests extends StatefulWidget {
   }
 
   ///复制
-  DomainRequests copy({Iterable<RequestWidget>? body, bool? selected}) {
-    var state = key as GlobalKey<_DomainRequestsState>;
+  DomainRequests copy({Iterable<RequestWidget>? body, DomainHeaderState? headerState}) {
     var headerBody = DomainRequests(domain,
-        key: state,
+        // 默认与主对象共用同一份头部状态：搜索态下展开/折叠不会丢失
+        headerState: headerState ?? this.headerState,
         trailing: trailing,
-        selected: selected ?? state.currentState?.selected == true,
         onDelete: onDelete,
         onExportHar: onExportHar,
         onRequestRemove: onRequestRemove,
@@ -551,15 +568,9 @@ class DomainRequests extends StatefulWidget {
     return headerBody;
   }
 
-  bool get currentSelected {
-    var state = key as GlobalKey<_DomainRequestsState>;
-    return state.currentState?.selected == true;
-  }
+  bool get currentSelected => headerState.selected;
 
-  void changeState() {
-    var state = key as GlobalKey<_DomainRequestsState>;
-    state.currentState?.changeState();
-  }
+  void changeState() => headerState.onChange?.call();
 
   @override
   State<StatefulWidget> createState() {
@@ -570,9 +581,13 @@ class DomainRequests extends StatefulWidget {
 class _DomainRequestsState extends State<DomainRequests> {
   final GlobalKey<ColorTransitionState> transitionState = GlobalKey<ColorTransitionState>();
   late Configuration configuration;
-  late bool selected;
-  Widget? trailing;
   bool changing = false;
+
+  /// 展开/折叠与 trailing 都存在共享的 [DomainHeaderState] 上：
+  /// 搜索视图的副本与主对象读写同一份，切换视图时状态自然延续。
+  bool get selected => widget.headerState.selected;
+
+  set selected(bool value) => widget.headerState.selected = value;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -580,8 +595,18 @@ class _DomainRequestsState extends State<DomainRequests> {
   void initState() {
     super.initState();
     configuration = widget.proxyServer.configuration;
-    selected = widget.selected;
-    trailing = widget.trailing;
+    widget.headerState.trailing ??= widget.trailing;
+    // 本实例是当前挂树的那份，changeState 指向自己；离开树时（dispose）再让位
+    widget.headerState.onChange = changeState;
+  }
+
+  @override
+  void dispose() {
+    // 只有回调仍指向自己时才清空：paint 顺序切换时新实例可能已经先接管
+    if (widget.headerState.onChange == changeState) {
+      widget.headerState.onChange = null;
+    }
+    super.dispose();
   }
 
   void changeState() {
@@ -614,7 +639,7 @@ class _DomainRequestsState extends State<DomainRequests> {
         child: ListTile(
             minLeadingWidth: 25,
             leading: Icon(selected ? Icons.arrow_drop_down : Icons.arrow_right, size: 18),
-            trailing: trailing,
+            trailing: widget.headerState.trailing,
             dense: true,
             horizontalTitleGap: 0,
             contentPadding: const EdgeInsets.only(left: 3, right: 8),

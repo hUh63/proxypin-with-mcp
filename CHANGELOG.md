@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.67.92 (2026-10-25) — 分组头部去 GlobalKey + 帧索引与连接上限 + 大 body 分页解码
+
+### 桌面分组列表：头部状态不再靠 GlobalKey 共享
+- 新增 `DomainHeaderState`（展开/折叠 + trailing + onChange）。搜索结果里的
+  `DomainRequests.copy()` 与主对象共享这一份纯数据，不再复用同一个
+  `GlobalKey<_DomainRequestsState>`：早先那份写法一旦两份同时挂载就是
+  duplicate GlobalKey 崩溃，且切视图时 State 生命周期很难预料。
+- `selected` / `currentSelected` / `setTrailing` / `changeState` 全部改走共享状态，
+  副本不在树上时只改数据、下次挂树生效；挂树实例在 `initState` 里注册 `onChange`、
+  `dispose` 时仅在回调仍指向自己时让位。
+
+### 内存与并发上限
+- `FlowStore` 的 WebSocket 帧索引改为 `LinkedHashMap` + 流数量上限（128）：
+  此前只按「每流帧数」截断，一条长连接的 request 被 1000 条新请求挤出索引后，
+  后续帧仍会重建索引，几十条被淘汰的流各自攒到 5000 帧就无界增长。
+- MCP Streamable HTTP 会话加上限 256（`LinkedHashMap` 记创建顺序），
+  超出淘汰最旧的并关闭其 SSE 输出流、取消过期 Timer：此前只有 1 小时过期的
+  Timer 没有条数上限，局域网暴露或关掉鉴权时反复 `initialize` 就能堆到无界。
+- 局域网流量共享（WebSocket）客户端连接上限 32，超出直接 503：
+  令牌可被用户关掉，此前谁都能无限建连。
+
+### 大 body 预览
+- `FlowView.bodySlice` 改为有界解码：窗口 ≤512KB 时走
+  `decodeBodyStringBounded`，不再每次分页都把完整 body 解压 + 全量 UTF-8 编码
+  + 再复制一份字节（几十 MB 的响应翻几页就是几十 MB 内存抖动）。
+  返回里补 `totalExact` / `rawBodyBytes`，`truncated` 也把解码截断算进去；
+  WebSocket 帧的 `truncated` 只对文本帧比较（二进制帧此前恒为 true）。
+
+### 性能与其它
+- 桌面状态栏的上下行速率改为「增量累加新增条目 + 每 5 秒全量校正」：
+  抓包上限默认 10000 条，原先每秒全表求和等于每秒一万次链式属性访问。
+- 流量分析对话框的聚合统计从 `build` 移到 `late final`：
+  10 万条请求的遍历 + 两次全量排序此前在每次重建时都会重跑（滚动就卡）。
+- 局域网流量共享的 `get_history`：会话重名时返回 `candidates` 列表让调用方改用
+  `id` 指定，此前直接取第一条，拿到的可能是另一个同名会话的数据。
+
 ## v1.67.91 (2026-10-25) — 上游 mcp 目录整合核对 + 面板限高 + 官方工具重挂载
 
 ### 上游代码整合核对（无新增合并）

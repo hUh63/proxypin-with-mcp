@@ -43,6 +43,10 @@ class WsTrafficServer implements EventListener {
   io.HttpServer? _server;
   final Set<io.WebSocket> _clients = {};
 
+  /// 同时连接的客户端上限：局域网暴露、或用户关掉「要求访问令牌」时，
+  /// 避免被无限建连耗尽内存（与 MCP 的 SSE 连接上限同一思路）。
+  static const int maxClients = 32;
+
   /// 单帧 payload 推送上限，避免大帧撑爆客户端
   static const int _maxPayloadChars = 4096;
 
@@ -160,6 +164,16 @@ class WsTrafficServer implements EventListener {
           'service': 'ProxyPin WsTrafficServer',
           'hint': '请使用 WebSocket 连接（ws://<host>:<port>）',
         }));
+      await request.response.close();
+      return;
+    }
+
+    if (_clients.length >= maxClients) {
+      logger.w('WsTrafficServer 拒绝连接：已达上限 $maxClients');
+      request.response
+        ..statusCode = io.HttpStatus.serviceUnavailable
+        ..headers.contentType = io.ContentType('application', 'json', charset: 'utf-8')
+        ..write(jsonEncode({'error': 'Too many connections (max $maxClients)'}));
       await request.response.close();
       return;
     }
@@ -290,11 +304,32 @@ class WsTrafficServer implements EventListener {
     }
     try {
       final storage = await HistoryStorage.instance;
-      final matched = hasId
-          ? storage.histories.where((h) => h.path == id)
-          : storage.histories.where((h) => h.name == name);
+      final matched = (hasId
+              ? storage.histories.where((h) => h.path == id)
+              : storage.histories.where((h) => h.name == name))
+          .toList();
       if (matched.isEmpty) {
         _send(ws, {'type': 'error', 'message': '未找到历史会话: ${hasId ? id : name}'});
+        return;
+      }
+      if (matched.length > 1) {
+        // 会话名允许重名：以前直接取第一条，调用方拿到的可能是另一个同名会话的数据。
+        // 这里返回候选列表，让调用方改用 id 精确指定。
+        _send(ws, {
+          'type': 'result',
+          'action': 'get_history',
+          'ambiguous': true,
+          'message': '存在 ${matched.length} 个同名会话，请改用 id 指定',
+          'candidates': matched
+              .map((h) => {
+                    'id': h.path,
+                    'name': h.name,
+                    'requestLength': h.requestLength,
+                    'fileSize': h.fileSize,
+                    'createTime': h.createTime.millisecondsSinceEpoch,
+                  })
+              .toList(),
+        });
         return;
       }
       final item = matched.first;

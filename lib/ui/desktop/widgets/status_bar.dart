@@ -68,20 +68,52 @@ class _DesktopStatusBarState extends State<DesktopStatusBar> {
     }
   }
 
+  /// 已累加到 [_sumUp] / [_sumDown] 的条目数（增量统计的前缀长度）
+  int _sumCount = 0;
+  int _sumUp = 0;
+  int _sumDown = 0;
+
+  /// 距离下一次全量重算还剩几 tick。
+  ///
+  /// 增量模式只看新增的尾部条目（O(新增数)），但「响应后到达 / 流式 body 继续长」会改变
+  /// 已统计条目的 packageSize，靠每 5 秒一次的全量重算校正。抓包上限默认 10000 条时，
+  /// 原先每秒全表求和等于每秒一万次链式属性访问，活跃抓包下纯属白烧 CPU。
+  int _fullScanCountdown = 0;
+
+  /// 每多少秒做一次全量重算
+  static const int _fullScanSeconds = 5;
+
   /// 每秒统计一次上下行速率（按列表内请求/响应包大小的增量近似）
   void _tick() {
-    int up = 0, down = 0;
+    int up, down;
     try {
       // 按索引遍历底层 List：ListenableList 的迭代器在遍历中被 add 会抛
       // ConcurrentModificationError —— 状态栏每秒一跑，活跃抓包时必然撞上，
       // 异常从 Timer 回调逃逸后整条状态栏就停更了。
       final list = widget.container.source;
       final n = list.length;
-      for (var i = 0; i < n; i++) {
-        final request = list[i];
-        up += request.packageSize ?? 0;
-        down += request.response?.packageSize ?? 0;
+      // 列表被裁剪（条数变少）或到了校正周期：全量重算
+      if (n < _sumCount || _fullScanCountdown <= 0) {
+        _sumUp = 0;
+        _sumDown = 0;
+        for (var i = 0; i < n; i++) {
+          final request = list[i];
+          _sumUp += request.packageSize ?? 0;
+          _sumDown += request.response?.packageSize ?? 0;
+        }
+        _sumCount = n;
+        _fullScanCountdown = _fullScanSeconds;
+      } else {
+        for (var i = _sumCount; i < n; i++) {
+          final request = list[i];
+          _sumUp += request.packageSize ?? 0;
+          _sumDown += request.response?.packageSize ?? 0;
+        }
+        _sumCount = n;
+        _fullScanCountdown--;
       }
+      up = _sumUp;
+      down = _sumDown;
     } catch (_) {
       return;
     }
