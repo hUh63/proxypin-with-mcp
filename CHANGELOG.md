@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.67.97 (2026-10-25) — 继续排查：分号检查别再放过真错误
+
+- **过度豁免**：分号检查的行首豁免表里原来塞了 `return` / `throw` / `yield` /
+  `static` / `using` / `import` / `package` / `namespace` / `export` /
+  `async` / `synchronized` / `throws`——这些都不是块头，后面照样要分号。
+  结果是「漏了分号的 return 语句」永远查不出来（漏报比误报更难发现）。
+  现在只保留 case/default/else/do/try/finally/catch/@/#/访问修饰符标签这一批真·块头。
+- **properties / ini 续行误报**：行尾反斜杠是标准的续行写法，之前被当成
+  「既不是 [section] 也不是 key = value」。
+
 ## v1.67.96 (2026-10-25) — 语法检查降误报 + 覆盖所有语言；控制台对任意语言可用
 
 ### 降误报（逐条都有对应的合法写法豁免）

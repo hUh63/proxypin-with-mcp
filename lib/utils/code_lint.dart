@@ -829,11 +829,12 @@ class CodeLint {
     final maskLines = masked.split('\n');
     var offset = 0;
     // 这些行首是「块头 / 预处理 / 标签 / 修饰符」，本来就不该有分号。
+    // 只有「块头 / 预处理 / 标签 / 注释」才不需要分号。
+    // return / throw / yield / static / using / import 这些后面照样要分号，
+    // 列进来会把真错误放过去（漏报比误报更难发现）。
     const skipHeads = <String>[
       'case ', 'default', 'else', 'do', 'try', 'finally', 'catch', 'template', //
-      '@', '#', 'public:', 'private:', 'protected:', 'internal:', '//', '/*', '*',
-      '}', 'auto ', 'using ', 'import ', 'package ', 'namespace ', 'export ',
-      'static ', 'async ', 'synchronized', 'throws ', 'return ', 'throw ', 'yield ',
+      '@', '#', 'public:', 'private:', 'protected:', 'internal:', '//', '/*', '*', '}',
     ];
 
     for (var line = 0; line < maskLines.length && line < rawLines.length; line++) {
@@ -1201,6 +1202,8 @@ class CodeLint {
         seen.clear();
         continue;
       }
+      // properties / ini 支持行尾反斜杠续行
+      if (trimmed.endsWith('\\')) continue;
       final eq = trimmed.indexOf('=');
       final colon = trimmed.indexOf(':');
       final sep = eq >= 0 ? eq : colon;
