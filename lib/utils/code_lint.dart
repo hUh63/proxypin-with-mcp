@@ -16,21 +16,17 @@
 
 // 多语言语法检查（静态、零依赖、纯 Dart）。
 //
-// 为什么不用真编译器：手机上没有 python/gcc/javac，「语法检查」只能靠增量词法扫描。
-// 所以这里按**语言画像**（LintProfile）分派，画像从 [langFamilyOf] 的族信息推导，
-// 再由语言专属表覆盖 —— 新增语言不用写新检查器，只需要落进某个族。
-//
-// 检查项（按顺序，都是「能给出可执行修法」的）：
-//   1. 字符串 / 块注释未闭合            → error
-//   2. 括号不配平（多余 / 缺失 / 错配）  → error / warning
-//   3. 语句行缺分号（仅分号语言）        → warning，可一键补
-//   4. 关键字大小写写错（console→Console）→ info，可一键改
-//   5. Python 式缩进异常（tab/空格混用、冒号后没缩进）→ warning
-//   6. `if (x = 1)` 把赋值当条件        → warning
-//   7. JSON / XML 直接走严格解析器，给出行列 → error
-//
-// 设计原则与 [JsCompiler] 一致：**宁可漏报，不可误报**，所有结论都带明确的
-// 行:列与修法，自动修复只做「删一个字符 / 补一个字符 / 改大小写」这类确定动作。
+// 设计要点
+// 1. **按语言画像分派**，不按语言各写一套：画像（LintProfile）从 lang_meta 的语言族
+//    推导出「注释语法 / 字符串语法 / 要不要分号 / 是否缩进敏感 / 块怎么闭合」，
+//    190+ 种语言自动落族；新增语言只要落进某个族就有检查能力。
+// 2. **宁可漏报，不可误报**。每条规则都为真实代码里的合法写法留了豁免：字符串与
+//    注释里的括号、C 预处理行、VB 的单行 If、C++ 的 if (auto x = f())、Rust 的
+//    生命周期 'a、C# 的逐字字符串 @"..."、JS 的正则字面量……见各规则注释。
+// 3. **不只查大括号语言**：bash / lua / ruby / matlab / pascal / vb / fortran / ada
+//    这类用 end 收尾的语言走「块关键字配对」；HTML 走标签配平；Markdown 查代码围栏；
+//    ini/properties 查行格式；YAML 查 tab 缩进；Makefile 查命令行是否用了 tab。
+// 4. 消息中英双语：check(chinese: ...)，非中文用户看到英文而不是中文。
 library;
 
 import 'dart:convert';
@@ -40,16 +36,7 @@ import 'package:proxypin/utils/lang_meta.dart';
 import 'package:xml/xml.dart';
 
 /// 诊断严重程度。
-enum LintSeverity {
-  /// 语法错误，代码跑不起来。
-  error,
-
-  /// 可能出错 / 不符合该语言习惯。
-  warning,
-
-  /// 只是提醒（例如大小写不符）。
-  info,
-}
+enum LintSeverity { error, warning, info }
 
 /// 一条诊断。
 class LintDiagnostic {
@@ -135,12 +122,35 @@ class LintReport {
     if (infoCount > 0) return LintSeverity.info;
     return null;
   }
+
+  /// 只要某一级别的诊断（UI 过滤用）。
+  LintReport filter(Set<LintSeverity> levels) => LintReport(
+        diagnostics: diagnostics.where((d) => levels.contains(d.severity)).toList(growable: false),
+        profile: profile,
+        language: language,
+        skipped: skipped,
+      );
 }
 
-/// 语言画像：决定「这个语言怎么识别字符串/注释/块/语句结束」。
+/// 语言画像：决定「这个语言怎么识别字符串 / 注释 / 块 / 语句结束」。
 class LintProfile {
+  /// 语言 key（小写，re_highlight 的标识），用于语言专属规则。
+  final String key;
+
   /// XML / HTML 这类标记语言。
   final bool markup;
+
+  /// 严格标记：走 XML 解析器（xml / svg / xhtml）。
+  final bool strictMarkup;
+
+  /// HTML 家族：只做标签配平（不做括号/分号）。
+  final bool htmlTags;
+
+  /// 完全不做语法扫描（纯文本、Markdown 正文、HTTP 报文等）。
+  final bool skipAll;
+
+  /// 只看代码围栏（Markdown）。
+  final bool fenceCheck;
 
   /// JSON（走严格解析器）。
   final bool json;
@@ -148,20 +158,38 @@ class LintProfile {
   /// 缩进敏感（Python / YAML / Ruby…）。
   final bool indented;
 
+  /// 「冒号结尾必须缩进」的语言（Python / Ruby / Julia）。
+  final bool blockIndent;
+
   /// 语句必须以分号结束。
   final bool semicolons;
+
+  /// 大小写敏感（SQL / VB / Pascal / Fortran / Ada 不敏感，跳过大小写纠错）。
+  final bool caseSensitive;
 
   /// 支持三引号字符串（Python / Kotlin / Swift…）。
   final bool tripleQuote;
 
-  /// 严格标记：走 XML 解析器（xml / svg / xhtml）。
-  final bool strictMarkup;
+  /// Rust：单引号可能是生命周期标记（'a），不是字符串。
+  final bool rustApostrophe;
 
-  /// 什么都不查（HTML / Vue / Svelte 这类模板语法，静态扫描误报太多）。
-  final bool skipAll;
+  /// C#：支持逐字字符串 @"..." 与原始字符串 """..."""。
+  final bool atVerbatim;
 
-  /// 「冒号结尾必须缩进」的语言（Python / Ruby / Julia）。
-  final bool blockIndent;
+  /// JS / TS：支持正则字面量 /.../。
+  final bool jsRegex;
+
+  /// CSS 家族：块内声明需要分号。
+  final bool cssDecls;
+
+  /// ini / properties / toml：每行必须是 key = value 或 [section]。
+  final bool iniLike;
+
+  /// YAML：禁止 tab 缩进。
+  final bool yamlLike;
+
+  /// Makefile：命令行必须用 tab。
+  final bool makefileLike;
 
   /// `#` 行注释。
   final bool hashComment;
@@ -179,14 +207,25 @@ class LintProfile {
   final List<String> traits;
 
   const LintProfile({
+    this.key = '',
     this.markup = false,
+    this.strictMarkup = false,
+    this.htmlTags = false,
+    this.skipAll = false,
+    this.fenceCheck = false,
     this.json = false,
     this.indented = false,
-    this.semicolons = false,
-    this.tripleQuote = false,
-    this.strictMarkup = false,
-    this.skipAll = false,
     this.blockIndent = false,
+    this.semicolons = false,
+    this.caseSensitive = true,
+    this.tripleQuote = false,
+    this.rustApostrophe = false,
+    this.atVerbatim = false,
+    this.jsRegex = false,
+    this.cssDecls = false,
+    this.iniLike = false,
+    this.yamlLike = false,
+    this.makefileLike = false,
     this.hashComment = false,
     this.sqlComment = false,
     this.slashComment = false,
@@ -201,47 +240,50 @@ class CodeLint {
   static const int maxCheckLength = 2 * 1024 * 1024;
 
   /// 按语言名 / 语言 key 推导画像。
-  ///
-  /// 顺序：先按 key 命中语言专属表，再退回 [langFamilyOf] 的族信息，
-  /// 最后是「纯文本」这种什么都没有的空画像。
   static LintProfile profileOf(String langLabel, String? langKey) {
     final key = (langKey ?? '').toLowerCase();
     final label = langLabel.toLowerCase();
     final family = langFamilyOf(key: key.isEmpty ? null : key, label: langLabel);
+    bool oneOf(List<String> list) => list.contains(key);
 
     final json = key == 'json' || label == 'json';
-    final markup = const <String>{'xml', 'html', 'xhtml', 'svg', 'vue', 'svelte'}.contains(key) ||
-        label.contains('xml') ||
-        label.contains('html');
-    // 严格 XML 才交给解析器；HTML / Vue / Svelte 的模板语法（自闭合标签、{{ }}）
-    // 用静态扫描误报太多，直接不查。
-    final strictMarkup = const <String>{'xml', 'xhtml', 'svg'}.contains(key) ||
-        (key.isEmpty && label.contains('xml'));
-    final skipAll = markup && !strictMarkup;
-    final blockIndent = key == 'python' || key == 'ruby' || key == 'julia' || label.startsWith('python');
-    final indented = const <String>{
+    final htmlTags = oneOf(['html', 'htm', 'vue', 'svelte']) ||
+        (key.isEmpty && (label.contains('html') || label.contains('vue')));
+    final strictMarkup = oneOf(['xml', 'svg', 'xhtml']) || (key.isEmpty && label.contains('xml'));
+    final fenceCheck = oneOf(['markdown', 'md']) || label.contains('markdown');
+    final plain = oneOf(['plaintext', 'text', 'log', 'diff', 'http', 'csv']) ||
+        label == 'plain text' ||
+        label.contains('plain');
+    final skipAll = fenceCheck || plain;
+    final markup = htmlTags || strictMarkup;
+
+    final indented = oneOf([
           'python', 'yaml', 'yml', 'ruby', 'toml', 'ini', 'makefile', 'dockerfile', //
           'cmake', 'nginx', 'properties', 'julia', 'coffeescript', 'sass', 'stylus',
-        }.contains(key) ||
+        ]) ||
         label.startsWith('python');
-    final semicolons = const <String>{
+    final blockIndent =
+        key == 'python' || key == 'ruby' || key == 'julia' || label.startsWith('python');
+    final semicolons = oneOf([
       'c', 'cpp', 'csharp', 'cs', 'java', 'javascript', 'typescript', //
       'dart', 'php', 'objectivec', 'objc', 'groovy', 'scala', 'zig',
-    }.contains(key);
-    final tripleQuote = const <String>{
-          'python', 'kotlin', 'swift', 'groovy', 'scala', 'julia', 'dart',
-        }.contains(key) ||
+    ]);
+    final caseSensitive =
+        !oneOf(['sql', 'vb', 'vbnet', 'visualbasic', 'pascal', 'delphi', 'fortran', 'ada', 'basic']);
+    final tripleQuote = oneOf([
+          'python', 'kotlin', 'swift', 'groovy', 'scala', 'julia', 'dart', 'csharp', 'cs',
+        ]) ||
         label.startsWith('python');
     final hashComment = family == LangFamily.hash ||
-        const <String>{
+        oneOf([
           'python', 'ruby', 'perl', 'r', 'yaml', 'yml', 'bash', 'sh', 'shell', 'zsh', //
           'powershell', 'ps1', 'makefile', 'dockerfile', 'cmake', 'nginx', 'toml', 'ini',
           'properties', 'elixir', 'julia', 'coffeescript', 'conf', 'dotenv',
-        }.contains(key) ||
+        ]) ||
         label.startsWith('python') ||
         label.startsWith('shell');
     final sqlComment =
-        family == LangFamily.sql || const <String>{'sql', 'lua', 'haskell', 'ada'}.contains(key);
+        family == LangFamily.sql || oneOf(['sql', 'lua', 'haskell', 'ada']);
     final slashComment = family == LangFamily.c || family == LangFamily.lisp;
 
     (String, String)? blockComment;
@@ -251,21 +293,39 @@ class CodeLint {
     final traits = <String>['brackets'];
     if (json) {
       traits.insert(0, 'json');
-    } else if (markup) {
-      traits.insert(0, 'markup');
+    } else if (strictMarkup) {
+      traits.insert(0, 'xml');
+    } else if (htmlTags) {
+      traits.insert(0, 'tags');
+    } else if (fenceCheck) {
+      traits.insert(0, 'fence');
+    } else if (plain) {
+      traits.insert(0, 'plain');
     }
     if (semicolons) traits.add('semicolon');
     if (indented) traits.add('indent');
+    if (_pairRules.containsKey(key)) traits.add('blocks');
 
     return LintProfile(
+      key: key,
       markup: markup,
-      json: json,
       strictMarkup: strictMarkup,
+      htmlTags: htmlTags,
       skipAll: skipAll,
-      blockIndent: blockIndent,
+      fenceCheck: fenceCheck,
+      json: json,
       indented: indented,
+      blockIndent: blockIndent,
       semicolons: semicolons,
+      caseSensitive: caseSensitive,
       tripleQuote: tripleQuote,
+      rustApostrophe: key == 'rust',
+      atVerbatim: key == 'csharp' || key == 'cs',
+      jsRegex: key == 'javascript' || key == 'typescript' || key == 'coffeescript',
+      cssDecls: oneOf(['css', 'scss', 'less', 'sass', 'stylus']),
+      iniLike: oneOf(['ini', 'properties', 'conf', 'dotenv', 'toml']),
+      yamlLike: oneOf(['yaml', 'yml']),
+      makefileLike: key == 'makefile',
       hashComment: hashComment,
       sqlComment: sqlComment,
       slashComment: slashComment,
@@ -275,8 +335,16 @@ class CodeLint {
   }
 
   /// 检查整份文本。返回按位置排序的诊断。
-  static LintReport check(String source, {required String langLabel, String? langKey}) {
+  ///
+  /// [chinese] 决定消息语言：中文用户看中文，其余看英文。
+  static LintReport check(
+    String source, {
+    required String langLabel,
+    String? langKey,
+    bool chinese = true,
+  }) {
     final profile = profileOf(langLabel, langKey);
+    final ctx = _Ctx(chinese);
     if (source.length > maxCheckLength) {
       return LintReport(
         diagnostics: const <LintDiagnostic>[],
@@ -317,13 +385,15 @@ class CodeLint {
     }
 
     if (profile.skipAll) {
-      // 模板语言：不产出诊断（但仍返回画像，UI 可以展示规则）。
+      if (profile.fenceCheck) _checkFences(source, ctx, add);
     } else if (profile.json) {
-      _checkJson(source, add);
+      _checkJson(source, ctx, add);
     } else if (profile.strictMarkup) {
-      _checkMarkup(source, add);
+      _checkMarkup(source, ctx, add);
+    } else if (profile.htmlTags) {
+      _checkHtmlTags(source, ctx, add);
     } else {
-      _scanAndCheck(source, profile, langLabel, langKey, add);
+      _scanAndCheck(source, profile, langLabel, langKey, ctx, add);
     }
 
     out.sort((a, b) {
@@ -334,13 +404,11 @@ class CodeLint {
   }
 
   /// 把一批可自动修复的诊断写回文本。
-  ///
-  /// 从后往前替换，重叠的（前一处修改已经覆盖了它）直接跳过，避免错位。
   static String applyFixes(String source, Iterable<LintDiagnostic> diagnostics) {
     final fixes = diagnostics.where((d) => d.fixable).toList()
       ..sort((a, b) => b.start.compareTo(a.start));
     var out = source;
-    var guard = -1; // 上一次修改的起点，本次修改的右边界不能越过它
+    var guard = -1;
     for (final d in fixes) {
       final end = d.start + d.length;
       if (end > out.length) continue;
@@ -353,22 +421,43 @@ class CodeLint {
 
   // ------------------------------ JSON / XML ------------------------------
 
-  static void _checkJson(String src, _Add add) {
+  static void _checkJson(String src, _Ctx ctx, _Add add) {
     try {
       jsonDecode(src);
+      return;
     } on FormatException catch (e) {
       final offset = (e.offset ?? 0).clamp(0, src.length);
+      // JSONC（带注释 / 尾逗号）：很多配置文件长这样，当硬错误会误报。
+      // 去掉注释与尾逗号还能解析，就只提示「严格的 JSON 解析器会拒绝」。
+      if (_parsesAsJsonc(src)) {
+        add(offset, 1, LintSeverity.info, 'jsonc', ctx.t('这是 JSONC（含注释或尾逗号），严格 JSON 解析器会拒绝', 'JSONC (comments/trailing comma) - strict JSON parsers reject this'));
+        return;
+      }
       add(offset, 1, LintSeverity.error, 'json-header', 'JSON: ${e.message}',
-          suggestion: '检查该位置附近的引号、逗号与括号');
+          suggestion: ctx.t('检查该位置附近的引号、逗号与括号', 'check quotes, commas and brackets near here'));
     }
   }
 
-  static void _checkMarkup(String src, _Add add) {
+  static bool _parsesAsJsonc(String src) {
+    try {
+      // 去掉行注释 / 块注释 / 尾逗号
+      var text = src.replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '');
+      // 注意：replaceAll 不支持 $1 分组引用，必须用 replaceAllMapped。
+      text = text.replaceAllMapped(RegExp(r'(^|[\s\[,])//[^\n]*'), (m) => m.group(1) ?? '');
+      text = text.replaceAll(RegExp(r',(\s*[}\]])'), r'$1');
+      jsonDecode(text);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static void _checkMarkup(String src, _Ctx ctx, _Add add) {
     try {
       XmlDocument.parse(src);
     } catch (e) {
-      final message = e.toString();
-      add(0, 0, LintSeverity.error, 'markup', 'XML: $message', suggestion: '检查标签是否成对闭合');
+      add(0, 0, LintSeverity.error, 'markup', 'XML: ${e.toString()}',
+          suggestion: ctx.t('检查标签是否成对闭合', 'check that every tag is closed'));
     }
   }
 
@@ -380,11 +469,7 @@ class CodeLint {
   static const int _backslash = 0x5c;
 
   static bool _isIdStart(int c) =>
-      c == 0x24 ||
-      c == 0x5f ||
-      (c >= 0x41 && c <= 0x5a) ||
-      (c >= 0x61 && c <= 0x7a) ||
-      c > 0x7f;
+      c == 0x24 || c == 0x5f || (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) || c > 0x7f;
 
   static bool _isIdPart(int c) => _isIdStart(c) || (c >= 0x30 && c <= 0x39);
 
@@ -395,14 +480,13 @@ class CodeLint {
     LintProfile p,
     String langLabel,
     String? langKey,
+    _Ctx ctx,
     _Add add,
   ) {
     final n = src.length;
     final units = src.codeUnits.toList();
     final idents = <_Ident>[];
     final stack = <_Open>[];
-    // 每行的「行首栈顶符号」与「本行新增的未闭合开括号数」：
-    // 判断这一行是不是「语句还没写完」要用的两个量。
     final lineTops = <int>[];
     final lineDeltas = <int>[];
     var lineStartDepth = 0;
@@ -459,6 +543,15 @@ class CodeLint {
           i += 2;
           continue;
         }
+        // JS 正则字面量：/ 出现在运算符、括号、逗号之后时是正则，不是除号或注释。
+        // 不处理会把 /abc/ 里的 // 当成行注释，整行后面的代码全被「吃掉」。
+        if (p.jsRegex && _looksLikeRegexStart(src, i)) {
+          final end = _skipRegexLiteral(src, i);
+          if (end > i) {
+            i = end;
+            continue;
+          }
+        }
       }
       if (p.sqlComment && c == 0x2d && i + 1 < n && src.codeUnitAt(i + 1) == 0x2d) {
         inLineComment = true;
@@ -468,6 +561,7 @@ class CodeLint {
         continue;
       }
       if (p.hashComment && c == 0x23) {
+        // 例外：CSS 的 #id（css 家族本就不开 hashComment）、Rust 的 #[attr]（族是 c）
         inLineComment = true;
         units[i] = 32;
         i++;
@@ -482,8 +576,40 @@ class CodeLint {
         continue;
       }
 
+      // C# 逐字字符串 @"..."：内部只有 "" 表示一个引号，反斜杠不转义。
+      if (p.atVerbatim && c == 0x40 && i + 1 < n && src.codeUnitAt(i + 1) == _quote) {
+        final start = i;
+        i += 2;
+        var closed = false;
+        while (i < n) {
+          if (src.codeUnitAt(i) == _quote) {
+            if (i + 1 < n && src.codeUnitAt(i + 1) == _quote) {
+              i += 2;
+              continue;
+            }
+            i++;
+            closed = true;
+            break;
+          }
+          i++;
+        }
+        if (!closed) {
+          add(start, 2, LintSeverity.error, 'unclosed-string', ctx.t('逐字字符串未闭合', 'unterminated verbatim string'),
+              suggestion: ctx.t('补上结尾的引号', 'add the closing quote'));
+        }
+        continue;
+      }
+
       // 字符串
       if (c == _quote || c == _apos) {
+        // Rust 生命周期：'a、'static —— 不是字符串。
+        if (p.rustApostrophe && c == _apos && i + 1 < n && _isIdStart(src.codeUnitAt(i + 1))) {
+          final next = i + 2 < n ? src.codeUnitAt(i + 2) : 32;
+          if (next != _apos) {
+            i++;
+            continue;
+          }
+        }
         if (p.tripleQuote &&
             i + 2 < n &&
             src.codeUnitAt(i + 1) == c &&
@@ -508,8 +634,8 @@ class CodeLint {
             i++;
           }
           if (!closed) {
-            add(start, 3, LintSeverity.error, 'unclosed-string', '三引号字符串未闭合',
-                suggestion: '补上结尾的 ${String.fromCharCode(c) * 3}');
+            add(start, 3, LintSeverity.error, 'unclosed-string', ctx.t('三引号字符串未闭合', 'unterminated triple-quoted string'),
+                suggestion: ctx.t('补上结尾的三引号', 'add the closing triple quote'));
           }
           continue;
         }
@@ -524,7 +650,6 @@ class CodeLint {
             continue;
           }
           if (ch == c) {
-            // SQL 用 '' 表示一个单引号
             if (p.sqlComment && i + 1 < n && src.codeUnitAt(i + 1) == c) {
               i += 2;
               continue;
@@ -533,12 +658,12 @@ class CodeLint {
             closed = true;
             break;
           }
-          if (ch == _lf) break; // 普通字符串不跨行
+          if (ch == _lf) break;
           i++;
         }
         if (!closed) {
-          add(start, 1, LintSeverity.error, 'unclosed-string', '字符串未闭合',
-              suggestion: '这一行的引号没有配对，检查是否漏了结尾的 ${String.fromCharCode(c)}');
+          add(start, 1, LintSeverity.error, 'unclosed-string', ctx.t('字符串未闭合', 'unterminated string'),
+              suggestion: ctx.t('这一行的引号没有配对，检查是否漏了结尾引号', 'the quote is not paired - check the closing quote'));
         }
         continue;
       }
@@ -554,7 +679,6 @@ class CodeLint {
         continue;
       }
 
-      // 数字（跳过，避免把 1.0e5 之类当成标识符）
       if (_isDigit(c)) {
         i++;
         while (i < n) {
@@ -576,8 +700,9 @@ class CodeLint {
       }
       if (c == 0x7d || c == 0x29 || c == 0x5d) {
         if (stack.isEmpty) {
-          add(i, 1, LintSeverity.error, 'extra-bracket', '多余的 ${String.fromCharCode(c)}：前面没有对应的开括号',
-              suggestion: '删掉这个括号', replacement: '');
+          add(i, 1, LintSeverity.error, 'extra-bracket',
+              ctx.t('多余的 ${String.fromCharCode(c)}：前面没有对应的开括号', 'extra ${String.fromCharCode(c)}: no matching opener'),
+              suggestion: ctx.t('删掉这个括号', 'delete it'), replacement: '');
         } else {
           final open = stack.removeLast();
           final want = open.ch == 0x7b
@@ -586,18 +711,35 @@ class CodeLint {
                   ? 0x29
                   : 0x5d;
           if (c != want) {
-            add(i, 1, LintSeverity.error, 'bracket-mismatch',
-                '括号不匹配：这里应该是 ${String.fromCharCode(want)}（对应第 ${_lineOfOffset(src, open.at)} 行的 ${String.fromCharCode(open.ch)}）');
+            add(
+                i,
+                1,
+                LintSeverity.error,
+                'bracket-mismatch',
+                ctx.t(
+                    '括号不匹配：这里应该是 ${String.fromCharCode(want)}（对应第 ${_lineOfOffset(src, open.at)} 行的 ${String.fromCharCode(open.ch)}）',
+                    'mismatched bracket: expected ${String.fromCharCode(want)} for the ${String.fromCharCode(open.ch)} on line ${_lineOfOffset(src, open.at)}'));
           }
         }
         i++;
         continue;
       }
 
+      // 全角标点混进代码（中文输入法最容易踩的坑，扫描时才知道在不在字符串里）
+      final fullWidth = _fullWidthOf(c);
+      if (fullWidth != null) {
+        add(
+            i,
+            1,
+            LintSeverity.warning,
+            'full-width',
+            ctx.t('代码里混入了全角符号「$fullWidth」', 'full-width character "$fullWidth" in code'),
+            suggestion: ctx.t('换成半角符号', 'use the ASCII version'));
+      }
+
       i++;
     }
 
-    // 收尾：未闭合括号
     if (stack.isNotEmpty) {
       final tail = StringBuffer();
       for (final open in stack.reversed) {
@@ -612,36 +754,82 @@ class CodeLint {
         0,
         LintSeverity.error,
         'unclosed-bracket',
-        '有 ${stack.length} 个括号没有闭合（最后一个在第 ${_lineOfOffset(src, stack.last.at)} 行）',
-        suggestion: '在末尾补上 $tail',
+        ctx.t('有 ${stack.length} 个括号没有闭合（最后一个在第 ${_lineOfOffset(src, stack.last.at)} 行）',
+            '${stack.length} unclosed bracket(s), last one on line ${_lineOfOffset(src, stack.last.at)}'),
+        suggestion: ctx.t('在末尾补上 $tail', 'append $tail'),
         replacement: tail.toString(),
       );
     }
 
-    // 分号
-    if (p.semicolons) {
-      _checkSemicolons(src, String.fromCharCodes(units), lineTops, lineDeltas, add);
-    }
-
-    // 大小写
-    _checkCase(src, idents, langLabel, langKey, add);
-
-    // 缩进
-    if (p.indented) _checkIndent(src, p.blockIndent, add);
-
-    // if / while 里把 = 当 ==
-    if (p.semicolons || p.slashComment) _checkAssignmentCondition(src, add);
+    if (p.semicolons) _checkSemicolons(src, String.fromCharCodes(units), lineTops, lineDeltas, ctx, add);
+    if (p.caseSensitive) _checkCase(src, idents, langLabel, langKey, ctx, add);
+    if (p.indented) _checkIndent(src, p.blockIndent, ctx, add);
+    if (p.semicolons || p.slashComment) _checkAssignmentCondition(src, langLabel, ctx, add);
+    if (p.cssDecls) _checkCssDecls(src, ctx, add);
+    if (p.iniLike) _checkIni(src, ctx, add);
+    if (p.yamlLike) _checkYaml(src, ctx, add);
+    if (p.makefileLike) _checkMakefile(src, ctx, add);
+    _checkBlockPairs(src, String.fromCharCodes(units), p.key, ctx, add);
   }
 
+  /// `/` 之前是「值」结束的字符时才是除法，否则是正则字面量起始。
+  static bool _looksLikeRegexStart(String src, int slashIndex) {
+    var k = slashIndex - 1;
+    while (k >= 0) {
+      final c = src[k];
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+        k--;
+        continue;
+      }
+      return '(,=:[!&|?{};+-*%~^<>'.contains(c);
+    }
+    return true;
+  }
+
+  /// 从 `/` 开始跳过一个正则字面量，返回结束位置（含标志位）；失败返回 -1。
+  static int _skipRegexLiteral(String src, int start) {
+    var i = start + 1;
+    var inClass = false;
+    while (i < src.length) {
+      final c = src[i];
+      if (c == '\\') {
+        i += 2;
+        continue;
+      }
+      if (c == '\n') return -1;
+      if (c == '[') inClass = true;
+      if (c == ']') inClass = false;
+      if (c == '/' && !inClass) {
+        i++;
+        while (i < src.length && RegExp(r'[a-z]').hasMatch(src[i])) {
+          i++;
+        }
+        return i;
+      }
+      i++;
+    }
+    return -1;
+  }
+
+  // ------------------------------ 分号 ------------------------------
+
   static void _checkSemicolons(
-      String src, String masked, List<int> lineTops, List<int> lineDeltas, _Add add) {
+    String src,
+    String masked,
+    List<int> lineTops,
+    List<int> lineDeltas,
+    _Ctx ctx,
+    _Add add,
+  ) {
     final rawLines = src.split('\n');
     final maskLines = masked.split('\n');
     var offset = 0;
+    // 这些行首是「块头 / 预处理 / 标签 / 修饰符」，本来就不该有分号。
     const skipHeads = <String>[
       'case ', 'default', 'else', 'do', 'try', 'finally', 'catch', 'template', //
       '@', '#', 'public:', 'private:', 'protected:', 'internal:', '//', '/*', '*',
-      '}', 'auto ', 'using ', 'import ', 'package ', 'namespace ', '#region',
+      '}', 'auto ', 'using ', 'import ', 'package ', 'namespace ', 'export ',
+      'static ', 'async ', 'synchronized', 'throws ', 'return ', 'throw ', 'yield ',
     ];
 
     for (var line = 0; line < maskLines.length && line < rawLines.length; line++) {
@@ -651,11 +839,10 @@ class CodeLint {
 
       final trimmedRight = _trimRight(mask);
       if (trimmedRight.isEmpty) continue;
-      // 整行都在注释里
       if (mask.trim().isEmpty) continue;
 
-      // 语句跨行：本行内有没闭合的开括号，或行首就处在 ( / [ 里面。
-      // 注意不能只看「栈深 > 0」——函数体的 { 一直开着，那样会把整个函数体都跳过。
+      // 语句跨行：本行有没闭合的开括号，或行首就处在 ( / [ 里面。
+      // 不能只看「栈深 > 0」——函数体的 { 一直开着，那样会把整个函数体都跳过。
       if (line < lineDeltas.length) {
         if (lineDeltas[line] > 0) continue;
         final top = lineTops[line];
@@ -671,13 +858,14 @@ class CodeLint {
         }
       }
       if (skip) continue;
+      // 单独的 `}` / `};` 之后的行首，或者行首是 `label:` 形式
+      if (RegExp(r'^[\w$]+\s*:\s*$').hasMatch(head)) continue;
 
       final lastChar = trimmedRight[trimmedRight.length - 1];
       if (';{}),]:'.contains(lastChar)) continue;
-      // 运算符 / 逗号结尾 → 语句没结束
       if ('+-*/%&|^<>=,:?([.~!'.contains(lastChar)) continue;
 
-      // 下一行以 { 或 : 开头 → 本行是块头
+      // 下一行以 { 或 : 开头 → 本行是块头 / 构造初始化列表
       var nextHead = '';
       for (var k = line + 1; k < maskLines.length; k++) {
         final t = maskLines[k].trim();
@@ -697,30 +885,30 @@ class CodeLint {
           if ('+-*/%&|^<>=,:?(['.contains(pc)) continue;
         }
       }
-
-      // 行首是 . 或 ? 之类（链式调用续行）也不需要分号
       if (head.startsWith('.') || head.startsWith('?') || head.startsWith(')') || head.startsWith(']')) {
         continue;
       }
 
-      final insertAt = lineStart + trimmedRight.length;
       add(
-        insertAt,
+        lineStart + trimmedRight.length,
         0,
         LintSeverity.warning,
         'missing-semicolon',
-        '这行可能缺少分号',
-        suggestion: '补上 ;',
+        ctx.t('这行可能缺少分号', 'missing semicolon'),
+        suggestion: ctx.t('补上 ;', 'add ;'),
         replacement: ';',
       );
     }
   }
+
+  // ------------------------------ 大小写 ------------------------------
 
   static void _checkCase(
     String src,
     List<_Ident> idents,
     String langLabel,
     String? langKey,
+    _Ctx ctx,
     _Add add,
   ) {
     if (idents.isEmpty) return;
@@ -728,28 +916,27 @@ class CodeLint {
     if (known.isEmpty) return;
 
     final declared = <String>{};
-    for (final m
-        in RegExp(r'\b(?:class|interface|struct|enum|namespace|function|func|def|var|let|const|val|record|macro)\s+([A-Za-z_$][\w$]*)')
-            .allMatches(src)) {
+    for (final m in RegExp(
+            r'\b(?:class|interface|struct|enum|namespace|function|func|def|var|let|const|val|record|macro|type)\s+([A-Za-z_$][\w$]*)')
+        .allMatches(src)) {
       declared.add(m.group(1)!);
     }
 
-    final seen = <String>{};
     final counts = <String, int>{};
     for (final id in idents) {
       counts[id.text] = (counts[id.text] ?? 0) + 1;
     }
-
+    // 一个词如果写错了一次、后面又写对过，说明用户知道正确写法，不必提示。
+    final seen = <String>{};
     var emitted = 0;
     for (final id in idents) {
-      if (emitted >= 20) break;
+      if (emitted >= 12) break;
       final text = id.text;
       if (text.length < 3) continue;
       if (declared.contains(text)) continue;
       if (seen.contains(text)) continue;
       final canonical = known[text.toLowerCase()];
       if (canonical == null || canonical == text) continue;
-      // 该词在文中还有别的写法（用户自己定义的同名不同形）→ 不动
       if ((counts[canonical] ?? 0) > 0) continue;
       seen.add(text);
       emitted++;
@@ -758,14 +945,17 @@ class CodeLint {
         text.length,
         LintSeverity.info,
         'case-mismatch',
-        '「$text」大小写可能写错了，该语言里写作「$canonical」',
-        suggestion: '改成 $canonical',
+        ctx.t('「$text」大小写可能写错了，该语言里写作「$canonical」',
+            '"$text" may be misspelled - it is written "$canonical" in this language'),
+        suggestion: ctx.t('改成 $canonical', 'change to $canonical'),
         replacement: canonical,
       );
     }
   }
 
-  static void _checkIndent(String src, bool blockIndent, _Add add) {
+  // ------------------------------ 缩进 ------------------------------
+
+  static void _checkIndent(String src, bool blockIndent, _Ctx ctx, _Add add) {
     final lines = src.split('\n');
     var offset = 0;
     var prevIndent = 0;
@@ -779,17 +969,17 @@ class CodeLint {
       final lead = raw.substring(0, indent);
 
       if (lead.contains(' ') && lead.contains('\t')) {
-        add(lineStart, indent, LintSeverity.warning, 'mixed-indent', '这一行同时用了空格和制表符缩进',
-            suggestion: '统一改成空格（该语言对缩进敏感）');
+        add(lineStart, indent, LintSeverity.warning, 'mixed-indent',
+            ctx.t('这一行同时用了空格和制表符缩进', 'this line mixes spaces and tabs'),
+            suggestion: ctx.t('统一改成空格（该语言对缩进敏感）', 'use spaces only'));
       }
 
       if (blockIndent && prevTrimmed.endsWith(':') && !prevTrimmed.startsWith('#')) {
         if (indent <= prevIndent) {
           final newIndent = ' ' * (prevIndent + 4);
           add(lineStart, indent, LintSeverity.warning, 'block-indent',
-              '上一行以「:」结尾，这一行应该缩进一层',
-              suggestion: '把这一行再缩进 4 个空格',
-              replacement: newIndent + trimmed);
+              ctx.t('上一行以「:」结尾，这一行应该缩进一层', 'previous line ends with ":" - this line should be indented'),
+              suggestion: ctx.t('再缩进 4 个空格', 'indent by 4 spaces'), replacement: newIndent + trimmed);
         }
       }
 
@@ -798,7 +988,9 @@ class CodeLint {
     }
   }
 
-  static void _checkAssignmentCondition(String src, _Add add) {
+  // ------------------------------ 条件里赋值 ------------------------------
+
+  static void _checkAssignmentCondition(String src, String langLabel, _Ctx ctx, _Add add) {
     final re = RegExp(r'\b(?:if|while)\s*\(');
     for (final m in re.allMatches(src)) {
       var i = m.end;
@@ -813,19 +1005,296 @@ class CodeLint {
       }
       if (depth != 0) continue;
       final inner = src.substring(start, i);
+      // C++/C# 的 if (auto p = f()) / if (var x = ...) 是合法的初始化语句。
+      if (RegExp(r'^\s*(auto|const|var|let|int|long|float|double|char|bool|bool\?|[A-Z][\w<>?]*)\s+[\w$]+\s*=')
+          .hasMatch(inner)) {
+        continue;
+      }
       for (var k = 0; k < inner.length; k++) {
         if (inner[k] != '=') continue;
         final prev = k > 0 ? inner[k - 1] : '';
         final next = k + 1 < inner.length ? inner[k + 1] : '';
-        if (next == '=' || prev == '=' || prev == '!' || prev == '<' || prev == '>' || prev == ':') {
+        if (next == '=' || prev == '=' || prev == '!' || prev == '<' || prev == '>' || prev == ':' || prev == '~') {
           continue;
         }
         if (next == '>') continue;
-        add(start + k, 1, LintSeverity.warning, 'assign-in-condition',
-            '条件里用了赋值「=」，是不是想写「==」？',
-            suggestion: '如果不是故意赋值，改成 ==');
+        add(
+          start + k,
+          1,
+          LintSeverity.warning,
+          'assign-in-condition',
+          ctx.t('条件里用了赋值「=」，是不是想写「==」？', 'assignment "=" inside a condition - did you mean "=="?'),
+          suggestion: ctx.t('如果不是故意赋值，改成 ==', 'use == unless the assignment is intended'),
+        );
         break;
       }
+    }
+  }
+
+  // ------------------------------ 块关键字配对（非大括号语言） ------------------------------
+
+  static void _checkBlockPairs(String src, String masked, String key, _Ctx ctx, _Add add) {
+    final rules = _pairRules[key];
+    if (rules == null || rules.isEmpty) return;
+    final lines = masked.split('\n');
+    final opens = List<int>.filled(rules.length, 0);
+    final closes = List<int>.filled(rules.length, 0);
+    final lastLine = List<int>.filled(rules.length, -1);
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (line.trim().isEmpty) continue;
+      for (var r = 0; r < rules.length; r++) {
+        final rule = rules[r];
+        final hasOpen = rule.open.hasMatch(line);
+        final closeCount = rule.close.allMatches(line).length;
+        // 同一行里既开又关（`if ...; fi` / `begin x end`）：自平衡，不计。
+        if (hasOpen && closeCount > 0) {
+          lastLine[r] = i;
+          continue;
+        }
+        if (hasOpen) opens[r]++;
+        if (closeCount > 0) closes[r] += closeCount;
+        if (hasOpen || closeCount > 0) lastLine[r] = i;
+      }
+    }
+
+    for (var r = 0; r < rules.length; r++) {
+      final diff = opens[r] - closes[r];
+      if (diff == 0) continue;
+      final rule = rules[r];
+      final at = _offsetOfLine(src, lastLine[r] < 0 ? lines.length - 1 : lastLine[r]);
+      if (diff > 0) {
+        add(
+          at,
+          0,
+          LintSeverity.warning,
+          'block-unclosed',
+          ctx.t('${rule.name} 少了 ${diff} 个「${rule.closeName}」', '${rule.name} is missing $diff "${rule.closeName}"'),
+          suggestion: ctx.t('检查是不是有块没有闭合', 'check for an unclosed block'),
+        );
+      } else {
+        add(
+          at,
+          0,
+          LintSeverity.warning,
+          'block-extra',
+          ctx.t('多出 ${-diff} 个「${rule.closeName}」，没有对应的「${rule.openName}」',
+              '${-diff} extra "${rule.closeName}" without a matching "${rule.openName}"'),
+          suggestion: ctx.t('删掉多余的收尾关键字', 'remove the extra terminator'),
+        );
+      }
+    }
+  }
+
+  // ------------------------------ HTML 标签配平 ------------------------------
+
+  static const Set<String> _voidTags = <String>{
+    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', //
+    'param', 'source', 'track', 'wbr', '!doctype',
+  };
+
+  static void _checkHtmlTags(String src, _Ctx ctx, _Add add) {
+    // script / style 里的 `<` 不是标签，先整体挖掉（长度用空格补齐以保留偏移）。
+    var text = src;
+    for (final tag in <String>['script', 'style']) {
+      text = text.replaceAllMapped(
+        RegExp('<$tag\\b[^>]*>[\\s\\S]*?</$tag\\s*>', caseSensitive: false),
+        (m) => ' ' * m.group(0)!.length,
+      );
+    }
+
+    final re = RegExp(
+        "<!--[\\s\\S]*?-->|<![^>]*>|<\\?[^>]*\\?>|<\\/?([a-zA-Z][\\w:-]*)((?:\\\"[^\\\"]*\\\"|'[^']*'|[^>\\\"'])*)>");
+    final stack = <(String, int)>[];
+    for (final m in re.allMatches(text)) {
+      final raw = m.group(0)!;
+      if (raw.startsWith('<!--') || raw.startsWith('<!') || raw.startsWith('<?')) continue;
+      final name = (m.group(1) ?? '').toLowerCase();
+      if (name.isEmpty) continue;
+      final selfClose = raw.endsWith('/>') || _voidTags.contains(name);
+      final isClose = raw.startsWith('</');
+      if (isClose) {
+        if (stack.isEmpty) {
+          add(m.start, raw.length, LintSeverity.error, 'tag-unmatched',
+              ctx.t('多余的 </$name>：前面没有对应的开标签', 'extra </$name>: no matching open tag'));
+          continue;
+        }
+        final (openName, openAt) = stack.removeLast();
+        if (openName != name) {
+          add(
+              m.start,
+              raw.length,
+              LintSeverity.error,
+              'tag-mismatch',
+              ctx.t('标签不匹配：<$openName>（第 ${_lineOfOffset(src, openAt)} 行）被 </$name> 关闭',
+                  'tag mismatch: <$openName> (line ${_lineOfOffset(src, openAt)}) closed by </$name>'));
+        }
+      } else if (!selfClose) {
+        stack.add((name, m.start));
+      }
+    }
+    if (stack.isNotEmpty) {
+      final (name, at) = stack.last;
+      add(
+        src.length,
+        0,
+        LintSeverity.error,
+        'tag-unclosed',
+        ctx.t('有 ${stack.length} 个标签没有闭合（最后一个 <$name> 在第 ${_lineOfOffset(src, at)} 行）',
+            '${stack.length} unclosed tag(s), last one <$name> on line ${_lineOfOffset(src, at)}'),
+        suggestion: ctx.t('补上 </$name>', 'append </$name>'),
+      );
+    }
+  }
+
+  // ------------------------------ Markdown 围栏 ------------------------------
+
+  static void _checkFences(String src, _Ctx ctx, _Add add) {
+    final lines = src.split('\n');
+    var offset = 0;
+    var backticks = 0;
+    var tildes = 0;
+    var lastBacktickOffset = 0;
+    var lastTildeOffset = 0;
+    for (final line in lines) {
+      final head = line.trimLeft();
+      if (head.startsWith('```')) {
+        backticks++;
+        lastBacktickOffset = offset;
+      } else if (head.startsWith('~~~')) {
+        tildes++;
+        lastTildeOffset = offset;
+      }
+      offset += line.length + 1;
+    }
+    if (backticks.isOdd) {
+      add(lastBacktickOffset, 3, LintSeverity.warning, 'fence-unclosed',
+          ctx.t('代码块围栏 ``` 没有闭合', 'code fence ``` is not closed'),
+          suggestion: ctx.t('在文末补一行 ```', 'add a closing ``` line'));
+    }
+    if (tildes.isOdd) {
+      add(lastTildeOffset, 3, LintSeverity.warning, 'fence-unclosed',
+          ctx.t('代码块围栏 ~~~ 没有闭合', 'code fence ~~~ is not closed'),
+          suggestion: ctx.t('在文末补一行 ~~~', 'add a closing ~~~ line'));
+    }
+  }
+
+  // ------------------------------ ini / properties ------------------------------
+
+  static void _checkIni(String src, _Ctx ctx, _Add add) {
+    final lines = src.split('\n');
+    var offset = 0;
+    final seen = <String>{};
+    String? section;
+    for (final line in lines) {
+      final lineStart = offset;
+      offset += line.length + 1;
+      final trimmed = line.trim();
+      if (trimmed.isEmpty || trimmed.startsWith('#') || trimmed.startsWith(';')) continue;
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        section = trimmed;
+        seen.clear();
+        continue;
+      }
+      final eq = trimmed.indexOf('=');
+      final colon = trimmed.indexOf(':');
+      final sep = eq >= 0 ? eq : colon;
+      if (sep <= 0) {
+        add(lineStart, line.length, LintSeverity.warning, 'ini-line',
+            ctx.t('这一行既不是 [section] 也不是 key = value', 'not a [section] and not key = value'),
+            suggestion: ctx.t('补上 = 与值，或改成注释', 'add "= value" or make it a comment'));
+        continue;
+      }
+      final name = trimmed.substring(0, sep).trim().toLowerCase();
+      if (!seen.add(name)) {
+        add(lineStart, sep, LintSeverity.info, 'ini-duplicate',
+            ctx.t('「${trimmed.substring(0, sep).trim()}」在 ${section ?? '全局'} 段里重复出现',
+                'duplicate key "${trimmed.substring(0, sep).trim()}" in ${section ?? 'global'}'));
+      }
+    }
+  }
+
+  // ------------------------------ YAML ------------------------------
+
+  static void _checkYaml(String src, _Ctx ctx, _Add add) {
+    final lines = src.split('\n');
+    var offset = 0;
+    for (final line in lines) {
+      final lineStart = offset;
+      offset += line.length + 1;
+      final trimmed = line.trimLeft();
+      if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+      if (line.startsWith('\t')) {
+        add(lineStart, 1, LintSeverity.error, 'yaml-tab',
+            ctx.t('YAML 不允许用 tab 缩进', 'YAML does not allow tab indentation'),
+            suggestion: ctx.t('换成空格', 'use spaces'));
+      }
+    }
+  }
+
+  // ------------------------------ Makefile ------------------------------
+
+  static void _checkMakefile(String src, _Ctx ctx, _Add add) {
+    final lines = src.split('\n');
+    var offset = 0;
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final lineStart = offset;
+      offset += line.length + 1;
+      if (line.trim().isEmpty || line.trimLeft().startsWith('#')) continue;
+      if (line.startsWith('\t')) continue;
+      // 上一行是 target（含冒号、不以 tab 开头）而本行用空格缩进 → 命令行的 tab 被编辑器换成了空格
+      if (line.startsWith('  ') && i > 0) {
+        final prev = lines[i - 1].trimRight();
+        if (prev.contains(':') && !prev.startsWith('\t') && !prev.endsWith('\\')) {
+          add(lineStart, line.length - line.trimLeft().length, LintSeverity.error, 'makefile-tab',
+              ctx.t('Makefile 的命令行必须以 tab 开头', 'Makefile recipe lines must start with a tab'),
+              suggestion: ctx.t('把行首缩进换成 tab', 'replace the indentation with a tab'));
+        }
+      }
+    }
+  }
+
+  // ------------------------------ CSS 声明 ------------------------------
+
+  static void _checkCssDecls(String src, _Ctx ctx, _Add add) {
+    final lines = src.split('\n');
+    var offset = 0;
+    var depth = 0;
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final lineStart = offset;
+      offset += line.length + 1;
+      for (final ch in line.split('')) {
+        if (ch == '{') depth++;
+        if (ch == '}') depth = depth > 0 ? depth - 1 : 0;
+      }
+      final trimmed = _trimRight(line).trim();
+      if (trimmed.isEmpty || depth == 0) continue;
+      if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) continue;
+      if (trimmed.startsWith('@')) continue;
+      final last = trimmed[trimmed.length - 1];
+      if (';{},'.contains(last)) continue;
+      if (!trimmed.contains(':')) continue;
+      // 值跨行（下一行缩进更深或本行以 ( , [ 结尾）→ 不判
+      var nextHead = '';
+      for (var k = i + 1; k < lines.length; k++) {
+        final t = lines[k].trim();
+        if (t.isEmpty) continue;
+        nextHead = t;
+        break;
+      }
+      if (nextHead.startsWith('}') || nextHead.startsWith(')')) continue;
+      add(
+        lineStart + _trimRight(line).length,
+        0,
+        LintSeverity.warning,
+        'css-semicolon',
+        ctx.t('这条声明可能缺少分号', 'missing semicolon after this declaration'),
+        suggestion: ctx.t('补上 ;', 'add ;'),
+        replacement: ';',
+      );
     }
   }
 
@@ -833,10 +1302,6 @@ class CodeLint {
 
   static final Map<String, Map<String, String>> _knownCache = <String, Map<String, String>>{};
 
-  /// 该语言的关键字 / 内置类型表 → 「小写 → 正式写法」。
-  ///
-  /// 同一个 lowercase 对应多个正式写法时（例如 C# 的 `Object`/`object`）直接丢弃，
-  /// 宁可不建议，也不给错的建议。
   static Map<String, String> _knownWords(String langLabel, String? langKey) {
     final cacheKey = '${langKey ?? ''}|$langLabel';
     final cached = _knownCache[cacheKey];
@@ -864,6 +1329,42 @@ class CodeLint {
 
   // ------------------------------ 工具 ------------------------------
 
+  static String? _fullWidthOf(int c) {
+    switch (c) {
+      case 0xFF1B:
+        return '；';
+      case 0xFF0C:
+        return '，';
+      case 0xFF08:
+        return '（';
+      case 0xFF09:
+        return '）';
+      case 0xFF1D:
+        return '＝';
+      case 0x201C:
+        return '“';
+      case 0x201D:
+        return '”';
+      case 0x2018:
+        return '‘';
+      case 0x2019:
+        return '’';
+      case 0xFF5B:
+        return '｛';
+      case 0xFF5D:
+        return '｝';
+      case 0xFF05:
+        return '％';
+      case 0xFF1A:
+        return '：';
+      case 0x3002:
+        return '。';
+      case 0xFF01:
+        return '！';
+    }
+    return null;
+  }
+
   static String _trimRight(String s) {
     var end = s.length;
     while (end > 0) {
@@ -877,6 +1378,18 @@ class CodeLint {
     return end == s.length ? s : s.substring(0, end);
   }
 
+  static int _offsetOfLine(String src, int line) {
+    if (line <= 0) return 0;
+    var count = 0;
+    for (var i = 0; i < src.length; i++) {
+      if (src.codeUnitAt(i) == _lf) {
+        count++;
+        if (count == line) return i + 1;
+      }
+    }
+    return src.length;
+  }
+
   static int _lineOfOffset(String src, int offset) {
     var line = 1;
     final limit = offset < src.length ? offset : src.length;
@@ -885,6 +1398,115 @@ class CodeLint {
     }
     return line;
   }
+
+  /// 非大括号语言的「块关键字配对」表。
+  ///
+  /// 只统计**行首**的开关键字（Ruby 的 `x = 1 if y` 这种修饰语不算），
+  /// 且同一行里既开又关（`if ...; fi`）的跳过，避免误报。
+  static final Map<String, List<_PairRule>> _pairRules = <String, List<_PairRule>>{
+    'bash': <_PairRule>[
+      _PairRule(RegExp(r'^\s*if\b'), RegExp(r'\bfi\b'), 'if … fi', 'if', 'fi'),
+      _PairRule(RegExp(r'^\s*case\b'), RegExp(r'\besac\b'), 'case … esac', 'case', 'esac'),
+      _PairRule(RegExp(r'^\s*(for|while|until|select)\b'), RegExp(r'\bdone\b'), '循环 … done', '循环', 'done'),
+    ],
+    'sh': <_PairRule>[
+      _PairRule(RegExp(r'^\s*if\b'), RegExp(r'\bfi\b'), 'if … fi', 'if', 'fi'),
+      _PairRule(RegExp(r'^\s*case\b'), RegExp(r'\besac\b'), 'case … esac', 'case', 'esac'),
+      _PairRule(RegExp(r'^\s*(for|while|until|select)\b'), RegExp(r'\bdone\b'), '循环 … done', '循环', 'done'),
+    ],
+    'zsh': <_PairRule>[
+      _PairRule(RegExp(r'^\s*if\b'), RegExp(r'\bfi\b'), 'if … fi', 'if', 'fi'),
+      _PairRule(RegExp(r'^\s*case\b'), RegExp(r'\besac\b'), 'case … esac', 'case', 'esac'),
+      _PairRule(RegExp(r'^\s*(for|while|until|select)\b'), RegExp(r'\bdone\b'), '循环 … done', '循环', 'done'),
+    ],
+    'lua': <_PairRule>[
+      _PairRule(RegExp(r'^\s*(if|for|while|function)\b'), RegExp(r'^\s*end\b'), 'block … end', 'block', 'end'),
+      _PairRule(RegExp(r'^\s*repeat\b'), RegExp(r'^\s*until\b'), 'repeat … until', 'repeat', 'until'),
+    ],
+    'ruby': <_PairRule>[
+      _PairRule(
+          RegExp(r'^\s*(if|unless|case|begin|while|until|for|def|class|module|do)\b'),
+          RegExp(r'^\s*end\b'),
+          'block … end',
+          'block',
+          'end'),
+    ],
+    'crystal': <_PairRule>[
+      _PairRule(RegExp(r'^\s*(if|unless|case|def|class|module|while|until|begin)\b'), RegExp(r'^\s*end\b'),
+          'block … end', 'block', 'end'),
+    ],
+    'elixir': <_PairRule>[
+      _PairRule(RegExp(r'^\s*(def|defp|defmodule|if|unless|case|cond|with|for|try|receive)\b'),
+          RegExp(r'^\s*end\b'), 'block … end', 'block', 'end'),
+    ],
+    'matlab': <_PairRule>[
+      _PairRule(RegExp(r'^\s*(if|for|parfor|while|switch|function|try)\b'), RegExp(r'^\s*end\b'), 'block … end',
+          'block', 'end'),
+    ],
+    'octave': <_PairRule>[
+      _PairRule(RegExp(r'^\s*(if|for|while|switch|function|try)\b'), RegExp(r'^\s*end\b'), 'block … end',
+          'block', 'end'),
+    ],
+    'pascal': <_PairRule>[
+      _PairRule(RegExp(r'^\s*begin\b', caseSensitive: false), RegExp(r'^\s*end\b', caseSensitive: false),
+          'begin … end', 'begin', 'end'),
+    ],
+    'delphi': <_PairRule>[
+      _PairRule(RegExp(r'^\s*begin\b', caseSensitive: false), RegExp(r'^\s*end\b', caseSensitive: false),
+          'begin … end', 'begin', 'end'),
+    ],
+    'vb': <_PairRule>[
+      _PairRule(
+          RegExp(r'^\s*(public |private |protected |friend |shared )*(sub|function|class|module|property)\b',
+              caseSensitive: false),
+          RegExp(r'^\s*end\s+(sub|function|class|module|property)\b', caseSensitive: false),
+          'Sub/Function … End Sub',
+          'Sub/Function',
+          'End Sub'),
+    ],
+    'vbnet': <_PairRule>[
+      _PairRule(
+          RegExp(r'^\s*(public |private |protected |friend |shared )*(sub|function|class|module|property)\b',
+              caseSensitive: false),
+          RegExp(r'^\s*end\s+(sub|function|class|module|property)\b', caseSensitive: false),
+          'Sub/Function … End Sub',
+          'Sub/Function',
+          'End Sub'),
+    ],
+    'fortran': <_PairRule>[
+      _PairRule(RegExp(r'^\s*do\b', caseSensitive: false), RegExp(r'^\s*end\s*do\b', caseSensitive: false),
+          'do … end do', 'do', 'end do'),
+      _PairRule(RegExp(r'^\s*if\b.*\bthen\b', caseSensitive: false), RegExp(r'^\s*end\s*if\b', caseSensitive: false),
+          'if … end if', 'if', 'end if'),
+      // 只认「单独一行的 end」，否则 end do / end if 会被重复计数
+      _PairRule(RegExp(r'^\s*(subroutine|function)\b', caseSensitive: false),
+          RegExp(r'^\s*end\s*$', caseSensitive: false), 'function … end', 'subroutine/function', 'end'),
+    ],
+    'ada': <_PairRule>[
+      _PairRule(RegExp(r'^\s*begin\b', caseSensitive: false), RegExp(r'^\s*end\b', caseSensitive: false),
+          'begin … end', 'begin', 'end'),
+    ],
+  };
+}
+
+class _PairRule {
+  final RegExp open;
+  final RegExp close;
+
+  /// 人类可读的名字，例如 `if … fi`。
+  final String name;
+  final String openName;
+  final String closeName;
+
+  const _PairRule(this.open, this.close, this.name, this.openName, this.closeName);
+}
+
+/// 双语消息。
+class _Ctx {
+  final bool chinese;
+  const _Ctx(this.chinese);
+
+  String t(String zh, String en) => chinese ? zh : en;
 }
 
 typedef _Add = void Function(
@@ -923,7 +1545,6 @@ class _LineIndex {
     return list;
   }
 
-  /// 0 开始的行号。
   int lineOf(int offset) {
     var lo = 0;
     var hi = starts.length - 1;

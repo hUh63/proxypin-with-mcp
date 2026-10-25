@@ -29,6 +29,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/ui/component/invisible_char_highlighter.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
+import 'package:proxypin/ui/component/lint_binding.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
@@ -57,6 +58,12 @@ class XmlViewerPage extends StatefulWidget {
 
 class _XmlViewerPageState extends State<XmlViewerPage> {
   late final CodeForgeController _controller;
+
+  late final LintBinding _lintBinding = LintBinding();
+
+  void _onLintChanged() {
+    _lintBinding.schedule(_controller, langLabel: 'XML', langKey: 'xml');
+  }
   late final FindController _find;
 
   /// 编辑器自动换行；CodeForge 的 lineWrap 是 late final，切换需要靠新的 key 重建组件，
@@ -105,6 +112,8 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
+    _controller.removeListener(_onLintChanged);
+    _lintBinding.dispose();
     _find.dispose();
     _controller.dispose();
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -247,6 +256,7 @@ class _XmlViewerPageState extends State<XmlViewerPage> {
             builder: (_, __) => _iconBtn(Icons.search, localizations.search, _toggleFind,
                 tint: _find.isActive ? color : null),
           ),
+          LintBadge(listenable: _lintBinding.report),
           _iconBtn(Icons.copy, localizations.copy, _copy),
           _iconBtn(Icons.file_download_outlined, localizations.download, _download),
           _invisibleMenu(),

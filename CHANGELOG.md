@@ -1,5 +1,49 @@
 # Changelog
 
+## v1.67.96 (2026-10-25) — 语法检查降误报 + 覆盖所有语言；控制台对任意语言可用
+
+### 降误报（逐条都有对应的合法写法豁免）
+- **Rust 生命周期**：`fn f<'a>(x: &'a str)` 的 `'a` 不再被当成未闭合字符串。
+- **C# 逐字字符串**：`@"C:\\temp"` 只认 `""` 转义，反斜杠不再触发「字符串未闭合」。
+- **JS 正则字面量**：`/https?:\/\//` 里的 `//` 不再被当行注释、把后半行吞掉。
+- **`if (auto p = f())`**：C++/C# 的初始化语句不再被误报成「是不是想写 ==」。
+- **SQL / VB / Pascal / Fortran / Ada** 大小写不敏感，不再给出「select 应该是 SELECT」这种建议。
+- **JSONC**（带注释或尾逗号）从 error 降为 info —— 配置文件本来就这么写。
+- **Makefile / YAML / ini / CSS** 各有专属规则，不再用「分号语言」的眼光去看它们。
+- **HTML / Vue / Svelte** 从「什么都不查」升级为标签配平检查（script/style 内容不参与、
+  void 元素不要求闭合）。
+
+### 覆盖所有语言
+- 新增**块关键字配对**检查（非大括号语言）：bash 的 `if/fi`、`case/esac`、`for/done`，
+  Lua 的 `block/end`、`repeat/until`，Ruby / Crystal / Elixir 的 `block/end`，
+  MATLAB / Octave 的 `block/end`，Pascal / Delphi 的 `begin/end`，
+  VB 的 `Sub/Function … End Sub`，Fortran 的 `do/end do`、`if/end if`，Ada 的 `begin/end`。
+  只统计行首关键字，同一行既开又关（`if …; fi`）自动跳过。
+- HTML 标签配平、Markdown 代码围栏配对、ini/properties 行格式 + 重复 key、
+  YAML 禁 tab 缩进、Makefile 命令行必须 tab、CSS 声明缺分号。
+- 新增**全角标点检查**：中文输入法混进代码的 `；，（）＝“”` 会标出来（字符串里的不算）。
+- 消息支持中英双语：`CodeLint.check(..., chinese: ...)`，非中文界面看到英文。
+
+### 控制台：任意语言都能用
+- 新增 `lib/utils/expr_eval.dart`：语言无关的表达式求值器（算术 / 比较 / 逻辑 / 位运算 /
+  三元 / 括号 / `abs` `min` `max` `round` `floor` `ceil` `sqrt` `pow` `len` `hex` `bin`
+  `upper` `lower` `trim` `int` `float` `str`）。C#/Java/Python/Go 的编辑器里也能算东西。
+- 面板顶部可在 `JavaScript`（真执行）与「表达式」之间切换；默认按当前语言自动选。
+- `$0` 表示当前选中文本；`↑历史` 按钮回填上一条命令。
+- 问题面板：按级别过滤（全部 / 仅错误 / 含警告）、上一处·下一处跳转、单条与全部修复。
+- 桌面端 `F8` / `Shift+F8` 在问题之间跳。
+
+### 语法检查铺开到更多页面
+- 抽出 `LintBinding` + `LintBadge` 公共组件，文本编辑器、JavaScript 页、JSON 查看器、
+  XML 查看器都挂上了同一套检查（行底色 + 行号栏色条 + 工具栏计数）。
+- 检查结果缓存在文档对象上，切换文档直接恢复标记，不再重跑。
+
+### 排查修掉
+- `LintBinding` 写装饰会 `notifyListeners`，页面的监听器又调度检查 —— 不给守卫就是
+  「每 650ms 自查一次」的死循环（现在用 `_applying` 拦住）。
+- JSONC 的注释剥离用 `replaceAll(RegExp, '$1')`，Dart 的 replaceAll 不支持分组引用，
+  结果是永远判不出 JSONC（改用 replaceAllMapped）。
+
 ## v1.67.95 (2026-10-25) — 编辑器语法检查 + 控制台，多语言按画面板分派
 
 ### 新增：语法检查（可纠错）

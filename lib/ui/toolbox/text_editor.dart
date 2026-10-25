@@ -190,7 +190,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool _showUnicode = false;
 
   // 语法检查 + 控制台。
-  LintReport? _lint;
+  /// 检查结果挂在文档上（切回来不用重跑）。
+  LintReport? get _lint => _doc?.lint;
+  int _issueCursor = -1;
   bool _lintChecking = false;
   Timer? _lintTimer;
   bool _lintEnabled = true;
@@ -259,7 +261,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     TextEditorPrefsStore.load();
     TextEditorPrefsStore.notifier.addListener(_onEditorPrefsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
-    if (Platforms.isDesktop() && widget.windowId != null) {
+    if (Platforms.isDesktop()) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
     }
   }
@@ -273,7 +275,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
-    if (Platforms.isDesktop() && widget.windowId != null) {
+    if (Platforms.isDesktop()) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     }
     super.dispose();
@@ -289,6 +291,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   bool _onKeyEvent(KeyEvent event) {
+    // F8 / Shift+F8：跳到下一处 / 上一处问题（桌面全平台）。
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f8) {
+      if ((_lint?.diagnostics.isNotEmpty ?? false)) {
+        _jumpIssue(!HardwareKeyboard.instance.isShiftPressed);
+        return true;
+      }
+      return false;
+    }
     if (widget.windowId == null) return false;
     if ((HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed) &&
         event.logicalKey == LogicalKeyboardKey.keyW) {
@@ -362,8 +372,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     doc.controller.addListener(_onControllerChanged);
     doc.undoController.addListener(_onUndoChanged);
     _restartFileWatch();
-    _lint = null;
-    _scheduleLint();
+    // 切回旧文档：直接恢复上次的诊断标记，避免「重新检查」造成的闪动。
+    final cached = doc.lint;
+    if (cached != null) {
+      _applyLintDecorations(cached);
+    } else {
+      _clearLintDecorations();
+      _scheduleLint();
+    }
   }
 
   // ---------- 外部改动 / 删除检测 ----------
@@ -454,22 +470,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (doc == null || !mounted || _inLint) return;
     final text = doc.text;
     if (text.length > CodeLint.maxCheckLength) {
-      setState(() {
-        _lint = null;
-        _lintChecking = false;
-      });
+      doc.lint = null;
+      setState(() => _lintChecking = false);
       _clearLintDecorations();
       return;
     }
     _inLint = true;
     // 纯 CPU 线性扫描，2MB 以内几十毫秒，同步跑即可（省掉跨 isolate 拷贝整份文本）。
-    final report = CodeLint.check(text, langLabel: doc.langLabel, langKey: _lang.key);
+    final report = CodeLint.check(
+      text,
+      langLabel: doc.langLabel,
+      langKey: _lang.key,
+      chinese: Localizations.localeOf(context).languageCode.startsWith('zh'),
+    );
     _inLint = false;
     if (!mounted) return;
-    setState(() {
-      _lint = report;
-      _lintChecking = false;
-    });
+    doc.lint = report;
+    _issueCursor = -1;
+    setState(() => _lintChecking = false);
     // 换完装饰会 notifyListeners，必须放在 setState 之后、且不能再次触发检查。
     _applyLintDecorations(report);
   }
@@ -537,6 +555,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.notifyListeners();
   }
 
+  /// 当前选区文本（控制台里的 `$0`）。
+  String _selectedText() {
+    final controller = _doc?.controller;
+    if (controller == null) return '';
+    final selection = controller.selection;
+    final text = controller.text;
+    if (selection.start < 0 || selection.end > text.length || selection.start == selection.end) {
+      return '';
+    }
+    return text.substring(selection.start, selection.end);
+  }
+
+  /// F8 / Shift+F8：在问题之间跳。
+  void _jumpIssue(bool forward) {
+    final list = _lint?.diagnostics;
+    if (list == null || list.isEmpty) return;
+    var next = _issueCursor + (forward ? 1 : -1);
+    if (next < 0) next = list.length - 1;
+    if (next >= list.length) next = 0;
+    _issueCursor = next;
+    _jumpToDiagnostic(list[next]);
+  }
+
   void _jumpToDiagnostic(LintDiagnostic d) {
     final controller = _doc?.controller;
     if (controller == null) return;
@@ -571,7 +612,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     setState(() => _lintEnabled = value);
     if (!value) {
       _lintTimer?.cancel();
-      setState(() => _lint = null);
+      _doc?.lint = null;
       _clearLintDecorations();
     } else {
       // 手动打开开关时立刻检查一次（流畅模式下自动检查是关掉的，
@@ -1591,6 +1632,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               langKey: _lang.key,
               jsBackend: _jsBackend,
               readDocument: () => doc.text,
+              readSelection: _selectedText,
               onJump: _jumpToDiagnostic,
               onFix: _fixDiagnostic,
               onFixAll: (_lint?.fixableCount ?? 0) > 0 ? _fixAllDiagnostics : null,
@@ -1773,7 +1815,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             onChanged: (v) {
               if (v == null || v == _lang || _doc == null) return;
               setState(() => _doc!.langLabel = v.label);
-              _lint = null;
+              _doc!.lint = null;
               _scheduleLint();
             },
           ),

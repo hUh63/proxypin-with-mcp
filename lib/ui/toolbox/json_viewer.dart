@@ -32,6 +32,7 @@ import 'package:proxypin/ui/component/json/json_viewer.dart' as proxy_json;
 import 'package:proxypin/ui/component/json/theme.dart';
 import 'package:proxypin/ui/component/invisible_char_highlighter.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
+import 'package:proxypin/ui/component/lint_binding.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
@@ -55,6 +56,12 @@ class JsonViewerPage extends StatefulWidget {
 
 class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProviderStateMixin {
   late final CodeForgeController _controller;
+
+  late final LintBinding _lintBinding = LintBinding();
+
+  void _onLintChanged() {
+    _lintBinding.schedule(_controller, langLabel: 'JSON', langKey: 'json');
+  }
   late final FindController _find;
   late final TabController _tabs;
 
@@ -101,6 +108,8 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
     SmartCompletion.load();
     SmartCompletion.enabled.addListener(_onSmartChanged);
     _applySmart();
+    _controller.addListener(_onLintChanged);
+    _lintBinding.schedule(_controller, langLabel: 'JSON', langKey: 'json');
     _tabs = TabController(length: 2, vsync: this);
 
     if (Platforms.isDesktop() && widget.windowId != null) {
@@ -116,6 +125,8 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
+    _controller.removeListener(_onLintChanged);
+    _lintBinding.dispose();
     _find.dispose();
     _controller.dispose();
     _tabs.dispose();
@@ -327,6 +338,7 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
             builder: (_, __) => _iconBtn(Icons.search, localizations.search, _toggleFind,
                 tint: _find.isActive ? color : null),
           ),
+          LintBadge(listenable: _lintBinding.report),
           _iconBtn(Icons.copy, localizations.copy, _copy),
           _iconBtn(Icons.delete_outline, localizations.clear, _clear),
           _iconBtn(Icons.file_download_outlined, localizations.download, _download),

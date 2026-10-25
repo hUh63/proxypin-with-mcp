@@ -4555,5 +4555,14 @@
   "editorConsoleBackend": "运行后端",
   "editorConsoleRun": "执行",
   "editorConsoleRunDocument": "运行整篇",
-  "editorConsoleError": "执行出错"
+  "editorConsoleError": "执行出错",
+  "editorLintPrev": "上一处",
+  "editorLintNext": "下一处",
+  "editorLintFilterAll": "全部",
+  "editorLintFilterErrors": "仅错误",
+  "editorLintFilterWarnings": "含警告",
+  "editorLintFilteredEmpty": "该级别下没有问题",
+  "editorConsoleExpr": "表达式",
+  "editorConsoleExprHint": "输入表达式（如 1+2*3、max(1,5)、\"a\"+\"b\"）。$0 表示当前选中文本",
+  "editorConsoleHistory": "历史"
 }

@@ -10,6 +10,7 @@ import 'package:re_highlight/styles/monokai-sublime.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
+import 'package:proxypin/ui/component/lint_binding.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:re_highlight/languages/javascript.dart';
 import 'package:proxypin/network/components/js/file.dart';
@@ -35,6 +36,8 @@ class _JavaScriptState extends State<JavaScript> {
 
   late CodeForgeController code;
 
+  late final LintBinding _lintBinding = LintBinding();
+
   List<Text> outLines = [];
 
   ScrollController outputScrollController = ScrollController();
@@ -55,10 +58,18 @@ class _JavaScriptState extends State<JavaScript> {
     flutterJs?.enableFetch2(enabledProxy: true);
 
     code = CodeForgeController()..text = 'console.log("Hello, World!")';
+    code.addListener(_onCodeChanged);
+    _lintBinding.schedule(code, langLabel: 'JavaScript', langKey: 'javascript');
+  }
+
+  void _onCodeChanged() {
+    _lintBinding.schedule(code, langLabel: 'JavaScript', langKey: 'javascript');
   }
 
   @override
   void dispose() {
+    code.removeListener(_onCodeChanged);
+    _lintBinding.dispose();
     code.dispose();
     outputScrollController.dispose();
     if (resetEnvironment) {
@@ -98,6 +109,7 @@ class _JavaScriptState extends State<JavaScript> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  LintBadge(listenable: _lintBinding.report),
                   //选择文件
                   ElevatedButton.icon(
                       onPressed: () async {

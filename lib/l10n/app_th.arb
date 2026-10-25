@@ -2754,5 +2754,14 @@
   "editorConsoleBackend": "Runtime",
   "editorConsoleRun": "Run",
   "editorConsoleRunDocument": "Run document",
-  "editorConsoleError": "Execution failed"
+  "editorConsoleError": "Execution failed",
+  "editorLintPrev": "Previous problem",
+  "editorLintNext": "Next problem",
+  "editorLintFilterAll": "All",
+  "editorLintFilterErrors": "Errors",
+  "editorLintFilterWarnings": "Warnings",
+  "editorLintFilteredEmpty": "Nothing at this level",
+  "editorConsoleExpr": "Expression",
+  "editorConsoleExprHint": "Type an expression (1+2*3, max(1,5), \"a\"+\"b\"). $0 = current selection",
+  "editorConsoleHistory": "History"
 }

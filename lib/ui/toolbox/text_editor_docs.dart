@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:code_forge/code_forge.dart';
+import 'package:proxypin/utils/code_lint.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:proxypin/network/util/logger.dart';
 
@@ -43,6 +44,9 @@ class EditorDocument {
 
   /// 打开文件时的原始换行符（仅用于展示；编辑器内部永远是 \n）
   String newline = '\n';
+
+  /// 最近一次语法检查结果（切换文档时直接恢复标记，不用重跑）。
+  LintReport? lint;
 
   EditorDocument({
     required this.id,
