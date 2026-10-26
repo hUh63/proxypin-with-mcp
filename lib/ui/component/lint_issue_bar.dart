@@ -69,6 +69,10 @@ class _LintIssueBarState extends State<LintIssueBar> {
   /// 用户主动收起。
   bool _collapsed = false;
 
+  /// 被关掉的严重程度。点表头的数量徽标切换，和 VS「问题」面板的筛选一个意思：
+  /// 只关心报错时把警告/提示关掉，列表就干净了。
+  final Set<LintSeverity> _muted = <LintSeverity>{};
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -80,8 +84,10 @@ class _LintIssueBarState extends State<LintIssueBar> {
     final errors = all.where((e) => e.severity == LintSeverity.error).length;
     final warnings = all.where((e) => e.severity == LintSeverity.warning).length;
     final infos = all.length - errors - warnings;
-    final rows = _collapsed ? const <LintDiagnostic>[] : all.take(widget.maxRows).toList();
-    final hidden = all.length - rows.length;
+    final visible =
+        _muted.isEmpty ? all : all.where((d) => !_muted.contains(d.severity)).toList(growable: false);
+    final rows = _collapsed ? const <LintDiagnostic>[] : visible.take(widget.maxRows).toList();
+    final hidden = visible.length - rows.length;
 
     return Container(
       decoration: BoxDecoration(
@@ -95,14 +101,14 @@ class _LintIssueBarState extends State<LintIssueBar> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 3, 6, 3),
             child: Row(children: [
-              if (errors > 0) _countBadge(Colors.red, errors),
+              if (errors > 0) _countBadge(Colors.red, errors, LintSeverity.error),
               if (warnings > 0) ...[
                 if (errors > 0) const SizedBox(width: 6),
-                _countBadge(Colors.orange, warnings),
+                _countBadge(Colors.orange, warnings, LintSeverity.warning),
               ],
               if (infos > 0) ...[
                 if (errors > 0 || warnings > 0) const SizedBox(width: 6),
-                _countBadge(Colors.blueGrey, infos),
+                _countBadge(Colors.blueGrey, infos, LintSeverity.info),
               ],
               const SizedBox(width: 8),
               Expanded(
@@ -156,12 +162,31 @@ class _LintIssueBarState extends State<LintIssueBar> {
     );
   }
 
-  Widget _countBadge(Color color, int count) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.circle, size: 8, color: color),
-      const SizedBox(width: 3),
-      Text('$count', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-    ]);
+  /// 数量徽标：点一下就把这个级别从列表里关掉（再点开）。
+  Widget _countBadge(Color color, int count, LintSeverity level) {
+    final off = _muted.contains(level);
+    return InkWell(
+      onTap: () => setState(() {
+        if (!_muted.remove(level)) _muted.add(level);
+      }),
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.circle, size: 8, color: off ? color.withValues(alpha: 0.3) : color),
+          const SizedBox(width: 3),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: off ? color.withValues(alpha: 0.45) : color,
+              decoration: off ? TextDecoration.lineThrough : null,
+            ),
+          ),
+        ]),
+      ),
+    );
   }
 
   Widget _row(ThemeData theme, LintDiagnostic d) {

@@ -499,6 +499,8 @@ class CodeLint {
       'unclosed-bracket', 'unclosed-string', 'markup', 'json-header', 'jsonc', //
       'tag-unclosed', 'tag-unmatched', 'tag-mismatch', 'extra-bracket',
       'block-unclosed', 'fence-unclosed',
+      // 未声明名字依赖「全文出现次数」，增量只看得到尾部片段，必然误报。
+      'unknown-identifier',
     };
     // 回退到**行首**再做增量。
     //
@@ -906,6 +908,9 @@ class CodeLint {
 
     if (p.semicolons) _checkSemicolons(src, String.fromCharCodes(units), lineTops, lineDeltas, ctx, add);
     if (p.caseSensitive) _checkCase(src, idents, langLabel, langKey, ctx, add);
+    // 语义类的提示只在「大括号 + 分号」语言上开：Python 这类靠缩进的语言，
+    // 单行一个词本来就可能是合法的表达式，误报风险高。
+    if (p.semicolons) _checkUnknownIdentifiers(src, idents, langLabel, langKey, ctx, add);
     if (p.indented) _checkIndent(src, p.blockIndent, ctx, add);
     if (p.semicolons || p.slashComment) _checkAssignmentCondition(src, langLabel, ctx, add);
     if (p.cssDecls) _checkCssDecls(src, ctx, add);
@@ -956,6 +961,10 @@ class CodeLint {
 
   // ------------------------------ 分号 ------------------------------
 
+  /// 整行只是一个名字链：`cons`、`Console.W`、`System.Console.WriteLine`。
+  static final RegExp _bareNameChain =
+      RegExp(r'^[A-Za-z_$][\w$]*(\s*\.\s*[A-Za-z_$][\w$]*)*$');
+
   static void _checkSemicolons(
     String src,
     String masked,
@@ -1004,6 +1013,12 @@ class CodeLint {
       if (skip) continue;
       // 单独的 `}` / `};` 之后的行首，或者行首是 `label:` 形式
       if (RegExp(r'^[\w$]+\s*:\s*$').hasMatch(head)) continue;
+
+      // 整行只是一个「名字链」（`cons` / `Console.W` / `System.Console`）：
+      // 用户还在拼名字，不是「写完语句忘了分号」。真实编译器这时也会顺带报一条
+      // 「; expected」，但对编辑器来说这是纯噪音 —— 真正该说的是「这个名字不存在
+      // 或者还没敲完」，见 _checkUnknownIdentifiers。
+      if (_bareNameChain.hasMatch(head.trim())) continue;
 
       final lastChar = trimmedRight[trimmedRight.length - 1];
       if (';{}),]:'.contains(lastChar)) continue;
@@ -1095,6 +1110,133 @@ class CodeLint {
         replacement: canonical,
       );
     }
+  }
+
+  // ------------------------------ 未声明的名字 / 拼写 ------------------------------
+
+  /// 整行只写了一个词时（`cons`），给出「这个名字不存在」而不是「缺分号」。
+  ///
+  /// 没有类型系统就不做真的语义分析，这里只处理最确定的一种情况：
+  /// **本文件里只出现一次、且独占一行**的词 —— 它要么还没敲完，要么敲错了。
+  /// 命中「大小写不敏感前缀」或「只差一个字符」时给出更具体的猜测。
+  static void _checkUnknownIdentifiers(
+    String src,
+    List<_Ident> idents,
+    String langLabel,
+    String? langKey,
+    _Ctx ctx,
+    _Add add,
+  ) {
+    if (idents.isEmpty) return;
+    final lines = src.split('\n');
+    final lineIndex = _LineIndex(src);
+    final counts = <String, int>{};
+    for (final id in idents) {
+      counts[id.text] = (counts[id.text] ?? 0) + 1;
+    }
+
+    // 候选池：本语言的关键字 / 标准库名 + 本文件里用过两次以上的词。
+    final pool = <String, String>{};
+    for (final w in CodeKeywords.forLanguage(langLabel, langKey ?? '')) {
+      if (w.length < 2 || !_isIdStart(w.codeUnitAt(0))) continue;
+      pool.putIfAbsent(w.toLowerCase(), () => w);
+    }
+    final docWords = <String, String>{};
+    for (final e in counts.entries) {
+      if (e.value < 2) continue;
+      final lower = e.key.toLowerCase();
+      final prev = docWords[lower];
+      if (prev == null || (counts[prev] ?? 0) < e.value) docWords[lower] = e.key;
+    }
+    // 文件里自己的写法优先（用户显然在用它），关键字表只用来兜底。
+    pool.addAll(docWords);
+
+    var emitted = 0;
+    final seen = <String>{};
+    for (final id in idents) {
+      if (emitted >= 6) break;
+      final text = id.text;
+      if (text.length < 3) continue;
+      if (!seen.add(text)) continue;
+      if ((counts[text] ?? 0) > 1) continue; // 出现多次：当作已声明过
+      final lineNo = lineIndex.lineOf(id.start);
+      final lineText = lineNo < lines.length ? lines[lineNo].trim() : '';
+      if (lineText != text) continue; // 只处理独占一行的裸词
+      final lower = text.toLowerCase();
+      // 本身就是已知写法、或者只是大小写不对：都交给 case-mismatch，别重复报。
+      if (pool.containsKey(lower)) continue;
+
+      String? near;
+      var nearScore = 0;
+      for (final e in pool.entries) {
+        final cand = e.value;
+        var score = 0;
+        if (lower.length >= 3 && e.key.startsWith(lower)) {
+          // 大写开头（类型 / 命名空间 / 静态类）更像「还没敲完的类型名」。
+          score = _isUpperStart(cand) ? 4 : 2;
+        } else if (lower.length >= 4 && _withinOneEdit(lower, e.key)) {
+          score = 1;
+        }
+        if (score == 0) continue;
+        if (score > nearScore ||
+            (score == nearScore && cand.length < (near?.length ?? 1 << 20))) {
+          near = cand;
+          nearScore = score;
+        }
+      }
+
+      emitted++;
+      add(
+        id.start,
+        text.length,
+        LintSeverity.info,
+        'unknown-identifier',
+        near == null
+            ? ctx.t('「$text」这个名字没有声明过，可能还没写完或者敲错了',
+                '"$text" is not declared - incomplete or misspelled')
+            : ctx.t('「$text」这个名字没有声明过，是不是想写「$near」？',
+                '"$text" is not declared - did you mean "$near"?'),
+        suggestion: near == null
+            ? null
+            : ctx.t('改成 $near（如果确实是它）', 'change to $near if that is what you meant'),
+      );
+    }
+  }
+
+  static bool _isUpperStart(String s) =>
+      s.isNotEmpty && s.codeUnitAt(0) >= 0x41 && s.codeUnitAt(0) <= 0x5a;
+
+  /// 两个词是否只差一个字符（插入 / 删除 / 替换），用于「打错字」的猜测。
+  static bool _withinOneEdit(String a, String b) {
+    final la = a.length;
+    final lb = b.length;
+    if ((la - lb).abs() > 1) return false;
+    if (la == lb) {
+      var diff = 0;
+      for (var i = 0; i < la; i++) {
+        if (a.codeUnitAt(i) != b.codeUnitAt(i)) {
+          diff++;
+          if (diff > 1) return false;
+        }
+      }
+      return diff == 1;
+    }
+    final longer = la > lb ? a : b;
+    final shorter = la > lb ? b : a;
+    var i = 0;
+    var j = 0;
+    var skipped = false;
+    while (i < longer.length && j < shorter.length) {
+      if (longer.codeUnitAt(i) == shorter.codeUnitAt(j)) {
+        i++;
+        j++;
+        continue;
+      }
+      if (skipped) return false;
+      skipped = true;
+      i++;
+    }
+    return true;
   }
 
   // ------------------------------ 缩进 ------------------------------
@@ -1725,6 +1867,7 @@ class LintRules {
     LintRule('bracket-mismatch', '括号类型不匹配', 'Mismatched bracket'),
     LintRule('missing-semicolon', '缺少分号', 'Missing semicolon'),
     LintRule('case-mismatch', '大小写可能写错', 'Possible casing mistake'),
+    LintRule('unknown-identifier', '名字没有声明过（拼写 / 没写完）', 'Undeclared identifier (spelling)'),
     LintRule('mixed-indent', '缩进混用空格与 tab', 'Mixed spaces and tabs'),
     LintRule('block-indent', '缺少一级缩进', 'Missing indentation'),
     LintRule('assign-in-condition', '条件里用了赋值', 'Assignment inside condition'),
