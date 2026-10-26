@@ -44,6 +44,9 @@ class LintIssueBar extends StatefulWidget {
   /// 点「还有 N 条」→ 打开完整面板。
   final VoidCallback? onShowAll;
 
+  /// 一键修复全部可修项（null = 没有可修项）。
+  final VoidCallback? onFixAll;
+
   /// 同时最多显示几行（超出的折叠）。
   final int maxRows;
 
@@ -53,6 +56,7 @@ class LintIssueBar extends StatefulWidget {
     required this.onJump,
     required this.onFix,
     this.onShowAll,
+    this.onFixAll,
     this.chinese = true,
     this.maxRows = 3,
   });
@@ -109,6 +113,17 @@ class _LintIssueBarState extends State<LintIssueBar> {
                   style: TextStyle(fontSize: 10.5, color: theme.textTheme.bodySmall?.color),
                 ),
               ),
+              if (widget.onFixAll != null)
+                TextButton(
+                  onPressed: widget.onFixAll,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(0, 22),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(localizations.editorFixAll, style: const TextStyle(fontSize: 11)),
+                ),
               Icon(_collapsed ? Icons.expand_less : Icons.expand_more,
                   size: 16, color: theme.textTheme.bodySmall?.color),
             ]),

@@ -2793,5 +2793,6 @@
   "editorPreviewHint": "Sobre a pré-visualização",
   "editorPreviewHintBody": "Renderizado localmente sem motor de navegador: scripts não são executados.",
   "filePreview": "Pré-visualizar arquivo",
-  "filePreviewTip": "Pré-visualize imagens, GIF, áudio, vídeo, zip e texto"
+  "filePreviewTip": "Pré-visualize imagens, GIF, áudio, vídeo, zip e texto",
+  "editorFixAll": "Corrigir tudo"
 }

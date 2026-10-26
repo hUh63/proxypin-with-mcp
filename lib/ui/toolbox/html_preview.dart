@@ -95,18 +95,41 @@ class HtmlPreviewPage extends StatelessWidget {
           ),
         ],
       ),
-      body: Container(
-        color: _isMarkdown ? theme.colorScheme.surface : Colors.white,
-        child: _isMarkdown
-            ? MarkdownLiteView(content: content)
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: HtmlWidget(
-                  _wrap(),
-                  textStyle: const TextStyle(fontSize: 14, height: 1.5),
-                  onTapUrl: (_) async => true,
-                ),
-              ),
+      // 渲染 / 源码 双视图：改一行就能对照看效果（不用来回切页面）
+      body: DefaultTabController(
+        length: _isMarkdown ? 1 : 2,
+        child: Column(children: [
+          if (!_isMarkdown)
+            const TabBar(
+              labelStyle: TextStyle(fontSize: 12.5),
+              tabs: [Tab(height: 34, text: 'Render'), Tab(height: 34, text: 'Source')],
+            ),
+          Expanded(
+            child: _isMarkdown
+                ? Container(color: theme.colorScheme.surface, child: MarkdownLiteView(content: content))
+                : TabBarView(children: [
+                    Container(
+                      color: Colors.white,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(12),
+                        child: HtmlWidget(
+                          _wrap(),
+                          textStyle: const TextStyle(fontSize: 14, height: 1.5),
+                          onTapUrl: (_) async => true,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      color: theme.colorScheme.surfaceContainerLowest,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(12),
+                        child: SelectableText(content,
+                            style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace', height: 1.45)),
+                      ),
+                    ),
+                  ]),
+          ),
+        ]),
       ),
     );
   }

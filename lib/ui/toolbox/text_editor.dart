@@ -1799,6 +1799,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               ),
         body: Column(children: [
           _toolbar(),
+          _docTabs(),
           const Divider(height: 1, thickness: 0.3),
           Expanded(
             child: Listener(
@@ -1818,6 +1819,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               onJump: _jumpToDiagnostic,
               onFix: _fixDiagnostic,
               onShowAll: () => _openConsole(EditorConsoleTab.problems),
+              onFixAll: (_lint?.fixableCount ?? 0) > 0 ? _fixAllDiagnostics : null,
             ),
           if (_prefs.shortcutBar) _snippetBar(),
           if (_consoleOpen && doc != null)
@@ -1861,6 +1863,62 @@ class _TextEditorPageState extends State<TextEditorPage> {
       controller: doc.controller,
       language: _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label,
       indent: _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}',
+    );
+  }
+
+  /// 顶部文档标签条（VS Code 式）：多文档时直接点切，不用开抽屉。
+  Widget _docTabs() {
+    final docs = _docs.docs;
+    if (docs.length < 2) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Container(
+      height: 29,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        border: Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: docs.length,
+        itemBuilder: (context, i) {
+          final doc = docs[i];
+          final active = doc.id == _doc?.id;
+          return InkWell(
+            onTap: () {
+              if (!active) _activate(doc);
+            },
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(10, 0, 4, 0),
+              margin: const EdgeInsets.only(right: 1),
+              decoration: BoxDecoration(
+                color: active ? theme.colorScheme.surface : null,
+                border: Border(
+                  top: BorderSide(
+                    color: active ? theme.colorScheme.primary : Colors.transparent,
+                    width: 1.6,
+                  ),
+                ),
+              ),
+              child: Row(children: [
+                Text(
+                  '${doc.name}${active && _dirty ? ' •' : ''}',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: active ? FontWeight.w500 : FontWeight.w400,
+                    color: active ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => _closeDoc(doc),
+                  child: Icon(Icons.close,
+                      size: 12, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+                ),
+              ]),
+            ),
+          );
+        },
+      ),
     );
   }
 

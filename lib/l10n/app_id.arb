@@ -2792,5 +2792,6 @@
   "editorPreviewHint": "Tentang pratinjau",
   "editorPreviewHintBody": "Dirender secara lokal tanpa mesin browser: skrip tidak dijalankan.",
   "filePreview": "Pratinjau file",
-  "filePreviewTip": "Pratinjau gambar, GIF, audio, video, zip, dan teks"
+  "filePreviewTip": "Pratinjau gambar, GIF, audio, video, zip, dan teks",
+  "editorFixAll": "Perbaiki semua"
 }

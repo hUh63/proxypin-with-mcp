@@ -2792,5 +2792,6 @@
   "editorPreviewHint": "Acerca de la vista previa",
   "editorPreviewHintBody": "Se renderiza localmente sin motor de navegador: los scripts no se ejecutan.",
   "filePreview": "Vista previa de archivo",
-  "filePreviewTip": "Previsualiza imágenes, GIF, audio, vídeo, zip y texto"
+  "filePreviewTip": "Previsualiza imágenes, GIF, audio, vídeo, zip y texto",
+  "editorFixAll": "Corregir todo"
 }

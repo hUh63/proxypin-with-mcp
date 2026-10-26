@@ -2792,5 +2792,6 @@
   "editorPreviewHint": "Giới thiệu về xem trước",
   "editorPreviewHintBody": "Kết xuất cục bộ, không dùng trình duyệt: script không chạy",
   "filePreview": "Xem trước tệp",
-  "filePreviewTip": "Xem trước ảnh, GIF, âm thanh, video, zip và văn bản"
+  "filePreviewTip": "Xem trước ảnh, GIF, âm thanh, video, zip và văn bản",
+  "editorFixAll": "Sửa tất cả"
 }
