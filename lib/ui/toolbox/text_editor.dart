@@ -1854,48 +1854,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 底部状态栏：光标位置、选中字符数、缩进、语言。
   ///
-  /// 用 AnimatedBuilder 只听 controller：光标一动就更新，但不会重建整个页面
-  /// （每条输入都 setState 整页在移动端很贵）。
+  /// 状态栏自己监听 controller（而不是整页 setState）：光标一动就更新，
+  /// 但不会重建编辑器本体——移动端每次按键重建整页是很贵的。
   Widget _statusBar(EditorDocument doc) {
-    final theme = Theme.of(context);
-    final controller = doc.controller;
-    final indent = _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}';
-    final lang = _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label;
-    final color = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.85);
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        final text = controller.text;
-        final offset = controller.selection.baseOffset;
-        final safe = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
-        final line = _lineOfOffset(text, safe) + 1;
-        final column = safe - _offsetOfLine(text, line - 1) + 1;
-        final selection = controller.selection;
-        final selected = selection.isValid && !selection.isCollapsed
-            ? (selection.end - selection.start).abs()
-            : 0;
-        return Container(
-          height: 21,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.06),
-            border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
-          ),
-          child: Row(children: [
-            Text('L$line:$column', style: TextStyle(fontSize: 10.5, color: color)),
-            if (selected > 0) ...[
-              const SizedBox(width: 6),
-              Text('($selected)', style: TextStyle(fontSize: 10.5, color: theme.colorScheme.primary)),
-            ],
-            const Spacer(),
-            Text('${text.length}', style: TextStyle(fontSize: 10.5, color: color)),
-            const SizedBox(width: 10),
-            Text(indent, style: TextStyle(fontSize: 10.5, color: color)),
-            const SizedBox(width: 10),
-            Text(lang, style: TextStyle(fontSize: 10.5, color: color)),
-          ]),
-        );
-      },
+    return _EditorStatusBar(
+      controller: doc.controller,
+      language: _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label,
+      indent: _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}',
     );
   }
 
@@ -2708,6 +2673,103 @@ class _SwipeTileState extends State<_SwipeTile> with SingleTickerProviderStateMi
           ),
         ]);
       },
+    );
+  }
+}
+
+/// 编辑器底部状态栏（行:列 / 选中 / 字符数 / 缩进 / 语言）。
+class _EditorStatusBar extends StatefulWidget {
+  final CodeForgeController controller;
+  final String language;
+  final String indent;
+
+  const _EditorStatusBar({required this.controller, required this.language, required this.indent});
+
+  @override
+  State<_EditorStatusBar> createState() => _EditorStatusBarState();
+}
+
+class _EditorStatusBarState extends State<_EditorStatusBar> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _EditorStatusBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onChanged);
+      widget.controller.addListener(_onChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  static int _lineOf(String text, int offset) {
+    var line = 0;
+    final limit = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
+    for (var i = 0; i < limit; i++) {
+      if (text.codeUnitAt(i) == 10) line++;
+    }
+    return line;
+  }
+
+  static int _lineStart(String text, int line) {
+    if (line <= 0) return 0;
+    var seen = 0;
+    for (var i = 0; i < text.length; i++) {
+      if (text.codeUnitAt(i) == 10) {
+        seen++;
+        if (seen == line) return i + 1;
+      }
+    }
+    return text.length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final text = widget.controller.text;
+    final offset = widget.controller.selection.baseOffset;
+    final safe = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
+    final line = _lineOf(text, safe);
+    final column = safe - _lineStart(text, line) + 1;
+    final selection = widget.controller.selection;
+    final selected = selection.isValid && !selection.isCollapsed
+        ? (selection.end - selection.start).abs()
+        : 0;
+    final color = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.85);
+    final style = TextStyle(fontSize: 10.5, color: color);
+    return Container(
+      height: 21,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: Row(children: [
+        Text('L${line + 1}:$column', style: style),
+        if (selected > 0) ...[
+          const SizedBox(width: 6),
+          Text('($selected)', style: TextStyle(fontSize: 10.5, color: theme.colorScheme.primary)),
+        ],
+        const Spacer(),
+        Text('${text.length}', style: style),
+        const SizedBox(width: 10),
+        Text(widget.indent, style: style),
+        const SizedBox(width: 10),
+        Text(widget.language, style: style),
+      ]),
     );
   }
 }

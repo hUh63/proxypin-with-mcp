@@ -299,12 +299,13 @@ class HttpBodyState extends State<HttpBodyWidget> {
     final body = message?.body;
     if (message == null || body == null || body.isEmpty) return;
     var name = message is HttpResponse ? 'response' : 'request';
-    final disposition = message.headers.value('content-disposition');
+    final disposition = message.headers.get('content-disposition');
     if (disposition != null) {
-      final match = RegExp(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?').firstMatch(disposition);
+      // filename=xxx / filename*=UTF-8''xxx 都取出来（RFC 6266）
+      final match = RegExp("filename\\*?=(?:UTF-8'')?\"?([^\";]+)\"?").firstMatch(disposition);
       if (match != null) name = match.group(1)!.trim();
     }
-    final type = message.headers.value('content-type');
+    final type = message.headers.get('content-type');
     if (!mounted) return;
     await FilePreviewPage.showBytes(context, body, fileName: name, contentType: type);
   }
