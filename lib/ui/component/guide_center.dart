@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/utils/net_image.dart';
 
 /// 内置文档中心：离线查看全部功能使用教程、规范文档与开发文档。
 ///
@@ -326,42 +327,34 @@ class _MarkdownLiteViewState extends State<MarkdownLiteView> {
   }
 
   /// 渲染一张文档图片；加载失败时把链接显示出来（而不是整块空白）。
+  ///
+  /// 用 [NetImage] 而不是 `Image.network`：后者走带系统代理的 HttpClient，
+  /// 而这个 App 自己就是代理——开着 VPN 时图片请求会绕进自己的代理链导致全挂。
   Widget _imageWidget(ThemeData theme, String url) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 2),
       child: GestureDetector(
         onTap: () => _previewImage(url),
-        child: ClipRRect(
+        child: NetImage(
+          url,
+          fit: BoxFit.contain,
           borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            url,
-            fit: BoxFit.contain,
-            loadingBuilder: (c, child, progress) {
-              if (progress == null) return child;
-              return Container(
-                height: 120,
-                alignment: Alignment.center,
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                child: const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-              );
-            },
-            errorBuilder: (c, error, stack) => Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.dividerColor),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(children: [
-                Icon(Icons.broken_image_outlined, size: 16, color: theme.colorScheme.outline),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(url,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: theme.colorScheme.outline)),
-                ),
-              ]),
+          errorBuilder: (context, link) => Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.dividerColor),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Row(children: [
+              Icon(Icons.broken_image_outlined, size: 16, color: theme.colorScheme.outline),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(link,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: theme.colorScheme.outline)),
+              ),
+            ]),
           ),
         ),
       ),
@@ -379,13 +372,19 @@ class _MarkdownLiteViewState extends State<MarkdownLiteView> {
           InteractiveViewer(
             maxScale: 5,
             child: Center(
-              child: Image.network(
+              child: NetImage(
                 url,
                 fit: BoxFit.contain,
-                errorBuilder: (c, e, s) => Padding(
+                errorBuilder: (c, link) => Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text(AppLocalizations.of(context)!.guideImageFailed,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(AppLocalizations.of(context)!.guideImageFailed,
+                        style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    SelectableText(link,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                  ]),
                 ),
               ),
             ),

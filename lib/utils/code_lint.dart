@@ -360,12 +360,29 @@ class CodeLint {
   /// 检查整份文本。返回按位置排序的诊断。
   ///
   /// [chinese] 决定消息语言：中文用户看中文，其余看英文。
+  /// 「这一行还没写完」类的诊断：光标就停在这行时不该报。
+  ///
+  /// 真实 IDE 在补全阶段不会因为你刚打了半个词就喊「缺分号」——编译器只在
+  /// 整个语句/表达式结束时才判断完整性。这里给编辑器一个「编辑中行」的口子。
+  static const Set<String> incompleteCodes = <String>{
+    'missing-semicolon',
+    'unclosed-string',
+    'unclosed-bracket',
+    'extra-bracket',
+    'block-unclosed',
+    'fence-unclosed',
+    'tag-unclosed',
+    'markup',
+    'json-header',
+  };
+
   static LintReport check(
     String source, {
     required String langLabel,
     String? langKey,
     bool chinese = true,
     Set<String> disabledRules = const <String>{},
+    int? editingLine,
   }) {
     final profile = profileOf(langLabel, langKey);
     final ctx = _Ctx(chinese);
@@ -421,6 +438,11 @@ class CodeLint {
       _scanAndCheck(source, profile, langLabel, langKey, ctx, add);
     }
 
+    // 光标所在行（用户正在打的那行）不报「还没写完」类问题：
+    // 刚敲到 `cons`、`Console.W` 就说缺分号，是这条路最吵的地方。
+    if (editingLine != null) {
+      out.removeWhere((d) => d.line == editingLine && incompleteCodes.contains(d.code));
+    }
     out.sort((a, b) {
       final byPos = a.start.compareTo(b.start);
       return byPos != 0 ? byPos : a.severity.index.compareTo(b.severity.index);
@@ -458,9 +480,14 @@ class CodeLint {
     String? langKey,
     bool chinese = true,
     Set<String> disabledRules = const <String>{},
+    int? editingLine,
   }) {
     LintReport full() => check(current,
-        langLabel: langLabel, langKey: langKey, chinese: chinese, disabledRules: disabledRules);
+        langLabel: langLabel,
+        langKey: langKey,
+        chinese: chinese,
+        disabledRules: disabledRules,
+        editingLine: editingLine);
     if (previous.length < 32768 ||
         current.length < previous.length ||
         !current.startsWith(previous)) {
@@ -483,7 +510,10 @@ class CodeLint {
     boundary = boundary < 0 ? 0 : boundary + 1;
     final delta = current.substring(boundary);
     final tail = check(delta,
-        langLabel: langLabel, langKey: langKey, chinese: chinese, disabledRules: disabledRules);
+        langLabel: langLabel,
+        langKey: langKey,
+        chinese: chinese,
+        disabledRules: disabledRules);
     final startLine = _lineNoOf(current, boundary);
 
     final merged = <LintDiagnostic>[];
@@ -508,6 +538,9 @@ class CodeLint {
         suggestion: d.suggestion,
         replacement: d.replacement != null ? d.replacement : null,
       ));
+    }
+    if (editingLine != null) {
+      merged.removeWhere((d) => d.line == editingLine && incompleteCodes.contains(d.code));
     }
     merged.sort((a, b) {
       final byPos = a.start.compareTo(b.start);

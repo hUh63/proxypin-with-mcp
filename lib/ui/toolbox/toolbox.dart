@@ -50,7 +50,7 @@ import 'rsa_page.dart';
 import 'js_run.dart';
 import 'json_viewer.dart';
 import 'network_diagnostics.dart';
-import 'media_preview.dart';
+import 'file_preview.dart';
 import 'text_diff.dart';
 import 'text_editor.dart';
 import 'websocket_request.dart';
@@ -228,19 +228,19 @@ class _ToolboxState extends State<Toolbox> {
                       tooltip: localizations.jsRestoreTips),
                   IconText(
                       onTap: () async {
-                        // 图片 / 动图 / 视频 / 音频：选中直接预览
+                        // 文件预览：图片/动图/音视频/压缩包/文本/网页/二进制，按类型自动分流
                         try {
                           final picked = await FilePicker.pickFile(type: FileType.any);
                           final path = picked?.path;
                           if (path == null || !context.mounted) return;
-                          await MediaPreviewPage.show(context, File(path));
+                          await FilePreviewPage.show(context, File(path));
                         } catch (e) {
-                          logger.w('media preview failed: $e');
+                          logger.w('file preview failed: $e');
                         }
                       },
                       icon: Icons.perm_media_outlined,
-                      text: localizations.mediaPreview,
-                      tooltip: localizations.mediaPreview),
+                      text: localizations.filePreview,
+                      tooltip: localizations.filePreviewTip),
                 ],
               ),
               _group(localizations.encode, [

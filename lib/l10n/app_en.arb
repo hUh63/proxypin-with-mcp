@@ -4829,5 +4829,7 @@
   "mediaUnsupported": "This file type cannot be previewed",
   "editorPreview": "Preview",
   "editorPreviewHint": "About preview",
-  "editorPreviewHintBody": "Rendered locally without a browser engine: scripts do not run, and no network requests are made for you."
+  "editorPreviewHintBody": "Rendered locally without a browser engine: scripts do not run, and no network requests are made for you.",
+  "filePreview": "File preview",
+  "filePreviewTip": "Preview images, GIF, audio, video, zip and text files"
 }

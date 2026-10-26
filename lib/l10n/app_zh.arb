@@ -4591,5 +4591,7 @@
   "mediaUnsupported": "这个格式无法预览",
   "editorPreview": "预览",
   "editorPreviewHint": "关于预览",
-  "editorPreviewHintBody": "在本地直接渲染，不启动浏览器引擎：脚本不会执行，也不会替你发起网络请求。"
+  "editorPreviewHintBody": "在本地直接渲染，不启动浏览器引擎：脚本不会执行，也不会替你发起网络请求。",
+  "filePreview": "文件预览",
+  "filePreviewTip": "预览图片/动图/音视频/压缩包/文本，按类型自动分流"
 }

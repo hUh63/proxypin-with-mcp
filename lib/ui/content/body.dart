@@ -57,6 +57,7 @@ import '../component/search/highlight_text.dart';
 import '../component/search/search_controller.dart';
 import '../component/search/virtualized_highlight_text.dart';
 import '../toolbox/encoder.dart';
+import '../toolbox/file_preview.dart';
 
 /// body 选区菜单：整个文本即全部内容，复制全部用“全选”即可，故不提供“复制值”
 Widget bodyContextMenu(BuildContext context, EditableTextState editableTextState) =>
@@ -292,6 +293,22 @@ class HttpBodyState extends State<HttpBodyWidget> {
     ];
   }
 
+  /// 把响应体落成临时文件后预览（图片 / 动图 / 视频 / 字体…）。
+  Future<void> _previewMediaBody() async {
+    final message = widget.httpMessage;
+    final body = message?.body;
+    if (message == null || body == null || body.isEmpty) return;
+    var name = message is HttpResponse ? 'response' : 'request';
+    final disposition = message.headers.value('content-disposition');
+    if (disposition != null) {
+      final match = RegExp(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?').firstMatch(disposition);
+      if (match != null) name = match.group(1)!.trim();
+    }
+    final type = message.headers.value('content-type');
+    if (!mounted) return;
+    await FilePreviewPage.showBytes(context, body, fileName: name, contentType: type);
+  }
+
   /// 标题
   Widget titleWidget({bool inNewWindow = false, Tabs? tabs}) {
     var type = widget.httpMessage is HttpRequest ? "Request" : "Response";
@@ -471,6 +488,22 @@ class HttpBodyState extends State<HttpBodyWidget> {
     // fork：HTML 正文的内置渲染预览入口
     if (widget.httpMessage?.contentType == ContentType.html) {
       actions.add(previewBtn);
+    }
+    // 抓到的媒体（图片 / 动图 / 视频 / 字体等二进制）：存成临时文件后交给
+    // 统一预览页——图片能放大、动图会动、视频可交给系统播放器。
+    final mediaType = widget.httpMessage?.contentType;
+    final isMedia = mediaType == ContentType.image ||
+        mediaType == ContentType.video ||
+        mediaType == ContentType.font;
+    if (isMedia) {
+      actions.add(IconButton(
+        visualDensity: visualDensity,
+        iconSize: 15,
+        splashRadius: 14,
+        icon: SvgIcon('code', size: 15, color: iconColor),
+        tooltip: localizations.mediaPreview,
+        onPressed: () => _previewMediaBody(),
+      ));
     }
 
     // 手机端两行布局（旧版行为）：第一行 标签+操作图标，第二行 格式分段——合并一行手机上放不下

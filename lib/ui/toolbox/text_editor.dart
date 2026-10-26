@@ -62,6 +62,7 @@ import 'package:xml/xml.dart';
 import 'package:proxypin/ui/component/lint_issue_bar.dart';
 import 'package:proxypin/ui/toolbox/html_preview.dart';
 import 'package:proxypin/ui/toolbox/media_preview.dart';
+import 'package:proxypin/ui/toolbox/file_preview.dart';
 
 /// 文本编辑工具：CodeForge 编辑器 + 多文档 + 语言高亮 + 正则查找替换。
 ///
@@ -207,6 +208,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 被用户关掉的规则（持久化在 prefs 里）。
   Set<String> _disabledRules = <String>{};
   bool _consoleOpen = false;
+
+  /// 上一次「为了弹补全」而记录的光标位置（避免光标每动一下就重算）。
+  int _lastSuggestOffset = -1;
   // 底部面板默认就是「控制台」——问题改在文本下方的窄栏里看。
   EditorConsoleTab _consoleTab = EditorConsoleTab.console;
   bool _dirty = false;
@@ -441,7 +445,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   void _onControllerChanged() {
     final text = _doc?.text ?? '';
-    if (text != _lastText) {
+    final changed = text != _lastText;
+    if (changed) {
       _lastText = text;
       if (!_dirty) setState(() => _dirty = true);
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
@@ -456,6 +461,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _lastNavOffset = off;
         _navTimer?.cancel();
         _navTimer = Timer(const Duration(milliseconds: 700), () => _pushNav(off));
+      }
+      // 文本没变、只是光标动了（点别处再点回来）：光标前是个词就重新弹补全。
+      // 不这么做的话，弹窗一旦被点掉就再也不回来，用户得重新打一个字才看得见。
+      if (!changed &&
+          off > 0 &&
+          off != _lastSuggestOffset &&
+          off <= text.length &&
+          SmartCompletion.enabled.value &&
+          !_smooth) {
+        _lastSuggestOffset = off;
+        final before = text.substring(off - 1, off);
+        if (RegExp(r'[\w\$]').hasMatch(before)) {
+          controller.requestSuggestions();
+        }
       }
       if (_prefs.magnifier && mounted) setState(() {});
     }
@@ -557,6 +576,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final chinese = Localizations.localeOf(context).languageCode.startsWith('zh');
     final previousText = doc.lintText;
     final previousReport = doc.lint;
+    // 光标所在行不报「还没写完」类问题（刚打到 `cons` 就说缺分号太吵）。
+    final caret = doc.controller.selection.baseOffset;
+    final editingLine = caret < 0 ? null : _lineOfOffset(text, caret) + 1;
     final LintReport report;
     if (previousText != null && previousReport != null) {
       // 大文件里「在末尾继续打字」是最常见的改动，只对新增部分做检查。
@@ -568,6 +590,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         langKey: _lang.key,
         chinese: chinese,
         disabledRules: _disabledRules,
+        editingLine: editingLine,
       );
     } else {
       report = CodeLint.check(
@@ -576,6 +599,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         langKey: _lang.key,
         chinese: chinese,
         disabledRules: _disabledRules,
+        editingLine: editingLine,
       );
     }
     _inLint = false;
@@ -1467,11 +1491,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     if (path == null) return;
 
-    // 图片 / 动图 / 视频 / 音频：当文本读只会得到乱码，直接进预览。
-    if (isPreviewableMedia(path)) {
-      final file = File(path);
+    // 媒体 / 压缩包 / 未知二进制：当文本读只会得到乱码（甚至卡死），直接进预览。
+    // HTML 与文本类仍然进编辑器——那些是要改的。
+    final kind = filePreviewKindOf(path);
+    if (kind == FilePreviewKind.media ||
+        kind == FilePreviewKind.archive ||
+        kind == FilePreviewKind.binary) {
       if (!mounted) return;
-      await MediaPreviewPage.show(context, file, title: path.split(Platform.pathSeparator).last);
+      await FilePreviewPage.show(context, File(path));
       return;
     }
 
@@ -1784,7 +1811,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
           // 问题栏：贴着代码，按文本顺序一行一条（红=报错，黄=警告）
-          if (doc != null && _lintEnabled)
+          if (doc != null && _lintEnabled && _programming)
             LintIssueBar(
               report: _lint,
               chinese: Localizations.localeOf(context).languageCode.startsWith('zh'),
@@ -1818,8 +1845,57 @@ class _TextEditorPageState extends State<TextEditorPage> {
               animation: doc.findController,
               builder: (_, __) => FindPanelView(controller: doc.findController),
             ),
+          // 状态栏（学 VS Code）：光标行列、选中字符数、缩进、语言
+          if (doc != null) _statusBar(doc),
         ]),
       ),
+    );
+  }
+
+  /// 底部状态栏：光标位置、选中字符数、缩进、语言。
+  ///
+  /// 用 AnimatedBuilder 只听 controller：光标一动就更新，但不会重建整个页面
+  /// （每条输入都 setState 整页在移动端很贵）。
+  Widget _statusBar(EditorDocument doc) {
+    final theme = Theme.of(context);
+    final controller = doc.controller;
+    final indent = _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}';
+    final lang = _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label;
+    final color = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.85);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final text = controller.text;
+        final offset = controller.selection.baseOffset;
+        final safe = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
+        final line = _lineOfOffset(text, safe) + 1;
+        final column = safe - _offsetOfLine(text, line - 1) + 1;
+        final selection = controller.selection;
+        final selected = selection.isValid && !selection.isCollapsed
+            ? (selection.end - selection.start).abs()
+            : 0;
+        return Container(
+          height: 21,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.06),
+            border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+          ),
+          child: Row(children: [
+            Text('L$line:$column', style: TextStyle(fontSize: 10.5, color: color)),
+            if (selected > 0) ...[
+              const SizedBox(width: 6),
+              Text('($selected)', style: TextStyle(fontSize: 10.5, color: theme.colorScheme.primary)),
+            ],
+            const Spacer(),
+            Text('${text.length}', style: TextStyle(fontSize: 10.5, color: color)),
+            const SizedBox(width: 10),
+            Text(indent, style: TextStyle(fontSize: 10.5, color: color)),
+            const SizedBox(width: 10),
+            Text(lang, style: TextStyle(fontSize: 10.5, color: color)),
+          ]),
+        );
+      },
     );
   }
 
@@ -2027,7 +2103,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 tint: _wrap ? color : null),
             _iconBtn(Icons.copy, localizations.copy, _copy),
             _iconBtn(Icons.delete_outline, localizations.clear, _clear),
-            if (_lintEnabled) _lintButton(color),
+            if (_lintEnabled && _programming) _lintButton(color),
             // 控制台只对编程语言出现，按钮本身控制显示/隐藏（高亮 = 已打开）
             if (_programming)
               _iconBtn(Icons.terminal, localizations.editorConsole,
@@ -2166,14 +2242,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'report', child: Text(localizations.editorSpecialReport)),
         PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
         const PopupMenuDivider(),
-        CheckedPopupMenuItem(
-          value: 'lint',
-          checked: _lintEnabled,
-          child: Text(localizations.editorLint),
-        ),
-        PopupMenuItem(value: 'lintIssues', child: Text(localizations.editorLintIssues)),
-        if (_programming)
+        // 「检查」只对编程语言有意义：JSON/YAML/纯文本没有「编译」这回事，
+        // 把它藏在非编程语法下，菜单里就不会出现点了也没用的项。
+        if (_programming) ...[
+          CheckedPopupMenuItem(
+            value: 'lint',
+            checked: _lintEnabled,
+            child: Text(localizations.editorLint),
+          ),
+          PopupMenuItem(value: 'lintIssues', child: Text(localizations.editorLintIssues)),
           PopupMenuItem(value: 'console', child: Text(localizations.editorConsole)),
+        ],
         const PopupMenuDivider(),
         PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
         PopupMenuItem(value: 'minifyAggressive', child: Text(localizations.editorMinifyAggressive)),

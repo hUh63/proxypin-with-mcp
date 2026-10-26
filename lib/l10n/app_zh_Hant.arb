@@ -4591,5 +4591,7 @@
   "mediaUnsupported": "這個格式無法預覽",
   "editorPreview": "預覽",
   "editorPreviewHint": "關於預覽",
-  "editorPreviewHintBody": "在本機直接渲染，不啟動瀏覽器引擎：腳本不會執行，也不會替你發送請求。"
+  "editorPreviewHintBody": "在本機直接渲染，不啟動瀏覽器引擎：腳本不會執行，也不會替你發送請求。",
+  "filePreview": "檔案預覽",
+  "filePreviewTip": "預覽圖片/動圖/影音/壓縮檔/文字，依類型自動分流"
 }

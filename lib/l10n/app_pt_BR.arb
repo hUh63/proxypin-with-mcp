@@ -2791,5 +2791,7 @@
   "mediaUnsupported": "Este tipo de arquivo não pode ser pré-visualizado",
   "editorPreview": "Pré-visualizar",
   "editorPreviewHint": "Sobre a pré-visualização",
-  "editorPreviewHintBody": "Renderizado localmente sem motor de navegador: scripts não são executados."
+  "editorPreviewHintBody": "Renderizado localmente sem motor de navegador: scripts não são executados.",
+  "filePreview": "Pré-visualizar arquivo",
+  "filePreviewTip": "Pré-visualize imagens, GIF, áudio, vídeo, zip e texto"
 }
