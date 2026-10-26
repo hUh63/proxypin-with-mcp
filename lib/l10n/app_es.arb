@@ -2773,5 +2773,22 @@
   "editorConsoleInsert": "Insert result into editor",
   "diffSyntaxCheck": "Check syntax of both sides",
   "diffSyntaxUnsupported": "Only JSON / XML content can be checked here",
-  "editorLintRulesApplyAll": "Aplicar a todos los idiomas"
+  "editorLintRulesApplyAll": "Aplicar a todos los idiomas",
+  "editorIssuePosition": "Línea {line}, col {col}",
+  "editorIssueFix": "Corregir",
+  "editorIssueMore": "{n} más",
+  "editorIssueHint": "Toca para ir",
+  "guideImageFailed": "No se pudo cargar la imagen",
+  "editorFormatNoChange": "Ya está formateado",
+  "editorFormatted": "Formateado",
+  "mediaPreview": "Vista previa",
+  "mediaActualSize": "Tamaño real",
+  "mediaFitWidth": "Ajustar ancho",
+  "mediaOpenExternal": "Abrir en app del sistema",
+  "mediaOpenExternalFailed": "No se puede abrir aquí: exporta el archivo",
+  "mediaPlayHint": "El vídeo/audio no se reproduce aquí; se abre con el reproductor del sistema",
+  "mediaUnsupported": "Este tipo de archivo no se puede previsualizar",
+  "editorPreview": "Vista previa",
+  "editorPreviewHint": "Acerca de la vista previa",
+  "editorPreviewHintBody": "Se renderiza localmente sin motor de navegador: los scripts no se ejecutan."
 }

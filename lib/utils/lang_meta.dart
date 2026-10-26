@@ -335,10 +335,15 @@ String reindentBraces(
   var depth = 0;
   var inBlockComment = false;
 
-  bool startsWithCloser(String s) {
-    if (s.isEmpty) return false;
-    final c = s[0];
-    return c == '}' || c == ')' || c == ']';
+  /// 行首连续有几个闭合括号（`}))` 要退 3 级，只按「有闭合」退 1 级会越缩越深）。
+  int leadingClosers(String s) {
+    var n = 0;
+    while (n < s.length) {
+      final c = s[n];
+      if (c != '}' && c != ')' && c != ']') break;
+      n++;
+    }
+    return n;
   }
 
   for (var line in lines) {
@@ -349,10 +354,12 @@ String reindentBraces(
       continue;
     }
 
-    // 首行是闭合括号时，先退一级。
+    // 行首是闭合括号时先退级（有几个闭合就退几级）。
     var lineDepth = depth;
-    if (startsWithCloser(trimmed)) {
-      lineDepth = depth > 0 ? depth - 1 : 0;
+    final closers = leadingClosers(trimmed);
+    if (closers > 0) {
+      lineDepth = depth - closers;
+      if (lineDepth < 0) lineDepth = 0;
     }
 
     out.add('${indentUnit * lineDepth}$trimmed');

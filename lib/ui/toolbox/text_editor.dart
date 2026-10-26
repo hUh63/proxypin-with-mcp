@@ -59,6 +59,9 @@ import 'package:re_highlight/re_highlight.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:xml/xml.dart';
+import 'package:proxypin/ui/component/lint_issue_bar.dart';
+import 'package:proxypin/ui/toolbox/html_preview.dart';
+import 'package:proxypin/ui/toolbox/media_preview.dart';
 
 /// 文本编辑工具：CodeForge 编辑器 + 多文档 + 语言高亮 + 正则查找替换。
 ///
@@ -204,7 +207,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 被用户关掉的规则（持久化在 prefs 里）。
   Set<String> _disabledRules = <String>{};
   bool _consoleOpen = false;
-  EditorConsoleTab _consoleTab = EditorConsoleTab.problems;
+  // 底部面板默认就是「控制台」——问题改在文本下方的窄栏里看。
+  EditorConsoleTab _consoleTab = EditorConsoleTab.console;
   bool _dirty = false;
   int? _gutterAnchorLine;
 
@@ -1463,6 +1467,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     if (path == null) return;
 
+    // 图片 / 动图 / 视频 / 音频：当文本读只会得到乱码，直接进预览。
+    if (isPreviewableMedia(path)) {
+      final file = File(path);
+      if (!mounted) return;
+      await MediaPreviewPage.show(context, file, title: path.split(Platform.pathSeparator).last);
+      return;
+    }
+
     try {
       final content = await File(path).readAsString();
       final name = path.split(Platform.pathSeparator).last;
@@ -1563,6 +1575,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 当前语言用哪种格式化器（全部语言都有归属，只是不一定有专属格式化器）。
+  /// 当前语法能不能就地预览（HTML / SVG / Markdown 类）。
+  bool get _canPreview => canPreviewLanguage(key: _lang.key, label: _lang.label);
+
+  /// 打开预览页（渲染当前文档内容，不执行脚本）。
+  void _preview() {
+    final doc = _doc;
+    if (doc == null) return;
+    HtmlPreviewPage.show(
+      context,
+      content: doc.text,
+      language: '${_lang.key} ${doc.langLabel}',
+      title: doc.name,
+    );
+  }
+
   FormatKind get _formatKind {
     // 没借用任何高亮的自定义语法（纯文本）不做格式化，避免按名字瞎猜。
     if (_lang.custom && _lang.key.isEmpty) return FormatKind.none;
@@ -1572,43 +1599,72 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool get _canFormat => _formatKind != FormatKind.none;
 
   /// 按当前语言格式化。失败时通过 toast 显示原因，不修改原文。
+  ///
+  /// 两个体验点：**格式化后光标留在原来那一行**（而不是跳回文件开头），
+  /// 以及「内容没变」时明确告知（否则用户会以为是点了没反应）。
   Future<void> _format() async {
     final controller = _controller;
     if (controller == null) return;
     final text = controller.text;
     if (text.trim().isEmpty) return;
-    switch (_formatKind) {
-      case FormatKind.json:
-        try {
-          final pretty = JSON.pretty(text);
-          if (pretty != text) controller.text = pretty;
-        } catch (e) {
-          _toast('${localizations.fail}: $e');
-        }
-      case FormatKind.xml:
-        try {
-          final pretty = XmlDocument.parse(text).toXmlString(pretty: true, indent: '  ');
-          if (pretty != text) controller.text = pretty;
-        } on XmlException catch (e) {
-          _toast('${localizations.fail}: ${e.message}');
-        }
-      case FormatKind.css:
-        final pretty = CSS.pretty(text);
-        if (pretty != text) controller.text = pretty;
-      case FormatKind.js:
-        try {
-          final pretty = await JsDeobfuscator.beautify(text);
-          if (pretty != text) controller.text = pretty;
-        } catch (e) {
-          _toast('${localizations.fail}: $e');
-        }
-      case FormatKind.brace:
-        // 通用大括号缩进重排：只改每行前导空白，正文逐字保留。
-        final pretty = reindentBraces(text, tabSize: _prefs.tabSize, useTabs: _prefs.useTabs);
-        if (pretty != text) controller.text = pretty;
-      case FormatKind.none:
-        _toast(localizations.editorFormatUnsupported);
+    final caret = controller.selection.baseOffset;
+    final caretLine = _lineOfOffset(text, caret < 0 ? 0 : caret);
+
+    String? result;
+    try {
+      switch (_formatKind) {
+        case FormatKind.json:
+          result = JSON.pretty(text);
+        case FormatKind.xml:
+          result = XmlDocument.parse(text).toXmlString(pretty: true, indent: '  ');
+        case FormatKind.css:
+          result = CSS.pretty(text);
+        case FormatKind.js:
+          result = await JsDeobfuscator.beautify(text);
+        case FormatKind.brace:
+          // 通用大括号缩进重排：只改每行前导空白，正文逐字保留。
+          result = reindentBraces(text, tabSize: _prefs.tabSize, useTabs: _prefs.useTabs);
+        case FormatKind.none:
+          _toast(localizations.editorFormatUnsupported);
+          return;
+      }
+    } catch (e) {
+      _toast('${localizations.fail}: $e');
+      return;
     }
+    if (!mounted || result == null) return;
+    if (result == text) {
+      _toast(localizations.editorFormatNoChange);
+      return;
+    }
+    controller.text = result;
+    // 尽量把光标放回原来那一行的行首（行数变少时落到末行）。
+    final keepLine = caretLine.clamp(0, '\n'.allMatches(result).length);
+    controller.selection = TextSelection.collapsed(offset: _offsetOfLine(result, keepLine));
+    _toast(localizations.editorFormatted);
+  }
+
+  /// 偏移量 → 行号（0 基）。
+  static int _lineOfOffset(String text, int offset) {
+    final limit = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
+    var line = 0;
+    for (var i = 0; i < limit; i++) {
+      if (text.codeUnitAt(i) == 10) line++;
+    }
+    return line;
+  }
+
+  /// 行号（0 基）→ 行首偏移量。
+  static int _offsetOfLine(String text, int line) {
+    if (line <= 0) return 0;
+    var seen = 0;
+    for (var i = 0; i < text.length; i++) {
+      if (text.codeUnitAt(i) == 10) {
+        seen++;
+        if (seen == line) return i + 1;
+      }
+    }
+    return text.length;
   }
 
   /// 压缩当前文档（保守压缩：删注释 / 去缩进 / 合并多余空白）。
@@ -1727,6 +1783,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ),
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
+          // 问题栏：贴着代码，按文本顺序一行一条（红=报错，黄=警告）
+          if (doc != null && _lintEnabled)
+            LintIssueBar(
+              report: _lint,
+              chinese: Localizations.localeOf(context).languageCode.startsWith('zh'),
+              onJump: _jumpToDiagnostic,
+              onFix: _fixDiagnostic,
+              onShowAll: () => _openConsole(EditorConsoleTab.problems),
+            ),
           if (_prefs.shortcutBar) _snippetBar(),
           if (_consoleOpen && doc != null)
             EditorConsolePanel(
@@ -1954,13 +2019,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
                   _toggleFind,
                   tint: (_doc?.findController.isActive ?? false) ? color : null),
             ),
-            _iconBtn(Icons.auto_fix_high, localizations.format, _canFormat ? _format : null),
+            // 纯文本 / 结构化文本之外的语法没有格式化器，直接不显示（灰按钮点不动最误导）
+            if (_canFormat) _iconBtn(Icons.auto_fix_high, localizations.format, _format),
+            if (_canPreview) _iconBtn(Icons.visibility_outlined, localizations.editorPreview, _preview),
             _iconBtn(Icons.code, localizations.editorToggleComment, _toggleComment),
             _iconBtn(Icons.wrap_text, localizations.wordWrap, () => setState(() => _wrap = !_wrap),
                 tint: _wrap ? color : null),
             _iconBtn(Icons.copy, localizations.copy, _copy),
             _iconBtn(Icons.delete_outline, localizations.clear, _clear),
             if (_lintEnabled) _lintButton(color),
+            // 控制台只对编程语言出现，按钮本身控制显示/隐藏（高亮 = 已打开）
+            if (_programming)
+              _iconBtn(Icons.terminal, localizations.editorConsole,
+                  () => setState(() => _consoleOpen = !_consoleOpen),
+                  tint: _consoleOpen ? color : null),
             _moreMenu(color),
           ],
         ),

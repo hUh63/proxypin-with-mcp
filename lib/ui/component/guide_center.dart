@@ -305,6 +305,104 @@ class _MarkdownLiteViewState extends State<MarkdownLiteView> {
     }
   }
 
+  /// 从一行里抠出图片地址（Markdown `![alt](url)` 与 HTML `<img src="...">`）。
+  ///
+  /// 返回「所有图片地址」+「去掉图片标签之后剩下的文字」。
+  static ({List<String> urls, String rest}) _splitImages(String line) {
+    final urls = <String>[];
+    var rest = line;
+    for (final m in RegExp(r'!\[[^\]]*\]\(\s*([^)\s]+)').allMatches(rest)) {
+      urls.add(m.group(1)!);
+    }
+    rest = rest.replaceAll(RegExp(r'!\[[^\]]*\]\(\s*[^)\s]+[^)]*\)'), '');
+    for (final m in RegExp(r'''<img\b[^>]*?src\s*=\s*["']([^"']+)["']''', caseSensitive: false)
+        .allMatches(rest)) {
+      urls.add(m.group(1)!);
+    }
+    rest = rest.replaceAll(RegExp(r'<img\b[^>]*>', caseSensitive: false), '').trim();
+    // 文档里常见 `<img ...>.`——只剩一个句点时当这行没有文字。
+    if (rest == '.' || rest == '。' || rest == '..') rest = '';
+    return (urls: urls, rest: rest);
+  }
+
+  /// 渲染一张文档图片；加载失败时把链接显示出来（而不是整块空白）。
+  Widget _imageWidget(ThemeData theme, String url) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 2),
+      child: GestureDetector(
+        onTap: () => _previewImage(url),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            url,
+            fit: BoxFit.contain,
+            loadingBuilder: (c, child, progress) {
+              if (progress == null) return child;
+              return Container(
+                height: 120,
+                alignment: Alignment.center,
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                child: const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            },
+            errorBuilder: (c, error, stack) => Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.dividerColor),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(children: [
+                Icon(Icons.broken_image_outlined, size: 16, color: theme.colorScheme.outline),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(url,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, color: theme.colorScheme.outline)),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 点开大图（可缩放）。
+  void _previewImage(String url) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(children: [
+          InteractiveViewer(
+            maxScale: 5,
+            child: Center(
+              child: Image.network(
+                url,
+                fit: BoxFit.contain,
+                errorBuilder: (c, e, s) => Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(AppLocalizations.of(context)!.guideImageFailed,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 4,
+            top: 4,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
   Widget _build(BuildContext context) {
     final theme = Theme.of(context);
     final lines = widget.content.split('\n');
@@ -475,6 +573,20 @@ class _MarkdownLiteViewState extends State<MarkdownLiteView> {
       if (trimmed.isEmpty) {
         flushParagraph();
         continue;
+      }
+      // 图片：文档里既有 Markdown 写法 `![alt](url)`，也有 GitHub 风格的
+      // 内嵌 HTML `<img src="...">`——后者以前被当成普通文字原样显示出来。
+      if (trimmed.contains('<img') || trimmed.contains('![')) {
+        final split = _splitImages(trimmed);
+        if (split.urls.isNotEmpty) {
+          flushParagraph();
+          for (final url in split.urls) {
+            widgets.add(_imageWidget(theme, url));
+          }
+          if (split.rest.isEmpty) continue;
+          buffer.add(split.rest);
+          continue;
+        }
       }
       if (trimmed == '---' || trimmed == '***') {
         flushParagraph();

@@ -14,6 +14,10 @@ import 'dart:io';
 
 import 'package:proxypin/ui/component/kernel_capture_dialog.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/ui/component/ai_analysis.dart';
 import 'package:proxypin/ui/toolbox/dev_tools.dart';
@@ -46,6 +50,7 @@ import 'rsa_page.dart';
 import 'js_run.dart';
 import 'json_viewer.dart';
 import 'network_diagnostics.dart';
+import 'media_preview.dart';
 import 'text_diff.dart';
 import 'text_editor.dart';
 import 'websocket_request.dart';
@@ -138,15 +143,6 @@ class _ToolboxState extends State<Toolbox> {
                       text: 'WebSocket',
                       tooltip: 'WebSocket'),
                   IconText(
-                    icon: Icons.calculate_outlined,
-                    text: localizations.calcTitle,
-                    tooltip: localizations.toolboxNavCalcTip,
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => const CalculatorPage()));
-                    },
-                  ),
-                  IconText(
                     icon: Icons.javascript,
                     text: 'JavaScript',
                     tooltip: 'JavaScript',
@@ -160,14 +156,21 @@ class _ToolboxState extends State<Toolbox> {
                       MultiWindow.openWindow('JavaScript', 'JavaScript', size: Size(960, size.height));
                     },
                   ),
+                  IconText(
+                      onTap: () async {
+                        // 上游 v1.4.0：可查看/暂停/取消的重放任务
+                        if (Platforms.isMobile()) {
+                          Navigator.of(context)
+                              .push(MaterialPageRoute(builder: (context) => const ReplayTasksPage()));
+                          return;
+                        }
+                        await replay_desktop.showReplayTasksDialog(context);
+                      },
+                      icon: Icons.schedule_outlined,
+                      text: localizations.replayTasks,
+                      tooltip: localizations.replayTasks),
                 ],
               ),
-              const Divider(thickness: 0.3),
-              Text(localizations.view, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
-              ]),
               _group(localizations.view, [
                   IconText(
                       onTap: () async {
@@ -225,25 +228,21 @@ class _ToolboxState extends State<Toolbox> {
                       tooltip: localizations.jsRestoreTips),
                   IconText(
                       onTap: () async {
-                        // 上游 v1.4.0：可查看/暂停/取消的重放任务
-                        if (Platforms.isMobile()) {
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (context) => const ReplayTasksPage()));
-                          return;
+                        // 图片 / 动图 / 视频 / 音频：选中直接预览
+                        try {
+                          final picked = await FilePicker.pickFile(type: FileType.any);
+                          final path = picked?.path;
+                          if (path == null || !context.mounted) return;
+                          await MediaPreviewPage.show(context, File(path));
+                        } catch (e) {
+                          logger.w('media preview failed: $e');
                         }
-                        await replay_desktop.showReplayTasksDialog(context);
                       },
-                      icon: Icons.schedule_outlined,
-                      text: localizations.replayTasks,
-                      tooltip: localizations.replayTasks),
+                      icon: Icons.perm_media_outlined,
+                      text: localizations.mediaPreview,
+                      tooltip: localizations.mediaPreview),
                 ],
               ),
-              const Divider(thickness: 0.3),
-              Text(localizations.encode, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
-              ]),
               _group(localizations.encode, [
                   IconText(
                     onTap: () => encodeWindow(EncoderType.url, context),
@@ -301,19 +300,6 @@ class _ToolboxState extends State<Toolbox> {
                   ),
               ]),
               _group(localizations.cipher, [
-                  IconText(
-                    onTap: () => encodeWindow(EncoderType.md5, context),
-                    icon: Icons.tag_outlined,
-                    text: 'MD5',
-                    tooltip: localizations.toolboxMd5Tip,
-                  ),
-                ],
-              ),
-              const Divider(thickness: 0.3),
-              Text(localizations.cipher, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
                   _cipherButton('AES', 'AES', Icons.enhanced_encryption_outlined),
                   _cipherButton('DES', 'DES', Icons.lock_outline),
                   _cipherButton('3DES', '3DES', Icons.lock_reset),
@@ -343,11 +329,13 @@ class _ToolboxState extends State<Toolbox> {
                   ),
                 ],
               ),
-              const Divider(thickness: 0.3),
-              Text(localizations.toolboxHash, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
+              _group(localizations.toolboxHash, [
+                  IconText(
+                    onTap: () => encodeWindow(EncoderType.md5, context),
+                    icon: Icons.tag_outlined,
+                    text: 'MD5',
+                    tooltip: localizations.toolboxMd5Tip,
+                  ),
                   IconText(
                     onTap: () => Navigator.of(context)
                         .push(MaterialPageRoute(builder: (context) => const HashPage(initialIndex: 0))),
@@ -371,13 +359,7 @@ class _ToolboxState extends State<Toolbox> {
                   ),
                 ],
               ),
-              const Divider(thickness: 0.3),
-              Text(localizations.toolboxGroupUtilities, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
-              ]),
-              _group(localizations.other, [
+              _group(localizations.toolboxGroupUtilities, [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -436,13 +418,18 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.qr_code_2,
                       text: localizations.qrCode,
                       tooltip: localizations.qrCode),
+                  IconText(
+                    icon: Icons.calculate_outlined,
+                    text: localizations.calcTitle,
+                    tooltip: localizations.toolboxNavCalcTip,
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => const CalculatorPage()));
+                    },
+                  ),
                 ],
               ),
-              const Divider(thickness: 0.3),
-              Text(localizations.toolboxGroupRuntime, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
+              _group(localizations.toolboxGroupRuntime, [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -454,8 +441,6 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.cast_connected,
                       text: 'MCP',
                       tooltip: localizations.toolboxNavMcpTip),
-              ]),
-              _group(localizations.toolboxGroupDebug, [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -486,11 +471,7 @@ class _ToolboxState extends State<Toolbox> {
                       tooltip: localizations.toolboxLogTip),
                 ],
               ),
-              const Divider(thickness: 0.3),
-              Text(localizations.toolboxGroupCapture, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
+              _group(localizations.toolboxGroupCapture, [
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {
@@ -608,13 +589,6 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.cloud_outlined,
                       text: localizations.cloudTitle,
                       tooltip: localizations.toolboxNavCloudTip),
-                ],
-              ),
-              const Divider(thickness: 0.3),
-              Text(localizations.other, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Wrap(
-                spacing: 6,
-                children: [
                   IconText(
                       onTap: () => showGuideCenter(context),
                       icon: Icons.menu_book_outlined,
@@ -637,6 +611,8 @@ class _ToolboxState extends State<Toolbox> {
                       text: localizations.aiTitle,
                       tooltip: localizations.toolboxNavAiTip),
               ]),
+              // 手机端底部导航会盖住最后一行图标，留一段可滚动的空白。
+              if (mobile) const SizedBox(height: 28),
             ],
           ),
         )));

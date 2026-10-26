@@ -4574,5 +4574,22 @@
   "editorConsoleInsert": "把结果插入编辑器",
   "diffSyntaxCheck": "检查两侧语法",
   "diffSyntaxUnsupported": "这里只检查 JSON / XML 内容",
-  "editorLintRulesApplyAll": "应用到全部语言"
+  "editorLintRulesApplyAll": "应用到全部语言",
+  "editorIssuePosition": "第 {line} 行 第 {col} 个",
+  "editorIssueFix": "修复",
+  "editorIssueMore": "还有 {n} 条",
+  "editorIssueHint": "点一条跳到该位置",
+  "guideImageFailed": "图片加载失败",
+  "editorFormatNoChange": "已经是标准格式",
+  "editorFormatted": "已格式化",
+  "mediaPreview": "媒体预览",
+  "mediaActualSize": "原始尺寸",
+  "mediaFitWidth": "适应宽度",
+  "mediaOpenExternal": "用系统应用打开",
+  "mediaOpenExternalFailed": "无法在此打开，请导出文件后用其它应用打开",
+  "mediaPlayHint": "视频与音频不内置播放，交给系统播放器打开",
+  "mediaUnsupported": "这个格式无法预览",
+  "editorPreview": "预览",
+  "editorPreviewHint": "关于预览",
+  "editorPreviewHintBody": "在本地直接渲染，不启动浏览器引擎：脚本不会执行，也不会替你发起网络请求。"
 }

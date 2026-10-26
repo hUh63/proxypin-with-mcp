@@ -4574,5 +4574,22 @@
   "editorConsoleInsert": "把結果插入編輯器",
   "diffSyntaxCheck": "檢查兩側語法",
   "diffSyntaxUnsupported": "這裡只檢查 JSON / XML 內容",
-  "editorLintRulesApplyAll": "套用到全部語言"
+  "editorLintRulesApplyAll": "套用到全部語言",
+  "editorIssuePosition": "第 {line} 行 第 {col} 個",
+  "editorIssueFix": "修復",
+  "editorIssueMore": "還有 {n} 條",
+  "editorIssueHint": "點一項跳到該位置",
+  "guideImageFailed": "圖片載入失敗",
+  "editorFormatNoChange": "已是標準格式",
+  "editorFormatted": "已格式化",
+  "mediaPreview": "媒體預覽",
+  "mediaActualSize": "原始尺寸",
+  "mediaFitWidth": "適應寬度",
+  "mediaOpenExternal": "用系統應用開啟",
+  "mediaOpenExternalFailed": "無法在此開啟，請匯出檔案後用其它應用開啟",
+  "mediaPlayHint": "影片與音訊不內建播放，交給系統播放器開啟",
+  "mediaUnsupported": "這個格式無法預覽",
+  "editorPreview": "預覽",
+  "editorPreviewHint": "關於預覽",
+  "editorPreviewHintBody": "在本機直接渲染，不啟動瀏覽器引擎：腳本不會執行，也不會替你發送請求。"
 }

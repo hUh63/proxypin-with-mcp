@@ -2773,5 +2773,22 @@
   "editorConsoleInsert": "Insert result into editor",
   "diffSyntaxCheck": "Check syntax of both sides",
   "diffSyntaxUnsupported": "Only JSON / XML content can be checked here",
-  "editorLintRulesApplyAll": "Terapkan ke semua bahasa"
+  "editorLintRulesApplyAll": "Terapkan ke semua bahasa",
+  "editorIssuePosition": "Baris {line}, kol {col}",
+  "editorIssueFix": "Perbaiki",
+  "editorIssueMore": "{n} lagi",
+  "editorIssueHint": "Ketuk untuk menuju",
+  "guideImageFailed": "Gagal memuat gambar",
+  "editorFormatNoChange": "Sudah terformat",
+  "editorFormatted": "Terformat",
+  "mediaPreview": "Pratinjau media",
+  "mediaActualSize": "Ukuran asli",
+  "mediaFitWidth": "Sesuaikan lebar",
+  "mediaOpenExternal": "Buka di aplikasi sistem",
+  "mediaOpenExternalFailed": "Tidak bisa dibuka di sini - ekspor file lalu buka manual",
+  "mediaPlayHint": "Video dan audio tidak diputar di sini; buka dengan pemutar sistem",
+  "mediaUnsupported": "Jenis file ini tidak bisa dipratinjau",
+  "editorPreview": "Pratinjau",
+  "editorPreviewHint": "Tentang pratinjau",
+  "editorPreviewHintBody": "Dirender secara lokal tanpa mesin browser: skrip tidak dijalankan."
 }

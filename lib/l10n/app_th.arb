@@ -2773,5 +2773,22 @@
   "editorConsoleInsert": "Insert result into editor",
   "diffSyntaxCheck": "Check syntax of both sides",
   "diffSyntaxUnsupported": "Only JSON / XML content can be checked here",
-  "editorLintRulesApplyAll": "ใช้กับทุกภาษา"
+  "editorLintRulesApplyAll": "ใช้กับทุกภาษา",
+  "editorIssuePosition": "บรรทัด {line} คอลัมน์ {col}",
+  "editorIssueFix": "แก้ไข",
+  "editorIssueMore": "อีก {n}",
+  "editorIssueHint": "แตะเพื่อไปยังตำแหน่ง",
+  "guideImageFailed": "โหลดรูปภาพไม่สำเร็จ",
+  "editorFormatNoChange": "จัดรูปแบบแล้ว",
+  "editorFormatted": "จัดรูปแบบแล้ว",
+  "mediaPreview": "ดูตัวอย่างสื่อ",
+  "mediaActualSize": "ขนาดจริง",
+  "mediaFitWidth": "พอดีความกว้าง",
+  "mediaOpenExternal": "เปิดด้วยแอประบบ",
+  "mediaOpenExternalFailed": "เปิดที่นี่ไม่ได้ - ส่งออกไฟล์แล้วเปิดเอง",
+  "mediaPlayHint": "วิดีโอ/เสียงไม่เล่นในแอป จะเปิดด้วยเครื่องเล่นของระบบ",
+  "mediaUnsupported": "ประเภทไฟล์นี้แสดงตัวอย่างไม่ได้",
+  "editorPreview": "ดูตัวอย่าง",
+  "editorPreviewHint": "เกี่ยวกับการดูตัวอย่าง",
+  "editorPreviewHintBody": "เรนเดอร์ในเครื่องโดยไม่ใช้เบราว์เซอร์: สคริปต์ไม่ทำงาน"
 }

@@ -2773,5 +2773,22 @@
   "editorConsoleInsert": "Insert result into editor",
   "diffSyntaxCheck": "Check syntax of both sides",
   "diffSyntaxUnsupported": "Only JSON / XML content can be checked here",
-  "editorLintRulesApplyAll": "Áp dụng cho tất cả ngôn ngữ"
+  "editorLintRulesApplyAll": "Áp dụng cho tất cả ngôn ngữ",
+  "editorIssuePosition": "Dòng {line}, cột {col}",
+  "editorIssueFix": "Sửa",
+  "editorIssueMore": "thêm {n}",
+  "editorIssueHint": "Chạm để chuyển đến",
+  "guideImageFailed": "Không tải được ảnh",
+  "editorFormatNoChange": "Đã được định dạng",
+  "editorFormatted": "Đã định dạng",
+  "mediaPreview": "Xem trước phương tiện",
+  "mediaActualSize": "Kích thước gốc",
+  "mediaFitWidth": "Vừa chiều rộng",
+  "mediaOpenExternal": "Mở bằng ứng dụng hệ thống",
+  "mediaOpenExternalFailed": "Không mở được ở đây - hãy xuất tệp rồi mở",
+  "mediaPlayHint": "Video và âm thanh không phát tại đây; mở bằng trình phát hệ thống",
+  "mediaUnsupported": "Định dạng này không xem trước được",
+  "editorPreview": "Xem trước",
+  "editorPreviewHint": "Giới thiệu về xem trước",
+  "editorPreviewHintBody": "Kết xuất cục bộ, không dùng trình duyệt: script không chạy"
 }

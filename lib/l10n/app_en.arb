@@ -4795,5 +4795,39 @@
   "editorConsoleInsert": "Insert result into editor",
   "diffSyntaxCheck": "Check syntax of both sides",
   "diffSyntaxUnsupported": "Only JSON / XML content can be checked here",
-  "editorLintRulesApplyAll": "Apply to all languages"
+  "editorLintRulesApplyAll": "Apply to all languages",
+  "editorIssuePosition": "Line {line}, col {col}",
+  "@editorIssuePosition": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "col": {
+        "type": "String"
+      }
+    }
+  },
+  "editorIssueFix": "Fix",
+  "editorIssueMore": "{n} more",
+  "@editorIssueMore": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "editorIssueHint": "Tap an item to jump to it",
+  "guideImageFailed": "Failed to load image",
+  "editorFormatNoChange": "Already formatted",
+  "editorFormatted": "Formatted",
+  "mediaPreview": "Media preview",
+  "mediaActualSize": "Actual size",
+  "mediaFitWidth": "Fit width",
+  "mediaOpenExternal": "Open in system app",
+  "mediaOpenExternalFailed": "Cannot open here - export the file and open it manually",
+  "mediaPlayHint": "Video and audio are not played inline. Hand it to the system player instead.",
+  "mediaUnsupported": "This file type cannot be previewed",
+  "editorPreview": "Preview",
+  "editorPreviewHint": "About preview",
+  "editorPreviewHintBody": "Rendered locally without a browser engine: scripts do not run, and no network requests are made for you."
 }
