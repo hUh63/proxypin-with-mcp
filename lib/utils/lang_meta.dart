@@ -285,8 +285,16 @@ FormatKind formatKindOf({String? key, String? label}) {
     final k = _formatByKey[key];
     if (k != null) return k;
   }
-  final family = langFamilyOf(key: key, label: label);
   final norm = normalizeLang(label ?? '');
+  // Markdown / AsciiDoc 借 XML 的注释语法（`<!-- -->`），但他们**不是** XML：
+  // 用 XML 解析器去格式化必然抛异常，用户看到的就是「点了格式化报错」。
+  if (key == 'markdown' ||
+      norm.contains('markdown') ||
+      norm.contains('asciidoc') ||
+      norm.contains('rst')) {
+    return FormatKind.none;
+  }
+  final family = langFamilyOf(key: key, label: label);
   switch (family) {
     case LangFamily.xml:
       return FormatKind.xml;
