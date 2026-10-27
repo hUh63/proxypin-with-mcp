@@ -366,6 +366,10 @@ class CodeLint {
   /// 整个语句/表达式结束时才判断完整性。这里给编辑器一个「编辑中行」的口子。
   static const Set<String> incompleteCodes = <String>{
     'missing-semicolon',
+    'missing-paren',
+    'case-colon',
+    'unclosed-preproc',
+    'type-body',
     'unclosed-string',
     'unclosed-bracket',
     'extra-bracket',
@@ -906,18 +910,25 @@ class CodeLint {
       );
     }
 
-    if (p.semicolons) _checkSemicolons(src, String.fromCharCodes(units), lineTops, lineDeltas, ctx, add);
+    final masked = String.fromCharCodes(units);
+    if (p.semicolons) {
+      _checkSemicolons(src, masked, lineTops, lineDeltas, ctx, add);
+      // 下面这几条只对「大括号 + 分号」语言有意义：Swift / Go / Rust 的 if 不要求括号，
+      // Python 根本没有 #if，硬套只会误报。
+      _checkControlParens(masked, ctx, add);
+      _checkCaseLabels(src, masked, ctx, add);
+      _checkPreprocessor(masked, ctx, add);
+      // 语义类的提示同理：Python 单行一个裸词可能是合法表达式，误报风险高。
+      _checkUnknownIdentifiers(src, idents, langLabel, langKey, ctx, add);
+    }
     if (p.caseSensitive) _checkCase(src, idents, langLabel, langKey, ctx, add);
-    // 语义类的提示只在「大括号 + 分号」语言上开：Python 这类靠缩进的语言，
-    // 单行一个词本来就可能是合法的表达式，误报风险高。
-    if (p.semicolons) _checkUnknownIdentifiers(src, idents, langLabel, langKey, ctx, add);
     if (p.indented) _checkIndent(src, p.blockIndent, ctx, add);
     if (p.semicolons || p.slashComment) _checkAssignmentCondition(src, langLabel, ctx, add);
     if (p.cssDecls) _checkCssDecls(src, ctx, add);
     if (p.iniLike) _checkIni(src, ctx, add);
     if (p.yamlLike) _checkYaml(src, ctx, add);
     if (p.makefileLike) _checkMakefile(src, ctx, add);
-    _checkBlockPairs(src, String.fromCharCodes(units), p.key, ctx, add);
+    _checkBlockPairs(src, masked, p.key, ctx, add);
   }
 
   /// `/` 之前是「值」结束的字符时才是除法，否则是正则字面量起始。
@@ -983,6 +994,8 @@ class CodeLint {
     const skipHeads = <String>[
       'case ', 'default', 'else', 'do', 'try', 'finally', 'catch', 'template', //
       '@', '#', 'public:', 'private:', 'protected:', 'internal:', '//', '/*', '*', '}',
+      // C# 泛型约束行（`where T : class`）与构造函数初始化列表（`: base(...)`）
+      'where ', ':',
     ];
 
     for (var line = 0; line < maskLines.length && line < rawLines.length; line++) {
@@ -1021,7 +1034,10 @@ class CodeLint {
       if (_bareNameChain.hasMatch(head.trim())) continue;
 
       final lastChar = trimmedRight[trimmedRight.length - 1];
-      if (';{}),]:'.contains(lastChar)) continue;
+      // 注意：`)` / `]` 不在这里一刀切跳过 —— `Console.WriteLine("hi")`、`arr[0]`
+      // 这类「漏了分号」正是最常见的编译错误，以前被整类放过。块头 / 声明 / 特性
+      // 在下面单独豁免。
+      if (';{},:'.contains(lastChar)) continue;
       if ('+-*/%&|^<>=,:?([.~!'.contains(lastChar)) continue;
 
       // 下一行以 { 或 : 开头 → 本行是块头 / 构造初始化列表
@@ -1048,6 +1064,30 @@ class CodeLint {
         continue;
       }
 
+      // `)` 结尾：块头（if / for / 方法声明 / using / lock…）不算语句，
+      // 其余（方法调用、return f(x)）漏分号要报。
+      if (lastChar == ')') {
+        if (_isBlockHeaderLine(head)) continue;
+      } else if (lastChar == ']') {
+        // C# 特性 `[Serializable]`、C 的 `int a[]` 声明行
+        if (head.startsWith('[')) continue;
+      }
+
+      // 类型 / 命名空间声明行：少了 `{` 时报「缺 {」而不是「缺分号」——
+      // 后者虽然也能指出问题，但对不上用户看到的东西。
+      if (_typeDeclHead.hasMatch(head)) {
+        add(
+          lineStart + trimmedRight.length,
+          0,
+          LintSeverity.warning,
+          'type-body',
+          ctx.t('这个类型声明后面缺少「{」', 'missing "{" after this type declaration'),
+          suggestion: ctx.t('补上 {', 'add {'),
+          replacement: '{',
+        );
+        continue;
+      }
+
       add(
         lineStart + trimmedRight.length,
         0,
@@ -1057,6 +1097,141 @@ class CodeLint {
         suggestion: ctx.t('补上 ;', 'add ;'),
         replacement: ';',
       );
+    }
+  }
+
+  // ------------------------------ 语句「形状」 ------------------------------
+
+  static const List<String> _blockHeadKeywords = <String>[
+    'if ', 'if(', 'while ', 'while(', 'for ', 'for(', 'foreach ', 'foreach(', //
+    'switch ', 'switch(', 'using ', 'using(', 'lock ', 'lock(', 'fixed ',
+    'else ', 'do ', 'try', 'catch', 'finally', 'unsafe', 'checked', 'unchecked',
+  ];
+
+  /// 这一行是「块头 / 成员声明」——结尾的 `)` 不代表一条语句结束。
+  static bool _isBlockHeaderLine(String head) {
+    final h = head.trimLeft();
+    for (final k in _blockHeadKeywords) {
+      if (h.startsWith(k)) return true;
+    }
+    // 带修饰符的成员声明：`public void M()` / `static async Task<int> M()`
+    return _modifierHead.hasMatch(h);
+  }
+
+  static final RegExp _typeDeclHead = RegExp(
+      r'^(?:public\s+|private\s+|protected\s+|internal\s+|static\s+|abstract\s+|sealed\s+|partial\s+|new\s+)*'
+      r'(?:class|struct|interface|enum|namespace|record)\b');
+
+  static final RegExp _modifierHead = RegExp(
+      r'^(?:public|private|protected|internal|static|async|override|virtual|abstract|sealed|extern|unsafe|partial|readonly|const|final)\b');
+
+  /// `if (…)` / `while (…)` / `for (…)` 这类关键字后面必须紧跟 `(`。
+  ///
+  /// 漏写左括号是很常见的「根本编译不过」，而纯靠括号配平发现不了：少的是**左**括号，
+  /// 于是右括号会被报成「多余」，报错位置完全是另一处。
+  static final RegExp _ctrlRe = RegExp(r'\b(if|while|for|foreach|switch|lock|fixed)\b');
+
+  static void _checkControlParens(String masked, _Ctx ctx, _Add add) {
+    for (final m in _ctrlRe.allMatches(masked)) {
+      final word = m.group(1)!;
+      // 只认「语句位置」上的关键字（前面是行首 / ; { } ) : 或 else / do / in）。
+      // 这样 `x switch { ... }`（switch 表达式）、`obj.if` 这类不会误判。
+      final before = masked.substring(0, m.start).trimRight();
+      final prevChar = before.isEmpty ? '' : before[before.length - 1];
+      final prevWord = RegExp(r'[A-Za-z_]\w*$').firstMatch(before)?.group(0);
+      final statementPos = before.isEmpty ||
+          ';{}):'.contains(prevChar) ||
+          prevWord == 'else' ||
+          prevWord == 'do' ||
+          prevWord == 'in';
+      if (!statementPos) continue;
+
+      var j = m.end;
+      while (j < masked.length && (masked[j] == ' ' || masked[j] == '\t')) {
+        j++;
+      }
+      if (j >= masked.length) continue;
+      final next = masked[j];
+      if (next == '(' || next == '\n' || next == '\r') continue;
+      add(
+        m.start,
+        word.length,
+        LintSeverity.error,
+        'missing-paren',
+        ctx.t('「$word」后面必须跟括号「(」', '"$word" must be followed by "("'),
+        suggestion: ctx.t('检查这一句是不是漏了左括号', 'check whether the opening parenthesis is missing'),
+      );
+    }
+  }
+
+  /// `case X` 少了结尾的冒号。少了它 switch 整段都编译不过。
+  static void _checkCaseLabels(String src, String masked, _Ctx ctx, _Add add) {
+    final rawLines = src.split('\n');
+    final maskLines = masked.split('\n');
+    var offset = 0;
+    for (var i = 0; i < maskLines.length && i < rawLines.length; i++) {
+      final lineStart = offset;
+      offset += rawLines[i].length + 1;
+      final mask = _trimRight(maskLines[i]);
+      if (mask.isEmpty) continue;
+      final t = mask.trimLeft();
+      if (t != 'case' && !t.startsWith('case ')) continue;
+      if (t.endsWith(':') || t.endsWith('{') || t.endsWith(',')) continue;
+      add(
+        lineStart + mask.length,
+        0,
+        LintSeverity.warning,
+        'case-colon',
+        ctx.t('case 后面缺少冒号「:」', 'missing ":" after case'),
+        suggestion: ctx.t('补上 :', 'add :'),
+        replacement: ':',
+      );
+    }
+  }
+
+  /// `#if / #region` 配对（C / C++ / C# / Objective-C）。
+  ///
+  /// 少了 `#endif` 的后果是整段代码被吞掉，报错往往出现在几百行之外。
+  static final RegExp _preprocRe = RegExp(
+      r'^[ \t]*#(if|ifdef|ifndef|elif|else|endif|region|endregion)\b',
+      multiLine: true);
+
+  static void _checkPreprocessor(String masked, _Ctx ctx, _Add add) {
+    final ifStack = <int>[];
+    final regionStack = <int>[];
+    for (final m in _preprocRe.allMatches(masked)) {
+      final kind = m.group(1)!;
+      switch (kind) {
+        case 'if':
+        case 'ifdef':
+        case 'ifndef':
+          ifStack.add(m.start);
+        case 'endif':
+          if (ifStack.isEmpty) {
+            add(m.start, m.end - m.start, LintSeverity.warning, 'unclosed-preproc',
+                ctx.t('#endif 没有对应的 #if', '#endif without a matching #if'));
+          } else {
+            ifStack.removeLast();
+          }
+        case 'region':
+          regionStack.add(m.start);
+        case 'endregion':
+          if (regionStack.isEmpty) {
+            add(m.start, m.end - m.start, LintSeverity.warning, 'unclosed-preproc',
+                ctx.t('#endregion 没有对应的 #region', '#endregion without a matching #region'));
+          } else {
+            regionStack.removeLast();
+          }
+      }
+    }
+    for (final at in ifStack) {
+      add(at, 3, LintSeverity.warning, 'unclosed-preproc',
+          ctx.t('这个 #if 到文件末尾都没有 #endif', 'this #if is never closed with #endif'));
+    }
+    for (final at in regionStack) {
+      add(at, 7, LintSeverity.warning, 'unclosed-preproc',
+          ctx.t('这个 #region 到文件末尾都没有 #endregion',
+              'this #region is never closed with #endregion'));
     }
   }
 
@@ -1866,6 +2041,10 @@ class LintRules {
     LintRule('extra-bracket', '多余的括号', 'Extra bracket'),
     LintRule('bracket-mismatch', '括号类型不匹配', 'Mismatched bracket'),
     LintRule('missing-semicolon', '缺少分号', 'Missing semicolon'),
+    LintRule('missing-paren', '关键字后面缺括号', 'Missing parenthesis after keyword'),
+    LintRule('case-colon', 'case 后面缺冒号', 'Missing colon after case'),
+    LintRule('type-body', '类型声明缺 {', 'Missing "{" after type declaration'),
+    LintRule('unclosed-preproc', '#if / #region 不配对', 'Unbalanced #if / #region'),
     LintRule('case-mismatch', '大小写可能写错', 'Possible casing mistake'),
     LintRule('unknown-identifier', '名字没有声明过（拼写 / 没写完）', 'Undeclared identifier (spelling)'),
     LintRule('mixed-indent', '缩进混用空格与 tab', 'Mixed spaces and tabs'),
