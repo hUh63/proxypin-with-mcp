@@ -41,6 +41,9 @@ class TextEditorPrefs {
   /// 是否高亮光标所在行（VS Code 的 current line highlight）。
   final bool highlightCurrentLine;
 
+  /// 是否检查排版风格（行尾空白 / 连续空行 / 文件末尾换行）。默认关。
+  final bool styleLint;
+
   /// 是否允许折叠代码。
   final bool enableFolding;
 
@@ -105,6 +108,7 @@ class TextEditorPrefs {
     this.gutterDivider = false,
     this.guideLines = false,
     this.highlightCurrentLine = true,
+    this.styleLint = false,
     this.enableFolding = true,
     this.useTabs = false,
     this.tabSize = 4,
@@ -133,6 +137,7 @@ class TextEditorPrefs {
     bool? gutterDivider,
     bool? guideLines,
     bool? highlightCurrentLine,
+    bool? styleLint,
     bool? enableFolding,
     bool? useTabs,
     int? tabSize,
@@ -160,6 +165,7 @@ class TextEditorPrefs {
       gutterDivider: gutterDivider ?? this.gutterDivider,
       guideLines: guideLines ?? this.guideLines,
       highlightCurrentLine: highlightCurrentLine ?? this.highlightCurrentLine,
+      styleLint: styleLint ?? this.styleLint,
       enableFolding: enableFolding ?? this.enableFolding,
       useTabs: useTabs ?? this.useTabs,
       tabSize: tabSize ?? this.tabSize,
@@ -189,6 +195,7 @@ class TextEditorPrefs {
         'gutterDivider': gutterDivider,
         'guideLines': guideLines,
         'highlightCurrentLine': highlightCurrentLine,
+        'styleLint': styleLint,
         'enableFolding': enableFolding,
         'useTabs': useTabs,
         'tabSize': tabSize,
@@ -223,6 +230,7 @@ class TextEditorPrefs {
       gutterDivider: json['gutterDivider'] as bool? ?? false,
       guideLines: json['guideLines'] as bool? ?? false,
       highlightCurrentLine: json['highlightCurrentLine'] as bool? ?? true,
+      styleLint: json['styleLint'] as bool? ?? false,
       enableFolding: json['enableFolding'] as bool? ?? true,
       useTabs: json['useTabs'] as bool? ?? false,
       tabSize: (json['tabSize'] as num?)?.toInt() ?? 4,

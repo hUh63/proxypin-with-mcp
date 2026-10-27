@@ -157,6 +157,12 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 label: prefs.suggestionMaxHeight.toStringAsFixed(0),
                 onChanged: (v) => _apply(prefs.copyWith(suggestionMaxHeight: v)),
               ),
+              _switchTile(
+                icon: Icons.spellcheck,
+                title: localizations.editorStyleLint,
+                value: prefs.styleLint,
+                onChanged: (v) => _apply(prefs.copyWith(styleLint: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsGesture),
               _switchTile(

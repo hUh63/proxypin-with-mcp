@@ -2806,5 +2806,6 @@
   "editorLowerCase": "minúsculas",
   "editorTitleCase": "Tipo Título",
   "editorSymbols": "Ir al símbolo",
-  "editorSymbolsEmpty": "No hay símbolos en este archivo"
+  "editorSymbolsEmpty": "No hay símbolos en este archivo",
+  "editorStyleLint": "Revisar formato (espacios finales, líneas en blanco)"
 }

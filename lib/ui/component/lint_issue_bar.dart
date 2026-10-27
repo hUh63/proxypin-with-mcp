@@ -50,6 +50,12 @@ class LintIssueBar extends StatefulWidget {
   /// 同时最多显示几行（超出的折叠）。
   final int maxRows;
 
+  /// 被关掉的严重程度（由外部持有，和底部「问题」面板共用一份）。
+  final Set<LintSeverity> muted;
+
+  /// 点徽标切换级别时回调。
+  final ValueChanged<Set<LintSeverity>>? onMutedChanged;
+
   const LintIssueBar({
     super.key,
     required this.report,
@@ -59,6 +65,8 @@ class LintIssueBar extends StatefulWidget {
     this.onFixAll,
     this.chinese = true,
     this.maxRows = 3,
+    this.muted = const <LintSeverity>{},
+    this.onMutedChanged,
   });
 
   @override
@@ -71,7 +79,9 @@ class _LintIssueBarState extends State<LintIssueBar> {
 
   /// 被关掉的严重程度。点表头的数量徽标切换，和 VS「问题」面板的筛选一个意思：
   /// 只关心报错时把警告/提示关掉，列表就干净了。
-  final Set<LintSeverity> _muted = <LintSeverity>{};
+  ///
+  /// 状态由外部持有（和底部面板共用），这里只负责显示与回调。
+  Set<LintSeverity> get _muted => widget.muted;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -166,9 +176,11 @@ class _LintIssueBarState extends State<LintIssueBar> {
   Widget _countBadge(Color color, int count, LintSeverity level) {
     final off = _muted.contains(level);
     return InkWell(
-      onTap: () => setState(() {
-        if (!_muted.remove(level)) _muted.add(level);
-      }),
+      onTap: () {
+        final next = <LintSeverity>{..._muted};
+        if (!next.remove(level)) next.add(level);
+        widget.onMutedChanged?.call(next);
+      },
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
@@ -195,13 +207,19 @@ class _LintIssueBarState extends State<LintIssueBar> {
       LintSeverity.warning => Colors.orange,
       LintSeverity.info => Colors.blueGrey,
     };
+    // 和 VS「错误列表」一样用等级图标，而不是一个色点：扫一眼就能分出错误/警告/消息。
+    final icon = switch (d.severity) {
+      LintSeverity.error => Icons.error,
+      LintSeverity.warning => Icons.warning_amber_rounded,
+      LintSeverity.info => Icons.info_outline,
+    };
     final fixable = d.replacement != null;
     return InkWell(
       onTap: () => widget.onJump(d),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(10, 2, 6, 2),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          Icon(Icons.circle, size: 7, color: color),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -220,7 +238,7 @@ class _LintIssueBarState extends State<LintIssueBar> {
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              localizations.editorIssuePosition('${d.line}', '${d.column}'),
+              '${d.line}:${d.column}',
               style: TextStyle(fontSize: 10, color: theme.colorScheme.primary),
             ),
           ),

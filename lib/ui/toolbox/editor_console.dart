@@ -76,6 +76,9 @@ class EditorConsolePanel extends StatefulWidget {
   /// 被关掉的规则（不产出诊断）。
   final Set<String> disabledRules;
 
+  /// 被问题栏关掉的严重程度（两边共用同一份状态，和 VS 的筛选一致）。
+  final Set<LintSeverity> hiddenSeverities;
+
   /// 打开规则开关面板。
   final VoidCallback? onOpenRules;
 
@@ -100,6 +103,7 @@ class EditorConsolePanel extends StatefulWidget {
     this.onFixAll,
     required this.onClose,
     this.initialTab = EditorConsoleTab.problems,
+    this.hiddenSeverities = const <LintSeverity>{},
     this.programming = false,
     this.disabledRules = const <String>{},
     this.onOpenRules,
@@ -129,6 +133,10 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   int _filter = 0;
   int _cursor = 0;
 
+  /// 问题列表的搜索词（VS「错误列表」顶部那行搜索）。
+  String _search = '';
+  final TextEditingController _searchInput = TextEditingController();
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -149,6 +157,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   @override
   void dispose() {
     _input.dispose();
+    _searchInput.dispose();
     _scroll.dispose();
     _rt?.dispose();
     _rt = null;
@@ -159,14 +168,20 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
 
   List<LintDiagnostic> get _visible {
     final all = widget.report?.diagnostics ?? const <LintDiagnostic>[];
-    switch (_filter) {
-      case 1:
-        return all.where((d) => d.severity == LintSeverity.error).toList(growable: false);
-      case 2:
-        return all.where((d) => d.severity != LintSeverity.info).toList(growable: false);
-      default:
-        return all;
-    }
+    final filtered = switch (_filter) {
+      1 => all.where((d) => d.severity == LintSeverity.error).toList(growable: false),
+      2 => all.where((d) => d.severity != LintSeverity.info).toList(growable: false),
+      _ => all,
+    };
+    final visible = widget.hiddenSeverities.isEmpty
+        ? filtered
+        : filtered.where((d) => !widget.hiddenSeverities.contains(d.severity)).toList(growable: false);
+    final q = _search.trim().toLowerCase();
+    if (q.isEmpty) return visible;
+    return visible
+        .where((d) =>
+            d.message.toLowerCase().contains(q) || d.code.toLowerCase().contains(q))
+        .toList(growable: false);
   }
 
   void _goIssue(bool forward) {
@@ -504,6 +519,41 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     }
     if (list.isEmpty) return _hint(localizations.editorLintFilteredEmpty, theme);
 
+    return Column(children: [
+      // 搜索框：VS 的「错误列表」就有这一行，按说明或规则名过滤。
+      Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
+        child: TextField(
+          controller: _searchInput,
+          style: const TextStyle(fontSize: 12),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: localizations.search,
+            hintStyle: const TextStyle(fontSize: 12),
+            prefixIcon: const Icon(Icons.search, size: 15),
+            prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            suffixIcon: _search.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close, size: 14),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: localizations.clear,
+                    onPressed: () {
+                      _searchInput.clear();
+                      setState(() => _search = '');
+                    },
+                  ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: (v) => setState(() => _search = v),
+        ),
+      ),
+      Expanded(child: _problemList(theme, list)),
+    ]);
+  }
+
+  Widget _problemList(ThemeData theme, List<LintDiagnostic> list) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 2),
       itemCount: list.length,

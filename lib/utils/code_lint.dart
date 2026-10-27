@@ -387,8 +387,14 @@ class CodeLint {
     bool chinese = true,
     Set<String> disabledRules = const <String>{},
     int? editingLine,
+    /// 是否启用「排版风格」类规则（行尾空白 / 连续空行 / 文件末尾换行）。
+    /// 这类规则不是「编译不过」，默认关掉——VS 里也是交给格式化工具而不是错误列表。
+    bool styleRules = false,
   }) {
     final profile = profileOf(langLabel, langKey);
+    final blocked = styleRules
+        ? disabledRules
+        : <String>{...disabledRules, ...LintRules.styleCodes};
     final ctx = _Ctx(chinese);
     if (source.length > maxCheckLength) {
       return LintReport(
@@ -414,7 +420,7 @@ class CodeLint {
       String? suggestion,
       String? replacement,
     }) {
-      if (disabledRules.contains(code)) return;
+      if (blocked.contains(code)) return;
       final offset = start < 0 ? 0 : (start > source.length ? source.length : start);
       final line = index.lineOf(offset);
       out.add(LintDiagnostic(
@@ -485,13 +491,15 @@ class CodeLint {
     bool chinese = true,
     Set<String> disabledRules = const <String>{},
     int? editingLine,
+    bool styleRules = false,
   }) {
     LintReport full() => check(current,
         langLabel: langLabel,
         langKey: langKey,
         chinese: chinese,
         disabledRules: disabledRules,
-        editingLine: editingLine);
+        editingLine: editingLine,
+        styleRules: styleRules);
     if (previous.length < 32768 ||
         current.length < previous.length ||
         !current.startsWith(previous)) {
@@ -519,7 +527,8 @@ class CodeLint {
         langLabel: langLabel,
         langKey: langKey,
         chinese: chinese,
-        disabledRules: disabledRules);
+        disabledRules: disabledRules,
+        styleRules: styleRules);
     final startLine = _lineNoOf(current, boundary);
 
     final merged = <LintDiagnostic>[];
@@ -930,6 +939,7 @@ class CodeLint {
     if (p.yamlLike) _checkYaml(src, ctx, add);
     if (p.makefileLike) _checkMakefile(src, ctx, add);
     _checkBlockPairs(src, masked, p.key, ctx, add);
+    if (p.programming) _checkStyle(src, ctx, add);
   }
 
   /// `/` 之前是「值」结束的字符时才是除法，否则是正则字面量起始。
@@ -1855,6 +1865,62 @@ class CodeLint {
     return lower;
   }
 
+  // ------------------------------ 排版风格（默认关） ------------------------------
+
+  /// 行尾空白 / 连续空行 / 文件末尾换行。
+  ///
+  /// 这三条不影响编译，所以归到「风格」里默认关——真要看的时候在设置里打开。
+  static void _checkStyle(String src, _Ctx ctx, _Add add) {
+    final lines = src.split('\n');
+    var offset = 0;
+    var blankRun = 0;
+    for (final raw in lines) {
+      final lineStart = offset;
+      offset += raw.length + 1;
+      // CRLF：先把 \r 摘掉再判断，否则每一行都会被算成「行尾空白」。
+      final body = raw.endsWith('\r') ? raw.substring(0, raw.length - 1) : raw;
+      final trimmed = _trimRight(body);
+      if (body.trim().isNotEmpty && trimmed.length != body.length) {
+        final trailing = body.length - trimmed.length;
+        add(
+          lineStart + trimmed.length,
+          trailing,
+          LintSeverity.info,
+          'trailing-space',
+          ctx.t('行尾有多余的空格', 'trailing whitespace'),
+          suggestion: ctx.t('删掉行尾空白', 'remove it'),
+          replacement: '',
+        );
+      }
+      if (body.trim().isEmpty) {
+        blankRun++;
+        if (blankRun == 3) {
+          add(
+            lineStart,
+            0,
+            LintSeverity.info,
+            'blank-lines',
+            ctx.t('连续空行超过两行', 'more than two consecutive blank lines'),
+            suggestion: ctx.t('留一两个空行就够', 'keep one or two blank lines'),
+          );
+        }
+      } else {
+        blankRun = 0;
+      }
+    }
+    if (src.isNotEmpty && !src.endsWith('\n')) {
+      add(
+        src.length,
+        0,
+        LintSeverity.info,
+        'eof-newline',
+        ctx.t('文件末尾没有换行', 'no newline at end of file'),
+        suggestion: ctx.t('补一个换行', 'add a newline'),
+        replacement: '\n',
+      );
+    }
+  }
+
   // ------------------------------ 工具 ------------------------------
 
   static String? _fullWidthOf(int c) {
@@ -2095,7 +2161,10 @@ class LintRule {
   final String nameZh;
   final String nameEn;
 
-  const LintRule(this.code, this.nameZh, this.nameEn);
+  /// 「排版风格」类规则：默认关，开了才查（不检查也不影响编译）。
+  final bool style;
+
+  const LintRule(this.code, this.nameZh, this.nameEn, {this.style = false});
 }
 
 /// 全部规则清单（设置面板按这个列出开关）。
@@ -2131,7 +2200,18 @@ class LintRules {
     LintRule('css-semicolon', 'CSS 声明缺分号', 'CSS missing semicolon'),
     LintRule('block-unclosed', '代码块未闭合（if/fi、begin/end…）', 'Unclosed block (if/fi, begin/end…)'),
     LintRule('block-extra', '多余的块结尾', 'Extra block terminator'),
+    // 排版风格（默认关）
+    LintRule('trailing-space', '行尾多余空格', 'Trailing whitespace', style: true),
+    LintRule('blank-lines', '连续空行过多', 'Too many blank lines', style: true),
+    LintRule('eof-newline', '文件末尾缺换行', 'Missing newline at end of file', style: true),
   ];
+
+  /// 排版风格类规则的代码（默认禁用，`styleRules` 打开才生效）。
+  static const Set<String> styleCodes = <String>{
+    'trailing-space',
+    'blank-lines',
+    'eof-newline',
+  };
 
   static LintRule? byCode(String code) {
     for (final rule in all) {

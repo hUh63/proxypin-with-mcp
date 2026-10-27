@@ -2806,5 +2806,6 @@
   "editorLowerCase": "huruf kecil",
   "editorTitleCase": "Huruf Kapital Tiap Kata",
   "editorSymbols": "Buka simbol",
-  "editorSymbolsEmpty": "Tidak ada simbol di berkas ini"
+  "editorSymbolsEmpty": "Tidak ada simbol di berkas ini",
+  "editorStyleLint": "Periksa format (spasi di akhir baris)"
 }

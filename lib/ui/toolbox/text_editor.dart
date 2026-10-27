@@ -207,6 +207,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 被用户关掉的规则（持久化在 prefs 里）。
   Set<String> _disabledRules = <String>{};
+
+  /// 被用户关掉的严重程度（问题栏与底部「问题」面板共用一份，和 VS 一样是面板级筛选）。
+  final Set<LintSeverity> _hiddenSeverities = <LintSeverity>{};
   bool _consoleOpen = false;
 
   /// 上一次「为了弹补全」而记录的光标位置（避免光标每动一下就重算）。
@@ -599,6 +602,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         chinese: chinese,
         disabledRules: _disabledRules,
         editingLine: editingLine,
+        styleRules: _prefs.styleLint,
       );
     } else {
       report = CodeLint.check(
@@ -608,6 +612,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         chinese: chinese,
         disabledRules: _disabledRules,
         editingLine: editingLine,
+        styleRules: _prefs.styleLint,
       );
     }
     _inLint = false;
@@ -1498,7 +1503,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final controller = _controller;
     if (controller == null) return;
     final text = controller.text;
-    final items = <({String name, String kind, int line, int offset})>[];
+    final items = <({String name, String kind, int line, int offset, int indent})>[];
     // 匹配位置是递增的，行号就用「游标 + 数换行」增量算：300 个符号也只扫一遍全文，
     // 每个都调一次 _lineOfOffset 的话，大文件里打开这个列表会明显卡一下。
     var scanFrom = 0;
@@ -1513,7 +1518,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
         if (text.codeUnitAt(i) == 10) line++;
       }
       scanFrom = offset;
-      items.add((name: name, kind: kind, line: line, offset: offset));
+      // 缩进层级：VS 的符号大纲就是按层级缩进的，一眼能看出谁在谁里面。
+      final raw = m.group(0)!;
+      items.add((
+        name: name,
+        kind: kind,
+        line: line,
+        offset: offset,
+        indent: raw.length - raw.trimLeft().length,
+      ));
       if (items.length >= 300) break;
     }
     if (!mounted) return;
@@ -1528,19 +1541,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
         itemCount: items.length,
         itemBuilder: (ctx, i) {
           final it = items[i];
-          return ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            leading: Icon(_symbolIcon(it.kind), size: 18),
-            title: Text(it.name, style: const TextStyle(fontSize: 13)),
-            trailing: Text('L${it.line + 1}', style: const TextStyle(fontSize: 11)),
-            onTap: () {
-              Navigator.pop(ctx);
-              final len = controller.text.length;
-              controller.selection =
-                  TextSelection.collapsed(offset: it.offset.clamp(0, len));
-              controller.scrollToLine(it.line);
-            },
+          final indent = ((it.indent ~/ 4).clamp(0, 6)) * 10.0;
+          return Padding(
+            padding: EdgeInsets.only(left: indent),
+            child: ListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              leading: Icon(_symbolIcon(it.kind), size: 18),
+              title: Text(it.name, style: const TextStyle(fontSize: 13)),
+              trailing: Text('L${it.line + 1}', style: const TextStyle(fontSize: 11)),
+              onTap: () {
+                Navigator.pop(ctx);
+                final len = controller.text.length;
+                controller.selection =
+                    TextSelection.collapsed(offset: it.offset.clamp(0, len));
+                controller.scrollToLine(it.line);
+              },
+            ),
           );
         },
       ),
@@ -2127,6 +2144,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
               onFix: _fixDiagnostic,
               onShowAll: () => _openConsole(EditorConsoleTab.problems),
               onFixAll: (_lint?.fixableCount ?? 0) > 0 ? _fixAllDiagnostics : null,
+              muted: _hiddenSeverities,
+              onMutedChanged: (next) => setState(() {
+                _hiddenSeverities
+                  ..clear()
+                  ..addAll(next);
+              }),
             ),
           if (_prefs.shortcutBar) _snippetBar(),
           if (_consoleOpen && doc != null)
@@ -2147,6 +2170,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               disabledRules: _disabledRules,
               onOpenRules: _openLintRules,
               onInsertText: _insertText,
+              hiddenSeverities: _hiddenSeverities,
               state: doc.consoleState,
             ),
           if (doc != null)
@@ -2170,6 +2194,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       controller: doc.controller,
       language: _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label,
       indent: _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}',
+      report: doc.lint,
+      onTapIssues: () => _openConsole(EditorConsoleTab.problems),
     );
   }
 
@@ -3077,7 +3103,19 @@ class _EditorStatusBar extends StatefulWidget {
   final String language;
   final String indent;
 
-  const _EditorStatusBar({required this.controller, required this.language, required this.indent});
+  /// 当前诊断（VS 状态栏左侧那组「错误 N / 警告 M」）。
+  final LintReport? report;
+
+  /// 点计数 → 打开问题列表。
+  final VoidCallback? onTapIssues;
+
+  const _EditorStatusBar({
+    required this.controller,
+    required this.language,
+    required this.indent,
+    this.report,
+    this.onTapIssues,
+  });
 
   @override
   State<_EditorStatusBar> createState() => _EditorStatusBarState();
@@ -3158,6 +3196,29 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
           Text('($selected)', style: TextStyle(fontSize: 10.5, color: theme.colorScheme.primary)),
         ],
         const Spacer(),
+        if (widget.report != null) ...[
+          InkWell(
+            onTap: widget.onTapIssues,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.cancel,
+                    size: 10.5,
+                    color: (widget.report!.errorCount) > 0 ? Colors.red : color),
+                const SizedBox(width: 2),
+                Text('${widget.report!.errorCount}', style: style),
+                const SizedBox(width: 8),
+                Icon(Icons.warning_amber_rounded,
+                    size: 11.5,
+                    color: (widget.report!.warningCount) > 0 ? Colors.orange : color),
+                const SizedBox(width: 2),
+                Text('${widget.report!.warningCount}', style: style),
+              ]),
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
         Text('${text.length}', style: style),
         const SizedBox(width: 10),
         Text(widget.indent, style: style),

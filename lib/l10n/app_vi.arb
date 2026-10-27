@@ -2806,5 +2806,6 @@
   "editorLowerCase": "lowercase",
   "editorTitleCase": "Title Case",
   "editorSymbols": "Go to symbol",
-  "editorSymbolsEmpty": "No symbols found in this file"
+  "editorSymbolsEmpty": "No symbols found in this file",
+  "editorStyleLint": "Check formatting (trailing spaces, blank lines)"
 }
