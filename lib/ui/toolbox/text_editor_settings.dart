@@ -92,6 +92,12 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 onChanged: (v) => _apply(prefs.copyWith(guideLines: v)),
               ),
               _switchTile(
+                icon: Icons.highlight_alt,
+                title: localizations.editorHighlightLine,
+                value: prefs.highlightCurrentLine,
+                onChanged: (v) => _apply(prefs.copyWith(highlightCurrentLine: v)),
+              ),
+              _switchTile(
                 icon: Icons.space_bar,
                 title: localizations.editorHideSingleSpace,
                 value: prefs.hideSingleSpace,

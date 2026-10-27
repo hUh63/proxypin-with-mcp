@@ -4594,5 +4594,16 @@
   "editorPreviewHintBody": "在本地直接渲染，不启动浏览器引擎：脚本不会执行，也不会替你发起网络请求。",
   "filePreview": "文件预览",
   "filePreviewTip": "预览图片/动图/音视频/压缩包/文本，按类型自动分流",
-  "editorFixAll": "全部修复"
+  "editorFixAll": "全部修复",
+  "editorHighlightLine": "高亮当前行",
+  "editorLineOps": "行操作",
+  "editorDeleteLine": "删除当前行",
+  "editorDuplicateLine": "复制当前行",
+  "editorMoveLineUp": "上移一行",
+  "editorMoveLineDown": "下移一行",
+  "editorJoinLine": "与下一行合并",
+  "editorCaseOps": "转换大小写",
+  "editorUpperCase": "全部大写",
+  "editorLowerCase": "全部小写",
+  "editorTitleCase": "首字母大写"
 }

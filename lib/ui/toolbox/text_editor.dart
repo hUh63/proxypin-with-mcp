@@ -384,19 +384,25 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _docs.activeId = doc.id;
       _lastText = doc.text;
       _dirty = false;
+      _caretLine = -1;
+      _caretOffset = -1;
+      // 换文档后「上次触发补全的位置」不再有意义，否则同偏移量会被误判成重复。
+      _lastSuggestOffset = -1;
+      _issueCursor = -1;
     });
 
     doc.controller.addListener(_onControllerChanged);
     doc.undoController.addListener(_onUndoChanged);
     _restartFileWatch();
     // 切回旧文档：直接恢复上次的诊断标记，避免「重新检查」造成的闪动。
-    final cached = doc.lint;
-    if (cached != null) {
-      _applyLintDecorations(cached);
+    if (doc.lint != null) {
+      _refreshDecorations();
     } else {
       _clearLintDecorations();
       _scheduleLint();
     }
+    // 当前行高亮跟着光标走，切文档后要先算一次（缓存刚被清成 -1）。
+    _syncCaretLine();
   }
 
   // ---------- 外部改动 / 删除检测 ----------
@@ -477,6 +483,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         }
       }
       if (_prefs.magnifier && mounted) setState(() {});
+      // 当前行高亮（VS Code 的 current line）：只在跨行时重绘。
+      _syncCaretLine();
     }
   }
 
@@ -609,7 +617,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _issueCursor = -1;
     setState(() => _lintChecking = false);
     // 换完装饰会 notifyListeners，必须放在 setState 之后、且不能再次触发检查。
-    _applyLintDecorations(report);
+    _refreshDecorations();
   }
 
   void _openConsole(EditorConsoleTab tab) {
@@ -623,55 +631,99 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _clearLintDecorations() {
-    final controller = _doc?.controller;
-    if (controller == null) return;
-    controller.clearLineDecorations();
-    controller.clearGutterDecorations();
-    controller.notifyListeners();
+    _refreshDecorations();
   }
 
-  void _applyLintDecorations(LintReport report) {
+  /// 当前光标行（0 基），用于高亮当前行。由 [_syncCaretLine] 增量维护。
+  int _caretLine = -1;
+  int _caretOffset = -1;
+
+  /// 光标位置变了就更新「当前行高亮」。
+  ///
+  /// 只把「行号是否变化」当作重绘条件：光标在行内移动不重绘。
+  /// 行号用增量推断（数新旧偏移之间有几个换行），大文件里也不会每点一下都扫全篇。
+  void _syncCaretLine() {
     final controller = _doc?.controller;
     if (controller == null) return;
+    final text = controller.text;
+    final off = controller.selection.extentOffset.clamp(0, text.length);
+    var line = _caretLine;
+    if (line < 0) {
+      // 只有切文档 / 首次进来才整篇扫一次。
+      line = _lineOfOffset(text, off);
+    } else if (off > _caretOffset) {
+      for (var i = _caretOffset; i < off && i < text.length; i++) {
+        if (text.codeUnitAt(i) == 10) line++;
+      }
+    } else if (off < _caretOffset) {
+      // 退格 / 删除：同样只数中间那段换行，不整篇重扫。
+      for (var i = off; i < _caretOffset && i < text.length; i++) {
+        if (text.codeUnitAt(i) == 10) line--;
+      }
+      if (line < 0) line = _lineOfOffset(text, off);
+    }
+    final changed = line != _caretLine;
+    _caretLine = line;
+    _caretOffset = off;
+    if (changed && mounted) _refreshDecorations();
+  }
+
+  /// 重画「当前行」与「语法问题」这两类行装饰。
+  ///
+  /// 两者共用 controller 的 lineDecoration 通道，只能一起重建——谁单独 clear 一次
+  /// 都会把对方抹掉（以前就是这么丢的）。
+  void _refreshDecorations() {
+    final controller = _doc?.controller;
+    if (controller == null || !mounted) return;
     controller.clearLineDecorations();
     controller.clearGutterDecorations();
-    if (report.diagnostics.isEmpty) {
-      controller.notifyListeners();
-      return;
-    }
-
-    // 同一行有多条诊断时只按最严重的那条染色。
-    final worstByLine = <int, LintSeverity>{};
-    for (final d in report.diagnostics) {
-      final line = d.line - 1;
-      if (line < 0) continue;
-      final current = worstByLine[line];
-      if (current == null || d.severity.index < current.index) worstByLine[line] = d.severity;
-    }
-
     final decos = <LineDecoration>[];
     final gutters = <GutterDecoration>[];
-    worstByLine.forEach((line, severity) {
-      final color = severity == LintSeverity.error
-          ? Colors.red
-          : severity == LintSeverity.warning
-              ? Colors.orange
-              : Colors.blueGrey;
+
+    // VS Code 的当前行高亮：手机屏幕上尤其容易「找不到光标在哪一行」。
+    if (_prefs.highlightCurrentLine && _caretLine >= 0) {
       decos.add(LineDecoration(
-        id: 'lint-bg-$line',
-        startLine: line,
-        endLine: line,
+        id: 'caret-line',
+        startLine: _caretLine,
+        endLine: _caretLine,
         type: LineDecorationType.background,
-        color: color.withValues(alpha: 0.12),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.07),
       ));
-      gutters.add(GutterDecoration(
-        id: 'lint-gutter-$line',
-        startLine: line,
-        endLine: line,
-        type: GutterDecorationType.colorBar,
-        color: color,
-      ));
-    });
+    }
+
+    final report = _doc?.lint;
+    if (report != null && report.diagnostics.isNotEmpty) {
+      // 同一行有多条诊断时只按最严重的那条染色。
+      final worstByLine = <int, LintSeverity>{};
+      for (final d in report.diagnostics) {
+        final line = d.line - 1;
+        if (line < 0) continue;
+        final current = worstByLine[line];
+        if (current == null || d.severity.index < current.index) worstByLine[line] = d.severity;
+      }
+      worstByLine.forEach((line, severity) {
+        final color = severity == LintSeverity.error
+            ? Colors.red
+            : severity == LintSeverity.warning
+                ? Colors.orange
+                : Colors.blueGrey;
+        decos.add(LineDecoration(
+          id: 'lint-bg-$line',
+          startLine: line,
+          endLine: line,
+          type: LineDecorationType.background,
+          color: color.withValues(alpha: 0.12),
+        ));
+        gutters.add(GutterDecoration(
+          id: 'lint-gutter-$line',
+          startLine: line,
+          endLine: line,
+          type: GutterDecorationType.colorBar,
+          color: color,
+        ));
+      });
+    }
+
     controller.addLineDecorations(decos);
     controller.addGutterDecorations(gutters);
     controller.notifyListeners();
@@ -1391,7 +1443,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final text = controller.text;
     final sel = controller.selection;
     final offset = sel.isValid ? sel.start : 0;
-    final lineStart = text.lastIndexOf('\n', offset - 1) + 1;
+    final lineStart = offset == 0 ? 0 : text.lastIndexOf('\n', offset - 1) + 1;
     final nlIndex = text.indexOf('\n', offset);
     final hasTrailingNewline = nlIndex >= 0;
     final lineEnd = hasTrailingNewline ? nlIndex : text.length;
@@ -1400,6 +1452,167 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.text = text.replaceRange(lineStart, removeEnd, insert);
     controller.selection = TextSelection.collapsed(offset: lineStart + insert.length);
     _toast(localizations.editorReplacedLine);
+  }
+
+  // ---------- 行操作 / 大小写（VS Code 的「编辑」菜单） ----------
+
+  /// 光标所在行范围。光标停在换行符之后时算下一行开头。
+  ({int start, int end, bool hasNewline})? _currentLineSpan() {
+    final controller = _controller;
+    if (controller == null) return null;
+    final text = controller.text;
+    final sel = controller.selection;
+    final raw = sel.isValid ? sel.extentOffset : 0;
+    final off = raw.clamp(0, text.length);
+    final start = off == 0 ? 0 : text.lastIndexOf('\n', off - 1) + 1;
+    var nl = text.indexOf('\n', off);
+    final hasNewline = nl >= 0;
+    if (!hasNewline) nl = text.length;
+    return (start: start, end: nl, hasNewline: hasNewline);
+  }
+
+  Future<void> _showLineOpsMenu() async {
+    final size = MediaQuery.of(context).size;
+    final chosen = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(size.width - 190, kToolbarHeight + 40, 20, 0),
+      items: [
+        PopupMenuItem(value: 'delete', child: Text(localizations.editorDeleteLine)),
+        PopupMenuItem(value: 'duplicate', child: Text(localizations.editorDuplicateLine)),
+        PopupMenuItem(value: 'up', child: Text(localizations.editorMoveLineUp)),
+        PopupMenuItem(value: 'down', child: Text(localizations.editorMoveLineDown)),
+        PopupMenuItem(value: 'join', child: Text(localizations.editorJoinLine)),
+      ],
+    );
+    if (chosen != null) _lineOp(chosen);
+  }
+
+  /// 行操作：VS Code 里是 Ctrl+Shift+K（删除行）、Alt+Shift+↑/↓（移动行）这一组。
+  /// 手机上不给快捷键，全部收进菜单——但语义保持一致。
+  void _lineOp(String op) {
+    final controller = _controller;
+    final span = _currentLineSpan();
+    if (controller == null || span == null) return;
+    final text = controller.text;
+    switch (op) {
+      case 'delete':
+        final cutEnd = span.hasNewline ? span.end + 1 : span.end;
+        controller.replaceRange(span.start, cutEnd, '');
+        controller.selection =
+            TextSelection.collapsed(offset: span.start.clamp(0, controller.text.length));
+      case 'duplicate':
+        final line = text.substring(span.start, span.end);
+        if (span.hasNewline) {
+          controller.replaceRange(span.end + 1, span.end + 1, '$line\n');
+          controller.selection = TextSelection.collapsed(offset: span.end + 1 + line.length + 1);
+        } else {
+          controller.replaceRange(text.length, text.length, '\n$line');
+          controller.selection = TextSelection.collapsed(offset: text.length + 1 + line.length);
+        }
+      case 'up':
+        if (span.start == 0) return;
+        final prevEnd = span.start - 1; // 上一行末尾，也就是换行符的位置
+        final prevStart = prevEnd == 0 ? 0 : text.lastIndexOf('\n', prevEnd - 1) + 1;
+        final prev = text.substring(prevStart, prevEnd);
+        final cur = text.substring(span.start, span.end);
+        controller.replaceRange(prevStart, span.end, '$cur\n$prev');
+        controller.selection = TextSelection.collapsed(offset: prevStart + cur.length + 1);
+      case 'down':
+        if (!span.hasNewline) return;
+        final nextStart = span.end + 1;
+        if (nextStart >= text.length) return;
+        var nextEnd = text.indexOf('\n', nextStart);
+        if (nextEnd < 0) nextEnd = text.length;
+        final cur = text.substring(span.start, span.end);
+        final next = text.substring(nextStart, nextEnd);
+        controller.replaceRange(span.start, nextEnd, '$next\n$cur');
+        controller.selection = TextSelection.collapsed(offset: span.start + next.length + 1);
+      case 'join':
+        if (!span.hasNewline) return;
+        final nextStart = span.end + 1;
+        var nextEnd = text.indexOf('\n', nextStart);
+        if (nextEnd < 0) nextEnd = text.length;
+        // 合并时去掉下一行的前导缩进（VS 也这么做），否则接出来一长串空格。
+        final next = text.substring(nextStart, nextEnd).trimLeft();
+        controller.replaceRange(span.end, nextEnd, next);
+    }
+  }
+
+  Future<void> _showCaseOpsMenu() async {
+    final size = MediaQuery.of(context).size;
+    final chosen = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(size.width - 190, kToolbarHeight + 40, 20, 0),
+      items: [
+        PopupMenuItem(value: 'upper', child: Text(localizations.editorUpperCase)),
+        PopupMenuItem(value: 'lower', child: Text(localizations.editorLowerCase)),
+        PopupMenuItem(value: 'title', child: Text(localizations.editorTitleCase)),
+      ],
+    );
+    if (chosen != null) _changeCase(chosen);
+  }
+
+  /// 大小写转换：有选区转选区，没选区转光标所在的词。
+  void _changeCase(String mode) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+    var start = sel.start;
+    var end = sel.end;
+    if (start == end) {
+      final range = _wordRangeAt(text, start);
+      start = range.start;
+      end = range.end;
+    }
+    start = start.clamp(0, text.length);
+    end = end.clamp(start, text.length);
+    if (end <= start) return;
+    final chunk = text.substring(start, end);
+    final converted = switch (mode) {
+      'upper' => chunk.toUpperCase(),
+      'lower' => chunk.toLowerCase(),
+      _ => _titleCase(chunk),
+    };
+    if (converted == chunk) return;
+    controller.replaceRange(start, end, converted);
+    controller.selection = TextSelection(baseOffset: start, extentOffset: start + converted.length);
+  }
+
+  /// 光标处的「词」范围；不在词上时退化成光标所在的一个字符。
+  static ({int start, int end}) _wordRangeAt(String text, int offset) {
+    bool isWord(int c) =>
+        (c >= 0x30 && c <= 0x39) ||
+        (c >= 0x41 && c <= 0x5a) ||
+        (c >= 0x61 && c <= 0x7a) ||
+        c == 0x5f ||
+        c == 0x24 ||
+        c > 0x7f;
+    var s = offset.clamp(0, text.length);
+    var e = s;
+    while (s > 0 && isWord(text.codeUnitAt(s - 1))) {
+      s--;
+    }
+    while (e < text.length && isWord(text.codeUnitAt(e))) {
+      e++;
+    }
+    if (s == e && e < text.length) e++;
+    return (start: s, end: e);
+  }
+
+  static String _titleCase(String s) {
+    final buf = StringBuffer();
+    var inWord = false;
+    for (var i = 0; i < s.length; i++) {
+      final ch = s[i];
+      final lower = ch.toLowerCase();
+      final upper = ch.toUpperCase();
+      final isLetter = upper != lower;
+      buf.write(isLetter && !inWord ? upper : lower);
+      inWord = isLetter || RegExp(r'\d').hasMatch(ch);
+    }
+    return buf.toString();
   }
 
   /// 行注释前缀（自定义语法用显式族；其余按语言族查表）。
@@ -2105,9 +2318,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
           spacing: 0,
           runSpacing: 0,
           children: [
+            // 按用途分组，中间用竖线隔开（VS Code 工具栏的分组感）；
+            // 手机窄屏时 Wrap 会自动折行，不会像固定 Row 那样溢出。
             _iconBtn(Icons.note_add_outlined, localizations.editorNewFile, _newFile),
             _iconBtn(Icons.folder_open, localizations.selectFile, _openFile),
             _iconBtn(Icons.save_outlined, localizations.save, _download),
+            _toolbarSep(),
             _iconBtn(Icons.undo, localizations.editorUndo, _doc?.undoController.canUndo == true ? _undo : null),
             _iconBtn(Icons.redo, localizations.editorRedo, _doc?.undoController.canRedo == true ? _redo : null),
             AnimatedBuilder(
@@ -2118,6 +2334,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                   _toggleFind,
                   tint: (_doc?.findController.isActive ?? false) ? color : null),
             ),
+            _toolbarSep(),
             // 纯文本 / 结构化文本之外的语法没有格式化器，直接不显示（灰按钮点不动最误导）
             if (_canFormat) _iconBtn(Icons.auto_fix_high, localizations.format, _format),
             if (_canPreview) _iconBtn(Icons.visibility_outlined, localizations.editorPreview, _preview),
@@ -2132,6 +2349,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               _iconBtn(Icons.terminal, localizations.editorConsole,
                   () => setState(() => _consoleOpen = !_consoleOpen),
                   tint: _consoleOpen ? color : null),
+            _toolbarSep(),
             _moreMenu(color),
           ],
         ),
@@ -2157,6 +2375,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _showSyntaxMenu();
           case 'gotoLine':
             _selectToLine();
+          case 'lineOps':
+            _showLineOpsMenu();
+          case 'caseOps':
+            _showCaseOpsMenu();
           case 'navBack':
             _navBack();
           case 'navForward':
@@ -2213,6 +2435,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
           child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right),
         ),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
+        PopupMenuItem(
+          value: 'lineOps',
+          child: _menuRow(localizations.editorLineOps, Icons.arrow_right),
+        ),
+        PopupMenuItem(
+          value: 'caseOps',
+          child: _menuRow(localizations.editorCaseOps, Icons.arrow_right),
+        ),
         PopupMenuItem(
           value: 'navBack',
           enabled: _navIndex > 0,
@@ -2560,6 +2790,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
       tooltip: tooltip,
       icon: Icon(icon, size: 17, color: onTap == null ? Colors.grey : tint),
       visualDensity: VisualDensity.compact,
+    );
+  }
+
+  /// 工具栏分组之间的竖线（VS Code 那套「文件 | 编辑 | 视图」的分隔）。
+  Widget _toolbarSep() {
+    // Wrap 里没有交叉轴拉伸，竖线必须自己给高度，否则高度 0 看不见。
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 9),
+      child: Container(width: 1, height: 18, color: Theme.of(context).dividerColor),
     );
   }
 

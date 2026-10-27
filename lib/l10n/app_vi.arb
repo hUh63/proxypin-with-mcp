@@ -2793,5 +2793,16 @@
   "editorPreviewHintBody": "Kết xuất cục bộ, không dùng trình duyệt: script không chạy",
   "filePreview": "Xem trước tệp",
   "filePreviewTip": "Xem trước ảnh, GIF, âm thanh, video, zip và văn bản",
-  "editorFixAll": "Sửa tất cả"
+  "editorFixAll": "Sửa tất cả",
+  "editorHighlightLine": "Highlight current line",
+  "editorLineOps": "Line operations",
+  "editorDeleteLine": "Delete line",
+  "editorDuplicateLine": "Duplicate line",
+  "editorMoveLineUp": "Move line up",
+  "editorMoveLineDown": "Move line down",
+  "editorJoinLine": "Join with next line",
+  "editorCaseOps": "Change case",
+  "editorUpperCase": "UPPERCASE",
+  "editorLowerCase": "lowercase",
+  "editorTitleCase": "Title Case"
 }

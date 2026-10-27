@@ -2793,5 +2793,16 @@
   "editorPreviewHintBody": "เรนเดอร์ในเครื่องโดยไม่ใช้เบราว์เซอร์: สคริปต์ไม่ทำงาน",
   "filePreview": "ดูตัวอย่างไฟล์",
   "filePreviewTip": "ดูตัวอย่างรูป GIF เสียง วิดีโอ zip และข้อความ",
-  "editorFixAll": "แก้ไขทั้งหมด"
+  "editorFixAll": "แก้ไขทั้งหมด",
+  "editorHighlightLine": "Highlight current line",
+  "editorLineOps": "Line operations",
+  "editorDeleteLine": "Delete line",
+  "editorDuplicateLine": "Duplicate line",
+  "editorMoveLineUp": "Move line up",
+  "editorMoveLineDown": "Move line down",
+  "editorJoinLine": "Join with next line",
+  "editorCaseOps": "Change case",
+  "editorUpperCase": "UPPERCASE",
+  "editorLowerCase": "lowercase",
+  "editorTitleCase": "Title Case"
 }

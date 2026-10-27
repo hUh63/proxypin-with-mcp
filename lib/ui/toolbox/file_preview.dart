@@ -104,6 +104,7 @@ class FilePreviewPage {
   }) async {
     if (bytes.isEmpty) return;
     final name = _withExtension(fileName, contentType);
+    await _sweepTemp();
     try {
       final dir = Directory.systemTemp;
       final file = File('${dir.path}${Platform.pathSeparator}pv_'
@@ -120,6 +121,35 @@ class FilePreviewPage {
           duration: const Duration(seconds: 2),
         ),
       );
+    }
+  }
+
+  static bool _swept = false;
+
+  /// 清掉上次运行遗留的预览临时文件。
+  ///
+  /// 不能「关掉预览就删」：音视频是交给系统播放器打开的，删早了播放器就读不到。
+  /// 所以改成会话内第一次落临时文件前，清掉 1 小时前的旧文件——反复预览大视频
+  /// 不会把临时目录堆满。
+  static Future<void> _sweepTemp() async {
+    if (_swept) return;
+    _swept = true;
+    try {
+      final dir = Directory.systemTemp;
+      if (!await dir.exists()) return;
+      final cutoff = DateTime.now().subtract(const Duration(hours: 1));
+      await for (final entity in dir.list()) {
+        if (entity is! File) continue;
+        if (!_baseName(entity.path).startsWith('pv_')) continue;
+        try {
+          final stat = await entity.stat();
+          if (stat.modified.isBefore(cutoff)) await entity.delete();
+        } catch (_) {
+          // 单个文件删不掉不影响预览。
+        }
+      }
+    } catch (_) {
+      // 临时目录不可读也不影响预览。
     }
   }
 

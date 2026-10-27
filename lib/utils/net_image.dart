@@ -57,7 +57,12 @@ class NetImageLoader {
     }
     final pending = _inflight[url];
     if (pending != null) return pending;
-    final future = _download(url).whenComplete(() => _inflight.remove(url));
+    late final Future<Uint8List?> future;
+    future = _fetch(url).whenComplete(() {
+      // 只删自己：同一个 URL 可能在这次完成前又被发起过一次，
+      // 无脑 remove 会把新登记的请求从表里抹掉，后面的调用就会重复下载。
+      if (identical(_inflight[url], future)) _inflight.remove(url);
+    });
     _inflight[url] = future;
     return future;
   }
@@ -71,14 +76,26 @@ class NetImageLoader {
     _bytes = 0;
   }
 
-  static Future<Uint8List?> _download(String url) async {
-    final uri = Uri.tryParse(url);
+  /// 先直连；直连拿不到时再用系统代理试一次。
+  ///
+  /// 直连是为了避开「App 自己的代理链」（否则开 VPN 时图片必挂），但有些网络
+  /// 环境本来就只能经代理出网（公司网 / 需要代理的国际站点），这时直连必失败。
+  /// 两种环境都得能用，所以在失败后再给一次带系统代理的机会。
+  static Future<Uint8List?> _fetch(String url) async {
+    final direct = await _download(url, direct: true);
+    if (direct != null) return direct;
+    return _download(url, direct: false);
+  }
+
+  static Future<Uint8List?> _download(String url, {required bool direct}) async {
+    // 文档里的 HTML 写法会把 & 写成 &amp;，直接用会让整条 query 变样（403 / 404）。
+    final uri = Uri.tryParse(url.replaceAll('&amp;', '&').trim());
     if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) return null;
     final client = HttpClient()
-      // 关键：直连，不走系统代理（否则抓包 App 会把自己的图片请求也抓走）
-      ..findProxy = ((_) => 'DIRECT')
       ..connectionTimeout = const Duration(seconds: 15)
       ..idleTimeout = const Duration(seconds: 10);
+    // 关键：正常路径直连，不走系统代理（否则抓包 App 会把自己的图片请求也抓走）
+    if (direct) client.findProxy = ((_) => 'DIRECT');
     client.userAgent = 'Mozilla/5.0 (compatible; ProxyPin)';
     try {
       final request = await client.getUrl(uri).timeout(timeout);
@@ -173,8 +190,11 @@ class _NetImageState extends State<NetImage> {
   }
 
   Future<void> _load() async {
-    final bytes = await NetImageLoader.load(widget.url);
-    if (!mounted) return;
+    // 记住发起时的地址：await 期间 widget.url 可能已经换掉（列表回收复用），
+    // 那时把旧图的字节写进去会显示成错图。
+    final url = widget.url;
+    final bytes = await NetImageLoader.load(url);
+    if (!mounted || widget.url != url) return;
     setState(() {
       _bytes = bytes;
       _loading = false;

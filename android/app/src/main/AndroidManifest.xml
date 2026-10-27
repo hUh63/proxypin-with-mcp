@@ -41,6 +41,7 @@
         android:enableOnBackInvokedCallback="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
         android:label="ProxyPin">
 
         <!-- Shizuku 官方要求：应用必须声明 ShizukuProvider 才能在启动时收到 Shizuku binder。

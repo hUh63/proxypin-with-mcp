@@ -2794,5 +2794,16 @@
   "editorPreviewHintBody": "Renderizado localmente sem motor de navegador: scripts não são executados.",
   "filePreview": "Pré-visualizar arquivo",
   "filePreviewTip": "Pré-visualize imagens, GIF, áudio, vídeo, zip e texto",
-  "editorFixAll": "Corrigir tudo"
+  "editorFixAll": "Corrigir tudo",
+  "editorHighlightLine": "Realçar a linha atual",
+  "editorLineOps": "Operações de linha",
+  "editorDeleteLine": "Excluir linha",
+  "editorDuplicateLine": "Duplicar linha",
+  "editorMoveLineUp": "Mover linha para cima",
+  "editorMoveLineDown": "Mover linha para baixo",
+  "editorJoinLine": "Juntar com a próxima linha",
+  "editorCaseOps": "Alterar maiúsculas",
+  "editorUpperCase": "MAIÚSCULAS",
+  "editorLowerCase": "minúsculas",
+  "editorTitleCase": "Tipo Título"
 }

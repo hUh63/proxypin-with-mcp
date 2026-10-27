@@ -4594,5 +4594,16 @@
   "editorPreviewHintBody": "在本機直接渲染，不啟動瀏覽器引擎：腳本不會執行，也不會替你發送請求。",
   "filePreview": "檔案預覽",
   "filePreviewTip": "預覽圖片/動圖/影音/壓縮檔/文字，依類型自動分流",
-  "editorFixAll": "全部修復"
+  "editorFixAll": "全部修復",
+  "editorHighlightLine": "高亮目前行",
+  "editorLineOps": "行操作",
+  "editorDeleteLine": "刪除目前行",
+  "editorDuplicateLine": "複製目前行",
+  "editorMoveLineUp": "上移一行",
+  "editorMoveLineDown": "下移一行",
+  "editorJoinLine": "與下一行合併",
+  "editorCaseOps": "轉換大小寫",
+  "editorUpperCase": "全部大寫",
+  "editorLowerCase": "全部小寫",
+  "editorTitleCase": "首字母大寫"
 }

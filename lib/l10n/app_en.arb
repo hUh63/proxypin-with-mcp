@@ -4832,5 +4832,16 @@
   "editorPreviewHintBody": "Rendered locally without a browser engine: scripts do not run, and no network requests are made for you.",
   "filePreview": "File preview",
   "filePreviewTip": "Preview images, GIF, audio, video, zip and text files",
-  "editorFixAll": "Fix all"
+  "editorFixAll": "Fix all",
+  "editorHighlightLine": "Highlight current line",
+  "editorLineOps": "Line operations",
+  "editorDeleteLine": "Delete line",
+  "editorDuplicateLine": "Duplicate line",
+  "editorMoveLineUp": "Move line up",
+  "editorMoveLineDown": "Move line down",
+  "editorJoinLine": "Join with next line",
+  "editorCaseOps": "Change case",
+  "editorUpperCase": "UPPERCASE",
+  "editorLowerCase": "lowercase",
+  "editorTitleCase": "Title Case"
 }
