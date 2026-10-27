@@ -55,6 +55,11 @@ void main() {
       expect(list.first.message, contains('WriteLine'));
     });
 
+    test('常见的短成员名不会被乱猜（Add 不会变成 Any）', () {
+      const src = 'class A {\n  void M() {\n    list.Add(1);\n  }\n}';
+      expect(run(src).diagnostics.where((e) => e.code == 'member-spelling'), isEmpty);
+    });
+
     test('拼对的成员名不报', () {
       const src = 'class A {\n  void M() {\n    Console.WriteLine("x");\n  }\n}';
       expect(run(src).diagnostics.where((e) => e.code == 'member-spelling'), isEmpty);

@@ -1489,7 +1489,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   static final RegExp _symbolRe = RegExp(
     r'^[ \t]*(?:(?:public|private|protected|internal|static|async|override|virtual|abstract|sealed|partial|readonly|const|final|export|default)\s+)*'
     r'(?:(class|struct|interface|enum|record|namespace|func|function|def)\s+([A-Za-z_$][\w$]*)'
-    r'|([A-Za-z_$][\w$<>\[\],.?]*)\s+([A-Za-z_$][\w$]*)\s*\()',
+    r'|(?!(?:return|throw|new|await|yield|using|var|let|const|if|while|for|foreach|switch|case|else|do|try|catch|assert|print)\b)'
+    r'([A-Za-z_$][\w$<>\[\],.?]*)\s+([A-Za-z_$][\w$]*)\s*\()',
     multiLine: true,
   );
 
@@ -1498,17 +1499,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (controller == null) return;
     final text = controller.text;
     final items = <({String name, String kind, int line, int offset})>[];
+    // 匹配位置是递增的，行号就用「游标 + 数换行」增量算：300 个符号也只扫一遍全文，
+    // 每个都调一次 _lineOfOffset 的话，大文件里打开这个列表会明显卡一下。
+    var scanFrom = 0;
+    var line = 0;
     for (final m in _symbolRe.allMatches(text)) {
       final kindWord = m.group(1);
       final name = kindWord != null ? m.group(2)! : m.group(4)!;
       final kind = kindWord ?? '';
-      final offset = kindWord != null ? m.start(2) : m.start(4);
-      items.add((
-        name: name,
-        kind: kind,
-        line: _lineOfOffset(text, offset),
-        offset: offset,
-      ));
+      // Match 没有「取某一组起点」的方法，从整段匹配里找名字的位置（名字在行内唯一）。
+      final offset = m.start + m.group(0)!.lastIndexOf(name);
+      for (var i = scanFrom; i < offset && i < text.length; i++) {
+        if (text.codeUnitAt(i) == 10) line++;
+      }
+      scanFrom = offset;
+      items.add((name: name, kind: kind, line: line, offset: offset));
       if (items.length >= 300) break;
     }
     if (!mounted) return;

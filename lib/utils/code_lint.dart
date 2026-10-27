@@ -1419,6 +1419,10 @@ class CodeLint {
       if (pool.containsKey(lower)) continue; // 本身就是已知 API
       String? near;
       for (final e in pool.entries) {
+        // 只差一个字母还不够：`Add` 与 `Any`、`Max` 与 `Min` 也就差一个字母，
+        // 但它们是完全不同的成员。要求前 3 个字母一致，才像是「打漏/打错了一个字母」。
+        if (e.key.length < 5 || lower.length < 5) continue;
+        if (!lower.startsWith(e.key.substring(0, 3))) continue;
         if (!_withinOneEdit(lower, e.key)) continue;
         // 大小写风格要一致，否则 String 与 string 之间会互猜个没完。
         if (_isUpperStart(name) != _isUpperStart(e.value)) continue;
