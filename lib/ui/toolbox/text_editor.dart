@@ -1482,6 +1482,84 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return (start: start, end: nl, hasNewline: hasNewline);
   }
 
+  /// 「转到符号」：把当前文件的类 / 接口 / 枚举 / 命名空间 / 方法列出来，点一下跳过去。
+  ///
+  /// VS 里是 Ctrl+Shift+O。手机上没有快捷键，但这个列表在长文件里确实好用——
+  /// 比来回滚动、或者用查找猜名字快得多。
+  static final RegExp _symbolRe = RegExp(
+    r'^[ \t]*(?:(?:public|private|protected|internal|static|async|override|virtual|abstract|sealed|partial|readonly|const|final|export|default)\s+)*'
+    r'(?:(class|struct|interface|enum|record|namespace|func|function|def)\s+([A-Za-z_$][\w$]*)'
+    r'|([A-Za-z_$][\w$<>\[\],.?]*)\s+([A-Za-z_$][\w$]*)\s*\()',
+    multiLine: true,
+  );
+
+  Future<void> _showSymbols() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final items = <({String name, String kind, int line, int offset})>[];
+    for (final m in _symbolRe.allMatches(text)) {
+      final kindWord = m.group(1);
+      final name = kindWord != null ? m.group(2)! : m.group(4)!;
+      final kind = kindWord ?? '';
+      final offset = kindWord != null ? m.start(2) : m.start(4);
+      items.add((
+        name: name,
+        kind: kind,
+        line: _lineOfOffset(text, offset),
+        offset: offset,
+      ));
+      if (items.length >= 300) break;
+    }
+    if (!mounted) return;
+    if (items.isEmpty) {
+      _toast(localizations.editorSymbolsEmpty);
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => ListView.builder(
+        itemCount: items.length,
+        itemBuilder: (ctx, i) {
+          final it = items[i];
+          return ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            leading: Icon(_symbolIcon(it.kind), size: 18),
+            title: Text(it.name, style: const TextStyle(fontSize: 13)),
+            trailing: Text('L${it.line + 1}', style: const TextStyle(fontSize: 11)),
+            onTap: () {
+              Navigator.pop(ctx);
+              final len = controller.text.length;
+              controller.selection =
+                  TextSelection.collapsed(offset: it.offset.clamp(0, len));
+              controller.scrollToLine(it.line);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  static IconData _symbolIcon(String kind) {
+    switch (kind) {
+      case 'class':
+      case 'record':
+        return Icons.class_outlined;
+      case 'struct':
+        return Icons.view_in_ar_outlined;
+      case 'interface':
+        return Icons.offline_bolt_outlined;
+      case 'enum':
+        return Icons.list_alt;
+      case 'namespace':
+        return Icons.folder_outlined;
+      default:
+        return Icons.functions;
+    }
+  }
+
   Future<void> _showLineOpsMenu() async {
     final size = MediaQuery.of(context).size;
     final chosen = await showMenu<String>(
@@ -2386,6 +2464,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _showSyntaxMenu();
           case 'gotoLine':
             _selectToLine();
+          case 'symbols':
+            _showSymbols();
           case 'lineOps':
             _showLineOpsMenu();
           case 'caseOps':
@@ -2446,6 +2526,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right),
         ),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
+        PopupMenuItem(value: 'symbols', child: Text(localizations.editorSymbols)),
         PopupMenuItem(
           value: 'lineOps',
           child: _menuRow(localizations.editorLineOps, Icons.arrow_right),

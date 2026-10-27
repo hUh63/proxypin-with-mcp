@@ -2804,5 +2804,7 @@
   "editorCaseOps": "Ubah huruf besar/kecil",
   "editorUpperCase": "HURUF BESAR",
   "editorLowerCase": "huruf kecil",
-  "editorTitleCase": "Huruf Kapital Tiap Kata"
+  "editorTitleCase": "Huruf Kapital Tiap Kata",
+  "editorSymbols": "Buka simbol",
+  "editorSymbolsEmpty": "Tidak ada simbol di berkas ini"
 }

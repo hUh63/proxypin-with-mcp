@@ -47,6 +47,19 @@ void main() {
       expect(r.diagnostics.where((d) => d.code == 'unknown-identifier'), isEmpty);
     });
 
+    test('成员名拼错会提示（Console.WritLine）', () {
+      const src = 'class A {\n  void M() {\n    Console.WritLine("x");\n  }\n}';
+      final r = run(src);
+      final list = r.diagnostics.where((e) => e.code == 'member-spelling').toList();
+      expect(list.length, 1);
+      expect(list.first.message, contains('WriteLine'));
+    });
+
+    test('拼对的成员名不报', () {
+      const src = 'class A {\n  void M() {\n    Console.WriteLine("x");\n  }\n}';
+      expect(run(src).diagnostics.where((e) => e.code == 'member-spelling'), isEmpty);
+    });
+
     test('unknown-identifier 是一份可关闭的规则', () {
       const src = 'class A {\n  void M() {\n    Console.WriteLine("hi");\n    cons\n  }\n}';
       final off = CodeLint.check(src,

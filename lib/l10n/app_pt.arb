@@ -2805,5 +2805,7 @@
   "editorCaseOps": "Alterar maiúsculas",
   "editorUpperCase": "MAIÚSCULAS",
   "editorLowerCase": "minúsculas",
-  "editorTitleCase": "Tipo Título"
+  "editorTitleCase": "Tipo Título",
+  "editorSymbols": "Ir para símbolo",
+  "editorSymbolsEmpty": "Nenhum símbolo neste arquivo"
 }

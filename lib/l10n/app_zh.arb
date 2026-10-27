@@ -4605,5 +4605,7 @@
   "editorCaseOps": "转换大小写",
   "editorUpperCase": "全部大写",
   "editorLowerCase": "全部小写",
-  "editorTitleCase": "首字母大写"
+  "editorTitleCase": "首字母大写",
+  "editorSymbols": "转到符号",
+  "editorSymbolsEmpty": "这个文件里没有可跳转的符号"
 }

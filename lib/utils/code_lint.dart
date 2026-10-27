@@ -920,6 +920,7 @@ class CodeLint {
       _checkPreprocessor(masked, ctx, add);
       // 语义类的提示同理：Python 单行一个裸词可能是合法表达式，误报风险高。
       _checkUnknownIdentifiers(src, idents, langLabel, langKey, ctx, add);
+      _checkMemberSpelling(masked, langLabel, langKey, ctx, add);
     }
     if (p.caseSensitive) _checkCase(src, idents, langLabel, langKey, ctx, add);
     if (p.indented) _checkIndent(src, p.blockIndent, ctx, add);
@@ -1374,6 +1375,66 @@ class CodeLint {
         suggestion: near == null
             ? null
             : ctx.t('改成 $near（如果确实是它）', 'change to $near if that is what you meant'),
+      );
+    }
+  }
+
+  /// 点号后面的成员名拼错（`Console.WritLine`）。
+  ///
+  /// 只处理「本文件里只出现一次」的成员名，并在语言关键字 / 标准库表里找一个
+  /// 「只差一个字母」且大小写风格一致的候选——这种情况下几乎都是打字漏字。
+  static final RegExp _memberAccessRe = RegExp(r'\.\s*([A-Za-z_]\w*)');
+
+  static void _checkMemberSpelling(
+    String masked,
+    String langLabel,
+    String? langKey,
+    _Ctx ctx,
+    _Add add,
+  ) {
+    final words = CodeKeywords.forLanguage(langLabel, langKey ?? '');
+    if (words.isEmpty) return;
+    final pool = <String, String>{};
+    for (final w in words) {
+      if (w.length < 4 || !_isIdStart(w.codeUnitAt(0))) continue;
+      pool.putIfAbsent(w.toLowerCase(), () => w);
+    }
+    if (pool.isEmpty) return;
+
+    final counts = <String, int>{};
+    for (final m in _memberAccessRe.allMatches(masked)) {
+      final name = m.group(1)!;
+      counts[name] = (counts[name] ?? 0) + 1;
+    }
+
+    var emitted = 0;
+    final seen = <String>{};
+    for (final m in _memberAccessRe.allMatches(masked)) {
+      if (emitted >= 5) break;
+      final name = m.group(1)!;
+      if (name.length < 4) continue;
+      if ((counts[name] ?? 0) > 1) continue;
+      if (!seen.add(name)) continue;
+      final lower = name.toLowerCase();
+      if (pool.containsKey(lower)) continue; // 本身就是已知 API
+      String? near;
+      for (final e in pool.entries) {
+        if (!_withinOneEdit(lower, e.key)) continue;
+        // 大小写风格要一致，否则 String 与 string 之间会互猜个没完。
+        if (_isUpperStart(name) != _isUpperStart(e.value)) continue;
+        near = e.value;
+        break;
+      }
+      if (near == null) continue;
+      final at = m.start + m.group(0)!.indexOf(name);
+      emitted++;
+      add(
+        at,
+        name.length,
+        LintSeverity.info,
+        'member-spelling',
+        ctx.t('「$name」可能拼错了，是不是「$near」？', '"$name" may be misspelled - did you mean "$near"?'),
+        suggestion: ctx.t('改成 $near（如果确实是它）', 'change to $near if that is what you meant'),
       );
     }
   }
@@ -2047,6 +2108,7 @@ class LintRules {
     LintRule('unclosed-preproc', '#if / #region 不配对', 'Unbalanced #if / #region'),
     LintRule('case-mismatch', '大小写可能写错', 'Possible casing mistake'),
     LintRule('unknown-identifier', '名字没有声明过（拼写 / 没写完）', 'Undeclared identifier (spelling)'),
+    LintRule('member-spelling', '成员名可能拼错', 'Possible typo in member name'),
     LintRule('mixed-indent', '缩进混用空格与 tab', 'Mixed spaces and tabs'),
     LintRule('block-indent', '缺少一级缩进', 'Missing indentation'),
     LintRule('assign-in-condition', '条件里用了赋值', 'Assignment inside condition'),

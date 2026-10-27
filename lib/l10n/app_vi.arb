@@ -2804,5 +2804,7 @@
   "editorCaseOps": "Change case",
   "editorUpperCase": "UPPERCASE",
   "editorLowerCase": "lowercase",
-  "editorTitleCase": "Title Case"
+  "editorTitleCase": "Title Case",
+  "editorSymbols": "Go to symbol",
+  "editorSymbolsEmpty": "No symbols found in this file"
 }
