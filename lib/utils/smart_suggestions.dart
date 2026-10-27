@@ -755,7 +755,20 @@ class SmartSuggestions {
     final trimmed = linePrefix.trimRight();
     // `obj.` 之后：补文档里出现过的成员名。
     if (RegExp(r'\.[\w$]*$').hasMatch(trimmed)) {
-      return _dedupe([..._collect(tail, _memberRe, 200), ...words], prefix);
+      // 成员位置要「像成员」的词：大写开头的（方法 / 属性 / 类型）排前面，
+      // 关键字（if / for / int…）只在后面兜底——否则列表头全是关键字，看着就不智能。
+      final members = <String>[];
+      final rest = <String>[];
+      for (final w in words) {
+        if (w.isEmpty) continue;
+        final c = w.codeUnitAt(0);
+        if (c >= 0x41 && c <= 0x5a) {
+          members.add(w);
+        } else {
+          rest.add(w);
+        }
+      }
+      return _dedupe([..._collect(tail, _memberRe, 200), ...members, ...rest], prefix);
     }
     // `new ` / `extends ` 之后：补文档里的大驼峰类型名。
     if (RegExp(r'\b(new|extends|implements|with|throw)\s+[\w$]*$').hasMatch(trimmed)) {

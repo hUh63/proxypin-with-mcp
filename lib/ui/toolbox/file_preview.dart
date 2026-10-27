@@ -103,7 +103,9 @@ class FilePreviewPage {
     String? contentType,
   }) async {
     if (bytes.isEmpty) return;
-    final name = _withExtension(fileName, contentType);
+    // 文件名来自 HTTP 头（content-disposition），不可信：可能带路径分隔符，
+    // 直接拼进临时路径会写到目录外，甚至失败。
+    final name = _withExtension(_safeName(fileName), contentType);
     await _sweepTemp();
     try {
       final dir = Directory.systemTemp;
@@ -151,6 +153,26 @@ class FilePreviewPage {
     } catch (_) {
       // 临时目录不可读也不影响预览。
     }
+  }
+
+  /// 把 HTTP 头里来的文件名洗成能安全拼进临时路径的形式。
+  static final RegExp _unsafeName = RegExp(r'[<>:"/\\|?*\x00-\x1f]');
+
+  static String _safeName(String raw) {
+    var name = raw.replaceAll(_unsafeName, '_').trim();
+    // 去掉可能残留的 ../ 与开头结尾的点
+    name = name.replaceAll(RegExp(r'\.\.'), '_');
+    name = name.replaceAll(RegExp(r'^\.+'), '');
+    if (name.isEmpty) return 'preview';
+    if (name.length > 80) {
+      final dot = name.lastIndexOf('.');
+      if (dot > 0 && name.length - dot <= 10) {
+        name = '${name.substring(0, 80 - (name.length - dot))}${name.substring(dot)}';
+      } else {
+        name = name.substring(0, 80);
+      }
+    }
+    return name;
   }
 
   /// 名字里没扩展名时按 content-type 补一个，否则分流会判成「未知二进制」。

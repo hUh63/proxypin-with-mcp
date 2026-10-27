@@ -776,9 +776,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final controller = _doc?.controller;
     final report = _lint;
     if (controller == null || report == null) return;
-    final fixed = CodeLint.applyFixes(controller.text, report.diagnostics);
-    if (fixed == controller.text) return;
+    final before = controller.text;
+    // 一键修复后光标不能跳回行首/文末：按「光标之前被替换掉的字符数」平移。
+    final caret = controller.selection.extentOffset.clamp(0, before.length);
+    var adjusted = caret;
+    for (final d in report.diagnostics) {
+      final replacement = d.replacement;
+      if (replacement == null) continue;
+      if (d.start + d.length <= caret) adjusted += replacement.length - d.length;
+    }
+    final fixed = CodeLint.applyFixes(before, report.diagnostics);
+    if (fixed == before) return;
     controller.text = fixed;
+    controller.selection =
+        TextSelection.collapsed(offset: adjusted.clamp(0, controller.text.length));
     _runLint();
   }
 

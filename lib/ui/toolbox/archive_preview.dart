@@ -78,6 +78,9 @@ class _ArchivePreviewPageState extends State<ArchivePreviewPage> {
   /// 超过这个大小就不解析了——解压是「整包进内存」，几百 MB 会直接 OOM。
   static const int _maxBytes = 200 * 1024 * 1024;
 
+  /// 解压后的总大小上限：超过就当作可疑包（zip bomb / 超大镜像），不展开。
+  static const int _maxUnpacked = 512 * 1024 * 1024;
+
   static final RegExp _textExt = RegExp(
       r'\.(json|xml|html?|js|ts|css|py|java|kt|cs|c|cpp|h|go|rs|php|rb|sh|ya?ml|toml|ini|log|txt|md)$');
   static final RegExp _imageExt = RegExp(r'\.(png|jpe?g|gif|webp|bmp|ico)$');
@@ -117,6 +120,15 @@ class _ArchivePreviewPageState extends State<ArchivePreviewPage> {
       }
       final bytes = await widget.file.readAsBytes();
       final archive = _decode(kind, bytes);
+      // zip bomb 粗判：解压后总量远超输入时不继续——后面的「点开条目」会再复刻
+      // 一份字节，几百 MB 的包在手机上很容易直接把进程顶掉。
+      var unpacked = 0;
+      for (final f in archive.files) {
+        unpacked += f.size;
+      }
+      if (unpacked > _maxUnpacked) {
+        throw const FormatException('解压后体积过大');
+      }
       if (!mounted) return;
       setState(() {
         _archive = archive;
@@ -147,6 +159,9 @@ class _ArchivePreviewPageState extends State<ArchivePreviewPage> {
         return TarDecoder().decodeBytes(GZipDecoder().decodeBytes(bytes));
       case ArchiveKind.gzip:
         final raw = GZipDecoder().decodeBytes(bytes);
+        if (raw.length > _maxUnpacked) {
+          throw const FormatException('解压后体积过大');
+        }
         // 单个 .gz 就是一份压缩数据，没有条目结构，直接当成一个文件展示
         return Archive()
           ..addFile(ArchiveFile(widget.file.path.split(Platform.pathSeparator).last, raw.length, raw));

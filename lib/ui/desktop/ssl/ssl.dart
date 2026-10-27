@@ -12,6 +12,7 @@ import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/desktop/ssl/client_cert.dart';
 import 'package:proxypin/ui/desktop/ssl/pc_cert.dart';
 import 'package:proxypin/utils/ip.dart';
+import 'package:proxypin/utils/net_image.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -255,14 +256,14 @@ class _SslState extends State<SslWidget> {
                   Column(children: [
                     Text("3.1 ${localizations.installCaDescribe}", style: const TextStyle(fontSize: 12)),
                     const SizedBox(height: 10),
-                    Image.network("https://foruda.gitee.com/images/1689346516243774963/c56bc546_1073801.png",
+                    NetImage("https://foruda.gitee.com/images/1689346516243774963/c56bc546_1073801.png",
                         height: 270, width: 300)
                   ]),
                   const SizedBox(width: 10),
                   Column(children: [
                     Text("3.2 ${localizations.trustCaDescribe}", style: const TextStyle(fontSize: 12)),
                     const SizedBox(height: 10),
-                    Image.network("https://foruda.gitee.com/images/1689346614916658100/fd9b9e41_1073801.png",
+                    NetImage("https://foruda.gitee.com/images/1689346614916658100/fd9b9e41_1073801.png",
                         height: 270, width: 300)
                   ])
                 ])
@@ -315,9 +316,7 @@ class _SslState extends State<SslWidget> {
                                 ClipRRect(
                                     child: Align(
                                         alignment: Alignment.topCenter,
-                                        child: Image.network(
-                                          scale: 0.5,
-                                          "https://foruda.gitee.com/images/1710181660282752846/cb520c0b_1073801.png",
+                                        child: NetImage("https://foruda.gitee.com/images/1710181660282752846/cb520c0b_1073801.png",
                                           height: 460,
                                         )))
                               ]),
@@ -353,7 +352,7 @@ class _SslState extends State<SslWidget> {
                                       child: Align(
                                           alignment: Alignment.topCenter,
                                           heightFactor: .7,
-                                          child: Image.network(
+                                          child: NetImage(
                                             "https://foruda.gitee.com/images/1689352695624941051/74e3bed6_1073801.png",
                                             height: 530,
                                           )))

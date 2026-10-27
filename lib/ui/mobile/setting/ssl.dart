@@ -33,6 +33,7 @@ import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/mobile/menu/drawer.dart';
 import 'package:proxypin/ui/mobile/setting/client_cert.dart';
 import 'package:proxypin/utils/lang.dart';
+import 'package:proxypin/utils/net_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MobileSslWidget extends StatefulWidget {
@@ -417,9 +418,7 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
       ClipRRect(
           child: Align(
               alignment: Alignment.topCenter,
-              child: Image.network(
-                scale: 0.5,
-                "https://foruda.gitee.com/images/1710181660282752846/cb520c0b_1073801.png",
+              child: NetImage("https://foruda.gitee.com/images/1710181660282752846/cb520c0b_1073801.png",
                 height: 460,
               )))
     ]);
@@ -450,7 +449,7 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
           child: Align(
               alignment: Alignment.topCenter,
               heightFactor: .7,
-              child: Image.network(
+              child: NetImage(
                 "https://foruda.gitee.com/images/1689352695624941051/74e3bed6_1073801.png",
                 height: 680,
               )))
@@ -954,12 +953,12 @@ class _IosCaInstallState extends State<IosCaInstall> {
       Padding(
           padding: const EdgeInsets.only(left: 15),
           child:
-              Image.network("https://foruda.gitee.com/images/1689346516243774963/c56bc546_1073801.png", height: 400)),
+              NetImage("https://foruda.gitee.com/images/1689346516243774963/c56bc546_1073801.png", height: 400)),
       TextButton(onPressed: () {}, child: Text("2.2 ${localizations.trustCaDescribe}")),
       Padding(
           padding: const EdgeInsets.only(left: 15),
           child:
-              Image.network("https://foruda.gitee.com/images/1689346614916658100/fd9b9e41_1073801.png", height: 270)),
+              NetImage("https://foruda.gitee.com/images/1689346614916658100/fd9b9e41_1073801.png", height: 270)),
     ]);
   }
 }

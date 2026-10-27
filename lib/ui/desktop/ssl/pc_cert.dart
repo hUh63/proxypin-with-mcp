@@ -9,6 +9,7 @@ import 'package:proxypin/network/util/crts.dart';
 import 'package:proxypin/storage/local_storage.dart';
 import 'package:proxypin/ui/component/app_dialog.dart';
 import 'package:proxypin/ui/desktop/ssl/cert_installer.dart';
+import 'package:proxypin/utils/net_image.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -150,13 +151,13 @@ class _PCCertState extends State<PCCert> with TickerProviderStateMixin {
               child: Text(localizations.installRootCa))),
       const SizedBox(height: 10),
       Platform.isMacOS
-          ? Image.network("https://foruda.gitee.com/images/1689323260158189316/c2d881a4_1073801.png",
+          ? NetImage("https://foruda.gitee.com/images/1689323260158189316/c2d881a4_1073801.png",
               width: 800, height: 500)
           : Row(children: [
-              Image.network("https://foruda.gitee.com/images/1689335589122168223/c904a543_1073801.png",
+              NetImage("https://foruda.gitee.com/images/1689335589122168223/c904a543_1073801.png",
                   width: 370, height: 380),
               const SizedBox(width: 10),
-              Image.network("https://foruda.gitee.com/images/1689335334688878324/f6aa3a3a_1073801.png",
+              NetImage("https://foruda.gitee.com/images/1689335334688878324/f6aa3a3a_1073801.png",
                   width: 370, height: 380)
             ])
     ];
