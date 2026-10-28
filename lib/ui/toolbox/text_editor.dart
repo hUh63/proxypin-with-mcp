@@ -1502,6 +1502,37 @@ class _TextEditorPageState extends State<TextEditorPage> {
     multiLine: true,
   );
 
+  /// 状态栏点「语言」时弹的语言列表（手机上没有下拉框那么小的点击区，弹层更好点）。
+  Future<void> _showLanguagePicker() async {
+    final chosen = await showModalBottomSheet<_LangOption>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => ListView.builder(
+        itemCount: _langs.length,
+        itemBuilder: (ctx, i) {
+          final option = _langs[i];
+          final active = option.key == _lang.key && option.label == _lang.label;
+          return ListTile(
+            dense: true,
+            selected: active,
+            title: Text(
+              option.label == 'Plain Text' ? localizations.editorPlainText : option.label,
+              style: const TextStyle(fontSize: 13),
+            ),
+            onTap: () => Navigator.pop(ctx, option),
+          );
+        },
+      ),
+    );
+    if (chosen == null || _doc == null) return;
+    if (chosen.key == _lang.key && chosen.label == _lang.label) return;
+    setState(() => _doc!.langLabel = chosen.label);
+    _doc!.lint = null;
+    // 规则开关是按语言记的：切语言要换一份，并立刻重查。
+    unawaited(_loadLintRules());
+    _scheduleLint();
+  }
+
   // ------------------------------ 转到定义（同文件） ------------------------------
 
   /// 同文件「转到定义」：光标在某个名字上时，去找它的声明并跳过去。
@@ -2580,6 +2611,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       indent: _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}',
       report: doc.lint,
       onTapIssues: () => _openConsole(EditorConsoleTab.problems),
+      onTapLanguage: _showLanguagePicker,
+      onTapIndent: _openSettings,
     );
   }
 
@@ -3499,12 +3532,18 @@ class _EditorStatusBar extends StatefulWidget {
   /// 点计数 → 打开问题列表。
   final VoidCallback? onTapIssues;
 
+  /// 点语言 / 缩进段（VS 状态栏这两处都能点）。
+  final VoidCallback? onTapLanguage;
+  final VoidCallback? onTapIndent;
+
   const _EditorStatusBar({
     required this.controller,
     required this.language,
     required this.indent,
     this.report,
     this.onTapIssues,
+    this.onTapLanguage,
+    this.onTapIndent,
   });
 
   @override
@@ -3537,25 +3576,45 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
     if (mounted) setState(() {});
   }
 
-  static int _lineOf(String text, int offset) {
-    var line = 0;
-    final limit = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
-    for (var i = 0; i < limit; i++) {
-      if (text.codeUnitAt(i) == 10) line++;
-    }
-    return line;
-  }
+  // 行列计算：以前每次重建都从头扫两遍全文（1MB 文件里每按一个键就是 2ms），
+  // 现在按「上次位置」增量数换行；文本对象变了才从头算一次。
+  String? _cacheText;
+  int _cacheOffset = -1;
+  int _cacheLine = 0;
+  int _cacheLineStart = 0;
 
-  static int _lineStart(String text, int line) {
-    if (line <= 0) return 0;
-    var seen = 0;
-    for (var i = 0; i < text.length; i++) {
+  ({int line, int column}) _position(String text, int offset) {
+    final target = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
+    if (!identical(_cacheText, text)) {
+      _cacheText = text;
+      _cacheOffset = -1;
+    }
+    if (_cacheOffset >= 0 && target >= _cacheOffset) {
+      var line = _cacheLine;
+      var lineStart = _cacheLineStart;
+      for (var i = _cacheOffset; i < target; i++) {
+        if (text.codeUnitAt(i) == 10) {
+          line++;
+          lineStart = i + 1;
+        }
+      }
+      _cacheOffset = target;
+      _cacheLine = line;
+      _cacheLineStart = lineStart;
+      return (line: line, column: target - lineStart + 1);
+    }
+    var line = 0;
+    var lineStart = 0;
+    for (var i = 0; i < target; i++) {
       if (text.codeUnitAt(i) == 10) {
-        seen++;
-        if (seen == line) return i + 1;
+        line++;
+        lineStart = i + 1;
       }
     }
-    return text.length;
+    _cacheOffset = target;
+    _cacheLine = line;
+    _cacheLineStart = lineStart;
+    return (line: line, column: target - lineStart + 1);
   }
 
   @override
@@ -3564,8 +3623,9 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
     final text = widget.controller.text;
     final offset = widget.controller.selection.baseOffset;
     final safe = offset < 0 ? 0 : (offset > text.length ? text.length : offset);
-    final line = _lineOf(text, safe);
-    final column = safe - _lineStart(text, line) + 1;
+    final pos = _position(text, safe);
+    final line = pos.line;
+    final column = pos.column;
     final selection = widget.controller.selection;
     final selected = selection.isValid && !selection.isCollapsed
         ? (selection.end - selection.start).abs()
@@ -3611,9 +3671,21 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
         ],
         Text('${text.length}', style: style),
         const SizedBox(width: 10),
-        Text(widget.indent, style: style),
-        const SizedBox(width: 10),
-        Text(widget.language, style: style),
+        InkWell(
+          onTap: widget.onTapIndent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(widget.indent, style: style),
+          ),
+        ),
+        const SizedBox(width: 6),
+        InkWell(
+          onTap: widget.onTapLanguage,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(widget.language, style: style),
+          ),
+        ),
       ]),
     );
   }
