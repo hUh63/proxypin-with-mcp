@@ -528,8 +528,8 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
         ]),
       );
     }
-    if (list.isEmpty) return _hint(localizations.editorLintFilteredEmpty, theme);
-
+    // 注意：过滤后为空时**不能**直接 return——那样顶部统计 chips 也没了，
+    // 用户就没法把「按规则过滤」撤掉，会卡在一个空列表里。
     return Column(children: [
       // 搜索框：VS 的「错误列表」就有这一行，按说明或规则名过滤。
       Padding(
@@ -561,7 +561,11 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
         ),
       ),
       if (_ruleStats.isNotEmpty) _ruleChips(theme),
-      Expanded(child: _problemList(theme, list)),
+      Expanded(
+        child: list.isEmpty
+            ? _hint(localizations.editorLintFilteredEmpty, theme)
+            : _problemList(theme, list),
+      ),
     ]);
   }
 
