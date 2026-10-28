@@ -162,6 +162,9 @@ List<_LangOption> _buildCustomLangs() {
 }
 
 /// 新文件的保留偏好。
+/// 一个符号（类 / 方法 / 命名空间…）。「转到符号」与顶部面包屑共用。
+typedef _SymbolItem = ({String name, String kind, int line, int offset, int indent});
+
 enum _RetainMode { ask, always, never }
 
 /// 换行符写出策略（编辑器内部永远是 \n）。
@@ -420,6 +423,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 当前行高亮跟着光标走，切文档后要先算一次（缓存刚被清成 -1）。
     _syncCaretLine();
     _refreshExtraHighlights();
+    _refreshSymbolCache();
   }
 
   // ---------- 外部改动 / 删除检测 ----------
@@ -669,6 +673,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     doc.lintText = text;
     _issueCursor = -1;
     _lastIssueOffset = -1;
+    _refreshSymbolCache();
     setState(() => _lintChecking = false);
     // 换完装饰会 notifyListeners，必须放在 setState 之后、且不能再次触发检查。
     _refreshDecorations();
@@ -719,7 +724,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final changed = line != _caretLine;
     _caretLine = line;
     _caretOffset = off;
-    if (changed && mounted) _refreshDecorations();
+    if (changed && mounted) {
+      _refreshDecorations();
+      // 面包屑跟着光标走，需要重建（_refreshDecorations 只重画装饰，不重建 widget）。
+      setState(() {});
+    }
   }
 
   /// 重画「当前行」与「语法问题」这两类行装饰。
@@ -2060,11 +2069,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _toast('${index.clamp(1, total)} / ${truncated ? '$total+' : '$total'}');
   }
 
-  Future<void> _showSymbols() async {
-    final controller = _controller;
-    if (controller == null) return;
-    final text = controller.text;
-    final items = <({String name, String kind, int line, int offset, int indent})>[];
+  /// 扫一遍文档里的符号。
+  ///
+  /// 「转到符号」和顶部面包屑都用它；结果按文本对象缓存，
+  /// 否则光标每动一下就要重扫一遍全文。
+  List<_SymbolItem> _collectSymbols(String text) {
+    final cached = _symbolCacheText;
+    if (cached != null && identical(cached, text)) return _symbolCacheItems;
+    final items = <_SymbolItem>[];
     // 匹配位置是递增的，行号就用「游标 + 数换行」增量算：300 个符号也只扫一遍全文，
     // 每个都调一次 _lineOfOffset 的话，大文件里打开这个列表会明显卡一下。
     var scanFrom = 0;
@@ -2090,6 +2102,51 @@ class _TextEditorPageState extends State<TextEditorPage> {
       ));
       if (items.length >= 300) break;
     }
+    _symbolCacheText = text;
+    _symbolCacheItems = items;
+    return items;
+  }
+
+  /// 缓存：文本对象没换就直接复用（TextEditingController.text 未编辑时是同一实例）。
+  String? _symbolCacheText;
+  List<_SymbolItem> _symbolCacheItems = const <_SymbolItem>[];
+
+  /// 重扫符号（供顶部面包屑用）。检查跑完后调一次，别放在 build 里。
+  ///
+  /// 超大文件直接放弃面包屑：那是给自己找卡顿，而且那种文件本来就该用「转到符号」。
+  void _refreshSymbolCache() {
+    final doc = _doc;
+    if (doc == null) return;
+    final text = doc.text;
+    if (text.length > 262144) {
+      _symbolCacheText = text;
+      _symbolCacheItems = const <_SymbolItem>[];
+      return;
+    }
+    _symbolCacheText = null;
+    _collectSymbols(text);
+  }
+
+  /// 光标所在行属于哪条符号链（VS 顶部面包屑的 `Namespace › Class › Method`）。
+  ///
+  /// 按缩进做栈：遇到缩进不比栈顶深的符号就弹出，压入自己——
+  /// 于是「行号 ≤ 当前行」跑完之后，栈里剩下的正好是层层包含的那几个。
+  static List<_SymbolItem> _symbolTrail(List<_SymbolItem> symbols, int line) {
+    final stack = <_SymbolItem>[];
+    for (final item in symbols) {
+      if (item.line > line) break;
+      while (stack.isNotEmpty && stack.last.indent >= item.indent) {
+        stack.removeLast();
+      }
+      stack.add(item);
+    }
+    return stack;
+  }
+
+  Future<void> _showSymbols() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final items = _collectSymbols(controller.text);
     if (!mounted) return;
     if (items.isEmpty) {
       _toast(localizations.editorSymbolsEmpty);
@@ -2123,6 +2180,129 @@ class _TextEditorPageState extends State<TextEditorPage> {
         },
       ),
     );
+  }
+
+  /// 顶部面包屑（VS 的编辑器导航栏）：当前光标在哪条 `命名空间 › 类 › 方法` 里。
+  ///
+  /// 手机上没有横向空间放整串，所以只显示路径本身，点一下弹完整的符号大纲。
+  Widget _breadcrumb() {
+    final doc = _doc;
+    if (doc == null || !_programming) return const SizedBox.shrink();
+    // 只读缓存：build 里绝不重扫全文（打字时每个字符都会 build 一次）。
+    // 缓存由 [_refreshSymbolCache] 在检查跑完后刷新。
+    if (!identical(_symbolCacheText, doc.text)) return const SizedBox.shrink();
+    final trail = _symbolTrail(_symbolCacheItems, _caretLine < 0 ? 0 : _caretLine);
+    if (trail.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7);
+    final children = <Widget>[];
+    for (var i = 0; i < trail.length; i++) {
+      if (i > 0) {
+        children.add(Icon(Icons.chevron_right, size: 13, color: muted));
+      }
+      children.add(Flexible(
+        child: Text(
+          trail[i].name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            color: i == trail.length - 1 ? theme.colorScheme.primary : muted,
+          ),
+        ),
+      ));
+    }
+    return InkWell(
+      onTap: _showSymbols,
+      child: Container(
+        height: 22,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        alignment: Alignment.centerLeft,
+        child: Row(mainAxisSize: MainAxisSize.min, children: children),
+      ),
+    );
+  }
+
+  /// 「查找所有引用」（VS 的 Shift+F12）：把这个词在全文出现的位置列出来。
+  ///
+  /// 和查找面板的区别是它**只找整词**、且直接从当前位置出发，不用先输入。
+  Future<void> _showReferences() async {
+    final controller = _controller;
+    final doc = _doc;
+    if (controller == null || doc == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
+    final name = text.substring(range.start, range.end);
+    if (name.isEmpty) {
+      _toast(localizations.editorReferencesEmpty);
+      return;
+    }
+    final hits = <int>[];
+    final wordChar = RegExp(r'[\w$]');
+    var from = 0;
+    while (hits.length < 200) {
+      final at = text.indexOf(name, from);
+      if (at < 0) break;
+      // 只认整词：`Count` 不该命中 `Counter`。
+      final before = at == 0 ? '' : text[at - 1];
+      final afterAt = at + name.length;
+      final after = afterAt >= text.length ? '' : text[afterAt];
+      final ok = (before.isEmpty || !wordChar.hasMatch(before)) &&
+          (after.isEmpty || !wordChar.hasMatch(after));
+      if (ok) hits.add(at);
+      from = at + name.length;
+    }
+    if (hits.isEmpty) {
+      _toast(localizations.editorReferencesEmpty);
+      return;
+    }
+    if (!mounted) return;
+    final lines = <int>[];
+    var scan = 0;
+    var line = 0;
+    for (final at in hits) {
+      for (var i = scan; i < at && i < text.length; i++) {
+        if (text.codeUnitAt(i) == 10) line++;
+      }
+      scan = at;
+      lines.add(line);
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => ListView.builder(
+        itemCount: hits.length,
+        itemBuilder: (ctx, i) {
+          final at = hits[i];
+          final snippet = _lineTextAt(text, lines[i]).trim();
+          return ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.format_list_bulleted, size: 16),
+            title: Text(snippet, maxLines: 1,
+                overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+            trailing: Text('L${lines[i] + 1}', style: const TextStyle(fontSize: 11)),
+            onTap: () {
+              Navigator.pop(ctx);
+              final len = controller.text.length;
+              controller.selection =
+                  TextSelection(baseOffset: at.clamp(0, len), extentOffset: (at + name.length).clamp(0, len));
+              controller.scrollToLine(lines[i]);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  /// 取某一行的原文（引用列表的摘要用）。
+  static String _lineTextAt(String text, int line) {
+    final start = _offsetOfLine(text, line);
+    var end = text.indexOf('\n', start);
+    if (end < 0) end = text.length;
+    return text.substring(start, end);
   }
 
   static IconData _symbolIcon(String kind) {
@@ -2690,6 +2870,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _toolbar(),
           _docTabs(),
           const Divider(height: 1, thickness: 0.3),
+          _breadcrumb(),
           Expanded(
             child: Listener(
               onPointerDown: _onPointerDown,
@@ -3118,6 +3299,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _pickRetainMode();
           case 'settings':
             _openSettings();
+          case 'references':
+            unawaited(_showReferences());
           case 'close':
             final doc = _doc;
             if (doc != null) _closeDoc(doc);
@@ -3139,6 +3322,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'symbols', child: Text(localizations.editorSymbols)),
         PopupMenuItem(value: 'nextOccurrence', child: Text(localizations.editorSelectNext)),
         PopupMenuItem(value: 'gotoDef', child: Text(localizations.editorGotoDefinition)),
+        PopupMenuItem(value: 'references', child: Text(localizations.editorReferences)),
         PopupMenuItem(
           value: 'lineOps',
           child: _menuRow(localizations.editorLineOps, Icons.arrow_right),

@@ -2817,5 +2817,7 @@
   "editorFormatOnSave": "Format on save",
   "editorFormatOnSaveDesc": "Reformat the document before writing it to disk.",
   "editorIssuePrev": "Previous problem",
-  "editorIssueNext": "Next problem"
+  "editorIssueNext": "Next problem",
+  "editorReferences": "Find all references",
+  "editorReferencesEmpty": "No references found"
 }

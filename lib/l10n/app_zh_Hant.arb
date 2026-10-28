@@ -4618,5 +4618,7 @@
   "editorFormatOnSave": "儲存時格式化",
   "editorFormatOnSaveDesc": "寫入檔案前先依目前語言重排一次。",
   "editorIssuePrev": "上一處問題",
-  "editorIssueNext": "下一處問題"
+  "editorIssueNext": "下一處問題",
+  "editorReferences": "列出這個詞在全文出現的位置",
+  "editorReferencesEmpty": "找不到引用"
 }
