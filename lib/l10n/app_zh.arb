@@ -4608,5 +4608,7 @@
   "editorTitleCase": "首字母大写",
   "editorSymbols": "转到符号",
   "editorSymbolsEmpty": "这个文件里没有可跳转的符号",
-  "editorStyleLint": "检查排版风格（行尾空格 / 空行）"
+  "editorStyleLint": "检查排版风格（行尾空格 / 空行）",
+  "editorSelectNext": "选择下一个相同词",
+  "editorGroupByRule": "按规则分组"
 }

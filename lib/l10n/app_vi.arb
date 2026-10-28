@@ -2807,5 +2807,7 @@
   "editorTitleCase": "Title Case",
   "editorSymbols": "Go to symbol",
   "editorSymbolsEmpty": "No symbols found in this file",
-  "editorStyleLint": "Check formatting (trailing spaces, blank lines)"
+  "editorStyleLint": "Check formatting (trailing spaces, blank lines)",
+  "editorSelectNext": "Select next occurrence",
+  "editorGroupByRule": "Group by rule"
 }

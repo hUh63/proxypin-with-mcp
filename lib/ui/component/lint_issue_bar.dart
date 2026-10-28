@@ -77,6 +77,9 @@ class _LintIssueBarState extends State<LintIssueBar> {
   /// 用户主动收起。
   bool _collapsed = false;
 
+  /// 「按规则分组」：同一规则的多处问题合成一行，先看「哪类问题最多」。
+  bool _grouped = false;
+
   /// 被关掉的严重程度。点表头的数量徽标切换，和 VS「问题」面板的筛选一个意思：
   /// 只关心报错时把警告/提示关掉，列表就干净了。
   ///
@@ -96,8 +99,18 @@ class _LintIssueBarState extends State<LintIssueBar> {
     final infos = all.length - errors - warnings;
     final visible =
         _muted.isEmpty ? all : all.where((d) => !_muted.contains(d.severity)).toList(growable: false);
-    final rows = _collapsed ? const <LintDiagnostic>[] : visible.take(widget.maxRows).toList();
-    final hidden = visible.length - rows.length;
+    // 按规则归并（保持首次出现的顺序）。
+    final groups = <String, List<LintDiagnostic>>{};
+    for (final d in visible) {
+      (groups[d.code] ??= <LintDiagnostic>[]).add(d);
+    }
+    final grouped = groups.entries.toList(growable: false);
+    final rows = _collapsed
+        ? const <LintDiagnostic>[]
+        : (_grouped ? const <LintDiagnostic>[] : visible.take(widget.maxRows).toList());
+    final shownGroups =
+        _collapsed || !_grouped ? 0 : grouped.take(widget.maxRows).length;
+    final hidden = _grouped ? (visible.length - shownGroups) : (visible.length - rows.length);
 
     return Container(
       decoration: BoxDecoration(
@@ -129,6 +142,15 @@ class _LintIssueBarState extends State<LintIssueBar> {
                   style: TextStyle(fontSize: 10.5, color: theme.textTheme.bodySmall?.color),
                 ),
               ),
+              IconButton(
+                onPressed: () => setState(() => _grouped = !_grouped),
+                tooltip: localizations.editorGroupByRule,
+                icon: Icon(_grouped ? Icons.unfold_more : Icons.unfold_less, size: 15),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 26, minHeight: 24),
+                color: _grouped ? theme.colorScheme.primary : theme.textTheme.bodySmall?.color,
+              ),
               if (widget.onFixAll != null)
                 TextButton(
                   onPressed: widget.onFixAll,
@@ -145,14 +167,15 @@ class _LintIssueBarState extends State<LintIssueBar> {
             ]),
           ),
         ),
-        if (rows.isNotEmpty)
+        if (rows.isNotEmpty || (_grouped && shownGroups > 0))
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 132),
             child: ListView.builder(
               shrinkWrap: true,
               padding: EdgeInsets.zero,
-              itemCount: rows.length,
-              itemBuilder: (context, i) => _row(theme, rows[i]),
+              itemCount: _grouped ? shownGroups : rows.length,
+              itemBuilder: (context, i) =>
+                  _grouped ? _groupRow(theme, grouped[i]) : _row(theme, rows[i]),
             ),
           ),
         if (hidden > 0)
@@ -196,6 +219,52 @@ class _LintIssueBarState extends State<LintIssueBar> {
               decoration: off ? TextDecoration.lineThrough : null,
             ),
           ),
+        ]),
+      ),
+    );
+  }
+
+  /// 规则名（中文/英文按界面语言）。
+  String _ruleName(String code) {
+    final rule = LintRules.byCode(code);
+    if (rule == null) return code;
+    return widget.chinese ? rule.nameZh : rule.nameEn;
+  }
+
+  /// 「按规则分组」时的行：规则名 + 出现次数 + 第一处位置。
+  Widget _groupRow(ThemeData theme, MapEntry<String, List<LintDiagnostic>> entry) {
+    final list = entry.value;
+    final worst = list.reduce((a, b) => a.severity.index <= b.severity.index ? a : b);
+    final color = switch (worst.severity) {
+      LintSeverity.error => Colors.red,
+      LintSeverity.warning => Colors.orange,
+      LintSeverity.info => Colors.blueGrey,
+    };
+    final icon = switch (worst.severity) {
+      LintSeverity.error => Icons.error,
+      LintSeverity.warning => Icons.warning_amber_rounded,
+      LintSeverity.info => Icons.info_outline,
+    };
+    return InkWell(
+      onTap: () => widget.onJump(list.first),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 3, 8, 3),
+        child: Row(children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              _ruleName(entry.key),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: theme.textTheme.bodyMedium?.color),
+            ),
+          ),
+          Text('×${list.length}',
+              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: color)),
+          const SizedBox(width: 8),
+          Text('L${list.first.line}',
+              style: TextStyle(fontSize: 10, color: theme.colorScheme.primary)),
         ]),
       ),
     );

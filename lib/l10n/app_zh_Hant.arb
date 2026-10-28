@@ -4608,5 +4608,7 @@
   "editorTitleCase": "首字母大寫",
   "editorSymbols": "前往符號",
   "editorSymbolsEmpty": "這個檔案裡沒有可跳轉的符號",
-  "editorStyleLint": "檢查排版風格（行尾空格 / 空行）"
+  "editorStyleLint": "檢查排版風格（行尾空格 / 空行）",
+  "editorSelectNext": "選擇下一個相同詞",
+  "editorGroupByRule": "依規則分組"
 }

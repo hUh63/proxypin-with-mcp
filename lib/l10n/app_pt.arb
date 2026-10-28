@@ -2808,5 +2808,7 @@
   "editorTitleCase": "Tipo Título",
   "editorSymbols": "Ir para símbolo",
   "editorSymbolsEmpty": "Nenhum símbolo neste arquivo",
-  "editorStyleLint": "Verificar formatação (espaços finais, linhas em branco)"
+  "editorStyleLint": "Verificar formatação (espaços finais, linhas em branco)",
+  "editorSelectNext": "Selecionar próxima ocorrência",
+  "editorGroupByRule": "Agrupar por regra"
 }

@@ -2807,5 +2807,7 @@
   "editorTitleCase": "Huruf Kapital Tiap Kata",
   "editorSymbols": "Buka simbol",
   "editorSymbolsEmpty": "Tidak ada simbol di berkas ini",
-  "editorStyleLint": "Periksa format (spasi di akhir baris)"
+  "editorStyleLint": "Periksa format (spasi di akhir baris)",
+  "editorSelectNext": "Pilih kemunculan berikutnya",
+  "editorGroupByRule": "Kelompokkan per aturan"
 }

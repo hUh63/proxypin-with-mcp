@@ -1499,6 +1499,170 @@ class _TextEditorPageState extends State<TextEditorPage> {
     multiLine: true,
   );
 
+  // ------------------------------ 参数签名提示 ------------------------------
+
+  /// 光标在某个调用的括号里时，给出「这个函数的签名 + 现在在第几个参数」。
+  ///
+  /// 没有语义分析，签名只能从**当前文档里**找声明（参数长得像「类型 名字」才算）。
+  /// 找不到就不显示——宁可没有，也不要瞎猜一个错签名给用户看。
+  ({String name, List<String> params, int active})? _resolveSignature() {
+    final doc = _doc;
+    final controller = doc?.controller;
+    if (doc == null || controller == null) return null;
+    if (!_programming) return null;
+    final text = controller.text;
+    final caret = controller.selection.extentOffset;
+    if (caret <= 0 || caret > text.length) return null;
+
+    // 1) 向上找未闭合的 `(`；碰到语句边界就放弃（别跨语句猜）。
+    var i = caret - 1;
+    var depth = 0;
+    var open = -1;
+    while (i >= 0) {
+      final c = text[i];
+      if (c == ')') {
+        depth++;
+      } else if (c == '(') {
+        if (depth == 0) {
+          open = i;
+          break;
+        }
+        depth--;
+      } else if (c == ';' || c == '{' || c == '}') {
+        return null;
+      }
+      i--;
+    }
+    if (open < 0) return null;
+
+    // 2) 取函数名（允许 a.b.c）
+    var j = open - 1;
+    while (j >= 0 && (text[j] == ' ' || text[j] == '\t')) {
+      j--;
+    }
+    final nameEnd = j + 1;
+    while (j >= 0) {
+      final c = text[j];
+      if (RegExp(r'[\w$]').hasMatch(c) || c == '.') {
+        j--;
+      } else {
+        break;
+      }
+    }
+    final full = text.substring(j + 1, nameEnd);
+    if (full.isEmpty) return null;
+    final simple = full.contains('.') ? full.substring(full.lastIndexOf('.') + 1) : full;
+    if (!RegExp(r'^[A-Za-z_$][\w$]*$').hasMatch(simple)) return null;
+
+    // 3) 当前在第几个参数：数光标前的顶层逗号。
+    var active = 0;
+    var d = 0;
+    for (var k = open + 1; k < caret; k++) {
+      final c = text[k];
+      if (c == '(' || c == '[' || c == '{') {
+        d++;
+      } else if (c == ')' || c == ']' || c == '}') {
+        d--;
+      } else if (c == ',' && d == 0) {
+        active++;
+      }
+    }
+
+    // 4) 在文档里找声明
+    final declRe = RegExp(r'\b' + RegExp.escape(simple) + r'\s*\(([^()]*)\)\s*(?:\{|=>|;)');
+    for (final m in declRe.allMatches(text)) {
+      if (m.start < caret && m.end > open) continue; // 跳过光标这次调用本身
+      final raw = m.group(1)!;
+      if (!_looksLikeParams(raw)) continue;
+      final parts = _splitParams(raw);
+      // 无参函数（`Foo()`）：parts 为空，clamp 的上下界会反过来，必须单独处理。
+      return (
+        name: simple,
+        params: parts,
+        active: parts.isEmpty ? 0 : active.clamp(0, parts.length - 1),
+      );
+    }
+    return null;
+  }
+
+  static List<String> _splitParams(String raw) {
+    final parts = <String>[];
+    var depth = 0;
+    var start = 0;
+    for (var i = 0; i < raw.length; i++) {
+      final c = raw[i];
+      if (c == '(' || c == '[' || c == '{' || c == '<') {
+        depth++;
+      } else if (c == ')' || c == ']' || c == '}' || c == '>') {
+        depth--;
+      } else if (c == ',' && depth == 0) {
+        parts.add(raw.substring(start, i).trim());
+        start = i + 1;
+      }
+    }
+    final tail = raw.substring(start).trim();
+    if (tail.isNotEmpty || parts.isNotEmpty) parts.add(tail);
+    return parts;
+  }
+
+  static final RegExp _paramRe = RegExp(
+      r'^(?:\[[^\]]*\]\s*)*(?:(?:this|ref|out|in|params|scoped)\s+)*'
+      r'[A-Za-z_$][\w$]*(?:<[^>]*>)?(?:\[\])?\??\s+[A-Za-z_$][\w$]*\s*(?:=.*)?$');
+
+  /// 参数段是否像「类型 名字」（用来区分声明和调用）。
+  static bool _looksLikeParams(String raw) {
+    final parts = _splitParams(raw);
+    for (final p in parts) {
+      if (p.isEmpty) continue;
+      if (!_paramRe.hasMatch(p)) return false;
+    }
+    return true;
+  }
+
+  /// 「选择下一个相同词」（VS 的 Ctrl+D）。
+  ///
+  /// 手机上没有多光标，做成「依次选中下一处」也能用：改完第一处、再点一下跳到第二处，
+  /// 顺带提示「第 2 / 7 处」，心里有数还剩几个没改。
+  void _selectNextOccurrence() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+
+    var start = sel.start;
+    var end = sel.end;
+    final collapsed = start == end;
+    if (collapsed) {
+      // 没有选区：先选中光标所在的词。
+      final range = _wordRangeAt(text, start);
+      start = range.start;
+      end = range.end;
+      if (end <= start) return;
+    }
+    final word = text.substring(start, end);
+    if (word.trim().isEmpty) return;
+
+    var total = 0;
+    for (var i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + word.length)) {
+      total++;
+      if (total > 9999) break;
+    }
+
+    var next = collapsed ? start : text.indexOf(word, end);
+    if (next < 0) next = text.indexOf(word);
+    if (next < 0) return;
+
+    var index = 0;
+    for (var i = text.indexOf(word); i >= 0 && i <= next; i = text.indexOf(word, i + word.length)) {
+      index++;
+    }
+
+    controller.selection = TextSelection(baseOffset: next, extentOffset: next + word.length);
+    controller.scrollToLine(_lineOfOffset(text, next));
+    _toast('${index.clamp(1, total)} / $total');
+  }
+
   Future<void> _showSymbols() async {
     final controller = _controller;
     if (controller == null) return;
@@ -2135,6 +2299,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ),
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
+          // 参数签名提示（VS 打 `(` 后那行签名）：只在对当前语言、且文档里找得到声明时显示。
+          if (doc != null && _programming)
+            _SignatureBar(controller: doc.controller, resolve: _resolveSignature),
           // 问题栏：贴着代码，按文本顺序一行一条（红=报错，黄=警告）
           if (doc != null && _lintEnabled && _programming)
             LintIssueBar(
@@ -2497,6 +2664,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _selectToLine();
           case 'symbols':
             _showSymbols();
+          case 'nextOccurrence':
+            _selectNextOccurrence();
           case 'lineOps':
             _showLineOpsMenu();
           case 'caseOps':
@@ -2558,6 +2727,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'symbols', child: Text(localizations.editorSymbols)),
+        PopupMenuItem(value: 'nextOccurrence', child: Text(localizations.editorSelectNext)),
         PopupMenuItem(
           value: 'lineOps',
           child: _menuRow(localizations.editorLineOps, Icons.arrow_right),
@@ -3224,6 +3394,98 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
         Text(widget.indent, style: style),
         const SizedBox(width: 10),
         Text(widget.language, style: style),
+      ]),
+    );
+  }
+}
+
+
+/// 参数签名提示条：显示「函数名(参数列表)」并高亮当前参数。
+///
+/// 自己监听 controller —— 光标一动就更新，但只重建这一条，不带动整个编辑页。
+class _SignatureBar extends StatefulWidget {
+  final CodeForgeController controller;
+  final ({String name, List<String> params, int active})? Function() resolve;
+
+  const _SignatureBar({required this.controller, required this.resolve});
+
+  @override
+  State<_SignatureBar> createState() => _SignatureBarState();
+}
+
+class _SignatureBarState extends State<_SignatureBar> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SignatureBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onChanged);
+      widget.controller.addListener(_onChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hint = widget.resolve();
+    if (hint == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final spans = <InlineSpan>[];
+    for (var i = 0; i < hint.params.length; i++) {
+      if (i > 0) spans.add(const TextSpan(text: ', '));
+      final active = i == hint.active;
+      spans.add(TextSpan(
+        text: hint.params[i],
+        style: TextStyle(
+          fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+          color: active ? theme.colorScheme.primary : theme.textTheme.bodyMedium?.color,
+          backgroundColor:
+              active ? theme.colorScheme.primary.withValues(alpha: 0.10) : null,
+        ),
+      ));
+    }
+    const mono = TextStyle(fontSize: 11.5, fontFamily: 'monospace');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 3, 10, 3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: Row(children: [
+        Icon(Icons.functions, size: 13, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 4),
+        Text('${hint.name}(', style: mono),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: spans),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: mono,
+          ),
+        ),
+        const Text(')', style: mono),
+        if (hint.params.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          Text(
+            '${hint.active + 1}/${hint.params.length}',
+            style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ],
       ]),
     );
   }
