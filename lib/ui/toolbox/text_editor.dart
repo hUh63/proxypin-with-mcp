@@ -1561,6 +1561,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (full.isEmpty) return null;
     final simple = full.contains('.') ? full.substring(full.lastIndexOf('.') + 1) : full;
     if (!RegExp(r'^[A-Za-z_$][\w$]*$').hasMatch(simple)) return null;
+    // `if (` / `for (` / `new Foo(` 之类不是「函数调用」，别硬找签名。
+    if (_sigKeywordBlacklist.contains(simple)) return null;
 
     // 3) 当前在第几个参数：数光标前的顶层逗号。
     var active = 0;
@@ -1589,6 +1591,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           RegExp(r'\b' + RegExp.escape(simple) + r'\s*\(([^()]*)\)\s*(?:\{|=>|;)');
       for (final m in declRe.allMatches(text)) {
         if (m.start < caret && m.end > open) continue; // 跳过光标这次调用本身
+        if (!_looksLikeDeclHead(text, m.start)) continue;
         final raw = m.group(1)!;
         if (!_looksLikeParams(raw)) continue;
         parts = _splitParams(raw);
@@ -1625,6 +1628,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return parts;
   }
 
+  static const Set<String> _sigKeywordBlacklist = <String>{
+    'if', 'for', 'foreach', 'while', 'switch', 'catch', 'using', 'lock', 'fixed', //
+    'return', 'new', 'throw', 'sizeof', 'typeof', 'nameof', 'default', 'assert',
+  };
+
+  /// 声明前面应该有「修饰符 + 返回类型」，否则就是一次调用语句（`Foo();`）。
+  static bool _looksLikeDeclHead(String text, int at) {
+    final lineStart = at <= 0 ? 0 : text.lastIndexOf('\n', at - 1) + 1;
+    final head = text.substring(lineStart, at);
+    if (head.trim().isEmpty) return false;
+    // 行内已经出现赋值/括号/逗号，说明我们在一个表达式里（`var x = Foo(`），不是声明。
+    if (head.contains('=') || head.contains('(') || head.contains(',')) return false;
+    return RegExp(
+            r'^(?:\s*)(?:(?:public|private|protected|internal|static|async|override|virtual|abstract|sealed|extern|unsafe|partial|synchronized|export|function|fun|def|fn)\s+)*'
+            r'[\w<>\[\],.?:]+\s+$')
+        .hasMatch(head);
+  }
+
   static final RegExp _paramRe = RegExp(
       r'^(?:\[[^\]]*\]\s*)*(?:(?:this|ref|out|in|params|scoped)\s+)*'
       r'[A-Za-z_$][\w$]*(?:<[^>]*>)?(?:\[\])?\??\s+[A-Za-z_$][\w$]*\s*(?:=.*)?$');
@@ -1652,7 +1673,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     var start = sel.start;
     var end = sel.end;
-    final collapsed = start == end;
+    // 选区跨行时「相同词」就没意义了（会拿整段去全文搜），退回光标所在的词。
+    var collapsed = start == end || text.substring(start, end).contains('\n');
+    if (collapsed && start != end) {
+      start = sel.extentOffset;
+      end = start;
+    }
     if (collapsed) {
       // 没有选区：先选中光标所在的词。
       final range = _wordRangeAt(text, start);
