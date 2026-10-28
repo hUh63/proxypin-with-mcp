@@ -1587,8 +1587,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (_sigCache.containsKey(simple)) {
       parts = _sigCache[simple];
     } else {
-      final declRe =
-          RegExp(r'\b' + RegExp.escape(simple) + r'\s*\(([^()]*)\)\s*(?:\{|=>|;)');
+      final declRe = RegExp(
+          r'\b' + RegExp.escape(simple) + r'\s*\(([^()]*)\)\s*(?:\{|=>|;|:(?=\s*(?:\n|$)))');
       for (final m in declRe.allMatches(text)) {
         if (m.start < caret && m.end > open) continue; // 跳过光标这次调用本身
         if (!_looksLikeDeclHead(text, m.start)) continue;
@@ -1640,6 +1640,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (head.trim().isEmpty) return false;
     // 行内已经出现赋值/括号/逗号，说明我们在一个表达式里（`var x = Foo(`），不是声明。
     if (head.contains('=') || head.contains('(') || head.contains(',')) return false;
+    // Python / JS 的函数声明没有返回类型：`def foo(` / `function foo(` / `fn foo(`。
+    if (RegExp(r'^\s*(?:def|fn|fun|function|func)\s+$').hasMatch(head)) return true;
     return RegExp(
             r'^(?:\s*)(?:(?:public|private|protected|internal|static|async|override|virtual|abstract|sealed|extern|unsafe|partial|synchronized|export|function|fun|def|fn)\s+)*'
             r'[\w<>\[\],.?:]+\s+$')
@@ -1689,10 +1691,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final word = text.substring(start, end);
     if (word.trim().isEmpty) return;
 
+    // 出现次数多到离谱（比如 `int`）就不数了，避免每次点击扫全文好几遍。
     var total = 0;
+    var truncated = false;
     for (var i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + word.length)) {
       total++;
-      if (total > 9999) break;
+      if (total > 2000) {
+        truncated = true;
+        break;
+      }
     }
 
     var next = collapsed ? start : text.indexOf(word, end);
@@ -1706,7 +1713,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     controller.selection = TextSelection(baseOffset: next, extentOffset: next + word.length);
     controller.scrollToLine(_lineOfOffset(text, next));
-    _toast('${index.clamp(1, total)} / $total');
+    _toast('${index.clamp(1, total)} / ${truncated ? '$total+' : '$total'}');
   }
 
   Future<void> _showSymbols() async {
