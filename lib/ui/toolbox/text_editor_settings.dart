@@ -163,6 +163,12 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.styleLint,
                 onChanged: (v) => _apply(prefs.copyWith(styleLint: v)),
               ),
+              _switchTile(
+                icon: Icons.format_color_fill,
+                title: localizations.editorHighlightOccurrences,
+                value: prefs.highlightOccurrences,
+                onChanged: (v) => _apply(prefs.copyWith(highlightOccurrences: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsGesture),
               _switchTile(

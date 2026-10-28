@@ -137,11 +137,18 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   String _search = '';
   final TextEditingController _searchInput = TextEditingController();
 
+  /// 按规则过滤（点顶部统计 chip 切换）。
+  String? _ruleFilter;
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
   void didUpdateWidget(covariant EditorConsolePanel oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // 换文档/换语言后，按规则过滤就不该留着了（那些规则可能已经不存在）。
+    if (oldWidget.language != widget.language && _ruleFilter != null) {
+      _ruleFilter = null;
+    }
     if (oldWidget.initialTab != widget.initialTab) {
       setState(() => _tab = widget.programming ? widget.initialTab : EditorConsoleTab.problems);
     }
@@ -173,9 +180,13 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       2 => all.where((d) => d.severity != LintSeverity.info).toList(growable: false),
       _ => all,
     };
-    final visible = widget.hiddenSeverities.isEmpty
+    var visible = widget.hiddenSeverities.isEmpty
         ? filtered
         : filtered.where((d) => !widget.hiddenSeverities.contains(d.severity)).toList(growable: false);
+    final rule = _ruleFilter;
+    if (rule != null) {
+      visible = visible.where((d) => d.code == rule).toList(growable: false);
+    }
     final q = _search.trim().toLowerCase();
     if (q.isEmpty) return visible;
     return visible
@@ -549,8 +560,60 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
           onChanged: (v) => setState(() => _search = v),
         ),
       ),
+      if (_ruleStats.isNotEmpty) _ruleChips(theme),
       Expanded(child: _problemList(theme, list)),
     ]);
+  }
+
+  /// 按规则统计（VS「错误列表」也支持按工具/规则分组看）。
+  Map<String, int> get _ruleStats {
+    final counts = <String, int>{};
+    for (final d in widget.report?.diagnostics ?? const <LintDiagnostic>[]) {
+      counts[d.code] = (counts[d.code] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  Widget _ruleChips(ThemeData theme) {
+    final stats = _ruleStats;
+    if (stats.length < 2) return const SizedBox.shrink();
+    final chinese = Localizations.localeOf(context).languageCode.startsWith('zh');
+    final entries = stats.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    String labelOf(String? code) {
+      if (code == null) return localizations.editorLintAllRules;
+      final rule = LintRules.byCode(code);
+      if (rule == null) return code;
+      return chinese ? rule.nameZh : rule.nameEn;
+    }
+
+    final total = stats.values.fold<int>(0, (a, b) => a + b);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 2),
+      child: Row(children: [
+        _ruleChip(labelOf(null), total, _ruleFilter == null, () {
+          setState(() => _ruleFilter = null);
+        }),
+        for (final e in entries.take(8)) ...[
+          const SizedBox(width: 6),
+          _ruleChip(labelOf(e.key), e.value, _ruleFilter == e.key, () {
+            setState(() => _ruleFilter = _ruleFilter == e.key ? null : e.key);
+          }),
+        ],
+      ]),
+    );
+  }
+
+  Widget _ruleChip(String label, int count, bool selected, VoidCallback onTap) {
+    return ChoiceChip(
+      label: Text('$label ($count)', style: const TextStyle(fontSize: 10.5)),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+    );
   }
 
   Widget _problemList(ThemeData theme, List<LintDiagnostic> list) {

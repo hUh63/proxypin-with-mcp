@@ -4610,5 +4610,9 @@
   "editorSymbolsEmpty": "这个文件里没有可跳转的符号",
   "editorStyleLint": "检查排版风格（行尾空格 / 空行）",
   "editorSelectNext": "选择下一个相同词",
-  "editorGroupByRule": "按规则分组"
+  "editorGroupByRule": "按规则分组",
+  "editorHighlightOccurrences": "高亮当前词的所有出现处",
+  "editorGotoDefinition": "转到定义",
+  "editorNoDefinition": "这个文件里没找到它的定义",
+  "editorLintAllRules": "全部规则"
 }

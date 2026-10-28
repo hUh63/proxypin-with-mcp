@@ -406,6 +406,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     // 当前行高亮跟着光标走，切文档后要先算一次（缓存刚被清成 -1）。
     _syncCaretLine();
+    _refreshExtraHighlights();
   }
 
   // ---------- 外部改动 / 删除检测 ----------
@@ -488,6 +489,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (_prefs.magnifier && mounted) setState(() {});
       // 当前行高亮（VS Code 的 current line）：只在跨行时重绘。
       _syncCaretLine();
+      // 括号配对 / 当前词出现处（内核的 extraHighlights 通道）。
+      _refreshExtraHighlights();
     }
   }
 
@@ -1498,6 +1501,167 @@ class _TextEditorPageState extends State<TextEditorPage> {
     r'([A-Za-z_$][\w$<>\[\],.?]*)\s+([A-Za-z_$][\w$]*)\s*\()',
     multiLine: true,
   );
+
+  // ------------------------------ 转到定义（同文件） ------------------------------
+
+  /// 同文件「转到定义」：光标在某个名字上时，去找它的声明并跳过去。
+  ///
+  /// 没有工程索引，只在当前文件里找——多数时候够用（改自己写的函数最常干的就是这个）。
+  void _gotoDefinition() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.extentOffset;
+    if (caret < 0 || caret > text.length) return;
+    final range = _wordRangeAt(text, caret);
+    final name = text.substring(range.start, range.end);
+    if (name.isEmpty) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    final at = _findDeclaration(text, name, range.start);
+    if (at == null) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    controller.selection = TextSelection.collapsed(offset: at);
+    controller.scrollToLine(_lineOfOffset(text, at));
+  }
+
+  /// 在文档里找 [name] 的声明位置（返回名字所在的偏移）。
+  ///
+  /// [skipOffset] 是当前光标所在的词，找不到别的声明时不要「跳到自己」。
+  static int? _findDeclaration(String text, String name, int skipOffset) {
+    final escaped = RegExp.escape(name);
+    final patterns = <RegExp>[
+      RegExp(r'\b(?:class|struct|interface|enum|record|namespace)\s+' + escaped + r'\b'),
+      RegExp(r'\b' + escaped + r'\s*\([^()]*\)\s*(?:\{|=>|;|:(?=\s*(?:\n|$)))'),
+      RegExp(r'\b(?:var|let|const|val|final|int|long|double|float|bool|string|char|byte|decimal|object|dynamic|auto|[A-Z][\w<>\[\],.?]*)\s+'
+          + escaped +
+          r'\b\s*(?:=|;|,)'),
+    ];
+    for (final re in patterns) {
+      for (final m in re.allMatches(text)) {
+        final at = m.start + m.group(0)!.indexOf(name);
+        if ((at - skipOffset).abs() < 1) continue;
+        // 函数形态要确认前面确实是「声明」（`Foo();` 是调用，不是定义）。
+        if (re.pattern.contains(r'\(') && !_looksLikeDeclHead(text, m.start)) continue;
+        return at;
+      }
+    }
+    return null;
+  }
+
+  // ------------------------------ 参考高亮（括号配对 / 当前词） ------------------------------
+
+  /// VS 的两个「参考高亮」：光标贴在括号上时把配对的那一对点亮；光标在某个词上时
+  /// 把这个词在本文件里的所有出现处淡淡标出来。
+  ///
+  /// 走内核的 `extraHighlights` 通道（和查找高亮分开），所以开查找不会把它冲掉。
+  void _refreshExtraHighlights() {
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    final caret = sel.isValid ? sel.extentOffset.clamp(0, text.length) : 0;
+    final list = <SearchHighlight>[];
+
+    // 1) 括号配对
+    final pair = _bracketPairAt(text, caret);
+    if (pair != null) {
+      list.add(SearchHighlight(start: pair.$1, end: pair.$1 + 1, isCurrentMatch: true));
+      list.add(SearchHighlight(start: pair.$2, end: pair.$2 + 1, isCurrentMatch: true));
+    }
+
+    // 2) 当前词的所有出现
+    if (_prefs.highlightOccurrences) {
+      var start = sel.isValid ? sel.start : caret;
+      var end = sel.isValid ? sel.end : caret;
+      if (start == end) {
+        final range = _wordRangeAt(text, caret);
+        start = range.start;
+        end = range.end;
+      }
+      if (end > start) {
+        final word = text.substring(start, end);
+        if (word.length >= 2 && word.length <= 60 && !word.contains('\n')) {
+          var count = 0;
+          for (var i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + word.length)) {
+            list.add(SearchHighlight(start: i, end: i + word.length));
+            if (++count >= 200) break;
+          }
+        }
+      }
+    }
+
+    if (_sameHighlights(controller.extraHighlights, list)) return;
+    controller.extraHighlights = list;
+    controller.extraHighlightsChanged = true;
+    controller.notifyListeners();
+  }
+
+  static bool _sameHighlights(List<SearchHighlight> a, List<SearchHighlight> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].start != b[i].start ||
+          a[i].end != b[i].end ||
+          a[i].isCurrentMatch != b[i].isCurrentMatch) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// 光标处（或它前面那个字符）是括号时，找它配对的那一个。
+  static (int, int)? _bracketPairAt(String text, int caret) {
+    if (text.isEmpty) return null;
+    for (final offset in <int>[caret, caret - 1]) {
+      if (offset < 0 || offset >= text.length) continue;
+      final c = text[offset];
+      final isOpen = '([{'.contains(c);
+      final isClose = ')]}'.contains(c);
+      if (!isOpen && !isClose) continue;
+      final match = isOpen ? _findClosing(text, offset, c) : _findOpening(text, offset, c);
+      if (match == null) continue;
+      return offset < match ? (offset, match) : (match, offset);
+    }
+    return null;
+  }
+
+  static int? _findClosing(String text, int open, String ch) {
+    const pairs = <String, String>{'(': ')', '[': ']', '{': '}'};
+    final close = pairs[ch]!;
+    var depth = 0;
+    final limit = (open + 20000).clamp(0, text.length);
+    for (var i = open; i < limit; i++) {
+      final c = text[i];
+      if (c == ch) {
+        depth++;
+      } else if (c == close) {
+        depth--;
+        if (depth == 0) return i;
+      }
+    }
+    return null;
+  }
+
+  static int? _findOpening(String text, int close, String ch) {
+    const pairs = <String, String>{')': '(', ']': '[', '}': '{'};
+    final open = pairs[ch]!;
+    var depth = 0;
+    final limit = (close - 20000).clamp(0, text.length);
+    for (var i = close; i >= limit; i--) {
+      final c = text[i];
+      if (c == ch) {
+        depth++;
+      } else if (c == open) {
+        depth--;
+        if (depth == 0) return i;
+      }
+    }
+    return null;
+  }
 
   // ------------------------------ 参数签名提示 ------------------------------
 
@@ -2719,6 +2883,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _showSymbols();
           case 'nextOccurrence':
             _selectNextOccurrence();
+          case 'gotoDef':
+            _gotoDefinition();
           case 'lineOps':
             _showLineOpsMenu();
           case 'caseOps':
@@ -2781,6 +2947,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'symbols', child: Text(localizations.editorSymbols)),
         PopupMenuItem(value: 'nextOccurrence', child: Text(localizations.editorSelectNext)),
+        PopupMenuItem(value: 'gotoDef', child: Text(localizations.editorGotoDefinition)),
         PopupMenuItem(
           value: 'lineOps',
           child: _menuRow(localizations.editorLineOps, Icons.arrow_right),

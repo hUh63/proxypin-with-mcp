@@ -2809,5 +2809,9 @@
   "editorSymbolsEmpty": "Tidak ada simbol di berkas ini",
   "editorStyleLint": "Periksa format (spasi di akhir baris)",
   "editorSelectNext": "Pilih kemunculan berikutnya",
-  "editorGroupByRule": "Kelompokkan per aturan"
+  "editorGroupByRule": "Kelompokkan per aturan",
+  "editorHighlightOccurrences": "Sorot kemunculan kata lain",
+  "editorGotoDefinition": "Buka definisi",
+  "editorNoDefinition": "Definisi tidak ditemukan di berkas ini",
+  "editorLintAllRules": "Semua aturan"
 }

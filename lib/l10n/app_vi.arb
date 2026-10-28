@@ -2809,5 +2809,9 @@
   "editorSymbolsEmpty": "No symbols found in this file",
   "editorStyleLint": "Check formatting (trailing spaces, blank lines)",
   "editorSelectNext": "Select next occurrence",
-  "editorGroupByRule": "Group by rule"
+  "editorGroupByRule": "Group by rule",
+  "editorHighlightOccurrences": "Highlight other occurrences of the word",
+  "editorGotoDefinition": "Go to definition",
+  "editorNoDefinition": "No definition found in this file",
+  "editorLintAllRules": "All rules"
 }

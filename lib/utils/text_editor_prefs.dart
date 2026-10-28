@@ -44,6 +44,9 @@ class TextEditorPrefs {
   /// 是否检查排版风格（行尾空白 / 连续空行 / 文件末尾换行）。默认关。
   final bool styleLint;
 
+  /// 光标所在词在全文的所有出现处是否淡淡标出来（VS 的行为）。
+  final bool highlightOccurrences;
+
   /// 是否允许折叠代码。
   final bool enableFolding;
 
@@ -109,6 +112,7 @@ class TextEditorPrefs {
     this.guideLines = false,
     this.highlightCurrentLine = true,
     this.styleLint = false,
+    this.highlightOccurrences = true,
     this.enableFolding = true,
     this.useTabs = false,
     this.tabSize = 4,
@@ -138,6 +142,7 @@ class TextEditorPrefs {
     bool? guideLines,
     bool? highlightCurrentLine,
     bool? styleLint,
+    bool? highlightOccurrences,
     bool? enableFolding,
     bool? useTabs,
     int? tabSize,
@@ -166,6 +171,7 @@ class TextEditorPrefs {
       guideLines: guideLines ?? this.guideLines,
       highlightCurrentLine: highlightCurrentLine ?? this.highlightCurrentLine,
       styleLint: styleLint ?? this.styleLint,
+      highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
       enableFolding: enableFolding ?? this.enableFolding,
       useTabs: useTabs ?? this.useTabs,
       tabSize: tabSize ?? this.tabSize,
@@ -196,6 +202,7 @@ class TextEditorPrefs {
         'guideLines': guideLines,
         'highlightCurrentLine': highlightCurrentLine,
         'styleLint': styleLint,
+        'highlightOccurrences': highlightOccurrences,
         'enableFolding': enableFolding,
         'useTabs': useTabs,
         'tabSize': tabSize,
@@ -231,6 +238,7 @@ class TextEditorPrefs {
       guideLines: json['guideLines'] as bool? ?? false,
       highlightCurrentLine: json['highlightCurrentLine'] as bool? ?? true,
       styleLint: json['styleLint'] as bool? ?? false,
+      highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
       enableFolding: json['enableFolding'] as bool? ?? true,
       useTabs: json['useTabs'] as bool? ?? false,
       tabSize: (json['tabSize'] as num?)?.toInt() ?? 4,

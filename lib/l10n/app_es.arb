@@ -2809,5 +2809,9 @@
   "editorSymbolsEmpty": "No hay símbolos en este archivo",
   "editorStyleLint": "Revisar formato (espacios finales, líneas en blanco)",
   "editorSelectNext": "Seleccionar siguiente aparición",
-  "editorGroupByRule": "Agrupar por regla"
+  "editorGroupByRule": "Agrupar por regla",
+  "editorHighlightOccurrences": "Resaltar otras apariciones de la palabra",
+  "editorGotoDefinition": "Ir a la definición",
+  "editorNoDefinition": "No se encontró la definición en este archivo",
+  "editorLintAllRules": "Todas las reglas"
 }
