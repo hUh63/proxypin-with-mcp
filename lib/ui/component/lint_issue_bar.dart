@@ -110,7 +110,9 @@ class _LintIssueBarState extends State<LintIssueBar> {
         : (_grouped ? const <LintDiagnostic>[] : visible.take(widget.maxRows).toList());
     final shownGroups =
         _collapsed || !_grouped ? 0 : grouped.take(widget.maxRows).length;
-    final hidden = _grouped ? (visible.length - shownGroups) : (visible.length - rows.length);
+    final hidden = _collapsed
+        ? 0
+        : (_grouped ? (grouped.length - shownGroups) : (visible.length - rows.length));
 
     return Container(
       decoration: BoxDecoration(

@@ -1505,6 +1505,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 没有语义分析，签名只能从**当前文档里**找声明（参数长得像「类型 名字」才算）。
   /// 找不到就不显示——宁可没有，也不要瞎猜一个错签名给用户看。
+  /// 签名缓存：`函数名 → 参数列表`（找不到时存 null）。
+  ///
+  /// 这个函数在**每次光标移动**时都会被调用（签名条自己监听 controller 重建），
+  /// 如果每次都全文正则扫一遍，大文件里光标走一步卡一下。所以按「文本是否同一个对象」
+  /// 缓存——文本一变（String 不可变）缓存整体作废。
+  String? _sigCacheText;
+  final Map<String, List<String>?> _sigCache = <String, List<String>?>{};
+
   ({String name, List<String> params, int active})? _resolveSignature() {
     final doc = _doc;
     final controller = doc?.controller;
@@ -1569,20 +1577,32 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
 
     // 4) 在文档里找声明
-    final declRe = RegExp(r'\b' + RegExp.escape(simple) + r'\s*\(([^()]*)\)\s*(?:\{|=>|;)');
-    for (final m in declRe.allMatches(text)) {
-      if (m.start < caret && m.end > open) continue; // 跳过光标这次调用本身
-      final raw = m.group(1)!;
-      if (!_looksLikeParams(raw)) continue;
-      final parts = _splitParams(raw);
-      // 无参函数（`Foo()`）：parts 为空，clamp 的上下界会反过来，必须单独处理。
-      return (
-        name: simple,
-        params: parts,
-        active: parts.isEmpty ? 0 : active.clamp(0, parts.length - 1),
-      );
+    if (!identical(_sigCacheText, text)) {
+      _sigCache.clear();
+      _sigCacheText = text;
     }
-    return null;
+    List<String>? parts;
+    if (_sigCache.containsKey(simple)) {
+      parts = _sigCache[simple];
+    } else {
+      final declRe =
+          RegExp(r'\b' + RegExp.escape(simple) + r'\s*\(([^()]*)\)\s*(?:\{|=>|;)');
+      for (final m in declRe.allMatches(text)) {
+        if (m.start < caret && m.end > open) continue; // 跳过光标这次调用本身
+        final raw = m.group(1)!;
+        if (!_looksLikeParams(raw)) continue;
+        parts = _splitParams(raw);
+        break;
+      }
+      _sigCache[simple] = parts;
+    }
+    if (parts == null) return null;
+    // 无参函数（`Foo()`）：parts 为空，clamp 的上下界会反过来，必须单独处理。
+    return (
+      name: simple,
+      params: parts,
+      active: parts.isEmpty ? 0 : active.clamp(0, parts.length - 1),
+    );
   }
 
   static List<String> _splitParams(String raw) {
