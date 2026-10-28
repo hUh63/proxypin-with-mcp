@@ -668,6 +668,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     doc.lint = report;
     doc.lintText = text;
     _issueCursor = -1;
+    _lastIssueOffset = -1;
     setState(() => _lintChecking = false);
     // 换完装饰会 notifyListeners，必须放在 setState 之后、且不能再次触发检查。
     _refreshDecorations();
@@ -865,15 +866,41 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return text.substring(selection.start, selection.end);
   }
 
+  /// 上一次跳到的位置（偏移）。用偏移而不是列表下标：
+  /// 列表会因为「筛选掉了某个级别」「检查结果刷新」而变短，下标就指到别处去了。
+  int _lastIssueOffset = -1;
+
   /// F8 / Shift+F8：在问题之间跳。
+  ///
+  /// 被筛选关掉的级别不参与导航——VS 里隐藏的问题也不会被 F8 跳过去。
   void _jumpIssue(bool forward) {
-    final list = _lint?.diagnostics;
-    if (list == null || list.isEmpty) return;
-    var next = _issueCursor + (forward ? 1 : -1);
-    if (next < 0) next = list.length - 1;
-    if (next >= list.length) next = 0;
-    _issueCursor = next;
-    _jumpToDiagnostic(list[next]);
+    final all = _lint?.diagnostics;
+    if (all == null || all.isEmpty) return;
+    final list = _hiddenSeverities.isEmpty
+        ? all
+        : all.where((d) => !_hiddenSeverities.contains(d.severity)).toList(growable: false);
+    if (list.isEmpty) return;
+    LintDiagnostic? pick;
+    if (forward) {
+      for (final d in list) {
+        if (d.start > _lastIssueOffset) {
+          pick = d;
+          break;
+        }
+      }
+      pick ??= list.first;
+    } else {
+      for (final d in list.reversed) {
+        if (d.start < _lastIssueOffset) {
+          pick = d;
+          break;
+        }
+      }
+      pick ??= list.last;
+    }
+    _lastIssueOffset = pick.start;
+    _issueCursor = list.indexOf(pick);
+    _jumpToDiagnostic(pick);
   }
 
   void _jumpToDiagnostic(LintDiagnostic d) {
