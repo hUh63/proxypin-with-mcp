@@ -2813,5 +2813,9 @@
   "editorHighlightOccurrences": "Sorot kemunculan kata lain",
   "editorGotoDefinition": "Buka definisi",
   "editorNoDefinition": "Definisi tidak ditemukan di berkas ini",
-  "editorLintAllRules": "Semua aturan"
+  "editorLintAllRules": "Semua aturan",
+  "editorFormatOnSave": "Format on save",
+  "editorFormatOnSaveDesc": "Reformat the document before writing it to disk.",
+  "editorIssuePrev": "Previous problem",
+  "editorIssueNext": "Next problem"
 }

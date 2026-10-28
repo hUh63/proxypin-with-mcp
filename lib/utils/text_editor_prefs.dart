@@ -47,6 +47,9 @@ class TextEditorPrefs {
   /// 光标所在词在全文的所有出现处是否淡淡标出来（VS 的行为）。
   final bool highlightOccurrences;
 
+  /// 保存时先按语言格式化（VS 的 format on save）。默认关：它会改用户原文。
+  final bool formatOnSave;
+
   /// 是否允许折叠代码。
   final bool enableFolding;
 
@@ -113,6 +116,7 @@ class TextEditorPrefs {
     this.highlightCurrentLine = true,
     this.styleLint = false,
     this.highlightOccurrences = true,
+    this.formatOnSave = false,
     this.enableFolding = true,
     this.useTabs = false,
     this.tabSize = 4,
@@ -143,6 +147,7 @@ class TextEditorPrefs {
     bool? highlightCurrentLine,
     bool? styleLint,
     bool? highlightOccurrences,
+    bool? formatOnSave,
     bool? enableFolding,
     bool? useTabs,
     int? tabSize,
@@ -172,6 +177,7 @@ class TextEditorPrefs {
       highlightCurrentLine: highlightCurrentLine ?? this.highlightCurrentLine,
       styleLint: styleLint ?? this.styleLint,
       highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
+      formatOnSave: formatOnSave ?? this.formatOnSave,
       enableFolding: enableFolding ?? this.enableFolding,
       useTabs: useTabs ?? this.useTabs,
       tabSize: tabSize ?? this.tabSize,
@@ -203,6 +209,7 @@ class TextEditorPrefs {
         'highlightCurrentLine': highlightCurrentLine,
         'styleLint': styleLint,
         'highlightOccurrences': highlightOccurrences,
+        'formatOnSave': formatOnSave,
         'enableFolding': enableFolding,
         'useTabs': useTabs,
         'tabSize': tabSize,
@@ -239,6 +246,7 @@ class TextEditorPrefs {
       highlightCurrentLine: json['highlightCurrentLine'] as bool? ?? true,
       styleLint: json['styleLint'] as bool? ?? false,
       highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
+      formatOnSave: json['formatOnSave'] as bool? ?? false,
       enableFolding: json['enableFolding'] as bool? ?? true,
       useTabs: json['useTabs'] as bool? ?? false,
       tabSize: (json['tabSize'] as num?)?.toInt() ?? 4,

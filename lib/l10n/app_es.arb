@@ -2813,5 +2813,9 @@
   "editorHighlightOccurrences": "Resaltar otras apariciones de la palabra",
   "editorGotoDefinition": "Ir a la definición",
   "editorNoDefinition": "No se encontró la definición en este archivo",
-  "editorLintAllRules": "Todas las reglas"
+  "editorLintAllRules": "Todas las reglas",
+  "editorFormatOnSave": "Format on save",
+  "editorFormatOnSaveDesc": "Reformat the document before writing it to disk.",
+  "editorIssuePrev": "Previous problem",
+  "editorIssueNext": "Next problem"
 }

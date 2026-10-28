@@ -169,6 +169,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.highlightOccurrences,
                 onChanged: (v) => _apply(prefs.copyWith(highlightOccurrences: v)),
               ),
+              _switchTile(
+                icon: Icons.save_as_outlined,
+                title: localizations.editorFormatOnSave,
+                subtitle: localizations.editorFormatOnSaveDesc,
+                value: prefs.formatOnSave,
+                onChanged: (v) => _apply(prefs.copyWith(formatOnSave: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsGesture),
               _switchTile(
@@ -284,11 +291,15 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
     required String title,
     required bool value,
     required ValueChanged<bool> onChanged,
+    String? subtitle,
   }) {
     return SwitchListTile(
       dense: true,
       secondary: Icon(icon, size: 20),
       title: Text(title, style: const TextStyle(fontSize: 14)),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle, style: const TextStyle(fontSize: 11)),
       value: value,
       onChanged: onChanged,
     );

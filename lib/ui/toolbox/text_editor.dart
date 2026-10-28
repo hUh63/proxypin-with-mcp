@@ -210,6 +210,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 被用户关掉的严重程度（问题栏与底部「问题」面板共用一份，和 VS 一样是面板级筛选）。
   final Set<LintSeverity> _hiddenSeverities = <LintSeverity>{};
+
+  /// 严重程度筛选会记住（VS 里面板筛选也是全局状态，重开还在）。
+  static const String _hiddenSevKey = 'text_editor_hidden_sev_v1';
+
+  /// 已转换好的波浪线诊断，以及它对应的那份检查结果。
+  /// 换行高亮也会走 [_refreshDecorations]，有缓存就不用每次都重算一遍全文边界。
+  LintReport? _diagReport;
+  List<DiagnosticLine> _diagLines = const <DiagnosticLine>[];
+  bool _diagRepaintScheduled = false;
   bool _consoleOpen = false;
 
   /// 上一次「为了弹补全」而记录的光标位置（避免光标每动一下就重算）。
@@ -275,6 +284,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     });
     SmartCompletion.load();
     unawaited(_loadLintRules());
+    unawaited(_loadHiddenSeverities());
     unawaited(SuggestionStats.ensureLoaded());
     unawaited(LintPrefs.ensureLoaded());
     SmartCompletion.enabled.addListener(_onSmartCompletionChanged);
@@ -392,6 +402,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 换文档后「上次触发补全的位置」不再有意义，否则同偏移量会被误判成重复。
       _lastSuggestOffset = -1;
       _issueCursor = -1;
+      // 换文档后波浪线要按新文档重算。
+      _diagReport = null;
+      _diagLines = const <DiagnosticLine>[];
     });
 
     doc.controller.addListener(_onControllerChanged);
@@ -540,6 +553,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _scheduleLint();
     } catch (_) {
       // 偏好读取失败就按「全部规则开启」跑
+    }
+  }
+
+  Future<void> _loadHiddenSeverities() async {
+    try {
+      final raw = await SharedPreferencesAsync().getStringList(_hiddenSevKey);
+      if (raw == null || raw.isEmpty || !mounted) return;
+      final next = <LintSeverity>{};
+      for (final name in raw) {
+        for (final sev in LintSeverity.values) {
+          if (sev.name == name) next.add(sev);
+        }
+      }
+      if (next.isEmpty) return;
+      setState(() {
+        _hiddenSeverities
+          ..clear()
+          ..addAll(next);
+      });
+    } catch (_) {
+      // 读不到就按「全部显示」处理
+    }
+  }
+
+  Future<void> _saveHiddenSeverities() async {
+    try {
+      await SharedPreferencesAsync().setStringList(
+        _hiddenSevKey,
+        _hiddenSeverities.map((e) => e.name).toList(),
+      );
+    } catch (_) {
+      // 存不上不影响使用
     }
   }
 
@@ -700,8 +745,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
 
     final report = _doc?.lint;
+    // VS 的做法：出错的那几个字符下面画波浪线，行号栏左侧加一条竖色条。
+    // 不再把整行铺底色——整行染色会把正常代码读成一片彩色，长文件里尤其吵。
+    var diagChanged = false;
+    if (!identical(report, _diagReport)) {
+      _diagReport = report;
+      _diagLines = _toDiagnosticLines(report, _doc?.text ?? '');
+      diagChanged = true;
+    }
+    // 内核也可能自己清这个通道（切文档 / LSP 断开），不一致时补回来。
+    if (!identical(controller.diagnosticsNotifier.value, _diagLines)) {
+      controller.diagnosticsNotifier.value = _diagLines;
+      diagChanged = true;
+    }
     if (report != null && report.diagnostics.isNotEmpty) {
-      // 同一行有多条诊断时只按最严重的那条染色。
+      // 同一行有多条诊断时只按最严重的那条上色。
       final worstByLine = <int, LintSeverity>{};
       for (final d in report.diagnostics) {
         final line = d.line - 1;
@@ -715,13 +773,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
             : severity == LintSeverity.warning
                 ? Colors.orange
                 : Colors.blueGrey;
-        decos.add(LineDecoration(
-          id: 'lint-bg-$line',
-          startLine: line,
-          endLine: line,
-          type: LineDecorationType.background,
-          color: color.withValues(alpha: 0.12),
-        ));
         gutters.add(GutterDecoration(
           id: 'lint-gutter-$line',
           startLine: line,
@@ -735,6 +786,71 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.addLineDecorations(decos);
     controller.addGutterDecorations(gutters);
     controller.notifyListeners();
+    if (diagChanged) _scheduleDiagRepaint();
+  }
+
+  /// 把 lint 诊断翻译成内核的「波浪线」。
+  ///
+  /// 内核按**字符范围**画波浪线（红色 error / 黄色 warning / 蓝色 info），
+  /// 所以要把「偏移 + 长度」换算成 (行, 列)。所有边界点一次扫完，别每条诊断各扫全文。
+  static List<DiagnosticLine> _toDiagnosticLines(LintReport? report, String text) {
+    final list = report?.diagnostics;
+    if (list == null || list.isEmpty) return const <DiagnosticLine>[];
+    // 波浪线太多会拖慢绘制（每行都要重建段落），取最前面的 400 条够了。
+    final items = list.length > 400 ? list.sublist(0, 400) : list;
+    final starts = <int>[];
+    final ends = <int>[];
+    for (final d in items) {
+      final start = d.start.clamp(0, text.length);
+      starts.add(start);
+      final len = d.length < 0 ? 0 : d.length;
+      ends.add((start + len).clamp(start, text.length));
+    }
+    final targets = <int>{...starts, ...ends}.toList()..sort();
+    final positions = <int, (int, int)>{};
+    var line = 0;
+    var lineStart = 0;
+    var cursor = 0;
+    for (final target in targets) {
+      while (cursor < target) {
+        if (text.codeUnitAt(cursor) == 10) {
+          line++;
+          lineStart = cursor + 1;
+        }
+        cursor++;
+      }
+      positions[target] = (line, cursor - lineStart);
+    }
+    final out = <DiagnosticLine>[];
+    for (var i = 0; i < items.length; i++) {
+      final d = items[i];
+      final from = positions[starts[i]] ?? (0, 0);
+      final to = positions[ends[i]] ?? from;
+      out.add(DiagnosticLine(
+        severity: switch (d.severity) {
+          LintSeverity.error => 1,
+          LintSeverity.warning => 2,
+          LintSeverity.info => 3,
+        },
+        range: <String, dynamic>{
+          'start': <String, dynamic>{'line': from.$1, 'character': from.$2},
+          'end': <String, dynamic>{'line': to.$1, 'character': to.$2},
+        },
+        message: d.message,
+      ));
+    }
+    return out;
+  }
+
+  /// 波浪线是 RenderObject 的构造参数，改完得让编辑器重建一次才会画出来；
+  /// 而 [_refreshDecorations] 有时会在 build 期间被间接调到，所以推迟到帧末做。
+  void _scheduleDiagRepaint() {
+    if (_diagRepaintScheduled) return;
+    _diagRepaintScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _diagRepaintScheduled = false;
+      if (mounted) setState(() {});
+    });
   }
 
   /// 当前选区文本（控制台里的 `$0`）。
@@ -1036,6 +1152,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final controller = _controller;
     final doc = _doc;
     if (controller == null || doc == null) return;
+
+    // VS 的 format on save：先按语言重排，再落盘（失败/无变化都不打扰用户）。
+    if (_prefs.formatOnSave && _canFormat) {
+      await _applyFormat(quiet: true);
+      if (!mounted) return;
+    }
 
     var text = controller.text;
     switch (_newline) {
@@ -2365,7 +2487,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 两个体验点：**格式化后光标留在原来那一行**（而不是跳回文件开头），
   /// 以及「内容没变」时明确告知（否则用户会以为是点了没反应）。
-  Future<void> _format() async {
+  Future<void> _format() => _applyFormat();
+
+  /// [quiet] 为 true 时（保存时格式化）不弹提示：用户要的是「存下去」，
+  /// 不是「格式化成功了」这种噪音。
+  Future<void> _applyFormat({bool quiet = false}) async {
     final controller = _controller;
     if (controller == null) return;
     final text = controller.text;
@@ -2388,23 +2514,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
           // 通用大括号缩进重排：只改每行前导空白，正文逐字保留。
           result = reindentBraces(text, tabSize: _prefs.tabSize, useTabs: _prefs.useTabs);
         case FormatKind.none:
-          _toast(localizations.editorFormatUnsupported);
+          if (!quiet) _toast(localizations.editorFormatUnsupported);
           return;
       }
     } catch (e) {
-      _toast('${localizations.fail}: $e');
+      if (!quiet) _toast('${localizations.fail}: $e');
       return;
     }
     if (!mounted || result == null) return;
     if (result == text) {
-      _toast(localizations.editorFormatNoChange);
+      if (!quiet) _toast(localizations.editorFormatNoChange);
       return;
     }
     controller.text = result;
     // 尽量把光标放回原来那一行的行首（行数变少时落到末行）。
     final keepLine = caretLine.clamp(0, '\n'.allMatches(result).length);
     controller.selection = TextSelection.collapsed(offset: _offsetOfLine(result, keepLine));
-    _toast(localizations.editorFormatted);
+    if (!quiet) _toast(localizations.editorFormatted);
   }
 
   /// 偏移量 → 行号（0 基）。
@@ -2559,12 +2685,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
               onFix: _fixDiagnostic,
               onShowAll: () => _openConsole(EditorConsoleTab.problems),
               onFixAll: (_lint?.fixableCount ?? 0) > 0 ? _fixAllDiagnostics : null,
+              onPrevIssue: () => _jumpIssue(false),
+              onNextIssue: () => _jumpIssue(true),
               muted: _hiddenSeverities,
-              onMutedChanged: (next) => setState(() {
-                _hiddenSeverities
-                  ..clear()
-                  ..addAll(next);
-              }),
+              onMutedChanged: (next) {
+                setState(() {
+                  _hiddenSeverities
+                    ..clear()
+                    ..addAll(next);
+                });
+                unawaited(_saveHiddenSeverities());
+              },
             ),
           if (_prefs.shortcutBar) _snippetBar(),
           if (_consoleOpen && doc != null)

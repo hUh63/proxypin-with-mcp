@@ -4852,5 +4852,12 @@
   "editorHighlightOccurrences": "Highlight other occurrences of the word",
   "editorGotoDefinition": "Go to definition",
   "editorNoDefinition": "No definition found in this file",
-  "editorLintAllRules": "All rules"
+  "editorLintAllRules": "All rules",
+  "editorFormatOnSave": "Format on save",
+  "@editorFormatOnSave": {
+    "description": "Reformat on save switch"
+  },
+  "editorFormatOnSaveDesc": "Reformat the document before writing it to disk.",
+  "editorIssuePrev": "Previous problem",
+  "editorIssueNext": "Next problem"
 }

@@ -47,6 +47,10 @@ class LintIssueBar extends StatefulWidget {
   /// 一键修复全部可修项（null = 没有可修项）。
   final VoidCallback? onFixAll;
 
+  /// 跳到上一处 / 下一处问题（VS 里的 Shift+F8 / F8）。
+  final VoidCallback? onPrevIssue;
+  final VoidCallback? onNextIssue;
+
   /// 同时最多显示几行（超出的折叠）。
   final int maxRows;
 
@@ -63,6 +67,8 @@ class LintIssueBar extends StatefulWidget {
     required this.onFix,
     this.onShowAll,
     this.onFixAll,
+    this.onPrevIssue,
+    this.onNextIssue,
     this.chinese = true,
     this.maxRows = 3,
     this.muted = const <LintSeverity>{},
@@ -153,6 +159,24 @@ class _LintIssueBarState extends State<LintIssueBar> {
                 constraints: const BoxConstraints(minWidth: 26, minHeight: 24),
                 color: _grouped ? theme.colorScheme.primary : theme.textTheme.bodySmall?.color,
               ),
+              if (widget.onPrevIssue != null)
+                IconButton(
+                  onPressed: widget.onPrevIssue,
+                  tooltip: localizations.editorIssuePrev,
+                  icon: const Icon(Icons.keyboard_arrow_up, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                ),
+              if (widget.onNextIssue != null)
+                IconButton(
+                  onPressed: widget.onNextIssue,
+                  tooltip: localizations.editorIssueNext,
+                  icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                ),
               if (widget.onFixAll != null)
                 TextButton(
                   onPressed: widget.onFixAll,
