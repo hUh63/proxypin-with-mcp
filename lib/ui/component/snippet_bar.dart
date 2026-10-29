@@ -308,17 +308,22 @@ class _SnippetBarState extends State<SnippetBar> {
         ToolSnippetStore.recordUse(s.insert).ignore();
       },
       borderRadius: BorderRadius.circular(4),
-      child: Container(
-        width: 46,
-        height: 30,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Text(
-          s.label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: widget.labelStyle,
+      // 宽度跟着文字走（46～110）：固定 46 会把 `#include <iostream>` 这类
+      // 直接截成 `#inc...`，等于把信息全砍掉了。
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 46, maxWidth: 110),
+        child: Container(
+          height: 30,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 7),
+          child: Text(
+            s.label,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: widget.labelStyle,
+          ),
         ),
       ),
     );

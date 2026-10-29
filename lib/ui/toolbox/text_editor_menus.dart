@@ -525,8 +525,11 @@ class _SyntaxPickerDialogState extends State<SyntaxPickerDialog> {
       title: Text(loc.editorMoreSyntax),
       contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
       content: SizedBox(
+        // 小屏上固定 440 会顶到状态栏，按屏幕高度收一点。
         width: 340,
-        height: 440,
+        height: MediaQuery.sizeOf(context).height < 620
+            ? MediaQuery.sizeOf(context).height * 0.55
+            : 440,
         child: Column(children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
