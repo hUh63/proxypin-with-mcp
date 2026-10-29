@@ -757,6 +757,119 @@ String _fLower(AppLocalizations l) => l.editorLowerCase;
 String _fFormatSel(AppLocalizations l) => l.editorFormatSelection;
 String _fRename(AppLocalizations l) => l.editorRename;
 
+/// 菜单项对应的图标（分类菜单、`▸` 二级菜单行、命令面板共用一张表）。
+IconData menuIconOf(String id) {
+  switch (id) {
+    case 'newFile':
+      return Icons.note_add_outlined;
+    case 'open':
+      return Icons.folder_open;
+    case 'save':
+      return Icons.save_outlined;
+    case 'file':
+      return Icons.folder_outlined;
+    case 'docs':
+      return Icons.description_outlined;
+    case 'close':
+      return Icons.close;
+    case 'undo':
+      return Icons.undo;
+    case 'redo':
+      return Icons.redo;
+    case 'copy':
+      return Icons.copy_all;
+    case 'clear':
+      return Icons.backspace_outlined;
+    case 'replaceLine':
+      return Icons.sync_alt;
+    case 'comment':
+      return Icons.code;
+    case 'lineOps':
+      return Icons.format_list_numbered;
+    case 'caseOps':
+      return Icons.text_fields;
+    case 'nextOccurrence':
+      return Icons.select_all;
+    case 'format':
+      return Icons.auto_fix_high;
+    case 'formatSel':
+      return Icons.auto_fix_normal;
+    case 'preview':
+      return Icons.visibility_outlined;
+    case 'symbols':
+      return Icons.account_tree_outlined;
+    case 'gotoLine':
+      return Icons.pin_drop_outlined;
+    case 'gotoDef':
+      return Icons.my_location_outlined;
+    case 'peekDef':
+      return Icons.visibility;
+    case 'expandSel':
+      return Icons.open_in_full;
+    case 'jumpBracket':
+      return Icons.data_object;
+    case 'references':
+      return Icons.format_list_bulleted;
+    case 'rename':
+      return Icons.drive_file_rename_outline;
+    case 'foldAll':
+      return Icons.unfold_less;
+    case 'unfoldAll':
+      return Icons.unfold_more;
+    case 'minify':
+    case 'minifyAggressive':
+      return Icons.compress;
+    case 'syntax':
+      return Icons.code;
+    case 'newline':
+      return Icons.keyboard_return;
+    case 'retainMode':
+      return Icons.save_as_outlined;
+    case 'settings':
+      return Icons.settings;
+    case 'lint':
+      return Icons.fact_check_outlined;
+    case 'lintIssues':
+      return Icons.error_outline;
+    case 'console':
+      return Icons.terminal;
+    case 'lintRules':
+      return Icons.rule;
+    case 'toggleBookmark':
+      return Icons.bookmark_add_outlined;
+    case 'bookmarks':
+      return Icons.bookmarks_outlined;
+    case 'clearBookmarks':
+      return Icons.bookmark_remove_outlined;
+    case 'recentEdits':
+      return Icons.history;
+    case 'report':
+      return Icons.report_outlined;
+    case 'search':
+      return Icons.search;
+    case 'wrap':
+      return Icons.wrap_text;
+    case 'readOnly':
+      return Icons.lock_outline;
+    case 'smooth':
+      return Icons.speed;
+    case 'smart':
+      return Icons.auto_awesome;
+    case 'smoothKeepIme':
+      return Icons.keyboard;
+    case 'ascii':
+    case 'unicode':
+      return Icons.visibility_outlined;
+    case 'navBack':
+      return Icons.arrow_back;
+    case 'navForward':
+      return Icons.arrow_forward;
+    case 'stats':
+      return Icons.analytics_outlined;
+  }
+  return Icons.chevron_right;
+}
+
 /// 勾选要在「更多」菜单里显示 / 隐藏的项。
 class EditorMenuManagerDialog extends StatefulWidget {
   const EditorMenuManagerDialog({super.key});

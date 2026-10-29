@@ -2861,5 +2861,7 @@
   "editorNoBookmark": "No bookmarks in this file",
   "editorBookmarks": "Bookmarks",
   "editorRecentEdits": "Recent edits",
-  "editorNoRecentEdits": "Nothing edited yet"
+  "editorNoRecentEdits": "Nothing edited yet",
+  "editorCommandPalette": "Command palette",
+  "editorCommandPaletteHint": "Type a command…"
 }

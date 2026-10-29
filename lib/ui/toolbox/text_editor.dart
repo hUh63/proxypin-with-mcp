@@ -4530,6 +4530,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 padding: const EdgeInsets.only(right: 6),
                 child: Icon(Icons.circle, size: 7, color: color),
               ),
+            // 命令面板：找功能不用翻菜单（VS 的 Ctrl+Q / VS Code 的 Ctrl+Shift+P）。
+            _iconBtn(Icons.manage_search, loc.editorCommandPalette, _showCommandPalette),
             // 光标那行有问题时才出现的灯泡（VS 的 Quick Fix），靠右放。
             if (_fixAtCaretLine != null)
               _iconBtn(Icons.lightbulb, loc.editorQuickFix,
@@ -4613,7 +4615,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('newFile', Icons.note_add_outlined, loc.editorNewFile),
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('save', Icons.save_outlined, loc.save),
-          PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right)),
+          PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right, id: 'file')),
           _menuItem('docs', Icons.description_outlined, loc.editorDocuments),
           const PopupMenuDivider(),
           _menuItem('close', Icons.close, loc.editorCloseFile),
@@ -4651,8 +4653,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('replaceLine', Icons.sync_alt, loc.editorReplaceLine),
           const PopupMenuDivider(),
           _menuItem('comment', Icons.code, loc.editorToggleComment),
-          PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right)),
-          PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right)),
+          PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right, id: 'lineOps')),
+          PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right, id: 'caseOps')),
           _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
@@ -4835,12 +4837,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         return <PopupMenuEntry<String>>[
         PopupMenuItem(
           value: 'file',
-          child: _menuRow(localizations.editorMoreFile, Icons.arrow_right),
+          child: _menuRow(localizations.editorMoreFile, Icons.arrow_right, id: 'file'),
         ),
         PopupMenuItem(value: 'search', child: Text(localizations.search)),
         PopupMenuItem(
           value: 'syntax',
-          child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right),
+          child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right, id: 'syntax'),
         ),
         _menuItem('gotoLine', Icons.pin_drop_outlined, localizations.editorSelectToLine),
         _menuItem('symbols', Icons.account_tree_outlined, localizations.editorSymbols),
@@ -4856,11 +4858,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('references', Icons.format_list_bulleted, localizations.editorReferences),
         PopupMenuItem(
           value: 'lineOps',
-          child: _menuRow(localizations.editorLineOps, Icons.arrow_right),
+          child: _menuRow(localizations.editorLineOps, Icons.arrow_right, id: 'lineOps'),
         ),
         PopupMenuItem(
           value: 'caseOps',
-          child: _menuRow(localizations.editorCaseOps, Icons.arrow_right),
+          child: _menuRow(localizations.editorCaseOps, Icons.arrow_right, id: 'caseOps'),
         ),
         PopupMenuItem(
           value: 'navBack',
@@ -4952,13 +4954,41 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 菜单里带右侧箭头的行（表示还有下一级）。
-  Widget _menuRow(String text, IconData trailing) {
+  Widget _menuRow(String text, IconData trailing, {String? id}) {
     return Row(
       children: [
-        Expanded(child: Text(text)),
+        // 二级菜单行也带图标：和一级项保持一样的扫读节奏。
+        if (id != null) ...[
+          Icon(menuIconOf(id), size: 17, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8)),
+          const SizedBox(width: 10),
+        ],
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 13.5))),
         Icon(trailing, size: 18),
       ],
     );
+  }
+
+  /// 命令面板（VS / VS Code 的 Ctrl+Shift+P，这里也能一键找到任何功能）。
+  ///
+  /// 五个分类是「浏览」，命令面板是「已经知道要找什么」——
+  /// 手机上翻四级菜单找一个功能，远不如打两个字。
+  Future<void> _showCommandPalette() async {
+    final loc = localizations;
+    final hidden = _prefs.hiddenMenu.toSet();
+    final commands = <({String id, String label})>[];
+    for (final item in kEditorMenuItems) {
+      if (hidden.contains(item.id)) continue;
+      commands.add((id: item.id, label: item.label(loc)));
+    }
+    if (commands.isEmpty || !mounted) return;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => _CommandPaletteSheet(commands: commands),
+    );
+    if (picked == null) return;
+    _menuAction(picked);
   }
 
   /// 「文件」子菜单：另存为 / 重新加载 / 换行符 / 统计。
@@ -5293,6 +5323,74 @@ class _TextEditorPageState extends State<TextEditorPage> {
 ///
 /// VS 是在滚动条上画，这里滚动条归内核管，就贴在它左侧自己画一条——
 /// 效果一样：扫一眼就知道错误是集中在开头还是尾部。
+/// 命令面板：输入两个字就定位到任何菜单项。
+class _CommandPaletteSheet extends StatefulWidget {
+  final List<({String id, String label})> commands;
+
+  const _CommandPaletteSheet({required this.commands});
+
+  @override
+  State<_CommandPaletteSheet> createState() => _CommandPaletteSheetState();
+}
+
+class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final q = _query.trim().toLowerCase();
+    final matched = q.isEmpty
+        ? widget.commands
+        : widget.commands.where((c) => c.label.toLowerCase().contains(q)).toList(growable: false);
+    return Padding(
+      // 键盘弹起来时要让位，否则列表被压到看不见。
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: TextField(
+              autofocus: true,
+              onChanged: (v) => setState(() => _query = v),
+              style: const TextStyle(fontSize: 13.5),
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.manage_search, size: 18),
+                hintText: AppLocalizations.of(context)!.editorCommandPaletteHint,
+                hintStyle: const TextStyle(fontSize: 12.5),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: matched.isEmpty
+                ? Center(
+                    child: Text(AppLocalizations.of(context)!.emptyData,
+                        style: TextStyle(fontSize: 12, color: theme.disabledColor)),
+                  )
+                : ListView.builder(
+                    itemCount: matched.length,
+                    itemBuilder: (ctx, i) {
+                      final cmd = matched[i];
+                      return ListTile(
+                        dense: true,
+                        leading: Icon(menuIconOf(cmd.id), size: 17),
+                        title: Text(cmd.label, style: const TextStyle(fontSize: 13.5)),
+                        onTap: () => Navigator.pop(ctx, cmd.id),
+                      );
+                    },
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
 /// 语言选择的底部弹层：搜索 + 常用语言置顶。
 ///
 /// 内置加自定义语法将近两百个，没有搜索的列表在手机上等于「滑到手指发麻」；

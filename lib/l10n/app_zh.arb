@@ -4661,5 +4661,7 @@
   "editorNoBookmark": "这个文件还没有书签",
   "editorBookmarks": "书签列表",
   "editorRecentEdits": "最近编辑位置",
-  "editorNoRecentEdits": "还没有编辑记录"
+  "editorNoRecentEdits": "还没有编辑记录",
+  "editorCommandPalette": "命令面板",
+  "editorCommandPaletteHint": "输入命令名…"
 }

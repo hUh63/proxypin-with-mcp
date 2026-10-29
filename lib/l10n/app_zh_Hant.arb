@@ -4661,5 +4661,7 @@
   "editorNoBookmark": "這個檔案還沒有書籤",
   "editorBookmarks": "書籤列表",
   "editorRecentEdits": "最近編輯位置",
-  "editorNoRecentEdits": "還沒有編輯記錄"
+  "editorNoRecentEdits": "還沒有編輯記錄",
+  "editorCommandPalette": "命令面板",
+  "editorCommandPaletteHint": "輸入命令名稱…"
 }
