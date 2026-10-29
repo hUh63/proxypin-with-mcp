@@ -204,7 +204,7 @@ class _LintIssueBarState extends State<LintIssueBar> {
                   _grouped ? _groupRow(theme, grouped[i]) : _row(theme, rows[i]),
             ),
           ),
-        if (hidden > 0)
+        if (hidden > 0 && widget.maxRows > 0)
           InkWell(
             onTap: widget.onShowAll,
             child: Padding(

@@ -2379,6 +2379,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
               _multiAction(localizations.delete, () => _editSelections((_) => '')),
               _multiAction(localizations.editorUpperCase, () => _editSelections((v) => v.toUpperCase())),
               _multiAction(localizations.editorLowerCase, () => _editSelections((v) => v.toLowerCase())),
+              _multiAction(localizations.editorMultiSelNewline, () => _editSelections((v) => '$v\n')),
+              _multiAction(localizations.editorMultiSelCopy, _copySelections),
             ]),
           ),
         ),
@@ -2392,6 +2394,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ),
       ]),
     );
+  }
+
+  /// 把每一处选中的内容按顺序复制出来（一处一行）。
+  void _copySelections() {
+    final ranges = _allSelectionRanges();
+    if (ranges.isEmpty) return;
+    final text = _controller?.text ?? '';
+    final buffer = StringBuffer();
+    for (final r in ranges) {
+      if (r.start < 0 || r.end > text.length) continue;
+      buffer.writeln(text.substring(r.start, r.end));
+    }
+    final out = buffer.toString().trimRight();
+    if (out.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: out));
+    _toast(localizations.copied);
   }
 
   Widget _multiAction(String label, VoidCallback onTap) {
@@ -2548,6 +2566,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Widget _breadcrumb() {
     final doc = _doc;
     if (doc == null || !_programming) return const SizedBox.shrink();
+    // 多选操作栏和面包屑在手机上抢同一块地方：正在批量改的时候，路径没人在看。
+    if (_multiSel.isNotEmpty) return const SizedBox.shrink();
     // 只读缓存：build 里绝不重扫全文（打字时每个字符都会 build 一次）。
     // 缓存由 [_refreshSymbolCache] 在检查跑完后刷新。
     if (!identical(_symbolCacheText, doc.text)) return const SizedBox.shrink();
@@ -3050,6 +3070,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   bool get _canFormat => _formatKind != FormatKind.none;
 
+  /// 光标所在行里第一条「能自动修」的问题（VS 的灯泡）。
+  ///
+  /// 有了它就不用眼睛在下方问题栏里找「我这一行是不是有毛病」——
+  /// 光标停在那行，工具栏上就亮一个灯泡，点一下直接修掉。
+  LintDiagnostic? get _fixAtCaretLine {
+    final report = _lint;
+    if (report == null || _caretLine < 0) return null;
+    for (final d in report.diagnostics) {
+      if (d.line - 1 != _caretLine) continue;
+      if (d.replacement == null) continue;
+      if (_hiddenSeverities.contains(d.severity)) continue;
+      return d;
+    }
+    return null;
+  }
+
   /// 按当前语言格式化。失败时通过 toast 显示原因，不修改原文。
   ///
   /// 两个体验点：**格式化后光标留在原来那一行**（而不是跳回文件开头），
@@ -3194,6 +3230,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Widget build(BuildContext context) {
     final isNewWindows = widget.windowId != null && Platform.isWindows;
     final doc = _doc;
+    // 手机上键盘一弹就吃掉 290dp：这时固定的横条（文档标签、面包屑、问题列表）
+    // 会把代码区压到只剩三四行。打字时只留真正要看的东西。
+    final typing = MediaQuery.viewInsetsOf(context).bottom > 0;
     final title = doc == null ? localizations.textEditor : '${doc.name}${_dirty ? ' •' : ''}';
     // 智能预测：文档词 + 语言关键字 + 按光标上下文 / 代码格式推断的候选。
     // 幂等赋值，不触发重建。
@@ -3241,6 +3280,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       },
       child: Scaffold(
         key: _scaffoldKey,
+        // 抽屉边缘拖拽会抢走编辑区的横向滚动（手机上误触很明显），
+        // 文档列表改从工具栏的菜单按钮进。
+        drawerEdgeDragWidth: 0,
         drawer: _docDrawer(),
         appBar: isNewWindows
             ? null
@@ -3252,9 +3294,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
               ),
         body: Column(children: [
           _toolbar(),
-          _docTabs(),
+          if (!typing) _docTabs(),
           const Divider(height: 1, thickness: 0.3),
-          _breadcrumb(),
+          if (!typing) _breadcrumb(),
           _multiSelBar(),
           Expanded(
             child: Stack(children: [
@@ -3279,6 +3321,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           if (doc != null && _lintEnabled && _programming)
             LintIssueBar(
               report: _lint,
+              // 打字时只留表头（点一下能进完整面板），别把代码区挤没了。
+              maxRows: typing ? 0 : 3,
               chinese: Localizations.localeOf(context).languageCode.startsWith('zh'),
               onJump: _jumpToDiagnostic,
               onFix: _fixDiagnostic,
@@ -3603,6 +3647,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ),
             _toolbarSep(),
             // 纯文本 / 结构化文本之外的语法没有格式化器，直接不显示（灰按钮点不动最误导）
+            if (_fixAtCaretLine != null)
+              _iconBtn(Icons.lightbulb, localizations.editorQuickFix,
+                  () => _fixDiagnostic(_fixAtCaretLine!), tint: Colors.amber),
             if (_canFormat) _iconBtn(Icons.auto_fix_high, localizations.format, _format),
             if (_canPreview) _iconBtn(Icons.visibility_outlined, localizations.editorPreview, _preview),
             _iconBtn(Icons.code, localizations.editorToggleComment, _toggleComment),
@@ -3694,6 +3741,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
             unawaited(_renameSymbol());
           case 'formatSel':
             unawaited(_applyFormat(selectionOnly: true));
+          case 'foldAll':
+            _controller?.foldAll();
+          case 'unfoldAll':
+            _controller?.unfoldAll();
           case 'references':
             unawaited(_showReferences());
           case 'close':
@@ -3721,6 +3772,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           value: 'formatSel',
           child: Text(localizations.editorFormatSelection),
         ),
+        PopupMenuItem(value: 'foldAll', child: Text(localizations.editorFoldAll)),
+        PopupMenuItem(value: 'unfoldAll', child: Text(localizations.editorUnfoldAll)),
         PopupMenuItem(value: 'gotoDef', child: Text(localizations.editorGotoDefinition)),
         PopupMenuItem(value: 'references', child: Text(localizations.editorReferences)),
         PopupMenuItem(

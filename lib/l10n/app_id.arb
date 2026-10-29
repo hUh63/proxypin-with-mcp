@@ -2830,5 +2830,10 @@
   "editorRenameDone": "Renamed {n} places",
   "editorFormatSelection": "Format selection",
   "editorKindKeyword": "keyword",
-  "editorKindBuiltin": "built-in"
+  "editorKindBuiltin": "built-in",
+  "editorQuickFix": "Quick fix",
+  "editorFoldAll": "Fold all",
+  "editorUnfoldAll": "Unfold all",
+  "editorMultiSelNewline": "Newline",
+  "editorMultiSelCopy": "Copy all"
 }

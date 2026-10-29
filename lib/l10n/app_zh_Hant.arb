@@ -4631,5 +4631,10 @@
   "editorRenameDone": "已改名 {n} 處",
   "editorFormatSelection": "格式化選取部分",
   "editorKindKeyword": "關鍵字",
-  "editorKindBuiltin": "內建"
+  "editorKindBuiltin": "內建",
+  "editorQuickFix": "快速修復",
+  "editorFoldAll": "全部摺疊",
+  "editorUnfoldAll": "全部展開",
+  "editorMultiSelNewline": "插入換行",
+  "editorMultiSelCopy": "複製全部"
 }
