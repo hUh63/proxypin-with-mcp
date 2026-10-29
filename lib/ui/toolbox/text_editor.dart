@@ -2416,8 +2416,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return TextButton(
       onPressed: onTap,
       style: TextButton.styleFrom(
-        minimumSize: const Size(0, 24),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 30),
+        padding: const EdgeInsets.symmetric(horizontal: 9),
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
@@ -3625,12 +3625,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
               child: Text(localizations.editorUnsaved, style: TextStyle(fontSize: 11, color: color)),
             ),
         ]),
-        Wrap(
-          spacing: 0,
-          runSpacing: 0,
-          children: [
+        SizedBox(
+          height: 40,
+          // 一行横向滚动，而不是 Wrap 折成两三行：
+          // 手机上折行会让工具栏白吃掉 80+ dp，而代码区才是主角。
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.zero,
+            children: [
             // 按用途分组，中间用竖线隔开（VS Code 工具栏的分组感）；
-            // 手机窄屏时 Wrap 会自动折行，不会像固定 Row 那样溢出。
+            // 手机窄屏靠横向滚动看后面的按钮，不再折行。
             _iconBtn(Icons.note_add_outlined, localizations.editorNewFile, _newFile),
             _iconBtn(Icons.folder_open, localizations.selectFile, _openFile),
             _iconBtn(Icons.save_outlined, localizations.save, _download),
@@ -3666,6 +3671,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _toolbarSep(),
             _moreMenu(color),
           ],
+          ),
         ),
       ]),
     );
@@ -4126,11 +4132,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   Widget _iconBtn(IconData icon, String tooltip, VoidCallback? onTap, {Color? tint}) {
+    // 固定 38×38：手指按得准，又不像默认 48 那么占地方。
     return IconButton(
       onPressed: onTap,
       tooltip: tooltip,
-      icon: Icon(icon, size: 17, color: onTap == null ? Colors.grey : tint),
+      icon: Icon(icon, size: 18, color: onTap == null ? Colors.grey : tint),
+      padding: EdgeInsets.zero,
       visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
     );
   }
 
