@@ -3603,7 +3603,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                     itemBuilder: (context, i) => _docTile(docs[i], i),
                   )
                 : ListView.builder(
-                    scrollController: _docScroll,
+                    controller: _docScroll,
                     itemCount: docs.length,
                     itemBuilder: (context, i) {
                       final doc = docs[i];
