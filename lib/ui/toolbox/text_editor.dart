@@ -1933,16 +1933,47 @@ class _TextEditorPageState extends State<TextEditorPage> {
   );
 
   /// 状态栏点「语言」时弹的语言列表（手机上没有下拉框那么小的点击区，弹层更好点）。
+  static const String _recentLangKey = 'text_editor_recent_langs_v1';
+
+  Future<List<String>> _loadRecentLangs() async {
+    try {
+      return await SharedPreferencesAsync().getStringList(_recentLangKey) ?? const <String>[];
+    } catch (_) {
+      return const <String>[];
+    }
+  }
+
+  Future<void> _rememberLang(String label) async {
+    if (label.isEmpty) return;
+    try {
+      final prefs = SharedPreferencesAsync();
+      final list = (await prefs.getStringList(_recentLangKey)) ?? <String>[];
+      list.remove(label);
+      list.insert(0, label);
+      if (list.length > 6) list.removeRange(6, list.length);
+      await prefs.setStringList(_recentLangKey, list);
+    } catch (_) {
+      // 记不上不影响切语言
+    }
+  }
+
   Future<void> _showLanguagePicker() async {
+    final recent = await _loadRecentLangs();
+    if (!mounted) return;
     final chosen = await showModalBottomSheet<_LangOption>(
       context: context,
       showDragHandle: true,
       // 带键盘搜索，必须让弹层跟着键盘让位。
       isScrollControlled: true,
-      builder: (ctx) => _LanguagePickerSheet(langs: _langs, current: _lang.label),
+      builder: (ctx) => _LanguagePickerSheet(
+        langs: _langs,
+        current: _lang.label,
+        recent: recent,
+      ),
     );
     if (chosen == null || _doc == null) return;
     if (chosen.key == _lang.key && chosen.label == _lang.label) return;
+    unawaited(_rememberLang(chosen.label));
     _applyLanguage(chosen);
   }
 
@@ -4190,7 +4221,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
                       setState(() => doc.bookmarks.remove(offset));
                       _refreshDecorations();
                       Navigator.pop(ctx);
-                      unawaited(_showBookmarks());
+                      // 删空了就到此为止，不再弹一个空列表 + 一句「还没有书签」。
+                      if (doc.bookmarks.isNotEmpty) unawaited(_showBookmarks());
                     },
                   ),
                   onTap: () {
@@ -4374,7 +4406,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 13.5)),
-                        subtitle: Text(doc.langLabel,
+                        subtitle: Text(
+                            doc.bookmarks.isEmpty
+                                ? doc.langLabel
+                                : '${doc.langLabel} · ${doc.bookmarks.length}',
                             style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                         onTap: () {
                           _activate(doc);
@@ -4597,7 +4632,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         Icon(icon, size: 17,
             color: enabled ? Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8) : Theme.of(context).disabledColor),
         const SizedBox(width: 10),
-        Expanded(child: Text(label, style: const TextStyle(fontSize: 13.5))),
+        Expanded(
+          child: Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13.5)),
+        ),
       ]),
     );
   }
@@ -5399,7 +5439,14 @@ class _LanguagePickerSheet extends StatefulWidget {
   final List<_LangOption> langs;
   final String current;
 
-  const _LanguagePickerSheet({required this.langs, required this.current});
+  /// 最近用过的语言（排在最前）。
+  final List<String> recent;
+
+  const _LanguagePickerSheet({
+    required this.langs,
+    required this.current,
+    this.recent = const <String>[],
+  });
 
   @override
   State<_LanguagePickerSheet> createState() => _LanguagePickerSheetState();
@@ -5445,14 +5492,23 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
     // 空查询时把常用语言提到最前（保持原顺序）。
     final List<_LangOption> ordered;
     if (query.isEmpty) {
+      final recent = <_LangOption>[];
       final common = <_LangOption>[];
       final rest = <_LangOption>[];
       for (final option in matched) {
-        (_common.contains(option.label) ? common : rest).add(option);
+        if (widget.recent.contains(option.label)) {
+          recent.add(option);
+        } else if (_common.contains(option.label)) {
+          common.add(option);
+        } else {
+          rest.add(option);
+        }
       }
-      common.sort((a, b) =>
-          _common.indexOf(a.label).compareTo(_common.indexOf(b.label)));
-      ordered = <_LangOption>[...common, ...rest];
+      // 最近用过的按「最近」排序，常用的按固定表排序。
+      recent.sort((a, b) =>
+          widget.recent.indexOf(a.label).compareTo(widget.recent.indexOf(b.label)));
+      common.sort((a, b) => _common.indexOf(a.label).compareTo(_common.indexOf(b.label)));
+      ordered = <_LangOption>[...recent, ...common, ...rest];
     } else {
       ordered = matched;
     }

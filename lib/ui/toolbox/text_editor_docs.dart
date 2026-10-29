@@ -212,6 +212,8 @@ class EditorDocuments {
           'path': d.path,
           'langLabel': d.langLabel,
           'pinned': d.pinned,
+          // 书签存偏移，正文一起落盘后偏移依然有效。
+          'bookmarks': d.bookmarks.toList(),
         });
       }
       await File('${dir.path}/manifest.json').writeAsString(jsonEncode({
@@ -253,6 +255,12 @@ class EditorDocuments {
           retained: true,
           text: text,
         );
+        final marks = raw['bookmarks'];
+        if (marks is List) {
+          for (final mark in marks) {
+            if (mark is int && mark >= 0 && mark <= text.length) doc.bookmarks.add(mark);
+          }
+        }
         restored.add(doc);
       }
       if (restored.isEmpty) return;
