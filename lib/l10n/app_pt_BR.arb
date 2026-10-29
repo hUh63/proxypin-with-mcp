@@ -2820,5 +2820,13 @@
   "editorIssuePrev": "Previous problem",
   "editorIssueNext": "Next problem",
   "editorReferences": "Find all references",
-  "editorReferencesEmpty": "No references found"
+  "editorReferencesEmpty": "No references found",
+  "editorMultiSelCount": "{n} selected",
+  "editorMultiSelReplace": "Replace {n} places…",
+  "editorMultiSelNoMore": "No more occurrences",
+  "editorReplaceWith": "New text",
+  "editorRename": "Rename symbol",
+  "editorRenameHint": "New name",
+  "editorRenameNoDecl": "No declaration here - rename would be unsafe",
+  "editorRenameDone": "Renamed {n} places"
 }

@@ -4861,5 +4861,34 @@
   "editorIssuePrev": "Previous problem",
   "editorIssueNext": "Next problem",
   "editorReferences": "Find all references",
-  "editorReferencesEmpty": "No references found"
+  "editorReferencesEmpty": "No references found",
+  "editorMultiSelCount": "{n} selected",
+  "@editorMultiSelCount": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "editorMultiSelReplace": "Replace {n} places…",
+  "@editorMultiSelReplace": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "editorMultiSelNoMore": "No more occurrences",
+  "editorReplaceWith": "New text",
+  "editorRename": "Rename symbol",
+  "editorRenameHint": "New name",
+  "editorRenameNoDecl": "No declaration here - rename would be unsafe",
+  "editorRenameDone": "Renamed {n} places",
+  "@editorRenameDone": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
 }

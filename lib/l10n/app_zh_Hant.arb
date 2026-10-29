@@ -4620,5 +4620,13 @@
   "editorIssuePrev": "上一處問題",
   "editorIssueNext": "下一處問題",
   "editorReferences": "列出這個詞在全文出現的位置",
-  "editorReferencesEmpty": "找不到引用"
+  "editorReferencesEmpty": "找不到引用",
+  "editorMultiSelCount": "已選 {n} 處",
+  "editorMultiSelReplace": "批次取代 {n} 處…",
+  "editorMultiSelNoMore": "沒有更多出現處了",
+  "editorReplaceWith": "新文字",
+  "editorRename": "重新命名符號",
+  "editorRenameHint": "新名稱",
+  "editorRenameNoDecl": "這裡找不到宣告，改名不安全",
+  "editorRenameDone": "已改名 {n} 處"
 }

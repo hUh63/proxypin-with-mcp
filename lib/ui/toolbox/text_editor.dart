@@ -408,6 +408,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 换文档后波浪线要按新文档重算。
       _diagReport = null;
       _diagLines = const <DiagnosticLine>[];
+      // 多选是「针对某几个位置」的状态，换文档就失效了。
+      _multiSel.clear();
+      _multiWord = '';
     });
 
     doc.controller.addListener(_onControllerChanged);
@@ -1762,7 +1765,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
       list.add(SearchHighlight(start: pair.$2, end: pair.$2 + 1, isCurrentMatch: true));
     }
 
-    // 2) 当前词的所有出现
+    // 2) 多选编辑进行中：只标「已圈中的那几处」。
+    //    这时再按整篇同词高亮会看混——用户关心的是「我选了哪几个」。
+    if (_multiSel.isNotEmpty) {
+      if (sel.isValid && sel.start != sel.end) {
+        list.add(SearchHighlight(start: sel.start, end: sel.end, isCurrentMatch: true));
+      }
+      for (final r in _multiSel) {
+        list.add(SearchHighlight(start: r.start, end: r.end));
+      }
+      if (_sameHighlights(controller.extraHighlights, list)) return;
+      controller.extraHighlights = list;
+      controller.extraHighlightsChanged = true;
+      controller.notifyListeners();
+      return;
+    }
+
+    // 3) 当前词的所有出现
     if (_prefs.highlightOccurrences) {
       var start = sel.isValid ? sel.start : caret;
       var end = sel.isValid ? sel.end : caret;
@@ -2015,58 +2034,281 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return true;
   }
 
-  /// 「选择下一个相同词」（VS 的 Ctrl+D）。
+  // ---------- 多选编辑（VS 的 Ctrl+D 累加，移动端做成「先圈出来，再一次性改」）----------
+
+  /// 除主选区之外的其它选区（按位置升序、互不重叠）。
   ///
-  /// 手机上没有多光标，做成「依次选中下一处」也能用：改完第一处、再点一下跳到第二处，
-  /// 顺带提示「第 2 / 7 处」，心里有数还剩几个没改。
-  void _selectNextOccurrence() {
+  /// 内核只有「单个选区 + 多个插入点」，画不出 VS 那种多个光标同时打字的效果；
+  /// 手机上边打字边盯几处光标本来也不好使。所以这里换了交互：
+  /// **先把要改的地方一个个圈出来（加入下一个出现处），再一次性替换 / 删除 / 改大小写。**
+  final List<({int start, int end})> _multiSel = <({int start, int end})>[];
+
+  /// 多选时共享的那个词（只用来提示与预填输入框）。
+  String _multiWord = '';
+
+  /// 主选区 + 多选区，排好序并合并重叠。
+  List<({int start, int end})> _allSelectionRanges() {
+    final controller = _controller;
+    if (controller == null) return const <({int start, int end})>[];
+    final text = controller.text;
+    final sel = controller.selection;
+    final out = <({int start, int end})>[..._multiSel];
+    if (sel.isValid && sel.start != sel.end) {
+      out.add((
+        start: sel.start.clamp(0, text.length),
+        end: sel.end.clamp(0, text.length),
+      ));
+    }
+    out.sort((a, b) => a.start.compareTo(b.start));
+    final merged = <({int start, int end})>[];
+    for (final r in out) {
+      if (merged.isNotEmpty && r.start <= merged.last.end) {
+        final last = merged.removeLast();
+        merged.add((start: last.start, end: r.end > last.end ? r.end : last.end));
+      } else {
+        merged.add(r);
+      }
+    }
+    return merged;
+  }
+
+  /// 「加入下一个出现处」：第一次先把光标下的词选起来，之后每按一次多收一处。
+  void _addNextOccurrence() {
     final controller = _controller;
     if (controller == null) return;
     final text = controller.text;
     final sel = controller.selection;
     if (!sel.isValid) return;
+    var start = sel.start.clamp(0, text.length);
+    var end = sel.end.clamp(0, text.length);
 
-    var start = sel.start;
-    var end = sel.end;
-    // 选区跨行时「相同词」就没意义了（会拿整段去全文搜），退回光标所在的词。
-    var collapsed = start == end || text.substring(start, end).contains('\n');
-    if (collapsed && start != end) {
-      start = sel.extentOffset;
-      end = start;
+    // 空选区（或跨行选区）：先选中光标下的词，进入多选模式的第一步。
+    if (start == end || text.substring(start, end).contains('\n')) {
+      final range = _wordRangeAt(text, start == end ? start : sel.extentOffset);
+      if (range.end <= range.start) return;
+      _multiSel.clear();
+      _multiWord = text.substring(range.start, range.end);
+      controller.selection = TextSelection(baseOffset: range.start, extentOffset: range.end);
+      _toast(localizations.editorMultiSelCount('1'));
+      setState(() {});
+      _refreshExtraHighlights();
+      return;
     }
-    if (collapsed) {
-      // 没有选区：先选中光标所在的词。
-      final range = _wordRangeAt(text, start);
-      start = range.start;
-      end = range.end;
-      if (end <= start) return;
-    }
-    final word = text.substring(start, end);
-    if (word.trim().isEmpty) return;
 
-    // 出现次数多到离谱（比如 `int`）就不数了，避免每次点击扫全文好几遍。
-    var total = 0;
-    var truncated = false;
-    for (var i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + word.length)) {
-      total++;
-      if (total > 2000) {
-        truncated = true;
+    final word = _multiSel.isEmpty ? text.substring(start, end) : _multiWord;
+    if (word.isEmpty) return;
+    if (_multiSel.isEmpty) _multiWord = word;
+
+    if (!_multiSel.any((r) => r.start == start && r.end == end)) {
+      _multiSel.add((start: start, end: end));
+    }
+    // 已经收进来的位置不能重复收，否则会「加了两次同一处」。
+    final taken = <int>{for (final r in _multiSel) r.start};
+
+    var next = -1;
+    for (var i = text.indexOf(word, end); i >= 0; i = text.indexOf(word, i + word.length)) {
+      if (!taken.contains(i)) {
+        next = i;
         break;
       }
     }
-
-    var next = collapsed ? start : text.indexOf(word, end);
-    if (next < 0) next = text.indexOf(word);
-    if (next < 0) return;
-
-    var index = 0;
-    for (var i = text.indexOf(word); i >= 0 && i <= next; i = text.indexOf(word, i + word.length)) {
-      index++;
+    if (next < 0) {
+      for (var i = text.indexOf(word); i >= 0 && i < end; i = text.indexOf(word, i + word.length)) {
+        if (!taken.contains(i)) {
+          next = i;
+          break;
+        }
+      }
     }
-
+    if (next < 0) {
+      // 全都收完了：保持现状，只提示一声。
+      setState(() {});
+      _refreshExtraHighlights();
+      _toast(localizations.editorMultiSelNoMore);
+      return;
+    }
     controller.selection = TextSelection(baseOffset: next, extentOffset: next + word.length);
     controller.scrollToLine(_lineOfOffset(text, next));
-    _toast('${index.clamp(1, total)} / ${truncated ? '$total+' : '$total'}');
+    setState(() {});
+    _refreshExtraHighlights();
+    _toast(localizations.editorMultiSelCount('${_multiSel.length + 1}'));
+  }
+
+  /// 清空多选，回到普通单选状态。
+  void _clearMultiSel() {
+    if (_multiSel.isEmpty && _multiWord.isEmpty) return;
+    setState(() {
+      _multiSel.clear();
+      _multiWord = '';
+    });
+    _refreshExtraHighlights();
+  }
+
+  /// 对所有选区做一次性批量编辑。
+  ///
+  /// 直接重建整篇文本，而不是循环 `replaceRange`：一次赋值只产生**一条**撤销记录，
+  /// 也不会因为逐个替换让后面的偏移整体漂移。
+  void _editSelections(String Function(String selected) transform) {
+    final controller = _controller;
+    if (controller == null) return;
+    final ranges = _allSelectionRanges();
+    if (ranges.isEmpty) return;
+    final text = controller.text;
+    final buffer = StringBuffer();
+    var cursor = 0;
+    final after = <({int start, int end})>[];
+    for (final r in ranges) {
+      buffer.write(text.substring(cursor, r.start));
+      final replaced = transform(text.substring(r.start, r.end));
+      final at = buffer.length;
+      buffer.write(replaced);
+      after.add((start: at, end: at + replaced.length));
+      cursor = r.end;
+    }
+    buffer.write(text.substring(cursor));
+    final result = buffer.toString();
+    _multiSel.clear();
+    _multiWord = '';
+    controller.text = result;
+    if (after.isNotEmpty) {
+      // 光标落在最后一处（VS 里改完焦点也留在最后一个光标上）。
+      final last = after.last;
+      controller.selection = TextSelection(baseOffset: last.start, extentOffset: last.end);
+      controller.scrollToLine(_lineOfOffset(result, last.start));
+    }
+    setState(() {});
+    _refreshExtraHighlights();
+  }
+
+  /// 批量替换：问一次新文本，然后所有选区都换成它。
+  Future<void> _promptReplaceSelections() async {
+    final ranges = _allSelectionRanges();
+    if (ranges.isEmpty) return;
+    final input = TextEditingController(text: _multiWord);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorMultiSelReplace('${ranges.length}')),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          decoration: InputDecoration(labelText: localizations.editorReplaceWith),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, input.text), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    input.dispose();
+    if (!mounted || value == null) return;
+    _editSelections((_) => value);
+  }
+
+  /// 重命名符号（VS 的 F2 简化版）：只改**同文件内整词出现处**，且要求这里确实是声明。
+  ///
+  /// 不弹「重命名」面板是因为手机上多一步操作收益很低；
+  /// 关键是把「找不到声明就别乱改」这条守住——否则一次误触能把整篇的通用词改掉。
+  Future<void> _renameSymbol() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
+    final name = text.substring(range.start, range.end);
+    if (name.isEmpty) return;
+    if (_findDeclaration(text, name, range.start) == null) {
+      _toast(localizations.editorRenameNoDecl);
+      return;
+    }
+    final input = TextEditingController(text: name);
+    input.selection = TextSelection(baseOffset: 0, extentOffset: name.length);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorRename),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          decoration: InputDecoration(labelText: localizations.editorRenameHint),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, input.text), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    input.dispose();
+    if (!mounted || next == null || next.isEmpty || next == name) return;
+    // 整词替换：`Count` 不能命中 `Counter`。
+    final re = RegExp(r'\b' + RegExp.escape(name) + r'\b');
+    var count = 0;
+    final rebuilt = text.replaceAllMapped(re, (m) {
+      count++;
+      return next;
+    });
+    if (count == 0) return;
+    controller.text = rebuilt;
+    controller.selection = TextSelection.collapsed(offset: range.start.clamp(0, rebuilt.length));
+    controller.scrollToLine(_lineOfOffset(rebuilt, range.start.clamp(0, rebuilt.length)));
+    _toast(localizations.editorRenameDone('$count'));
+    _runLint();
+  }
+
+  /// 多选状态下的一条操作栏：已选几处 + 替换 / 删除 / 大小写 / 取消。
+  Widget _multiSelBar() {
+    if (_multiSel.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final count = _multiSel.length + 1;
+    return Container(
+      height: 30,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.4)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(children: [
+        Icon(Icons.select_all, size: 15, color: theme.colorScheme.primary),
+        const SizedBox(width: 5),
+        Text(localizations.editorMultiSelCount('$count'),
+            style: TextStyle(fontSize: 11, color: theme.colorScheme.primary)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              _multiAction(localizations.editorMultiSelReplace('$count'), _promptReplaceSelections),
+              _multiAction(localizations.delete, () => _editSelections((_) => '')),
+              _multiAction(localizations.editorUpperCase, () => _editSelections((v) => v.toUpperCase())),
+              _multiAction(localizations.editorLowerCase, () => _editSelections((v) => v.toLowerCase())),
+            ]),
+          ),
+        ),
+        IconButton(
+          onPressed: _clearMultiSel,
+          tooltip: localizations.cancel,
+          icon: const Icon(Icons.close, size: 15),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+        ),
+      ]),
+    );
+  }
+
+  Widget _multiAction(String label, VoidCallback onTap) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(0, 24),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 11)),
+    );
   }
 
   /// 扫一遍文档里的符号。
@@ -2871,6 +3113,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _docTabs(),
           const Divider(height: 1, thickness: 0.3),
           _breadcrumb(),
+          _multiSelBar(),
           Expanded(
             child: Listener(
               onPointerDown: _onPointerDown,
@@ -3254,7 +3497,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           case 'symbols':
             _showSymbols();
           case 'nextOccurrence':
-            _selectNextOccurrence();
+            _addNextOccurrence();
           case 'gotoDef':
             _gotoDefinition();
           case 'lineOps':
@@ -3299,6 +3542,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _pickRetainMode();
           case 'settings':
             _openSettings();
+          case 'rename':
+            unawaited(_renameSymbol());
           case 'references':
             unawaited(_showReferences());
           case 'close':
@@ -3321,6 +3566,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
         PopupMenuItem(value: 'symbols', child: Text(localizations.editorSymbols)),
         PopupMenuItem(value: 'nextOccurrence', child: Text(localizations.editorSelectNext)),
+        PopupMenuItem(value: 'rename', child: Text(localizations.editorRename)),
         PopupMenuItem(value: 'gotoDef', child: Text(localizations.editorGotoDefinition)),
         PopupMenuItem(value: 'references', child: Text(localizations.editorReferences)),
         PopupMenuItem(
