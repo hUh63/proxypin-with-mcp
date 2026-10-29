@@ -2835,5 +2835,9 @@
   "editorFoldAll": "Fold all",
   "editorUnfoldAll": "Unfold all",
   "editorMultiSelNewline": "Newline",
-  "editorMultiSelCopy": "Copy all"
+  "editorMultiSelCopy": "Copy all",
+  "editorUnsavedExitTitle": "Unsaved changes",
+  "editorUnsavedExitBody": "This file has changes that are not written back to disk yet.",
+  "editorSaveAndExit": "Save and exit",
+  "editorExitWithoutSaving": "Exit without saving"
 }

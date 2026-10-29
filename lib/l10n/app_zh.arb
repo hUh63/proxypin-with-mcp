@@ -4636,5 +4636,9 @@
   "editorFoldAll": "全部折叠",
   "editorUnfoldAll": "全部展开",
   "editorMultiSelNewline": "插入换行",
-  "editorMultiSelCopy": "复制全部"
+  "editorMultiSelCopy": "复制全部",
+  "editorUnsavedExitTitle": "有未保存的修改",
+  "editorUnsavedExitBody": "这个文件有修改还没写回磁盘。",
+  "editorSaveAndExit": "保存并退出",
+  "editorExitWithoutSaving": "不保存直接退出"
 }

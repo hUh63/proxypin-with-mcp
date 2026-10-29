@@ -1429,6 +1429,49 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<void> _confirmExit() async {
     if (_confirmingExit) return;
     _confirmingExit = true;
+
+    // 一、「改了但没写回文件」先问一句。默认 retained 文档的正文是存在草稿里的，
+    //     下次打开还在，但**文件本身没变**——用户以为存了，其实没存。
+    final doc = _doc;
+    final path = doc?.path;
+    if (_dirty && path != null && path.isNotEmpty) {
+      final choice = await showDialog<int>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(localizations.editorUnsavedExitTitle),
+          content: Text(localizations.editorUnsavedExitBody),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, 0),
+                child: Text(localizations.editorExitWithoutSaving)),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, 1),
+                child: Text(localizations.editorSaveAndExit)),
+          ],
+        ),
+      );
+      if (!mounted) {
+        _confirmingExit = false;
+        return;
+      }
+      // 取消 = 留在编辑器里。
+      if (choice == null) {
+        _confirmingExit = false;
+        return;
+      }
+      if (choice == 1) {
+        await _saveWithEncoding(_encoding);
+        if (!mounted || _dirty) {
+          // 保存失败（或用户中途取消了另存为）就别退，避免「以为存了」。
+          _confirmingExit = false;
+          return;
+        }
+      }
+    }
+
+    // 二、未保留文档的取舍（原有逻辑）。
     final keep = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -3270,7 +3313,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
 
     return PopScope(
-      canPop: !(_retainMode == _RetainMode.ask && _hasUnretained),
+      // 有没写回文件的修改时也拦一下：手机上按返回是最容易误触的退出方式。
+      canPop: !(_dirty || (_retainMode == _RetainMode.ask && _hasUnretained)),
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           _scheduleExitCleanup(null);
