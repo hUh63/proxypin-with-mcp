@@ -39,6 +39,12 @@ class EditorDocument {
   /// 保留：退出编辑器时不移除，并落盘以便下次进入恢复
   bool retained;
 
+  /// 有未写回磁盘的修改。
+  ///
+  /// 挂在文档上而不是页面状态里：多文档时切来切去，「这份改没改过」
+  /// 是每份文件自己的属性，放在页面里会被切文档顺手清掉。
+  bool dirty = false;
+
   late final CodeForgeController controller;
   late final UndoRedoController undoController;
   late final FindController findController;

@@ -228,7 +228,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
   int _lastSuggestOffset = -1;
   // 底部面板默认就是「控制台」——问题改在文本下方的窄栏里看。
   EditorConsoleTab _consoleTab = EditorConsoleTab.console;
-  bool _dirty = false;
+
+  /// 当前文档有没有未写回磁盘的修改。
+  ///
+  /// 真正的状态挂在 [EditorDocument] 上：多文档时每份文件各记各的，
+  /// 切文档不会把别人的「已修改」标记抹掉（以前就是这么丢的）。
+  bool get _dirty => _doc?.dirty ?? false;
+  set _dirty(bool value) => _doc?.dirty = value;
   int? _gutterAnchorLine;
 
   // 光标导航历史（「上一处 / 下一处位置」）。
@@ -429,7 +435,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _doc = doc;
       _docs.activeId = doc.id;
       _lastText = doc.text;
-      _dirty = false;
       _caretLine = -1;
       _caretOffset = -1;
       // 换文档后「上次触发补全的位置」不再有意义，否则同偏移量会被误判成重复。
@@ -1416,7 +1421,33 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
-  void _closeDoc(EditorDocument doc) {
+  Future<void> _closeDoc(EditorDocument doc) async {
+    // 关掉一份「改了但没存」的文档，跟按返回键退出是一回事，都得先问。
+    if (doc.dirty && (doc.path?.isNotEmpty ?? false)) {
+      final keep = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(localizations.editorUnsavedExitTitle),
+          content: Text(localizations.editorUnsavedExitBody),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(localizations.editorExitWithoutSaving)),
+            FilledButton(
+                onPressed: () async {
+                  Navigator.pop(ctx, true);
+                  await _saveDoc(doc);
+                },
+                child: Text(localizations.save)),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      // 取消 → 什么都不做；选「保存」的话上面已经把内容写回去了。
+      if (keep == null) return;
+      if (doc.dirty) return; // 保存失败则别关，避免「以为存了」
+    }
     final wasActive = identical(doc, _doc);
     if (wasActive) {
       // 先解绑，避免随后对已 dispose 的 controller 做 removeListener
@@ -3589,7 +3620,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     return PopScope(
       // 有没写回文件的修改时也拦一下：手机上按返回是最容易误触的退出方式。
-      canPop: !(_dirty || (_retainMode == _RetainMode.ask && _hasUnretained)),
+      // 任一文档有未保存修改都要拦（原来只看当前这份，切走的那些就被忽略了）。
+      canPop: !(_docs.docs.any((d) => d.dirty) ||
+          (_retainMode == _RetainMode.ask && _hasUnretained)),
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           _scheduleExitCleanup(null);
@@ -3759,7 +3792,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               ),
               child: Row(children: [
                 Text(
-                  '${doc.name}${active && _dirty ? ' •' : ''}',
+                  '${doc.name}${doc.dirty ? ' •' : ''}',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: active ? FontWeight.w500 : FontWeight.w400,
@@ -3778,6 +3811,30 @@ class _TextEditorPageState extends State<TextEditorPage> {
         },
       ),
     );
+  }
+
+  /// 把某份文档写回它自己的路径（不是当前文档也能存）。
+  Future<bool> _saveDoc(EditorDocument doc) async {
+    final path = doc.path;
+    if (path == null || path.isEmpty) return false;
+    try {
+      var text = doc.text;
+      switch (_newline) {
+        case _Newline.crlf:
+          text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
+        case _Newline.cr:
+          text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r');
+        case _Newline.lf:
+          text = text.replaceAll('\r\n', '\n');
+      }
+      await File(path).writeAsBytes(await _encoding.encode(text));
+      doc.dirty = false;
+      if (mounted && identical(doc, _doc)) setState(() {});
+      return true;
+    } catch (e) {
+      _toast('$e');
+      return false;
+    }
   }
 
   /// 文档抽屉的滚动控制器（打开时滚到当前文档）。
@@ -3912,7 +3969,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             color: doc.pinned ? Theme.of(context).colorScheme.primary : null,
           ),
           title: Text(
-            doc.name,
+            '${doc.name}${doc.dirty ? ' •' : ''}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 13.5),
