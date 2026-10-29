@@ -4027,73 +4027,41 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
-  /// 工具栏两行：
-  ///   第一行是**菜单栏**（文件 / 编辑 / 代码 / 视图 / 检查），像桌面软件那样按功能归类；
-  ///   第二行是**真正高频的几个图标**，直接摆在外面不用展开。
+  /// 工具栏两行，按「找得到 + 按得准」重新排过。
   ///
-  /// 之前的做法是把二十来个按钮摊成一行横滑，手机上一个都滑不回来——
-  /// 摊平不是「全都看得见」，而是「全都难找」。
+  /// 第一行只有五个分类菜单（文件 / 编辑 / 代码 / 视图 / 检查）。
+  /// 语言选择挪到右下角状态栏（VS 就在那儿），抽屉入口用标题栏自带的按钮，
+  /// 省下来的宽度全给这五个分类——每个约 70dp 宽、36dp 高，手指按得准，
+  /// 不像之前那样挤成一排小字。
+  ///
+  /// 第二行是高频图标；灯泡和「更多」靠右，单手握持时拇指更容易够到。
   Widget _toolbar() {
     final color = Theme.of(context).colorScheme.primary;
     final loc = localizations;
+    final canUndo = _doc?.undoController.canUndo == true;
+    final canRedo = _doc?.undoController.canRedo == true;
     return Container(
-      padding: const EdgeInsets.only(top: 2, bottom: 2, left: 4, right: 6),
+      padding: const EdgeInsets.only(left: 2, right: 4),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(
-          height: 32,
+          height: 36,
           child: Row(children: [
-            IconButton(
-              icon: const Icon(Icons.menu, size: 19),
-              tooltip: loc.editorDocuments,
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
-            DropdownButton<_LangOption>(
-              value: _lang,
-              isDense: true,
-              underline: const SizedBox.shrink(),
-              icon: const Icon(Icons.arrow_drop_down, size: 18),
-              items: _langs
-                  .map((l) => DropdownMenuItem(
-                      value: l,
-                      child: Text(l.label == 'Plain Text' ? loc.editorPlainText : l.label,
-                          style: const TextStyle(fontSize: 12.5))))
-                  .toList(),
-              onChanged: (v) {
-                if (v == null || v == _lang || _doc == null) return;
-                setState(() => _doc!.langLabel = v.label);
-                _doc!.lint = null;
-                // 规则开关是按语言记的：切语言要换一份，并立刻重查。
-                unawaited(_loadLintRules());
-                _scheduleLint();
-              },
-            ),
-            Expanded(
-              child: Row(children: [
-                Expanded(child: _groupMenu('file', loc.editorMenuFile)),
-                Expanded(child: _groupMenu('edit', loc.editorMenuEdit)),
-                Expanded(child: _groupMenu('code', loc.editorMenuCode)),
-                Expanded(child: _groupMenu('view', loc.editorMenuView)),
-                if (_programming) Expanded(child: _groupMenu('inspect', loc.editorMenuInspect)),
-              ]),
-            ),
-            if (_dirty) ...[
-              const SizedBox(width: 2),
-              Text(loc.editorUnsaved, style: TextStyle(fontSize: 11, color: color)),
-            ],
+            Expanded(child: _groupMenu('file', loc.editorMenuFile)),
+            Expanded(child: _groupMenu('edit', loc.editorMenuEdit)),
+            Expanded(child: _groupMenu('code', loc.editorMenuCode)),
+            Expanded(child: _groupMenu('view', loc.editorMenuView)),
+            if (_programming) Expanded(child: _groupMenu('inspect', loc.editorMenuInspect)),
           ]),
         ),
         SizedBox(
-          height: 38,
+          height: 40,
           child: Row(children: [
             _iconBtn(Icons.note_add_outlined, loc.editorNewFile, _newFile),
             _iconBtn(Icons.folder_open, loc.selectFile, _openFile),
             _iconBtn(Icons.save_outlined, loc.save, _download),
             _toolbarSep(),
-            _iconBtn(Icons.undo, loc.editorUndo, _doc?.undoController.canUndo == true ? _undo : null),
-            _iconBtn(Icons.redo, loc.editorRedo, _doc?.undoController.canRedo == true ? _redo : null),
+            _iconBtn(Icons.undo, loc.editorUndo, canUndo ? _undo : null),
+            _iconBtn(Icons.redo, loc.editorRedo, canRedo ? _redo : null),
             AnimatedBuilder(
               animation: _doc?.findController ?? _noFind,
               builder: (_, __) => _iconBtn(
@@ -4102,11 +4070,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
                   _toggleFind,
                   tint: (_doc?.findController.isActive ?? false) ? color : null),
             ),
-            // 光标那行有问题时才出现的灯泡（VS 的 Quick Fix）。
+            const Spacer(),
+            // 未保存小圆点（VS 标签上那个点），一眼知道这份文件还没写回磁盘。
+            if (_dirty)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(Icons.circle, size: 7, color: color),
+              ),
+            // 光标那行有问题时才出现的灯泡（VS 的 Quick Fix），靠右放。
             if (_fixAtCaretLine != null)
               _iconBtn(Icons.lightbulb, loc.editorQuickFix,
                   () => _fixDiagnostic(_fixAtCaretLine!), tint: Colors.amber),
-            const Spacer(),
             _moreMenu(color),
           ]),
         ),
@@ -4129,13 +4103,19 @@ class _TextEditorPageState extends State<TextEditorPage> {
       itemBuilder: (_) => entries.toList(),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11.5),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+            // 小箭头：纯文字一排很容易被当成 tab，加上它就明确是「下拉菜单」。
+            Icon(Icons.arrow_drop_down, size: 15, color: Theme.of(context).textTheme.bodySmall?.color),
+          ]),
         ),
       ),
     );
