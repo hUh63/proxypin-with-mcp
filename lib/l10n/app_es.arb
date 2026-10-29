@@ -2847,5 +2847,9 @@
   "editorMenuInspect": "Revisar",
   "editorPeekDefinition": "Peek definition",
   "editorExpandSelection": "Expand selection",
-  "editorJumpBracket": "Jump to matching bracket"
+  "editorJumpBracket": "Jump to matching bracket",
+  "editorSaveAll": "Save all",
+  "editorCloseOthers": "Close others",
+  "editorSavedCount": "Saved {n} files",
+  "editorCloseOthersDirty": "{n} of them have unsaved changes"
 }

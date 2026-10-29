@@ -4648,5 +4648,9 @@
   "editorMenuInspect": "檢查",
   "editorPeekDefinition": "速覽定義",
   "editorExpandSelection": "擴大選取",
-  "editorJumpBracket": "跳到配對括號"
+  "editorJumpBracket": "跳到配對括號",
+  "editorSaveAll": "全部儲存",
+  "editorCloseOthers": "關閉其他文件",
+  "editorSavedCount": "已儲存 {n} 份",
+  "editorCloseOthersDirty": "其中 {n} 份有未儲存的修改"
 }

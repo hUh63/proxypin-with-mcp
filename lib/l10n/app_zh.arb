@@ -4648,5 +4648,9 @@
   "editorMenuInspect": "检查",
   "editorPeekDefinition": "速览定义",
   "editorExpandSelection": "扩大选区",
-  "editorJumpBracket": "跳到配对括号"
+  "editorJumpBracket": "跳到配对括号",
+  "editorSaveAll": "全部保存",
+  "editorCloseOthers": "关闭其它文档",
+  "editorSavedCount": "已保存 {n} 份",
+  "editorCloseOthersDirty": "其中 {n} 份有未保存的修改"
 }

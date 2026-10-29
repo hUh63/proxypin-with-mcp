@@ -2580,6 +2580,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorNoDefinition);
       return;
     }
+    await _showPeekAt(at: at, title: name);
+  }
+
+  /// 在下面弹一张卡片「速览」某个位置（声明和引用都走这里）。
+  ///
+  /// [at] 是名字所在的偏移。卡片里给两个出口：真的跳过去，或者看它的所有引用——
+  /// 这样「这里是什么 → 还有谁用我」不用来回关面板再点菜单。
+  Future<void> _showPeekAt({required int at, required String title}) async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
     final targetLine = _lineOfOffset(text, at);
     final total = _totalLinesOf(text);
     final from = (targetLine - 3).clamp(0, total - 1);
@@ -2607,7 +2618,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-                child: Text('$name  ·  L${targetLine + 1}',
+                child: Text('$title  ·  L${targetLine + 1}',
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               ),
               ConstrainedBox(
@@ -2645,8 +2656,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: Row(children: [
                   TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(localizations.cancel),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      controller.selection =
+                          TextSelection.collapsed(offset: at.clamp(0, text.length));
+                      unawaited(_showReferences());
+                    },
+                    child: Text(localizations.editorReferences),
                   ),
                   const Spacer(),
                   FilledButton(
@@ -2705,6 +2721,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 顺序：光标处的词 → 所在括号的内容 → 含括号 → 整行 → 外层括号整块 → 全文。
   /// 手机上没有这种组合键，而「恰好选中这一段」在触屏上更难，所以给一个可以连点的入口。
+  /// 这个位置是否在字符串或行注释里。
+  ///
+  /// 只扫当前行：括号扩级在注释/字符串里数层级一定会数错（`"("` 这种），
+  /// 与其猜，不如判定「这行是注释/字符串」后直接退化成「扩到整行」。
+  static bool _insideStringOrComment(String text, int offset) {
+    final lineStart = offset == 0 ? 0 : text.lastIndexOf('\n', offset - 1) + 1;
+    var inSingle = false;
+    var inDouble = false;
+    var escaped = false;
+    for (var i = lineStart; i < offset && i < text.length; i++) {
+      final c = text[i];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (c.codeUnitAt(0) == 92) {
+        // 反斜杠
+        escaped = true;
+        continue;
+      }
+      if (!inDouble && c == "'") {
+        inSingle = !inSingle;
+      } else if (!inSingle && c == '"') {
+        inDouble = !inDouble;
+      } else if (!inSingle && !inDouble) {
+        if (c == '#' ) return true;
+        if (c == '/' && i + 1 < text.length && text[i + 1] == '/') return true;
+      }
+    }
+    return inSingle || inDouble;
+  }
+
   void _expandSelection() {
     final controller = _controller;
     if (controller == null) return;
@@ -2735,7 +2783,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return;
     }
 
-    // 2) 已经是整行 → 外层括号整块 / 全文
+    // 2) 在字符串 / 注释里：不做括号扩级，直接给整行。
+    if (_insideStringOrComment(text, start)) {
+      select(lineStart, lineEnd);
+      return;
+    }
+
+    // 3) 已经是整行 → 外层括号整块 / 全文
     if (start <= lineStart && end >= lineEnd) {
       final outer = _enclosingBracketChain(text, start, maxDepth: 16)
           .where((p) => p.$2 >= end)
@@ -2749,7 +2803,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return;
     }
 
-    // 3) 括号内 → 含括号 → 整行
+    // 4) 括号内 → 含括号 → 整行
     final chain = _enclosingBracketChain(text, start, maxDepth: 16);
     ({int a, int b})? pair;
     for (final p in chain) {
@@ -3007,7 +3061,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
             leading: const Icon(Icons.format_list_bulleted, size: 16),
             title: Text(snippet, maxLines: 1,
                 overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-            trailing: Text('L${lines[i] + 1}', style: const TextStyle(fontSize: 11)),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text('L${lines[i] + 1}', style: const TextStyle(fontSize: 11)),
+              IconButton(
+                icon: const Icon(Icons.visibility_outlined, size: 16),
+                tooltip: localizations.editorPeekDefinition,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  unawaited(_showPeekAt(at: at, title: name));
+                },
+              ),
+            ]),
             onTap: () {
               Navigator.pop(ctx);
               final len = controller.text.length;
@@ -3748,6 +3815,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Widget _statusBar(EditorDocument doc) {
     return _EditorStatusBar(
       controller: doc.controller,
+      dirtyCount: _docs.docs.where((d) => d.dirty).length,
       language: _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label,
       indent: _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}',
       report: doc.lint,
@@ -3837,6 +3905,63 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 把所有改过且有路径的文档一次写回磁盘。
+  ///
+  /// 没有路径的那些（新建未保存）跳过——它们只能走「另存为」，一弹一串文件选择框
+  /// 比什么都糟糕。当前文档若属于这一类，就老老实实弹一次另存为。
+  Future<void> _saveAllDirty() async {
+    final targets = _docs.docs.where((d) => d.dirty).toList(growable: false);
+    if (targets.isEmpty) return;
+    var saved = 0;
+    var failed = 0;
+    for (final doc in targets) {
+      final path = doc.path;
+      if (path == null || path.isEmpty) {
+        if (identical(doc, _doc)) unawaited(_download());
+        continue;
+      }
+      final ok = await _saveDoc(doc);
+      if (ok) {
+        saved++;
+      } else {
+        failed++;
+      }
+    }
+    if (!mounted) return;
+    if (saved > 0) _toast(localizations.editorSavedCount('$saved'));
+    if (failed > 0) _toast('${localizations.fail}: $failed');
+  }
+
+  /// 关掉除当前文档以外的全部文档。
+  ///
+  /// 其中有改过的只问一次（不逐个弹——手机上弹一串对话框最难忍受）。
+  Future<void> _closeOtherDocs() async {
+    final others = _docs.docs.where((d) => !identical(d, _doc)).toList(growable: false);
+    if (others.isEmpty) return;
+    final dirtyCount = others.where((d) => d.dirty).length;
+    if (dirtyCount > 0) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(localizations.editorCloseOthers),
+          content: Text(localizations.editorCloseOthersDirty('$dirtyCount')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(localizations.editorExitWithoutSaving)),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    for (final doc in others) {
+      _docs.remove(doc.id);
+    }
+    setState(() {});
+    _docs.persist();
+  }
+
   /// 文档抽屉的滚动控制器（打开时滚到当前文档）。
   final ScrollController _docScroll = ScrollController();
 
@@ -3872,6 +3997,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 icon: const Icon(Icons.add),
                 tooltip: localizations.editorNewFile,
                 onPressed: _newFile,
+              ),
+              // 多开几份之后「一份份点开再存」很烦，批量入口放这儿。
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 19),
+                tooltip: localizations.editorMore,
+                onSelected: (v) {
+                  switch (v) {
+                    case 'saveAll':
+                      unawaited(_saveAllDirty());
+                    case 'closeOthers':
+                      unawaited(_closeOtherDocs());
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'saveAll', child: Text(localizations.editorSaveAll)),
+                  PopupMenuItem(value: 'closeOthers', child: Text(localizations.editorCloseOthers)),
+                ],
               ),
             ]),
           ),
@@ -4019,7 +4161,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             title: Text(localizations.editorCloseFile),
             onTap: () {
               Navigator.pop(ctx);
-              _closeDoc(doc);
+              unawaited(_closeDoc(doc));
             },
           ),
         ]),
@@ -4311,7 +4453,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           unawaited(_showReferences());
         case 'close':
           final doc = _doc;
-          if (doc != null) _closeDoc(doc);
+          if (doc != null) unawaited(_closeDoc(doc));
       
       // 分类菜单里额外暴露出来的高频入口（原来只能从图标或子菜单点）。
       case 'newFile':
@@ -4951,6 +5093,9 @@ class _EditorStatusBar extends StatefulWidget {
   final String language;
   final String indent;
 
+  /// 有未保存修改的文档份数（>1 时状态栏显示 `•N`）。
+  final int dirtyCount;
+
   /// 当前诊断（VS 状态栏左侧那组「错误 N / 警告 M」）。
   final LintReport? report;
 
@@ -4965,6 +5110,7 @@ class _EditorStatusBar extends StatefulWidget {
     required this.controller,
     required this.language,
     required this.indent,
+    this.dirtyCount = 0,
     this.report,
     this.onTapIssues,
     this.onTapLanguage,
@@ -5093,6 +5239,13 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
             ),
           ),
           const SizedBox(width: 10),
+        ],
+        // 未保存份数（多文档时才知道「还有几份没写回磁盘」）。
+        if (widget.dirtyCount > 0) ...[
+          Icon(Icons.circle, size: 6, color: color),
+          const SizedBox(width: 3),
+          Text('${widget.dirtyCount}', style: style),
+          const SizedBox(width: 8),
         ],
         Text('${text.length}', style: style),
         const SizedBox(width: 10),
