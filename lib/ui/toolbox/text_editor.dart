@@ -3972,19 +3972,34 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 ),
               ),
               child: Row(children: [
-                Text(
-                  '${doc.name}${doc.dirty ? ' •' : ''}',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: active ? FontWeight.w500 : FontWeight.w400,
-                    color: active ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                ConstrainedBox(
+                  // 长文件名会把一个标签撑到半屏，横滑都救不回来。
+                  constraints: const BoxConstraints(maxWidth: 150),
+                  child: Text(
+                    '${doc.name}${doc.dirty ? ' •' : ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: active ? FontWeight.w500 : FontWeight.w400,
+                      color: active
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
-                GestureDetector(
+                // 关闭按钮的点击区做大一点：12px 的图标在手机上又难点、
+                // 又容易滑到标签本身（手一抖就成了「不小心关掉文件」）。
+                InkWell(
                   onTap: () => _closeDoc(doc),
-                  child: Icon(Icons.close,
-                      size: 12, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(Icons.close,
+                        size: 13,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.75)),
+                  ),
                 ),
               ]),
             ),
