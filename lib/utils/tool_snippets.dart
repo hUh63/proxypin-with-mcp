@@ -1756,6 +1756,35 @@ class ToolSnippetStore {
     await SharedPreferencesAsync().setString(_key(scope), '');
   }
 
+  /// 「最近用过」的插入文本（跨页共享，最多 12 条）。
+  ///
+  /// 快捷输入行里几十个符号平铺着，真正天天用的就那三五个，
+  /// 排在最前面比让人横滑去找强得多。
+  static const String recentKey = 'tool_snippets_recent_v1';
+
+  static Future<List<String>> loadRecent() async {
+    try {
+      return await SharedPreferencesAsync().getStringList(recentKey) ?? const <String>[];
+    } catch (_) {
+      return const <String>[];
+    }
+  }
+
+  /// 记一次使用（已在列表里的会被提到最前）。
+  static Future<void> recordUse(String insert) async {
+    if (insert.isEmpty) return;
+    try {
+      final prefs = SharedPreferencesAsync();
+      final list = (await prefs.getStringList(recentKey)) ?? <String>[];
+      list.remove(insert);
+      list.insert(0, insert);
+      if (list.length > 12) list.removeRange(12, list.length);
+      await prefs.setStringList(recentKey, list);
+    } catch (_) {
+      // 记不上不影响插入
+    }
+  }
+
   /// 全局「共用符号库」存储键：任意页面新增过的自定义条目都进这里，跨页共享。
   static const String customKey = 'tool_snippets_custom_v1';
 

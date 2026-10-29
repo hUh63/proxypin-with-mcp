@@ -95,11 +95,32 @@ class _SnippetBarState extends State<SnippetBar> {
   Future<void> _load() async {
     final saved = await ToolSnippetStore.load(widget.scope);
     final lib = await ToolSnippetStore.loadCustom();
+    final recent = await ToolSnippetStore.loadRecent();
     if (!mounted) return;
     setState(() {
       if (saved != null) _items = saved;
       _customLibrary = lib;
+      _items = _sortByRecent(_items, recent);
     });
+  }
+
+  /// 最近用过的排前面，其余保持原顺序（稳定）。
+  static List<ToolSnippet> _sortByRecent(List<ToolSnippet> items, List<String> recent) {
+    if (recent.isEmpty) return items;
+    final rank = <String, int>{};
+    for (var i = 0; i < recent.length; i++) {
+      rank[recent[i]] = i;
+    }
+    final sorted = List<ToolSnippet>.from(items);
+    sorted.sort((a, b) {
+      final ra = rank[a.insert];
+      final rb = rank[b.insert];
+      if (ra == null && rb == null) return 0;
+      if (ra == null) return 1;
+      if (rb == null) return -1;
+      return ra.compareTo(rb);
+    });
+    return sorted;
   }
 
   Future<void> _manage() async {
@@ -281,7 +302,11 @@ class _SnippetBarState extends State<SnippetBar> {
   /// 一个符号格：纯文字、无边框，方便成排排列。
   Widget _cell(ToolSnippet s) {
     return InkWell(
-      onTap: () => widget.onInsert(s.insert),
+      onTap: () {
+        widget.onInsert(s.insert);
+        // 记一笔「最近使用」，下次打开就排到前面。
+        ToolSnippetStore.recordUse(s.insert).ignore();
+      },
       borderRadius: BorderRadius.circular(4),
       child: Container(
         width: 46,

@@ -660,6 +660,14 @@ const List<FloatMenuItem> kFloatMenuItems = [
   FloatMenuItem('find', _fFind),
   FloatMenuItem('special', _fSpecial),
   FloatMenuItem('replaceLine', _fReplaceLine),
+  // 把已经做好的能力接到长按菜单上：长按选词是最顺手的入口，
+  // 让用户再回头去找工具栏或子菜单反而绕。
+  FloatMenuItem('selectNext', _fSelectNext),
+  FloatMenuItem('gotoDef', _fGotoDef),
+  FloatMenuItem('upper', _fUpper),
+  FloatMenuItem('lower', _fLower),
+  FloatMenuItem('formatSel', _fFormatSel),
+  FloatMenuItem('rename', _fRename),
 ];
 
 String _fCopy(AppLocalizations l) => l.copy;
@@ -672,6 +680,12 @@ String _fMinify(AppLocalizations l) => l.editorMinify;
 String _fFind(AppLocalizations l) => l.search;
 String _fSpecial(AppLocalizations l) => l.editorSpecialReport;
 String _fReplaceLine(AppLocalizations l) => l.editorReplaceLine;
+String _fSelectNext(AppLocalizations l) => l.editorSelectNext;
+String _fGotoDef(AppLocalizations l) => l.editorGotoDefinition;
+String _fUpper(AppLocalizations l) => l.editorUpperCase;
+String _fLower(AppLocalizations l) => l.editorLowerCase;
+String _fFormatSel(AppLocalizations l) => l.editorFormatSelection;
+String _fRename(AppLocalizations l) => l.editorRename;
 
 /// 勾选要在「更多」菜单里显示 / 隐藏的项。
 class EditorMenuManagerDialog extends StatefulWidget {

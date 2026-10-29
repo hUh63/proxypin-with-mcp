@@ -140,6 +140,10 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   /// 按规则过滤（点顶部统计 chip 切换）。
   String? _ruleFilter;
 
+  /// 面板高度（顶部有拖拽条可调）。手机上控制台一开就吃掉大半屏，
+  /// 固定 232dp 时想看下面几行代码只能关掉面板。
+  double _height = 232;
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -366,15 +370,43 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      height: 232,
+      height: _height,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
         border: Border(top: BorderSide(color: theme.dividerColor, width: 0.6)),
       ),
       child: Column(children: [
+        _dragHandle(theme),
         _header(theme),
         Expanded(child: _tab == EditorConsoleTab.problems ? _problems(theme) : _console(theme)),
       ]),
+    );
+  }
+
+  /// 顶部拖拽条：上下拖动改面板高度。
+  ///
+  /// 用 `onVerticalDragUpdate` 而不是 GestureDetector 的 onPan：面板里还有
+  /// 列表要滚，横向手势不能抢。
+  Widget _dragHandle(ThemeData theme) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragUpdate: (d) {
+        setState(() => _height = (_height - d.delta.dy).clamp(120.0, 460.0));
+      },
+      child: SizedBox(
+        height: 12,
+        width: double.infinity,
+        child: Center(
+          child: Container(
+            width: 36,
+            height: 3,
+            decoration: BoxDecoration(
+              color: theme.dividerColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

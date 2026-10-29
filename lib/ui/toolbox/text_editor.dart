@@ -327,6 +327,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _navTimer?.cancel();
     _fileWatchTimer?.cancel();
     _lintTimer?.cancel();
+    _docScroll.dispose();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
@@ -1360,6 +1361,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _showSpecialReport();
       case 'replaceLine':
         _replaceCurrentLine();
+      case 'selectNext':
+        _addNextOccurrence();
+      case 'gotoDef':
+        _gotoDefinition();
+      case 'upper':
+        _editSelections((v) => v.toUpperCase());
+      case 'lower':
+        _editSelections((v) => v.toLowerCase());
+      case 'formatSel':
+        unawaited(_applyFormat(selectionOnly: true));
+      case 'rename':
+        unawaited(_renameSymbol());
     }
   }
 
@@ -3328,6 +3341,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
         // 文档列表改从工具栏的菜单按钮进。
         drawerEdgeDragWidth: 0,
         drawer: _docDrawer(),
+        onDrawerChanged: (open) {
+          if (!open) return;
+          // 抽屉刚建出来，等一帧再滚（控制器此时还没 attach）。
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _scrollToActiveDoc();
+          });
+        },
         appBar: isNewWindows
             ? null
             : PreferredSize(
@@ -3490,7 +3510,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 文档抽屉的滚动控制器（打开时滚到当前文档）。
+  final ScrollController _docScroll = ScrollController();
+
+  /// 抽屉里的搜索词（文档多了以后翻列表很痛苦）。
+  String _docQuery = '';
+
+  void _scrollToActiveDoc() {
+    if (!_docScroll.hasClients) return;
+    final index = _docs.docs.indexWhere((d) => identical(d, _doc));
+    if (index < 0) return;
+    // dense ListTile 一行约 56dp，估算即可——差几像素不影响「看得见」。
+    final target = (index * 56.0).clamp(0.0, _docScroll.position.maxScrollExtent);
+    _docScroll.animateTo(target,
+        duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+  }
+
   Widget _docDrawer() {
+    final query = _docQuery.trim().toLowerCase();
+    final docs = query.isEmpty
+        ? _docs.docs
+        : _docs.docs.where((d) => d.name.toLowerCase().contains(query)).toList(growable: false);
     return Drawer(
       child: SafeArea(
         child: Column(children: [
@@ -3509,28 +3549,60 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ]),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(localizations.editorDocsHint,
-                  style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+            child: TextField(
+              onChanged: (v) => setState(() => _docQuery = v),
+              style: const TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 17),
+                hintText: localizations.search,
+                hintStyle: const TextStyle(fontSize: 12.5),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
             ),
           ),
-          const SizedBox(height: 6),
           const Divider(height: 1, thickness: 0.3),
           Expanded(
-            child: ReorderableListView.builder(
-              buildDefaultDragHandles: false,
-              itemCount: _docs.docs.length,
-              onReorder: (oldIndex, newIndex) {
-                setState(() => _docs.reorder(oldIndex, newIndex));
-                _docs.persist();
-              },
-              itemBuilder: (context, i) {
-                final doc = _docs.docs[i];
-                return _docTile(doc, i);
-              },
-            ),
+            // 搜索时不做重排：过滤后的下标和真实顺序对不上，拖了会错位。
+            child: query.isEmpty
+                ? ReorderableListView.builder(
+                    scrollController: _docScroll,
+                    buildDefaultDragHandles: false,
+                    itemCount: docs.length,
+                    onReorder: (oldIndex, newIndex) {
+                      setState(() => _docs.reorder(oldIndex, newIndex));
+                      _docs.persist();
+                    },
+                    itemBuilder: (context, i) => _docTile(docs[i], i),
+                  )
+                : ListView.builder(
+                    scrollController: _docScroll,
+                    itemCount: docs.length,
+                    itemBuilder: (context, i) {
+                      final doc = docs[i];
+                      return ListTile(
+                        dense: true,
+                        selected: identical(doc, _doc),
+                        leading: Icon(
+                          doc.pinned ? Icons.push_pin : Icons.description_outlined,
+                          size: 18,
+                          color: doc.pinned ? Theme.of(context).colorScheme.primary : null,
+                        ),
+                        title: Text(doc.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13.5)),
+                        subtitle: Text(doc.langLabel,
+                            style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        onTap: () {
+                          _activate(doc);
+                          Navigator.of(context).pop();
+                        },
+                      );
+                    },
+                  ),
           ),
         ]),
       ),
