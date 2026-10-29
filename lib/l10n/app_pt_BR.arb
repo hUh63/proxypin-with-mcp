@@ -2828,5 +2828,6 @@
   "editorRename": "Rename symbol",
   "editorRenameHint": "New name",
   "editorRenameNoDecl": "No declaration here - rename would be unsafe",
-  "editorRenameDone": "Renamed {n} places"
+  "editorRenameDone": "Renamed {n} places",
+  "editorFormatSelection": "Format selection"
 }

@@ -4628,5 +4628,6 @@
   "editorRename": "重命名符号",
   "editorRenameHint": "新名字",
   "editorRenameNoDecl": "这里没有找到声明，改名不安全",
-  "editorRenameDone": "已改名 {n} 处"
+  "editorRenameDone": "已改名 {n} 处",
+  "editorFormatSelection": "格式化选中部分"
 }

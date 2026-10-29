@@ -4890,5 +4890,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "editorFormatSelection": "Format selection"
 }

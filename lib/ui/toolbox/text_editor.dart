@@ -878,6 +878,32 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return text.substring(selection.start, selection.end);
   }
 
+  /// 行数缓存（右侧「问题分布条」按行号比例定位，需要总行数）。
+  String? _lineCountText;
+  int _lineCount = 0;
+
+  int _totalLinesOf(String text) {
+    if (!identical(_lineCountText, text)) {
+      _lineCountText = text;
+      var n = 1;
+      for (var i = 0; i < text.length; i++) {
+        if (text.codeUnitAt(i) == 10) n++;
+      }
+      _lineCount = n;
+    }
+    return _lineCount;
+  }
+
+  /// 当前可见（没被筛选关掉）的问题。
+  List<LintDiagnostic> _visibleIssues() {
+    final all = _lint?.diagnostics;
+    if (all == null || all.isEmpty) return const <LintDiagnostic>[];
+    if (_hiddenSeverities.isEmpty) return all;
+    return all
+        .where((d) => !_hiddenSeverities.contains(d.severity))
+        .toList(growable: false);
+  }
+
   /// 上一次跳到的位置（偏移）。用偏移而不是列表下标：
   /// 列表会因为「筛选掉了某个级别」「检查结果刷新」而变短，下标就指到别处去了。
   int _lastIssueOffset = -1;
@@ -1759,10 +1785,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final list = <SearchHighlight>[];
 
     // 1) 括号配对
-    final pair = _bracketPairAt(text, caret);
-    if (pair != null) {
-      list.add(SearchHighlight(start: pair.$1, end: pair.$1 + 1, isCurrentMatch: true));
-      list.add(SearchHighlight(start: pair.$2, end: pair.$2 + 1, isCurrentMatch: true));
+    // 括号嵌套链上色（VS 的 bracket pair colorization）：由内到外各一层颜色。
+    // 只给「包住光标的这几层」上色，不给整篇所有括号铺底色——那只会更花。
+    final chain = _enclosingBracketChain(text, caret);
+    for (var i = 0; i < chain.length; i++) {
+      final pair = chain[i];
+      final color = _bracketColors[i % _bracketColors.length];
+      list.add(SearchHighlight(
+          start: pair.$1, end: pair.$1 + 1, isCurrentMatch: i == 0, color: color));
+      list.add(SearchHighlight(
+          start: pair.$2, end: pair.$2 + 1, isCurrentMatch: i == 0, color: color));
     }
 
     // 2) 多选编辑进行中：只标「已圈中的那几处」。
@@ -1822,53 +1854,50 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 光标处（或它前面那个字符）是括号时，找它配对的那一个。
-  static (int, int)? _bracketPairAt(String text, int caret) {
-    if (text.isEmpty) return null;
-    for (final offset in <int>[caret, caret - 1]) {
-      if (offset < 0 || offset >= text.length) continue;
-      final c = text[offset];
-      final isOpen = '([{'.contains(c);
-      final isClose = ')]}'.contains(c);
-      if (!isOpen && !isClose) continue;
-      final match = isOpen ? _findClosing(text, offset, c) : _findOpening(text, offset, c);
-      if (match == null) continue;
-      return offset < match ? (offset, match) : (match, offset);
-    }
-    return null;
-  }
+  /// 括号嵌套的配色（由内到外）。半透明，深浅主题下都能看见。
+  static const List<Color> _bracketColors = <Color>[
+    Color(0x44FFB300),
+    Color(0x4481C784),
+    Color(0x4464B5F6),
+    Color(0x44BA68C8),
+  ];
 
-  static int? _findClosing(String text, int open, String ch) {
-    const pairs = <String, String>{'(': ')', '[': ']', '{': '}'};
-    final close = pairs[ch]!;
-    var depth = 0;
-    final limit = (open + 20000).clamp(0, text.length);
-    for (var i = open; i < limit; i++) {
-      final c = text[i];
-      if (c == ch) {
-        depth++;
-      } else if (c == close) {
-        depth--;
-        if (depth == 0) return i;
+  /// 包住光标的括号链，由内到外，最多 [maxDepth] 层。
+  ///
+  /// 每层返回一对位置。用来做「括号对着色」：同一层的一对括号同色，越外层颜色越不同。
+  static List<(int, int)> _enclosingBracketChain(String text, int caret, {int maxDepth = 4}) {
+    final out = <(int, int)>[];
+    if (text.isEmpty) return out;
+    var pos = caret.clamp(0, text.length);
+    while (out.length < maxDepth) {
+      int? open;
+      var depth = 0;
+      // 往前找最近的、在 pos 之前还没闭合的开括号。扫太远就放弃（别把光标移动做成 O(n²)）。
+      final limit = (pos - 20000).clamp(0, text.length);
+      for (var i = pos - 1; i >= limit; i--) {
+        final c = text[i];
+        if (c == ')' || c == ']' || c == '}') {
+          depth++;
+        } else if (c == '(' || c == '[' || c == '{') {
+          if (depth == 0) {
+            open = i;
+            break;
+          }
+          depth--;
+        }
       }
-    }
-    return null;
-  }
-
-  static int? _findOpening(String text, int close, String ch) {
-    const pairs = <String, String>{')': '(', ']': '[', '}': '{'};
-    final open = pairs[ch]!;
-    var depth = 0;
-    final limit = (close - 20000).clamp(0, text.length);
-    for (var i = close; i >= limit; i--) {
-      final c = text[i];
-      if (c == ch) {
-        depth++;
-      } else if (c == open) {
-        depth--;
-        if (depth == 0) return i;
+      if (open == null) break;
+      final close = _findClosing(text, open, text[open]);
+      if (close == null) break;
+      if (close < pos) {
+        // 这一对在光标之前就闭合了，不是「包住光标的」，继续往外看。
+        pos = open;
+        continue;
       }
+      out.add((open, close));
+      pos = open;
     }
-    return null;
+    return out;
   }
 
   // ------------------------------ 参数签名提示 ------------------------------
@@ -2940,11 +2969,31 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// [quiet] 为 true 时（保存时格式化）不弹提示：用户要的是「存下去」，
   /// 不是「格式化成功了」这种噪音。
-  Future<void> _applyFormat({bool quiet = false}) async {
+  Future<void> _applyFormat({bool quiet = false, bool selectionOnly = false}) async {
     final controller = _controller;
     if (controller == null) return;
     final text = controller.text;
     if (text.trim().isEmpty) return;
+
+    // 只格式化选中部分（VS 的 Format Selection）。
+    // 片段单独拿去 JSON/XML 解析必然失败，所以这里只做「按大括号重排缩进」。
+    if (selectionOnly) {
+      final sel = controller.selection;
+      if (!sel.isValid || sel.start == sel.end) {
+        if (!quiet) _toast(localizations.editorFormatUnsupported);
+        return;
+      }
+      final snippet = text.substring(sel.start, sel.end);
+      final formatted =
+          reindentBraces(snippet, tabSize: _prefs.tabSize, useTabs: _prefs.useTabs);
+      if (formatted == snippet) {
+        if (!quiet) _toast(localizations.editorFormatNoChange);
+        return;
+      }
+      controller.replaceRange(sel.start, sel.end, formatted);
+      if (!quiet) _toast(localizations.editorFormatted);
+      return;
+    }
     final caret = controller.selection.baseOffset;
     final caretLine = _lineOfOffset(text, caret < 0 ? 0 : caret);
 
@@ -3115,13 +3164,33 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _breadcrumb(),
           _multiSelBar(),
           Expanded(
-            child: Listener(
-              onPointerDown: _onPointerDown,
-              onPointerMove: _onPointerMove,
-              onPointerUp: _onPointerUp,
-              onPointerCancel: _onPointerUp,
-              child: _textView(),
-            ),
+            child: Stack(children: [
+              Positioned.fill(
+                child: Listener(
+                  onPointerDown: _onPointerDown,
+                  onPointerMove: _onPointerMove,
+                  onPointerUp: _onPointerUp,
+                  onPointerCancel: _onPointerUp,
+                  child: _textView(),
+                ),
+              ),
+              // 右侧「问题分布条」：VS 滚动条旁那排小色块，一眼看出错误集中在文件哪一段。
+              if (doc != null && _programming && _visibleIssues().isNotEmpty)
+                Positioned(
+                  right: 1,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _RulerPainter(
+                        issues: _visibleIssues(),
+                        totalLines: _totalLinesOf(doc.text),
+                      ),
+                    ),
+                  ),
+                ),
+            ]),
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
           // 参数签名提示（VS 打 `(` 后那行签名）：只在对当前语言、且文档里找得到声明时显示。
@@ -3544,6 +3613,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _openSettings();
           case 'rename':
             unawaited(_renameSymbol());
+          case 'formatSel':
+            unawaited(_applyFormat(selectionOnly: true));
           case 'references':
             unawaited(_showReferences());
           case 'close':
@@ -3567,6 +3638,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'symbols', child: Text(localizations.editorSymbols)),
         PopupMenuItem(value: 'nextOccurrence', child: Text(localizations.editorSelectNext)),
         PopupMenuItem(value: 'rename', child: Text(localizations.editorRename)),
+        PopupMenuItem(
+          value: 'formatSel',
+          child: Text(localizations.editorFormatSelection),
+        ),
         PopupMenuItem(value: 'gotoDef', child: Text(localizations.editorGotoDefinition)),
         PopupMenuItem(value: 'references', child: Text(localizations.editorReferences)),
         PopupMenuItem(
@@ -3997,6 +4072,39 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
 
 /// 右滑露出操作的列表项（用于文档列表的「置顶 / 关闭」）。
+/// 编辑器右侧的问题分布条：把每条问题的行号按总行数换算成纵向位置画一小段。
+///
+/// VS 是在滚动条上画，这里滚动条归内核管，就贴在它左侧自己画一条——
+/// 效果一样：扫一眼就知道错误是集中在开头还是尾部。
+class _RulerPainter extends CustomPainter {
+  final List<LintDiagnostic> issues;
+  final int totalLines;
+
+  _RulerPainter({required this.issues, required this.totalLines});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.height <= 0 || totalLines <= 0 || issues.isEmpty) return;
+    final paint = Paint();
+    for (final d in issues) {
+      final ratio = (d.line - 1) / totalLines;
+      final y = (ratio * size.height).clamp(0.0, size.height - 2);
+      paint.color = d.severity == LintSeverity.error
+          ? Colors.red
+          : d.severity == LintSeverity.warning
+              ? Colors.orange
+              : Colors.blueGrey;
+      canvas.drawRect(Rect.fromLTWH(0, y, size.width, 2), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RulerPainter old) =>
+      old.totalLines != totalLines ||
+      old.issues.length != issues.length ||
+      !identical(old.issues, issues);
+}
+
 class _SwipeAction {
   final IconData icon;
   final String tooltip;
