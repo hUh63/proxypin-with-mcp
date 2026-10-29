@@ -2814,7 +2814,7 @@
   "editorHighlightOccurrences": "Realçar outras ocorrências da palavra",
   "editorGotoDefinition": "Ir para definição",
   "editorNoDefinition": "Nenhuma definição neste arquivo",
-  "editorLintAllRules": "Todas as regras",
+  "editorLintAllRules": "Regras de verificação",
   "editorFormatOnSave": "Format on save",
   "editorFormatOnSaveDesc": "Reformat the document before writing it to disk.",
   "editorIssuePrev": "Previous problem",

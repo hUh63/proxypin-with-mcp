@@ -4614,7 +4614,7 @@
   "editorHighlightOccurrences": "高亮当前词的所有出现处",
   "editorGotoDefinition": "转到定义",
   "editorNoDefinition": "这个文件里没找到它的定义",
-  "editorLintAllRules": "全部规则",
+  "editorLintAllRules": "检查规则",
   "editorFormatOnSave": "保存时格式化",
   "editorFormatOnSaveDesc": "写入文件前先按当前语言重排一遍。",
   "editorIssuePrev": "上一处问题",

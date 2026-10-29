@@ -617,6 +617,32 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('retainMode', _retainLabel),
   EditorMenuItem('settings', _settingsLabel),
   EditorMenuItem('close', _closeLabel),
+  // 工具栏分类菜单（文件/编辑/代码/视图/检查）里出现的项，也要能在这里统一隐藏。
+  EditorMenuItem('newFile', _newFileLabel),
+  EditorMenuItem('open', _openLabel),
+  EditorMenuItem('save', _saveLabel),
+  EditorMenuItem('docs', _docsLabel),
+  EditorMenuItem('undo', _undoLabel),
+  EditorMenuItem('redo', _redoLabel),
+  EditorMenuItem('copy', _copyLabel),
+  EditorMenuItem('clear', _clearLabel),
+  EditorMenuItem('comment', _commentLabel),
+  EditorMenuItem('format', _formatLabel),
+  EditorMenuItem('formatSel', _formatSelLabel),
+  EditorMenuItem('preview', _previewLabel),
+  EditorMenuItem('symbols', _symbolsLabel),
+  EditorMenuItem('gotoDef', _gotoDefLabel),
+  EditorMenuItem('references', _referencesLabel),
+  EditorMenuItem('rename', _renameLabel),
+  EditorMenuItem('foldAll', _foldAllLabel),
+  EditorMenuItem('unfoldAll', _unfoldAllLabel),
+  EditorMenuItem('nextOccurrence', _nextOccurrenceLabel),
+  EditorMenuItem('lineOps', _lineOpsLabel),
+  EditorMenuItem('caseOps', _caseOpsLabel),
+  EditorMenuItem('lint', _lintLabel),
+  EditorMenuItem('lintIssues', _lintIssuesLabel),
+  EditorMenuItem('console', _consoleLabel),
+  EditorMenuItem('lintRules', _lintRulesLabel),
 ];
 
 String _fileLabel(AppLocalizations l) => l.editorMoreFile;
@@ -640,6 +666,31 @@ String _newlineLabel(AppLocalizations l) => l.editorNewline;
 String _retainLabel(AppLocalizations l) => l.editorRetainPref;
 String _settingsLabel(AppLocalizations l) => l.editorSettings;
 String _closeLabel(AppLocalizations l) => l.editorCloseFile;
+String _newFileLabel(AppLocalizations l) => l.editorNewFile;
+String _openLabel(AppLocalizations l) => l.selectFile;
+String _saveLabel(AppLocalizations l) => l.save;
+String _docsLabel(AppLocalizations l) => l.editorDocuments;
+String _undoLabel(AppLocalizations l) => l.editorUndo;
+String _redoLabel(AppLocalizations l) => l.editorRedo;
+String _copyLabel(AppLocalizations l) => l.copy;
+String _clearLabel(AppLocalizations l) => l.clear;
+String _commentLabel(AppLocalizations l) => l.editorToggleComment;
+String _formatLabel(AppLocalizations l) => l.format;
+String _formatSelLabel(AppLocalizations l) => l.editorFormatSelection;
+String _previewLabel(AppLocalizations l) => l.editorPreview;
+String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
+String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
+String _referencesLabel(AppLocalizations l) => l.editorReferences;
+String _renameLabel(AppLocalizations l) => l.editorRename;
+String _foldAllLabel(AppLocalizations l) => l.editorFoldAll;
+String _unfoldAllLabel(AppLocalizations l) => l.editorUnfoldAll;
+String _nextOccurrenceLabel(AppLocalizations l) => l.editorSelectNext;
+String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
+String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
+String _lintLabel(AppLocalizations l) => l.editorLint;
+String _lintIssuesLabel(AppLocalizations l) => l.editorLintIssues;
+String _consoleLabel(AppLocalizations l) => l.editorConsole;
+String _lintRulesLabel(AppLocalizations l) => l.editorLintAllRules;
 
 /// 可加入长按浮动菜单的项。id 与 [EditorDocument] 侧的处理器对应。
 class FloatMenuItem {

@@ -1345,6 +1345,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   List<CustomContextMenu> _floatMenuItems() {
     final show = _prefs.floatMenu.toSet();
+    // 注意：这里返回空列表时内核会用它自己的菜单（复制/粘贴/全选）。
     if (show.isEmpty) return const <CustomContextMenu>[];
     final loc = localizations;
     final items = <CustomContextMenu>[];
@@ -3308,7 +3309,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final doc = _doc;
     // 手机上键盘一弹就吃掉 290dp：这时固定的横条（文档标签、面包屑、问题列表）
     // 会把代码区压到只剩三四行。打字时只留真正要看的东西。
-    final typing = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final media = MediaQuery.of(context);
+    final typing = media.viewInsets.bottom > 0;
+    // 横屏手机（高度 400 上下）即使没键盘也很挤：两行工具栏 + 几条横条之后
+    // 代码区就没多少了，所以横屏也按「紧凑」处理。
+    final shortScreen = media.size.height < 480;
+    final compact = typing || shortScreen;
     final title = doc == null ? localizations.textEditor : '${doc.name}${_dirty ? ' •' : ''}';
     // 智能预测：文档词 + 语言关键字 + 按光标上下文 / 代码格式推断的候选。
     // 幂等赋值，不触发重建。
@@ -3383,9 +3389,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
               ),
         body: Column(children: [
           _toolbar(),
-          if (!typing) _docTabs(),
+          if (!compact) _docTabs(),
           const Divider(height: 1, thickness: 0.3),
-          if (!typing) _breadcrumb(),
+          if (!compact) _breadcrumb(),
           _multiSelBar(),
           Expanded(
             child: Stack(children: [
@@ -3411,7 +3417,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             LintIssueBar(
               report: _lint,
               // 打字时只留表头（点一下能进完整面板），别把代码区挤没了。
-              maxRows: typing ? 0 : 3,
+              maxRows: compact ? 0 : 3,
               chinese: Localizations.localeOf(context).languageCode.startsWith('zh'),
               onJump: _jumpToDiagnostic,
               onFix: _fixDiagnostic,
@@ -3429,7 +3435,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 unawaited(_saveHiddenSeverities());
               },
             ),
-          if (_prefs.shortcutBar) _snippetBar(),
+          if (_prefs.shortcutBar && !shortScreen) _snippetBar(),
           if (_consoleOpen && doc != null)
             EditorConsolePanel(
               report: _lint,
@@ -3450,6 +3456,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
               onInsertText: _insertText,
               hiddenSeverities: _hiddenSeverities,
               state: doc.consoleState,
+              initialHeight: _prefs.consoleHeight,
+              onHeightChanged: (h) => TextEditorPrefsStore.update(
+                  TextEditorPrefsStore.notifier.value.copyWith(consoleHeight: h)),
             ),
           if (doc != null)
             AnimatedBuilder(

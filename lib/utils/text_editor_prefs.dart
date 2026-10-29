@@ -50,6 +50,9 @@ class TextEditorPrefs {
   /// 保存时先按语言格式化（VS 的 format on save）。默认关：它会改用户原文。
   final bool formatOnSave;
 
+  /// 底部控制台面板的高度（手机上调过之后要记住，否则每次重开又变回去）。
+  final double consoleHeight;
+
   /// 是否允许折叠代码。
   final bool enableFolding;
 
@@ -76,6 +79,22 @@ class TextEditorPrefs {
 
   /// 长按浮动菜单里显示的项 id。为空表示默认（全不显示自定义项）。
   final List<String> floatMenu;
+
+  /// 长按浮动菜单的默认项。
+  ///
+  /// 一开始这里是空的（等于不用自定义菜单、走系统那套）。但这半年往里加了
+  /// 「转大写 / 转小写 / 格式化选中 / 选择下一个相同词」这些只有这里才顺手的操作，
+  /// 默认空着等于谁都看不到。所以默认给一套「复制粘贴 + 几个编辑动作」。
+  static const List<String> defaultFloatMenu = <String>[
+    'copy',
+    'cut',
+    'paste',
+    'selectAll',
+    'upper',
+    'lower',
+    'formatSel',
+    'selectNext',
+  ];
 
   /// 隐藏单独出现的空格（只标记连续空格 / 制表符 / 控制字符）。
   final bool hideSingleSpace;
@@ -117,6 +136,7 @@ class TextEditorPrefs {
     this.styleLint = false,
     this.highlightOccurrences = true,
     this.formatOnSave = false,
+    this.consoleHeight = 232,
     this.enableFolding = true,
     this.useTabs = false,
     this.tabSize = 4,
@@ -125,7 +145,7 @@ class TextEditorPrefs {
     this.magnifier = false,
     this.enabledLangs = const <String>[],
     this.hiddenMenu = const <String>[],
-    this.floatMenu = const <String>[],
+    this.floatMenu = defaultFloatMenu,
     this.hideSingleSpace = false,
     this.softWrapArrow = false,
     this.enterSuggestion = false,
@@ -148,6 +168,7 @@ class TextEditorPrefs {
     bool? styleLint,
     bool? highlightOccurrences,
     bool? formatOnSave,
+    double? consoleHeight,
     bool? enableFolding,
     bool? useTabs,
     int? tabSize,
@@ -178,6 +199,7 @@ class TextEditorPrefs {
       styleLint: styleLint ?? this.styleLint,
       highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
       formatOnSave: formatOnSave ?? this.formatOnSave,
+      consoleHeight: consoleHeight ?? this.consoleHeight,
       enableFolding: enableFolding ?? this.enableFolding,
       useTabs: useTabs ?? this.useTabs,
       tabSize: tabSize ?? this.tabSize,
@@ -210,6 +232,7 @@ class TextEditorPrefs {
         'styleLint': styleLint,
         'highlightOccurrences': highlightOccurrences,
         'formatOnSave': formatOnSave,
+        'consoleHeight': consoleHeight,
         'enableFolding': enableFolding,
         'useTabs': useTabs,
         'tabSize': tabSize,
@@ -247,6 +270,7 @@ class TextEditorPrefs {
       styleLint: json['styleLint'] as bool? ?? false,
       highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
       formatOnSave: json['formatOnSave'] as bool? ?? false,
+      consoleHeight: (json['consoleHeight'] as num?)?.toDouble() ?? 232,
       enableFolding: json['enableFolding'] as bool? ?? true,
       useTabs: json['useTabs'] as bool? ?? false,
       tabSize: (json['tabSize'] as num?)?.toInt() ?? 4,
@@ -255,7 +279,7 @@ class TextEditorPrefs {
       magnifier: json['magnifier'] as bool? ?? false,
       enabledLangs: _strList(json['enabledLangs']),
       hiddenMenu: _strList(json['hiddenMenu']),
-      floatMenu: _strList(json['floatMenu']),
+      floatMenu: json['floatMenu'] == null ? defaultFloatMenu : _strList(json['floatMenu']),
       hideSingleSpace: json['hideSingleSpace'] as bool? ?? false,
       softWrapArrow: json['softWrapArrow'] as bool? ?? false,
       enterSuggestion: json['enterSuggestion'] as bool? ?? false,

@@ -89,6 +89,12 @@ class EditorConsolePanel extends StatefulWidget {
   /// 输出、命令历史、定义过的变量都还在。
   final ConsoleState state;
 
+  /// 面板初始高度（来自偏好；用户拖过之后会记住）。
+  final double? initialHeight;
+
+  /// 拖拽结束时的回调（只在结束时上报，拖动过程不落盘）。
+  final ValueChanged<double>? onHeightChanged;
+
   const EditorConsolePanel({
     super.key,
     required this.report,
@@ -109,6 +115,8 @@ class EditorConsolePanel extends StatefulWidget {
     this.onOpenRules,
     this.onInsertText,
     required this.state,
+    this.initialHeight,
+    this.onHeightChanged,
   });
 
   @override
@@ -142,7 +150,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
 
   /// 面板高度（顶部有拖拽条可调）。手机上控制台一开就吃掉大半屏，
   /// 固定 232dp 时想看下面几行代码只能关掉面板。
-  double _height = 232;
+  late double _height = widget.initialHeight ?? 232;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -393,6 +401,8 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       onVerticalDragUpdate: (d) {
         setState(() => _height = (_height - d.delta.dy).clamp(120.0, 460.0));
       },
+      // 拖动过程中不落盘：每像素写一次偏好没有意义。
+      onVerticalDragEnd: (_) => widget.onHeightChanged?.call(_height),
       child: SizedBox(
         height: 12,
         width: double.infinity,

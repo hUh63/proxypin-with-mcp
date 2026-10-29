@@ -4852,7 +4852,7 @@
   "editorHighlightOccurrences": "Highlight other occurrences of the word",
   "editorGotoDefinition": "Go to definition",
   "editorNoDefinition": "No definition found in this file",
-  "editorLintAllRules": "All rules",
+  "editorLintAllRules": "Check rules",
   "editorFormatOnSave": "Format on save",
   "@editorFormatOnSave": {
     "description": "Reformat on save switch"
