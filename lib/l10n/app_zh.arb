@@ -4645,5 +4645,8 @@
   "editorMenuEdit": "编辑",
   "editorMenuCode": "代码",
   "editorMenuView": "视图",
-  "editorMenuInspect": "检查"
+  "editorMenuInspect": "检查",
+  "editorPeekDefinition": "速览定义",
+  "editorExpandSelection": "扩大选区",
+  "editorJumpBracket": "跳到配对括号"
 }

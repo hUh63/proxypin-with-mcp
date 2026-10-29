@@ -643,6 +643,9 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('lintIssues', _lintIssuesLabel),
   EditorMenuItem('console', _consoleLabel),
   EditorMenuItem('lintRules', _lintRulesLabel),
+  EditorMenuItem('peekDef', _peekDefLabel),
+  EditorMenuItem('expandSel', _expandSelLabel),
+  EditorMenuItem('jumpBracket', _jumpBracketLabel),
 ];
 
 String _fileLabel(AppLocalizations l) => l.editorMoreFile;
@@ -691,6 +694,9 @@ String _lintLabel(AppLocalizations l) => l.editorLint;
 String _lintIssuesLabel(AppLocalizations l) => l.editorLintIssues;
 String _consoleLabel(AppLocalizations l) => l.editorConsole;
 String _lintRulesLabel(AppLocalizations l) => l.editorLintAllRules;
+String _peekDefLabel(AppLocalizations l) => l.editorPeekDefinition;
+String _expandSelLabel(AppLocalizations l) => l.editorExpandSelection;
+String _jumpBracketLabel(AppLocalizations l) => l.editorJumpBracket;
 
 /// 可加入长按浮动菜单的项。id 与 [EditorDocument] 侧的处理器对应。
 class FloatMenuItem {

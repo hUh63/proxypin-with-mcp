@@ -4645,5 +4645,8 @@
   "editorMenuEdit": "編輯",
   "editorMenuCode": "程式碼",
   "editorMenuView": "檢視",
-  "editorMenuInspect": "檢查"
+  "editorMenuInspect": "檢查",
+  "editorPeekDefinition": "速覽定義",
+  "editorExpandSelection": "擴大選取",
+  "editorJumpBracket": "跳到配對括號"
 }

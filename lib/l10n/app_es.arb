@@ -2844,5 +2844,8 @@
   "editorMenuEdit": "Edit",
   "editorMenuCode": "Code",
   "editorMenuView": "View",
-  "editorMenuInspect": "Revisar"
+  "editorMenuInspect": "Revisar",
+  "editorPeekDefinition": "Peek definition",
+  "editorExpandSelection": "Expand selection",
+  "editorJumpBracket": "Jump to matching bracket"
 }

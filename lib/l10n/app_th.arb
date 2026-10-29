@@ -2844,5 +2844,8 @@
   "editorMenuEdit": "Edit",
   "editorMenuCode": "Code",
   "editorMenuView": "View",
-  "editorMenuInspect": "ตรวจสอบ"
+  "editorMenuInspect": "ตรวจสอบ",
+  "editorPeekDefinition": "Peek definition",
+  "editorExpandSelection": "Expand selection",
+  "editorJumpBracket": "Jump to matching bracket"
 }

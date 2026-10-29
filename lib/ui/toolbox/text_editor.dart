@@ -1394,6 +1394,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_applyFormat(selectionOnly: true));
       case 'rename':
         unawaited(_renameSymbol());
+      case 'peekDef':
+        unawaited(_peekDefinition());
+      case 'expandSel':
+        _expandSelection();
+      case 'jumpBracket':
+        _jumpToMatchingBracket();
     }
   }
 
@@ -2027,6 +2033,25 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   // ------------------------------ 参数签名提示 ------------------------------
 
+  /// 从 [close] 处的闭括号往前找配对的开括号（同样带 2 万字符上限）。
+  static int? _findOpening(String text, int close, String ch) {
+    const pairs = <String, String>{')': '(', ']': '[', '}': '{'};
+    final open = pairs[ch];
+    if (open == null) return null;
+    var depth = 0;
+    final limit = (close - 20000).clamp(0, text.length);
+    for (var i = close; i >= limit; i--) {
+      final c = text[i];
+      if (c == ch) {
+        depth++;
+      } else if (c == open) {
+        depth--;
+        if (depth == 0) return i;
+      }
+    }
+    return null;
+  }
+
   /// 从 [open] 处的开括号往后找配对的闭括号（同样带 2 万字符上限）。
   static int? _findClosing(String text, int open, String ch) {
     const pairs = <String, String>{'(': ')', '[': ']', '{': '}'};
@@ -2500,6 +2525,217 @@ class _TextEditorPageState extends State<TextEditorPage> {
       ),
       child: Text(label, style: const TextStyle(fontSize: 11)),
     );
+  }
+
+  // ---------- 定义速览 / 括号跳转 / 逐级扩大选区（VS 的 Alt+F12、Ctrl+]、Shift+Alt+→）----------
+
+  /// 「速览定义」：不跳走，先在下面弹一张小卡片看声明长什么样。
+  ///
+  /// VS 里是 Alt+F12。手机上「跳过去看一眼再跳回来」这个来回成本很高
+  /// （滚动位置、选中都丢了），所以这里先给上下文，看完再决定要不要真跳。
+  Future<void> _peekDefinition() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
+    final name = text.substring(range.start, range.end);
+    if (name.isEmpty) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    final at = _findDeclaration(text, name, range.start);
+    if (at == null) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    final targetLine = _lineOfOffset(text, at);
+    final total = _totalLinesOf(text);
+    final from = (targetLine - 3).clamp(0, total - 1);
+    final to = (targetLine + 4).clamp(0, total - 1);
+    final lines = <({int no, String text})>[];
+    var offset = _offsetOfLine(text, from);
+    for (var line = from; line <= to; line++) {
+      var next = text.indexOf('\n', offset);
+      if (next < 0) next = text.length;
+      lines.add((no: line, text: text.substring(offset, next)));
+      offset = next + 1;
+      if (offset > text.length) break;
+    }
+    if (!mounted) return;
+    final theme = Theme.of(context);
+    final mono = TextStyle(
+        fontSize: 12, fontFamily: 'monospace', color: theme.textTheme.bodyMedium?.color);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                child: Text('$name  ·  L${targetLine + 1}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 220),
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  children: [
+                    for (final line in lines)
+                      Container(
+                        color: line.no == targetLine
+                            ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                            : null,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          SizedBox(
+                            width: 34,
+                            child: Text('${line.no + 1}',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: theme.disabledColor,
+                                    fontFamily: 'monospace')),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(line.text,
+                                  style: mono, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        ]),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Row(children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(localizations.cancel),
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      controller.selection =
+                          TextSelection.collapsed(offset: at.clamp(0, text.length));
+                      controller.scrollToLine(targetLine);
+                    },
+                    child: Text(localizations.editorGotoDefinition),
+                  ),
+                ]),
+              ),
+            ]),
+      ),
+    );
+  }
+
+  /// 「跳到配对括号」（VS 的 Ctrl+]）。
+  ///
+  /// 光标处的括号（或它前面那个）跳到另一半；不在括号上就提示一声——
+  /// 不做「找当前行第一个括号」这种猜测，猜错了更让人困惑。
+  void _jumpToMatchingBracket() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final caret = controller.selection.extentOffset.clamp(0, text.length);
+
+    void moveTo(int offset) {
+      controller.selection = TextSelection.collapsed(offset: offset.clamp(0, text.length));
+      controller.scrollToLine(_lineOfOffset(text, offset));
+    }
+
+    for (final offset in <int>[caret, caret - 1]) {
+      if (offset < 0 || offset >= text.length) continue;
+      final c = text[offset];
+      if ('([{'.contains(c)) {
+        final close = _findClosing(text, offset, c);
+        if (close != null) {
+          moveTo(close);
+          return;
+        }
+      } else if (')]}'.contains(c)) {
+        final open = _findOpening(text, offset, c);
+        if (open != null) {
+          moveTo(open);
+          return;
+        }
+      }
+    }
+    _toast(localizations.editorNoDefinition);
+  }
+
+  /// 「逐级扩大选区」（VS 的 Shift+Alt+→）。
+  ///
+  /// 顺序：光标处的词 → 所在括号的内容 → 含括号 → 整行 → 外层括号整块 → 全文。
+  /// 手机上没有这种组合键，而「恰好选中这一段」在触屏上更难，所以给一个可以连点的入口。
+  void _expandSelection() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+    final start = sel.start.clamp(0, text.length);
+    final end = sel.end.clamp(0, text.length);
+
+    final lineStart = start == 0 ? 0 : text.lastIndexOf('\n', start - 1) + 1;
+    var lineEnd = text.indexOf('\n', end);
+    if (lineEnd < 0) lineEnd = text.length;
+
+    void select(int a, int b) {
+      controller.selection = TextSelection(
+          baseOffset: a.clamp(0, text.length), extentOffset: b.clamp(0, text.length));
+    }
+
+    // 1) 光标 → 词 → 整行
+    if (start == end) {
+      final word = _wordRangeAt(text, start);
+      if (word.end > word.start) {
+        select(word.start, word.end);
+        return;
+      }
+      select(lineStart, lineEnd);
+      return;
+    }
+
+    // 2) 已经是整行 → 外层括号整块 / 全文
+    if (start <= lineStart && end >= lineEnd) {
+      final outer = _enclosingBracketChain(text, start, maxDepth: 16)
+          .where((p) => p.$2 >= end)
+          .toList(growable: false);
+      if (outer.isNotEmpty) {
+        final p = outer.last;
+        select(p.$1, p.$2 + 1);
+        return;
+      }
+      if (start > 0 || end < text.length) select(0, text.length);
+      return;
+    }
+
+    // 3) 括号内 → 含括号 → 整行
+    final chain = _enclosingBracketChain(text, start, maxDepth: 16);
+    ({int a, int b})? pair;
+    for (final p in chain) {
+      if (p.$2 >= end) {
+        pair = (a: p.$1, b: p.$2);
+        break;
+      }
+    }
+    if (pair != null) {
+      if (start == pair.a + 1 && end == pair.b) {
+        select(pair.a, pair.b + 1);
+      } else {
+        select(pair.a + 1, pair.b);
+      }
+      return;
+    }
+    select(lineStart, lineEnd);
   }
 
   /// 扫一遍文档里的符号。
@@ -3900,7 +4136,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'comment', child: Text(loc.editorToggleComment)),
           PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right)),
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right)),
-          PopupMenuItem(value: 'nextOccurrence', child: Text(loc.editorSelectNext)),
+          PopupMenuItem(value: 'expandSel', child: Text(loc.editorExpandSelection)),
+        PopupMenuItem(value: 'jumpBracket', child: Text(loc.editorJumpBracket)),
+        PopupMenuItem(value: 'nextOccurrence', child: Text(loc.editorSelectNext)),
         ];
       case 'code':
         return [
@@ -3911,6 +4149,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'symbols', child: Text(loc.editorSymbols)),
           PopupMenuItem(value: 'gotoLine', child: Text(loc.editorSelectToLine)),
           PopupMenuItem(value: 'gotoDef', child: Text(loc.editorGotoDefinition)),
+        PopupMenuItem(value: 'peekDef', child: Text(loc.editorPeekDefinition)),
           PopupMenuItem(value: 'references', child: Text(loc.editorReferences)),
           PopupMenuItem(value: 'rename', child: Text(loc.editorRename)),
           const PopupMenuDivider(),
