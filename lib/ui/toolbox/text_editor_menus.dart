@@ -651,6 +651,7 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('jumpBracket', _jumpBracketLabel),
   EditorMenuItem('toggleBookmark', _toggleBookmarkLabel),
   EditorMenuItem('nextBookmark', _nextBookmarkLabel),
+  EditorMenuItem('bookmarks', _bookmarksLabel),
   EditorMenuItem('clearBookmarks', _clearBookmarksLabel),
 ];
 
@@ -705,6 +706,7 @@ String _expandSelLabel(AppLocalizations l) => l.editorExpandSelection;
 String _jumpBracketLabel(AppLocalizations l) => l.editorJumpBracket;
 String _toggleBookmarkLabel(AppLocalizations l) => l.editorToggleBookmark;
 String _nextBookmarkLabel(AppLocalizations l) => l.editorNextBookmark;
+String _bookmarksLabel(AppLocalizations l) => l.editorBookmarks;
 String _clearBookmarksLabel(AppLocalizations l) => l.editorClearBookmarks;
 
 /// 可加入长按浮动菜单的项。id 与 [EditorDocument] 侧的处理器对应。

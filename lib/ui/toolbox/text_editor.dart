@@ -504,6 +504,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 一次改写涉及哪一段（公共前缀 + 公共后缀之外的部分）。
+  ///
+  /// 只用来平移书签，所以不追求精确到「哪几次编辑」，一次净变化就够。
+  static ({int start, int removed, int inserted})? _diffSpan(String before, String after) {
+    if (before == after) return null;
+    final minLen = before.length < after.length ? before.length : after.length;
+    var prefix = 0;
+    while (prefix < minLen && before.codeUnitAt(prefix) == after.codeUnitAt(prefix)) {
+      prefix++;
+    }
+    var suffix = 0;
+    while (suffix < minLen - prefix &&
+        before.codeUnitAt(before.length - 1 - suffix) ==
+            after.codeUnitAt(after.length - 1 - suffix)) {
+      suffix++;
+    }
+    return (
+      start: prefix,
+      removed: before.length - prefix - suffix,
+      inserted: after.length - prefix - suffix,
+    );
+  }
+
   void _onUndoChanged() {
     if (mounted) setState(() {});
   }
@@ -512,6 +535,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final text = _doc?.text ?? '';
     final changed = text != _lastText;
     if (changed) {
+      // 书签跟着代码走：按「这次改了哪一段」平移，别让它漂到隔壁行。
+      final bookmarks = _doc?.bookmarks;
+      if (bookmarks != null && bookmarks.isNotEmpty) {
+        final delta = _diffSpan(_lastText, text);
+        if (delta != null) {
+          final moved = <int>{};
+          for (final offset in bookmarks) {
+            if (offset <= delta.start) {
+              moved.add(offset);
+            } else if (offset >= delta.start + delta.removed) {
+              moved.add(offset + delta.inserted - delta.removed);
+            } else {
+              // 落在被删掉的那段里：收到改动起点，别丢。
+              moved.add(delta.start);
+            }
+          }
+          bookmarks
+            ..clear()
+            ..addAll(moved);
+        }
+      }
       _lastText = text;
       if (!_dirty) setState(() => _dirty = true);
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
@@ -795,7 +839,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 书签：淡琥珀底色 + 行号栏竖条（和错误标记用不同颜色，不会看混）。
     final doc = _doc;
     if (doc != null && doc.bookmarks.isNotEmpty) {
-      final lines = doc.bookmarks.toList()..sort();
+      final marks = doc.text;
+      final lines = doc.bookmarks.map((o) => _lineOfOffset(marks, o)).toSet().toList()..sort();
       for (final line in lines) {
         decos.add(LineDecoration(
           id: 'bm-$line',
@@ -1433,6 +1478,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _jumpBookmark(true);
       case 'prevBookmark':
         _jumpBookmark(false);
+      case 'bookmarks':
+        unawaited(_showBookmarks());
       case 'clearBookmarks':
         _clearBookmarks();
     }
@@ -2870,17 +2917,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 状态挂在文档上，切走再回来还在。
   void _toggleBookmark() {
     final doc = _doc;
-    if (doc == null || _caretLine < 0) return;
-    final has = doc.bookmarks.contains(_caretLine);
+    final controller = doc?.controller;
+    if (doc == null || controller == null || _caretLine < 0) return;
+    final text = controller.text;
+    // 用「行首偏移」当锚点：同一行点两次就是去掉。
+    final anchor = _offsetOfLine(text, _caretLine);
+    int? existing;
+    for (final offset in doc.bookmarks) {
+      if (_lineOfOffset(text, offset) == _caretLine) {
+        existing = offset;
+        break;
+      }
+    }
     setState(() {
-      if (has) {
-        doc.bookmarks.remove(_caretLine);
+      if (existing != null) {
+        doc.bookmarks.remove(existing);
       } else {
-        doc.bookmarks.add(_caretLine);
+        doc.bookmarks.add(anchor);
       }
     });
     _refreshDecorations();
-    _toast(has ? localizations.editorBookmarkRemoved : localizations.editorBookmarkAdded);
+    _toast(existing != null
+        ? localizations.editorBookmarkRemoved
+        : localizations.editorBookmarkAdded);
   }
 
   /// 跳到下一个 / 上一个书签（到头会绕回去）。
@@ -2892,30 +2951,104 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorNoBookmark);
       return;
     }
-    final lines = doc.bookmarks.toList()..sort();
-    final current = _caretLine;
-    int? target;
-    if (forward) {
-      for (final line in lines) {
-        if (line > current) {
-          target = line;
-          break;
-        }
-      }
-      target ??= lines.first;
-    } else {
-      for (final line in lines.reversed) {
-        if (line < current) {
-          target = line;
-          break;
-        }
-      }
-      target ??= lines.last;
-    }
     final text = controller.text;
-    controller.selection = TextSelection.collapsed(offset: _offsetOfLine(text, target));
-    controller.scrollToLine(target);
-    _toast('${lines.indexOf(target) + 1} / ${lines.length}');
+    final list = doc.bookmarks.toList()..sort();
+    final current = controller.selection.extentOffset.clamp(0, text.length);
+    final int target;
+    if (forward) {
+      target = list.firstWhere((o) => o > current, orElse: () => list.first);
+    } else {
+      int? found;
+      for (final offset in list.reversed) {
+        if (offset < current) {
+          found = offset;
+          break;
+        }
+      }
+      target = found ?? list.last;
+    }
+    controller.selection = TextSelection.collapsed(offset: target.clamp(0, text.length));
+    controller.scrollToLine(_lineOfOffset(text, target));
+    _toast('${list.indexOf(target) + 1} / ${list.length}');
+  }
+
+  /// 书签列表（VS 的「书签窗口」）：可以点、可以删、可以一键清空。
+  Future<void> _showBookmarks() async {
+    final doc = _doc;
+    final controller = doc?.controller;
+    if (doc == null || controller == null) return;
+    final text = controller.text;
+    if (doc.bookmarks.isEmpty) {
+      _toast(localizations.editorNoBookmark);
+      return;
+    }
+    final list = doc.bookmarks.toList()..sort();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(localizations.editorBookmarks,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _clearBookmarks();
+                },
+                child: Text(localizations.clear),
+              ),
+            ]),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 320),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: list.length,
+              itemBuilder: (ctx, i) {
+                final offset = list[i];
+                final line = _lineOfOffset(text, offset);
+                final snippet = _lineTextAt(text, line).trim();
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.bookmark, size: 16, color: Colors.amber),
+                  title: Text(
+                    snippet.isEmpty ? ' ' : snippet,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
+                  ),
+                  subtitle: Text('L${line + 1}', style: const TextStyle(fontSize: 10.5)),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    tooltip: localizations.delete,
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: () {
+                      setState(() => doc.bookmarks.remove(offset));
+                      _refreshDecorations();
+                      Navigator.pop(ctx);
+                      unawaited(_showBookmarks());
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    controller.selection =
+                        TextSelection.collapsed(offset: offset.clamp(0, text.length));
+                    controller.scrollToLine(line);
+                  },
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+    );
   }
 
   /// 清空本文档的所有书签。
@@ -3289,6 +3422,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 分类菜单里的一行（VS 的菜单每项前面都有图标）。
+  ///
+  /// 长菜单里扫图标比逐行读文字快得多，这也是桌面软件菜单一直保留图标的原因。
+  PopupMenuEntry<String> _menuItem(
+    String value,
+    IconData icon,
+    String label, {
+    bool enabled = true,
+  }) {
+    return PopupMenuItem<String>(
+      value: value,
+      enabled: enabled,
+      child: Row(children: [
+        Icon(icon, size: 17,
+            color: enabled ? Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8) : Theme.of(context).disabledColor),
+        const SizedBox(width: 10),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 13.5))),
+      ]),
+    );
+  }
+
   /// 某个分类里有哪些菜单项。
   ///
   /// 这里只负责「放哪些、按什么顺序」，点了之后做什么全在 [_menuAction]。
@@ -3299,13 +3453,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
     switch (group) {
       case 'file':
         return [
-          PopupMenuItem(value: 'newFile', child: Text(loc.editorNewFile)),
-          PopupMenuItem(value: 'open', child: Text(loc.selectFile)),
-          PopupMenuItem(value: 'save', child: Text(loc.save)),
+          _menuItem('newFile', Icons.note_add_outlined, loc.editorNewFile),
+          _menuItem('open', Icons.folder_open, loc.selectFile),
+          _menuItem('save', Icons.save_outlined, loc.save),
           PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right)),
-          PopupMenuItem(value: 'docs', child: Text(loc.editorDocuments)),
+          _menuItem('docs', Icons.description_outlined, loc.editorDocuments),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'close', child: Text(loc.editorCloseFile)),
+          _menuItem('close', Icons.close, loc.editorCloseFile),
         ];
       case 'edit':
         return [
@@ -3334,37 +3488,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
                           ? null
                           : Theme.of(context).disabledColor))),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'copy', child: Text(loc.copy)),
-          PopupMenuItem(value: 'clear', child: Text(loc.clear)),
-          PopupMenuItem(value: 'replaceLine', child: Text(loc.editorReplaceLine)),
+          _menuItem('copy', Icons.copy_all, loc.copy),
+          _menuItem('clear', Icons.backspace_outlined, loc.clear),
+          _menuItem('replaceLine', Icons.sync_alt, loc.editorReplaceLine),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'comment', child: Text(loc.editorToggleComment)),
+          _menuItem('comment', Icons.code, loc.editorToggleComment),
           PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right)),
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right)),
-          PopupMenuItem(value: 'expandSel', child: Text(loc.editorExpandSelection)),
-        PopupMenuItem(value: 'jumpBracket', child: Text(loc.editorJumpBracket)),
+          _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
+        _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
-        PopupMenuItem(value: 'toggleBookmark', child: Text(loc.editorToggleBookmark)),
-        PopupMenuItem(value: 'clearBookmarks', child: Text(loc.editorClearBookmarks)),
-        PopupMenuItem(value: 'nextOccurrence', child: Text(loc.editorSelectNext)),
+        _menuItem('toggleBookmark', Icons.bookmark_add_outlined, loc.editorToggleBookmark),
+        _menuItem('bookmarks', Icons.bookmarks_outlined, loc.editorBookmarks),
+        _menuItem('clearBookmarks', Icons.bookmark_remove_outlined, loc.editorClearBookmarks),
+        _menuItem('nextOccurrence', Icons.select_all, loc.editorSelectNext),
         ];
       case 'code':
         return [
-          if (_canFormat) PopupMenuItem(value: 'format', child: Text(loc.format)),
-          PopupMenuItem(value: 'formatSel', child: Text(loc.editorFormatSelection)),
-          if (_canPreview) PopupMenuItem(value: 'preview', child: Text(loc.editorPreview)),
+          if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
+          _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
+          if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'symbols', child: Text(loc.editorSymbols)),
-          PopupMenuItem(value: 'gotoLine', child: Text(loc.editorSelectToLine)),
-          PopupMenuItem(value: 'gotoDef', child: Text(loc.editorGotoDefinition)),
-        PopupMenuItem(value: 'peekDef', child: Text(loc.editorPeekDefinition)),
-          PopupMenuItem(value: 'references', child: Text(loc.editorReferences)),
-          PopupMenuItem(value: 'rename', child: Text(loc.editorRename)),
+          _menuItem('symbols', Icons.account_tree_outlined, loc.editorSymbols),
+          _menuItem('gotoLine', Icons.pin_drop_outlined, loc.editorSelectToLine),
+          _menuItem('gotoDef', Icons.my_location_outlined, loc.editorGotoDefinition),
+        _menuItem('peekDef', Icons.visibility, loc.editorPeekDefinition),
+          _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
+          _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'foldAll', child: Text(loc.editorFoldAll)),
-          PopupMenuItem(value: 'unfoldAll', child: Text(loc.editorUnfoldAll)),
-          PopupMenuItem(value: 'minify', child: Text(loc.editorMinify)),
-          PopupMenuItem(value: 'minifyAggressive', child: Text(loc.editorMinifyAggressive)),
+          _menuItem('foldAll', Icons.unfold_less, loc.editorFoldAll),
+          _menuItem('unfoldAll', Icons.unfold_more, loc.editorUnfoldAll),
+          _menuItem('minify', Icons.compress, loc.editorMinify),
+          _menuItem('minifyAggressive', Icons.compress, loc.editorMinifyAggressive),
         ];
       case 'view':
         return [
@@ -3381,25 +3536,25 @@ class _TextEditorPageState extends State<TextEditorPage> {
               value: 'ascii', checked: _showAscii, child: Text(loc.editorShowAsciiControl)),
           CheckedPopupMenuItem(
               value: 'unicode', checked: _showUnicode, child: Text(loc.editorShowUnicodeSpecial)),
-          PopupMenuItem(value: 'report', child: Text(loc.editorSpecialReport)),
+          _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'syntax', child: Text(loc.editorMoreSyntax)),
+          _menuItem('syntax', Icons.code, loc.editorMoreSyntax),
           PopupMenuItem(
               value: 'newline',
               child: Text('${loc.editorNewline}: ${_newlineLabel()}')),
           PopupMenuItem(
               value: 'retainMode',
               child: Text('${loc.editorRetainPref}: ${_retainModeLabel()}')),
-          PopupMenuItem(value: 'settings', child: Text(loc.editorSettings)),
+          _menuItem('settings', Icons.settings, loc.editorSettings),
         ];
       case 'inspect':
         if (!_programming) return const [];
         return [
           CheckedPopupMenuItem(
               value: 'lint', checked: _lintEnabled, child: Text(loc.editorLint)),
-          PopupMenuItem(value: 'lintIssues', child: Text(loc.editorLintIssues)),
-          PopupMenuItem(value: 'console', child: Text(loc.editorConsole)),
-          PopupMenuItem(value: 'lintRules', child: Text(loc.editorLintAllRules)),
+          _menuItem('lintIssues', Icons.error_outline, loc.editorLintIssues),
+          _menuItem('console', Icons.terminal, loc.editorConsole),
+          _menuItem('lintRules', Icons.rule, loc.editorLintAllRules),
         ];
     }
     return const [];
@@ -3529,18 +3684,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
           value: 'syntax',
           child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right),
         ),
-        PopupMenuItem(value: 'gotoLine', child: Text(localizations.editorSelectToLine)),
-        PopupMenuItem(value: 'symbols', child: Text(localizations.editorSymbols)),
-        PopupMenuItem(value: 'nextOccurrence', child: Text(localizations.editorSelectNext)),
-        PopupMenuItem(value: 'rename', child: Text(localizations.editorRename)),
+        _menuItem('gotoLine', Icons.pin_drop_outlined, localizations.editorSelectToLine),
+        _menuItem('symbols', Icons.account_tree_outlined, localizations.editorSymbols),
+        _menuItem('nextOccurrence', Icons.select_all, localizations.editorSelectNext),
+        _menuItem('rename', Icons.drive_file_rename_outline, localizations.editorRename),
         PopupMenuItem(
           value: 'formatSel',
           child: Text(localizations.editorFormatSelection),
         ),
-        PopupMenuItem(value: 'foldAll', child: Text(localizations.editorFoldAll)),
-        PopupMenuItem(value: 'unfoldAll', child: Text(localizations.editorUnfoldAll)),
-        PopupMenuItem(value: 'gotoDef', child: Text(localizations.editorGotoDefinition)),
-        PopupMenuItem(value: 'references', child: Text(localizations.editorReferences)),
+        _menuItem('foldAll', Icons.unfold_less, localizations.editorFoldAll),
+        _menuItem('unfoldAll', Icons.unfold_more, localizations.editorUnfoldAll),
+        _menuItem('gotoDef', Icons.my_location_outlined, localizations.editorGotoDefinition),
+        _menuItem('references', Icons.format_list_bulleted, localizations.editorReferences),
         PopupMenuItem(
           value: 'lineOps',
           child: _menuRow(localizations.editorLineOps, Icons.arrow_right),
@@ -3598,8 +3753,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           checked: _showUnicode,
           child: Text(localizations.editorShowUnicodeSpecial),
         ),
-        PopupMenuItem(value: 'report', child: Text(localizations.editorSpecialReport)),
-        PopupMenuItem(value: 'replaceLine', child: Text(localizations.editorReplaceLine)),
+        _menuItem('report', Icons.report_outlined, localizations.editorSpecialReport),
+        _menuItem('replaceLine', Icons.sync_alt, localizations.editorReplaceLine),
         const PopupMenuDivider(),
         // 「检查」只对编程语言有意义：JSON/YAML/纯文本没有「编译」这回事，
         // 把它藏在非编程语法下，菜单里就不会出现点了也没用的项。
@@ -3609,12 +3764,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
             checked: _lintEnabled,
             child: Text(localizations.editorLint),
           ),
-          PopupMenuItem(value: 'lintIssues', child: Text(localizations.editorLintIssues)),
-          PopupMenuItem(value: 'console', child: Text(localizations.editorConsole)),
+          _menuItem('lintIssues', Icons.error_outline, localizations.editorLintIssues),
+          _menuItem('console', Icons.terminal, localizations.editorConsole),
         ],
         const PopupMenuDivider(),
-        PopupMenuItem(value: 'minify', child: Text(localizations.editorMinify)),
-        PopupMenuItem(value: 'minifyAggressive', child: Text(localizations.editorMinifyAggressive)),
+        _menuItem('minify', Icons.compress, localizations.editorMinify),
+        _menuItem('minifyAggressive', Icons.compress, localizations.editorMinifyAggressive),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: 'newline',
@@ -3625,8 +3780,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           child: Text('${localizations.editorRetainPref}: ${_retainModeLabel()}'),
         ),
         const PopupMenuDivider(),
-        PopupMenuItem(value: 'settings', child: Text(localizations.editorSettings)),
-        PopupMenuItem(value: 'close', child: Text(localizations.editorCloseFile)),
+        _menuItem('settings', Icons.settings, localizations.editorSettings),
+        _menuItem('close', Icons.close, localizations.editorCloseFile),
         ]
             .where((e) => e is! PopupMenuItem<String> || !hidden.contains(e.value))
             .toList();

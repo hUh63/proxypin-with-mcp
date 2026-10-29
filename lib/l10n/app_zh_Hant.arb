@@ -4658,5 +4658,6 @@
   "editorClearBookmarks": "清除所有書籤",
   "editorBookmarkAdded": "已加書籤",
   "editorBookmarkRemoved": "已移除書籤",
-  "editorNoBookmark": "這個檔案還沒有書籤"
+  "editorNoBookmark": "這個檔案還沒有書籤",
+  "editorBookmarks": "書籤列表"
 }

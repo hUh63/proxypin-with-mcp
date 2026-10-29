@@ -2858,5 +2858,6 @@
   "editorClearBookmarks": "Clear bookmarks",
   "editorBookmarkAdded": "Bookmark added",
   "editorBookmarkRemoved": "Bookmark removed",
-  "editorNoBookmark": "No bookmarks in this file"
+  "editorNoBookmark": "No bookmarks in this file",
+  "editorBookmarks": "Bookmarks"
 }
