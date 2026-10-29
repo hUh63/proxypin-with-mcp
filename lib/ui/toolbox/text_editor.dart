@@ -1961,6 +1961,1081 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _scheduleLint();
   }
 
+  // ------------------------------ 转到定义（同文件） ------------------------------
+
+  /// 同文件「转到定义」：光标在某个名字上时，去找它的声明并跳过去。
+  ///
+  /// 没有工程索引，只在当前文件里找——多数时候够用（改自己写的函数最常干的就是这个）。
+  void _gotoDefinition() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.extentOffset;
+    if (caret < 0 || caret > text.length) return;
+    final range = _wordRangeAt(text, caret);
+    final name = text.substring(range.start, range.end);
+    if (name.isEmpty) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    final at = _findDeclaration(text, name, range.start);
+    if (at == null) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    controller.selection = TextSelection.collapsed(offset: at);
+    controller.scrollToLine(_lineOfOffset(text, at));
+  }
+
+  /// 在文档里找 [name] 的声明位置（返回名字所在的偏移）。
+  ///
+  /// [skipOffset] 是当前光标所在的词，找不到别的声明时不要「跳到自己」。
+  static int? _findDeclaration(String text, String name, int skipOffset) {
+    final escaped = RegExp.escape(name);
+    final patterns = <RegExp>[
+      RegExp(r'\b(?:class|struct|interface|enum|record|namespace)\s+' + escaped + r'\b'),
+      RegExp(r'\b' + escaped + r'\s*\([^()]*\)\s*(?:\{|=>|;|:(?=\s*(?:\n|$)))'),
+      RegExp(r'\b(?:var|let|const|val|final|int|long|double|float|bool|string|char|byte|decimal|object|dynamic|auto|[A-Z][\w<>\[\],.?]*)\s+'
+          + escaped +
+          r'\b\s*(?:=|;|,)'),
+    ];
+    for (final re in patterns) {
+      for (final m in re.allMatches(text)) {
+        final at = m.start + m.group(0)!.indexOf(name);
+        if ((at - skipOffset).abs() < 1) continue;
+        // 函数形态要确认前面确实是「声明」（`Foo();` 是调用，不是定义）。
+        if (re.pattern.contains(r'\(') && !_looksLikeDeclHead(text, m.start)) continue;
+        return at;
+      }
+    }
+    return null;
+  }
+
+  // ------------------------------ 参考高亮（括号配对 / 当前词） ------------------------------
+
+  /// VS 的两个「参考高亮」：光标贴在括号上时把配对的那一对点亮；光标在某个词上时
+  /// 把这个词在本文件里的所有出现处淡淡标出来。
+  ///
+  /// 走内核的 `extraHighlights` 通道（和查找高亮分开），所以开查找不会把它冲掉。
+  void _refreshExtraHighlights() {
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    final caret = sel.isValid ? sel.extentOffset.clamp(0, text.length) : 0;
+    final list = <SearchHighlight>[];
+
+    // 1) 括号配对
+    // 括号嵌套链上色（VS 的 bracket pair colorization）：由内到外各一层颜色。
+    // 只给「包住光标的这几层」上色，不给整篇所有括号铺底色——那只会更花。
+    final chain = _enclosingBracketChain(text, caret);
+    for (var i = 0; i < chain.length; i++) {
+      final pair = chain[i];
+      final color = _bracketColors[i % _bracketColors.length];
+      list.add(SearchHighlight(
+          start: pair.$1, end: pair.$1 + 1, isCurrentMatch: i == 0, color: color));
+      list.add(SearchHighlight(
+          start: pair.$2, end: pair.$2 + 1, isCurrentMatch: i == 0, color: color));
+    }
+
+    // 2) 多选编辑进行中：只标「已圈中的那几处」。
+    //    这时再按整篇同词高亮会看混——用户关心的是「我选了哪几个」。
+    if (_multiSel.isNotEmpty) {
+      if (sel.isValid && sel.start != sel.end) {
+        list.add(SearchHighlight(start: sel.start, end: sel.end, isCurrentMatch: true));
+      }
+      for (final r in _multiSel) {
+        list.add(SearchHighlight(start: r.start, end: r.end));
+      }
+      if (_sameHighlights(controller.extraHighlights, list)) return;
+      controller.extraHighlights = list;
+      controller.extraHighlightsChanged = true;
+      controller.notifyListeners();
+      return;
+    }
+
+    // 3) 当前词的所有出现
+    if (_prefs.highlightOccurrences) {
+      var start = sel.isValid ? sel.start : caret;
+      var end = sel.isValid ? sel.end : caret;
+      if (start == end) {
+        final range = _wordRangeAt(text, caret);
+        start = range.start;
+        end = range.end;
+      }
+      if (end > start) {
+        final word = text.substring(start, end);
+        if (word.length >= 2 && word.length <= 60 && !word.contains('\n')) {
+          var count = 0;
+          for (var i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + word.length)) {
+            list.add(SearchHighlight(start: i, end: i + word.length));
+            if (++count >= 200) break;
+          }
+        }
+      }
+    }
+
+    if (_sameHighlights(controller.extraHighlights, list)) return;
+    controller.extraHighlights = list;
+    controller.extraHighlightsChanged = true;
+    controller.notifyListeners();
+  }
+
+  static bool _sameHighlights(List<SearchHighlight> a, List<SearchHighlight> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].start != b[i].start ||
+          a[i].end != b[i].end ||
+          a[i].isCurrentMatch != b[i].isCurrentMatch) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// 括号嵌套的配色（由内到外）。半透明，深浅主题下都能看见。
+  static const List<Color> _bracketColors = <Color>[
+    Color(0x44FFB300),
+    Color(0x4481C784),
+    Color(0x4464B5F6),
+    Color(0x44BA68C8),
+  ];
+
+  /// 包住光标的括号链，由内到外，最多 [maxDepth] 层。
+  ///
+  /// 每层返回一对位置。用来做「括号对着色」：同一层的一对括号同色，越外层颜色越不同。
+  static List<(int, int)> _enclosingBracketChain(String text, int caret, {int maxDepth = 4}) {
+    final out = <(int, int)>[];
+    if (text.isEmpty) return out;
+    var pos = caret.clamp(0, text.length);
+    while (out.length < maxDepth) {
+      int? open;
+      var depth = 0;
+      // 往前找最近的、在 pos 之前还没闭合的开括号。扫太远就放弃（别把光标移动做成 O(n²)）。
+      final limit = (pos - 20000).clamp(0, text.length);
+      for (var i = pos - 1; i >= limit; i--) {
+        final c = text[i];
+        if (c == ')' || c == ']' || c == '}') {
+          depth++;
+        } else if (c == '(' || c == '[' || c == '{') {
+          if (depth == 0) {
+            open = i;
+            break;
+          }
+          depth--;
+        }
+      }
+      if (open == null) break;
+      final close = _findClosing(text, open, text[open]);
+      if (close == null) break;
+      if (close < pos) {
+        // 这一对在光标之前就闭合了，不是「包住光标的」，继续往外看。
+        pos = open;
+        continue;
+      }
+      out.add((open, close));
+      pos = open;
+    }
+    return out;
+  }
+
+  // ------------------------------ 参数签名提示 ------------------------------
+
+  /// 从 [close] 处的闭括号往前找配对的开括号（同样带 2 万字符上限）。
+  static int? _findOpening(String text, int close, String ch) {
+    const pairs = <String, String>{')': '(', ']': '[', '}': '{'};
+    final open = pairs[ch];
+    if (open == null) return null;
+    var depth = 0;
+    final limit = (close - 20000).clamp(0, text.length);
+    for (var i = close; i >= limit; i--) {
+      final c = text[i];
+      if (c == ch) {
+        depth++;
+      } else if (c == open) {
+        depth--;
+        if (depth == 0) return i;
+      }
+    }
+    return null;
+  }
+
+  /// 从 [open] 处的开括号往后找配对的闭括号（同样带 2 万字符上限）。
+  static int? _findClosing(String text, int open, String ch) {
+    const pairs = <String, String>{'(': ')', '[': ']', '{': '}'};
+    final close = pairs[ch];
+    if (close == null) return null;
+    var depth = 0;
+    final limit = (open + 20000).clamp(0, text.length);
+    for (var i = open; i < limit; i++) {
+      final c = text[i];
+      if (c == ch) {
+        depth++;
+      } else if (c == close) {
+        depth--;
+        if (depth == 0) return i;
+      }
+    }
+    return null;
+  }
+
+  /// 光标在某个调用的括号里时，给出「这个函数的签名 + 现在在第几个参数」。
+  ///
+  /// 没有语义分析，签名只能从**当前文档里**找声明（参数长得像「类型 名字」才算）。
+  /// 找不到就不显示——宁可没有，也不要瞎猜一个错签名给用户看。
+  /// 签名缓存：`函数名 → 参数列表`（找不到时存 null）。
+  ///
+  /// 这个函数在**每次光标移动**时都会被调用（签名条自己监听 controller 重建），
+  /// 如果每次都全文正则扫一遍，大文件里光标走一步卡一下。所以按「文本是否同一个对象」
+  /// 缓存——文本一变（String 不可变）缓存整体作废。
+  String? _sigCacheText;
+  final Map<String, List<String>?> _sigCache = <String, List<String>?>{};
+
+  ({String name, List<String> params, int active})? _resolveSignature() {
+    final doc = _doc;
+    final controller = doc?.controller;
+    if (doc == null || controller == null) return null;
+    if (!_programming) return null;
+    final text = controller.text;
+    final caret = controller.selection.extentOffset;
+    if (caret <= 0 || caret > text.length) return null;
+
+    // 1) 向上找未闭合的 `(`；碰到语句边界就放弃（别跨语句猜）。
+    var i = caret - 1;
+    var depth = 0;
+    var open = -1;
+    while (i >= 0) {
+      final c = text[i];
+      if (c == ')') {
+        depth++;
+      } else if (c == '(') {
+        if (depth == 0) {
+          open = i;
+          break;
+        }
+        depth--;
+      } else if (c == ';' || c == '{' || c == '}') {
+        return null;
+      }
+      i--;
+    }
+    if (open < 0) return null;
+
+    // 2) 取函数名（允许 a.b.c）
+    var j = open - 1;
+    while (j >= 0 && (text[j] == ' ' || text[j] == '\t')) {
+      j--;
+    }
+    final nameEnd = j + 1;
+    while (j >= 0) {
+      final c = text[j];
+      if (RegExp(r'[\w$]').hasMatch(c) || c == '.') {
+        j--;
+      } else {
+        break;
+      }
+    }
+    final full = text.substring(j + 1, nameEnd);
+    if (full.isEmpty) return null;
+    final simple = full.contains('.') ? full.substring(full.lastIndexOf('.') + 1) : full;
+    if (!RegExp(r'^[A-Za-z_$][\w$]*$').hasMatch(simple)) return null;
+    // `if (` / `for (` / `new Foo(` 之类不是「函数调用」，别硬找签名。
+    if (_sigKeywordBlacklist.contains(simple)) return null;
+
+    // 3) 当前在第几个参数：数光标前的顶层逗号。
+    var active = 0;
+    var d = 0;
+    for (var k = open + 1; k < caret; k++) {
+      final c = text[k];
+      if (c == '(' || c == '[' || c == '{') {
+        d++;
+      } else if (c == ')' || c == ']' || c == '}') {
+        d--;
+      } else if (c == ',' && d == 0) {
+        active++;
+      }
+    }
+
+    // 4) 在文档里找声明
+    if (!identical(_sigCacheText, text)) {
+      _sigCache.clear();
+      _sigCacheText = text;
+    }
+    List<String>? parts;
+    if (_sigCache.containsKey(simple)) {
+      parts = _sigCache[simple];
+    } else {
+      final declRe = RegExp(
+          r'\b' + RegExp.escape(simple) + r'\s*\(([^()]*)\)\s*(?:\{|=>|;|:(?=\s*(?:\n|$)))');
+      for (final m in declRe.allMatches(text)) {
+        if (m.start < caret && m.end > open) continue; // 跳过光标这次调用本身
+        if (!_looksLikeDeclHead(text, m.start)) continue;
+        final raw = m.group(1)!;
+        if (!_looksLikeParams(raw)) continue;
+        parts = _splitParams(raw);
+        break;
+      }
+      _sigCache[simple] = parts;
+    }
+    if (parts == null) return null;
+    // 无参函数（`Foo()`）：parts 为空，clamp 的上下界会反过来，必须单独处理。
+    return (
+      name: simple,
+      params: parts,
+      active: parts.isEmpty ? 0 : active.clamp(0, parts.length - 1),
+    );
+  }
+
+  static List<String> _splitParams(String raw) {
+    final parts = <String>[];
+    var depth = 0;
+    var start = 0;
+    for (var i = 0; i < raw.length; i++) {
+      final c = raw[i];
+      if (c == '(' || c == '[' || c == '{' || c == '<') {
+        depth++;
+      } else if (c == ')' || c == ']' || c == '}' || c == '>') {
+        depth--;
+      } else if (c == ',' && depth == 0) {
+        parts.add(raw.substring(start, i).trim());
+        start = i + 1;
+      }
+    }
+    final tail = raw.substring(start).trim();
+    if (tail.isNotEmpty || parts.isNotEmpty) parts.add(tail);
+    return parts;
+  }
+
+  static const Set<String> _sigKeywordBlacklist = <String>{
+    'if', 'for', 'foreach', 'while', 'switch', 'catch', 'using', 'lock', 'fixed', //
+    'return', 'new', 'throw', 'sizeof', 'typeof', 'nameof', 'default', 'assert',
+  };
+
+  /// 声明前面应该有「修饰符 + 返回类型」，否则就是一次调用语句（`Foo();`）。
+  static bool _looksLikeDeclHead(String text, int at) {
+    final lineStart = at <= 0 ? 0 : text.lastIndexOf('\n', at - 1) + 1;
+    final head = text.substring(lineStart, at);
+    if (head.trim().isEmpty) return false;
+    // 行内已经出现赋值/括号/逗号，说明我们在一个表达式里（`var x = Foo(`），不是声明。
+    if (head.contains('=') || head.contains('(') || head.contains(',')) return false;
+    // Python / JS 的函数声明没有返回类型：`def foo(` / `function foo(` / `fn foo(`。
+    if (RegExp(r'^\s*(?:def|fn|fun|function|func)\s+$').hasMatch(head)) return true;
+    return RegExp(
+            r'^(?:\s*)(?:(?:public|private|protected|internal|static|async|override|virtual|abstract|sealed|extern|unsafe|partial|synchronized|export|function|fun|def|fn)\s+)*'
+            r'[\w<>\[\],.?:]+\s+$')
+        .hasMatch(head);
+  }
+
+  static final RegExp _paramRe = RegExp(
+      r'^(?:\[[^\]]*\]\s*)*(?:(?:this|ref|out|in|params|scoped)\s+)*'
+      r'[A-Za-z_$][\w$]*(?:<[^>]*>)?(?:\[\])?\??\s+[A-Za-z_$][\w$]*\s*(?:=.*)?$');
+
+  /// 参数段是否像「类型 名字」（用来区分声明和调用）。
+  static bool _looksLikeParams(String raw) {
+    final parts = _splitParams(raw);
+    for (final p in parts) {
+      if (p.isEmpty) continue;
+      if (!_paramRe.hasMatch(p)) return false;
+    }
+    return true;
+  }
+
+  // ---------- 多选编辑（VS 的 Ctrl+D 累加，移动端做成「先圈出来，再一次性改」）----------
+
+  /// 除主选区之外的其它选区（按位置升序、互不重叠）。
+  ///
+  /// 内核只有「单个选区 + 多个插入点」，画不出 VS 那种多个光标同时打字的效果；
+  /// 手机上边打字边盯几处光标本来也不好使。所以这里换了交互：
+  /// **先把要改的地方一个个圈出来（加入下一个出现处），再一次性替换 / 删除 / 改大小写。**
+  final List<({int start, int end})> _multiSel = <({int start, int end})>[];
+
+  /// 多选时共享的那个词（只用来提示与预填输入框）。
+  String _multiWord = '';
+
+  /// 主选区 + 多选区，排好序并合并重叠。
+  List<({int start, int end})> _allSelectionRanges() {
+    final controller = _controller;
+    if (controller == null) return const <({int start, int end})>[];
+    final text = controller.text;
+    final sel = controller.selection;
+    final out = <({int start, int end})>[..._multiSel];
+    if (sel.isValid && sel.start != sel.end) {
+      out.add((
+        start: sel.start.clamp(0, text.length),
+        end: sel.end.clamp(0, text.length),
+      ));
+    }
+    out.sort((a, b) => a.start.compareTo(b.start));
+    final merged = <({int start, int end})>[];
+    for (final r in out) {
+      if (merged.isNotEmpty && r.start <= merged.last.end) {
+        final last = merged.removeLast();
+        merged.add((start: last.start, end: r.end > last.end ? r.end : last.end));
+      } else {
+        merged.add(r);
+      }
+    }
+    return merged;
+  }
+
+  /// 「加入下一个出现处」：第一次先把光标下的词选起来，之后每按一次多收一处。
+  void _addNextOccurrence() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+    var start = sel.start.clamp(0, text.length);
+    var end = sel.end.clamp(0, text.length);
+
+    // 空选区（或跨行选区）：先选中光标下的词，进入多选模式的第一步。
+    if (start == end || text.substring(start, end).contains('\n')) {
+      final range = _wordRangeAt(text, start == end ? start : sel.extentOffset);
+      if (range.end <= range.start) return;
+      _multiSel.clear();
+      _multiWord = text.substring(range.start, range.end);
+      controller.selection = TextSelection(baseOffset: range.start, extentOffset: range.end);
+      _toast(localizations.editorMultiSelCount('1'));
+      setState(() {});
+      _refreshExtraHighlights();
+      return;
+    }
+
+    final word = _multiSel.isEmpty ? text.substring(start, end) : _multiWord;
+    if (word.isEmpty) return;
+    if (_multiSel.isEmpty) _multiWord = word;
+
+    if (!_multiSel.any((r) => r.start == start && r.end == end)) {
+      _multiSel.add((start: start, end: end));
+    }
+    // 已经收进来的位置不能重复收，否则会「加了两次同一处」。
+    final taken = <int>{for (final r in _multiSel) r.start};
+
+    var next = -1;
+    for (var i = text.indexOf(word, end); i >= 0; i = text.indexOf(word, i + word.length)) {
+      if (!taken.contains(i)) {
+        next = i;
+        break;
+      }
+    }
+    if (next < 0) {
+      for (var i = text.indexOf(word); i >= 0 && i < end; i = text.indexOf(word, i + word.length)) {
+        if (!taken.contains(i)) {
+          next = i;
+          break;
+        }
+      }
+    }
+    if (next < 0) {
+      // 全都收完了：保持现状，只提示一声。
+      setState(() {});
+      _refreshExtraHighlights();
+      _toast(localizations.editorMultiSelNoMore);
+      return;
+    }
+    controller.selection = TextSelection(baseOffset: next, extentOffset: next + word.length);
+    controller.scrollToLine(_lineOfOffset(text, next));
+    setState(() {});
+    _refreshExtraHighlights();
+    _toast(localizations.editorMultiSelCount('${_multiSel.length + 1}'));
+  }
+
+  /// 清空多选，回到普通单选状态。
+  void _clearMultiSel() {
+    if (_multiSel.isEmpty && _multiWord.isEmpty) return;
+    setState(() {
+      _multiSel.clear();
+      _multiWord = '';
+    });
+    _refreshExtraHighlights();
+  }
+
+  /// 对所有选区做一次性批量编辑。
+  ///
+  /// 直接重建整篇文本，而不是循环 `replaceRange`：一次赋值只产生**一条**撤销记录，
+  /// 也不会因为逐个替换让后面的偏移整体漂移。
+  void _editSelections(String Function(String selected) transform) {
+    final controller = _controller;
+    if (controller == null) return;
+    final ranges = _allSelectionRanges();
+    if (ranges.isEmpty) return;
+    final text = controller.text;
+    final buffer = StringBuffer();
+    var cursor = 0;
+    final after = <({int start, int end})>[];
+    for (final r in ranges) {
+      buffer.write(text.substring(cursor, r.start));
+      final replaced = transform(text.substring(r.start, r.end));
+      final at = buffer.length;
+      buffer.write(replaced);
+      after.add((start: at, end: at + replaced.length));
+      cursor = r.end;
+    }
+    buffer.write(text.substring(cursor));
+    final result = buffer.toString();
+    _multiSel.clear();
+    _multiWord = '';
+    controller.text = result;
+    if (after.isNotEmpty) {
+      // 光标落在最后一处（VS 里改完焦点也留在最后一个光标上）。
+      final last = after.last;
+      controller.selection = TextSelection(baseOffset: last.start, extentOffset: last.end);
+      controller.scrollToLine(_lineOfOffset(result, last.start));
+    }
+    setState(() {});
+    _refreshExtraHighlights();
+  }
+
+  /// 批量替换：问一次新文本，然后所有选区都换成它。
+  Future<void> _promptReplaceSelections() async {
+    final ranges = _allSelectionRanges();
+    if (ranges.isEmpty) return;
+    final input = TextEditingController(text: _multiWord);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorMultiSelReplace('${ranges.length}')),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          decoration: InputDecoration(labelText: localizations.editorReplaceWith),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, input.text), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    input.dispose();
+    if (!mounted || value == null) return;
+    _editSelections((_) => value);
+  }
+
+  /// 重命名符号（VS 的 F2 简化版）：只改**同文件内整词出现处**，且要求这里确实是声明。
+  ///
+  /// 不弹「重命名」面板是因为手机上多一步操作收益很低；
+  /// 关键是把「找不到声明就别乱改」这条守住——否则一次误触能把整篇的通用词改掉。
+  Future<void> _renameSymbol() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
+    final name = text.substring(range.start, range.end);
+    if (name.isEmpty) return;
+    if (_findDeclaration(text, name, range.start) == null) {
+      _toast(localizations.editorRenameNoDecl);
+      return;
+    }
+    final input = TextEditingController(text: name);
+    input.selection = TextSelection(baseOffset: 0, extentOffset: name.length);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorRename),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          decoration: InputDecoration(labelText: localizations.editorRenameHint),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, input.text), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    input.dispose();
+    if (!mounted || next == null || next.isEmpty || next == name) return;
+    // 整词替换：`Count` 不能命中 `Counter`。
+    final re = RegExp(r'\b' + RegExp.escape(name) + r'\b');
+    var count = 0;
+    final rebuilt = text.replaceAllMapped(re, (m) {
+      count++;
+      return next;
+    });
+    if (count == 0) return;
+    controller.text = rebuilt;
+    controller.selection = TextSelection.collapsed(offset: range.start.clamp(0, rebuilt.length));
+    controller.scrollToLine(_lineOfOffset(rebuilt, range.start.clamp(0, rebuilt.length)));
+    _toast(localizations.editorRenameDone('$count'));
+    _runLint();
+  }
+
+  /// 多选状态下的一条操作栏：已选几处 + 替换 / 删除 / 大小写 / 取消。
+  Widget _multiSelBar() {
+    if (_multiSel.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final count = _multiSel.length + 1;
+    return Container(
+      height: 30,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.4)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(children: [
+        Icon(Icons.select_all, size: 15, color: theme.colorScheme.primary),
+        const SizedBox(width: 5),
+        Text(localizations.editorMultiSelCount('$count'),
+            style: TextStyle(fontSize: 11, color: theme.colorScheme.primary)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              _multiAction(localizations.editorMultiSelReplace('$count'), _promptReplaceSelections),
+              _multiAction(localizations.delete, () => _editSelections((_) => '')),
+              _multiAction(localizations.editorUpperCase, () => _editSelections((v) => v.toUpperCase())),
+              _multiAction(localizations.editorLowerCase, () => _editSelections((v) => v.toLowerCase())),
+              _multiAction(localizations.editorMultiSelNewline, () => _editSelections((v) => '$v\n')),
+              _multiAction(localizations.editorMultiSelCopy, _copySelections),
+            ]),
+          ),
+        ),
+        IconButton(
+          onPressed: _clearMultiSel,
+          tooltip: localizations.cancel,
+          icon: const Icon(Icons.close, size: 15),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+        ),
+      ]),
+    );
+  }
+
+  /// 把每一处选中的内容按顺序复制出来（一处一行）。
+  void _copySelections() {
+    final ranges = _allSelectionRanges();
+    if (ranges.isEmpty) return;
+    final text = _controller?.text ?? '';
+    final buffer = StringBuffer();
+    for (final r in ranges) {
+      if (r.start < 0 || r.end > text.length) continue;
+      buffer.writeln(text.substring(r.start, r.end));
+    }
+    final out = buffer.toString().trimRight();
+    if (out.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: out));
+    _toast(localizations.copied);
+  }
+
+  Widget _multiAction(String label, VoidCallback onTap) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(0, 30),
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 11)),
+    );
+  }
+
+  // ---------- 定义速览 / 括号跳转 / 逐级扩大选区（VS 的 Alt+F12、Ctrl+]、Shift+Alt+→）----------
+
+  /// 「速览定义」：不跳走，先在下面弹一张小卡片看声明长什么样。
+  ///
+  /// VS 里是 Alt+F12。手机上「跳过去看一眼再跳回来」这个来回成本很高
+  /// （滚动位置、选中都丢了），所以这里先给上下文，看完再决定要不要真跳。
+  Future<void> _peekDefinition() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
+    final name = text.substring(range.start, range.end);
+    if (name.isEmpty) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    final at = _findDeclaration(text, name, range.start);
+    if (at == null) {
+      _toast(localizations.editorNoDefinition);
+      return;
+    }
+    await _showPeekAt(at: at, title: name);
+  }
+
+  /// 在下面弹一张卡片「速览」某个位置（声明和引用都走这里）。
+  ///
+  /// [at] 是名字所在的偏移。卡片里给两个出口：真的跳过去，或者看它的所有引用——
+  /// 这样「这里是什么 → 还有谁用我」不用来回关面板再点菜单。
+  Future<void> _showPeekAt({required int at, required String title}) async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final targetLine = _lineOfOffset(text, at);
+    final total = _totalLinesOf(text);
+    final from = (targetLine - 3).clamp(0, total - 1);
+    final to = (targetLine + 4).clamp(0, total - 1);
+    final lines = <({int no, String text})>[];
+    var offset = _offsetOfLine(text, from);
+    for (var line = from; line <= to; line++) {
+      var next = text.indexOf('\n', offset);
+      if (next < 0) next = text.length;
+      lines.add((no: line, text: text.substring(offset, next)));
+      offset = next + 1;
+      if (offset > text.length) break;
+    }
+    if (!mounted) return;
+    final theme = Theme.of(context);
+    final mono = TextStyle(
+        fontSize: 12, fontFamily: 'monospace', color: theme.textTheme.bodyMedium?.color);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                child: Text('$title  ·  L${targetLine + 1}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 220),
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  children: [
+                    for (final line in lines)
+                      Container(
+                        color: line.no == targetLine
+                            ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                            : null,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          SizedBox(
+                            width: 34,
+                            child: Text('${line.no + 1}',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: theme.disabledColor,
+                                    fontFamily: 'monospace')),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(line.text,
+                                  style: mono, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        ]),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Row(children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      controller.selection =
+                          TextSelection.collapsed(offset: at.clamp(0, text.length));
+                      unawaited(_showReferences());
+                    },
+                    child: Text(localizations.editorReferences),
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      controller.selection =
+                          TextSelection.collapsed(offset: at.clamp(0, text.length));
+                      controller.scrollToLine(targetLine);
+                    },
+                    child: Text(localizations.editorGotoDefinition),
+                  ),
+                ]),
+              ),
+            ]),
+      ),
+    );
+  }
+
+  /// 「跳到配对括号」（VS 的 Ctrl+]）。
+  ///
+  /// 光标处的括号（或它前面那个）跳到另一半；不在括号上就提示一声——
+  /// 不做「找当前行第一个括号」这种猜测，猜错了更让人困惑。
+  void _jumpToMatchingBracket() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final caret = controller.selection.extentOffset.clamp(0, text.length);
+
+    void moveTo(int offset) {
+      controller.selection = TextSelection.collapsed(offset: offset.clamp(0, text.length));
+      controller.scrollToLine(_lineOfOffset(text, offset));
+    }
+
+    for (final offset in <int>[caret, caret - 1]) {
+      if (offset < 0 || offset >= text.length) continue;
+      final c = text[offset];
+      if ('([{'.contains(c)) {
+        final close = _findClosing(text, offset, c);
+        if (close != null) {
+          moveTo(close);
+          return;
+        }
+      } else if (')]}'.contains(c)) {
+        final open = _findOpening(text, offset, c);
+        if (open != null) {
+          moveTo(open);
+          return;
+        }
+      }
+    }
+    _toast(localizations.editorNoDefinition);
+  }
+
+  /// 「逐级扩大选区」（VS 的 Shift+Alt+→）。
+  ///
+  /// 顺序：光标处的词 → 所在括号的内容 → 含括号 → 整行 → 外层括号整块 → 全文。
+  /// 手机上没有这种组合键，而「恰好选中这一段」在触屏上更难，所以给一个可以连点的入口。
+  /// 这个位置是否在字符串或行注释里。
+  ///
+  /// 只扫当前行：括号扩级在注释/字符串里数层级一定会数错（`"("` 这种），
+  /// 与其猜，不如判定「这行是注释/字符串」后直接退化成「扩到整行」。
+  static bool _insideStringOrComment(String text, int offset) {
+    final lineStart = offset == 0 ? 0 : text.lastIndexOf('\n', offset - 1) + 1;
+    var inSingle = false;
+    var inDouble = false;
+    var escaped = false;
+    for (var i = lineStart; i < offset && i < text.length; i++) {
+      final c = text[i];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (c.codeUnitAt(0) == 92) {
+        // 反斜杠
+        escaped = true;
+        continue;
+      }
+      if (!inDouble && c == "'") {
+        inSingle = !inSingle;
+      } else if (!inSingle && c == '"') {
+        inDouble = !inDouble;
+      } else if (!inSingle && !inDouble) {
+        if (c == '#' ) return true;
+        if (c == '/' && i + 1 < text.length && text[i + 1] == '/') return true;
+      }
+    }
+    return inSingle || inDouble;
+  }
+
+  void _expandSelection() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+    final start = sel.start.clamp(0, text.length);
+    final end = sel.end.clamp(0, text.length);
+
+    final lineStart = start == 0 ? 0 : text.lastIndexOf('\n', start - 1) + 1;
+    var lineEnd = text.indexOf('\n', end);
+    if (lineEnd < 0) lineEnd = text.length;
+
+    void select(int a, int b) {
+      controller.selection = TextSelection(
+          baseOffset: a.clamp(0, text.length), extentOffset: b.clamp(0, text.length));
+    }
+
+    // 1) 光标 → 词 → 整行
+    if (start == end) {
+      final word = _wordRangeAt(text, start);
+      if (word.end > word.start) {
+        select(word.start, word.end);
+        return;
+      }
+      select(lineStart, lineEnd);
+      return;
+    }
+
+    // 2) 在字符串 / 注释里：不做括号扩级，直接给整行。
+    if (_insideStringOrComment(text, start)) {
+      select(lineStart, lineEnd);
+      return;
+    }
+
+    // 3) 已经是整行 → 外层括号整块 / 全文
+    if (start <= lineStart && end >= lineEnd) {
+      final outer = _enclosingBracketChain(text, start, maxDepth: 16)
+          .where((p) => p.$2 >= end)
+          .toList(growable: false);
+      if (outer.isNotEmpty) {
+        final p = outer.last;
+        select(p.$1, p.$2 + 1);
+        return;
+      }
+      if (start > 0 || end < text.length) select(0, text.length);
+      return;
+    }
+
+    // 4) 括号内 → 含括号 → 整行
+    final chain = _enclosingBracketChain(text, start, maxDepth: 16);
+    ({int a, int b})? pair;
+    for (final p in chain) {
+      if (p.$2 >= end) {
+        pair = (a: p.$1, b: p.$2);
+        break;
+      }
+    }
+    if (pair != null) {
+      if (start == pair.a + 1 && end == pair.b) {
+        select(pair.a, pair.b + 1);
+      } else {
+        select(pair.a + 1, pair.b);
+      }
+      return;
+    }
+    select(lineStart, lineEnd);
+  }
+
+  /// 扫一遍文档里的符号。
+  ///
+  /// 「转到符号」和顶部面包屑都用它；结果按文本对象缓存，
+  /// 否则光标每动一下就要重扫一遍全文。
+  List<_SymbolItem> _collectSymbols(String text) {
+    final cached = _symbolCacheText;
+    if (cached != null && identical(cached, text)) return _symbolCacheItems;
+    final items = <_SymbolItem>[];
+    // 匹配位置是递增的，行号就用「游标 + 数换行」增量算：300 个符号也只扫一遍全文，
+    // 每个都调一次 _lineOfOffset 的话，大文件里打开这个列表会明显卡一下。
+    var scanFrom = 0;
+    var line = 0;
+    for (final m in _symbolRe.allMatches(text)) {
+      final kindWord = m.group(1);
+      final name = kindWord != null ? m.group(2)! : m.group(4)!;
+      final kind = kindWord ?? '';
+      // Match 没有「取某一组起点」的方法，从整段匹配里找名字的位置（名字在行内唯一）。
+      final offset = m.start + m.group(0)!.lastIndexOf(name);
+      for (var i = scanFrom; i < offset && i < text.length; i++) {
+        if (text.codeUnitAt(i) == 10) line++;
+      }
+      scanFrom = offset;
+      // 缩进层级：VS 的符号大纲就是按层级缩进的，一眼能看出谁在谁里面。
+      final raw = m.group(0)!;
+      items.add((
+        name: name,
+        kind: kind,
+        line: line,
+        offset: offset,
+        indent: raw.length - raw.trimLeft().length,
+      ));
+      if (items.length >= 300) break;
+    }
+    _symbolCacheText = text;
+    _symbolCacheItems = items;
+    return items;
+  }
+
+  /// 缓存：文本对象没换就直接复用（TextEditingController.text 未编辑时是同一实例）。
+  String? _symbolCacheText;
+  List<_SymbolItem> _symbolCacheItems = const <_SymbolItem>[];
+
+  /// 重扫符号（供顶部面包屑用）。检查跑完后调一次，别放在 build 里。
+  ///
+  /// 超大文件直接放弃面包屑：那是给自己找卡顿，而且那种文件本来就该用「转到符号」。
+  void _refreshSymbolCache() {
+    final doc = _doc;
+    if (doc == null) return;
+    final text = doc.text;
+    if (text.length > 262144) {
+      _symbolCacheText = text;
+      _symbolCacheItems = const <_SymbolItem>[];
+      return;
+    }
+    _symbolCacheText = null;
+    _collectSymbols(text);
+  }
+
+  /// 光标所在行属于哪条符号链（VS 顶部面包屑的 `Namespace › Class › Method`）。
+  ///
+  /// 按缩进做栈：遇到缩进不比栈顶深的符号就弹出，压入自己——
+  /// 于是「行号 ≤ 当前行」跑完之后，栈里剩下的正好是层层包含的那几个。
+  static List<_SymbolItem> _symbolTrail(List<_SymbolItem> symbols, int line) {
+    final stack = <_SymbolItem>[];
+    for (final item in symbols) {
+      if (item.line > line) break;
+      while (stack.isNotEmpty && stack.last.indent >= item.indent) {
+        stack.removeLast();
+      }
+      stack.add(item);
+    }
+    return stack;
+  }
+
+  Future<void> _showSymbols() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final items = _collectSymbols(controller.text);
+    if (!mounted) return;
+    if (items.isEmpty) {
+      _toast(localizations.editorSymbolsEmpty);
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => ListView.builder(
+        itemCount: items.length,
+        itemBuilder: (ctx, i) {
+          final it = items[i];
+          final indent = ((it.indent ~/ 4).clamp(0, 6)) * 10.0;
+          return Padding(
+            padding: EdgeInsets.only(left: indent),
+            child: ListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              leading: Icon(_symbolIcon(it.kind), size: 18),
+              title: Text(it.name, style: const TextStyle(fontSize: 13)),
+              trailing: Text('L${it.line + 1}', style: const TextStyle(fontSize: 11)),
+              onTap: () {
+                Navigator.pop(ctx);
+                final len = controller.text.length;
+                controller.selection =
+                    TextSelection.collapsed(offset: it.offset.clamp(0, len));
+                controller.scrollToLine(it.line);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 右侧问题分布条。
+  ///
+  /// 位置让开右侧滚动条（宽度按常见值估 10px），否则拖滚动条时会被这条细带挡一下。
+  Widget _issueRuler(EditorDocument doc) {
+    final issues = _visibleIssues();
+    if (issues.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      right: 12,
+      top: 0,
+      bottom: 0,
+      width: 3,
+      child: IgnorePointer(
+        child: CustomPaint(
+          painter: _RulerPainter(
+            issues: issues,
+            totalLines: _totalLinesOf(doc.text),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 顶部面包屑（VS 的编辑器导航栏）：当前光标在哪条 `命名空间 › 类 › 方法` 里。
   ///
   /// 手机上没有横向空间放整串，所以只显示路径本身，点一下弹完整的符号大纲。

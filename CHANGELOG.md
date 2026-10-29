@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.67.147 (2026-10-29) — 修：144～146 三个版本因代码被误删而全部编译失败
+
+改语言选择器那次，我用「从 `_showLanguagePicker` 到 `_breadcrumb` 注释」的**区间替换**重写了那个方法。
+问题是这两个标记之间还夹着 36KB 的代码——转到定义、当前词高亮、查找所有引用、速览定义、
+括号跳转、逐级扩大选区、多选编辑……全被一起删掉了。于是 144、145、146 三个版本全平台红。
+
+已从 v1.67.143 的源码把整段原样补回（36,246 字符），并逐个核对了方法数量：
+`_gotoDefinition` / `_refreshExtraHighlights` / `_showReferences` / `_peekDefinition` / `_showPeekAt` /
+`_jumpToMatchingBracket` / `_expandSelection` / `_addNextOccurrence` / `_editSelections` / `_multiSelBar` /
+`_collectSymbols` / `_refreshSymbolCache` / `_issueRuler` 等各一份，无重复、无缺失。
+
+> 这是同一个错误犯第二次：v1.67.127 删 `_bracketPairAt` 时，区间把还在用的 `_findClosing` 带走了。
+> 以后凡是「按区间删/替换」，先打印区间首尾各 100 字符确认范围，再动手。
+
 ## v1.67.146 (2026-10-29) — 最近编辑位置
 
 `navBack` 只有「上一步/下一步」这种线性历史，缺一个「我刚才在哪几处改过」的清单——
