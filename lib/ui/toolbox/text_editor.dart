@@ -1879,7 +1879,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return true;
   }
 
-  /// 光标处（或它前面那个字符）是括号时，找它配对的那一个。
   /// 括号嵌套的配色（由内到外）。半透明，深浅主题下都能看见。
   static const List<Color> _bracketColors = <Color>[
     Color(0x44FFB300),
@@ -1927,6 +1926,25 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   // ------------------------------ 参数签名提示 ------------------------------
+
+  /// 从 [open] 处的开括号往后找配对的闭括号（同样带 2 万字符上限）。
+  static int? _findClosing(String text, int open, String ch) {
+    const pairs = <String, String>{'(': ')', '[': ']', '{': '}'};
+    final close = pairs[ch];
+    if (close == null) return null;
+    var depth = 0;
+    final limit = (open + 20000).clamp(0, text.length);
+    for (var i = open; i < limit; i++) {
+      final c = text[i];
+      if (c == ch) {
+        depth++;
+      } else if (c == close) {
+        depth--;
+        if (depth == 0) return i;
+      }
+    }
+    return null;
+  }
 
   /// 光标在某个调用的括号里时，给出「这个函数的签名 + 现在在第几个参数」。
   ///
