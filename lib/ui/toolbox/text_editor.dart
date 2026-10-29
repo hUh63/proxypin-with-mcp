@@ -274,6 +274,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   TextEditorPrefs get _prefs => TextEditorPrefsStore.notifier.value;
 
+  /// 候选副标题的缓存键与结果（`语言|key|词数`）。
+  String? _detailCacheKey;
+  Map<String, String> _detailCache = const <String, String>{};
+
+  /// 给每个候选配一句小字：「关键字」或「内置」。
+  ///
+  /// 文档里自己写的名字不在表里，也就没有小字 —— 这正好是想要的区分：
+  /// 有标签的是语言自带的名字，没标签的是这个文件自己的名字。
+  Map<String, String> _suggestionDetailsOf(String langLabel, String langKey, List<String> words) {
+    final key = '$langLabel|$langKey|${words.length}';
+    if (_detailCacheKey == key) return _detailCache;
+    final loc = localizations;
+    final keyword = loc.editorKindKeyword;
+    final builtin = loc.editorKindBuiltin;
+    final map = <String, String>{};
+    for (final word in words) {
+      map[word] = CodeKeywords.kindOf(word) == CompletionKind.keyword ? keyword : builtin;
+    }
+    _detailCacheKey = key;
+    _detailCache = map;
+    return map;
+  }
+
   _LangOption get _lang =>
       _langs.firstWhere((l) => l.label == (_doc?.langLabel ?? 'Plain Text'), orElse: () => _langs.first);
 
@@ -3199,6 +3222,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
               return SuggestionStats.rank(doc.langLabel, words);
             }
           : null;
+      // 候选右侧那行小字（关键字 / 内置）。按语言缓存：候选表有两百多个词，
+      // 每次 build 都现算分类没有意义。
+      doc.controller.suggestionDetails =
+          smart ? _suggestionDetailsOf(doc.langLabel, _lang.key, builtinWords) : const <String, String>{};
       doc.controller.onSuggestionAccepted =
           smart ? (accepted, _) => SuggestionStats.recordAccepted(doc.langLabel, accepted) : null;
     }

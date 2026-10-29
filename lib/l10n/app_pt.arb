@@ -2829,5 +2829,7 @@
   "editorRenameHint": "New name",
   "editorRenameNoDecl": "No declaration here - rename would be unsafe",
   "editorRenameDone": "Renamed {n} places",
-  "editorFormatSelection": "Format selection"
+  "editorFormatSelection": "Format selection",
+  "editorKindKeyword": "keyword",
+  "editorKindBuiltin": "built-in"
 }

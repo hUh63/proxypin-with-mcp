@@ -21,8 +21,51 @@ import 'package:proxypin/utils/lang_meta.dart';
 /// 作为本地代码补全（`enableLocalSuggestions`）的**额外候选**，与「文档里出现过的词」
 /// 一起参与匹配：这样即使文档还几乎是空的，也能补出 `function` / `SELECT` / `class` 这类词。
 /// 只放纯标识符，不放带空格/换行的片段，避免污染候选列表。
+/// 补全候选的分类。
+///
+/// 只用于在候选列表右侧标一行小字（VS 的 completion detail），不参与排序与匹配。
+enum CompletionKind {
+  /// 语言保留字（`if` / `class` / `public`…）。
+  keyword,
+
+  /// 标准库 / 框架里的常用名字（`Console` / `WriteLine` / `fetch`…）。
+  builtin,
+}
+
 class CodeKeywords {
   CodeKeywords._();
+
+  /// 跨语言共用的**保留字**（含 `true`/`null` 这类字面量）。
+  ///
+  /// 各语言的候选表是「关键字 + 标准库」混在一张扁平表里的，没法直接分辨。
+  /// 所以这里单独列一份「一定是语法关键字」的集合：命中就是关键字，否则算内置。
+  /// 判断偏广播没关系——把 `public` 标成关键字、把 `Console` 标成内置，
+  /// 用户一看就认可；反过来标错才会显眼。
+  static const List<String> _reservedList = <String>[
+    'abstract', 'as', 'assert', 'async', 'await', 'base', 'break', 'case',
+    'catch', 'char', 'checked', 'class', 'const', 'continue', 'default', 'def',
+    'defer', 'del', 'delete', 'do', 'double', 'dynamic', 'elif', 'else',
+    'enum', 'except', 'explicit', 'export', 'extends', 'extern', 'factory', 'fallthrough',
+    'false', 'final', 'finally', 'fixed', 'float', 'fn', 'for', 'foreach',
+    'from', 'func', 'function', 'get', 'global', 'goto', 'if', 'implements',
+    'implicit', 'import', 'in', 'init', 'instanceof', 'int', 'interface', 'internal',
+    'is', 'lambda', 'late', 'let', 'library', 'lock', 'long', 'map',
+    'mixin', 'namespace', 'native', 'never', 'new', 'nil', 'nonlocal', 'not',
+    'null', 'of', 'operator', 'or', 'out', 'override', 'package', 'params',
+    'part', 'pass', 'print', 'private', 'protected', 'public', 'raise', 'range',
+    'readonly', 'record', 'ref', 'require', 'required', 'return', 'sealed', 'select',
+    'set', 'short', 'show', 'hide', 'sizeof', 'static', 'strictfp', 'struct',
+    'super', 'switch', 'synchronized', 'this', 'throw', 'throws', 'transient', 'true',
+    'try', 'type', 'typedef', 'typeof', 'undefined', 'union', 'unsafe', 'unsigned',
+    'use', 'using', 'var', 'virtual', 'void', 'volatile', 'when', 'where',
+    'while', 'with', 'yield',
+  ];
+
+  static final Set<String> _reserved = _reservedList.toSet();
+
+  /// 这个词属于哪类候选。
+  static CompletionKind kindOf(String word) =>
+      _reserved.contains(word) ? CompletionKind.keyword : CompletionKind.builtin;
 
   static const List<String> javascript = [
     'const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'do',

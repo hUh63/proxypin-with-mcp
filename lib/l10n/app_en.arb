@@ -4891,5 +4891,7 @@
       }
     }
   },
-  "editorFormatSelection": "Format selection"
+  "editorFormatSelection": "Format selection",
+  "editorKindKeyword": "keyword",
+  "editorKindBuiltin": "built-in"
 }
