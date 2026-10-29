@@ -4928,5 +4928,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "editorToggleBookmark": "Toggle bookmark",
+  "editorNextBookmark": "Next bookmark",
+  "editorClearBookmarks": "Clear bookmarks",
+  "editorBookmarkAdded": "Bookmark added",
+  "editorBookmarkRemoved": "Bookmark removed",
+  "editorNoBookmark": "No bookmarks in this file"
 }

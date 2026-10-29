@@ -792,6 +792,28 @@ class _TextEditorPageState extends State<TextEditorPage> {
       ));
     }
 
+    // 书签：淡琥珀底色 + 行号栏竖条（和错误标记用不同颜色，不会看混）。
+    final doc = _doc;
+    if (doc != null && doc.bookmarks.isNotEmpty) {
+      final lines = doc.bookmarks.toList()..sort();
+      for (final line in lines) {
+        decos.add(LineDecoration(
+          id: 'bm-$line',
+          startLine: line,
+          endLine: line,
+          type: LineDecorationType.background,
+          color: Colors.amber.withValues(alpha: 0.10),
+        ));
+        gutters.add(GutterDecoration(
+          id: 'bm-gutter-$line',
+          startLine: line,
+          endLine: line,
+          type: GutterDecorationType.colorBar,
+          color: Colors.amber,
+        ));
+      }
+    }
+
     final report = _doc?.lint;
     // VS 的做法：出错的那几个字符下面画波浪线，行号栏左侧加一条竖色条。
     // 不再把整行铺底色——整行染色会把正常代码读成一片彩色，长文件里尤其吵。
@@ -1405,6 +1427,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _expandSelection();
       case 'jumpBracket':
         _jumpToMatchingBracket();
+      case 'toggleBookmark':
+        _toggleBookmark();
+      case 'nextBookmark':
+        _jumpBookmark(true);
+      case 'prevBookmark':
+        _jumpBookmark(false);
+      case 'clearBookmarks':
+        _clearBookmarks();
     }
   }
 
@@ -3905,6 +3935,70 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  // ---------- 书签（VS 的 Ctrl+K Ctrl+K）----------
+
+  /// 在当前行加 / 去掉书签。
+  ///
+  /// 长文件在手机上翻起来很累，书签是「我待会儿还要回到这里」的最省事表达。
+  /// 状态挂在文档上，切走再回来还在。
+  void _toggleBookmark() {
+    final doc = _doc;
+    if (doc == null || _caretLine < 0) return;
+    final has = doc.bookmarks.contains(_caretLine);
+    setState(() {
+      if (has) {
+        doc.bookmarks.remove(_caretLine);
+      } else {
+        doc.bookmarks.add(_caretLine);
+      }
+    });
+    _refreshDecorations();
+    _toast(has ? localizations.editorBookmarkRemoved : localizations.editorBookmarkAdded);
+  }
+
+  /// 跳到下一个 / 上一个书签（到头会绕回去）。
+  void _jumpBookmark(bool forward) {
+    final doc = _doc;
+    final controller = doc?.controller;
+    if (doc == null || controller == null) return;
+    if (doc.bookmarks.isEmpty) {
+      _toast(localizations.editorNoBookmark);
+      return;
+    }
+    final lines = doc.bookmarks.toList()..sort();
+    final current = _caretLine;
+    int? target;
+    if (forward) {
+      for (final line in lines) {
+        if (line > current) {
+          target = line;
+          break;
+        }
+      }
+      target ??= lines.first;
+    } else {
+      for (final line in lines.reversed) {
+        if (line < current) {
+          target = line;
+          break;
+        }
+      }
+      target ??= lines.last;
+    }
+    final text = controller.text;
+    controller.selection = TextSelection.collapsed(offset: _offsetOfLine(text, target));
+    controller.scrollToLine(target);
+    _toast('${lines.indexOf(target) + 1} / ${lines.length}');
+  }
+
+  /// 清空本文档的所有书签。
+  void _clearBookmarks() {
+    final doc = _doc;
+    if (doc == null || doc.bookmarks.isEmpty) return;
+    setState(() => doc.bookmarks.clear());
+    _refreshDecorations();
+  }
+
   /// 把所有改过且有路径的文档一次写回磁盘。
   ///
   /// 没有路径的那些（新建未保存）跳过——它们只能走「另存为」，一弹一串文件选择框
@@ -4317,6 +4411,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right)),
           PopupMenuItem(value: 'expandSel', child: Text(loc.editorExpandSelection)),
         PopupMenuItem(value: 'jumpBracket', child: Text(loc.editorJumpBracket)),
+        PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
+        PopupMenuItem(value: 'toggleBookmark', child: Text(loc.editorToggleBookmark)),
+        PopupMenuItem(value: 'clearBookmarks', child: Text(loc.editorClearBookmarks)),
         PopupMenuItem(value: 'nextOccurrence', child: Text(loc.editorSelectNext)),
         ];
       case 'code':

@@ -2852,5 +2852,11 @@
   "editorSaveAll": "Save all",
   "editorCloseOthers": "Close others",
   "editorSavedCount": "Saved {n} files",
-  "editorCloseOthersDirty": "{n} of them have unsaved changes"
+  "editorCloseOthersDirty": "{n} of them have unsaved changes",
+  "editorToggleBookmark": "Toggle bookmark",
+  "editorNextBookmark": "Next bookmark",
+  "editorClearBookmarks": "Clear bookmarks",
+  "editorBookmarkAdded": "Bookmark added",
+  "editorBookmarkRemoved": "Bookmark removed",
+  "editorNoBookmark": "No bookmarks in this file"
 }

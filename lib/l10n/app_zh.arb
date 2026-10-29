@@ -4652,5 +4652,11 @@
   "editorSaveAll": "全部保存",
   "editorCloseOthers": "关闭其它文档",
   "editorSavedCount": "已保存 {n} 份",
-  "editorCloseOthersDirty": "其中 {n} 份有未保存的修改"
+  "editorCloseOthersDirty": "其中 {n} 份有未保存的修改",
+  "editorToggleBookmark": "切换书签",
+  "editorNextBookmark": "下一个书签",
+  "editorClearBookmarks": "清除所有书签",
+  "editorBookmarkAdded": "已加书签",
+  "editorBookmarkRemoved": "已去掉书签",
+  "editorNoBookmark": "这个文件还没有书签"
 }

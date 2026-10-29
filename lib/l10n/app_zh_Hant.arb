@@ -4652,5 +4652,11 @@
   "editorSaveAll": "全部儲存",
   "editorCloseOthers": "關閉其他文件",
   "editorSavedCount": "已儲存 {n} 份",
-  "editorCloseOthersDirty": "其中 {n} 份有未儲存的修改"
+  "editorCloseOthersDirty": "其中 {n} 份有未儲存的修改",
+  "editorToggleBookmark": "切換書籤",
+  "editorNextBookmark": "下一個書籤",
+  "editorClearBookmarks": "清除所有書籤",
+  "editorBookmarkAdded": "已加書籤",
+  "editorBookmarkRemoved": "已移除書籤",
+  "editorNoBookmark": "這個檔案還沒有書籤"
 }
