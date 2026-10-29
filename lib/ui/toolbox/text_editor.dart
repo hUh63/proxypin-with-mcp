@@ -255,6 +255,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
   double _pinchStartFontSize = 13;
   int _lastPinchSize = 13;
 
+  /// 这次双指手势是否已经「确认」为捏合缩放。
+  ///
+  /// 双指平移（手机上很自然的滚动方式）时，两指间距本来就有百分之几的抖动，
+  /// 没有这道门槛就是「想滚动，结果字号变了」。
+  bool _pinching = false;
+
   _RetainMode _retainMode = _RetainMode.never;
   _Newline _newline = _Newline.lf;
 
@@ -1157,6 +1163,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _pinchBaseDistance = _pointerDistance();
       _pinchStartFontSize = _prefs.fontSize;
       _lastPinchSize = _prefs.fontSize.round();
+      _pinching = false;
     }
   }
 
@@ -1166,7 +1173,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (!_zoomEnabled || _pointers.length != 2 || _pinchBaseDistance == null) return;
     final base = _pinchBaseDistance!;
     if (base <= 0) return;
-    final ratio = _pointerDistance() / base;
+    final distance = _pointerDistance();
+    final ratio = distance / base;
+    if (!_pinching) {
+      // 两指间距变化超过 12% 才认定为「捏合」。滚动时到不了这个幅度。
+      if ((ratio - 1).abs() < 0.12) return;
+      _pinching = true;
+      // 以此刻为新的基准重新开始，避免确认的瞬间字号跳一大截。
+      _pinchBaseDistance = distance;
+      _pinchStartFontSize = _prefs.fontSize;
+      _lastPinchSize = _prefs.fontSize.round();
+      return;
+    }
     final next = (_pinchStartFontSize * ratio).clamp(10.0, 40.0);
     final rounded = next.round();
     if (rounded != _lastPinchSize) {
@@ -1178,13 +1196,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _onPointerUp(PointerEvent e) {
+    // 双指手势结束，下次重新判定是滚动还是捏合。
     _pointers.remove(e.pointer);
     if (_pointers.length < 2) {
-      if (_pinchBaseDistance != null) {
-        // 缩放结束，落盘一次。
+      // 只有真的缩放过的才落盘：双指滚动（没缩放）不该写偏好。
+      if (_pinching) {
         TextEditorPrefsStore.update(TextEditorPrefsStore.notifier.value).ignore();
       }
       _pinchBaseDistance = null;
+      _pinching = false;
     }
   }
 
@@ -3342,7 +3362,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         drawerEdgeDragWidth: 0,
         drawer: _docDrawer(),
         onDrawerChanged: (open) {
-          if (!open) return;
+          if (!open) {
+            // 抽屉一关，里面的输入框就销毁了；搜索词必须一起清掉，
+            // 否则下次打开是「列表被旧查询过滤着、搜索框却是空的」——看着像文档丢了。
+            if (_docQuery.isNotEmpty) setState(() => _docQuery = '');
+            return;
+          }
           // 抽屉刚建出来，等一帧再滚（控制器此时还没 attach）。
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _scrollToActiveDoc();
@@ -3752,8 +3777,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 if (_programming) Expanded(child: _groupMenu('inspect', loc.editorMenuInspect)),
               ]),
             ),
-            if (_dirty)
+            if (_dirty) ...[
+              const SizedBox(width: 2),
               Text(loc.editorUnsaved, style: TextStyle(fontSize: 11, color: color)),
+            ],
           ]),
         ),
         SizedBox(
