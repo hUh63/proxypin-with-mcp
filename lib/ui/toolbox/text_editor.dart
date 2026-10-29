@@ -3050,7 +3050,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 位置让开右侧滚动条（宽度按常见值估 10px），否则拖滚动条时会被这条细带挡一下。
   Widget _issueRuler(EditorDocument doc) {
     final issues = _visibleIssues();
-    if (issues.isEmpty) return const SizedBox.shrink();
+    if (issues.isEmpty && doc.bookmarks.isEmpty) return const SizedBox.shrink();
     return Positioned(
       right: 12,
       top: 0,
@@ -3061,6 +3061,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           painter: _RulerPainter(
             issues: issues,
             totalLines: _totalLinesOf(doc.text),
+            bookmarks: doc.bookmarks.map((o) => _lineOfOffset(doc.text, o)).toList(growable: false),
           ),
         ),
       ),
@@ -5027,6 +5028,41 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 五个分类是「浏览」，命令面板是「已经知道要找什么」——
   /// 手机上翻四级菜单找一个功能，远不如打两个字。
+  static const String _recentCmdKey = 'text_editor_recent_cmds_v1';
+
+  /// 这些是「开关」，执行完不该把面板关掉——用户往往要连着拨几下面板里的开关。
+  static const Set<String> _toggleCommands = <String>{
+    'wrap',
+    'readOnly',
+    'smooth',
+    'smart',
+    'smoothKeepIme',
+    'ascii',
+    'unicode',
+    'lint',
+  };
+
+  Future<List<String>> _loadRecentCommands() async {
+    try {
+      return await SharedPreferencesAsync().getStringList(_recentCmdKey) ?? const <String>[];
+    } catch (_) {
+      return const <String>[];
+    }
+  }
+
+  Future<void> _rememberCommand(String id) async {
+    try {
+      final prefs = SharedPreferencesAsync();
+      final list = (await prefs.getStringList(_recentCmdKey)) ?? <String>[];
+      list.remove(id);
+      list.insert(0, id);
+      if (list.length > 8) list.removeRange(8, list.length);
+      await prefs.setStringList(_recentCmdKey, list);
+    } catch (_) {
+      // 记不上不影响执行
+    }
+  }
+
   Future<void> _showCommandPalette() async {
     final loc = localizations;
     final hidden = _prefs.hiddenMenu.toSet();
@@ -5036,14 +5072,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
       commands.add((id: item.id, label: item.label(loc)));
     }
     if (commands.isEmpty || !mounted) return;
-    final picked = await showModalBottomSheet<String>(
+    final recent = await _loadRecentCommands();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (ctx) => _CommandPaletteSheet(commands: commands),
+      builder: (ctx) => _CommandPaletteSheet(
+        commands: commands,
+        recent: recent,
+        onRun: (id) {
+          unawaited(_rememberCommand(id));
+          _menuAction(id);
+          // true = 面板留着（开关类命令，可以连着拨几个）。
+          return _toggleCommands.contains(id);
+        },
+      ),
     );
-    if (picked == null) return;
-    _menuAction(picked);
   }
 
   /// 「文件」子菜单：另存为 / 重新加载 / 换行符 / 统计。
@@ -5379,10 +5424,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
 /// VS 是在滚动条上画，这里滚动条归内核管，就贴在它左侧自己画一条——
 /// 效果一样：扫一眼就知道错误是集中在开头还是尾部。
 /// 命令面板：输入两个字就定位到任何菜单项。
+///
+/// 列表分两段：「最近用过」在前（8 条，跨会话保留），下面才是全部。
+/// 47 项平铺时，常用的那三五个每次都得重新读一遍列表。
 class _CommandPaletteSheet extends StatefulWidget {
   final List<({String id, String label})> commands;
+  final List<String> recent;
 
-  const _CommandPaletteSheet({required this.commands});
+  /// 执行一条命令；返回 true 表示「执行完了但面板留着」（开关类）。
+  final bool Function(String id) onRun;
+
+  const _CommandPaletteSheet({
+    required this.commands,
+    required this.onRun,
+    this.recent = const <String>[],
+  });
 
   @override
   State<_CommandPaletteSheet> createState() => _CommandPaletteSheetState();
@@ -5393,16 +5449,40 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final q = _query.trim().toLowerCase();
     final matched = q.isEmpty
         ? widget.commands
         : widget.commands.where((c) => c.label.toLowerCase().contains(q)).toList(growable: false);
+
+    // 空查询时把「最近用过」提到最前（按最近顺序）。
+    final rows = <Object>[];
+    if (q.isEmpty && widget.recent.isNotEmpty) {
+      final byId = {for (final c in widget.commands) c.id: c};
+      final recentCmds = <({String id, String label})>[];
+      for (final id in widget.recent) {
+        final cmd = byId[id];
+        if (cmd != null) recentCmds.add(cmd);
+      }
+      if (recentCmds.isNotEmpty) {
+        rows.add(_PaletteHeader(loc.editorRecentCommands));
+        rows.addAll(recentCmds);
+        rows.add(_PaletteHeader(loc.editorAllCommands));
+      }
+    }
+    rows.addAll(matched);
+
+    // 横屏 + 键盘时 0.6 屏高可能只剩一百多 dp，再让一次位。
+    final media = MediaQuery.of(context);
+    final available = media.size.height - media.viewInsets.bottom - 120;
+    final maxHeight = (media.size.height * 0.6).clamp(140.0, available < 140 ? 140.0 : available);
+
     return Padding(
       // 键盘弹起来时要让位，否则列表被压到看不见。
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
+        constraints: BoxConstraints(maxHeight: maxHeight),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
@@ -5413,7 +5493,7 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
               decoration: InputDecoration(
                 isDense: true,
                 prefixIcon: const Icon(Icons.manage_search, size: 18),
-                hintText: AppLocalizations.of(context)!.editorCommandPaletteHint,
+                hintText: loc.editorCommandPaletteHint,
                 hintStyle: const TextStyle(fontSize: 12.5),
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -5422,20 +5502,41 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: matched.isEmpty
+            child: rows.isEmpty
                 ? Center(
-                    child: Text(AppLocalizations.of(context)!.emptyData,
+                    child: Text(loc.emptyData,
                         style: TextStyle(fontSize: 12, color: theme.disabledColor)),
                   )
                 : ListView.builder(
-                    itemCount: matched.length,
+                    itemCount: rows.length,
                     itemBuilder: (ctx, i) {
-                      final cmd = matched[i];
+                      final row = rows[i];
+                      if (row is _PaletteHeader) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+                          child: Text(row.text,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600)),
+                        );
+                      }
+                      final cmd = row as ({String id, String label});
                       return ListTile(
                         dense: true,
                         leading: Icon(menuIconOf(cmd.id), size: 17),
-                        title: Text(cmd.label, style: const TextStyle(fontSize: 13.5)),
-                        onTap: () => Navigator.pop(ctx, cmd.id),
+                        title: Text(cmd.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13.5)),
+                        onTap: () {
+                          final keep = widget.onRun(cmd.id);
+                          if (!keep) {
+                            Navigator.pop(ctx);
+                          } else {
+                            setState(() {});
+                          }
+                        },
                       );
                     },
                   ),
@@ -5444,6 +5545,12 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
       ),
     );
   }
+}
+
+/// 命令面板里的小标题。
+class _PaletteHeader {
+  final String text;
+  const _PaletteHeader(this.text);
 }
 
 /// 语言选择的底部弹层：搜索 + 常用语言置顶。
@@ -5505,7 +5612,8 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
         ? all
         : all.where((l) => l.label.toLowerCase().contains(query)).toList(growable: false);
     // 空查询时把常用语言提到最前（保持原顺序）。
-    final List<_LangOption> ordered;
+    // 分三段并给出标题：只靠排序的话，用户看不出「为什么这两项在最前面」。
+    final rows = <Object>[];
     if (query.isEmpty) {
       final recent = <_LangOption>[];
       final common = <_LangOption>[];
@@ -5523,9 +5631,20 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
       recent.sort((a, b) =>
           widget.recent.indexOf(a.label).compareTo(widget.recent.indexOf(b.label)));
       common.sort((a, b) => _common.indexOf(a.label).compareTo(_common.indexOf(b.label)));
-      ordered = <_LangOption>[...recent, ...common, ...rest];
+      if (recent.isNotEmpty) {
+        rows.add(_PaletteHeader(localizations.editorLangRecent));
+        rows.addAll(recent);
+      }
+      if (common.isNotEmpty) {
+        rows.add(_PaletteHeader(localizations.editorLangCommon));
+        rows.addAll(common);
+      }
+      if (rest.isNotEmpty) {
+        rows.add(_PaletteHeader(localizations.editorLangAll));
+        rows.addAll(rest);
+      }
     } else {
-      ordered = matched;
+      rows.addAll(matched);
     }
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
@@ -5548,15 +5667,26 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
         ),
         const Divider(height: 1),
         Expanded(
-          child: ordered.isEmpty
+          child: rows.isEmpty
               ? Center(
                   child: Text(localizations.emptyData,
                       style: TextStyle(fontSize: 12, color: theme.disabledColor)),
                 )
               : ListView.builder(
-                  itemCount: ordered.length,
+                  itemCount: rows.length,
                   itemBuilder: (ctx, i) {
-                    final option = ordered[i];
+                    final row = rows[i];
+                    if (row is _PaletteHeader) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+                        child: Text(row.text,
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w600)),
+                      );
+                    }
+                    final option = row as _LangOption;
                     return ListTile(
                       dense: true,
                       selected: option.label == widget.current,
@@ -5575,12 +5705,22 @@ class _RulerPainter extends CustomPainter {
   final List<LintDiagnostic> issues;
   final int totalLines;
 
-  _RulerPainter({required this.issues, required this.totalLines});
+  /// 书签所在的行（0 基）。画成琥珀色小段，和错误色区分开。
+  final List<int> bookmarks;
+
+  _RulerPainter({required this.issues, required this.totalLines, this.bookmarks = const <int>[]});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.height <= 0 || totalLines <= 0 || issues.isEmpty) return;
+    if (size.height <= 0 || totalLines <= 0) return;
     final paint = Paint();
+    // 先画书签（宽一点、偏左），错误再盖上去：同一行既有错又有书签时，错的优先。
+    for (final line in bookmarks) {
+      final ratio = line / totalLines;
+      final y = (ratio * size.height).clamp(0.0, size.height - 3);
+      paint.color = Colors.amber;
+      canvas.drawRect(Rect.fromLTWH(0, y, size.width * 0.6, 3), paint);
+    }
     for (final d in issues) {
       final ratio = (d.line - 1) / totalLines;
       final y = (ratio * size.height).clamp(0.0, size.height - 2);
@@ -5597,7 +5737,9 @@ class _RulerPainter extends CustomPainter {
   bool shouldRepaint(covariant _RulerPainter old) =>
       old.totalLines != totalLines ||
       old.issues.length != issues.length ||
-      !identical(old.issues, issues);
+      !identical(old.issues, issues) ||
+      old.bookmarks.length != bookmarks.length ||
+      !identical(old.bookmarks, bookmarks);
 }
 
 class _SwipeAction {

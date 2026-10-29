@@ -4663,5 +4663,10 @@
   "editorRecentEdits": "最近编辑位置",
   "editorNoRecentEdits": "还没有编辑记录",
   "editorCommandPalette": "命令面板",
-  "editorCommandPaletteHint": "输入命令名…"
+  "editorCommandPaletteHint": "输入命令名…",
+  "editorRecentCommands": "最近使用",
+  "editorAllCommands": "全部命令",
+  "editorLangRecent": "最近用过",
+  "editorLangCommon": "常用",
+  "editorLangAll": "全部语言"
 }
