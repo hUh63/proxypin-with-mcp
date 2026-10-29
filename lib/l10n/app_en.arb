@@ -4935,5 +4935,7 @@
   "editorBookmarkAdded": "Bookmark added",
   "editorBookmarkRemoved": "Bookmark removed",
   "editorNoBookmark": "No bookmarks in this file",
-  "editorBookmarks": "Bookmarks"
+  "editorBookmarks": "Bookmarks",
+  "editorRecentEdits": "Recent edits",
+  "editorNoRecentEdits": "Nothing edited yet"
 }

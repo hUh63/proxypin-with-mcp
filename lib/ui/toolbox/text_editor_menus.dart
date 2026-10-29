@@ -651,6 +651,7 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('jumpBracket', _jumpBracketLabel),
   EditorMenuItem('toggleBookmark', _toggleBookmarkLabel),
   EditorMenuItem('nextBookmark', _nextBookmarkLabel),
+  EditorMenuItem('recentEdits', _recentEditsLabel),
   EditorMenuItem('bookmarks', _bookmarksLabel),
   EditorMenuItem('clearBookmarks', _clearBookmarksLabel),
 ];
@@ -706,6 +707,7 @@ String _expandSelLabel(AppLocalizations l) => l.editorExpandSelection;
 String _jumpBracketLabel(AppLocalizations l) => l.editorJumpBracket;
 String _toggleBookmarkLabel(AppLocalizations l) => l.editorToggleBookmark;
 String _nextBookmarkLabel(AppLocalizations l) => l.editorNextBookmark;
+String _recentEditsLabel(AppLocalizations l) => l.editorRecentEdits;
 String _bookmarksLabel(AppLocalizations l) => l.editorBookmarks;
 String _clearBookmarksLabel(AppLocalizations l) => l.editorClearBookmarks;
 

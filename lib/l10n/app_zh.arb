@@ -4659,5 +4659,7 @@
   "editorBookmarkAdded": "已加书签",
   "editorBookmarkRemoved": "已去掉书签",
   "editorNoBookmark": "这个文件还没有书签",
-  "editorBookmarks": "书签列表"
+  "editorBookmarks": "书签列表",
+  "editorRecentEdits": "最近编辑位置",
+  "editorNoRecentEdits": "还没有编辑记录"
 }

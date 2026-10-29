@@ -556,6 +556,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ..addAll(moved);
         }
       }
+      _rememberEdit(_doc?.controller.selection.extentOffset ?? 0);
       _lastText = text;
       if (!_dirty) setState(() => _dirty = true);
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
@@ -1466,6 +1467,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_applyFormat(selectionOnly: true));
       case 'rename':
         unawaited(_renameSymbol());
+      case 'recentEdits':
+        unawaited(_showRecentEdits());
       case 'peekDef':
         unawaited(_peekDefinition());
       case 'expandSel':
@@ -2909,6 +2912,85 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 最近改动过的位置（偏移，最多 20 条）。
+  ///
+  /// 用「编辑时的光标位置」记，不需要算 diff：打字时光标就在改动处，
+  /// 而且这个列表只用来「回到刚才改的地方」，精度要求没那么高。
+  final List<int> _recentEdits = <int>[];
+
+  void _rememberEdit(int offset) {
+    if (offset < 0) return;
+    // 相差 200 字符内算同一处，否则连着打一句话会塞满整个列表。
+    _recentEdits.removeWhere((o) => (o - offset).abs() < 200);
+    _recentEdits.insert(0, offset);
+    if (_recentEdits.length > 20) _recentEdits.removeLast();
+  }
+
+  /// 最近编辑位置列表。
+  Future<void> _showRecentEdits() async {
+    final controller = _controller;
+    if (controller == null) return;
+    if (_recentEdits.isEmpty) {
+      _toast(localizations.editorNoRecentEdits);
+      return;
+    }
+    final text = controller.text;
+    final list = List<int>.from(_recentEdits);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(localizations.editorRecentEdits,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() => _recentEdits.clear());
+                  Navigator.pop(ctx);
+                },
+                child: Text(localizations.clear),
+              ),
+            ]),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 320),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: list.length,
+              itemBuilder: (ctx, i) {
+                final offset = list[i].clamp(0, text.length);
+                final line = _lineOfOffset(text, offset);
+                final snippet = _lineTextAt(text, line).trim();
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.history, size: 16),
+                  title: Text(
+                    snippet.isEmpty ? ' ' : snippet,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
+                  ),
+                  subtitle: Text('L${line + 1}', style: const TextStyle(fontSize: 10.5)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    controller.selection = TextSelection.collapsed(offset: offset);
+                    controller.scrollToLine(line);
+                  },
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
   // ---------- 书签（VS 的 Ctrl+K Ctrl+K）----------
 
   /// 在当前行加 / 去掉书签。
@@ -3473,6 +3555,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               enabled: canRedo,
               child: Text(loc.editorRedo,
                   style: TextStyle(color: canRedo ? null : Theme.of(context).disabledColor))),
+          _menuItem('recentEdits', Icons.history, loc.editorRecentEdits),
           PopupMenuItem(
               value: 'navBack',
               enabled: _navIndex > 0,
@@ -3709,6 +3792,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           enabled: _navIndex > 0,
           child: Text(localizations.editorNavBack, style: TextStyle(
               color: _navIndex > 0 ? null : Theme.of(context).disabledColor)),
+        ),
+        PopupMenuItem(
+          value: 'recentEdits',
+          child: Text(localizations.editorRecentEdits, style: const TextStyle(fontSize: 13.5)),
         ),
         PopupMenuItem(
           value: 'navForward',
