@@ -895,13 +895,39 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 当前可见（没被筛选关掉）的问题。
+  ///
+  /// 带缓存：build 里要拿它两次（判断显示 + 画分布条），每次现算会白分配一堆 List，
+  /// 还会让分布条每帧都重绘。
+  LintReport? _visibleFor;
+  List<LintDiagnostic> _visibleCache = const <LintDiagnostic>[];
+
   List<LintDiagnostic> _visibleIssues() {
-    final all = _lint?.diagnostics;
-    if (all == null || all.isEmpty) return const <LintDiagnostic>[];
-    if (_hiddenSeverities.isEmpty) return all;
-    return all
-        .where((d) => !_hiddenSeverities.contains(d.severity))
-        .toList(growable: false);
+    final report = _lint;
+    if (identical(report, _visibleFor) && _visibleHiddenSig == _severitySignature(_hiddenSeverities)) {
+      return _visibleCache;
+    }
+    final all = report?.diagnostics;
+    _visibleFor = report;
+    _visibleHiddenSig = _severitySignature(_hiddenSeverities);
+    if (all == null || all.isEmpty) {
+      _visibleCache = const <LintDiagnostic>[];
+    } else if (_hiddenSeverities.isEmpty) {
+      _visibleCache = all;
+    } else {
+      _visibleCache = all
+          .where((d) => !_hiddenSeverities.contains(d.severity))
+          .toList(growable: false);
+    }
+    return _visibleCache;
+  }
+
+  /// 筛选状态的「键」（用于判断缓存是否失效）。
+  String _visibleHiddenSig = '';
+
+  static String _severitySignature(Set<LintSeverity> muted) {
+    if (muted.isEmpty) return '';
+    final names = muted.map((e) => e.name).toList()..sort();
+    return names.join(',');
   }
 
   /// 上一次跳到的位置（偏移）。用偏移而不是列表下标：
@@ -2453,6 +2479,28 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 右侧问题分布条。
+  ///
+  /// 位置让开右侧滚动条（宽度按常见值估 10px），否则拖滚动条时会被这条细带挡一下。
+  Widget _issueRuler(EditorDocument doc) {
+    final issues = _visibleIssues();
+    if (issues.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      right: 12,
+      top: 0,
+      bottom: 0,
+      width: 3,
+      child: IgnorePointer(
+        child: CustomPaint(
+          painter: _RulerPainter(
+            issues: issues,
+            totalLines: _totalLinesOf(doc.text),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 顶部面包屑（VS 的编辑器导航栏）：当前光标在哪条 `命名空间 › 类 › 方法` 里。
   ///
   /// 手机上没有横向空间放整串，所以只显示路径本身，点一下弹完整的符号大纲。
@@ -3175,21 +3223,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 ),
               ),
               // 右侧「问题分布条」：VS 滚动条旁那排小色块，一眼看出错误集中在文件哪一段。
-              if (doc != null && _programming && _visibleIssues().isNotEmpty)
-                Positioned(
-                  right: 1,
-                  top: 0,
-                  bottom: 0,
-                  width: 4,
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: _RulerPainter(
-                        issues: _visibleIssues(),
-                        totalLines: _totalLinesOf(doc.text),
-                      ),
-                    ),
-                  ),
-                ),
+              if (doc != null && _programming) _issueRuler(doc),
             ]),
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
