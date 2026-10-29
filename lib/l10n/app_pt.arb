@@ -2840,5 +2840,10 @@
   "editorUnsavedExitTitle": "Unsaved changes",
   "editorUnsavedExitBody": "This file has changes that are not written back to disk yet.",
   "editorSaveAndExit": "Save and exit",
-  "editorExitWithoutSaving": "Exit without saving"
+  "editorExitWithoutSaving": "Exit without saving",
+  "editorMenuFile": "File",
+  "editorMenuEdit": "Edit",
+  "editorMenuCode": "Code",
+  "editorMenuView": "View",
+  "editorMenuInspect": "Verificar"
 }

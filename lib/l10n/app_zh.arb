@@ -4640,5 +4640,10 @@
   "editorUnsavedExitTitle": "有未保存的修改",
   "editorUnsavedExitBody": "这个文件有修改还没写回磁盘。",
   "editorSaveAndExit": "保存并退出",
-  "editorExitWithoutSaving": "不保存直接退出"
+  "editorExitWithoutSaving": "不保存直接退出",
+  "editorMenuFile": "文件",
+  "editorMenuEdit": "编辑",
+  "editorMenuCode": "代码",
+  "editorMenuView": "视图",
+  "editorMenuInspect": "检查"
 }

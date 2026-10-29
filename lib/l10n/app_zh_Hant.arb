@@ -4640,5 +4640,10 @@
   "editorUnsavedExitTitle": "有未儲存的修改",
   "editorUnsavedExitBody": "這個檔案有修改還沒寫回磁碟。",
   "editorSaveAndExit": "儲存並離開",
-  "editorExitWithoutSaving": "不儲存直接離開"
+  "editorExitWithoutSaving": "不儲存直接離開",
+  "editorMenuFile": "檔案",
+  "editorMenuEdit": "編輯",
+  "editorMenuCode": "程式碼",
+  "editorMenuView": "檢視",
+  "editorMenuInspect": "檢查"
 }

@@ -3628,180 +3628,340 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 工具栏两行：
+  ///   第一行是**菜单栏**（文件 / 编辑 / 代码 / 视图 / 检查），像桌面软件那样按功能归类；
+  ///   第二行是**真正高频的几个图标**，直接摆在外面不用展开。
+  ///
+  /// 之前的做法是把二十来个按钮摊成一行横滑，手机上一个都滑不回来——
+  /// 摊平不是「全都看得见」，而是「全都难找」。
   Widget _toolbar() {
     final color = Theme.of(context).colorScheme.primary;
-    final controller = _controller;
+    final loc = localizations;
     return Container(
-      padding: const EdgeInsets.only(top: 2, bottom: 2, left: 4, right: 12),
-      // 两行布局：菜单 + 语言行 + 工具行，窄屏（手机）不再溢出
+      padding: const EdgeInsets.only(top: 2, bottom: 2, left: 4, right: 6),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          IconButton(
-            icon: const Icon(Icons.menu, size: 19),
-            tooltip: localizations.editorDocuments,
-            visualDensity: VisualDensity.compact,
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          ),
-          DropdownButton<_LangOption>(
-            value: _lang,
-            isDense: true,
-            underline: const SizedBox.shrink(),
-            icon: const Icon(Icons.arrow_drop_down, size: 18),
-            items: _langs
-                .map((l) => DropdownMenuItem(
-                    value: l,
-                    child: Text(l.label == 'Plain Text' ? localizations.editorPlainText : l.label,
-                        style: const TextStyle(fontSize: 12.5))))
-                .toList(),
-            onChanged: (v) {
-              if (v == null || v == _lang || _doc == null) return;
-              setState(() => _doc!.langLabel = v.label);
-              _doc!.lint = null;
-              // 规则开关是按语言记的：切语言要换一份，并立刻重查。
-              unawaited(_loadLintRules());
-              _scheduleLint();
-            },
-          ),
-          const Spacer(),
-          if (_dirty)
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: Text(localizations.editorUnsaved, style: TextStyle(fontSize: 11, color: color)),
-            ),
-        ]),
         SizedBox(
-          height: 40,
-          // 一行横向滚动，而不是 Wrap 折成两三行：
-          // 手机上折行会让工具栏白吃掉 80+ dp，而代码区才是主角。
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.zero,
-            children: [
-            // 按用途分组，中间用竖线隔开（VS Code 工具栏的分组感）；
-            // 手机窄屏靠横向滚动看后面的按钮，不再折行。
-            _iconBtn(Icons.note_add_outlined, localizations.editorNewFile, _newFile),
-            _iconBtn(Icons.folder_open, localizations.selectFile, _openFile),
-            _iconBtn(Icons.save_outlined, localizations.save, _download),
+          height: 32,
+          child: Row(children: [
+            IconButton(
+              icon: const Icon(Icons.menu, size: 19),
+              tooltip: loc.editorDocuments,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+            DropdownButton<_LangOption>(
+              value: _lang,
+              isDense: true,
+              underline: const SizedBox.shrink(),
+              icon: const Icon(Icons.arrow_drop_down, size: 18),
+              items: _langs
+                  .map((l) => DropdownMenuItem(
+                      value: l,
+                      child: Text(l.label == 'Plain Text' ? loc.editorPlainText : l.label,
+                          style: const TextStyle(fontSize: 12.5))))
+                  .toList(),
+              onChanged: (v) {
+                if (v == null || v == _lang || _doc == null) return;
+                setState(() => _doc!.langLabel = v.label);
+                _doc!.lint = null;
+                // 规则开关是按语言记的：切语言要换一份，并立刻重查。
+                unawaited(_loadLintRules());
+                _scheduleLint();
+              },
+            ),
+            Expanded(
+              child: Row(children: [
+                Expanded(child: _groupMenu('file', loc.editorMenuFile)),
+                Expanded(child: _groupMenu('edit', loc.editorMenuEdit)),
+                Expanded(child: _groupMenu('code', loc.editorMenuCode)),
+                Expanded(child: _groupMenu('view', loc.editorMenuView)),
+                if (_programming) Expanded(child: _groupMenu('inspect', loc.editorMenuInspect)),
+              ]),
+            ),
+            if (_dirty)
+              Text(loc.editorUnsaved, style: TextStyle(fontSize: 11, color: color)),
+          ]),
+        ),
+        SizedBox(
+          height: 38,
+          child: Row(children: [
+            _iconBtn(Icons.note_add_outlined, loc.editorNewFile, _newFile),
+            _iconBtn(Icons.folder_open, loc.selectFile, _openFile),
+            _iconBtn(Icons.save_outlined, loc.save, _download),
             _toolbarSep(),
-            _iconBtn(Icons.undo, localizations.editorUndo, _doc?.undoController.canUndo == true ? _undo : null),
-            _iconBtn(Icons.redo, localizations.editorRedo, _doc?.undoController.canRedo == true ? _redo : null),
+            _iconBtn(Icons.undo, loc.editorUndo, _doc?.undoController.canUndo == true ? _undo : null),
+            _iconBtn(Icons.redo, loc.editorRedo, _doc?.undoController.canRedo == true ? _redo : null),
             AnimatedBuilder(
               animation: _doc?.findController ?? _noFind,
               builder: (_, __) => _iconBtn(
                   Icons.search,
-                  localizations.search,
+                  loc.search,
                   _toggleFind,
                   tint: (_doc?.findController.isActive ?? false) ? color : null),
             ),
-            _toolbarSep(),
-            // 纯文本 / 结构化文本之外的语法没有格式化器，直接不显示（灰按钮点不动最误导）
+            // 光标那行有问题时才出现的灯泡（VS 的 Quick Fix）。
             if (_fixAtCaretLine != null)
-              _iconBtn(Icons.lightbulb, localizations.editorQuickFix,
+              _iconBtn(Icons.lightbulb, loc.editorQuickFix,
                   () => _fixDiagnostic(_fixAtCaretLine!), tint: Colors.amber),
-            if (_canFormat) _iconBtn(Icons.auto_fix_high, localizations.format, _format),
-            if (_canPreview) _iconBtn(Icons.visibility_outlined, localizations.editorPreview, _preview),
-            _iconBtn(Icons.code, localizations.editorToggleComment, _toggleComment),
-            _iconBtn(Icons.wrap_text, localizations.wordWrap, () => setState(() => _wrap = !_wrap),
-                tint: _wrap ? color : null),
-            _iconBtn(Icons.copy, localizations.copy, _copy),
-            _iconBtn(Icons.delete_outline, localizations.clear, _clear),
-            if (_lintEnabled && _programming) _lintButton(color),
-            // 控制台只对编程语言出现，按钮本身控制显示/隐藏（高亮 = 已打开）
-            if (_programming)
-              _iconBtn(Icons.terminal, localizations.editorConsole,
-                  () => setState(() => _consoleOpen = !_consoleOpen),
-                  tint: _consoleOpen ? color : null),
-            _toolbarSep(),
+            const Spacer(),
             _moreMenu(color),
-          ],
-          ),
+          ]),
         ),
       ]),
     );
+  }
+
+  /// 一个分类菜单（`文件` / `编辑` / `代码` / `视图` / `检查`）。
+  ///
+  /// 内容按功能归类，和「更多」用的是同一套 value，动作只有 [_menuAction] 一份实现。
+  Widget _groupMenu(String group, String label) {
+    final hidden = _prefs.hiddenMenu.toSet();
+    final entries = _entriesOf(group)
+        .where((e) => e is! PopupMenuItem<String> || !hidden.contains(e.value as String))
+        .toList(growable: false);
+    if (entries.isEmpty) return const SizedBox.shrink();
+    return PopupMenuButton<String>(
+      tooltip: label,
+      onSelected: _menuAction,
+      itemBuilder: (_) => entries.toList(),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11.5),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 某个分类里有哪些菜单项。
+  ///
+  /// 这里只负责「放哪些、按什么顺序」，点了之后做什么全在 [_menuAction]。
+  List<PopupMenuEntry<String>> _entriesOf(String group) {
+    final loc = localizations;
+    final canUndo = _doc?.undoController.canUndo == true;
+    final canRedo = _doc?.undoController.canRedo == true;
+    switch (group) {
+      case 'file':
+        return [
+          PopupMenuItem(value: 'newFile', child: Text(loc.editorNewFile)),
+          PopupMenuItem(value: 'open', child: Text(loc.selectFile)),
+          PopupMenuItem(value: 'save', child: Text(loc.save)),
+          PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right)),
+          PopupMenuItem(value: 'docs', child: Text(loc.editorDocuments)),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'close', child: Text(loc.editorCloseFile)),
+        ];
+      case 'edit':
+        return [
+          PopupMenuItem(
+              value: 'undo',
+              enabled: canUndo,
+              child: Text(loc.editorUndo,
+                  style: TextStyle(color: canUndo ? null : Theme.of(context).disabledColor))),
+          PopupMenuItem(
+              value: 'redo',
+              enabled: canRedo,
+              child: Text(loc.editorRedo,
+                  style: TextStyle(color: canRedo ? null : Theme.of(context).disabledColor))),
+          PopupMenuItem(
+              value: 'navBack',
+              enabled: _navIndex > 0,
+              child: Text(loc.editorNavBack,
+                  style: TextStyle(
+                      color: _navIndex > 0 ? null : Theme.of(context).disabledColor))),
+          PopupMenuItem(
+              value: 'navForward',
+              enabled: _navIndex < _navStack.length - 1,
+              child: Text(loc.editorNavForward,
+                  style: TextStyle(
+                      color: _navIndex < _navStack.length - 1
+                          ? null
+                          : Theme.of(context).disabledColor))),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'copy', child: Text(loc.copy)),
+          PopupMenuItem(value: 'clear', child: Text(loc.clear)),
+          PopupMenuItem(value: 'replaceLine', child: Text(loc.editorReplaceLine)),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'comment', child: Text(loc.editorToggleComment)),
+          PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right)),
+          PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right)),
+          PopupMenuItem(value: 'nextOccurrence', child: Text(loc.editorSelectNext)),
+        ];
+      case 'code':
+        return [
+          if (_canFormat) PopupMenuItem(value: 'format', child: Text(loc.format)),
+          PopupMenuItem(value: 'formatSel', child: Text(loc.editorFormatSelection)),
+          if (_canPreview) PopupMenuItem(value: 'preview', child: Text(loc.editorPreview)),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'symbols', child: Text(loc.editorSymbols)),
+          PopupMenuItem(value: 'gotoLine', child: Text(loc.editorSelectToLine)),
+          PopupMenuItem(value: 'gotoDef', child: Text(loc.editorGotoDefinition)),
+          PopupMenuItem(value: 'references', child: Text(loc.editorReferences)),
+          PopupMenuItem(value: 'rename', child: Text(loc.editorRename)),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'foldAll', child: Text(loc.editorFoldAll)),
+          PopupMenuItem(value: 'unfoldAll', child: Text(loc.editorUnfoldAll)),
+          PopupMenuItem(value: 'minify', child: Text(loc.editorMinify)),
+          PopupMenuItem(value: 'minifyAggressive', child: Text(loc.editorMinifyAggressive)),
+        ];
+      case 'view':
+        return [
+          CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(loc.wordWrap)),
+          CheckedPopupMenuItem(value: 'readOnly', checked: _readOnly, child: Text(loc.editorReadOnly)),
+          CheckedPopupMenuItem(value: 'smooth', checked: _smooth, child: Text(loc.editorSmoothMode)),
+          CheckedPopupMenuItem(
+              value: 'smart', checked: SmartCompletion.enabled.value, child: Text(loc.smartCompletion)),
+          CheckedPopupMenuItem(
+              value: 'smoothKeepIme',
+              checked: _smoothKeepIme,
+              child: Text(loc.editorSmoothKeepIme)),
+          CheckedPopupMenuItem(
+              value: 'ascii', checked: _showAscii, child: Text(loc.editorShowAsciiControl)),
+          CheckedPopupMenuItem(
+              value: 'unicode', checked: _showUnicode, child: Text(loc.editorShowUnicodeSpecial)),
+          PopupMenuItem(value: 'report', child: Text(loc.editorSpecialReport)),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'syntax', child: Text(loc.editorMoreSyntax)),
+          PopupMenuItem(
+              value: 'newline',
+              child: Text('${loc.editorNewline}: ${_newlineLabel()}')),
+          PopupMenuItem(
+              value: 'retainMode',
+              child: Text('${loc.editorRetainPref}: ${_retainModeLabel()}')),
+          PopupMenuItem(value: 'settings', child: Text(loc.editorSettings)),
+        ];
+      case 'inspect':
+        if (!_programming) return const [];
+        return [
+          CheckedPopupMenuItem(
+              value: 'lint', checked: _lintEnabled, child: Text(loc.editorLint)),
+          PopupMenuItem(value: 'lintIssues', child: Text(loc.editorLintIssues)),
+          PopupMenuItem(value: 'console', child: Text(loc.editorConsole)),
+          PopupMenuItem(value: 'lintRules', child: Text(loc.editorLintAllRules)),
+        ];
+    }
+    return const [];
   }
 
   void _undo() => _doc?.undoController.undo();
 
   void _redo() => _doc?.undoController.redo();
 
+  /// 工具栏的分类菜单和「更多」菜单共用一个动作入口：
+  /// 两个入口只是「同一批功能的不同分组方式」，动作必须只有一份实现。
+  void _menuAction(String value) {
+    switch (value) {
+
+        case 'file':
+          _showFileMenu();
+        case 'search':
+          _toggleFind();
+        case 'syntax':
+          _showSyntaxMenu();
+        case 'gotoLine':
+          _selectToLine();
+        case 'symbols':
+          _showSymbols();
+        case 'nextOccurrence':
+          _addNextOccurrence();
+        case 'gotoDef':
+          _gotoDefinition();
+        case 'lineOps':
+          _showLineOpsMenu();
+        case 'caseOps':
+          _showCaseOpsMenu();
+        case 'navBack':
+          _navBack();
+        case 'navForward':
+          _navForward();
+        case 'wrap':
+          setState(() => _wrap = !_wrap);
+        case 'readOnly':
+          setState(() => _readOnly = !_readOnly);
+        case 'smooth':
+          setState(() => _smooth = !_smooth);
+        case 'smart':
+          SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
+        case 'smoothKeepIme':
+          _setSmoothKeepIme(!_smoothKeepIme);
+        case 'ascii':
+          _setShowAscii(!_showAscii);
+        case 'unicode':
+          _setShowUnicode(!_showUnicode);
+        case 'report':
+          _showSpecialReport();
+        case 'replaceLine':
+          _replaceCurrentLine();
+        case 'lint':
+          _setLintEnabled(!_lintEnabled);
+        case 'lintIssues':
+          _openConsole(EditorConsoleTab.problems);
+        case 'console':
+          _openConsole(EditorConsoleTab.console);
+        case 'minify':
+          _minify();
+        case 'minifyAggressive':
+          _minifyAggressive();
+        case 'newline':
+          _pickNewline();
+        case 'retainMode':
+          _pickRetainMode();
+        case 'settings':
+          _openSettings();
+        case 'rename':
+          unawaited(_renameSymbol());
+        case 'formatSel':
+          unawaited(_applyFormat(selectionOnly: true));
+        case 'foldAll':
+          _controller?.foldAll();
+        case 'unfoldAll':
+          _controller?.unfoldAll();
+        case 'references':
+          unawaited(_showReferences());
+        case 'close':
+          final doc = _doc;
+          if (doc != null) _closeDoc(doc);
+      
+      // 分类菜单里额外暴露出来的高频入口（原来只能从图标或子菜单点）。
+      case 'newFile':
+        _newFile();
+      case 'open':
+        unawaited(_openFile());
+      case 'save':
+        unawaited(_download());
+      case 'docs':
+        _scaffoldKey.currentState?.openDrawer();
+      case 'undo':
+        _undo();
+      case 'redo':
+        _redo();
+      case 'copy':
+        _copy();
+      case 'clear':
+        _clear();
+      case 'comment':
+        _toggleComment();
+      case 'format':
+        unawaited(_applyFormat());
+      case 'preview':
+        _preview();
+      case 'lintRules':
+        unawaited(_openLintRules());
+    }
+  }
+
   Widget _moreMenu(Color color) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 18),
       tooltip: localizations.editorMore,
-      onSelected: (value) {
-        switch (value) {
-          case 'file':
-            _showFileMenu();
-          case 'search':
-            _toggleFind();
-          case 'syntax':
-            _showSyntaxMenu();
-          case 'gotoLine':
-            _selectToLine();
-          case 'symbols':
-            _showSymbols();
-          case 'nextOccurrence':
-            _addNextOccurrence();
-          case 'gotoDef':
-            _gotoDefinition();
-          case 'lineOps':
-            _showLineOpsMenu();
-          case 'caseOps':
-            _showCaseOpsMenu();
-          case 'navBack':
-            _navBack();
-          case 'navForward':
-            _navForward();
-          case 'wrap':
-            setState(() => _wrap = !_wrap);
-          case 'readOnly':
-            setState(() => _readOnly = !_readOnly);
-          case 'smooth':
-            setState(() => _smooth = !_smooth);
-          case 'smart':
-            SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
-          case 'smoothKeepIme':
-            _setSmoothKeepIme(!_smoothKeepIme);
-          case 'ascii':
-            _setShowAscii(!_showAscii);
-          case 'unicode':
-            _setShowUnicode(!_showUnicode);
-          case 'report':
-            _showSpecialReport();
-          case 'replaceLine':
-            _replaceCurrentLine();
-          case 'lint':
-            _setLintEnabled(!_lintEnabled);
-          case 'lintIssues':
-            _openConsole(EditorConsoleTab.problems);
-          case 'console':
-            _openConsole(EditorConsoleTab.console);
-          case 'minify':
-            _minify();
-          case 'minifyAggressive':
-            _minifyAggressive();
-          case 'newline':
-            _pickNewline();
-          case 'retainMode':
-            _pickRetainMode();
-          case 'settings':
-            _openSettings();
-          case 'rename':
-            unawaited(_renameSymbol());
-          case 'formatSel':
-            unawaited(_applyFormat(selectionOnly: true));
-          case 'foldAll':
-            _controller?.foldAll();
-          case 'unfoldAll':
-            _controller?.unfoldAll();
-          case 'references':
-            unawaited(_showReferences());
-          case 'close':
-            final doc = _doc;
-            if (doc != null) _closeDoc(doc);
-        }
-      },
+      onSelected: _menuAction,
       itemBuilder: (context) {
         final hidden = _prefs.hiddenMenu.toSet();
         return <PopupMenuEntry<String>>[
