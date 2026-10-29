@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.67.153 (2026-10-30) — 修：菜单里点「速览定义 / 书签 / 扩大选区 / 跳到配对括号」毫无反应
+
+排查时用脚本比对「菜单里有的 id」和「动作里处理的 id」，发现 8 个对不上：
+
+`peekDef` `expandSel` `jumpBracket` `recentEdits` `toggleBookmark` `nextBookmark`
+`prevBookmark` `bookmarks` `clearBookmarks`
+
+原因：当初往 `_menuAction` 里加这些分支时，锚点串（`case 'rename': … } }`）先匹配到了
+**长按浮动菜单**的 `_runFloatAction`，于是这些分支被插到那边去了。
+`_runFloatAction` 收到这些 id 会执行，但**菜单发的是 `_menuAction`** ——
+所以从「代码」菜单点它们完全没反应，而且是静默的（没有报错、没有提示）。
+
+现在这些分支回到 `_menuAction`，`_runFloatAction` 恢复成 16 个长按项。
+并用脚本核对过：菜单里 54 个 id 全部有对应处理，两个 switch 都没有重复分支。
+
+> 这类错误编译期看不出来（语法完全合法），只能靠「菜单 id ↔ 动作 case」这种机械比对。
+> 以后每加一个菜单项，都跑一遍这个比对。
+
 ## v1.67.152 (2026-10-30) — 命令面板分组/最近使用/开关保持；分布条显示书签；语言选择器分组
 
 ### 命令面板

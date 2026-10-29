@@ -1467,24 +1467,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_applyFormat(selectionOnly: true));
       case 'rename':
         unawaited(_renameSymbol());
-      case 'recentEdits':
-        unawaited(_showRecentEdits());
-      case 'peekDef':
-        unawaited(_peekDefinition());
-      case 'expandSel':
-        _expandSelection();
-      case 'jumpBracket':
-        _jumpToMatchingBracket();
-      case 'toggleBookmark':
-        _toggleBookmark();
-      case 'nextBookmark':
-        _jumpBookmark(true);
-      case 'prevBookmark':
-        _jumpBookmark(false);
-      case 'bookmarks':
-        unawaited(_showBookmarks());
-      case 'clearBookmarks':
-        _clearBookmarks();
     }
   }
 
@@ -4880,6 +4862,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _preview();
       case 'lintRules':
         unawaited(_openLintRules());
+      // 以下这批是「代码」分类里的项，之前误插到了长按菜单的动作里，
+      // 结果从菜单点它们毫无反应（静默），这里补回正确位置。
+      case 'peekDef':
+        unawaited(_peekDefinition());
+      case 'expandSel':
+        _expandSelection();
+      case 'jumpBracket':
+        _jumpToMatchingBracket();
+      case 'recentEdits':
+        unawaited(_showRecentEdits());
+      case 'toggleBookmark':
+        _toggleBookmark();
+      case 'nextBookmark':
+        _jumpBookmark(true);
+      case 'prevBookmark':
+        _jumpBookmark(false);
+      case 'bookmarks':
+        unawaited(_showBookmarks());
+      case 'clearBookmarks':
+        _clearBookmarks();
     }
   }
 
