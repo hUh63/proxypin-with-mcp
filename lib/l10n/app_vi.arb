@@ -2867,5 +2867,6 @@
   "editorAllCommands": "All commands",
   "editorLangRecent": "Recently used",
   "editorLangCommon": "Common",
-  "editorLangAll": "All languages"
+  "editorLangAll": "All languages",
+  "editorNoAvailableCommand": "Không có lệnh nào khả dụng (đã ẩn hết trong cài đặt)"
 }

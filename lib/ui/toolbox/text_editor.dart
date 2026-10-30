@@ -205,6 +205,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   int _issueCursor = -1;
   bool _lintChecking = false;
   Timer? _lintTimer;
+
+  /// 长按右侧分布条时显示的「第几行」浮标（1 基）；null = 不显示。
+  int? _rulerLine;
+  Timer? _rulerTimer;
   bool _lintEnabled = true;
   bool _inLint = false;
 
@@ -339,6 +343,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _navTimer?.cancel();
     _fileWatchTimer?.cancel();
     _lintTimer?.cancel();
+    _rulerTimer?.cancel();
     _docScroll.dispose();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
@@ -3030,33 +3035,83 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 右侧问题分布条。
   ///
   /// 位置让开右侧滚动条（宽度按常见值估 10px），否则拖滚动条时会被这条细带挡一下。
-  Widget _issueRuler(EditorDocument doc) {
+  List<Widget> _issueRuler(EditorDocument doc) {
     final issues = _visibleIssues();
-    if (issues.isEmpty && doc.bookmarks.isEmpty) return const SizedBox.shrink();
+    if (issues.isEmpty && doc.bookmarks.isEmpty) return const <Widget>[];
     final total = _totalLinesOf(doc.text);
     final bookmarks = doc.bookmarks.map((o) => _lineOfOffset(doc.text, o)).toList(growable: false);
-    // 触摸区 14dp、实际只画右侧 3px：3dp 宽点不准，14dp 又会让开滚动条。
-    return Positioned(
-      right: 8,
-      top: 0,
-      bottom: 0,
-      width: 14,
-      child: LayoutBuilder(
-        builder: (context, box) => GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          // VS 的 overview ruler 点一下就跳过去，这里也补上。
-          onTapDown: (d) {
-            if (total <= 0 || box.maxHeight <= 0) return;
-            final line = (d.localPosition.dy / box.maxHeight * total).floor().clamp(0, total - 1);
-            doc.controller.selection = TextSelection.collapsed(offset: _offsetOfLine(doc.text, line));
-            doc.controller.scrollToLine(line);
-          },
-          child: CustomPaint(
-            painter: _RulerPainter(issues: issues, totalLines: total, bookmarks: bookmarks),
+    final theme = Theme.of(context);
+
+    int lineAt(double dy, double h) {
+      if (total <= 0 || h <= 0) return 0;
+      return (dy / h * total).floor().clamp(0, total - 1);
+    }
+
+    void jumpTo(int line) {
+      doc.controller.selection = TextSelection.collapsed(offset: _offsetOfLine(doc.text, line));
+      doc.controller.scrollToLine(line);
+    }
+
+    return <Widget>[
+      // 触摸区 14dp、实际只画右侧 3px：3dp 宽点不准，14dp 又会让开滚动条。
+      Positioned(
+        right: 8,
+        top: 0,
+        bottom: 0,
+        width: 14,
+        child: LayoutBuilder(
+          builder: (context, box) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            // 点一下直接跳（VS 的 overview ruler 行为）。
+            onTapDown: (d) => jumpTo(lineAt(d.localPosition.dy, box.maxHeight)),
+            // 长按先只报行号，松手再跳 —— 几千行的文件里 1px 就是几十行，
+            // 盲点必然跳偏，得有个浮标能对。
+            onLongPressStart: (d) => _previewRulerLine(lineAt(d.localPosition.dy, box.maxHeight)),
+            onLongPressMoveUpdate: (d) =>
+                _previewRulerLine(lineAt(d.localPosition.dy, box.maxHeight)),
+            onLongPressEnd: (d) {
+              jumpTo(lineAt(d.localPosition.dy, box.maxHeight));
+              _clearRulerLine();
+            },
+            child: CustomPaint(
+              painter: _RulerPainter(issues: issues, totalLines: total, bookmarks: bookmarks),
+            ),
           ),
         ),
       ),
-    );
+      if (_rulerLine != null)
+        Positioned(
+          right: 26,
+          top: 6,
+          child: IgnorePointer(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.inverseSurface.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '$_rulerLine',
+                style: TextStyle(fontSize: 11, color: theme.colorScheme.onInverseSurface),
+              ),
+            ),
+          ),
+        ),
+    ];
+  }
+
+  /// 长按分布条时的行号浮标：1.4 秒后自动消失（防止手指抬起事件丢了留个残影）。
+  void _previewRulerLine(int line) {
+    _rulerTimer?.cancel();
+    setState(() => _rulerLine = line + 1);
+    _rulerTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted) setState(() => _rulerLine = null);
+    });
+  }
+
+  void _clearRulerLine() {
+    _rulerTimer?.cancel();
+    if (_rulerLine != null) setState(() => _rulerLine = null);
   }
 
   /// 顶部面包屑（VS 的编辑器导航栏）：当前光标在哪条 `命名空间 › 类 › 方法` 里。
@@ -3846,7 +3901,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 ),
               ),
               // 右侧「问题分布条」：VS 滚动条旁那排小色块，一眼看出错误集中在文件哪一段。
-              if (doc != null && _programming) _issueRuler(doc),
+              if (doc != null) ..._issueRuler(doc),
             ]),
           ),
           if (doc != null && _prefs.magnifier) _magnifierBar(doc),
@@ -4251,7 +4306,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 清空本文档的所有书签。
   void _clearBookmarks() {
     final doc = _doc;
-    if (doc == null || doc.bookmarks.isEmpty) return;
+    if (doc == null) return;
+    if (doc.bookmarks.isEmpty) {
+      // 静默返回会让人以为是点了没反应。
+      _toast(localizations.editorNoBookmark);
+      return;
+    }
     setState(() => doc.bookmarks.clear());
     _refreshDecorations();
   }
@@ -4558,14 +4618,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _toolbarSep(),
             _iconBtn(Icons.undo, loc.editorUndo, canUndo ? _undo : null),
             _iconBtn(Icons.redo, loc.editorRedo, canRedo ? _redo : null),
-            AnimatedBuilder(
-              animation: _doc?.findController ?? _noFind,
-              builder: (_, __) => _iconBtn(
-                  Icons.search,
-                  loc.search,
-                  _toggleFind,
-                  tint: (_doc?.findController.isActive ?? false) ? color : null),
-            ),
+            // 搜索在「工具菜单」里可隐藏，这里跟着一起走：设置里关了却在工具栏
+            // 还杵着一个按钮，等于设置没生效。
+            if (!_prefs.hiddenMenu.contains('search'))
+              AnimatedBuilder(
+                animation: _doc?.findController ?? _noFind,
+                builder: (_, __) => _iconBtn(
+                    Icons.search,
+                    loc.search,
+                    _toggleFind,
+                    tint: (_doc?.findController.isActive ?? false) ? color : null),
+              ),
             const Spacer(),
             // 未保存小圆点（VS 标签上那个点），一眼知道这份文件还没写回磁盘。
             if (_dirty)
@@ -5043,6 +5106,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
   static const String _recentCmdKey = 'text_editor_recent_cmds_v1';
 
   /// 这些是「开关」，执行完不该把面板关掉——用户往往要连着拨几下面板里的开关。
+  /// 依赖语法解析的命令：纯文本下没有意义（点了只能得到「未找到符号」之类）。
+  static const Set<String> _programmingOnlyCommands = <String>{
+    'comment',
+    'expandSel',
+    'jumpBracket',
+    'nextOccurrence',
+    'symbols',
+    'gotoDef',
+    'peekDef',
+    'references',
+    'rename',
+    'foldAll',
+    'unfoldAll',
+    'minify',
+    'minifyAggressive',
+  };
+
   static const Set<String> _toggleCommands = <String>{
     'wrap',
     'readOnly',
@@ -5096,6 +5176,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 检查类（语法检查/问题/控制台/规则）只对编程语言有意义，
       // 非编程语言下不列出来，免得拨了开关毫无反应。
       if (item.group == 'inspect' && !_programming) continue;
+      // 同一类问题：这些命令依赖语法解析 / 可格式化 / 可预览，
+      // 条件不满足时列出来就是「点了没反应」。
+      if (!_programming && _programmingOnlyCommands.contains(item.id)) continue;
+      if ((item.id == 'format' || item.id == 'formatSel') && !_canFormat) continue;
+      if (item.id == 'preview' && !_canPreview) continue;
       commands.add((
         id: item.id,
         label: item.label(loc),
@@ -5103,7 +5188,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         keyword: item.aliases,
       ));
     }
-    if (commands.isEmpty || !mounted) return;
+    if (!mounted) return;
+    if (commands.isEmpty) {
+      // 全被隐藏时打开一个空面板只会让人懵。
+      _toast(loc.editorNoAvailableCommand);
+      return;
+    }
     final recent = await _loadRecentCommands();
     if (!mounted) return;
     await showModalBottomSheet<void>(
@@ -5115,6 +5205,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         recent: recent,
         toggles: _toggleStates,
         onRun: (id) {
+          // 一次性命令是「先关面板、下一帧再执行」，这中间用户可能已经把编辑器关了。
+          if (!mounted) return;
           unawaited(_rememberCommand(id));
           _menuAction(id);
         },
@@ -5502,6 +5594,8 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
     // 空查询时：最近用过提到最前，其余按工具栏那五个分类分段。
     // 47 项平铺成一长条时，找一个不常用的命令要滑很久。
     final rows = <Object>[];
+    // 已经在「最近使用」里出现过的命令不再在下面分组里重复列一遍。
+    final shown = <String>{};
     if (q.isEmpty) {
       if (widget.recent.isNotEmpty) {
         final byId = {for (final c in widget.commands) c.id: c};
@@ -5513,6 +5607,7 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
         if (recentCmds.isNotEmpty) {
           rows.add(_PaletteHeader(loc.editorRecentCommands));
           rows.addAll(recentCmds);
+          shown.addAll(recentCmds.map((c) => c.id));
         }
       }
       final groupTitles = <String, String>{
@@ -5523,7 +5618,7 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
         'inspect': loc.editorMenuInspect,
       };
       for (final g in const ['file', 'edit', 'code', 'view', 'inspect']) {
-        final items = matched.where((c) => c.group == g).toList(growable: false);
+        final items = matched.where((c) => c.group == g && !shown.contains(c.id)).toList(growable: false);
         if (items.isEmpty) continue;
         rows.add(_PaletteHeader(groupTitles[g]!));
         rows.addAll(items);

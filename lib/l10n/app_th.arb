@@ -2867,5 +2867,6 @@
   "editorAllCommands": "All commands",
   "editorLangRecent": "Recently used",
   "editorLangCommon": "Common",
-  "editorLangAll": "All languages"
+  "editorLangAll": "All languages",
+  "editorNoAvailableCommand": "ไม่มีคำสั่งที่ใช้ได้ (ซ่อนทั้งหมดในการตั้งค่าแล้ว)"
 }

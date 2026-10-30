@@ -2867,5 +2867,6 @@
   "editorAllCommands": "All commands",
   "editorLangRecent": "Recently used",
   "editorLangCommon": "Common",
-  "editorLangAll": "All languages"
+  "editorLangAll": "All languages",
+  "editorNoAvailableCommand": "No hay comandos disponibles (todos ocultos en los ajustes)"
 }

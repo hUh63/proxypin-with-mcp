@@ -4668,5 +4668,6 @@
   "editorAllCommands": "全部命令",
   "editorLangRecent": "最近用過",
   "editorLangCommon": "常用",
-  "editorLangAll": "全部語言"
+  "editorLangAll": "全部語言",
+  "editorNoAvailableCommand": "沒有可用命令（都已在編輯器設定裡隱藏）"
 }
