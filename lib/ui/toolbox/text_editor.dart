@@ -3600,8 +3600,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 复制。有选区就复制选区（VS 的 Edit › Copy 就是这个语义）——
+  /// 以前不分区选、永远复制整个文件，选中一段去点「复制」拿到全文，很难理解。
+  /// 没有选区时退回「复制全部」，手机上这个更常用。
   void _copy() {
-    final text = _controller?.text ?? '';
+    final controller = _controller;
+    if (controller == null) return;
+    final all = controller.text;
+    final selection = controller.selection;
+    final String text;
+    if (selection.isValid && !selection.isCollapsed) {
+      final len = all.length;
+      final start = selection.start.clamp(0, len);
+      final end = selection.end.clamp(0, len);
+      text = start <= end ? all.substring(start, end) : all.substring(end, start);
+    } else {
+      text = all;
+    }
     if (text.isEmpty) return;
     Clipboard.setData(ClipboardData(text: text));
     _toast(localizations.copied);
@@ -4759,7 +4774,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                           ? null
                           : Theme.of(context).disabledColor))),
           const PopupMenuDivider(),
-          _menuItem('copy', Icons.copy_all, loc.copy),
+          _menuItem('copy', Icons.content_copy, loc.copy),
           _menuItem('clear', Icons.backspace_outlined, loc.clear),
           _menuItem('replaceLine', Icons.sync_alt, loc.editorReplaceLine),
           const PopupMenuDivider(),
@@ -5196,6 +5211,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     final recent = await _loadRecentCommands();
     if (!mounted) return;
+    // 不能执行的命令置灰而不是「点了没反应」。
+    final disabled = <String>{};
+    final doc = _doc;
+    if (doc != null) {
+      if (!doc.undoController.canUndo) disabled.add('undo');
+      if (!doc.undoController.canRedo) disabled.add('redo');
+      if (doc.bookmarks.isEmpty) {
+        disabled.addAll(const ['bookmarks', 'clearBookmarks', 'nextBookmark']);
+      }
+    } else {
+      disabled.addAll(const ['bookmarks', 'clearBookmarks', 'nextBookmark']);
+    }
+    if (_navIndex <= 0) disabled.add('navBack');
+    if (_navIndex >= _navStack.length - 1) disabled.add('navForward');
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -5212,6 +5241,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         },
         // 开关类命令执行完面板留着，可以连着拨几个；其余执行完就关。
         isKeep: (id) => _toggleCommands.contains(id),
+        disabled: disabled,
       ),
     );
   }
@@ -5565,11 +5595,15 @@ class _CommandPaletteSheet extends StatefulWidget {
   /// 这条命令执行后要不要把面板留着（开关类命令 = true）。
   final bool Function(String id) isKeep;
 
+  /// 当前不能执行的命令（没有撤销历史、没有书签…），显示成灰色。
+  final Set<String> disabled;
+
   const _CommandPaletteSheet({
     required this.commands,
     required this.onRun,
     required this.isKeep,
     required this.toggles,
+    this.disabled = const <String>{},
     this.recent = const <String>[],
   });
 
@@ -5679,8 +5713,10 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                       // 开关类命令右侧显示当前状态，不然「换行/只读/平滑模式」
                       // 拨了之后看不出是开还是关，只能靠编辑区反推。
                       final toggle = widget.toggles[cmd.id];
+                      final usable = !widget.disabled.contains(cmd.id);
                       return ListTile(
                         dense: true,
+                        enabled: usable,
                         leading: Icon(menuIconOf(cmd.id), size: 17),
                         title: Text(cmd.label,
                             maxLines: 1,
