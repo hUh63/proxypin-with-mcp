@@ -494,48 +494,70 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
             problems > 0 ? '$problems' : null, badgeColor),
         if (widget.programming)
           tab(localizations.editorConsole, EditorConsoleTab.console, null, null),
-        const Spacer(),
-        if (_tab == EditorConsoleTab.problems) ...[
-          IconButton(
-            tooltip: localizations.editorLintRules,
-            onPressed: widget.onOpenRules,
-            icon: const Icon(Icons.tune, size: 16),
-            visualDensity: VisualDensity.compact,
-          ),
-          IconButton(
-            tooltip: localizations.editorLintReport,
-            onPressed: (widget.report?.diagnostics.isEmpty ?? true) ? null : _copyReport,
-            icon: const Icon(Icons.description_outlined, size: 16),
-            visualDensity: VisualDensity.compact,
-          ),
-          _filterButton(),
-          IconButton(
-            tooltip: localizations.editorLintPrev,
-            onPressed: _visible.isEmpty ? null : () => _goIssue(false),
-            icon: const Icon(Icons.keyboard_arrow_up, size: 17),
-            visualDensity: VisualDensity.compact,
-          ),
-          IconButton(
-            tooltip: localizations.editorLintNext,
-            onPressed: _visible.isEmpty ? null : () => _goIssue(true),
-            icon: const Icon(Icons.keyboard_arrow_down, size: 17),
-            visualDensity: VisualDensity.compact,
-          ),
-          if ((report?.fixableCount ?? 0) > 0)
-            IconButton(
-              tooltip: localizations.editorLintFixAll,
-              onPressed: widget.onFixAll,
-              icon: const Icon(Icons.auto_fix_high, size: 16),
-              visualDensity: VisualDensity.compact,
+        // 窄屏（360dp）上这条按钮区会超出宽度：问题页有 7 个图标按钮 + 2 个页签。
+        // 包一层「右对齐 + 横向可滑」，挤不下就滑过去，不会再出 Row overflow 的黄黑条。
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (_tab == EditorConsoleTab.problems) ...[
+                  _barIcon(
+                    tooltip: localizations.editorLintRules,
+                    onPressed: widget.onOpenRules,
+                    icon: const Icon(Icons.tune, size: 16),
+                  ),
+                  _barIcon(
+                    tooltip: localizations.editorLintReport,
+                    onPressed: (widget.report?.diagnostics.isEmpty ?? true) ? null : _copyReport,
+                    icon: const Icon(Icons.description_outlined, size: 16),
+                  ),
+                  _filterButton(),
+                  _barIcon(
+                    tooltip: localizations.editorLintPrev,
+                    onPressed: _visible.isEmpty ? null : () => _goIssue(false),
+                    icon: const Icon(Icons.keyboard_arrow_up, size: 17),
+                  ),
+                  _barIcon(
+                    tooltip: localizations.editorLintNext,
+                    onPressed: _visible.isEmpty ? null : () => _goIssue(true),
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 17),
+                  ),
+                  if ((report?.fixableCount ?? 0) > 0)
+                    _barIcon(
+                      tooltip: localizations.editorLintFixAll,
+                      onPressed: widget.onFixAll,
+                      icon: const Icon(Icons.auto_fix_high, size: 16),
+                    ),
+                ],
+                _barIcon(
+                  tooltip: localizations.close,
+                  onPressed: widget.onClose,
+                  icon: const Icon(Icons.close, size: 16),
+                ),
+              ]),
             ),
-        ],
-        IconButton(
-          onPressed: widget.onClose,
-          tooltip: localizations.close,
-          icon: const Icon(Icons.close, size: 16),
-          visualDensity: VisualDensity.compact,
+          ),
         ),
       ]),
+    );
+  }
+
+  /// 控制台页签行里的小图标按钮：34dp（默认 48 太占地方，这一行最多要放 7 个）。
+  Widget _barIcon({
+    required String tooltip,
+    required VoidCallback? onPressed,
+    required Widget icon,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      icon: icon,
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
     );
   }
 

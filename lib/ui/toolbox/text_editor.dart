@@ -4685,39 +4685,47 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ),
         SizedBox(
           height: 40,
-          child: Row(children: [
-            _iconBtn(Icons.note_add_outlined, loc.editorNewFile, _newFile),
-            _iconBtn(Icons.folder_open, loc.selectFile, _openFile),
-            _iconBtn(Icons.save_outlined, loc.save, _download),
-            _toolbarSep(),
-            _iconBtn(Icons.undo, loc.editorUndo, canUndo ? _undo : null),
-            _iconBtn(Icons.redo, loc.editorRedo, canRedo ? _redo : null),
-            // 搜索在「工具菜单」里可隐藏，这里跟着一起走：设置里关了却在工具栏
-            // 还杵着一个按钮，等于设置没生效。
-            if (!_prefs.hiddenMenu.contains('search'))
-              AnimatedBuilder(
-                animation: _doc?.findController ?? _noFind,
-                builder: (_, __) => _iconBtn(
-                    Icons.search,
-                    loc.search,
-                    _toggleFind,
-                    tint: (_doc?.findController.isActive ?? false) ? color : null),
-              ),
-            const Spacer(),
-            // 未保存小圆点（VS 标签上那个点），一眼知道这份文件还没写回磁盘。
-            if (_dirty)
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Icon(Icons.circle, size: 7, color: color),
-              ),
-            // 命令面板：找功能不用翻菜单（VS 的 Ctrl+Q / VS Code 的 Ctrl+Shift+P）。
-            _iconBtn(Icons.manage_search, loc.editorCommandPalette, _showCommandPalette),
-            // 光标那行有问题时才出现的灯泡（VS 的 Quick Fix），靠右放。
-            if (_fixAtCaretLine != null)
-              _iconBtn(Icons.lightbulb, loc.editorQuickFix,
-                  () => _fixDiagnostic(_fixAtCaretLine!), tint: Colors.amber),
-            _moreMenu(color),
-          ]),
+          child: LayoutBuilder(builder: (context, box) {
+            // 360dp 屏上第二行原本要塞 10 个 38dp 按钮（≈400dp），直接 Row overflow。
+            // 窄屏把「新建 / 打开」收进第一行的「文件」菜单（那两项本来就在里面），
+            // 「保存」留着 —— 手机上它最常用。
+            final narrow = box.maxWidth < 400;
+            return Row(children: [
+              if (!narrow) ...[
+                _iconBtn(Icons.note_add_outlined, loc.editorNewFile, _newFile),
+                _iconBtn(Icons.folder_open, loc.selectFile, _openFile),
+                _toolbarSep(),
+              ],
+              _iconBtn(Icons.save_outlined, loc.save, _download),
+              _iconBtn(Icons.undo, loc.editorUndo, canUndo ? _undo : null),
+              _iconBtn(Icons.redo, loc.editorRedo, canRedo ? _redo : null),
+              // 搜索在「工具菜单」里可隐藏，这里跟着一起走：设置里关了却在工具栏
+              // 还杵着一个按钮，等于设置没生效。
+              if (!_prefs.hiddenMenu.contains('search'))
+                AnimatedBuilder(
+                  animation: _doc?.findController ?? _noFind,
+                  builder: (_, __) => _iconBtn(
+                      Icons.search,
+                      loc.search,
+                      _toggleFind,
+                      tint: (_doc?.findController.isActive ?? false) ? color : null),
+                ),
+              const Spacer(),
+              // 未保存小圆点（VS 标签上那个点），一眼知道这份文件还没写回磁盘。
+              if (_dirty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Icon(Icons.circle, size: 7, color: color),
+                ),
+              // 命令面板：找功能不用翻菜单（VS 的 Ctrl+Q / VS Code 的 Ctrl+Shift+P）。
+              _iconBtn(Icons.manage_search, loc.editorCommandPalette, _showCommandPalette),
+              // 光标那行有问题时才出现的灯泡（VS 的 Quick Fix），靠右放。
+              if (_fixAtCaretLine != null)
+                _iconBtn(Icons.lightbulb, loc.editorQuickFix,
+                    () => _fixDiagnostic(_fixAtCaretLine!), tint: Colors.amber),
+              _moreMenu(color),
+            ]);
+          }),
         ),
       ]),
     );
