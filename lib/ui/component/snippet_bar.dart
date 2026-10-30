@@ -71,10 +71,14 @@ class _SnippetBarState extends State<SnippetBar> {
   /// 当前展开高度（0 = 收起）。拖动时实时变化，松手后动画吸附。
   double _extent = 0;
 
-  /// 展开态最大高度：默认 236dp，但横屏 / 分屏时最多占屏高的 45%。
-  /// 固定 236 在 360dp 高的横屏上会把编辑区挤到只剩几十 dp。
+  /// 展开态最大高度：默认 236dp，但横屏 / 分屏 / 键盘弹出时最多占「可用高度」的 45%。
+  ///
+  /// 固定 236 在 360dp 高的横屏上会把编辑区挤到只剩几十 dp；键盘弹出时同理
+  /// （`MediaQuery.size` 不含键盘，得自己扣 `viewInsets`）。
   double get _maxExtent {
-    final limit = MediaQuery.sizeOf(context).height * 0.45;
+    final media = MediaQuery.of(context);
+    final usable = media.size.height - media.viewInsets.bottom;
+    final limit = usable * 0.45;
     return limit < _prefMaxExtent ? limit.clamp(72.0, _prefMaxExtent) : _prefMaxExtent;
   }
   bool _dragging = false;
@@ -346,6 +350,18 @@ class _SnippetBarState extends State<SnippetBar> {
         child: Padding(padding: const EdgeInsets.all(5), child: Icon(icon, size: 18)),
       ),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 键盘弹出来了（viewInsets 变大）：展开态这时会把编辑区挤没，自动收起。
+    // 只在展开态处理，用户收起后不再动。
+    if (MediaQuery.of(context).viewInsets.bottom > 0 && _extent > 0 && !_dragging) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _extent > 0 && !_dragging) setState(() => _extent = 0);
+      });
+    }
   }
 
   @override

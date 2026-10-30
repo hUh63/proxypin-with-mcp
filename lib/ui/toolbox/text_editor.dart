@@ -4476,8 +4476,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (!_tabScroll.hasClients) return;
     final index = _docs.docs.indexWhere((d) => identical(d, _doc));
     if (index < 0) return;
-    // 标签最宽 150、最窄 70，按 110 估平均宽度就够（差几十像素不影响「看得见」）。
-    final target = (index * 110.0 - 80).clamp(0.0, _tabScroll.position.maxScrollExtent);
+    // 标签最宽 150、最窄 70，按 130 估（宁可多滚一点，也别让当前标签露不出来）。
+    final target = (index * 130.0 - 80).clamp(0.0, _tabScroll.position.maxScrollExtent);
     _tabScroll.animateTo(target,
         duration: const Duration(milliseconds: 180), curve: Curves.easeOut);
   }
