@@ -876,7 +876,14 @@ IconData menuIconOf(String id) {
     case 'navForward':
       return Icons.arrow_forward;
     case 'stats':
+    case 'report':
       return Icons.analytics_outlined;
+    case 'nextBookmark':
+    case 'prevBookmark':
+    case 'bookmarks':
+    case 'toggleBookmark':
+    case 'clearBookmarks':
+      return Icons.label_outline;
   }
   return Icons.chevron_right;
 }

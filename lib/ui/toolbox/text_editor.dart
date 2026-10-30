@@ -610,7 +610,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _scheduleLint() {
-    if (!_lintEnabled) return;
+    if (!_lintEnabled || !_programming) return;
     // 流畅模式刻意关掉了高亮/折叠，再挂一层全量扫描等于白费力气；
     // 这种情况下只在打开「问题」面板时按需检查。
     if (_smooth && !_consoleOpen) return;
@@ -709,7 +709,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   void _runLint() {
     final doc = _doc;
-    if (doc == null || !mounted || _inLint) return;
+    if (doc == null || !mounted || _inLint || !_programming) return;
     final text = doc.text;
     if (text.length > CodeLint.maxCheckLength) {
       doc.lint = null;
@@ -3923,7 +3923,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       dirtyCount: _docs.docs.where((d) => d.dirty).length,
       language: _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label,
       indent: _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}',
-      report: doc.lint,
+      // 纯文本没有「问题」这个概念，不显示 ❌0 ⚠0。
+      report: _programming && _lintEnabled ? doc.lint : null,
       onTapIssues: () => _openConsole(EditorConsoleTab.problems),
       onTapLanguage: _showLanguagePicker,
       onTapIndent: _openSettings,
