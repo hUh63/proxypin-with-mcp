@@ -1233,6 +1233,12 @@ class _LanguageManagerDialogState extends State<LanguageManagerDialog> with Sing
   }
 
   Future<void> _save() async {
+    // 一种都不勾 = 「语法菜单里什么都不要」，但存储层约定「空列表 = 全部启用」，
+    // 存下去会变成「全都能用」—— 和用户的操作正好相反。至少留一种。
+    if (_enabled.isEmpty) {
+      FlutterToastr.show(AppLocalizations.of(context)!.editorLangKeepOne, context, duration: 2);
+      return;
+    }
     // 全部启用时存空列表（等价于默认）。
     final list = _enabled.length == widget.allLangs.length ? <String>[] : _enabled.toList();
     await TextEditorPrefsStore.update(

@@ -2870,5 +2870,6 @@
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "Tidak ada perintah tersedia (semua disembunyikan di pengaturan)",
   "editorMinifyNoChange": "Sudah paling ringkas, tidak ada perubahan",
-  "editorFormatSelectFirst": "Pilih dulu teks yang akan diformat"
+  "editorFormatSelectFirst": "Pilih dulu teks yang akan diformat",
+  "editorLangKeepOne": "Simpan minimal satu sintaks"
 }

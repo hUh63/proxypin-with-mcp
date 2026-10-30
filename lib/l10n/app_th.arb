@@ -2870,5 +2870,6 @@
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "ไม่มีคำสั่งที่ใช้ได้ (ซ่อนทั้งหมดในการตั้งค่าแล้ว)",
   "editorMinifyNoChange": "กระชับอยู่แล้ว ไม่มีการเปลี่ยนแปลง",
-  "editorFormatSelectFirst": "เลือกข้อความที่ต้องการจัดรูปแบบก่อน"
+  "editorFormatSelectFirst": "เลือกข้อความที่ต้องการจัดรูปแบบก่อน",
+  "editorLangKeepOne": "ต้องเก็บไวยากรณ์ไว้อย่างน้อยหนึ่งรายการ"
 }

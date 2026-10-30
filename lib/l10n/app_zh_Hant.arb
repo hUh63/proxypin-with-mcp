@@ -4671,5 +4671,6 @@
   "editorLangAll": "全部語言",
   "editorNoAvailableCommand": "沒有可用命令（都已在編輯器設定裡隱藏）",
   "editorMinifyNoChange": "內容已經是最簡，沒有變化",
-  "editorFormatSelectFirst": "請先選取要格式化的內容"
+  "editorFormatSelectFirst": "請先選取要格式化的內容",
+  "editorLangKeepOne": "至少要保留一種語法"
 }

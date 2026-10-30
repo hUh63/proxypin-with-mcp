@@ -2871,5 +2871,6 @@
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "Nenhum comando disponível (todos ocultos nas configurações)",
   "editorMinifyNoChange": "Já está no mínimo, sem alterações",
-  "editorFormatSelectFirst": "Selecione primeiro o texto a formatar"
+  "editorFormatSelectFirst": "Selecione primeiro o texto a formatar",
+  "editorLangKeepOne": "Mantenha pelo menos uma sintaxe"
 }
