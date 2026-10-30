@@ -4946,5 +4946,6 @@
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "No available commands (all hidden in editor settings)",
-  "editorMinifyNoChange": "Already minimal, nothing changed"
+  "editorMinifyNoChange": "Already minimal, nothing changed",
+  "editorFormatSelectFirst": "Select some text to format first"
 }

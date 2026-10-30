@@ -2869,5 +2869,6 @@
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "ไม่มีคำสั่งที่ใช้ได้ (ซ่อนทั้งหมดในการตั้งค่าแล้ว)",
-  "editorMinifyNoChange": "กระชับอยู่แล้ว ไม่มีการเปลี่ยนแปลง"
+  "editorMinifyNoChange": "กระชับอยู่แล้ว ไม่มีการเปลี่ยนแปลง",
+  "editorFormatSelectFirst": "เลือกข้อความที่ต้องการจัดรูปแบบก่อน"
 }

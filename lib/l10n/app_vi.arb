@@ -2869,5 +2869,6 @@
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "Không có lệnh nào khả dụng (đã ẩn hết trong cài đặt)",
-  "editorMinifyNoChange": "Đã ở mức tối giản, không có thay đổi"
+  "editorMinifyNoChange": "Đã ở mức tối giản, không có thay đổi",
+  "editorFormatSelectFirst": "Hãy chọn nội dung cần định dạng trước"
 }

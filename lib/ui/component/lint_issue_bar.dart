@@ -24,9 +24,12 @@
 //
 // 点整行 → 跳到那个位置；点「修复」→ 直接应用该条的建议（不是全量修复）。
 // 行数和条数都有上限，超出的折叠成一行「还有 N 条」，点开进完整面板。
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/utils/text_editor_prefs.dart';
 
 /// 问题栏：红色报错 + 黄色警告，一行一条。
 class LintIssueBar extends StatefulWidget {
@@ -81,10 +84,10 @@ class LintIssueBar extends StatefulWidget {
 
 class _LintIssueBarState extends State<LintIssueBar> {
   /// 用户主动收起。
-  bool _collapsed = false;
+  bool _collapsed = TextEditorPrefsStore.notifier.value.lintCollapsed;
 
   /// 「按规则分组」：同一规则的多处问题合成一行，先看「哪类问题最多」。
-  bool _grouped = false;
+  bool _grouped = TextEditorPrefsStore.notifier.value.lintGrouped;
 
   /// 被关掉的严重程度。点表头的数量徽标切换，和 VS「问题」面板的筛选一个意思：
   /// 只关心报错时把警告/提示关掉，列表就干净了。
@@ -128,7 +131,12 @@ class _LintIssueBarState extends State<LintIssueBar> {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         // 表头：数量 + 收起/展开
         InkWell(
-          onTap: () => setState(() => _collapsed = !_collapsed),
+          onTap: () {
+            setState(() => _collapsed = !_collapsed);
+            // 记住：收起是有意的选择，切文档 / 重进编辑器后不该又自动展开。
+            unawaited(TextEditorPrefsStore.update(
+                TextEditorPrefsStore.notifier.value.copyWith(lintCollapsed: _collapsed)));
+          },
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 3, 6, 3),
             child: Row(children: [
@@ -151,7 +159,11 @@ class _LintIssueBarState extends State<LintIssueBar> {
                 ),
               ),
               IconButton(
-                onPressed: () => setState(() => _grouped = !_grouped),
+                onPressed: () {
+                  setState(() => _grouped = !_grouped);
+                  unawaited(TextEditorPrefsStore.update(
+                      TextEditorPrefsStore.notifier.value.copyWith(lintGrouped: _grouped)));
+                },
                 tooltip: localizations.editorGroupByRule,
                 icon: Icon(_grouped ? Icons.unfold_more : Icons.unfold_less, size: 15),
                 visualDensity: VisualDensity.compact,

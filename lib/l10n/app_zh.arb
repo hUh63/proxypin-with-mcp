@@ -4670,5 +4670,6 @@
   "editorLangCommon": "常用",
   "editorLangAll": "全部语言",
   "editorNoAvailableCommand": "没有可用命令（都已在编辑器设置里隐藏）",
-  "editorMinifyNoChange": "内容已经是最简，没有变化"
+  "editorMinifyNoChange": "内容已经是最简，没有变化",
+  "editorFormatSelectFirst": "请先选中要格式化的内容"
 }

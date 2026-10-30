@@ -53,6 +53,14 @@ class TextEditorPrefs {
   /// 底部控制台面板的高度（手机上调过之后要记住，否则每次重开又变回去）。
   final double consoleHeight;
 
+  /// 底部「问题栏」是否按规则分组。
+  ///
+  /// 这两个状态是「用户怎么用」而不是「哪份文件」的属性，切文档、重进编辑器都该保持。
+  final bool lintGrouped;
+
+  /// 底部「问题栏」是否整体收起。
+  final bool lintCollapsed;
+
   /// 是否允许折叠代码。
   final bool enableFolding;
 
@@ -137,6 +145,8 @@ class TextEditorPrefs {
     this.highlightOccurrences = true,
     this.formatOnSave = false,
     this.consoleHeight = 232,
+    this.lintGrouped = false,
+    this.lintCollapsed = false,
     this.enableFolding = true,
     this.useTabs = false,
     this.tabSize = 4,
@@ -169,6 +179,8 @@ class TextEditorPrefs {
     bool? highlightOccurrences,
     bool? formatOnSave,
     double? consoleHeight,
+    bool? lintGrouped,
+    bool? lintCollapsed,
     bool? enableFolding,
     bool? useTabs,
     int? tabSize,
@@ -200,6 +212,8 @@ class TextEditorPrefs {
       highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
       formatOnSave: formatOnSave ?? this.formatOnSave,
       consoleHeight: consoleHeight ?? this.consoleHeight,
+      lintGrouped: lintGrouped ?? this.lintGrouped,
+      lintCollapsed: lintCollapsed ?? this.lintCollapsed,
       enableFolding: enableFolding ?? this.enableFolding,
       useTabs: useTabs ?? this.useTabs,
       tabSize: tabSize ?? this.tabSize,
@@ -233,6 +247,8 @@ class TextEditorPrefs {
         'highlightOccurrences': highlightOccurrences,
         'formatOnSave': formatOnSave,
         'consoleHeight': consoleHeight,
+        'lintGrouped': lintGrouped,
+        'lintCollapsed': lintCollapsed,
         'enableFolding': enableFolding,
         'useTabs': useTabs,
         'tabSize': tabSize,
@@ -271,6 +287,8 @@ class TextEditorPrefs {
       highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
       formatOnSave: json['formatOnSave'] as bool? ?? false,
       consoleHeight: (json['consoleHeight'] as num?)?.toDouble() ?? 232,
+      lintGrouped: json['lintGrouped'] as bool? ?? false,
+      lintCollapsed: json['lintCollapsed'] as bool? ?? false,
       enableFolding: json['enableFolding'] as bool? ?? true,
       useTabs: json['useTabs'] as bool? ?? false,
       tabSize: (json['tabSize'] as num?)?.toInt() ?? 4,

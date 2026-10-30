@@ -2869,5 +2869,6 @@
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "No hay comandos disponibles (todos ocultos en los ajustes)",
-  "editorMinifyNoChange": "Ya está al mínimo, sin cambios"
+  "editorMinifyNoChange": "Ya está al mínimo, sin cambios",
+  "editorFormatSelectFirst": "Selecciona primero el texto a formatear"
 }

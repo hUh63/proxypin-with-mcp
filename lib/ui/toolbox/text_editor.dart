@@ -3732,7 +3732,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (selectionOnly) {
       final sel = controller.selection;
       if (!sel.isValid || sel.start == sel.end) {
-        if (!quiet) _toast(localizations.editorFormatUnsupported);
+        // 不能说「当前语言不支持格式化」—— 是没选东西，不是语言的问题。
+        if (!quiet) _toast(localizations.editorFormatSelectFirst);
         return;
       }
       final snippet = text.substring(sel.start, sel.end);
@@ -4288,9 +4289,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       target = found ?? list.last;
     }
-    controller.selection = TextSelection.collapsed(offset: target.clamp(0, text.length));
-    controller.scrollToLine(_lineOfOffset(text, target));
-    _toast('${list.indexOf(target) + 1} / ${list.length}');
+    final targetOffset = target.clamp(0, text.length);
+    final targetLine = _lineOfOffset(text, targetOffset);
+    controller.selection = TextSelection.collapsed(offset: targetOffset);
+    controller.scrollToLine(targetLine);
+    // 带上行号：只报「2 / 5」还得自己看跳到哪了。
+    _toast('${list.indexOf(target) + 1} / ${list.length} · L${targetLine + 1}');
   }
 
   /// 书签列表（VS 的「书签窗口」）：可以点、可以删、可以一键清空。
@@ -5204,6 +5208,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     'lint',
   };
 
+  Future<void> _clearRecentCommands() async {
+    try {
+      await SharedPreferencesAsync().remove(_recentCmdKey);
+    } catch (_) {
+      // 清不掉不影响使用，下次记录会覆盖
+    }
+  }
+
   Future<List<String>> _loadRecentCommands() async {
     try {
       return await SharedPreferencesAsync().getStringList(_recentCmdKey) ?? const <String>[];
@@ -5227,6 +5239,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 命令面板里那些「开关类」命令的当前状态，用来在右侧显示 ✓。
   Map<String, bool> get _toggleStates => {
+        // 查找面板是否开着：读一下就能看出「搜索」这条为什么点了没反应（它本来就在开着的状态）。
+        'search': _doc?.findController.isActive ?? false,
         'wrap': _wrap,
         'readOnly': _readOnly,
         'smooth': _smooth,
@@ -5310,7 +5324,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         commands: commands,
         recent: recent,
         // 传回调而不是快照：面板留着拨开关时，勾选框要跟着变。
-        isOn: (id) => _toggleStates[id] ?? false,
+        isOn: (id) => _toggleStates[id],
         isDisabled: (id) => _disabledCommands.contains(id),
         onRun: (id) {
           // 一次性命令是「先关面板、下一帧再执行」，这中间用户可能已经把编辑器关了。
@@ -5320,6 +5334,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         },
         // 开关类命令执行完面板留着，可以连着拨几个；其余执行完就关。
         isKeep: (id) => _toggleCommands.contains(id),
+        onClearRecent: _clearRecentCommands,
       ),
     );
   }
@@ -5664,8 +5679,10 @@ class _CommandPaletteSheet extends StatefulWidget {
   final List<({String id, String label, String group, String keyword})> commands;
   final List<String> recent;
 
-  /// 开关类命令当前是否开启（现取现用，拨完立刻能看到勾变化）。
-  final bool Function(String id) isOn;
+  /// 命令当前是否处于「开着」的状态；null = 这条不是开关类，不显示状态。
+  ///
+  /// 现取现用（回调而不是快照），拨完开关立刻能看到勾变化。
+  final bool? Function(String id) isOn;
 
   /// 执行一条命令。
   final void Function(String id) onRun;
@@ -5676,12 +5693,16 @@ class _CommandPaletteSheet extends StatefulWidget {
   /// 当前不能执行的命令（没有撤销历史、没有书签…），显示成灰色。
   final bool Function(String id) isDisabled;
 
+  /// 长按「最近使用」标题 → 清空这份记录。
+  final Future<void> Function()? onClearRecent;
+
   const _CommandPaletteSheet({
     required this.commands,
     required this.onRun,
     required this.isKeep,
     required this.isOn,
     required this.isDisabled,
+    this.onClearRecent,
     this.recent = const <String>[],
   });
 
@@ -5691,6 +5712,9 @@ class _CommandPaletteSheet extends StatefulWidget {
 
 class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
   String _query = '';
+
+  /// 刚清空过「最近使用」（不再显示这一段）。
+  bool _recentCleared = false;
 
   void _runCommand(String id) {
     if (widget.isDisabled(id)) return;
@@ -5723,7 +5747,7 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
     // 已经在「最近使用」里出现过的命令不再在下面分组里重复列一遍。
     final shown = <String>{};
     if (q.isEmpty) {
-      if (widget.recent.isNotEmpty) {
+      if (!_recentCleared && widget.recent.isNotEmpty) {
         final byId = {for (final c in widget.commands) c.id: c};
         final recentCmds = <({String id, String label, String group, String keyword})>[];
         for (final id in widget.recent) {
@@ -5731,7 +5755,8 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
           if (cmd != null) recentCmds.add(cmd);
         }
         if (recentCmds.isNotEmpty) {
-          rows.add(_PaletteHeader(loc.editorRecentCommands));
+          rows.add(_PaletteHeader(loc.editorRecentCommands,
+              onLongPress: widget.onClearRecent == null ? null : () => widget.onClearRecent!()));
           rows.addAll(recentCmds);
           shown.addAll(recentCmds.map((c) => c.id));
         }
@@ -5798,19 +5823,29 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                     itemBuilder: (_, i) {
                       final row = rows[i];
                       if (row is _PaletteHeader) {
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-                          child: Text(row.text,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600)),
+                        return GestureDetector(
+                          // 长按「最近使用」→ 清空记录（VS Code 没有，但手机上没有别的入口）。
+                          onLongPress: row.onLongPress == null
+                              ? null
+                              : () {
+                                  row.onLongPress!();
+                                  setState(() => _recentCleared = true);
+                                },
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+                            child: Text(row.text,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600)),
+                          ),
                         );
                       }
                       final cmd = row as ({String id, String label, String group, String keyword});
                       // 开关类命令右侧显示当前状态，不然「换行/只读/平滑模式」
                       // 拨了之后看不出是开还是关，只能靠编辑区反推。
-                      final toggle = widget.isKeep(cmd.id) ? widget.isOn(cmd.id) : null;
+                      final state = widget.isOn(cmd.id);
+                      final isToggle = widget.isKeep(cmd.id);
                       final usable = !widget.isDisabled(cmd.id);
                       return ListTile(
                         dense: true,
@@ -5820,13 +5855,24 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 13.5)),
-                        trailing: toggle == null
+                        trailing: state == null
                             ? null
-                            : Icon(
-                                toggle ? Icons.check_box_outlined : Icons.check_box_outline_blank,
-                                size: 17,
-                                color: toggle ? theme.colorScheme.primary : theme.disabledColor,
-                              ),
+                            : isToggle
+                                ? Icon(
+                                    state
+                                        ? Icons.check_box_outlined
+                                        : Icons.check_box_outline_blank,
+                                    size: 17,
+                                    color: state
+                                        ? theme.colorScheme.primary
+                                        : theme.disabledColor,
+                                  )
+                                // 不是开关类但当前「生效中」（如查找面板正开着）：
+                                // 用实心小圆点，不用勾选框 —— 它点了不是切换。
+                                : (state
+                                    ? Icon(Icons.circle,
+                                        size: 7, color: theme.colorScheme.primary)
+                                    : null),
                         onTap: () => _runCommand(cmd.id),
                       );
                     },
@@ -5841,7 +5887,11 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
 /// 命令面板里的小标题。
 class _PaletteHeader {
   final String text;
-  const _PaletteHeader(this.text);
+
+  /// 长按标题时的动作（目前只有「最近使用」用它清空记录）。
+  final VoidCallback? onLongPress;
+
+  const _PaletteHeader(this.text, {this.onLongPress});
 }
 
 /// 语言选择的底部弹层：搜索 + 常用语言置顶。

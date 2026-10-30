@@ -2869,5 +2869,6 @@
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
   "editorNoAvailableCommand": "Tidak ada perintah tersedia (semua disembunyikan di pengaturan)",
-  "editorMinifyNoChange": "Sudah paling ringkas, tidak ada perubahan"
+  "editorMinifyNoChange": "Sudah paling ringkas, tidak ada perubahan",
+  "editorFormatSelectFirst": "Pilih dulu teks yang akan diformat"
 }
