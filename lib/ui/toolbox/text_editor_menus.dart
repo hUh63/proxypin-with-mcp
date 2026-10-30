@@ -590,70 +590,81 @@ class _SyntaxPickerDialogState extends State<SyntaxPickerDialog> {
 }
 
 /// 一个可在「工具菜单」里显隐的菜单项。
+///
+/// [group] 决定它在命令面板里归到哪一段（file/edit/code/view/inspect），
+/// 与工具栏五个分类菜单保持同一套归属。
+/// [aliases] 是给命令面板用的搜索关键词（拼音首字母 + 英文同义词），
+/// 手机中文输入法下想打 "gs" 找「格式化」，只靠 label 匹配是找不到的。
 class EditorMenuItem {
   final String id;
   final String Function(AppLocalizations) label;
+  final String group;
+  final String aliases;
 
-  const EditorMenuItem(this.id, this.label);
+  const EditorMenuItem(this.id, this.label, {this.group = 'edit', this.aliases = ''});
 }
 
 /// 「文字编辑器」更多菜单里所有可配置的项（顺序即菜单顺序）。
 const List<EditorMenuItem> kEditorMenuItems = [
-  EditorMenuItem('file', _fileLabel),
-  EditorMenuItem('search', _searchLabel),
-  EditorMenuItem('syntax', _syntaxLabel),
-  EditorMenuItem('gotoLine', _gotoLabel),
-  EditorMenuItem('navBack', _navBackLabel),
-  EditorMenuItem('navForward', _navForwardLabel),
-  EditorMenuItem('wrap', _wrapLabel),
-  EditorMenuItem('readOnly', _readOnlyLabel),
-  EditorMenuItem('smooth', _smoothLabel),
-  EditorMenuItem('smart', _smartLabel),
-  EditorMenuItem('smoothKeepIme', _keepImeLabel),
-  EditorMenuItem('ascii', _asciiLabel),
-  EditorMenuItem('unicode', _unicodeLabel),
-  EditorMenuItem('report', _reportLabel),
-  EditorMenuItem('replaceLine', _replaceLineLabel),
-  EditorMenuItem('minify', _minifyLabel),
-  EditorMenuItem('minifyAggressive', _minifyAggressiveLabel),
-  EditorMenuItem('newline', _newlineLabel),
-  EditorMenuItem('retainMode', _retainLabel),
-  EditorMenuItem('settings', _settingsLabel),
-  EditorMenuItem('close', _closeLabel),
-  // 工具栏分类菜单（文件/编辑/代码/视图/检查）里出现的项，也要能在这里统一隐藏。
-  EditorMenuItem('newFile', _newFileLabel),
-  EditorMenuItem('open', _openLabel),
-  EditorMenuItem('save', _saveLabel),
-  EditorMenuItem('docs', _docsLabel),
-  EditorMenuItem('undo', _undoLabel),
-  EditorMenuItem('redo', _redoLabel),
-  EditorMenuItem('copy', _copyLabel),
-  EditorMenuItem('clear', _clearLabel),
-  EditorMenuItem('comment', _commentLabel),
-  EditorMenuItem('format', _formatLabel),
-  EditorMenuItem('formatSel', _formatSelLabel),
-  EditorMenuItem('preview', _previewLabel),
-  EditorMenuItem('symbols', _symbolsLabel),
-  EditorMenuItem('gotoDef', _gotoDefLabel),
-  EditorMenuItem('references', _referencesLabel),
-  EditorMenuItem('rename', _renameLabel),
-  EditorMenuItem('foldAll', _foldAllLabel),
-  EditorMenuItem('unfoldAll', _unfoldAllLabel),
-  EditorMenuItem('nextOccurrence', _nextOccurrenceLabel),
-  EditorMenuItem('lineOps', _lineOpsLabel),
-  EditorMenuItem('caseOps', _caseOpsLabel),
-  EditorMenuItem('lint', _lintLabel),
-  EditorMenuItem('lintIssues', _lintIssuesLabel),
-  EditorMenuItem('console', _consoleLabel),
-  EditorMenuItem('lintRules', _lintRulesLabel),
-  EditorMenuItem('peekDef', _peekDefLabel),
-  EditorMenuItem('expandSel', _expandSelLabel),
-  EditorMenuItem('jumpBracket', _jumpBracketLabel),
-  EditorMenuItem('toggleBookmark', _toggleBookmarkLabel),
-  EditorMenuItem('nextBookmark', _nextBookmarkLabel),
-  EditorMenuItem('recentEdits', _recentEditsLabel),
-  EditorMenuItem('bookmarks', _bookmarksLabel),
-  EditorMenuItem('clearBookmarks', _clearBookmarksLabel),
+  // 文件（6 项）
+  EditorMenuItem('newFile', _newFileLabel, group: 'file', aliases: 'xj xinjian new file'),
+  EditorMenuItem('open', _openLabel, group: 'file', aliases: 'dk dakai open load'),
+  EditorMenuItem('save', _saveLabel, group: 'file', aliases: 'bc baocun save write'),
+  EditorMenuItem('file', _fileLabel, group: 'file'),
+  EditorMenuItem('docs', _docsLabel, group: 'file', aliases: 'wd 文档 documents tabs'),
+  EditorMenuItem('close', _closeLabel, group: 'file', aliases: 'gb guanbi close'),
+  // 编辑（19 项）
+  EditorMenuItem('search', _searchLabel, group: 'edit', aliases: 'ss sousuo chazhao find search'),
+  EditorMenuItem('undo', _undoLabel, group: 'edit', aliases: 'cx chexiao undo'),
+  EditorMenuItem('redo', _redoLabel, group: 'edit', aliases: 'cz chongzuo redo'),
+  EditorMenuItem('navBack', _navBackLabel, group: 'edit', aliases: 'ht 后退 back'),
+  EditorMenuItem('navForward', _navForwardLabel, group: 'edit', aliases: 'qj 前进 forward'),
+  EditorMenuItem('recentEdits', _recentEditsLabel, group: 'edit'),
+  EditorMenuItem('copy', _copyLabel, group: 'edit', aliases: 'fz fuzhi copy'),
+  EditorMenuItem('clear', _clearLabel, group: 'edit', aliases: 'ql qingkong clear'),
+  EditorMenuItem('replaceLine', _replaceLineLabel, group: 'edit', aliases: 'th 替换行 replace line'),
+  EditorMenuItem('comment', _commentLabel, group: 'edit', aliases: 'zs zhushi comment'),
+  EditorMenuItem('expandSel', _expandSelLabel, group: 'edit', aliases: 'kx 扩大选区 expand selection'),
+  EditorMenuItem('jumpBracket', _jumpBracketLabel, group: 'edit', aliases: 'tkw 括号 bracket match'),
+  EditorMenuItem('toggleBookmark', _toggleBookmarkLabel, group: 'edit', aliases: 'sj 书签 bookmark'),
+  EditorMenuItem('nextBookmark', _nextBookmarkLabel, group: 'edit', aliases: 'xysj 下一个书签 bookmark'),
+  EditorMenuItem('bookmarks', _bookmarksLabel, group: 'edit', aliases: 'sjlb 书签列表 bookmark'),
+  EditorMenuItem('clearBookmarks', _clearBookmarksLabel, group: 'edit', aliases: 'qcsj 清除书签 bookmark'),
+  EditorMenuItem('nextOccurrence', _nextOccurrenceLabel, group: 'edit', aliases: 'xy 下一个 occurrence dul'),
+  EditorMenuItem('lineOps', _lineOpsLabel, group: 'edit', aliases: 'hhang 行操作 line'),
+  EditorMenuItem('caseOps', _caseOpsLabel, group: 'edit', aliases: 'dx 大小写 case upper lower'),
+  // 代码（13 项）
+  EditorMenuItem('format', _formatLabel, group: 'code', aliases: 'gs geshihua format beautify indent'),
+  EditorMenuItem('formatSel', _formatSelLabel, group: 'code', aliases: 'gs 选中格式化 format selection'),
+  EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
+  EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
+  EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
+  EditorMenuItem('gotoDef', _gotoDefLabel, group: 'code', aliases: 'dy 转到定义 definition'),
+  EditorMenuItem('peekDef', _peekDefLabel, group: 'code', aliases: 'sl 速览 peek definition'),
+  EditorMenuItem('references', _referencesLabel, group: 'code', aliases: 'yy 引用 references usages'),
+  EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
+  EditorMenuItem('foldAll', _foldAllLabel, group: 'code', aliases: 'zd 折叠 fold collapse'),
+  EditorMenuItem('unfoldAll', _unfoldAllLabel, group: 'code', aliases: 'zk 展开 unfold expand'),
+  EditorMenuItem('minify', _minifyLabel, group: 'code', aliases: 'ys 压缩 minify'),
+  EditorMenuItem('minifyAggressive', _minifyAggressiveLabel, group: 'code', aliases: 'ys 深度压缩 minify'),
+  // 视图（12 项）
+  EditorMenuItem('syntax', _syntaxLabel, group: 'view', aliases: 'yf 语法 syntax language'),
+  EditorMenuItem('settings', _settingsLabel, group: 'view', aliases: 'sz 设置 settings'),
+  EditorMenuItem('wrap', _wrapLabel, group: 'view', aliases: 'hh 自动换行 wrap'),
+  EditorMenuItem('readOnly', _readOnlyLabel, group: 'view', aliases: 'zx 只读 readonly'),
+  EditorMenuItem('smooth', _smoothLabel, group: 'view', aliases: 'sm 平滑 smooth'),
+  EditorMenuItem('smart', _smartLabel, group: 'view', aliases: 'zn 智能补全 complete'),
+  EditorMenuItem('smoothKeepIme', _keepImeLabel, group: 'view', aliases: 'sr 输入法 ime'),
+  EditorMenuItem('ascii', _asciiLabel, group: 'view', aliases: 'kg 控制字符 ascii'),
+  EditorMenuItem('unicode', _unicodeLabel, group: 'view', aliases: 'ts 特殊字符 unicode'),
+  EditorMenuItem('report', _reportLabel, group: 'view', aliases: 'tj 统计 report special'),
+  EditorMenuItem('newline', _newlineLabel, group: 'view', aliases: 'fh 换行符 newline'),
+  EditorMenuItem('retainMode', _retainLabel, group: 'view', aliases: 'bc 保留 retain'),
+  // 检查（4 项）
+  EditorMenuItem('lint', _lintLabel, group: 'inspect', aliases: 'jc 检查 lint'),
+  EditorMenuItem('lintIssues', _lintIssuesLabel, group: 'inspect', aliases: 'wt 问题 issues problems'),
+  EditorMenuItem('console', _consoleLabel, group: 'inspect', aliases: 'kzt 控制台 console'),
+  EditorMenuItem('lintRules', _lintRulesLabel, group: 'inspect', aliases: 'gz 检查规则 rules'),
 ];
 
 String _fileLabel(AppLocalizations l) => l.editorMoreFile;

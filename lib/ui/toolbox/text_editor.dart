@@ -3033,17 +3033,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Widget _issueRuler(EditorDocument doc) {
     final issues = _visibleIssues();
     if (issues.isEmpty && doc.bookmarks.isEmpty) return const SizedBox.shrink();
+    final total = _totalLinesOf(doc.text);
+    final bookmarks = doc.bookmarks.map((o) => _lineOfOffset(doc.text, o)).toList(growable: false);
+    // 触摸区 14dp、实际只画右侧 3px：3dp 宽点不准，14dp 又会让开滚动条。
     return Positioned(
-      right: 12,
+      right: 8,
       top: 0,
       bottom: 0,
-      width: 3,
-      child: IgnorePointer(
-        child: CustomPaint(
-          painter: _RulerPainter(
-            issues: issues,
-            totalLines: _totalLinesOf(doc.text),
-            bookmarks: doc.bookmarks.map((o) => _lineOfOffset(doc.text, o)).toList(growable: false),
+      width: 14,
+      child: LayoutBuilder(
+        builder: (context, box) => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          // VS 的 overview ruler 点一下就跳过去，这里也补上。
+          onTapDown: (d) {
+            if (total <= 0 || box.maxHeight <= 0) return;
+            final line = (d.localPosition.dy / box.maxHeight * total).floor().clamp(0, total - 1);
+            doc.controller.selection = TextSelection.collapsed(offset: _offsetOfLine(doc.text, line));
+            doc.controller.scrollToLine(line);
+          },
+          child: CustomPaint(
+            painter: _RulerPainter(issues: issues, totalLines: total, bookmarks: bookmarks),
           ),
         ),
       ),
@@ -5065,13 +5074,33 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 命令面板里那些「开关类」命令的当前状态，用来在右侧显示 ✓。
+  Map<String, bool> get _toggleStates => {
+        'wrap': _wrap,
+        'readOnly': _readOnly,
+        'smooth': _smooth,
+        'smart': SmartCompletion.enabled.value,
+        'smoothKeepIme': _smoothKeepIme,
+        'ascii': _showAscii,
+        'unicode': _showUnicode,
+        'lint': _lintEnabled,
+      };
+
   Future<void> _showCommandPalette() async {
     final loc = localizations;
     final hidden = _prefs.hiddenMenu.toSet();
-    final commands = <({String id, String label})>[];
+    final commands = <({String id, String label, String group, String keyword})>[];
     for (final item in kEditorMenuItems) {
       if (hidden.contains(item.id)) continue;
-      commands.add((id: item.id, label: item.label(loc)));
+      // 检查类（语法检查/问题/控制台/规则）只对编程语言有意义，
+      // 非编程语言下不列出来，免得拨了开关毫无反应。
+      if (item.group == 'inspect' && !_programming) continue;
+      commands.add((
+        id: item.id,
+        label: item.label(loc),
+        group: item.group,
+        keyword: item.aliases,
+      ));
     }
     if (commands.isEmpty || !mounted) return;
     final recent = await _loadRecentCommands();
@@ -5083,12 +5112,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
       builder: (ctx) => _CommandPaletteSheet(
         commands: commands,
         recent: recent,
+        toggles: _toggleStates,
         onRun: (id) {
           unawaited(_rememberCommand(id));
           _menuAction(id);
-          // true = 面板留着（开关类命令，可以连着拨几个）。
-          return _toggleCommands.contains(id);
         },
+        // 开关类命令执行完面板留着，可以连着拨几个；其余执行完就关。
+        isKeep: (id) => _toggleCommands.contains(id),
       ),
     );
   }
@@ -5430,15 +5460,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
 /// 列表分两段：「最近用过」在前（8 条，跨会话保留），下面才是全部。
 /// 47 项平铺时，常用的那三五个每次都得重新读一遍列表。
 class _CommandPaletteSheet extends StatefulWidget {
-  final List<({String id, String label})> commands;
+  final List<({String id, String label, String group, String keyword})> commands;
   final List<String> recent;
 
-  /// 执行一条命令；返回 true 表示「执行完了但面板留着」（开关类）。
-  final bool Function(String id) onRun;
+  /// 开关类命令的当前状态（id → 是否开启），用来显示右侧的 ✓。
+  final Map<String, bool> toggles;
+
+  /// 执行一条命令。
+  final void Function(String id) onRun;
+
+  /// 这条命令执行后要不要把面板留着（开关类命令 = true）。
+  final bool Function(String id) isKeep;
 
   const _CommandPaletteSheet({
     required this.commands,
     required this.onRun,
+    required this.isKeep,
+    required this.toggles,
     this.recent = const <String>[],
   });
 
@@ -5456,24 +5494,42 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
     final q = _query.trim().toLowerCase();
     final matched = q.isEmpty
         ? widget.commands
-        : widget.commands.where((c) => c.label.toLowerCase().contains(q)).toList(growable: false);
+        : widget.commands
+            .where((c) => c.label.toLowerCase().contains(q) || c.keyword.toLowerCase().contains(q))
+            .toList(growable: false);
 
-    // 空查询时把「最近用过」提到最前（按最近顺序）。
+    // 空查询时：最近用过提到最前，其余按工具栏那五个分类分段。
+    // 47 项平铺成一长条时，找一个不常用的命令要滑很久。
     final rows = <Object>[];
-    if (q.isEmpty && widget.recent.isNotEmpty) {
-      final byId = {for (final c in widget.commands) c.id: c};
-      final recentCmds = <({String id, String label})>[];
-      for (final id in widget.recent) {
-        final cmd = byId[id];
-        if (cmd != null) recentCmds.add(cmd);
+    if (q.isEmpty) {
+      if (widget.recent.isNotEmpty) {
+        final byId = {for (final c in widget.commands) c.id: c};
+        final recentCmds = <({String id, String label, String group, String keyword})>[];
+        for (final id in widget.recent) {
+          final cmd = byId[id];
+          if (cmd != null) recentCmds.add(cmd);
+        }
+        if (recentCmds.isNotEmpty) {
+          rows.add(_PaletteHeader(loc.editorRecentCommands));
+          rows.addAll(recentCmds);
+        }
       }
-      if (recentCmds.isNotEmpty) {
-        rows.add(_PaletteHeader(loc.editorRecentCommands));
-        rows.addAll(recentCmds);
-        rows.add(_PaletteHeader(loc.editorAllCommands));
+      final groupTitles = <String, String>{
+        'file': loc.editorMenuFile,
+        'edit': loc.editorMenuEdit,
+        'code': loc.editorMenuCode,
+        'view': loc.editorMenuView,
+        'inspect': loc.editorMenuInspect,
+      };
+      for (final g in const ['file', 'edit', 'code', 'view', 'inspect']) {
+        final items = matched.where((c) => c.group == g).toList(growable: false);
+        if (items.isEmpty) continue;
+        rows.add(_PaletteHeader(groupTitles[g]!));
+        rows.addAll(items);
       }
+    } else {
+      rows.addAll(matched);
     }
-    rows.addAll(matched);
 
     // 横屏 + 键盘时 0.6 屏高可能只剩一百多 dp，再让一次位。
     final media = MediaQuery.of(context);
@@ -5523,7 +5579,10 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                                   fontWeight: FontWeight.w600)),
                         );
                       }
-                      final cmd = row as ({String id, String label});
+                      final cmd = row as ({String id, String label, String group, String keyword});
+                      // 开关类命令右侧显示当前状态，不然「换行/只读/平滑模式」
+                      // 拨了之后看不出是开还是关，只能靠编辑区反推。
+                      final toggle = widget.toggles[cmd.id];
                       return ListTile(
                         dense: true,
                         leading: Icon(menuIconOf(cmd.id), size: 17),
@@ -5531,13 +5590,25 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 13.5)),
+                        trailing: toggle == null
+                            ? null
+                            : Icon(
+                                toggle ? Icons.check_box_outlined : Icons.check_box_outline_blank,
+                                size: 17,
+                                color: toggle ? theme.colorScheme.primary : theme.disabledColor,
+                              ),
                         onTap: () {
-                          final keep = widget.onRun(cmd.id);
-                          if (!keep) {
-                            Navigator.pop(ctx);
-                          } else {
+                          if (widget.isKeep(cmd.id)) {
+                            widget.onRun(cmd.id);
                             setState(() {});
+                            return;
                           }
+                          // 先关面板、下一帧再执行：这里有些命令（文件▸/语法▸/
+                          // 行操作▸/大小写▸ 以及各种 sheet）自己会 push 一个 route，
+                          // 面板还在栈上时执行，它们收尾时的 pop 会把刚弹出的子菜单
+                          // 一起弹掉 —— 表现为「点了闪一下就没了」。
+                          Navigator.pop(ctx);
+                          WidgetsBinding.instance.addPostFrameCallback((_) => widget.onRun(cmd.id));
                         },
                       );
                     },
@@ -5715,13 +5786,16 @@ class _RulerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.height <= 0 || totalLines <= 0) return;
+    // 控件比色带宽（触摸区 14dp，色带 3dp），统一右对齐，色带贴着滚动条。
+    const w = 3.0;
+    final left = size.width - w;
     final paint = Paint();
-    // 先画书签（宽一点、偏左），错误再盖上去：同一行既有错又有书签时，错的优先。
+    // 先画书签（窄一点、偏左），错误再盖上去：同一行既有错又有书签时，错的优先。
     for (final line in bookmarks) {
       final ratio = line / totalLines;
       final y = (ratio * size.height).clamp(0.0, size.height - 3);
       paint.color = Colors.amber;
-      canvas.drawRect(Rect.fromLTWH(0, y, size.width * 0.6, 3), paint);
+      canvas.drawRect(Rect.fromLTWH(left, y, w * 0.6, 3), paint);
     }
     for (final d in issues) {
       final ratio = (d.line - 1) / totalLines;
@@ -5731,7 +5805,7 @@ class _RulerPainter extends CustomPainter {
           : d.severity == LintSeverity.warning
               ? Colors.orange
               : Colors.blueGrey;
-      canvas.drawRect(Rect.fromLTWH(0, y, size.width, 2), paint);
+      canvas.drawRect(Rect.fromLTWH(left, y, w, 2), paint);
     }
   }
 
