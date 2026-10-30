@@ -373,6 +373,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   bool _onKeyEvent(KeyEvent event) {
+    // Ctrl/Cmd+Shift+P：命令面板（VS Code 的同款快捷键，外接键盘时比找按钮快）。
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyP &&
+        HardwareKeyboard.instance.isShiftPressed &&
+        (HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed)) {
+      unawaited(_showCommandPalette());
+      return true;
+    }
     // F8 / Shift+F8：跳到下一处 / 上一处问题（桌面全平台）。
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f8) {
       if ((_lint?.diagnostics.isNotEmpty ?? false)) {
@@ -1957,6 +1965,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   Future<void> _showLanguagePicker() async {
+    if (_langPickerOpen) return;
+    _langPickerOpen = true;
+    try {
+      await _showLanguagePickerBody();
+    } finally {
+      _langPickerOpen = false;
+    }
+  }
+
+  Future<void> _showLanguagePickerBody() async {
     final recent = await _loadRecentLangs();
     if (!mounted) return;
     final chosen = await showModalBottomSheet<_LangOption>(
@@ -5219,7 +5237,42 @@ class _TextEditorPageState extends State<TextEditorPage> {
         'lint': _lintEnabled,
       };
 
+  /// 当前不能执行的命令（置灰用）。做成 getter 而不是面板打开时算一次：
+  /// 面板留着拨开关时，撤销/重做的可用性会变，算一次就永远是旧的。
+  Set<String> get _disabledCommands {
+    final out = <String>{};
+    final doc = _doc;
+    if (doc != null) {
+      if (!doc.undoController.canUndo) out.add('undo');
+      if (!doc.undoController.canRedo) out.add('redo');
+      if (doc.bookmarks.isEmpty) {
+        out.addAll(const ['bookmarks', 'clearBookmarks', 'nextBookmark']);
+      }
+    } else {
+      out.addAll(const ['bookmarks', 'clearBookmarks', 'nextBookmark']);
+    }
+    if (_navIndex <= 0) out.add('navBack');
+    if (_navIndex >= _navStack.length - 1) out.add('navForward');
+    return out;
+  }
+
+  /// 面板是否已经打开（连点工具栏 ⌕ / 快捷键连按会叠出好几层一样的面板）。
+  bool _paletteOpen = false;
+
+  /// 语言选择器同样防连点。
+  bool _langPickerOpen = false;
+
   Future<void> _showCommandPalette() async {
+    if (_paletteOpen) return;
+    _paletteOpen = true;
+    try {
+      await _showCommandPaletteBody();
+    } finally {
+      _paletteOpen = false;
+    }
+  }
+
+  Future<void> _showCommandPaletteBody() async {
     final loc = localizations;
     final hidden = _prefs.hiddenMenu.toSet();
     final commands = <({String id, String label, String group, String keyword})>[];
@@ -5248,20 +5301,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     final recent = await _loadRecentCommands();
     if (!mounted) return;
-    // 不能执行的命令置灰而不是「点了没反应」。
-    final disabled = <String>{};
-    final doc = _doc;
-    if (doc != null) {
-      if (!doc.undoController.canUndo) disabled.add('undo');
-      if (!doc.undoController.canRedo) disabled.add('redo');
-      if (doc.bookmarks.isEmpty) {
-        disabled.addAll(const ['bookmarks', 'clearBookmarks', 'nextBookmark']);
-      }
-    } else {
-      disabled.addAll(const ['bookmarks', 'clearBookmarks', 'nextBookmark']);
-    }
-    if (_navIndex <= 0) disabled.add('navBack');
-    if (_navIndex >= _navStack.length - 1) disabled.add('navForward');
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -5269,7 +5309,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       builder: (ctx) => _CommandPaletteSheet(
         commands: commands,
         recent: recent,
-        toggles: _toggleStates,
+        // 传回调而不是快照：面板留着拨开关时，勾选框要跟着变。
+        isOn: (id) => _toggleStates[id] ?? false,
+        isDisabled: (id) => _disabledCommands.contains(id),
         onRun: (id) {
           // 一次性命令是「先关面板、下一帧再执行」，这中间用户可能已经把编辑器关了。
           if (!mounted) return;
@@ -5278,7 +5320,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
         },
         // 开关类命令执行完面板留着，可以连着拨几个；其余执行完就关。
         isKeep: (id) => _toggleCommands.contains(id),
-        disabled: disabled,
       ),
     );
   }
@@ -5623,8 +5664,8 @@ class _CommandPaletteSheet extends StatefulWidget {
   final List<({String id, String label, String group, String keyword})> commands;
   final List<String> recent;
 
-  /// 开关类命令的当前状态（id → 是否开启），用来显示右侧的 ✓。
-  final Map<String, bool> toggles;
+  /// 开关类命令当前是否开启（现取现用，拨完立刻能看到勾变化）。
+  final bool Function(String id) isOn;
 
   /// 执行一条命令。
   final void Function(String id) onRun;
@@ -5633,14 +5674,14 @@ class _CommandPaletteSheet extends StatefulWidget {
   final bool Function(String id) isKeep;
 
   /// 当前不能执行的命令（没有撤销历史、没有书签…），显示成灰色。
-  final Set<String> disabled;
+  final bool Function(String id) isDisabled;
 
   const _CommandPaletteSheet({
     required this.commands,
     required this.onRun,
     required this.isKeep,
-    required this.toggles,
-    this.disabled = const <String>{},
+    required this.isOn,
+    required this.isDisabled,
     this.recent = const <String>[],
   });
 
@@ -5650,6 +5691,20 @@ class _CommandPaletteSheet extends StatefulWidget {
 
 class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
   String _query = '';
+
+  void _runCommand(String id) {
+    if (widget.isDisabled(id)) return;
+    if (widget.isKeep(id)) {
+      widget.onRun(id);
+      setState(() {});
+      return;
+    }
+    // 先关面板、下一帧再执行：这里有些命令（文件▸/语法▸/行操作▸/大小写▸
+    // 以及各种 sheet）自己会 push 一个 route，面板还在栈上时执行，
+    // 它们收尾时的 pop 会把刚弹出的子菜单一起弹掉 —— 表现为「点了闪一下就没了」。
+    Navigator.pop(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.onRun(id));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -5714,6 +5769,12 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
             child: TextField(
               autofocus: true,
               onChanged: (v) => setState(() => _query = v),
+              // 回车执行第一条匹配（VS Code 的行为）。手机上输入法右下角就是回车，
+              // 打字 → 回车比「打字 → 手指移到列表 → 点」快得多。
+              onSubmitted: (_) {
+                if (matched.isEmpty) return;
+                _runCommand(matched.first.id);
+              },
               style: const TextStyle(fontSize: 13.5),
               decoration: InputDecoration(
                 isDense: true,
@@ -5734,7 +5795,7 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                   )
                 : ListView.builder(
                     itemCount: rows.length,
-                    itemBuilder: (ctx, i) {
+                    itemBuilder: (_, i) {
                       final row = rows[i];
                       if (row is _PaletteHeader) {
                         return Padding(
@@ -5749,8 +5810,8 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                       final cmd = row as ({String id, String label, String group, String keyword});
                       // 开关类命令右侧显示当前状态，不然「换行/只读/平滑模式」
                       // 拨了之后看不出是开还是关，只能靠编辑区反推。
-                      final toggle = widget.toggles[cmd.id];
-                      final usable = !widget.disabled.contains(cmd.id);
+                      final toggle = widget.isKeep(cmd.id) ? widget.isOn(cmd.id) : null;
+                      final usable = !widget.isDisabled(cmd.id);
                       return ListTile(
                         dense: true,
                         enabled: usable,
@@ -5766,19 +5827,7 @@ class _CommandPaletteSheetState extends State<_CommandPaletteSheet> {
                                 size: 17,
                                 color: toggle ? theme.colorScheme.primary : theme.disabledColor,
                               ),
-                        onTap: () {
-                          if (widget.isKeep(cmd.id)) {
-                            widget.onRun(cmd.id);
-                            setState(() {});
-                            return;
-                          }
-                          // 先关面板、下一帧再执行：这里有些命令（文件▸/语法▸/
-                          // 行操作▸/大小写▸ 以及各种 sheet）自己会 push 一个 route，
-                          // 面板还在栈上时执行，它们收尾时的 pop 会把刚弹出的子菜单
-                          // 一起弹掉 —— 表现为「点了闪一下就没了」。
-                          Navigator.pop(ctx);
-                          WidgetsBinding.instance.addPostFrameCallback((_) => widget.onRun(cmd.id));
-                        },
+                        onTap: () => _runCommand(cmd.id),
                       );
                     },
                   ),
