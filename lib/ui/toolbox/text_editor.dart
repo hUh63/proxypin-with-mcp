@@ -6141,68 +6141,87 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
         : 0;
     final color = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.85);
     final style = TextStyle(fontSize: 10.5, color: color);
-    return Container(
-      height: 21,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.06),
-        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
-      ),
-      child: Row(children: [
-        Text('L${line + 1}:$column', style: style),
-        if (selected > 0) ...[
-          const SizedBox(width: 6),
-          Text('($selected)', style: TextStyle(fontSize: 10.5, color: theme.colorScheme.primary)),
-        ],
-        const Spacer(),
-        if (widget.report != null) ...[
-          InkWell(
-            onTap: widget.onTapIssues,
-            borderRadius: BorderRadius.circular(4),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.cancel,
-                    size: 10.5,
-                    color: (widget.report!.errorCount) > 0 ? Colors.red : color),
-                const SizedBox(width: 2),
-                Text('${widget.report!.errorCount}', style: style),
-                const SizedBox(width: 8),
-                Icon(Icons.warning_amber_rounded,
-                    size: 11.5,
-                    color: (widget.report!.warningCount) > 0 ? Colors.orange : color),
-                const SizedBox(width: 2),
-                Text('${widget.report!.warningCount}', style: style),
-              ]),
+    // 手机窄屏（360dp）装不下这么多项：行号 + 选中数 + ❌⚠ + 未保存 + 字符数 +
+    // 缩进 + 语言名，「Objective-C++」这种长语言名一进来就 Row overflow（黄黑条）。
+    // 处理：语言名允许收缩成省略号，窄屏再先把「缩进」收掉。
+    return LayoutBuilder(
+      builder: (context, box) {
+        final compact = box.maxWidth < 380;
+        return Container(
+          height: 21,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.06),
+            border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+          ),
+          child: Row(children: [
+            Text('L${line + 1}:$column', style: style),
+            if (selected > 0) ...[
+              const SizedBox(width: 6),
+              Text('($selected)', style: TextStyle(fontSize: 10.5, color: theme.colorScheme.primary)),
+            ],
+            const Spacer(),
+            if (widget.report != null) ...[
+              InkWell(
+                onTap: widget.onTapIssues,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.cancel,
+                        size: 10.5,
+                        color: (widget.report!.errorCount) > 0 ? Colors.red : color),
+                    const SizedBox(width: 2),
+                    Text('${widget.report!.errorCount}', style: style),
+                    const SizedBox(width: 8),
+                    Icon(Icons.warning_amber_rounded,
+                        size: 11.5,
+                        color: (widget.report!.warningCount) > 0 ? Colors.orange : color),
+                    const SizedBox(width: 2),
+                    Text('${widget.report!.warningCount}', style: style),
+                  ]),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            // 未保存份数（多文档时才知道「还有几份没写回磁盘」）。
+            if (widget.dirtyCount > 0) ...[
+              Icon(Icons.circle, size: 6, color: color),
+              const SizedBox(width: 3),
+              Text('${widget.dirtyCount}', style: style),
+              const SizedBox(width: 8),
+            ],
+            Text('${text.length}', style: style),
+            if (!compact) ...[
+              const SizedBox(width: 10),
+              InkWell(
+                onTap: widget.onTapIndent,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(widget.indent, style: style),
+                ),
+              ),
+            ],
+            const SizedBox(width: 6),
+            // 语言名最后才收缩：点它换语法，是状态栏上最常点的东西。
+            Flexible(
+              child: InkWell(
+                onTap: widget.onTapLanguage,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(
+                    widget.language,
+                    style: style,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-        ],
-        // 未保存份数（多文档时才知道「还有几份没写回磁盘」）。
-        if (widget.dirtyCount > 0) ...[
-          Icon(Icons.circle, size: 6, color: color),
-          const SizedBox(width: 3),
-          Text('${widget.dirtyCount}', style: style),
-          const SizedBox(width: 8),
-        ],
-        Text('${text.length}', style: style),
-        const SizedBox(width: 10),
-        InkWell(
-          onTap: widget.onTapIndent,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Text(widget.indent, style: style),
-          ),
-        ),
-        const SizedBox(width: 6),
-        InkWell(
-          onTap: widget.onTapLanguage,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Text(widget.language, style: style),
-          ),
-        ),
-      ]),
+          ]),
+        );
+      },
     );
   }
 }
