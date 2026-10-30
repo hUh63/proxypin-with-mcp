@@ -58,6 +58,17 @@ class EditorDocument {
   /// 打开文件时的原始换行符（仅用于展示；编辑器内部永远是 \n）
   String newline = '\n';
 
+  /// 光标导航历史（「后退 / 前进」用，存字符偏移）。
+  ///
+  /// 挂在文档上而不是页面状态里：多文档时有的一份文件几万字、有的几行，
+  /// 共用一条偏移栈等于「在 A 文件后退，跳到 B 文件的第 N 个字符」，
+  /// 位置完全是错的。
+  final List<int> navStack = <int>[];
+  int navIndex = -1;
+
+  /// 最近编辑过的位置（字符偏移，最多 20 个）。同样按文档分开记。
+  final List<int> recentEdits = <int>[];
+
   /// 最近一次语法检查结果（切换文档时直接恢复标记，不用重跑）。
   LintReport? lint;
 

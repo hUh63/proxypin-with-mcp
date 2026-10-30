@@ -242,8 +242,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
   int? _gutterAnchorLine;
 
   // 光标导航历史（「上一处 / 下一处位置」）。
-  final List<int> _navStack = <int>[];
-  int _navIndex = -1;
+  /// 导航历史按文档存（见 [EditorDocument.navStack]），这里只是转发。
+  /// 切文档后「后退」不会跳到另一份文件的同名偏移上。
+  List<int> get _navStack => _doc?.navStack ?? const <int>[];
+
+  int get _navIndex => _doc?.navIndex ?? -1;
+
+  set _navIndex(int value) {
+    final doc = _doc;
+    if (doc != null) doc.navIndex = value;
+  }
   int _lastNavOffset = -1;
   Timer? _navTimer;
   bool _suppressNav = false;
@@ -1160,13 +1168,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   void _pushNav(int offset) {
     if (_suppressNav) return;
-    if (_navIndex >= 0 && _navIndex < _navStack.length && _navStack[_navIndex] == offset) return;
-    if (_navIndex + 1 < _navStack.length) {
-      _navStack.removeRange(_navIndex + 1, _navStack.length);
+    final doc = _doc;
+    if (doc == null) return;
+    final stack = doc.navStack;
+    final index = doc.navIndex;
+    if (index >= 0 && index < stack.length && stack[index] == offset) return;
+    if (index + 1 < stack.length) {
+      stack.removeRange(index + 1, stack.length);
     }
-    _navStack.add(offset);
-    if (_navStack.length > 100) _navStack.removeAt(0);
-    _navIndex = _navStack.length - 1;
+    stack.add(offset);
+    if (stack.length > 100) stack.removeAt(0);
+    doc.navIndex = stack.length - 1;
     if (mounted) setState(() {});
   }
 
@@ -3085,19 +3097,34 @@ class _TextEditorPageState extends State<TextEditorPage> {
           top: 6,
           child: IgnorePointer(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              constraints: const BoxConstraints(maxWidth: 220),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
-                color: theme.colorScheme.inverseSurface.withValues(alpha: 0.9),
+                color: theme.colorScheme.inverseSurface.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(4),
               ),
+              // 顺带把这行的首个问题报出来：只报行号还得自己滑过去看。
               child: Text(
-                '$_rulerLine',
+                _rulerHintOf(issues, _rulerLine!),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 11, color: theme.colorScheme.onInverseSurface),
               ),
             ),
           ),
         ),
     ];
+  }
+
+  /// 浮标文案：`L12 · 未闭合的括号`。该行没有问题时只显示行号。
+  String _rulerHintOf(List<LintDiagnostic> issues, int line) {
+    LintDiagnostic? first;
+    for (final d in issues) {
+      if (d.line != line) continue;
+      if (first == null || d.severity.index < first.severity.index) first = d;
+    }
+    if (first == null) return 'L$line';
+    return 'L$line · ${first.message}';
   }
 
   /// 长按分布条时的行号浮标：1.4 秒后自动消失（防止手指抬起事件丢了留个残影）。
@@ -3773,7 +3800,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorMinifyUnsupported);
       return;
     }
-    if (result == text) return;
+    if (result == text) {
+      // 静默返回会像「按钮坏了」。
+      _toast(localizations.editorMinifyNoChange);
+      return;
+    }
     controller.text = result;
     _toast(localizations.editorMinified('${text.length}', '${result.length}'));
   }
@@ -3796,7 +3827,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorMinifyAggressiveUnsupported);
       return;
     }
-    if (result == text) return;
+    if (result == text) {
+      _toast(localizations.editorMinifyNoChange);
+      return;
+    }
     controller.text = result;
     _toast(localizations.editorMinified('${text.length}', '${result.length}'));
   }
@@ -4100,10 +4134,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 用「编辑时的光标位置」记，不需要算 diff：打字时光标就在改动处，
   /// 而且这个列表只用来「回到刚才改的地方」，精度要求没那么高。
-  final List<int> _recentEdits = <int>[];
+  /// 最近编辑位置按文档存（见 [EditorDocument.recentEdits]）。
+  List<int> get _recentEdits => _doc?.recentEdits ?? const <int>[];
 
   void _rememberEdit(int offset) {
     if (offset < 0) return;
+    final doc = _doc;
+    if (doc == null) return;
     // 相差 200 字符内算同一处，否则连着打一句话会塞满整个列表。
     _recentEdits.removeWhere((o) => (o - offset).abs() < 200);
     _recentEdits.insert(0, offset);
@@ -4135,7 +4172,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               ),
               TextButton(
                 onPressed: () {
-                  setState(() => _recentEdits.clear());
+                  setState(() => _doc?.recentEdits.clear());
                   Navigator.pop(ctx);
                 },
                 child: Text(localizations.clear),
@@ -6228,16 +6265,20 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
               const SizedBox(width: 8),
             ],
             Text('${text.length}', style: style),
-            if (!compact) ...[
-              const SizedBox(width: 10),
-              InkWell(
-                onTap: widget.onTapIndent,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Text(widget.indent, style: style),
+            const SizedBox(width: 10),
+            // 窄屏不直接收掉，缩成 `S4` / `T4`：值还是看一眼就知道，点进去还能改。
+            InkWell(
+              onTap: widget.onTapIndent,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Text(
+                  compact
+                      ? widget.indent.replaceFirst('Space:', 'S').replaceFirst('Tab:', 'T')
+                      : widget.indent,
+                  style: style,
                 ),
               ),
-            ],
+            ),
             const SizedBox(width: 6),
             // 语言名最后才收缩：点它换语法，是状态栏上最常点的东西。
             Flexible(

@@ -4945,5 +4945,6 @@
   "editorLangRecent": "Recently used",
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
-  "editorNoAvailableCommand": "No available commands (all hidden in editor settings)"
+  "editorNoAvailableCommand": "No available commands (all hidden in editor settings)",
+  "editorMinifyNoChange": "Already minimal, nothing changed"
 }

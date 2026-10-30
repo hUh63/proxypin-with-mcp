@@ -2868,5 +2868,6 @@
   "editorLangRecent": "Recently used",
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
-  "editorNoAvailableCommand": "No hay comandos disponibles (todos ocultos en los ajustes)"
+  "editorNoAvailableCommand": "No hay comandos disponibles (todos ocultos en los ajustes)",
+  "editorMinifyNoChange": "Ya está al mínimo, sin cambios"
 }

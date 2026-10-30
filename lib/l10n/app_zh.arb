@@ -4669,5 +4669,6 @@
   "editorLangRecent": "最近用过",
   "editorLangCommon": "常用",
   "editorLangAll": "全部语言",
-  "editorNoAvailableCommand": "没有可用命令（都已在编辑器设置里隐藏）"
+  "editorNoAvailableCommand": "没有可用命令（都已在编辑器设置里隐藏）",
+  "editorMinifyNoChange": "内容已经是最简，没有变化"
 }
