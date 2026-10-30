@@ -4948,5 +4948,6 @@
   "editorNoAvailableCommand": "No available commands (all hidden in editor settings)",
   "editorMinifyNoChange": "Already minimal, nothing changed",
   "editorFormatSelectFirst": "Select some text to format first",
-  "editorLangKeepOne": "Keep at least one syntax"
+  "editorLangKeepOne": "Keep at least one syntax",
+  "editorRecentCleared": "Recent commands cleared"
 }

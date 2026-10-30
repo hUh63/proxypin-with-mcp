@@ -56,7 +56,8 @@ class SnippetBar extends StatefulWidget {
 
 class _SnippetBarState extends State<SnippetBar> {
   /// 展开面板的最大高度。
-  static const double _maxExtent = 236;
+  /// 展开态的「理想」高度。
+  static const double _prefMaxExtent = 236;
 
   /// 超过这个比例就吸附成「展开」。
   static const double _snapRatio = 0.35;
@@ -69,6 +70,13 @@ class _SnippetBarState extends State<SnippetBar> {
 
   /// 当前展开高度（0 = 收起）。拖动时实时变化，松手后动画吸附。
   double _extent = 0;
+
+  /// 展开态最大高度：默认 236dp，但横屏 / 分屏时最多占屏高的 45%。
+  /// 固定 236 在 360dp 高的横屏上会把编辑区挤到只剩几十 dp。
+  double get _maxExtent {
+    final limit = MediaQuery.sizeOf(context).height * 0.45;
+    return limit < _prefMaxExtent ? limit.clamp(72.0, _prefMaxExtent) : _prefMaxExtent;
+  }
   bool _dragging = false;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
@@ -348,7 +356,7 @@ class _SnippetBarState extends State<SnippetBar> {
         _dragHandle(),
         // 展开的面板：高度带动画（拖动时 0 时长 → 跟手；松手 200ms 吸附）。
         TweenAnimationBuilder<double>(
-          tween: Tween<double>(end: _extent),
+          tween: Tween<double>(end: _extent.clamp(0.0, _maxExtent)),
           duration: _dragging ? Duration.zero : const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           builder: (_, height, __) => SizedBox(

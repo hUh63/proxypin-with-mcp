@@ -353,6 +353,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _lintTimer?.cancel();
     _rulerTimer?.cancel();
     _docScroll.dispose();
+    _tabScroll.dispose();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
@@ -413,6 +414,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       if (keepIme != null) _smoothKeepIme = keepIme;
     });
+    // 「语法」菜单的显示勾选存的是语言标签。语言表改过名 / 导入了别的版本的配置时，
+    // 这些标签可能一个都对不上 —— 那样 `_visibleLangs` 会静默回退成全量，每次 build
+    // 白算一遍。这里清掉失效项（清空即「全部启用」，与默认语义一致）。
+    final enabled = _prefs.enabledLangs;
+    if (enabled.isNotEmpty) {
+      final known = _langs.where((l) => !l.custom).map((l) => l.label).toSet();
+      if (!enabled.any(known.contains)) {
+        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(enabledLangs: const <String>[])));
+      }
+    }
   }
 
   Future<void> _saveRetainMode() async {
@@ -479,6 +490,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _clearLintDecorations();
       _scheduleLint();
     }
+    // 标签条上可能有十几个文档，切过去要保证那个标签在可视区里。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollTabIntoView();
+    });
     // 当前行高亮跟着光标走，切文档后要先算一次（缓存刚被清成 -1）。
     _syncCaretLine();
     _refreshExtraHighlights();
@@ -4066,6 +4081,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         border: Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
       child: ListView.builder(
+        controller: _tabScroll,
         scrollDirection: Axis.horizontal,
         itemCount: docs.length,
         itemBuilder: (context, i) {
@@ -4452,6 +4468,19 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 抽屉里的搜索词（文档多了以后翻列表很痛苦）。
   String _docQuery = '';
+
+  /// 顶部文档标签条的滚动控制器（切文档时把当前标签滚进可视区）。
+  final ScrollController _tabScroll = ScrollController();
+
+  void _scrollTabIntoView() {
+    if (!_tabScroll.hasClients) return;
+    final index = _docs.docs.indexWhere((d) => identical(d, _doc));
+    if (index < 0) return;
+    // 标签最宽 150、最窄 70，按 110 估平均宽度就够（差几十像素不影响「看得见」）。
+    final target = (index * 110.0 - 80).clamp(0.0, _tabScroll.position.maxScrollExtent);
+    _tabScroll.animateTo(target,
+        duration: const Duration(milliseconds: 180), curve: Curves.easeOut);
+  }
 
   void _scrollToActiveDoc() {
     if (!_docScroll.hasClients) return;
@@ -5041,128 +5070,134 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   Widget _moreMenu(Color color) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, size: 18),
-      tooltip: localizations.editorMore,
-      onSelected: _menuAction,
-      itemBuilder: (context) {
-        final hidden = _prefs.hiddenMenu.toSet();
-        return <PopupMenuEntry<String>>[
-        PopupMenuItem(
-          value: 'file',
-          child: _menuRow(localizations.editorMoreFile, Icons.arrow_right, id: 'file'),
-        ),
-        PopupMenuItem(value: 'search', child: Text(localizations.search)),
-        PopupMenuItem(
-          value: 'syntax',
-          child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right, id: 'syntax'),
-        ),
-        _menuItem('gotoLine', Icons.pin_drop_outlined, localizations.editorSelectToLine),
-        _menuItem('symbols', Icons.account_tree_outlined, localizations.editorSymbols),
-        _menuItem('nextOccurrence', Icons.select_all, localizations.editorSelectNext),
-        _menuItem('rename', Icons.drive_file_rename_outline, localizations.editorRename),
-        PopupMenuItem(
-          value: 'formatSel',
-          child: Text(localizations.editorFormatSelection),
-        ),
-        _menuItem('foldAll', Icons.unfold_less, localizations.editorFoldAll),
-        _menuItem('unfoldAll', Icons.unfold_more, localizations.editorUnfoldAll),
-        _menuItem('gotoDef', Icons.my_location_outlined, localizations.editorGotoDefinition),
-        _menuItem('references', Icons.format_list_bulleted, localizations.editorReferences),
-        PopupMenuItem(
-          value: 'lineOps',
-          child: _menuRow(localizations.editorLineOps, Icons.arrow_right, id: 'lineOps'),
-        ),
-        PopupMenuItem(
-          value: 'caseOps',
-          child: _menuRow(localizations.editorCaseOps, Icons.arrow_right, id: 'caseOps'),
-        ),
-        PopupMenuItem(
-          value: 'navBack',
-          enabled: _navIndex > 0,
-          child: Text(localizations.editorNavBack, style: TextStyle(
-              color: _navIndex > 0 ? null : Theme.of(context).disabledColor)),
-        ),
-        PopupMenuItem(
-          value: 'recentEdits',
-          child: Text(localizations.editorRecentEdits, style: const TextStyle(fontSize: 13.5)),
-        ),
-        PopupMenuItem(
-          value: 'navForward',
-          enabled: _navIndex < _navStack.length - 1,
-          child: Text(localizations.editorNavForward, style: TextStyle(
-              color: _navIndex < _navStack.length - 1 ? null : Theme.of(context).disabledColor)),
-        ),
-        const PopupMenuDivider(),
-        CheckedPopupMenuItem(
-          value: 'wrap',
-          checked: _wrap,
-          child: Text(localizations.wordWrap),
-        ),
-        CheckedPopupMenuItem(
-          value: 'readOnly',
-          checked: _readOnly,
-          child: Text(localizations.editorReadOnly),
-        ),
-        CheckedPopupMenuItem(
-          value: 'smooth',
-          checked: _smooth,
-          child: Text(localizations.editorSmoothMode),
-        ),
-        CheckedPopupMenuItem(
-          value: 'smart',
-          checked: SmartCompletion.enabled.value,
-          child: Text(localizations.smartCompletion),
-        ),
-        CheckedPopupMenuItem(
-          value: 'smoothKeepIme',
-          checked: _smoothKeepIme,
-          child: Text(localizations.editorSmoothKeepIme),
-        ),
-        const PopupMenuDivider(),
-        CheckedPopupMenuItem(
-          value: 'ascii',
-          checked: _showAscii,
-          child: Text(localizations.editorShowAsciiControl),
-        ),
-        CheckedPopupMenuItem(
-          value: 'unicode',
-          checked: _showUnicode,
-          child: Text(localizations.editorShowUnicodeSpecial),
-        ),
-        _menuItem('report', Icons.report_outlined, localizations.editorSpecialReport),
-        _menuItem('replaceLine', Icons.sync_alt, localizations.editorReplaceLine),
-        const PopupMenuDivider(),
-        // 「检查」只对编程语言有意义：JSON/YAML/纯文本没有「编译」这回事，
-        // 把它藏在非编程语法下，菜单里就不会出现点了也没用的项。
-        if (_programming) ...[
-          CheckedPopupMenuItem(
-            value: 'lint',
-            checked: _lintEnabled,
-            child: Text(localizations.editorLint),
-          ),
-          _menuItem('lintIssues', Icons.error_outline, localizations.editorLintIssues),
-          _menuItem('console', Icons.terminal, localizations.editorConsole),
-        ],
-        const PopupMenuDivider(),
-        _menuItem('minify', Icons.compress, localizations.editorMinify),
-        _menuItem('minifyAggressive', Icons.compress, localizations.editorMinifyAggressive),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'newline',
-          child: Text('${localizations.editorNewline}: ${_newlineLabel()}'),
-        ),
-        PopupMenuItem(
-          value: 'retainMode',
-          child: Text('${localizations.editorRetainPref}: ${_retainModeLabel()}'),
-        ),
-        const PopupMenuDivider(),
-        _menuItem('settings', Icons.settings, localizations.editorSettings),
-        _menuItem('close', Icons.close, localizations.editorCloseFile),
-        ]
-            .where((e) => e is! PopupMenuItem<String> || !hidden.contains(e.value))
-            .toList();
-      },
+    // 触摸区收成 38dp 与 _iconBtn 一致：PopupMenuButton 默认 48，第二个行会白占 10dp。
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: PopupMenuButton<String>(
+        padding: EdgeInsets.zero,
+        icon: const Icon(Icons.more_vert, size: 18),
+        tooltip: localizations.editorMore,
+        onSelected: _menuAction,
+        itemBuilder: (context) {
+          final hidden = _prefs.hiddenMenu.toSet();
+          return <PopupMenuEntry<String>>[
+            PopupMenuItem(
+              value: 'file',
+              child: _menuRow(localizations.editorMoreFile, Icons.arrow_right, id: 'file'),
+            ),
+            PopupMenuItem(value: 'search', child: Text(localizations.search)),
+            PopupMenuItem(
+              value: 'syntax',
+              child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right, id: 'syntax'),
+            ),
+            _menuItem('gotoLine', Icons.pin_drop_outlined, localizations.editorSelectToLine),
+            _menuItem('symbols', Icons.account_tree_outlined, localizations.editorSymbols),
+            _menuItem('nextOccurrence', Icons.select_all, localizations.editorSelectNext),
+            _menuItem('rename', Icons.drive_file_rename_outline, localizations.editorRename),
+            PopupMenuItem(
+              value: 'formatSel',
+              child: Text(localizations.editorFormatSelection),
+            ),
+            _menuItem('foldAll', Icons.unfold_less, localizations.editorFoldAll),
+            _menuItem('unfoldAll', Icons.unfold_more, localizations.editorUnfoldAll),
+            _menuItem('gotoDef', Icons.my_location_outlined, localizations.editorGotoDefinition),
+            _menuItem('references', Icons.format_list_bulleted, localizations.editorReferences),
+            PopupMenuItem(
+              value: 'lineOps',
+              child: _menuRow(localizations.editorLineOps, Icons.arrow_right, id: 'lineOps'),
+            ),
+            PopupMenuItem(
+              value: 'caseOps',
+              child: _menuRow(localizations.editorCaseOps, Icons.arrow_right, id: 'caseOps'),
+            ),
+            PopupMenuItem(
+              value: 'navBack',
+              enabled: _navIndex > 0,
+              child: Text(localizations.editorNavBack, style: TextStyle(
+                  color: _navIndex > 0 ? null : Theme.of(context).disabledColor)),
+            ),
+            PopupMenuItem(
+              value: 'recentEdits',
+              child: Text(localizations.editorRecentEdits, style: const TextStyle(fontSize: 13.5)),
+            ),
+            PopupMenuItem(
+              value: 'navForward',
+              enabled: _navIndex < _navStack.length - 1,
+              child: Text(localizations.editorNavForward, style: TextStyle(
+                  color: _navIndex < _navStack.length - 1 ? null : Theme.of(context).disabledColor)),
+            ),
+            const PopupMenuDivider(),
+            CheckedPopupMenuItem(
+              value: 'wrap',
+              checked: _wrap,
+              child: Text(localizations.wordWrap),
+            ),
+            CheckedPopupMenuItem(
+              value: 'readOnly',
+              checked: _readOnly,
+              child: Text(localizations.editorReadOnly),
+            ),
+            CheckedPopupMenuItem(
+              value: 'smooth',
+              checked: _smooth,
+              child: Text(localizations.editorSmoothMode),
+            ),
+            CheckedPopupMenuItem(
+              value: 'smart',
+              checked: SmartCompletion.enabled.value,
+              child: Text(localizations.smartCompletion),
+            ),
+            CheckedPopupMenuItem(
+              value: 'smoothKeepIme',
+              checked: _smoothKeepIme,
+              child: Text(localizations.editorSmoothKeepIme),
+            ),
+            const PopupMenuDivider(),
+            CheckedPopupMenuItem(
+              value: 'ascii',
+              checked: _showAscii,
+              child: Text(localizations.editorShowAsciiControl),
+            ),
+            CheckedPopupMenuItem(
+              value: 'unicode',
+              checked: _showUnicode,
+              child: Text(localizations.editorShowUnicodeSpecial),
+            ),
+            _menuItem('report', Icons.report_outlined, localizations.editorSpecialReport),
+            _menuItem('replaceLine', Icons.sync_alt, localizations.editorReplaceLine),
+            const PopupMenuDivider(),
+            // 「检查」只对编程语言有意义：JSON/YAML/纯文本没有「编译」这回事，
+            // 把它藏在非编程语法下，菜单里就不会出现点了也没用的项。
+            if (_programming) ...[
+              CheckedPopupMenuItem(
+                value: 'lint',
+                checked: _lintEnabled,
+                child: Text(localizations.editorLint),
+              ),
+              _menuItem('lintIssues', Icons.error_outline, localizations.editorLintIssues),
+              _menuItem('console', Icons.terminal, localizations.editorConsole),
+            ],
+            const PopupMenuDivider(),
+            _menuItem('minify', Icons.compress, localizations.editorMinify),
+            _menuItem('minifyAggressive', Icons.compress, localizations.editorMinifyAggressive),
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'newline',
+              child: Text('${localizations.editorNewline}: ${_newlineLabel()}'),
+            ),
+            PopupMenuItem(
+              value: 'retainMode',
+              child: Text('${localizations.editorRetainPref}: ${_retainModeLabel()}'),
+            ),
+            const PopupMenuDivider(),
+            _menuItem('settings', Icons.settings, localizations.editorSettings),
+            _menuItem('close', Icons.close, localizations.editorCloseFile),
+          ]
+              .where((e) => e is! PopupMenuItem<String> || !hidden.contains(e.value))
+              .toList();
+        },
+      ),
     );
   }
 
@@ -5217,11 +5252,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
   };
 
   Future<void> _clearRecentCommands() async {
+    final backup = await _loadRecentCommands();
     try {
       await SharedPreferencesAsync().remove(_recentCmdKey);
     } catch (_) {
       // 清不掉不影响使用，下次记录会覆盖
+      return;
     }
+    if (!mounted || backup.isEmpty) return;
+    // 长按清空没有二次确认（面板上再加个对话框太重），给 1.6 秒撤销。
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
+      content: Text(localizations.editorRecentCleared),
+      duration: const Duration(milliseconds: 1600),
+      behavior: SnackBarBehavior.floating,
+      action: SnackBarAction(
+        label: localizations.editorUndo,
+        onPressed: () {
+          unawaited(SharedPreferencesAsync().setStringList(_recentCmdKey, backup));
+        },
+      ),
+    ));
   }
 
   Future<List<String>> _loadRecentCommands() async {

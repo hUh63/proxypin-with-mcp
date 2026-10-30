@@ -150,57 +150,63 @@ class _LintIssueBarState extends State<LintIssueBar> {
                 _countBadge(Colors.blueGrey, infos, LintSeverity.info),
               ],
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.onShowAll == null ? '' : localizations.editorIssueHint,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.5, color: theme.textTheme.bodySmall?.color),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(() => _grouped = !_grouped);
-                  unawaited(TextEditorPrefsStore.update(
-                      TextEditorPrefsStore.notifier.value.copyWith(lintGrouped: _grouped)));
-                },
-                tooltip: localizations.editorGroupByRule,
-                icon: Icon(_grouped ? Icons.unfold_more : Icons.unfold_less, size: 15),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 26, minHeight: 24),
-                color: _grouped ? theme.colorScheme.primary : theme.textTheme.bodySmall?.color,
-              ),
-              if (widget.onPrevIssue != null)
-                IconButton(
-                  onPressed: widget.onPrevIssue,
-                  tooltip: localizations.editorIssuePrev,
-                  icon: const Icon(Icons.keyboard_arrow_up, size: 16),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                ),
-              if (widget.onNextIssue != null)
-                IconButton(
-                  onPressed: widget.onNextIssue,
-                  tooltip: localizations.editorIssueNext,
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                ),
-              if (widget.onFixAll != null)
-                TextButton(
-                  onPressed: widget.onFixAll,
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(0, 22),
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              // 收起状态只留「计数 + 箭头」：这时分组 / 上下处 / 全部修复都没东西可操作，
+              // 摆着占地方还容易被误点。
+              if (!_collapsed) ...[
+                Expanded(
+                  child: Text(
+                    widget.onShowAll == null ? '' : localizations.editorIssueHint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10.5, color: theme.textTheme.bodySmall?.color),
                   ),
-                  child: Text(localizations.editorFixAll, style: const TextStyle(fontSize: 11)),
                 ),
-              Icon(_collapsed ? Icons.expand_less : Icons.expand_more,
+                IconButton(
+                  onPressed: () {
+                    setState(() => _grouped = !_grouped);
+                    unawaited(TextEditorPrefsStore.update(
+                        TextEditorPrefsStore.notifier.value.copyWith(lintGrouped: _grouped)));
+                  },
+                  tooltip: localizations.editorGroupByRule,
+                  icon: Icon(_grouped ? Icons.unfold_more : Icons.unfold_less, size: 15),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 26, minHeight: 24),
+                  color: _grouped ? theme.colorScheme.primary : theme.textTheme.bodySmall?.color,
+                ),
+                if (widget.onPrevIssue != null)
+                  IconButton(
+                    onPressed: widget.onPrevIssue,
+                    tooltip: localizations.editorIssuePrev,
+                    icon: const Icon(Icons.keyboard_arrow_up, size: 16),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  ),
+                if (widget.onNextIssue != null)
+                  IconButton(
+                    onPressed: widget.onNextIssue,
+                    tooltip: localizations.editorIssueNext,
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  ),
+                if (widget.onFixAll != null)
+                  TextButton(
+                    onPressed: widget.onFixAll,
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 22),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(localizations.editorFixAll, style: const TextStyle(fontSize: 11)),
+                  ),
+              ] else
+                // 收起时把中间撑开，箭头贴到最右。
+                const Spacer(),
+              Icon(_collapsed ? Icons.expand_more : Icons.expand_less,
                   size: 16, color: theme.textTheme.bodySmall?.color),
             ]),
           ),

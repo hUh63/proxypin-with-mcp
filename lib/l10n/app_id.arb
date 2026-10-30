@@ -2871,5 +2871,6 @@
   "editorNoAvailableCommand": "Tidak ada perintah tersedia (semua disembunyikan di pengaturan)",
   "editorMinifyNoChange": "Sudah paling ringkas, tidak ada perubahan",
   "editorFormatSelectFirst": "Pilih dulu teks yang akan diformat",
-  "editorLangKeepOne": "Simpan minimal satu sintaks"
+  "editorLangKeepOne": "Simpan minimal satu sintaks",
+  "editorRecentCleared": "Perintah terbaru dihapus"
 }
