@@ -410,6 +410,14 @@ class _SnippetBarState extends State<SnippetBar> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _extent > 0 && !_dragging) setState(() => _extent = 0);
       });
+    } else if (_extent > 0 && _extent > _maxExtent) {
+      // 旋屏 / 分屏把可用高度压小了：状态值也要跟着收，
+      // 否则下一次拖动是从一个已经超出边界的值上加减，手感会「跳一下」。
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _extent > 0 && _extent > _maxExtent) {
+          setState(() => _extent = _maxExtent);
+        }
+      });
     }
   }
 

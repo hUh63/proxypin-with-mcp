@@ -2877,5 +2877,6 @@
   "editorReloadDiscard": "Recarregar descarta as alterações não salvas. Continuar?",
   "editorBigFileWarn": "Este arquivo tem {mb} MB. Abrir pode ser lento. Continuar?",
   "editorApplyToAll": "Aplicar a todos os documentos abertos",
-  "editorRestorePartial": "Não foi possível restaurar {n} documentos mantidos"
+  "editorRestorePartial": "Não foi possível restaurar {n} documentos mantidos",
+  "editorOpenReadOnly": "Abrir somente leitura"
 }

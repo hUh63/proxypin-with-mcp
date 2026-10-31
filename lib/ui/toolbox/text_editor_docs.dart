@@ -218,6 +218,9 @@ class EditorDocuments {
 
   bool _persistPending = false;
 
+  /// 上一次成功写到磁盘的正文（id → 文本），用于跳过没变化的写盘。
+  final Map<String, String> _lastWrite = <String, String>{};
+
   /// 只落盘「保留」的文档；其余视为临时文件，退出即丢。
   Future<void> persist() {
     // 连点置顶 / 连续拖拽会排很多次全量写盘，而每次写的都是「当前内存快照」，
@@ -241,8 +244,18 @@ class EditorDocuments {
       // 先「写新的」再「清旧的」：原来的顺序是先删干净再写，
       // 中途失败（磁盘满 / 被系统杀掉）会让磁盘上什么都不剩。
       final keepNames = <String>{'manifest.json'};
+      // 已关闭/取消保留的文档不必再记「上次写了什么」。
+      _lastWrite.removeWhere((id, _) => !kept.any((d) => d.id == id));
       for (final d in kept) {
-        await File('${dir.path}/${d.id}.txt').writeAsString(d.text);
+        final cache = File('${dir.path}/${d.id}.txt');
+        // 置顶 / 拖拽 / 关闭都会触发一次全量落盘，但正文通常一个字都没改。
+        // 内容没变且磁盘上文件还在就跳过写 —— 50 份保留文档时能省 49 次全量写。
+        final unchanged =
+            _lastWrite[d.id] == d.text && await cache.exists();
+        if (!unchanged) {
+          await cache.writeAsString(d.text);
+          _lastWrite[d.id] = d.text;
+        }
         keepNames.add('${d.id}.txt');
         manifest.add({
           'id': d.id,

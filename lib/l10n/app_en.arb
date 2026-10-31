@@ -4967,5 +4967,6 @@
         "type": "int"
       }
     }
-  }
+  },
+  "editorOpenReadOnly": "Open read-only"
 }

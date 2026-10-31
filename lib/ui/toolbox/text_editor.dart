@@ -190,6 +190,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool _wrap = true;
   bool _smooth = false;
 
+  /// 流畅模式是「因为文件太大自动打开的」——切到小文档时自动关掉，
+  /// 免得用户改完大文件之后，所有小文件也跟着一直关着高亮。
+  bool _smoothAuto = false;
+
   /// 没有文档时给 AnimatedBuilder 用的空监听源。
   static final ChangeNotifier _noFind = ChangeNotifier();
 
@@ -438,8 +442,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final enabled = _prefs.enabledLangs;
     if (enabled.isNotEmpty) {
       final known = _langs.where((l) => !l.custom).map((l) => l.label).toSet();
-      if (!enabled.any(known.contains)) {
-        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(enabledLangs: const <String>[])));
+      // 失效的标签逐个清掉（不只是「全失效才清空」）：语言表改过名之后，
+      // 残留项会让「语法文件管理」里出现勾了就再也点不掉的名字。
+      final alive = enabled.where(known.contains).toList();
+      if (alive.length != enabled.length) {
+        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(
+          enabledLangs: alive.isEmpty ? const <String>[] : alive,
+        )));
       }
     }
   }
@@ -498,6 +507,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 多选是「针对某几个位置」的状态，换文档就失效了。
       _multiSel.clear();
       _multiWord = '';
+      if (_smoothAuto) {
+        final limit = _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
+        if (doc.text.length <= limit) {
+          _smooth = false;
+          _smoothAuto = false;
+        }
+      }
     });
 
     doc.controller.addListener(_onControllerChanged);
@@ -3623,54 +3639,35 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (size > bigFileBytes) {
         if (!mounted) return;
         final mb = (size / (1024 * 1024)).toStringAsFixed(1);
-        final ok = await showDialog<bool>(
+        // 除了「照样打开」，还给一个「只读预览」：几 MB 的日志/导出文件多半只是看一眼，
+        // 走查看器（截断 + 搜索）比整份塞进编辑器快得多，也不会误改。
+        final pick = await showDialog<int>(
           context: context,
           builder: (ctx) => AlertDialog(
             content: Text(localizations.editorBigFileWarn(mb)),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+                  onPressed: () => Navigator.pop(ctx, 0), child: Text(localizations.cancel)),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, 2),
+                  child: Text(localizations.editorOpenReadOnly)),
               FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+                  onPressed: () => Navigator.pop(ctx, 1), child: Text(localizations.confirm)),
             ],
           ),
         );
-        if (ok != true || !mounted) return;
+        if (!mounted) return;
+        if (pick == 2) {
+          final name = path.split(Platform.pathSeparator).last;
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => TextViewerPage(file: file, title: name)),
+          );
+          return;
+        }
+        if (pick != 1) return;
       }
       final bytes = await file.readAsBytes();
-      final String content;
-      var detected = _bomEncodingOf(bytes);
-      if (detected != null) {
-        content = await detected.decode(bytes);
-      } else {
-        // 无 BOM：先按 UTF-8 容错解；出现大量 U+FFFD 再试 GBK
-        // （与抓包侧 decodeBytesToText 同一套判据）。
-        final utf8Text = utf8.decode(bytes, allowMalformed: true);
-        // 只拿前 64KB 做「是不是 GBK」的判断：大文件整份解两次太贵，
-        // 而判定只需要一段有中文的样本。
-        const probeLimit = 64 * 1024;
-        final sample = bytes.length > probeLimit
-            ? utf8.decode(bytes.sublist(0, probeLimit), allowMalformed: true)
-            : utf8Text;
-        final bad = '\uFFFD'.allMatches(sample).length;
-        String? gbkText;
-        if (bad >= 3 && bad * 100 > sample.length) {
-          for (final e in kEncodings) {
-            if (e.name != 'GBK') continue;
-            try {
-              final decoded = await e.decode(bytes);
-              if ('\uFFFD'.allMatches(decoded).length * 2 < bad) {
-                gbkText = decoded;
-                detected = e;
-              }
-            } catch (_) {
-              // 解不出就按 UTF-8 处理
-            }
-            break;
-          }
-        }
-        content = gbkText ?? utf8Text;
-      }
+      final (content, detected) = await _decodeForOpen(bytes);
       // 编码记到这份文档上（同时也更新全局偏好，作为下次新建的默认）——
       // 否则「打开 GBK 文件 → 改一个字 → 保存」会把它悄悄写成 UTF-8。
       final name = path.split(Platform.pathSeparator).last;
@@ -3691,6 +3688,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
       if (content.length > pageLimit && !_smooth) {
         setState(() => _smooth = true);
+        _smoothAuto = true;
         _toast(localizations.editorSmoothAutoEnabled);
       }
     } catch (e) {
@@ -3857,6 +3855,30 @@ class _TextEditorPageState extends State<TextEditorPage> {
     'astro': 'xml',
     'http': '',
     'rest': '',
+    // 第三批：数据/配置类与少数语言。内核没有对应 key 时照样退回纯文本，不会更差。
+    'json5': 'json',
+    'jsonl': 'json',
+    'ndjson': 'json',
+    'mk': 'makefile',
+    'qml': 'xml',
+    'prisma': 'prisma',
+    'zig': 'zig',
+    'sol': 'solidity',
+    'pas': 'delphi',
+    'dpr': 'delphi',
+    'd': 'd',
+    'raku': 'perl',
+    'p6': 'perl',
+    'lisp': 'lisp',
+    'el': 'lisp',
+    'scm': 'scheme',
+    'ss': 'scheme',
+    'editorconfig': 'ini',
+    'reg': 'ini',
+    'desktop': 'ini',
+    'service': 'ini',
+    'srt': 'plaintext',
+    'vtt': 'plaintext',
   };
 
   String? _detectLanguage(String path) {
@@ -3869,6 +3891,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return _labelOfLangKey('makefile');
     }
     if (fileName == 'cmakelists.txt') return _labelOfLangKey('cmake');
+    // .env / .env.local / .env.production：key=value，按 ini 给个高亮。
+    if (fileName == '.env' || fileName.startsWith('.env.')) return _labelOfLangKey('ini');
+    if (fileName == '.editorconfig') return _labelOfLangKey('ini');
     final dot = fileName.lastIndexOf('.');
     final ext = dot < 0 ? '' : fileName.substring(dot + 1);
     // http / rest 是编辑器自己的「HTTP」类（不是 re_highlight 语言）。
@@ -3878,6 +3903,58 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return _labelOfLangKey(key);
   }
 
+  /// 把文件字节解成文本：BOM 认 UTF-16/32，否则 UTF-8 容错解 + 中文样本 GBK 兜底。
+  /// 打开文件与「从磁盘重新读取」共用这一套 —— 后者原来直接 readAsString()
+  /// （严格 UTF-8），GBK 文件点「重新读取」永远失败。
+  Future<(String, EditorEncoding?)> _decodeForOpen(List<int> bytes, {String? prefer}) async {
+    var detected = _bomEncodingOf(bytes);
+    final String content;
+    // 无 BOM 时先试「这份文档记住的编码」（重新读取时用），解出来没有替换字符才认。
+    if (detected == null && prefer != null && prefer.isNotEmpty && prefer != 'UTF-8') {
+      final preferred = kEncodings.where((e) => e.name == prefer).toList();
+      if (preferred.isNotEmpty) {
+        try {
+          final decoded = await preferred.first.decode(bytes);
+          if (!decoded.contains('\uFFFD')) detected = preferred.first;
+        } catch (_) {
+          // 解不出就按 UTF-8 处理
+        }
+      }
+    }
+    if (detected != null) {
+      content = await detected.decode(bytes);
+    } else {
+      // 无 BOM：先按 UTF-8 容错解；出现大量 U+FFFD 再试 GBK
+      // （与抓包侧 decodeBytesToText 同一套判据）。
+      final utf8Text = utf8.decode(bytes, allowMalformed: true);
+      // 只拿前 64KB 做「是不是 GBK」的判断：大文件整份解两次太贵，
+      // 而判定只需要一段有中文的样本。
+      const probeLimit = 64 * 1024;
+      final sample = bytes.length > probeLimit
+          ? utf8.decode(bytes.sublist(0, probeLimit), allowMalformed: true)
+          : utf8Text;
+      final bad = '\uFFFD'.allMatches(sample).length;
+      String? gbkText;
+      if (bad >= 3 && bad * 100 > sample.length) {
+        for (final e in kEncodings) {
+          if (e.name != 'GBK') continue;
+          try {
+            final decoded = await e.decode(bytes);
+            if ('\uFFFD'.allMatches(decoded).length * 2 < bad) {
+              gbkText = decoded;
+              detected = e;
+            }
+          } catch (_) {
+            // 解不出就按 UTF-8 处理
+          }
+          break;
+        }
+      }
+      content = gbkText ?? utf8Text;
+    }
+    return (content, detected);
+  }
+
   /// 扩展名不可靠时的兜底：按内容开头判断（`xxx.txt` 里装的其实是 JSON 很常见）。
   ///
   /// 只做「高置信度」的几种，拿不准就返回 null（退回纯文本，宁可不高亮也不乱高亮）。
@@ -3885,6 +3962,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final head = content.length > 400 ? content.substring(0, 400) : content;
     final t = head.trimLeft();
     if (t.isEmpty) return null;
+    // 以 `# 标题` 开头的文档几乎都是 Markdown；里面夹着 `<div>` 也不该被判成 XML。
+    final firstLine = head.split('\n').first.trim();
+    if ((firstLine.startsWith('# ') || firstLine.startsWith('## ')) &&
+        content.contains('\n')) {
+      return _labelOfLangKey('markdown');
+    }
     if (t.startsWith('<!DOCTYPE') || t.startsWith('<!doctype') || t.startsWith('<html')) {
       return _labelOfLangKey('xml');
     }
@@ -5260,6 +5343,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         case 'readOnly':
           setState(() => _readOnly = !_readOnly);
         case 'smooth':
+          // 手动切过就当作「用户的意愿」，不再跟着文件大小自动变。
+          _smoothAuto = false;
           setState(() => _smooth = !_smooth);
         case 'smart':
           SmartCompletion.setEnabled(!SmartCompletion.enabled.value).ignore();
@@ -5671,13 +5756,19 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return;
     }
     try {
-      final text = await File(path).readAsString();
+      final bytes = await File(path).readAsBytes();
+      final (text, detected) = await _decodeForOpen(bytes, prefer: doc.encodingName);
       if (!mounted) return;
+      // 编码/换行符跟着磁盘上的实际内容走，否则重载之后一保存又会被改写。
+      if (detected != null) doc.encodingName = detected.name;
       setState(() {
         doc.text = text;
+        doc.newline = text.contains('\r\n') ? '\r\n' : (text.contains('\r') ? '\r' : '\n');
         _lastText = text;
         _dirty = false;
       });
+      // 重载后旧的撤销栈指向的是被丢弃的内容，撤销回去等于「变回旧版本」。
+      doc.undoController.clear();
       _toast(localizations.editorReloadSuccess);
     } catch (e) {
       _toast('$e');
