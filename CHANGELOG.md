@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.67.168 (2026-10-31) — 打开 GBK 文件后不再把保存编码写错
+
+167 修好了「GBK 文件打不开」，但紧接着还有半个坑：打开时**没有记住检测到的编码** ——
+`_prefs.encodingName` 还是上次用的（通常是 UTF-8），于是「打开 GBK 文件 → 改一个字 → 保存」
+会用 UTF-8 写回，文件编码被悄悄改掉（对老项目源码、`.properties` 是灾难）。
+
+现在打开时就确定实际编码并同步到 `encodingName`：
+- 有 BOM → 按 BOM（UTF-16LE/BE、UTF-32LE/BE）；
+- 无 BOM → UTF-8 容错解，出现大量 U+FFFD 时试 GBK，替换字符显著减少才采用 GBK
+  （与抓包侧 `decodeBytesToText` 同一套判据）。
+
 ## v1.67.167 (2026-10-31) — 修 GBK / UTF-16 文本文件打不开
 
 **问题：** 打开本地文件用的是 `File(path).readAsString()`，它按 UTF-8 **严格**解码 ——

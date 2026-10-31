@@ -3585,11 +3585,35 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 这里走带容错 + GBK 探测的解码，UTF-16/32 按 BOM 认。
       final bytes = await File(path).readAsBytes();
       final String content;
-      final bom = _bomEncodingOf(bytes);
-      if (bom != null) {
-        content = await bom.decode(bytes);
+      var detected = _bomEncodingOf(bytes);
+      if (detected != null) {
+        content = await detected.decode(bytes);
       } else {
-        content = decodeBytesToText(bytes, null);
+        // 无 BOM：先按 UTF-8 容错解；出现大量 U+FFFD 再试 GBK
+        // （与抓包侧 decodeBytesToText 同一套判据）。
+        final utf8Text = utf8.decode(bytes, allowMalformed: true);
+        final bad = '\uFFFD'.allMatches(utf8Text).length;
+        String? gbkText;
+        if (bytes.length <= 512 * 1024 && bad >= 3 && bad * 100 > utf8Text.length) {
+          for (final e in kEncodings) {
+            if (e.name != 'GBK') continue;
+            try {
+              final decoded = await e.decode(bytes);
+              if ('\uFFFD'.allMatches(decoded).length * 2 < bad) {
+                gbkText = decoded;
+                detected = e;
+              }
+            } catch (_) {
+              // 解不出就按 UTF-8 处理
+            }
+            break;
+          }
+        }
+        content = gbkText ?? utf8Text;
+      }
+      if (detected != null) {
+        // 记住实际编码：否则「打开 GBK 文件 → 改一个字 → 保存」会把它悄悄写成 UTF-8。
+        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(encodingName: detected.name)));
       }
       final name = path.split(Platform.pathSeparator).last;
       final doc = _docs.create(name: name, text: content, path: path, langLabel: _detectLanguage(path) ?? 'Plain Text');
