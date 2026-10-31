@@ -608,6 +608,40 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 记下每个书签前面的 20 个字符（整份替换后靠它找回位置）。
+  void _syncBookmarkHeads(EditorDocument doc) {
+    final text = doc.text;
+    doc.bookmarkHeads.clear();
+    for (final o in doc.bookmarks) {
+      final end = o.clamp(0, text.length);
+      final start = (end - 20).clamp(0, end);
+      doc.bookmarkHeads[o] = text.substring(start, end);
+    }
+  }
+
+  /// 整份替换之后（重载 / 换编码）：按上下文重新定位书签，找不到就收到最近的合法偏移。
+  void _remapBookmarksByHead(EditorDocument doc) {
+    if (doc.bookmarks.isEmpty) return;
+    final text = doc.text;
+    final heads = Map<int, String>.from(doc.bookmarkHeads);
+    final moved = <int>{};
+    for (final o in doc.bookmarks) {
+      final head = heads[o];
+      if (head != null && head.isNotEmpty) {
+        final at = text.indexOf(head);
+        if (at >= 0) {
+          moved.add(at + head.length);
+          continue;
+        }
+      }
+      moved.add(o.clamp(0, text.length));
+    }
+    doc.bookmarks
+      ..clear()
+      ..addAll(moved);
+    _syncBookmarkHeads(doc);
+  }
+
   void _onUndoChanged() {
     if (mounted) setState(() {});
   }
@@ -618,7 +652,25 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final doc = _doc;
     if (doc == null || !doc.langSniffed || !mounted) return;
     final next = _sniffLanguage(doc.text) ?? 'Plain Text';
-    if (next == doc.langLabel) return;
+    if (next == doc.langLabel) {
+      doc.plainSniffStreak = 0;
+      return;
+    }
+    if (next == 'Plain Text') {
+      doc.plainSniffStreak++;
+      // 还没到 3 次就先不动：粘进一段话就把高亮掉掉，编辑过程中会一直闪。
+      if (doc.plainSniffStreak < 3) return;
+      // 连续三次都判不出语言：锁定为纯文本，别再嗅探了 —— 否则
+      // 「JSON → 大白话 → JSON」这种反复编辑会让语言一直抖。
+      setState(() {
+        doc.langLabel = 'Plain Text';
+        doc.langSniffed = false;
+        doc.plainSniffStreak = 0;
+      });
+      return;
+    } else {
+      doc.plainSniffStreak = 0;
+    }
     setState(() {
       doc.langLabel = next;
       // 语言变了，补全表与 lint 规则都要跟着换。
@@ -637,7 +689,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
         final delta = _diffSpan(_lastText, text);
         if (delta != null) {
           final moved = <int>{};
+          // 整份替换（粘贴全文、重新加载）：按偏移平移只会全部挤到起点，
+          // 改成「按书签前的上下文找」。
+          final bigChange = delta.removed > 2000 || delta.inserted > 2000;
           for (final offset in bookmarks) {
+            if (bigChange) {
+              final head = _doc?.bookmarkHeads[offset];
+              if (head != null && head.isNotEmpty) {
+                final at = text.indexOf(head);
+                if (at >= 0) {
+                  moved.add(at + head.length);
+                  continue;
+                }
+              }
+            }
             if (offset <= delta.start) {
               moved.add(offset);
             } else if (offset >= delta.start + delta.removed) {
@@ -651,6 +716,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ..clear()
             ..addAll(moved);
         }
+        final doc0 = _doc;
+        if (doc0 != null) _syncBookmarkHeads(doc0);
       }
       _rememberEdit(_doc?.controller.selection.extentOffset ?? 0);
       _lastText = text;
@@ -1474,6 +1541,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       });
       // 换编码后旧的撤销栈指向的是被丢弃的内容，撤销回去等于「变回乱码」。
       doc.undoController.clear();
+      _remapBookmarksByHead(doc);
       _toast(localizations.editorReloadSuccess);
     } catch (e) {
       _toast('$e');
@@ -3122,6 +3190,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<void> _showSymbols() async {
     final controller = _controller;
     if (controller == null) return;
+    if (_tooLargeForSync(controller.text, limit: 2000000)) return;
     final items = _collectSymbols(controller.text);
     if (!mounted) return;
     if (items.isEmpty) {
@@ -3995,10 +4064,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final head = content.length > 400 ? content.substring(0, 400) : content;
     final t = head.trimLeft();
     if (t.isEmpty) return null;
-    // 以 `# 标题` 开头的文档几乎都是 Markdown；里面夹着 `<div>` 也不该被判成 XML。
-    final firstLine = head.split('\n').first.trim();
-    if ((firstLine.startsWith('# ') || firstLine.startsWith('## ')) &&
-        content.contains('\n')) {
+    // Markdown 的几个高置信度特征：`# 标题`、`- [ ]` 任务列表、`| a | b |` 表格。
+    // 命中任何一个就不该被判成 XML —— 文档里夹 `<div>` 很常见。
+    final lines = head.split('\n');
+    final firstLine = lines.isEmpty ? '' : lines.first.trim();
+    final mdHeading = firstLine.startsWith('# ') || firstLine.startsWith('## ');
+    final mdTask = firstLine.startsWith('- [ ]') || firstLine.startsWith('- [x]');
+    final mdTable = lines.length >= 2 &&
+        firstLine.startsWith('|') &&
+        RegExp(r'^\|[\s:|-]+\|?$').hasMatch(lines[1].trim());
+    if ((mdHeading || mdTask || mdTable) && content.contains('\n')) {
       return _labelOfLangKey('markdown');
     }
     if (t.startsWith('<!DOCTYPE') || t.startsWith('<!doctype') || t.startsWith('<html')) {
@@ -4234,12 +4309,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 压缩当前文档（保守压缩：删注释 / 去缩进 / 合并多余空白）。
+  /// 大文本上的全量同步处理（压缩 / 符号表）会卡住界面，超过阈值直接提示跳过。
+  bool _tooLargeForSync(String text, {int limit = 1000000}) {
+    if (text.length <= limit) return false;
+    _toast(localizations.editorTooLargeToProcess);
+    return true;
+  }
+
   void _minify() {
     final controller = _controller;
     final doc = _doc;
     if (controller == null || doc == null) return;
     final text = controller.text;
     if (text.trim().isEmpty) return;
+    if (_tooLargeForSync(text)) return;
     final result = CodeMinifier.minify(doc.langLabel, text);
     if (result == null) {
       _toast(localizations.editorMinifyUnsupported);
@@ -4267,6 +4350,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     final text = controller.text;
     if (text.trim().isEmpty) return;
+    if (_tooLargeForSync(text)) return;
     final result = JsCompiler.minify(text);
     if (result == null) {
       _toast(localizations.editorMinifyAggressiveUnsupported);
@@ -5807,6 +5891,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       });
       // 重载后旧的撤销栈指向的是被丢弃的内容，撤销回去等于「变回旧版本」。
       doc.undoController.clear();
+      // 正文可能整份换了位置，书签按上下文重新找。
+      _remapBookmarksByHead(doc);
       _toast(localizations.editorReloadSuccess);
     } catch (e) {
       _toast('$e');

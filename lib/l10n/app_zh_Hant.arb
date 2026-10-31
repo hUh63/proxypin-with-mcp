@@ -4679,5 +4679,6 @@
   "editorApplyToAll": "套用到全部開啟的文件",
   "editorRestorePartial": "有 {n} 份保留文件沒能復原",
   "editorOpenReadOnly": "唯讀預覽",
-  "editorTooLargeToFormat": "檔案太大，已略過格式化"
+  "editorTooLargeToFormat": "檔案太大，已略過格式化",
+  "editorTooLargeToProcess": "檔案太大，已略過此操作"
 }

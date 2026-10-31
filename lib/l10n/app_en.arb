@@ -4969,5 +4969,6 @@
     }
   },
   "editorOpenReadOnly": "Open read-only",
-  "editorTooLargeToFormat": "File is too large to format"
+  "editorTooLargeToFormat": "File is too large to format",
+  "editorTooLargeToProcess": "File is too large for this operation"
 }

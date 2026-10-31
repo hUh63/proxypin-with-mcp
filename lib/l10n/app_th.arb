@@ -2878,5 +2878,6 @@
   "editorApplyToAll": "ใช้กับเอกสารที่เปิดทั้งหมด",
   "editorRestorePartial": "กู้คืนเอกสารที่เก็บไว้ {n} ฉบับไม่สำเร็จ",
   "editorOpenReadOnly": "เปิดแบบอ่านอย่างเดียว",
-  "editorTooLargeToFormat": "ไฟล์ใหญ่เกินกว่าจะจัดรูปแบบ"
+  "editorTooLargeToFormat": "ไฟล์ใหญ่เกินกว่าจะจัดรูปแบบ",
+  "editorTooLargeToProcess": "ไฟล์ใหญ่เกินไปสำหรับการดำเนินการนี้"
 }

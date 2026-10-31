@@ -2879,5 +2879,6 @@
   "editorApplyToAll": "Aplicar a todos os documentos abertos",
   "editorRestorePartial": "Não foi possível restaurar {n} documentos mantidos",
   "editorOpenReadOnly": "Abrir só leitura",
-  "editorTooLargeToFormat": "O ficheiro é demasiado grande para formatar"
+  "editorTooLargeToFormat": "O ficheiro é demasiado grande para formatar",
+  "editorTooLargeToProcess": "O ficheiro é demasiado grande para esta operação"
 }

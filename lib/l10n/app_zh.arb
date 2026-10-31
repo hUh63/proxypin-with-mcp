@@ -4679,5 +4679,6 @@
   "editorApplyToAll": "应用到全部打开的文档",
   "editorRestorePartial": "有 {n} 份保留文档没能恢复",
   "editorOpenReadOnly": "只读预览",
-  "editorTooLargeToFormat": "文件太大，已跳过格式化"
+  "editorTooLargeToFormat": "文件太大，已跳过格式化",
+  "editorTooLargeToProcess": "文件太大，已跳过该操作"
 }

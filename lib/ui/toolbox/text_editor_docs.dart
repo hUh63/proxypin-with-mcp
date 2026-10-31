@@ -45,6 +45,13 @@ class EditorDocument {
   /// 存偏移再在文本变化时重映射，才能做到「跟着代码走」（VS 就是这样）。
   final Set<int> bookmarks = <int>{};
 
+  /// 每个书签「前面的 20 个字符」，用来在整份替换（重载 / 换编码）后重新定位。
+  /// 只靠偏移的话，整份替换后所有书签会挤到同一个位置。
+  final Map<int, String> bookmarkHeads = <int, String>{};
+
+  /// 连续几次被嗅探判成「纯文本」。连续 3 次就锁定，不再嗅探（避免来回抖）。
+  int plainSniffStreak = 0;
+
   /// 有未写回磁盘的修改。
   ///
   /// 挂在文档上而不是页面状态里：多文档时切来切去，「这份改没改过」

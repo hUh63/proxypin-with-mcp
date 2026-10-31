@@ -2878,5 +2878,6 @@
   "editorApplyToAll": "Aplicar a todos los documentos abiertos",
   "editorRestorePartial": "No se pudieron restaurar {n} documentos conservados",
   "editorOpenReadOnly": "Abrir en solo lectura",
-  "editorTooLargeToFormat": "El archivo es demasiado grande para formatear"
+  "editorTooLargeToFormat": "El archivo es demasiado grande para formatear",
+  "editorTooLargeToProcess": "El archivo es demasiado grande para esta operación"
 }
