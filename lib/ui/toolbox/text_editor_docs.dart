@@ -287,11 +287,11 @@ class EditorDocuments {
     try {
       final dir = await _dir();
       final manifestFile = File('${dir.path}/manifest.json');
-      if (!await manifestFile.exists()) return;
+      if (!await manifestFile.exists()) return broken;
       final data = jsonDecode(await manifestFile.readAsString());
-      if (data is! Map) return;
+      if (data is! Map) return broken;
       final list = data['docs'];
-      if (list is! List) return;
+      if (list is! List) return broken;
 
       final restored = <EditorDocument>[];
       for (final raw in list) {
@@ -334,7 +334,7 @@ class EditorDocuments {
         }
         restored.add(doc);
       }
-      if (restored.isEmpty) return;
+      if (restored.isEmpty) return broken;
       // 置顶的排前面，其余保持磁盘顺序
       _docs.insertAll(0, restored.where((d) => d.pinned));
       _docs.addAll(restored.where((d) => !d.pinned));

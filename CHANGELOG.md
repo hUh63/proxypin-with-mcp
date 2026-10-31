@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.67.176 (2026-10-31) — 修 175 的编译错误
+
+`ensureRestored()` 的返回类型改成 `Future<int>` 后，函数里 4 处裸 `return;`
+（manifest 不存在 / 格式不对 / 没恢复出任何文档）都变成非法。全部补成 `return broken;`。
+
 ## v1.67.175 (2026-10-31) — 嗅探补 YAML/INI、落盘合批、恢复失败有提示
 
 1. **内容嗅探扩到 YAML / INI**（`.txt` 里装配置也能高亮）：
