@@ -71,6 +71,11 @@ class _SnippetBarState extends State<SnippetBar> {
   /// 当前展开高度（0 = 收起）。拖动时实时变化，松手后动画吸附。
   double _extent = 0;
 
+  /// 收起行的滚动控制器与「是否溢出 / 是否到最右」（决定要不要显示提示箭头）。
+  final ScrollController _rowScroll = ScrollController();
+  bool _rowOverflow = false;
+  bool _rowAtEnd = true;
+
   /// 展开态最大高度：默认 236dp，但横屏 / 分屏 / 键盘弹出时最多占「可用高度」的 45%。
   ///
   /// 固定 236 在 360dp 高的横屏上会把编辑区挤到只剩几十 dp；键盘弹出时同理
@@ -89,6 +94,10 @@ class _SnippetBarState extends State<SnippetBar> {
   void initState() {
     super.initState();
     _load();
+    // 首次布局后判断一次收起行是否溢出（决定要不要显示「右边还有」的箭头）。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkRowOverflow();
+    });
   }
 
   @override
@@ -101,6 +110,9 @@ class _SnippetBarState extends State<SnippetBar> {
         _showLibrary = false;
       });
       _load();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _checkRowOverflow();
+      });
     }
   }
 
@@ -220,18 +232,49 @@ class _SnippetBarState extends State<SnippetBar> {
             Expanded(
               child: _items.isEmpty
                   ? const SizedBox.shrink()
-                  : ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _items.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 2),
-                      itemBuilder: (_, i) => Center(child: _cell(_items[i])),
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (_) {
+                        _checkRowOverflow();
+                        return false;
+                      },
+                      child: ListView.separated(
+                        controller: _rowScroll,
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _items.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 2),
+                        itemBuilder: (_, i) => Center(child: _cell(_items[i])),
+                      ),
                     ),
             ),
+            // 片段放不下时给个提示：只靠横向滚动，用户根本不知道右边还有。
+            if (_rowOverflow && !_rowAtEnd)
+              Icon(Icons.chevron_right,
+                  size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
             _iconBtn(Icons.tune, localizations.editorManage, _manage),
           ],
         ),
       ),
     );
+  }
+
+  /// 收起行的片段是否溢出 / 是否已经滚到最右（决定要不要显示那个小箭头）。
+  void _checkRowOverflow() {
+    if (!_rowScroll.hasClients) {
+      if (_rowOverflow || _rowAtEnd) setState(() {
+        _rowOverflow = false;
+        _rowAtEnd = true;
+      });
+      return;
+    }
+    final pos = _rowScroll.position;
+    final over = pos.maxScrollExtent > 1;
+    final atEnd = !over || pos.pixels >= pos.maxScrollExtent - 1;
+    if (over != _rowOverflow || atEnd != _rowAtEnd) {
+      setState(() {
+        _rowOverflow = over;
+        _rowAtEnd = atEnd;
+      });
+    }
   }
 
   // ------------------------------------------------------------------ 展开
@@ -350,6 +393,12 @@ class _SnippetBarState extends State<SnippetBar> {
         child: Padding(padding: const EdgeInsets.all(5), child: Icon(icon, size: 18)),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _rowScroll.dispose();
+    super.dispose();
   }
 
   @override
