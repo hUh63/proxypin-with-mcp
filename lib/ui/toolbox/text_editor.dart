@@ -472,7 +472,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (existing != null) {
       _activate(existing);
     } else {
-      _activate(_docs.create(name: localizations.editorUntitled));
+      final doc = _docs.create(name: localizations.editorUntitled);
+      doc.newline = _newlineChars(_newline);
+      _activate(doc);
     }
   }
 
@@ -3813,7 +3815,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
     'tf': 'hcl',
     'tfvars': 'hcl',
     'matlab': 'matlab',
-    'mjs2': 'javascript',
     'mdx': 'markdown',
     'svelte': 'xml',
     'astro': 'xml',

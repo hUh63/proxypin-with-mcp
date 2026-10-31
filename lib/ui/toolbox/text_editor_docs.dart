@@ -234,6 +234,10 @@ class EditorDocuments {
           'pinned': d.pinned,
           // 书签存偏移，正文一起落盘后偏移依然有效。
           'bookmarks': d.bookmarks.toList(),
+          // 换行符与编码也要一起记：否则恢复后一保存，CRLF 文件被写成 LF、
+          // GBK 文件被写成 UTF-8。
+          'newline': d.newline,
+          'encodingName': d.encodingName,
         });
       }
       await File('${dir.path}/manifest.json').writeAsString(jsonEncode({
@@ -275,6 +279,9 @@ class EditorDocuments {
           retained: true,
           text: text,
         );
+        final nl = raw['newline'];
+        if (nl == '\r\n' || nl == '\r' || nl == '\n') doc.newline = nl as String;
+        doc.encodingName = raw['encodingName'] as String?;
         final marks = raw['bookmarks'];
         if (marks is List) {
           for (final mark in marks) {
