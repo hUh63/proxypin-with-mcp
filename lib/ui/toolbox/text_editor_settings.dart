@@ -255,7 +255,11 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 min: 0,
                 max: 1000000,
                 divisions: 20,
-                label: '${((prefs.autoPageSize == 0 ? 200000 : prefs.autoPageSize) / 1000).toStringAsFixed(0)}k',
+                // 0 = 不自定义（按 200k 起）。显示成「200k+」而不是「200k」，
+                // 否则用户会以为这就是设成了 200k。
+                label: prefs.autoPageSize == 0
+                    ? '200k+'
+                    : '${(prefs.autoPageSize / 1000).toStringAsFixed(0)}k',
                 onChanged: (v) => _apply(prefs.copyWith(autoPageSize: v.round())),
               ),
               Padding(

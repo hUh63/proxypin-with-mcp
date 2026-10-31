@@ -39,6 +39,7 @@ import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/network/util/stream_decode.dart';
 import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
 import 'package:proxypin/ui/toolbox/editor_console.dart';
@@ -3578,7 +3579,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
 
     try {
-      final content = await File(path).readAsString();
+      // 不能直接用 readAsString：它按 UTF-8 **严格**解码，国内很常见的 GBK 文本
+      // （.txt / .properties / 老项目源码）会直接抛异常，文件根本打不开 ——
+      // 用户连「重新以某编码加载」的机会都没有。
+      // 这里走带容错 + GBK 探测的解码，UTF-16/32 按 BOM 认。
+      final bytes = await File(path).readAsBytes();
+      final String content;
+      final bom = _bomEncodingOf(bytes);
+      if (bom != null) {
+        content = await bom.decode(bytes);
+      } else {
+        content = decodeBytesToText(bytes, null);
+      }
       final name = path.split(Platform.pathSeparator).last;
       final doc = _docs.create(name: name, text: content, path: path, langLabel: _detectLanguage(path) ?? 'Plain Text');
       doc.newline = content.contains('\r\n') ? '\r\n' : (content.contains('\r') ? '\r' : '\n');
@@ -5103,6 +5115,30 @@ class _TextEditorPageState extends State<TextEditorPage> {
         },
       ),
     );
+  }
+
+  /// 按 BOM 认 UTF-16 / UTF-32（这类文件没有 BOM 基本无法可靠识别）。
+  EditorEncoding? _bomEncodingOf(List<int> b) {
+    EditorEncoding? find(String name) {
+      for (final e in kEncodings) {
+        if (e.name == name) return e;
+      }
+      return null;
+    }
+
+    if (b.length >= 4) {
+      if (b[0] == 0xFF && b[1] == 0xFE && b[2] == 0x00 && b[3] == 0x00) {
+        return find('UTF-32LE');
+      }
+      if (b[0] == 0x00 && b[1] == 0x00 && b[2] == 0xFE && b[3] == 0xFF) {
+        return find('UTF-32BE');
+      }
+    }
+    if (b.length >= 2) {
+      if (b[0] == 0xFF && b[1] == 0xFE) return find('UTF-16LE');
+      if (b[0] == 0xFE && b[1] == 0xFF) return find('UTF-16BE');
+    }
+    return null;
   }
 
   /// 菜单里带右侧箭头的行（表示还有下一级）。
