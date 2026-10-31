@@ -3705,6 +3705,37 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 原来只映射了 22 种扩展名，`.kt` / `.cs` / `.cpp` / `.rs` / `.php` / `.rb` / `.swift`
   /// 这些常见源码打开后全是纯文本（无高亮、无补全）—— 而编辑器本身支持 190 多种语言。
   /// 这里按内核的语言 key 建表，找不到就退回纯文本（不会比原来更差）。
+  /// INI：第一段非空内容就是 `[section]`。普通代码不会长这样，误判风险很低。
+  static bool _looksLikeIni(String head) {
+    for (final line in head.split('\n')) {
+      final t = line.trim();
+      if (t.isEmpty || t.startsWith(';') || t.startsWith('#')) continue;
+      return RegExp(r'^\[[^\]\s]+\]$').hasMatch(t);
+    }
+    return false;
+  }
+
+  /// YAML：连续多行 `key: value`，且没有别的东西掺杂。
+  /// 判据取保守一侧 —— 宁可认不出，也不要把 shell / 代码认成 YAML。
+  static final RegExp _yamlKvRe = RegExp(r'^[A-Za-z_][\w.\-]*\s*:\s*(\S.*)?$');
+  static bool _looksLikeYaml(String head) {
+    var kv = 0;
+    var others = 0;
+    for (final line in head.split('\n')) {
+      var t = line.trim();
+      if (t.isEmpty || t.startsWith('#')) continue;
+      // 列表项算「中性」：YAML 里常见，Markdown 里也常见，不足以单独判成 YAML。
+      if (t == '-' || t.startsWith('- ')) continue;
+      if (_yamlKvRe.hasMatch(t)) {
+        kv++;
+        continue;
+      }
+      others++;
+    }
+    // 至少两行 key: value、且没有一行是别的东西（代码/命令/散文）。
+    return kv >= 2 && others == 0;
+  }
+
   static const Map<String, String> _extToLangKey = {
     'c': 'c',
     'h': 'c',
@@ -3869,6 +3900,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         return null;
       }
     }
+    if (_looksLikeIni(head)) return _labelOfLangKey('ini');
+    if (_looksLikeYaml(head)) return _labelOfLangKey('yaml');
     if (t.startsWith('---')) return _labelOfLangKey('yaml');
     if (t.startsWith('#!')) {
       if (t.contains('python')) return _labelOfLangKey('python');

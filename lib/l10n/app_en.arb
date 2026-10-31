@@ -4959,5 +4959,13 @@
       }
     }
   },
-  "editorApplyToAll": "Apply to all open documents"
+  "editorApplyToAll": "Apply to all open documents",
+  "editorRestorePartial": "Some retained documents ({n}) could not be restored",
+  "@editorRestorePartial": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

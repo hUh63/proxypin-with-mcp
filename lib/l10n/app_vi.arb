@@ -2875,5 +2875,6 @@
   "editorRecentCleared": "Đã xóa lệnh dùng gần đây",
   "editorReloadDiscard": "Tải lại sẽ bỏ các thay đổi chưa lưu. Tiếp tục?",
   "editorBigFileWarn": "Tệp này có {mb} MB. Mở có thể chậm. Tiếp tục?",
-  "editorApplyToAll": "Áp dụng cho tất cả tài liệu đang mở"
+  "editorApplyToAll": "Áp dụng cho tất cả tài liệu đang mở",
+  "editorRestorePartial": "Không khôi phục được {n} tài liệu đã giữ"
 }

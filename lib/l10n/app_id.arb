@@ -2875,5 +2875,6 @@
   "editorRecentCleared": "Perintah terbaru dihapus",
   "editorReloadDiscard": "Memuat ulang akan membuang perubahan yang belum disimpan. Lanjutkan?",
   "editorBigFileWarn": "File ini {mb} MB. Membukanya mungkin lambat. Lanjutkan?",
-  "editorApplyToAll": "Terapkan ke semua dokumen yang terbuka"
+  "editorApplyToAll": "Terapkan ke semua dokumen yang terbuka",
+  "editorRestorePartial": "{n} dokumen tersimpan gagal dipulihkan"
 }

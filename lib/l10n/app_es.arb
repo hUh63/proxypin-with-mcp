@@ -2875,5 +2875,6 @@
   "editorRecentCleared": "Comandos recientes borrados",
   "editorReloadDiscard": "Recargar descarta los cambios sin guardar. ¿Continuar?",
   "editorBigFileWarn": "Este archivo pesa {mb} MB. Abrirlo puede ser lento. ¿Continuar?",
-  "editorApplyToAll": "Aplicar a todos los documentos abiertos"
+  "editorApplyToAll": "Aplicar a todos los documentos abiertos",
+  "editorRestorePartial": "No se pudieron restaurar {n} documentos conservados"
 }

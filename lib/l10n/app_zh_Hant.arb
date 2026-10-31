@@ -4676,5 +4676,6 @@
   "editorRecentCleared": "已清空最近使用的命令",
   "editorReloadDiscard": "重新載入會捨棄未儲存的修改，要繼續嗎？",
   "editorBigFileWarn": "這個檔案有 {mb} MB，開啟會比較慢，可能卡頓。要繼續嗎？",
-  "editorApplyToAll": "套用到全部開啟的文件"
+  "editorApplyToAll": "套用到全部開啟的文件",
+  "editorRestorePartial": "有 {n} 份保留文件沒能復原"
 }

@@ -216,9 +216,18 @@ class EditorDocuments {
   /// 两路同时跑会「一边删目录、一边写文件」，最容易丢的正是保留文档。
   Future<void>? _persistChain;
 
+  bool _persistPending = false;
+
   /// 只落盘「保留」的文档；其余视为临时文件，退出即丢。
   Future<void> persist() {
-    final next = (_persistChain ?? Future<void>.value()).then((_) => _persistNow());
+    // 连点置顶 / 连续拖拽会排很多次全量写盘，而每次写的都是「当前内存快照」，
+    // 所以只要还没轮到它开始写，就可以合并成一个。
+    if (_persistPending) return _persistChain ?? Future<void>.value();
+    _persistPending = true;
+    final next = (_persistChain ?? Future<void>.value()).then((_) {
+      _persistPending = false;
+      return _persistNow();
+    });
     // 失败也不该卡住后面的写盘。
     _persistChain = next.catchError((_) {});
     return next;
@@ -270,9 +279,11 @@ class EditorDocuments {
   }
 
   /// 从磁盘恢复上次保留的文档；同一进程只执行一次。
-  Future<void> ensureRestored() async {
-    if (_restored) return;
+  /// 返回「manifest 里有、但正文读不回来」的份数，供界面提示。
+  Future<int> ensureRestored() async {
+    if (_restored) return 0;
     _restored = true;
+    var broken = 0;
     try {
       final dir = await _dir();
       final manifestFile = File('${dir.path}/manifest.json');
@@ -288,7 +299,10 @@ class EditorDocuments {
         final id = raw['id'] as String?;
         if (id == null || id.isEmpty) continue;
         final file = File('${dir.path}/$id.txt');
-        if (!await file.exists()) continue;
+        if (!await file.exists()) {
+          broken++;
+          continue;
+        }
         // 单份缓存读失败（写盘时断电、文件被别的进程清掉）不能连带丢掉其它文档 ——
         // 原来这里一抛，外层 catch 一吞，整批保留文档全没了。
         String text;
@@ -296,6 +310,7 @@ class EditorDocuments {
           text = await file.readAsString();
         } catch (e) {
           logger.w('restore text editor doc failed: $id', error: e);
+          broken++;
           continue;
         }
         if (byId(id) != null) continue;
@@ -332,5 +347,6 @@ class EditorDocuments {
     } catch (e) {
       logger.w('restore text editor docs failed', error: e);
     }
+    return broken;
   }
 }
