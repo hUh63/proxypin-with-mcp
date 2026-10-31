@@ -257,11 +257,28 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Timer? _navTimer;
   bool _suppressNav = false;
 
-  // 读写磁盘文件时使用的编码（跟随全局偏好）。
-  EditorEncoding get _encoding => kEncodings.firstWhere(
-        (e) => e.name == _prefs.encodingName,
-        orElse: () => defaultEncoding,
-      );
+  // 读写磁盘文件时使用的编码：文档自己的优先，否则跟随全局偏好。
+  EditorEncoding get _encoding => _encodingOf(_doc);
+
+  EditorEncoding _encodingOf(EditorDocument? doc) {
+    final name = doc?.encodingName ?? _prefs.encodingName;
+    return kEncodings.firstWhere((e) => e.name == name, orElse: () => defaultEncoding);
+  }
+
+  /// 某份文档要写回的换行符（打开时检测到的值）。
+  String _newlineCharsOf(EditorDocument? doc) {
+    final nl = doc?.newline;
+    return (nl == '\r\n' || nl == '\r') ? nl! : '\n';
+  }
+
+  /// 把文本统一成目标换行符。
+  ///
+  /// 先全部折成 `\n` 再展开：混合换行（半 CRLF 半 LF）的文件直接 replaceAll
+  /// 会被反复替换，出现 `\r\r\n` 这种脏东西。
+  String _applyNewline(String text, String nl) {
+    final lf = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    return nl == '\n' ? lf : lf.replaceAll('\n', nl);
+  }
 
   // 文件外部改动 / 删除检测。
   Timer? _fileWatchTimer;
@@ -1382,12 +1399,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorNoFilePath);
       return;
     }
+    if (doc.dirty) {
+      // 重新加载会丢掉未保存的修改，先问一句。
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          content: Text(localizations.editorReloadDiscard),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
     try {
       final bytes = await File(path).readAsBytes();
       final text = await encoding.decode(bytes);
       if (!mounted) return;
-      TextEditorPrefsStore.update(
-          TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name));
+      doc.encodingName = encoding.name;
+      unawaited(TextEditorPrefsStore.update(
+          TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name)));
       setState(() {
         doc.text = text;
         _lastText = text;
@@ -1411,18 +1443,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (!mounted) return;
     }
 
-    var text = controller.text;
-    switch (_newline) {
-      case _Newline.crlf:
-        text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
-      case _Newline.cr:
-        text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r');
-      case _Newline.lf:
-        text = text.replaceAll('\r\n', '\n');
-    }
+    final text = _applyNewline(controller.text, _newlineCharsOf(doc));
     final bytes = await encoding.encode(text);
-    TextEditorPrefsStore.update(
-        TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name));
+    // 编码记在文档上：改一份文件的编码不该影响下一份。
+    doc.encodingName = encoding.name;
+    unawaited(TextEditorPrefsStore.update(
+        TextEditorPrefsStore.notifier.value.copyWith(encodingName: encoding.name)));
 
     final path = doc.path;
     if (path != null && path.isNotEmpty) {
@@ -3592,9 +3618,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
         // 无 BOM：先按 UTF-8 容错解；出现大量 U+FFFD 再试 GBK
         // （与抓包侧 decodeBytesToText 同一套判据）。
         final utf8Text = utf8.decode(bytes, allowMalformed: true);
-        final bad = '\uFFFD'.allMatches(utf8Text).length;
+        // 只拿前 64KB 做「是不是 GBK」的判断：大文件整份解两次太贵，
+        // 而判定只需要一段有中文的样本。
+        const probeLimit = 64 * 1024;
+        final sample = bytes.length > probeLimit
+            ? utf8.decode(bytes.sublist(0, probeLimit), allowMalformed: true)
+            : utf8Text;
+        final bad = '\uFFFD'.allMatches(sample).length;
         String? gbkText;
-        if (bytes.length <= 512 * 1024 && bad >= 3 && bad * 100 > utf8Text.length) {
+        if (bad >= 3 && bad * 100 > sample.length) {
           for (final e in kEncodings) {
             if (e.name != 'GBK') continue;
             try {
@@ -3611,13 +3643,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
         }
         content = gbkText ?? utf8Text;
       }
-      if (detected != null) {
-        // 记住实际编码：否则「打开 GBK 文件 → 改一个字 → 保存」会把它悄悄写成 UTF-8。
-        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(encodingName: detected.name)));
-      }
+      // 编码记到这份文档上（同时也更新全局偏好，作为下次新建的默认）——
+      // 否则「打开 GBK 文件 → 改一个字 → 保存」会把它悄悄写成 UTF-8。
       final name = path.split(Platform.pathSeparator).last;
       final doc = _docs.create(name: name, text: content, path: path, langLabel: _detectLanguage(path) ?? 'Plain Text');
       doc.newline = content.contains('\r\n') ? '\r\n' : (content.contains('\r') ? '\r' : '\n');
+      if (detected != null) {
+        doc.encodingName = detected.name;
+        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(encodingName: detected.name)));
+      }
       _activate(doc);
       final pageLimit =
           _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
@@ -3668,14 +3702,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (text.isEmpty) return;
 
     // 编辑器内部永远是 \n，写出时按设置替换
-    switch (_newline) {
-      case _Newline.crlf:
-        text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
-      case _Newline.cr:
-        text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r');
-      case _Newline.lf:
-        text = text.replaceAll('\r\n', '\n');
-    }
+    text = _applyNewline(text, _newlineCharsOf(_doc));
 
     final fileName = _doc?.name ?? 'text.txt';
 
@@ -4185,16 +4212,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final path = doc.path;
     if (path == null || path.isEmpty) return false;
     try {
-      var text = doc.text;
-      switch (_newline) {
-        case _Newline.crlf:
-          text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
-        case _Newline.cr:
-          text = text.replaceAll('\r\n', '\n').replaceAll('\n', '\r');
-        case _Newline.lf:
-          text = text.replaceAll('\r\n', '\n');
-      }
-      await File(path).writeAsBytes(await _encoding.encode(text));
+      final text = _applyNewline(doc.text, _newlineCharsOf(doc));
+      await File(path).writeAsBytes(await _encodingOf(doc).encode(text));
       doc.dirty = false;
       if (mounted && identical(doc, _doc)) setState(() {});
       return true;
@@ -5515,7 +5534,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   String _newlineLabel() {
-    switch (_newline) {
+    // 显示的是「这份文件」的换行符（保存时按它写回），不是全局偏好。
+    final current = _newlineOf(_newlineCharsOf(_doc));
+    switch (current) {
       case _Newline.lf:
         return 'LF (\\n)';
       case _Newline.crlf:
@@ -5550,15 +5571,41 @@ class _TextEditorPageState extends State<TextEditorPage> {
           ..._Newline.values.map((e) => ListTile(
                 dense: true,
                 title: Text(_newlineText(e)),
-                trailing: e == _newline ? const Icon(Icons.check, size: 18) : null,
+                trailing: e == _newlineOf(_newlineCharsOf(_doc))
+                    ? const Icon(Icons.check, size: 18)
+                    : null,
                 onTap: () => Navigator.pop(ctx, e),
               )),
         ],
       ),
     );
     if (value == null) return;
-    setState(() => _newline = value);
+    // 改的是当前文档（保存时按它写回）；同时存成全局偏好，新建文件沿用它。
+    final doc = _doc;
+    setState(() {
+      _newline = value;
+      doc?.newline = _newlineChars(value);
+    });
     await _saveNewline();
+  }
+
+  /// `_Newline` → 实际字符。
+  static String _newlineChars(_Newline n) {
+    switch (n) {
+      case _Newline.lf:
+        return '\n';
+      case _Newline.crlf:
+        return '\r\n';
+      case _Newline.cr:
+        return '\r';
+    }
+  }
+
+  /// 实际字符 → `_Newline`。
+  static _Newline _newlineOf(String nl) {
+    if (nl == '\r\n') return _Newline.crlf;
+    if (nl == '\r') return _Newline.cr;
+    return _Newline.lf;
   }
 
   Future<void> _pickRetainMode() async {

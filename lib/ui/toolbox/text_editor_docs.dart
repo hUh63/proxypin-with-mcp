@@ -55,8 +55,17 @@ class EditorDocument {
   late final UndoRedoController undoController;
   late final FindController findController;
 
-  /// 打开文件时的原始换行符（仅用于展示；编辑器内部永远是 \n）
+  /// 这份文件的换行符（`\n` / `\r\n` / `\r`）。
+  ///
+  /// 打开时按内容检测，保存时按它写回 —— 不能让「页面上的全局偏好」决定，
+  /// 否则打开一个 CRLF 文件、改一个字保存，整个文件的换行符就被统一改写了。
   String newline = '\n';
+
+  /// 这份文件实际用的编码名（打开时检测 / 用户手动切换）。
+  ///
+  /// null = 跟随全局偏好（新建文件、或没检测出来）。放文档上是为了
+  /// 「打开 GBK 文件」不会把全局编码改掉，进而污染下一个另存为。
+  String? encodingName;
 
   /// 光标导航历史（「后退 / 前进」用，存字符偏移）。
   ///

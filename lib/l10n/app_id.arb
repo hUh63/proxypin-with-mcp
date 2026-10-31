@@ -2872,5 +2872,6 @@
   "editorMinifyNoChange": "Sudah paling ringkas, tidak ada perubahan",
   "editorFormatSelectFirst": "Pilih dulu teks yang akan diformat",
   "editorLangKeepOne": "Simpan minimal satu sintaks",
-  "editorRecentCleared": "Perintah terbaru dihapus"
+  "editorRecentCleared": "Perintah terbaru dihapus",
+  "editorReloadDiscard": "Memuat ulang akan membuang perubahan yang belum disimpan. Lanjutkan?"
 }

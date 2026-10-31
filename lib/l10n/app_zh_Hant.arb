@@ -4673,5 +4673,6 @@
   "editorMinifyNoChange": "內容已經是最簡，沒有變化",
   "editorFormatSelectFirst": "請先選取要格式化的內容",
   "editorLangKeepOne": "至少要保留一種語法",
-  "editorRecentCleared": "已清空最近使用的命令"
+  "editorRecentCleared": "已清空最近使用的命令",
+  "editorReloadDiscard": "重新載入會捨棄未儲存的修改，要繼續嗎？"
 }

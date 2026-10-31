@@ -2873,5 +2873,6 @@
   "editorMinifyNoChange": "Já está no mínimo, sem alterações",
   "editorFormatSelectFirst": "Selecione primeiro o texto a formatar",
   "editorLangKeepOne": "Mantenha pelo menos uma sintaxe",
-  "editorRecentCleared": "Comandos recentes apagados"
+  "editorRecentCleared": "Comandos recentes apagados",
+  "editorReloadDiscard": "Recarregar descarta as alterações não salvas. Continuar?"
 }

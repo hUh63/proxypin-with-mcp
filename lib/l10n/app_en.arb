@@ -4949,5 +4949,6 @@
   "editorMinifyNoChange": "Already minimal, nothing changed",
   "editorFormatSelectFirst": "Select some text to format first",
   "editorLangKeepOne": "Keep at least one syntax",
-  "editorRecentCleared": "Recent commands cleared"
+  "editorRecentCleared": "Recent commands cleared",
+  "editorReloadDiscard": "Reloading discards unsaved changes. Continue?"
 }
