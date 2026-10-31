@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.67.171 (2026-10-31) — 语言识别第二批 / 重新加载清撤销栈 / 超大文件先问一句
+
+1. **语言识别再补 25 种**：Clojure、Elixir、Erlang、Haskell、Julia、Nim、Nix、OCaml、
+   PureScript、Tcl、Awk、CoffeeScript、Sass、Stylus、Handlebars、Pug、F#、VB.NET、Razor/CSHTML、
+   Elm、Haxe、Crystal、HCL(Terraform)、MATLAB、Svelte/Astro。内核没有对应 key 的一律退回纯文本。
+2. **「重新以某编码加载」后清空撤销栈**：之前 `doc.text = 新内容`，撤销栈里还指着被丢弃的旧内容 ——
+   点一下撤销就「变回乱码」。现在重新加载后 `undoController.clear()`。
+3. **新建文件的换行符沿用全局偏好**：原来固定 `\n`，从 Windows 文件里复制一段内容到新标签页，
+   保存出来是 LF。现在按「视图 › 换行符」里的设置初始化。
+4. **超大文件打开前先问一句**：> 8MB 弹确认（原来直接整份读进 controller —— 流畅模式只是关掉
+   高亮与折叠，文本仍全量载入、全量建行索引，几十 MB 的文件能把 App 卡死）。用 `File.length()`
+   先量大小，不会先读进内存再判断。
+
+**排查确认（无缺陷，记录备查）：**
+
+- `EditorDocuments.persist()` 的 6 个调用点都在「新建 / 删除 / 置顶 / 拖拽排序 / 关闭文档」这类
+  低频动作上，**不在打字路径**，不存在每敲一个字重写所有 retained 文档的 IO 风暴。
+- `_checkFileState`（3 秒轮询）检测到外部修改时只 toast 提示「文件已被外部修改」，不会静默覆盖
+  内存内容，也不会自动重载 —— 行为正确。
+
 ## v1.67.170 (2026-10-31) — 打开文件的语言识别从 22 种扩到 70+ 种
 
 `_detectLanguage` 原来是手写的 22 条映射（js/ts/py/java/go/dart/css/sql/yaml/md/sh/json/xml/html），

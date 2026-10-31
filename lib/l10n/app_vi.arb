@@ -2873,5 +2873,6 @@
   "editorFormatSelectFirst": "Hãy chọn nội dung cần định dạng trước",
   "editorLangKeepOne": "Giữ lại ít nhất một cú pháp",
   "editorRecentCleared": "Đã xóa lệnh dùng gần đây",
-  "editorReloadDiscard": "Tải lại sẽ bỏ các thay đổi chưa lưu. Tiếp tục?"
+  "editorReloadDiscard": "Tải lại sẽ bỏ các thay đổi chưa lưu. Tiếp tục?",
+  "editorBigFileWarn": "Tệp này có {mb} MB. Mở có thể chậm. Tiếp tục?"
 }

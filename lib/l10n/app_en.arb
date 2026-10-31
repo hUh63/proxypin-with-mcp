@@ -4950,5 +4950,13 @@
   "editorFormatSelectFirst": "Select some text to format first",
   "editorLangKeepOne": "Keep at least one syntax",
   "editorRecentCleared": "Recent commands cleared",
-  "editorReloadDiscard": "Reloading discards unsaved changes. Continue?"
+  "editorReloadDiscard": "Reloading discards unsaved changes. Continue?",
+  "editorBigFileWarn": "This file is {mb} MB. Opening it may be slow. Continue?",
+  "@editorBigFileWarn": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  }
 }

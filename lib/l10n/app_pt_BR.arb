@@ -2874,5 +2874,6 @@
   "editorFormatSelectFirst": "Selecione primeiro o texto a formatar",
   "editorLangKeepOne": "Mantenha pelo menos uma sintaxe",
   "editorRecentCleared": "Comandos recentes apagados",
-  "editorReloadDiscard": "Recarregar descarta as alterações não salvas. Continuar?"
+  "editorReloadDiscard": "Recarregar descarta as alterações não salvas. Continuar?",
+  "editorBigFileWarn": "Este arquivo tem {mb} MB. Abrir pode ser lento. Continuar?"
 }

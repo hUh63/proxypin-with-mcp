@@ -2873,5 +2873,6 @@
   "editorFormatSelectFirst": "Pilih dulu teks yang akan diformat",
   "editorLangKeepOne": "Simpan minimal satu sintaks",
   "editorRecentCleared": "Perintah terbaru dihapus",
-  "editorReloadDiscard": "Memuat ulang akan membuang perubahan yang belum disimpan. Lanjutkan?"
+  "editorReloadDiscard": "Memuat ulang akan membuang perubahan yang belum disimpan. Lanjutkan?",
+  "editorBigFileWarn": "File ini {mb} MB. Membukanya mungkin lambat. Lanjutkan?"
 }

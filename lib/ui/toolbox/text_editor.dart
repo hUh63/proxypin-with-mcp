@@ -1425,6 +1425,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _lastText = text;
         _dirty = false;
       });
+      // 换编码后旧的撤销栈指向的是被丢弃的内容，撤销回去等于「变回乱码」。
+      doc.undoController.clear();
       _toast(localizations.editorReloadSuccess);
     } catch (e) {
       _toast('$e');
@@ -1547,6 +1549,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       name: localizations.editorUntitled,
       langLabel: keep ? current.langLabel : 'Plain Text',
     );
+    // 新建文件沿用全局换行符偏好（从 Windows 文件里复制内容过来时更顺）。
+    doc.newline = _newlineChars(_newline);
     _activate(doc);
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).pop();
@@ -3609,7 +3613,29 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // （.txt / .properties / 老项目源码）会直接抛异常，文件根本打不开 ——
       // 用户连「重新以某编码加载」的机会都没有。
       // 这里走带容错 + GBK 探测的解码，UTF-16/32 按 BOM 认。
-      final bytes = await File(path).readAsBytes();
+      final file = File(path);
+      // 超大文件先问一句：整份读进 controller 很卡（流畅模式只是关掉高亮与折叠，
+      // 文本仍然全量载入、全量做行索引）。
+      const bigFileBytes = 8 * 1024 * 1024;
+      final size = await file.length();
+      if (size > bigFileBytes) {
+        if (!mounted) return;
+        final mb = (size / (1024 * 1024)).toStringAsFixed(1);
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Text(localizations.editorBigFileWarn(mb)),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+              FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+            ],
+          ),
+        );
+        if (ok != true || !mounted) return;
+      }
+      final bytes = await file.readAsBytes();
       final String content;
       var detected = _bomEncodingOf(bytes);
       if (detected != null) {
@@ -3748,6 +3774,49 @@ class _TextEditorPageState extends State<TextEditorPage> {
     'conf': 'nginx',
     'diff': 'diff',
     'patch': 'diff',
+    // 第二批：hljs 里有的其它常用语言（内核没有对应 key 时会退回纯文本，不会更差）。
+    'clj': 'clojure',
+    'cljs': 'clojure',
+    'cljc': 'clojure',
+    'edn': 'clojure',
+    'ex': 'elixir',
+    'exs': 'elixir',
+    'erl': 'erlang',
+    'hrl': 'erlang',
+    'hs': 'haskell',
+    'lhs': 'haskell',
+    'jl': 'julia',
+    'nim': 'nim',
+    'nix': 'nix',
+    'ml': 'ocaml',
+    'mli': 'ocaml',
+    'purs': 'purescript',
+    'tcl': 'tcl',
+    'awk': 'awk',
+    'coffee': 'coffeescript',
+    'sass': 'sass',
+    'styl': 'stylus',
+    'hbs': 'handlebars',
+    'mustache': 'handlebars',
+    'pug': 'pug',
+    'jade': 'pug',
+    'fs': 'fsharp',
+    'fsx': 'fsharp',
+    'fsi': 'fsharp',
+    'vb': 'vbnet',
+    'vbs': 'vbscript',
+    'cshtml': 'cshtml',
+    'razor': 'cshtml',
+    'elm': 'elm',
+    'hx': 'haxe',
+    'cr': 'crystal',
+    'tf': 'hcl',
+    'tfvars': 'hcl',
+    'matlab': 'matlab',
+    'mjs2': 'javascript',
+    'mdx': 'markdown',
+    'svelte': 'xml',
+    'astro': 'xml',
     'http': '',
     'rest': '',
   };
