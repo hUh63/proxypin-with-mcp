@@ -4958,5 +4958,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "editorApplyToAll": "Apply to all open documents"
 }

@@ -3674,7 +3674,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 编码记到这份文档上（同时也更新全局偏好，作为下次新建的默认）——
       // 否则「打开 GBK 文件 → 改一个字 → 保存」会把它悄悄写成 UTF-8。
       final name = path.split(Platform.pathSeparator).last;
-      final doc = _docs.create(name: name, text: content, path: path, langLabel: _detectLanguage(path) ?? 'Plain Text');
+      final doc = _docs.create(
+        name: name,
+        text: content,
+        path: path,
+        // 扩展名给不出语言时按内容嗅探（.txt 里装 JSON 这类）。
+        langLabel: _detectLanguage(path) ?? _sniffLanguage(content) ?? 'Plain Text',
+      );
       doc.newline = content.contains('\r\n') ? '\r\n' : (content.contains('\r') ? '\r' : '\n');
       if (detected != null) {
         doc.encodingName = detected.name;
@@ -3839,6 +3845,35 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final key = _extToLangKey[ext];
     if (key == null || key.isEmpty) return null;
     return _labelOfLangKey(key);
+  }
+
+  /// 扩展名不可靠时的兜底：按内容开头判断（`xxx.txt` 里装的其实是 JSON 很常见）。
+  ///
+  /// 只做「高置信度」的几种，拿不准就返回 null（退回纯文本，宁可不高亮也不乱高亮）。
+  String? _sniffLanguage(String content) {
+    final head = content.length > 400 ? content.substring(0, 400) : content;
+    final t = head.trimLeft();
+    if (t.isEmpty) return null;
+    if (t.startsWith('<!DOCTYPE') || t.startsWith('<!doctype') || t.startsWith('<html')) {
+      return _labelOfLangKey('xml');
+    }
+    if (t.startsWith('<?xml')) return _labelOfLangKey('xml');
+    if (t.startsWith('{') || t.startsWith('[')) {
+      // 必须是能解析的 JSON，避免把普通大括号块认成 JSON。
+      try {
+        jsonDecode(content.length > 200000 ? t : content);
+        return _labelOfLangKey('json');
+      } catch (_) {
+        return null;
+      }
+    }
+    if (t.startsWith('---')) return _labelOfLangKey('yaml');
+    if (t.startsWith('#!')) {
+      if (t.contains('python')) return _labelOfLangKey('python');
+      if (t.contains('node')) return _labelOfLangKey('javascript');
+      return _labelOfLangKey('bash');
+    }
+    return null;
   }
 
   /// 按 re_highlight 的 key 找语言 label；内核没有这门语言时返回 null（退回纯文本）。
@@ -5712,33 +5747,55 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   Future<void> _pickNewline() async {
+    // 多文档时允许一次改完（同一个项目里通常是一套换行符）。
+    var applyAll = false;
+    final multi = _docs.docs.length > 1;
     final value = await showDialog<_Newline>(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(localizations.editorNewline),
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-            child: Text(localizations.editorNewlineHint,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ),
-          ..._Newline.values.map((e) => ListTile(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => SimpleDialog(
+          title: Text(localizations.editorNewline),
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              child: Text(localizations.editorNewlineHint,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ),
+            ..._Newline.values.map((e) => ListTile(
+                  dense: true,
+                  title: Text(_newlineText(e)),
+                  trailing: e == _newlineOf(_newlineCharsOf(_doc))
+                      ? const Icon(Icons.check, size: 18)
+                      : null,
+                  onTap: () => Navigator.pop(ctx, e),
+                )),
+            if (multi) ...[
+              const Divider(height: 1),
+              CheckboxListTile(
                 dense: true,
-                title: Text(_newlineText(e)),
-                trailing: e == _newlineOf(_newlineCharsOf(_doc))
-                    ? const Icon(Icons.check, size: 18)
-                    : null,
-                onTap: () => Navigator.pop(ctx, e),
-              )),
-        ],
+                value: applyAll,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                title: Text(localizations.editorApplyToAll,
+                    style: const TextStyle(fontSize: 13)),
+                onChanged: (v) => setDlg(() => applyAll = v ?? false),
+              ),
+            ],
+          ],
+        ),
       ),
     );
     if (value == null) return;
-    // 改的是当前文档（保存时按它写回）；同时存成全局偏好，新建文件沿用它。
-    final doc = _doc;
+    // 改的是文档（保存时按它写回）；同时存成全局偏好，新建文件沿用它。
+    final chars = _newlineChars(value);
     setState(() {
       _newline = value;
-      doc?.newline = _newlineChars(value);
+      if (applyAll) {
+        for (final d in _docs.docs) {
+          d.newline = chars;
+        }
+      } else {
+        _doc?.newline = chars;
+      }
     });
     await _saveNewline();
   }

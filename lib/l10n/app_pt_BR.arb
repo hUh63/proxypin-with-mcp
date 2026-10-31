@@ -2875,5 +2875,6 @@
   "editorLangKeepOne": "Mantenha pelo menos uma sintaxe",
   "editorRecentCleared": "Comandos recentes apagados",
   "editorReloadDiscard": "Recarregar descarta as alterações não salvas. Continuar?",
-  "editorBigFileWarn": "Este arquivo tem {mb} MB. Abrir pode ser lento. Continuar?"
+  "editorBigFileWarn": "Este arquivo tem {mb} MB. Abrir pode ser lento. Continuar?",
+  "editorApplyToAll": "Aplicar a todos os documentos abertos"
 }

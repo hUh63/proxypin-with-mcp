@@ -269,7 +269,16 @@ class EditorDocuments {
         if (id == null || id.isEmpty) continue;
         final file = File('${dir.path}/$id.txt');
         if (!await file.exists()) continue;
-        final text = await file.readAsString();
+        // 单份缓存读失败（写盘时断电、文件被别的进程清掉）不能连带丢掉其它文档 ——
+        // 原来这里一抛，外层 catch 一吞，整批保留文档全没了。
+        String text;
+        try {
+          text = await file.readAsString();
+        } catch (e) {
+          logger.w('restore text editor doc failed: $id', error: e);
+          continue;
+        }
+        if (byId(id) != null) continue;
         final doc = EditorDocument(
           id: id,
           name: raw['name'] as String? ?? id,

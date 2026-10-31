@@ -4675,5 +4675,6 @@
   "editorLangKeepOne": "至少要保留一种语法",
   "editorRecentCleared": "已清空最近使用的命令",
   "editorReloadDiscard": "重新加载会丢弃未保存的修改，继续吗？",
-  "editorBigFileWarn": "这个文件有 {mb} MB，打开会比较慢，可能卡顿。继续吗？"
+  "editorBigFileWarn": "这个文件有 {mb} MB，打开会比较慢，可能卡顿。继续吗？",
+  "editorApplyToAll": "应用到全部打开的文档"
 }
