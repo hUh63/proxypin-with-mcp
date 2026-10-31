@@ -3859,9 +3859,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     if (t.startsWith('<?xml')) return _labelOfLangKey('xml');
     if (t.startsWith('{') || t.startsWith('[')) {
+      // 大文件不嗅探：整份 jsonDecode 太贵，只解析开头又必然失败（不完整）。
+      if (content.length > 200000) return null;
       // 必须是能解析的 JSON，避免把普通大括号块认成 JSON。
       try {
-        jsonDecode(content.length > 200000 ? t : content);
+        jsonDecode(content);
         return _labelOfLangKey('json');
       } catch (_) {
         return null;

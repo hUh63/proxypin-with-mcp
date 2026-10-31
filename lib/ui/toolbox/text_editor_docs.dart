@@ -212,20 +212,29 @@ class EditorDocuments {
     return dir;
   }
 
+  /// 落盘串行链：所有调用点（新建 / 删除 / 置顶 / 拖拽 / 关闭）都是 `unawaited` 的，
+  /// 两路同时跑会「一边删目录、一边写文件」，最容易丢的正是保留文档。
+  Future<void>? _persistChain;
+
   /// 只落盘「保留」的文档；其余视为临时文件，退出即丢。
-  Future<void> persist() async {
+  Future<void> persist() {
+    final next = (_persistChain ?? Future<void>.value()).then((_) => _persistNow());
+    // 失败也不该卡住后面的写盘。
+    _persistChain = next.catchError((_) {});
+    return next;
+  }
+
+  Future<void> _persistNow() async {
     try {
       final dir = await _dir();
-      // 先清掉旧文件，保证磁盘与内存一致
-      await for (final entity in dir.list()) {
-        if (entity is File) {
-          await entity.delete();
-        }
-      }
       final kept = _docs.where((d) => d.retained).toList();
       final manifest = <Map<String, dynamic>>[];
+      // 先「写新的」再「清旧的」：原来的顺序是先删干净再写，
+      // 中途失败（磁盘满 / 被系统杀掉）会让磁盘上什么都不剩。
+      final keepNames = <String>{'manifest.json'};
       for (final d in kept) {
         await File('${dir.path}/${d.id}.txt').writeAsString(d.text);
+        keepNames.add('${d.id}.txt');
         manifest.add({
           'id': d.id,
           'name': d.name,
@@ -244,6 +253,17 @@ class EditorDocuments {
         'docs': manifest,
         'activeId': _activeId,
       }));
+      // 清掉不再需要的旧缓存（已关闭 / 取消保留的文档）。
+      await for (final entity in dir.list()) {
+        if (entity is! File) continue;
+        final name = entity.uri.pathSegments.last;
+        if (keepNames.contains(name)) continue;
+        try {
+          await entity.delete();
+        } catch (_) {
+          // 删不掉就留着，下次再清
+        }
+      }
     } catch (e) {
       logger.w('persist text editor docs failed', error: e);
     }
