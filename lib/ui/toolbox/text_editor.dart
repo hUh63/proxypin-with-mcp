@@ -23,6 +23,7 @@ import 'dart:io';
 import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -189,6 +190,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   bool _wrap = true;
   bool _smooth = false;
+
+  /// 本会话里已经确认过「就这么打开」的大文件（path）。
+  final Set<String> _bigFileConfirmed = <String>{};
+
+  /// 内容变化后重新嗅探语言的防抖定时器。
+  Timer? _sniffTimer;
 
   /// 流畅模式是「因为文件太大自动打开的」——切到小文档时自动关掉，
   /// 免得用户改完大文件之后，所有小文件也跟着一直关着高亮。
@@ -374,6 +381,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _fileWatchTimer?.cancel();
     _lintTimer?.cancel();
     _rulerTimer?.cancel();
+    _sniffTimer?.cancel();
     _docScroll.dispose();
     _tabScroll.dispose();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
@@ -507,6 +515,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 多选是「针对某几个位置」的状态，换文档就失效了。
       _multiSel.clear();
       _multiWord = '';
+      _sniffTimer?.cancel();
       if (_smoothAuto) {
         final limit = _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
         if (doc.text.length <= limit) {
@@ -603,6 +612,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (mounted) setState(() {});
   }
 
+  /// 语言是嗅探来的：内容首行/结构变了（例如本来空的 .txt 里粘进一段 JSON），
+  /// 语言要跟着变。只对 `doc.langSniffed` 生效，用户手动选的语言不动。
+  void _maybeResniffLanguage() {
+    final doc = _doc;
+    if (doc == null || !doc.langSniffed || !mounted) return;
+    final next = _sniffLanguage(doc.text) ?? 'Plain Text';
+    if (next == doc.langLabel) return;
+    setState(() {
+      doc.langLabel = next;
+      // 语言变了，补全表与 lint 规则都要跟着换。
+      final key = _langs.firstWhere((l) => l.label == next, orElse: () => _langs.first).key;
+      doc.controller.extraSuggestions = CodeKeywords.forLanguage(next, key);
+    });
+  }
+
   void _onControllerChanged() {
     final text = _doc?.text ?? '';
     final changed = text != _lastText;
@@ -633,6 +657,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (!_dirty) setState(() => _dirty = true);
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
       _scheduleLint();
+      // 语言是嗅探来的话，内容变了可能就该换语言（空 .txt 里粘进 JSON）。
+      if (_doc?.langSniffed ?? false) {
+        _sniffTimer?.cancel();
+        _sniffTimer = Timer(const Duration(milliseconds: 900), _maybeResniffLanguage);
+      }
     }
 
     // 光标移动防抖后记录位置，供「上一处 / 下一处位置」使用。
@@ -3636,7 +3665,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 文本仍然全量载入、全量做行索引）。
       const bigFileBytes = 8 * 1024 * 1024;
       final size = await file.length();
-      if (size > bigFileBytes) {
+      if (size > bigFileBytes && !_bigFileConfirmed.contains(path)) {
         if (!mounted) return;
         final mb = (size / (1024 * 1024)).toStringAsFixed(1);
         // 除了「照样打开」，还给一个「只读预览」：几 MB 的日志/导出文件多半只是看一眼，
@@ -3665,19 +3694,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
           return;
         }
         if (pick != 1) return;
+        // 同一个文件在同一会话里问过一次就够了（从查看器「丢进编辑器」也会回到这里）。
+        _bigFileConfirmed.add(path);
       }
       final bytes = await file.readAsBytes();
       final (content, detected) = await _decodeForOpen(bytes);
       // 编码记到这份文档上（同时也更新全局偏好，作为下次新建的默认）——
       // 否则「打开 GBK 文件 → 改一个字 → 保存」会把它悄悄写成 UTF-8。
       final name = path.split(Platform.pathSeparator).last;
+      final sniffed = _detectLanguage(path) == null ? _sniffLanguage(content) : null;
       final doc = _docs.create(
         name: name,
         text: content,
         path: path,
         // 扩展名给不出语言时按内容嗅探（.txt 里装 JSON 这类）。
-        langLabel: _detectLanguage(path) ?? _sniffLanguage(content) ?? 'Plain Text',
+        langLabel: _detectLanguage(path) ?? sniffed ?? 'Plain Text',
       );
+      doc.langSniffed = sniffed != null;
       doc.newline = content.contains('\r\n') ? '\r\n' : (content.contains('\r') ? '\r' : '\n');
       if (detected != null) {
         doc.encodingName = detected.name;
@@ -4114,6 +4147,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (controller == null) return;
     final text = controller.text;
     if (text.trim().isEmpty) return;
+    // 全量格式化是同步正则 + 重新拼串，几 MB 会把界面卡住好几秒。
+    if (text.length > 2000000) {
+      if (!quiet) _toast(localizations.editorTooLargeToFormat);
+      return;
+    }
 
     // 只格式化选中部分（VS 的 Format Selection）。
     // 片段单独拿去 JSON/XML 解析必然失败，所以这里只做「按大括号重排缩进」。
@@ -5724,7 +5762,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       case 'newline':
         await _pickNewline();
       case 'stats':
-        _showStats();
+        unawaited(_showStats());
     }
   }
 
@@ -5776,14 +5814,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 文本统计。
-  void _showStats() {
+  Future<void> _showStats() async {
     final doc = _doc;
     if (doc == null) return;
     final text = doc.text;
-    final lines = text.isEmpty ? 0 : '\n'.allMatches(text).length + 1;
-    final chars = text.length;
-    final words = RegExp(r'\S+').allMatches(text).length;
-    final bytes = utf8.encode(text).length;
+    // 几 MB 的文本在主线程上扫全文 + utf8.encode 会卡一下，
+    // 直接丢给 isolate 算（算完回来再弹窗）。
+    final Map<String, int> stats = text.length > 500000
+        ? await compute(_computeTextStats, text)
+        : _computeTextStats(text);
+    if (!mounted) return;
+    final lines = stats['lines'] ?? 0;
+    final chars = stats['chars'] ?? 0;
+    final words = stats['words'] ?? 0;
+    final bytes = stats['bytes'] ?? 0;
 
     showDialog<void>(
       context: context,
@@ -6901,4 +6945,15 @@ class _SignatureBarState extends State<_SignatureBar> {
       ]),
     );
   }
+}
+
+/// 文本统计（行 / 字符 / 词 / 字节）。
+///
+/// 抽成顶层函数是为了能丢进 isolate：几 MB 的文本在主线程上扫全文 +
+/// `utf8.encode` 会明显卡顿。
+Map<String, int> _computeTextStats(String text) {
+  final lines = text.isEmpty ? 0 : '\n'.allMatches(text).length + 1;
+  final words = RegExp(r'\S+').allMatches(text).length;
+  final bytes = utf8.encode(text).length;
+  return {'lines': lines, 'chars': text.length, 'words': words, 'bytes': bytes};
 }

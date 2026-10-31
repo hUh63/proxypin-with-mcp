@@ -2877,5 +2877,6 @@
   "editorBigFileWarn": "Tệp này có {mb} MB. Mở có thể chậm. Tiếp tục?",
   "editorApplyToAll": "Áp dụng cho tất cả tài liệu đang mở",
   "editorRestorePartial": "Không khôi phục được {n} tài liệu đã giữ",
-  "editorOpenReadOnly": "Mở chỉ đọc"
+  "editorOpenReadOnly": "Mở chỉ đọc",
+  "editorTooLargeToFormat": "Tệp quá lớn để định dạng"
 }

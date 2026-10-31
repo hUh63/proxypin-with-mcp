@@ -61,6 +61,11 @@ class EditorDocument {
   /// 否则打开一个 CRLF 文件、改一个字保存，整个文件的换行符就被统一改写了。
   String newline = '\n';
 
+  /// 语言是「按内容嗅探」猜出来的（扩展名给不出语言时）。
+  ///
+  /// 只有这种语言才允许随内容变化重新判断 —— 用户手动选的语言不该被嗅探改掉。
+  bool langSniffed = false;
+
   /// 这份文件实际用的编码名（打开时检测 / 用户手动切换）。
   ///
   /// null = 跟随全局偏好（新建文件、或没检测出来）。放文档上是为了
@@ -263,8 +268,13 @@ class EditorDocuments {
           'path': d.path,
           'langLabel': d.langLabel,
           'pinned': d.pinned,
-          // 书签存偏移，正文一起落盘后偏移依然有效。
-          'bookmarks': d.bookmarks.toList(),
+          // 书签存偏移 + 偏移前 20 个字符：正文被大幅删改后偏移会漂，
+          // 有这段「上下文」就能在恢复时找回来（纯偏移只能瞎猜）。
+          'bookmarks': d.bookmarks.map((b) {
+            final o = b.clamp(0, d.text.length);
+            final head = o >= 20 ? d.text.substring(o - 20, o) : d.text.substring(0, o);
+            return {'o': o, 'h': head};
+          }).toList(),
           // 换行符与编码也要一起记：否则恢复后一保存，CRLF 文件被写成 LF、
           // GBK 文件被写成 UTF-8。
           'newline': d.newline,
@@ -289,6 +299,27 @@ class EditorDocuments {
     } catch (e) {
       logger.w('persist text editor docs failed', error: e);
     }
+  }
+
+  /// 把一个持久化的书签恢复到当前正文上。
+  ///
+  /// 旧格式是裸 int（纯偏移）；新格式是 `{o, h}` —— `h` 是偏移前的 20 个字符。
+  /// 先按偏移校验上下文，对不上再全文找 `h`（正文被大幅删改时偏移会漂）。
+  static int? _resolveBookmark(Object? mark, String text) {
+    if (mark is int) return (mark >= 0 && mark <= text.length) ? mark : null;
+    if (mark is! Map) return null;
+    final rawOffset = mark['o'];
+    if (rawOffset is! int) return null;
+    final head = mark['h'];
+    if (head is String && head.isNotEmpty) {
+      final o = rawOffset;
+      if (o >= head.length && o <= text.length && text.substring(o - head.length, o) == head) {
+        return o;
+      }
+      final at = text.indexOf(head);
+      if (at >= 0) return at + head.length;
+    }
+    return (rawOffset >= 0 && rawOffset <= text.length) ? rawOffset : null;
   }
 
   /// 从磁盘恢复上次保留的文档；同一进程只执行一次。
@@ -342,7 +373,8 @@ class EditorDocuments {
         final marks = raw['bookmarks'];
         if (marks is List) {
           for (final mark in marks) {
-            if (mark is int && mark >= 0 && mark <= text.length) doc.bookmarks.add(mark);
+            final resolved = _resolveBookmark(mark, text);
+            if (resolved != null) doc.bookmarks.add(resolved);
           }
         }
         restored.add(doc);

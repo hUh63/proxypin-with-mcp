@@ -4678,5 +4678,6 @@
   "editorBigFileWarn": "這個檔案有 {mb} MB，開啟會比較慢，可能卡頓。要繼續嗎？",
   "editorApplyToAll": "套用到全部開啟的文件",
   "editorRestorePartial": "有 {n} 份保留文件沒能復原",
-  "editorOpenReadOnly": "唯讀預覽"
+  "editorOpenReadOnly": "唯讀預覽",
+  "editorTooLargeToFormat": "檔案太大，已略過格式化"
 }

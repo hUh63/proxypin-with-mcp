@@ -2877,5 +2877,6 @@
   "editorBigFileWarn": "File ini {mb} MB. Membukanya mungkin lambat. Lanjutkan?",
   "editorApplyToAll": "Terapkan ke semua dokumen yang terbuka",
   "editorRestorePartial": "{n} dokumen tersimpan gagal dipulihkan",
-  "editorOpenReadOnly": "Buka hanya-baca"
+  "editorOpenReadOnly": "Buka hanya-baca",
+  "editorTooLargeToFormat": "File terlalu besar untuk diformat"
 }

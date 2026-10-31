@@ -4968,5 +4968,6 @@
       }
     }
   },
-  "editorOpenReadOnly": "Open read-only"
+  "editorOpenReadOnly": "Open read-only",
+  "editorTooLargeToFormat": "File is too large to format"
 }
