@@ -608,6 +608,34 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 把「改动前的偏移」映射到「改动后的偏移」。
+  static int _mapOffset(int offset, ({int start, int removed, int inserted}) d) {
+    if (offset <= d.start) return offset;
+    if (offset >= d.start + d.removed) return offset + d.inserted - d.removed;
+    // 落在被删掉的那段里：收到改动起点，别丢。
+    return d.start;
+  }
+
+  /// 在 [text] 里找 [head] 的所有出现，返回离 [near] 最近的那个（找不到返回 -1）。
+  ///
+  /// 只取第一个的话，同一句上下文出现两次就会定位到前面那份，书签直接跳走。
+  static int _nearestIndexOf(String text, String head, int near) {
+    var best = -1;
+    var bestDist = 0;
+    var at = text.indexOf(head);
+    // 出现次数不可能太多；给个上限防止极端文本（全同一字符）里死循环。
+    var guard = 0;
+    while (at >= 0 && guard++ < 200) {
+      final dist = (at - near).abs();
+      if (best < 0 || dist < bestDist) {
+        best = at;
+        bestDist = dist;
+      }
+      at = text.indexOf(head, at + 1);
+    }
+    return best;
+  }
+
   /// 记下每个书签前面的 20 个字符（整份替换后靠它找回位置）。
   void _syncBookmarkHeads(EditorDocument doc) {
     final text = doc.text;
@@ -628,7 +656,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     for (final o in doc.bookmarks) {
       final head = heads[o];
       if (head != null && head.isNotEmpty) {
-        final at = text.indexOf(head);
+        final at = _nearestIndexOf(text, head, o);
         if (at >= 0) {
           moved.add(at + head.length);
           continue;
@@ -692,32 +720,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
           // 整份替换（粘贴全文、重新加载）：按偏移平移只会全部挤到起点，
           // 改成「按书签前的上下文找」。
           final bigChange = delta.removed > 2000 || delta.inserted > 2000;
+          final heads0 = _doc?.bookmarkHeads;
+          final movedHeads = <int, String>{};
           for (final offset in bookmarks) {
-            if (bigChange) {
-              final head = _doc?.bookmarkHeads[offset];
-              if (head != null && head.isNotEmpty) {
-                final at = text.indexOf(head);
-                if (at >= 0) {
-                  moved.add(at + head.length);
-                  continue;
-                }
+            final head = heads0?[offset];
+            if (bigChange && head != null && head.isNotEmpty) {
+              final at = _nearestIndexOf(text, head, offset);
+              if (at >= 0) {
+                final dest = at + head.length;
+                moved.add(dest);
+                movedHeads[dest] = head;
+                continue;
               }
             }
-            if (offset <= delta.start) {
-              moved.add(offset);
-            } else if (offset >= delta.start + delta.removed) {
-              moved.add(offset + delta.inserted - delta.removed);
-            } else {
-              // 落在被删掉的那段里：收到改动起点，别丢。
-              moved.add(delta.start);
-            }
+            final dest = _mapOffset(offset, delta);
+            moved.add(dest);
+            if (head != null) movedHeads[dest] = head;
           }
           bookmarks
             ..clear()
             ..addAll(moved);
+          // 只在「大改动」时重新取上下文：每敲一个字都重建一遍是白活，
+          // 而旧上下文只要还在新文本里就能用来定位。
+          if (heads0 != null) {
+            heads0
+              ..clear()
+              ..addAll(movedHeads);
+            if (bigChange) {
+              final doc0 = _doc;
+              if (doc0 != null) _syncBookmarkHeads(doc0);
+            }
+          }
         }
-        final doc0 = _doc;
-        if (doc0 != null) _syncBookmarkHeads(doc0);
       }
       _rememberEdit(_doc?.controller.selection.extentOffset ?? 0);
       _lastText = text;
@@ -1635,7 +1669,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       case 'format':
         _format();
       case 'minify':
-        _minify();
+        unawaited(_minify());
       case 'find':
         _toggleFind();
       case 'special':
@@ -4080,6 +4114,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return _labelOfLangKey('xml');
     }
     if (t.startsWith('<?xml')) return _labelOfLangKey('xml');
+    if (t.startsWith('<?php')) return _labelOfLangKey('php');
+    if (t.startsWith('<svg')) return _labelOfLangKey('xml');
     if (t.startsWith('{') || t.startsWith('[')) {
       // 大文件不嗅探：整份 jsonDecode 太贵，只解析开头又必然失败（不完整）。
       if (content.length > 200000) return null;
@@ -4316,14 +4352,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return true;
   }
 
-  void _minify() {
+  Future<void> _minify() async {
     final controller = _controller;
     final doc = _doc;
     if (controller == null || doc == null) return;
     final text = controller.text;
     if (text.trim().isEmpty) return;
-    if (_tooLargeForSync(text)) return;
-    final result = CodeMinifier.minify(doc.langLabel, text);
+    // 压缩是纯函数，超过 100 万字符就丢给 isolate；再大的连 isolate 都搬不动了。
+    if (_tooLargeForSync(text, limit: 5000000)) return;
+    final String? result = text.length > 1000000
+        ? await compute(_minifyInIsolate, <String>[doc.langLabel, text])
+        : CodeMinifier.minify(doc.langLabel, text);
+    if (!mounted) return;
     if (result == null) {
       _toast(localizations.editorMinifyUnsupported);
       return;
@@ -4339,7 +4379,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 激进压缩：走内置 JS 编译器前端（DCE + 局部变量重命名）。仅 JS/TS；
   /// 语法超出子集时不给结果，提示用户，绝不猜测。
-  void _minifyAggressive() {
+  Future<void> _minifyAggressive() async {
     final controller = _controller;
     final doc = _doc;
     if (controller == null || doc == null) return;
@@ -4350,8 +4390,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     final text = controller.text;
     if (text.trim().isEmpty) return;
-    if (_tooLargeForSync(text)) return;
-    final result = JsCompiler.minify(text);
+    if (_tooLargeForSync(text, limit: 5000000)) return;
+    final String? result = text.length > 1000000
+        ? await compute(_compilerMinifyInIsolate, text)
+        : JsCompiler.minify(text);
+    if (!mounted) return;
     if (result == null) {
       _toast(localizations.editorMinifyAggressiveUnsupported);
       return;
@@ -5487,9 +5530,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
         case 'console':
           _openConsole(EditorConsoleTab.console);
         case 'minify':
-          _minify();
+          unawaited(_minify());
         case 'minifyAggressive':
-          _minifyAggressive();
+          unawaited(_minifyAggressive());
         case 'newline':
           _pickNewline();
         case 'retainMode':
@@ -7043,3 +7086,9 @@ Map<String, int> _computeTextStats(String text) {
   final bytes = utf8.encode(text).length;
   return {'lines': lines, 'chars': text.length, 'words': words, 'bytes': bytes};
 }
+
+/// 压缩（按语言）的 isolate 入口：参数是 `[语言 label, 正文]`。
+String? _minifyInIsolate(List<String> args) => CodeMinifier.minify(args[0], args[1]);
+
+/// 激进压缩（JS 编译器前端）的 isolate 入口。
+String? _compilerMinifyInIsolate(String text) => JsCompiler.minify(text);
