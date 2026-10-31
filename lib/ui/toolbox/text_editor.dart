@@ -3666,33 +3666,117 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 按文件后缀粗略命中语言；命中失败返回 null。
+  /// 扩展名 → re_highlight 的语言 key。
+  ///
+  /// 原来只映射了 22 种扩展名，`.kt` / `.cs` / `.cpp` / `.rs` / `.php` / `.rb` / `.swift`
+  /// 这些常见源码打开后全是纯文本（无高亮、无补全）—— 而编辑器本身支持 190 多种语言。
+  /// 这里按内核的语言 key 建表，找不到就退回纯文本（不会比原来更差）。
+  static const Map<String, String> _extToLangKey = {
+    'c': 'c',
+    'h': 'c',
+    'cpp': 'cpp',
+    'cc': 'cpp',
+    'cxx': 'cpp',
+    'hpp': 'cpp',
+    'hxx': 'cpp',
+    'cs': 'csharp',
+    'java': 'java',
+    'kt': 'kotlin',
+    'kts': 'kotlin',
+    'scala': 'scala',
+    'groovy': 'groovy',
+    'gradle': 'groovy',
+    'go': 'go',
+    'rs': 'rust',
+    'rb': 'ruby',
+    'php': 'php',
+    'swift': 'swift',
+    'm': 'objectivec',
+    'mm': 'objectivec',
+    'pl': 'perl',
+    'pm': 'perl',
+    'lua': 'lua',
+    'r': 'r',
+    'py': 'python',
+    'pyw': 'python',
+    'js': 'javascript',
+    'mjs': 'javascript',
+    'cjs': 'javascript',
+    'jsx': 'javascript',
+    'ts': 'typescript',
+    'tsx': 'typescript',
+    'dart': 'dart',
+    'html': 'xml',
+    'htm': 'xml',
+    'xml': 'xml',
+    'svg': 'xml',
+    'vue': 'xml',
+    'xaml': 'xml',
+    'css': 'css',
+    'scss': 'scss',
+    'less': 'less',
+    'json': 'json',
+    'jsonc': 'json',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'toml': 'ini',
+    'ini': 'ini',
+    'cfg': 'ini',
+    'properties': 'properties',
+    'md': 'markdown',
+    'markdown': 'markdown',
+    'sql': 'sql',
+    'sh': 'bash',
+    'bash': 'bash',
+    'zsh': 'bash',
+    'ps1': 'powershell',
+    'bat': 'dos',
+    'cmd': 'dos',
+    'asm': 'x86asm',
+    's': 'x86asm',
+    'proto': 'protobuf',
+    'graphql': 'graphql',
+    'gql': 'graphql',
+    'tex': 'latex',
+    'v': 'verilog',
+    'vhd': 'vhdl',
+    'vhdl': 'vhdl',
+    'dockerfile': 'dockerfile',
+    'makefile': 'makefile',
+    'cmake': 'cmake',
+    'nginx': 'nginx',
+    'conf': 'nginx',
+    'diff': 'diff',
+    'patch': 'diff',
+    'http': '',
+    'rest': '',
+  };
+
   String? _detectLanguage(String path) {
-    final ext = path.split('.').last.toLowerCase();
-    const map = {
-      'http': 'HTTP',
-      'rest': 'HTTP',
-      'json': 'JSON',
-      'xml': 'XML / HTML',
-      'html': 'XML / HTML',
-      'htm': 'XML / HTML',
-      'js': 'JavaScript',
-      'mjs': 'JavaScript',
-      'ts': 'TypeScript',
-      'tsx': 'TypeScript',
-      'css': 'CSS',
-      'sql': 'SQL',
-      'yaml': 'YAML',
-      'yml': 'YAML',
-      'md': 'Markdown',
-      'markdown': 'Markdown',
-      'sh': 'Bash',
-      'bash': 'Bash',
-      'py': 'Python',
-      'java': 'Java',
-      'go': 'Go',
-      'dart': 'Dart',
-    };
-    return map[ext];
+    final fileName = path.split(Platform.pathSeparator).last.toLowerCase();
+    // 这几类文件名本身没有扩展名。
+    if (fileName == 'dockerfile' || fileName.startsWith('dockerfile.')) {
+      return _labelOfLangKey('dockerfile');
+    }
+    if (fileName == 'makefile' || fileName.startsWith('makefile.')) {
+      return _labelOfLangKey('makefile');
+    }
+    if (fileName == 'cmakelists.txt') return _labelOfLangKey('cmake');
+    final dot = fileName.lastIndexOf('.');
+    final ext = dot < 0 ? '' : fileName.substring(dot + 1);
+    // http / rest 是编辑器自己的「HTTP」类（不是 re_highlight 语言）。
+    if (ext == 'http' || ext == 'rest') return 'HTTP';
+    final key = _extToLangKey[ext];
+    if (key == null || key.isEmpty) return null;
+    return _labelOfLangKey(key);
+  }
+
+  /// 按 re_highlight 的 key 找语言 label；内核没有这门语言时返回 null（退回纯文本）。
+  String? _labelOfLangKey(String key) {
+    for (final l in _langs) {
+      if (l.key == key) return l.label;
+    }
+    return null;
   }
 
   Future<void> _download() async {

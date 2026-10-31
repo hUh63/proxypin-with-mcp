@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.67.170 (2026-10-31) — 打开文件的语言识别从 22 种扩到 70+ 种
+
+`_detectLanguage` 原来是手写的 22 条映射（js/ts/py/java/go/dart/css/sql/yaml/md/sh/json/xml/html），
+`.kt`、`.cs`、`.cpp`、`.rs`、`.php`、`.rb`、`.swift`、`.scala`、`.lua`、`.proto` 等等
+**打开后全是纯文本** —— 没高亮、没补全、没「转到定义」，而编辑器本身支持 190 多种语言。
+
+现在按 re_highlight 的语言 key 建表（70+ 条扩展名），另外认三类没有扩展名的文件
+（`Dockerfile`、`Makefile`、`CMakeLists.txt`）。映射不到的一律退回纯文本，不会比原来更差。
+
 ## v1.67.169 (2026-10-31) — 换行符 / 编码都改成「按文件」，不再被全局偏好改写
 
 接着 167/168 的编码线往下挖，发现同一类问题还有两处：
