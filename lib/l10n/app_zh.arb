@@ -4702,5 +4702,7 @@
   "editorInsertLineBelow": "在下方插入行",
   "editorDedupeDone": "已删除 {n} 行重复内容",
   "editorAutoPair": "自动补全成对符号",
-  "editorSelectAllOccurrences": "选中所有出现处"
+  "editorSelectAllOccurrences": "选中所有出现处",
+  "diffOnlyChanges": "只显示差异",
+  "diffUnchangedLines": "行未变"
 }

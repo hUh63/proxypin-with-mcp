@@ -2901,5 +2901,7 @@
   "editorInsertLineBelow": "แทรกบรรทัดด้านล่าง",
   "editorDedupeDone": "ลบบรรทัดซ้ำ {n} บรรทัด",
   "editorAutoPair": "ปิดวงเล็บอัตโนมัติ",
-  "editorSelectAllOccurrences": "เลือกที่ปรากฏทั้งหมด"
+  "editorSelectAllOccurrences": "เลือกที่ปรากฏทั้งหมด",
+  "diffOnlyChanges": "แสดงเฉพาะที่ต่าง",
+  "diffUnchangedLines": "บรรทัดที่ไม่เปลี่ยน"
 }

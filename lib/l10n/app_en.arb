@@ -5012,5 +5012,7 @@
     }
   },
   "editorAutoPair": "Auto-close brackets",
-  "editorSelectAllOccurrences": "Select all occurrences"
+  "editorSelectAllOccurrences": "Select all occurrences",
+  "diffOnlyChanges": "Only show changes",
+  "diffUnchangedLines": "unchanged lines"
 }

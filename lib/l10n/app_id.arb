@@ -2901,5 +2901,7 @@
   "editorInsertLineBelow": "Sisipkan baris di bawah",
   "editorDedupeDone": "{n} baris duplikat dihapus",
   "editorAutoPair": "Tutup tanda kurung otomatis",
-  "editorSelectAllOccurrences": "Pilih semua kemunculan"
+  "editorSelectAllOccurrences": "Pilih semua kemunculan",
+  "diffOnlyChanges": "Hanya perubahan",
+  "diffUnchangedLines": "baris tidak berubah"
 }

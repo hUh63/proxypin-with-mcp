@@ -2901,5 +2901,7 @@
   "editorInsertLineBelow": "Insertar línea abajo",
   "editorDedupeDone": "Se eliminaron {n} líneas duplicadas",
   "editorAutoPair": "Cerrar paréntesis automáticamente",
-  "editorSelectAllOccurrences": "Seleccionar todas las apariciones"
+  "editorSelectAllOccurrences": "Seleccionar todas las apariciones",
+  "diffOnlyChanges": "Solo cambios",
+  "diffUnchangedLines": "líneas sin cambios"
 }

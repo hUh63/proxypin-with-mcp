@@ -2901,5 +2901,7 @@
   "editorInsertLineBelow": "Chèn dòng phía dưới",
   "editorDedupeDone": "Đã xóa {n} dòng trùng",
   "editorAutoPair": "Tự đóng dấu ngoặc",
-  "editorSelectAllOccurrences": "Chọn tất cả lần xuất hiện"
+  "editorSelectAllOccurrences": "Chọn tất cả lần xuất hiện",
+  "diffOnlyChanges": "Chỉ hiện khác biệt",
+  "diffUnchangedLines": "dòng không đổi"
 }

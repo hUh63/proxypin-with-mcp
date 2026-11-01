@@ -105,6 +105,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   double _rightWidth = 0;
   String _widthKey = '';
 
+  /// 只显示差异（相同行折叠成一行占位），对应 VS diff 的 hide unchanged。
+  bool _onlyDiff = false;
+
   /// 对齐视图的行缓存：每次 build 重算 diff 太贵（几千行会明显顿）。
   List<DiffRow> _alignedRowsCache = const <DiffRow>[];
   String _alignedRowsKey = '';
@@ -414,7 +417,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐视图里滚到当前差异（留一行上下文）。两侧联动，动左边就会带动右边。
   void _scrollToCurrentRow() {
     if (!_aligned || !_leftV.hasClients) return;
-    final i = _currentRowIndex(_alignedRows());
+    final i = _currentRowIndex(_visibleRows(_alignedRows()));
     if (i < 0) return;
     final target = (i * _rowHeight - _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
     _leftV.animateTo(target, duration: const Duration(milliseconds: 160), curve: Curves.easeOut);
@@ -769,6 +772,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'wrap':
             setState(() => _wrap = !_wrap);
+          case 'onlyDiff':
+            setState(() => _onlyDiff = !_onlyDiff);
           case 'syntax':
             unawaited(_checkSyntax());
           case 'swapLayout':
@@ -784,6 +789,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         CheckedPopupMenuItem(
             value: 'ignoreSpace', checked: _ignoreWhitespace, child: Text(localizations.diffIgnoreWhitespace)),
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
+        CheckedPopupMenuItem(
+            value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
         PopupMenuItem(value: 'swapLayout', child: Text(
             _sideBySide ? localizations.diffStacked : localizations.diffSideBySide)),
         PopupMenuItem(value: 'syntax', child: Text(localizations.diffSyntaxCheck)),
@@ -1181,7 +1188,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐并排视图：左右各一栏（行号 + 文本），两栏纵向滚动联动、
   /// 横向各自滚动、双指缩放统一字号。
   Widget _alignedView() {
-    final rows = _alignedRows();
+    final rows = _visibleRows(_alignedRows());
     if (rows.isEmpty) {
       return Center(
         child: Text(localizations.diffNoDifference, style: TextStyle(color: Colors.grey[600])),
@@ -1198,24 +1205,72 @@ class _TextDiffPageState extends State<TextDiffPage> {
     ]);
   }
 
+  /// 只显示差异时：保留每个差异块前后各一行上下文，其余折成一行占位。
+  List<DiffRow> _visibleRows(List<DiffRow> rows) {
+    if (!_onlyDiff) return rows;
+    final keep = <int>{};
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].type == DiffRowType.equal) continue;
+      for (var d = -1; d <= 1; d++) {
+        final j = i + d;
+        if (j >= 0 && j < rows.length) keep.add(j);
+      }
+    }
+    if (keep.isEmpty) return const <DiffRow>[];
+    final out = <DiffRow>[];
+    var i = 0;
+    while (i < rows.length) {
+      if (keep.contains(i)) {
+        out.add(rows[i]);
+        i++;
+      } else {
+        final start = i;
+        while (i < rows.length && !keep.contains(i)) {
+          i++;
+        }
+        out.add(DiffRow(DiffRowType.equal, null,
+            '⋯  ${i - start} ${localizations.diffUnchangedLines}', null, null));
+      }
+    }
+    return out;
+  }
+
   /// 右侧「差异密度条」：把每一行的类型按比例画成色块，点哪里滚到哪里（VS 的 overview ruler）。
   Widget _densityBar(List<DiffRow> rows) {
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
     return LayoutBuilder(builder: (context, c) {
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (d) {
-          if (c.maxHeight <= 0) return;
-          final i = (d.localPosition.dy / c.maxHeight * rows.length)
-              .floor()
-              .clamp(0, rows.length - 1);
-          _scrollToRowIndex(i);
+      // 监听滚动控制器画「当前视口」的滑块（滚动时不需要整页 setState）。
+      return ListenableBuilder(
+        listenable: _leftV,
+        builder: (context, _) {
+          var vpStart = 0.0;
+          var vpEnd = 1.0;
+          if (_leftV.hasClients) {
+            final pos = _leftV.position;
+            final total = pos.maxScrollExtent + pos.viewportDimension;
+            if (total > 0) {
+              vpStart = (pos.pixels / total).clamp(0.0, 1.0);
+              vpEnd = ((pos.pixels + pos.viewportDimension) / total).clamp(vpStart, 1.0);
+            }
+          }
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (d) {
+              if (c.maxHeight <= 0) return;
+              final i = (d.localPosition.dy / c.maxHeight * rows.length)
+                  .floor()
+                  .clamp(0, rows.length - 1);
+              _scrollToRowIndex(i);
+            },
+            child: SizedBox(
+              width: 9,
+              height: double.infinity,
+              child: CustomPaint(
+                painter: _DensityPainter(rows, isDark, vpStart, vpEnd),
+              ),
+            ),
+          );
         },
-        child: SizedBox(
-          width: 9,
-          height: double.infinity,
-          child: CustomPaint(painter: _DensityPainter(rows, isDark)),
-        ),
       );
     });
   }
@@ -1397,10 +1452,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
 /// 差异密度条的绘制：行太多时按固定桶数聚合，避免每帧画几万个小矩形。
 class _DensityPainter extends CustomPainter {
-  _DensityPainter(this.rows, this.isDark);
+  _DensityPainter(this.rows, this.isDark, this.vpStart, this.vpEnd);
 
   final List<DiffRow> rows;
   final bool isDark;
+  final double vpStart;
+  final double vpEnd;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1430,9 +1487,26 @@ class _DensityPainter extends CustomPainter {
       canvas.drawRect(
           Rect.fromLTWH(0, b * bucketHeight, size.width, bucketHeight < 1 ? 1 : bucketHeight), paint);
     }
+
+    // 当前视口的位置（拖动滚动时跟着走，方便知道自己在文件的哪一段）。
+    if (vpEnd > vpStart) {
+      final top = vpStart * size.height;
+      final h = ((vpEnd - vpStart) * size.height).clamp(2.0, size.height);
+      final rect = Rect.fromLTWH(0, top, size.width, h);
+      canvas.drawRect(rect, Paint()..color = Colors.white.withValues(alpha: 0.16));
+      canvas.drawRect(
+          rect,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1
+            ..color = Colors.white.withValues(alpha: 0.38));
+    }
   }
 
   @override
   bool shouldRepaint(covariant _DensityPainter oldDelegate) =>
-      oldDelegate.rows != rows || oldDelegate.isDark != isDark;
+      oldDelegate.rows != rows ||
+      oldDelegate.isDark != isDark ||
+      oldDelegate.vpStart != vpStart ||
+      oldDelegate.vpEnd != vpEnd;
 }

@@ -3497,6 +3497,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 顶部面包屑（VS 的编辑器导航栏）：当前光标在哪条 `命名空间 › 类 › 方法` 里。
   ///
   /// 手机上没有横向空间放整串，所以只显示路径本身，点一下弹完整的符号大纲。
+  /// 跳到某个符号（面包屑点击用）。
+  void _jumpToSymbol(_SymbolItem item) {
+    final controller = _controller;
+    if (controller == null) return;
+    final len = controller.text.length;
+    controller.selection = TextSelection.collapsed(offset: item.offset.clamp(0, len));
+    controller.scrollToLine(item.line);
+  }
+
   Widget _breadcrumb() {
     final doc = _doc;
     if (doc == null || !_programming) return const SizedBox.shrink();
@@ -3515,13 +3524,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
         children.add(Icon(Icons.chevron_right, size: 13, color: muted));
       }
       children.add(Flexible(
-        child: Text(
-          trail[i].name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 11,
-            color: i == trail.length - 1 ? theme.colorScheme.primary : muted,
+        child: InkWell(
+          // 点某一段直接跳到那个符号（VS 的面包屑也是这么用的）。
+          onTap: i == trail.length - 1 ? _showSymbols : () => _jumpToSymbol(trail[i]),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1),
+            child: Text(
+              trail[i].name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                color: i == trail.length - 1 ? theme.colorScheme.primary : muted,
+              ),
+            ),
           ),
         ),
       ));
