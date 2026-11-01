@@ -79,6 +79,9 @@ class TextEditorPrefs {
   /// 启用放大镜（底部显示当前行的放大视图）。
   final bool magnifier;
 
+  /// 自动补全成对符号：敲 `(` 补 `)`、写 `"` 补 `"`，光标停在中间。
+  final bool autoPair;
+
   /// 「语法」子菜单里启用的语言（label 列表）。为空表示全部启用。
   final List<String> enabledLangs;
 
@@ -153,6 +156,7 @@ class TextEditorPrefs {
     this.autoIndent = true,
     this.pinchZoom = true,
     this.magnifier = false,
+    this.autoPair = true,
     this.enabledLangs = const <String>[],
     this.hiddenMenu = const <String>[],
     this.floatMenu = defaultFloatMenu,
@@ -187,6 +191,7 @@ class TextEditorPrefs {
     bool? autoIndent,
     bool? pinchZoom,
     bool? magnifier,
+    bool? autoPair,
     List<String>? enabledLangs,
     List<String>? hiddenMenu,
     List<String>? floatMenu,
@@ -220,6 +225,7 @@ class TextEditorPrefs {
       autoIndent: autoIndent ?? this.autoIndent,
       pinchZoom: pinchZoom ?? this.pinchZoom,
       magnifier: magnifier ?? this.magnifier,
+      autoPair: autoPair ?? this.autoPair,
       enabledLangs: enabledLangs ?? this.enabledLangs,
       hiddenMenu: hiddenMenu ?? this.hiddenMenu,
       floatMenu: floatMenu ?? this.floatMenu,
@@ -255,6 +261,7 @@ class TextEditorPrefs {
         'autoIndent': autoIndent,
         'pinchZoom': pinchZoom,
         'magnifier': magnifier,
+        'autoPair': autoPair,
         'enabledLangs': enabledLangs,
         'hiddenMenu': hiddenMenu,
         'floatMenu': floatMenu,
@@ -295,6 +302,7 @@ class TextEditorPrefs {
       autoIndent: json['autoIndent'] as bool? ?? true,
       pinchZoom: json['pinchZoom'] as bool? ?? true,
       magnifier: json['magnifier'] as bool? ?? false,
+      autoPair: json['autoPair'] as bool? ?? true,
       enabledLangs: _strList(json['enabledLangs']),
       hiddenMenu: _strList(json['hiddenMenu']),
       floatMenu: json['floatMenu'] == null ? defaultFloatMenu : _strList(json['floatMenu']),

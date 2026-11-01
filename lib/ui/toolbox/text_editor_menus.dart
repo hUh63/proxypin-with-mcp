@@ -631,6 +631,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('bookmarks', _bookmarksLabel, group: 'edit', aliases: 'sjlb 书签列表 bookmark'),
   EditorMenuItem('clearBookmarks', _clearBookmarksLabel, group: 'edit', aliases: 'qcsj 清除书签 bookmark'),
   EditorMenuItem('nextOccurrence', _nextOccurrenceLabel, group: 'edit', aliases: 'xy 下一个 occurrence dul'),
+  EditorMenuItem('selectAllOccurrences', _selectAllOccurrencesLabel, group: 'edit',
+      aliases: 'qxsuoyou 选中所有 occurrence select all'),
   EditorMenuItem('lineOps', _lineOpsLabel, group: 'edit', aliases: 'hhang 行操作 line'),
   EditorMenuItem('caseOps', _caseOpsLabel, group: 'edit', aliases: 'dx 大小写 case upper lower'),
   // 代码（13 项）
@@ -707,6 +709,7 @@ String _renameLabel(AppLocalizations l) => l.editorRename;
 String _foldAllLabel(AppLocalizations l) => l.editorFoldAll;
 String _unfoldAllLabel(AppLocalizations l) => l.editorUnfoldAll;
 String _nextOccurrenceLabel(AppLocalizations l) => l.editorSelectNext;
+String _selectAllOccurrencesLabel(AppLocalizations l) => l.editorSelectAllOccurrences;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
 String _lintLabel(AppLocalizations l) => l.editorLint;
@@ -801,6 +804,8 @@ IconData menuIconOf(String id) {
       return Icons.text_fields;
     case 'nextOccurrence':
       return Icons.select_all;
+    case 'selectAllOccurrences':
+      return Icons.library_add_check_outlined;
     case 'format':
       return Icons.auto_fix_high;
     case 'formatSel':

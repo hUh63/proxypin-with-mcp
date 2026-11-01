@@ -133,6 +133,7 @@ class _FavoritesState extends State<MobileFavorites> {
                             content: localizations.confirmContent,
                             onConfirm: () async {
                               await FavoriteStorage.removeFavorite(favorite);
+                              if (!mounted) return;
                               setState(() {});
                             });
                       },

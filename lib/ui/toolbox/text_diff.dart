@@ -740,6 +740,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _rightSnapshot = _left.text;
     _navIndex = -1;
     _compare();
+    // 交换后两栏内容宽度可能完全变了，横向偏移要归零，否则可能停在空白处。
+    for (final c in [_leftH, _rightH]) {
+      if (c.hasClients) c.jumpTo(0);
+    }
     setState(() {});
     _toastText(localizations.diffSwapped);
   }
@@ -1190,7 +1194,37 @@ class _TextDiffPageState extends State<TextDiffPage> {
       Expanded(child: _alignedPane(rows, current, left: true)),
       Container(width: 1, color: divider),
       Expanded(child: _alignedPane(rows, current, left: false)),
+      _densityBar(rows),
     ]);
+  }
+
+  /// 右侧「差异密度条」：把每一行的类型按比例画成色块，点哪里滚到哪里（VS 的 overview ruler）。
+  Widget _densityBar(List<DiffRow> rows) {
+    final isDark = Theme.brightnessOf(context) == Brightness.dark;
+    return LayoutBuilder(builder: (context, c) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (d) {
+          if (c.maxHeight <= 0) return;
+          final i = (d.localPosition.dy / c.maxHeight * rows.length)
+              .floor()
+              .clamp(0, rows.length - 1);
+          _scrollToRowIndex(i);
+        },
+        child: SizedBox(
+          width: 9,
+          height: double.infinity,
+          child: CustomPaint(painter: _DensityPainter(rows, isDark)),
+        ),
+      );
+    });
+  }
+
+  void _scrollToRowIndex(int i) {
+    if (!_leftV.hasClients) return;
+    final target = (i * _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
+    _leftV.animateTo(target,
+        duration: const Duration(milliseconds: 120), curve: Curves.easeOut);
   }
 
   /// 一栏：横向可滚（看长行），纵向 ListView（行高固定，便于精确跳转）。
@@ -1359,4 +1393,46 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
 
+}
+
+/// 差异密度条的绘制：行太多时按固定桶数聚合，避免每帧画几万个小矩形。
+class _DensityPainter extends CustomPainter {
+  _DensityPainter(this.rows, this.isDark);
+
+  final List<DiffRow> rows;
+  final bool isDark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset.zero & size, Paint()..color = (isDark ? Colors.white10 : Colors.black12));
+    if (rows.isEmpty || size.height <= 0) return;
+
+    final buckets = rows.length > 400 ? 400 : rows.length;
+    final bucketHeight = size.height / buckets;
+    final paint = Paint();
+    for (var b = 0; b < buckets; b++) {
+      final start = (b * rows.length / buckets).floor();
+      final end = (((b + 1) * rows.length / buckets).ceil()).clamp(start + 1, rows.length);
+      DiffRowType? type;
+      for (var i = start; i < end; i++) {
+        final t = rows[i].type;
+        if (t == DiffRowType.equal) continue;
+        // 一个桶里混了多种时优先显示「新增」—— 绿最能引起注意。
+        if (type == null || t == DiffRowType.added) type = t;
+      }
+      if (type == null) continue;
+      paint.color = switch (type) {
+        DiffRowType.added => Colors.green.withValues(alpha: 0.9),
+        DiffRowType.deleted => Colors.red.withValues(alpha: 0.9),
+        DiffRowType.modified => Colors.orange.withValues(alpha: 0.9),
+        DiffRowType.equal => Colors.transparent,
+      };
+      canvas.drawRect(
+          Rect.fromLTWH(0, b * bucketHeight, size.width, bucketHeight < 1 ? 1 : bucketHeight), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DensityPainter oldDelegate) =>
+      oldDelegate.rows != rows || oldDelegate.isDark != isDark;
 }

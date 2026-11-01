@@ -211,6 +211,7 @@ class _MobileRequestCryptoPageState extends State<MobileRequestCryptoPage> {
                                 // export selected only
                                 final m = await RequestCryptoManager.instance;
                                 await _export(m, indexes: selected.toList());
+                                if (!mounted) return;
                                 setState(() {
                                   selected.clear();
                                   selectionMode = false;

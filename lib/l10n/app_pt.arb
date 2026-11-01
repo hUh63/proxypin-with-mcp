@@ -2900,5 +2900,7 @@
   "editorDedupeNone": "Sem linhas duplicadas",
   "editorInsertLineAbove": "Inserir linha acima",
   "editorInsertLineBelow": "Inserir linha abaixo",
-  "editorDedupeDone": "{n} linha(s) duplicada(s) removida(s)"
+  "editorDedupeDone": "{n} linha(s) duplicada(s) removida(s)",
+  "editorAutoPair": "Fechar parênteses automaticamente",
+  "editorSelectAllOccurrences": "Selecionar todas as ocorrências"
 }

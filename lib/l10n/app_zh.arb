@@ -4700,5 +4700,7 @@
   "editorDedupeNone": "没有重复行",
   "editorInsertLineAbove": "在上方插入行",
   "editorInsertLineBelow": "在下方插入行",
-  "editorDedupeDone": "已删除 {n} 行重复内容"
+  "editorDedupeDone": "已删除 {n} 行重复内容",
+  "editorAutoPair": "自动补全成对符号",
+  "editorSelectAllOccurrences": "选中所有出现处"
 }

@@ -378,6 +378,7 @@ class _WeakNetworkDialogState extends State<WeakNetworkDialog> {
         context: context, barrierDismissible: false, builder: (_) => _ProfileEditDialog(profile: draft));
     if (saved != null) {
       await m.upsertCustomProfile(saved);
+      if (!mounted) return null;
       setState(() {});
       return saved;
     }

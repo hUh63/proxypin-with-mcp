@@ -2899,5 +2899,7 @@
   "editorDedupeNone": "Sin líneas duplicadas",
   "editorInsertLineAbove": "Insertar línea arriba",
   "editorInsertLineBelow": "Insertar línea abajo",
-  "editorDedupeDone": "Se eliminaron {n} líneas duplicadas"
+  "editorDedupeDone": "Se eliminaron {n} líneas duplicadas",
+  "editorAutoPair": "Cerrar paréntesis automáticamente",
+  "editorSelectAllOccurrences": "Seleccionar todas las apariciones"
 }

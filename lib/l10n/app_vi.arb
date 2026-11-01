@@ -2899,5 +2899,7 @@
   "editorDedupeNone": "Không có dòng trùng",
   "editorInsertLineAbove": "Chèn dòng phía trên",
   "editorInsertLineBelow": "Chèn dòng phía dưới",
-  "editorDedupeDone": "Đã xóa {n} dòng trùng"
+  "editorDedupeDone": "Đã xóa {n} dòng trùng",
+  "editorAutoPair": "Tự đóng dấu ngoặc",
+  "editorSelectAllOccurrences": "Chọn tất cả lần xuất hiện"
 }

@@ -5010,5 +5010,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "editorAutoPair": "Auto-close brackets",
+  "editorSelectAllOccurrences": "Select all occurrences"
 }

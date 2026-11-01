@@ -197,6 +197,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 内容变化后重新嗅探语言的防抖定时器。
   Timer? _sniffTimer;
 
+  /// 上一次变化 *之前* 的文本（自动成对要用它判断「是不是只多了一个字符」）。
+  String? _lastBeforeChange;
+
   /// 流畅模式是「因为文件太大自动打开的」——切到小文档时自动关掉，
   /// 免得用户改完大文件之后，所有小文件也跟着一直关着高亮。
   bool _smoothAuto = false;
@@ -741,6 +744,65 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (mounted) setState(() {});
   }
 
+  /// 自动补全成对符号（VS 的 auto closing）。
+  ///
+  /// 只在「这次变化正好是敲入一个开符号、光标紧跟其后」时补一次：
+  /// 粘贴整段、选中替换、输入法组合都不碰，避免把用户的文本改坏。
+  void _maybeAutoPair() {
+    if (!_prefs.autoPair) return;
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final prev = _lastBeforeChange ?? _lastText;
+    if (text.length != prev.length + 1) return;
+    final sel = controller.selection;
+    if (!sel.isValid || !sel.isCollapsed) return;
+    final caret = sel.baseOffset;
+    if (caret <= 0 || caret > text.length) return;
+    final ch = text.substring(caret - 1, caret);
+    const pairs = {'(': ')', '[': ']', '{': '}', '<': '>', '"': '"', "'": "'"};
+    final close = pairs[ch];
+    if (close == null) return;
+    // 光标后面已经有闭合符号（用户自己打的）就不重复插入。
+    if (caret < text.length && text.substring(caret, caret + 1) == close) return;
+    controller.replaceRange(caret, caret, close);
+    controller.selection = TextSelection.collapsed(offset: caret);
+  }
+
+  /// 选中当前词/选区在全文的所有出现（VS 的 Select All Occurrences）。
+  void _selectAllOccurrences() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    String word;
+    if (sel.isValid && sel.start != sel.end) {
+      word = text.substring(sel.start.clamp(0, text.length), sel.end.clamp(0, text.length));
+    } else {
+      final range = _wordRangeAt(text, sel.isValid ? sel.start : 0);
+      word = text.substring(range.start, range.end);
+    }
+    if (!_isSymbolName(word)) {
+      _toast(localizations.editorNoAvailableCommand);
+      return;
+    }
+    final ranges = <({int start, int end})>[];
+    var at = text.indexOf(word);
+    while (at >= 0 && ranges.length < 2000) {
+      ranges.add((start: at, end: at + word.length));
+      at = text.indexOf(word, at + word.length);
+    }
+    if (ranges.isEmpty) return;
+    _multiSel
+      ..clear()
+      ..addAll(ranges);
+    _multiWord = word;
+    controller.selection = TextSelection(baseOffset: ranges.first.start, extentOffset: ranges.first.end);
+    _refreshExtraHighlights();
+    setState(() {});
+    _toast(localizations.editorMultiSelCount('${ranges.length}'));
+  }
+
   /// 语言是嗅探来的：内容首行/结构变了（例如本来空的 .txt 里粘进一段 JSON），
   /// 语言要跟着变。只对 `doc.langSniffed` 生效，用户手动选的语言不动。
   void _maybeResniffLanguage() {
@@ -778,6 +840,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final text = _doc?.text ?? '';
     final changed = text != _lastText;
     if (changed) {
+      final before = _lastText;
       // 书签跟着代码走：按「这次改了哪一段」平移，别让它漂到隔壁行。
       final bookmarks = _doc?.bookmarks;
       if (bookmarks != null && bookmarks.isNotEmpty) {
@@ -821,9 +884,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       _rememberEdit(_doc?.controller.selection.extentOffset ?? 0);
       _lastText = text;
+      _lastBeforeChange = text;
       if (!_dirty) setState(() => _dirty = true);
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
       _scheduleLint();
+      _lastBeforeChange = before;
+      _maybeAutoPair();
       // 语言是嗅探来的话，内容变了可能就该换语言（空 .txt 里粘进 JSON）。
       if (_doc?.langSniffed ?? false) {
         _sniffTimer?.cancel();
@@ -5763,6 +5829,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _showSymbols();
         case 'nextOccurrence':
           _addNextOccurrence();
+        case 'selectAllOccurrences':
+          _selectAllOccurrences();
         case 'gotoDef':
           _gotoDefinition();
         case 'lineOps':

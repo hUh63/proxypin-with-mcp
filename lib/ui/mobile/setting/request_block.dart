@@ -132,6 +132,7 @@ class _RequestBlockState extends State<MobileRequestBlock> {
                       content: localizations.confirmContent,
                       onConfirm: () async {
                         await widget.requestBlockManager.removeBlockRequest(index);
+                        if (!mounted) return;
                         setState(() {});
                       });
                 }),

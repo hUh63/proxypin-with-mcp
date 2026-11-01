@@ -252,6 +252,7 @@ class _MobileWeakNetworkState extends State<MobileWeakNetwork> {
     );
     if (saved != null) {
       await m.upsertCustomProfile(saved);
+      if (!mounted) return null;
       setState(() {});
       return saved;
     }

@@ -2899,5 +2899,7 @@
   "editorDedupeNone": "ไม่มีบรรทัดซ้ำ",
   "editorInsertLineAbove": "แทรกบรรทัดด้านบน",
   "editorInsertLineBelow": "แทรกบรรทัดด้านล่าง",
-  "editorDedupeDone": "ลบบรรทัดซ้ำ {n} บรรทัด"
+  "editorDedupeDone": "ลบบรรทัดซ้ำ {n} บรรทัด",
+  "editorAutoPair": "ปิดวงเล็บอัตโนมัติ",
+  "editorSelectAllOccurrences": "เลือกที่ปรากฏทั้งหมด"
 }

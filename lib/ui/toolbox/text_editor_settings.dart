@@ -190,6 +190,12 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.magnifier,
                 onChanged: (v) => _apply(prefs.copyWith(magnifier: v)),
               ),
+              _switchTile(
+                icon: Icons.keyboard_return,
+                title: localizations.editorAutoPair,
+                value: prefs.autoPair,
+                onChanged: (v) => _apply(prefs.copyWith(autoPair: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsMenu),
               ListTile(
