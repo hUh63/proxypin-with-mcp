@@ -1169,9 +1169,19 @@ class _TextDiffPageState extends State<TextDiffPage> {
         controller: _alignedScroll,
         itemExtent: _rowHeight,
         itemCount: rows.length,
-        itemBuilder: (_, i) => _alignedRow(rows[i], isCurrent: i == current),
+        itemBuilder: (_, i) => GestureDetector(
+          // 点某一行：把两侧编辑器都定位到这一行（切到编辑视图就落在原处）。
+          onTap: () => _jumpRow(rows[i]),
+          child: _alignedRow(rows[i], isCurrent: i == current),
+        ),
       ),
     );
+  }
+
+  /// 点对齐视图的某一行 → 两侧编辑器都滚到对应行（行号缺失的一侧跳过分）。
+  void _jumpRow(DiffRow r) {
+    if (r.leftLine != null) _gotoLine(_left, r.leftLine! - 1);
+    if (r.rightLine != null) _gotoLine(_right, r.rightLine! - 1);
   }
 
   Widget _alignedRow(DiffRow r, {required bool isCurrent}) {
