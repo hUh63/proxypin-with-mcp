@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.67.205 (2026-11-01)
+
+修 Kotlin 编译错误：`handleMethod` 是**返回 Map 的普通函数**（`private fun handleMethod(...): Any?`），
+没有 `MethodChannel.Result` 参数，新分支直接 `ownSignature()` 返回即可，不能写 `result.success(...)`。
+
 ## v1.67.204 (2026-11-01) — 折叠到层级 / 十六进制对比 / 本应用签名指纹
 
 **文本编辑器：折叠到层级**（VS 的 `Ctrl+K Ctrl+2`）

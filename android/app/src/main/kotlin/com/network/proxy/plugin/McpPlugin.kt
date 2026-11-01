@@ -269,7 +269,7 @@ class McpPlugin : FlutterPlugin {
                 inputText(text)
             }
             "screenshot" -> screenshot()
-            "getOwnSignature" -> result.success(ownSignature())
+            "getOwnSignature" -> ownSignature()
             "openAccessibilitySettings" -> openAccessibilitySettings()
             "openShizukuSettings" -> openShizukuSettings()
             "requestShizukuAuthorization" -> requestShizukuAuthorization()
