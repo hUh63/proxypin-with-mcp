@@ -4971,5 +4971,7 @@
   "editorOpenReadOnly": "Open read-only",
   "editorTooLargeToFormat": "File is too large to format",
   "editorTooLargeToProcess": "File is too large for this operation",
-  "editorPasteTooLarge": "Clipboard content is too large to paste"
+  "editorPasteTooLarge": "Clipboard content is too large to paste",
+  "diffSideBySide": "Side by side",
+  "diffStacked": "Stacked"
 }

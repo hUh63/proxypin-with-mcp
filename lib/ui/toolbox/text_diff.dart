@@ -59,6 +59,10 @@ class TextDiffPage extends StatefulWidget {
 class _TextDiffPageState extends State<TextDiffPage> {
   static const String _storeKey = 'text_diff_content_v1';
 
+  /// 并排还是上下。默认并排（左右两侧），用户切过就记住。
+  static const String _sideKey = 'text_diff_side_by_side_v1';
+  bool _sideBySide = true;
+
   late final CodeForgeController _left;
   late final CodeForgeController _right;
   late final UndoRedoController _leftUndo;
@@ -111,6 +115,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _right.setUndoController(_rightUndo);
     _findLeft = FindController(_left);
     _findRight = FindController(_right);
+    // 读取失败不影响使用（默认左右并排），但 catchError 必须返回同类型值，
+    // 否则会逃逸成未捕获异步错误（这个坑踩过）。
+    unawaited(SharedPreferencesAsync().getBool(_sideKey).then((v) {
+      if (!mounted || v == null || v == _sideBySide) return;
+      setState(() => _sideBySide = v);
+    }).catchError((_) => null));
 
     _left.addListener(_onLeftChanged);
     _right.addListener(_onRightChanged);
@@ -631,13 +641,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
           Expanded(
             child: _aligned
                 ? _alignedView()
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      // 800 是经验阈值：再窄左右两个编辑器单独宽度不够，堆叠更舒服。
-                      final wide = constraints.maxWidth >= 800;
-                      return wide ? _wideLayout() : _narrowLayout();
-                    },
-                  ),
+                // 默认左右两侧对比（和桌面的 diff 工具一致），窄屏也照样并排；
+                // 觉得太挤的可以用工具栏那个按钮切成上下。
+                : (_sideBySide ? _wideLayout() : _narrowLayout()),
           ),
           if (_summary != null)
             Container(
@@ -738,6 +744,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
             localizations.wordWrap,
             () => setState(() => _wrap = !_wrap),
             tint: _wrap ? color : null,
+          ),
+          _iconBtn(
+            _sideBySide ? Icons.horizontal_split : Icons.vertical_split,
+            _sideBySide ? localizations.diffStacked : localizations.diffSideBySide,
+            () {
+              final next = !_sideBySide;
+              setState(() => _sideBySide = next);
+              unawaited(SharedPreferencesAsync().setBool(_sideKey, next));
+            },
+            tint: _sideBySide ? null : color,
           ),
           _iconBtn(
             Icons.view_column_outlined,

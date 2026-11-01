@@ -874,7 +874,11 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                   setState(() {
                     selectedProvider = v;
                     if (v != 'custom') {
-                      final p = _aiProviders.firstWhere((p) => p.baseUrl == v);
+                      // 配置里可能有两个同 baseUrl 的项、或列表刚被重建：
+                      // firstWhere 无 orElse 会抛 StateError，整页崩。
+                      final matches = _aiProviders.where((p) => p.baseUrl == v).toList();
+                      if (matches.isEmpty) return;
+                      final p = matches.first;
                       baseUrlController.text = p.baseUrl;
                       if (modelController.text.isEmpty ||
                           _aiProviders.any((p) => p.modelHint == modelController.text)) {

@@ -325,7 +325,16 @@ class RewriteReplaceState extends State<DesktopRewriteReplace> {
 
   ///请求行
   Widget requestLine() {
-    var rewriteItem = items.firstWhere((item) => item.type == RewriteType.replaceRequestLine);
+    var rewriteItem = items.firstWhere(
+      (item) => item.type == RewriteType.replaceRequestLine,
+      orElse: () {
+        // 新建 / 导入的规则里可能没有这一项（用户删过、或老数据）：
+        // 原来这里直接抛 StateError，整个编辑页白屏。补一个默认项即可。
+        final created = RewriteItem(RewriteType.replaceRequestLine, false);
+        items.add(created);
+        return created;
+      },
+    );
     return Column(
       children: [
         Row(children: [
@@ -409,7 +418,16 @@ class RewriteReplaceState extends State<DesktopRewriteReplace> {
   }
 
   Widget statusCodeEdit() {
-    var rewriteItem = items.firstWhere((item) => item.type == RewriteType.replaceResponseStatus);
+    var rewriteItem = items.firstWhere(
+      (item) => item.type == RewriteType.replaceResponseStatus,
+      orElse: () {
+        // 新建 / 导入的规则里可能没有这一项（用户删过、或老数据）：
+        // 原来这里直接抛 StateError，整个编辑页白屏。补一个默认项即可。
+        final created = RewriteItem(RewriteType.replaceResponseStatus, false);
+        items.add(created);
+        return created;
+      },
+    );
 
     return Container(
         padding: const EdgeInsets.all(10),

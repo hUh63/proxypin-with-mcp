@@ -131,7 +131,9 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
                   widget.prefs.remove('customerRepeat');
                 }
 
-                int delayValue = int.parse(delay.text);
+                // 输入框只有「非空」校验，字母也能输进来：parse 会直接抛。
+                final totalCount = int.tryParse(count.text) ?? 1;
+                int delayValue = int.tryParse(delay.text) ?? 0;
                 DateTime? schedule;
                 if (time != null) {
                   DateTime now = DateTime.now();
@@ -146,12 +148,12 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
                 // 记录计划时间与待发送请求清单，关页后仍可查看进度与状态
                 _task = RepeatTaskManager.instance.create(
                   title: widget.taskTitle ?? localizations.customRepeat,
-                  total: int.parse(count.text),
+                  total: totalCount,
                   scheduledAt: schedule,
                   pending: widget.pendingItems ?? const [],
                 );
 
-                Future.delayed(Duration(milliseconds: delayValue), () => submitTask(int.parse(count.text)));
+                Future.delayed(Duration(milliseconds: delayValue), () => submitTask(totalCount));
                 Navigator.of(context).pop();
               },
             )
@@ -270,13 +272,18 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
   // 调度下一次重放
   void _scheduleNext(int counter) {
     if (counter <= 0) return;
-    int intervalValue = int.parse(interval.text);
+    int intervalValue = int.tryParse(interval.text) ?? 0;
     int multiplier = timeUnit == 0 ? 1 : (timeUnit == 1 ? 1000 : 60000);
     intervalValue = intervalValue * multiplier;
     if (!fixed) {
-      int min = int.parse(minInterval.text) * multiplier;
-      int max = int.parse(maxInterval.text) * multiplier;
-      intervalValue = Random().nextInt(max - min) + min;
+      final min = (int.tryParse(minInterval.text) ?? 0) * multiplier;
+      final max = (int.tryParse(maxInterval.text) ?? 0) * multiplier;
+      // max <= min 时 nextInt 会抛（区间必须非空）。
+      if (max > min) {
+        intervalValue = Random().nextInt(max - min) + min;
+      } else if (min > 0) {
+        intervalValue = min;
+      }
     }
     Future.delayed(Duration(milliseconds: intervalValue), () {
       submitTask(counter);

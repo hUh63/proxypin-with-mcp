@@ -2880,5 +2880,7 @@
   "editorOpenReadOnly": "Abrir en solo lectura",
   "editorTooLargeToFormat": "El archivo es demasiado grande para formatear",
   "editorTooLargeToProcess": "El archivo es demasiado grande para esta operación",
-  "editorPasteTooLarge": "El contenido del portapapeles es demasiado grande"
+  "editorPasteTooLarge": "El contenido del portapapeles es demasiado grande",
+  "diffSideBySide": "Lado a lado",
+  "diffStacked": "Apilado"
 }

@@ -2881,5 +2881,7 @@
   "editorOpenReadOnly": "Abrir só leitura",
   "editorTooLargeToFormat": "O ficheiro é demasiado grande para formatar",
   "editorTooLargeToProcess": "O ficheiro é demasiado grande para esta operação",
-  "editorPasteTooLarge": "O conteúdo da área de transferência é demasiado grande"
+  "editorPasteTooLarge": "O conteúdo da área de transferência é demasiado grande",
+  "diffSideBySide": "Lado a lado",
+  "diffStacked": "Empilhado"
 }

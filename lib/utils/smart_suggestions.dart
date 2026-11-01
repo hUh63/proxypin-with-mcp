@@ -748,9 +748,49 @@ class SmartSuggestions {
   static final RegExp _memberRe = RegExp(r'\.([A-Za-z_$][\w$]*)');
   static final RegExp _typeRe = RegExp(r'\b([A-Z][A-Za-z0-9_$]{2,})');
 
+  /// 各语言族常用的「语法符号」候选。
+  ///
+  /// 关键字联想解决「要写什么词」，符号联想解决「这行的括号/分号/箭头怎么收尾」——
+  /// 手机上敲 `= >` 两个键出一堆候选词，但 `=>` 本身没人给，只能硬敲。
+  static const List<String> _cLikeSymbols = [
+    '(', ')', '{', '}', '[', ']', ';', ':', ',', '.', '=',
+    '==', '===', '!=', '!==', '=>', '<=', '>=', '&&', '||', '??', '?.', '++', '--',
+    '+=', '-=', '*=', '/=', '...',
+  ];
+
+  static const List<String> _pythonSymbols = [
+    '(', ')', '[', ']', '{', '}', ':', ',', '.', '=', '==', '!=', '+=', '-=',
+    '**', '//', '->', '...',
+  ];
+
+  static const List<String> _luaSymbols = [
+    '(', ')', '[', ']', '{', '}', ',', '.', '=', '==', '~=', '..', '--',
+  ];
+
+  static const List<String> _sqlSymbols = [
+    '(', ')', ';', ',', '.', '=', '<>', '!=', '>=', '<=', '%',
+  ];
+
+  static const List<String> _shellSymbols = [
+    r'$', r'${', r'$(', '|', '&&', '||', ';', '>', '>>', '2>&1',
+  ];
+
+  /// 按语言挑一组符号；没专门列的语言按 C 系处理（花括号 + 分号那套最通用）。
+  static List<String> _symbolsFor(String language, String key) {
+    final k = key.toLowerCase();
+    final l = language.toLowerCase();
+    bool is(List<String> names) => names.contains(k) || names.contains(l);
+    if (is(const ['python', 'ruby'])) return _pythonSymbols;
+    if (is(const ['lua'])) return _luaSymbols;
+    if (is(const ['sql', 'mysql', 'pgsql'])) return _sqlSymbols;
+    if (is(const ['bash', 'shell', 'sh', 'zsh', 'powershell'])) return _shellSymbols;
+    return _cLikeSymbols;
+  }
+
   static List<String> _generic(
       String doc, String linePrefix, String prefix, String language, String key) {
     final words = CodeKeywords.forLanguage(language, key);
+    final symbols = _symbolsFor(language, key);
     final tail = _tail(doc);
     final trimmed = linePrefix.trimRight();
     // `obj.` 之后：补文档里出现过的成员名。
@@ -775,7 +815,7 @@ class SmartSuggestions {
       final types = _collect(tail, _typeRe, 200);
       if (types.isNotEmpty) return _dedupe([...types, ...words], prefix);
     }
-    if (words.isEmpty) return const [];
+    if (words.isEmpty) return _dedupe(symbols, prefix);
     final indent = linePrefix.length - linePrefix.trimLeft().length;
     final declarationFirst = indent == 0;
     final head = <String>[];
@@ -791,7 +831,8 @@ class SmartSuggestions {
         tailWords.add(w);
       }
     }
-    return _dedupe([...head, ...tailWords], prefix);
+    // 符号排在最前：输入 `=` 时最想看到的是 `==` / `=>`，不是 `else`。
+    return _dedupe([...symbols, ...head, ...tailWords], prefix);
   }
 
   // ---------------------------------------------------------------------------

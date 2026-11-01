@@ -2880,5 +2880,7 @@
   "editorOpenReadOnly": "เปิดแบบอ่านอย่างเดียว",
   "editorTooLargeToFormat": "ไฟล์ใหญ่เกินกว่าจะจัดรูปแบบ",
   "editorTooLargeToProcess": "ไฟล์ใหญ่เกินไปสำหรับการดำเนินการนี้",
-  "editorPasteTooLarge": "เนื้อหาคลิปบอร์ดใหญ่เกินกว่าจะวาง"
+  "editorPasteTooLarge": "เนื้อหาคลิปบอร์ดใหญ่เกินกว่าจะวาง",
+  "diffSideBySide": "เคียงข้างกัน",
+  "diffStacked": "ซ้อนกัน"
 }

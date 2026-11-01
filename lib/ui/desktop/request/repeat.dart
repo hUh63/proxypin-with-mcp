@@ -227,7 +227,9 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
               widget.prefs.remove('customerRepeat');
             }
 
-            int delayValue = int.parse(delay.text);
+            // 这些输入框只有「非空」校验，用户可以输入字母：parse 会直接抛。
+            final totalCount = int.tryParse(count.text) ?? 1;
+            int delayValue = int.tryParse(delay.text) ?? 0;
             DateTime? schedule;
             if (time != null) {
               DateTime now = DateTime.now();
@@ -241,13 +243,13 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
             // 上游 #715/#401：登记任务到「发送队列」，含计划时间与待发送清单
             _task = RepeatTaskManager.instance.create(
               title: widget.taskTitle ?? localizations.customRepeat,
-              total: int.parse(count.text),
+              total: totalCount,
               scheduledAt: schedule,
               pending: widget.pendingItems ?? const [],
             );
 
             //定时发起请求
-            Future.delayed(Duration(milliseconds: delayValue), () => submitTask(int.parse(count.text)));
+            Future.delayed(Duration(milliseconds: delayValue), () => submitTask(totalCount));
             Navigator.of(context).pop();
           },
         ),
@@ -271,12 +273,17 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
     widget.onRepeat.call();
     if (_task != null) RepeatTaskManager.instance.record(_task!, ok: true);
 
-    int intervalValue = int.parse(interval.text);
+    int intervalValue = int.tryParse(interval.text) ?? 0;
     //随机
     if (!fixed) {
-      int min = int.parse(minInterval.text);
-      int max = int.parse(maxInterval.text);
-      intervalValue = Random().nextInt(max - min) + min;
+      final min = int.tryParse(minInterval.text) ?? 0;
+      final max = int.tryParse(maxInterval.text) ?? 0;
+      // max <= min 时 nextInt 会抛（上限必须大于 0 且区间非空）。
+      if (max > min) {
+        intervalValue = Random().nextInt(max - min) + min;
+      } else if (min > 0) {
+        intervalValue = min;
+      }
     }
 
     Future.delayed(Duration(milliseconds: intervalValue), () {

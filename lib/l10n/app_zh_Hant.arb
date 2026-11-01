@@ -4681,5 +4681,7 @@
   "editorOpenReadOnly": "唯讀預覽",
   "editorTooLargeToFormat": "檔案太大，已略過格式化",
   "editorTooLargeToProcess": "檔案太大，已略過此操作",
-  "editorPasteTooLarge": "剪貼簿內容太大，無法貼上"
+  "editorPasteTooLarge": "剪貼簿內容太大，無法貼上",
+  "diffSideBySide": "左右並排",
+  "diffStacked": "上下堆疊"
 }
