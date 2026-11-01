@@ -89,8 +89,8 @@
   "textDiff": "Comparação de texto",
   "textEditor": "Editor de texto",
   "compare": "Comparar",
-  "diffOriginal": "Original",
-  "diffChanged": "Alterado",
+  "diffOriginal": "Original file",
+  "diffChanged": "New file",
   "diffIdentical": "Os dois textos são idênticos",
   "text": "Texto",
   "format": "Formatar",
@@ -3098,5 +3098,8 @@
   "editorTrimOnSave": "Trim trailing whitespace on save",
   "editorTrimOnSaveDesc": "Strip spaces and tabs at the end of every line before writing the file",
   "mergeApplyToDiff": "Apply to compare",
-  "mergeReplaceRight": "Replace the right pane with the merged result?"
+  "mergeReplaceRight": "Replace the right pane with the merged result?",
+  "mcpLoopbackUrl": "URL de loopback (mesmo dispositivo)",
+  "resetWindowPosition": "Reset window position",
+  "resetWindowPositionDesc": "Move the window back to the center of the main screen (use this if the app opens with no visible window after unplugging a monitor)"
 }

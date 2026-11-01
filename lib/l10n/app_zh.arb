@@ -309,8 +309,8 @@
   "textDiff": "文本对比",
   "textEditor": "文本编辑",
   "compare": "对比",
-  "diffOriginal": "原文",
-  "diffChanged": "新文",
+  "diffOriginal": "原文件",
+  "diffChanged": "新文件",
   "diffIdentical": "两段文本完全相同",
   "text": "文本",
   "format": "格式化",
@@ -4898,5 +4898,8 @@
   "editorTrimOnSave": "保存时修剪行尾空白",
   "editorTrimOnSaveDesc": "写盘前去掉每行末尾的空格与制表符",
   "mergeApplyToDiff": "应用到对比页",
-  "mergeReplaceRight": "用合并结果替换右侧内容？"
+  "mergeReplaceRight": "用合并结果替换右侧内容？",
+  "mcpLoopbackUrl": "本机回环地址（同机使用）",
+  "resetWindowPosition": "重置窗口位置",
+  "resetWindowPositionDesc": "把窗口移回主屏中央（拔掉副屏后应用打开看不到窗口时用这个）"
 }

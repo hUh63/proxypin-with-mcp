@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/ui/configuration.dart';
@@ -44,6 +45,24 @@ class DesktopSupport {
 
         await windowManager.show();
         await windowManager.focus();
+
+        // 兜底：某些多屏 / DPI 组合下，setPosition 完成后窗口仍落在可视区外
+        // （setPosition 用的是逻辑像素，副屏缩放比不同时会被换算到屏幕外）。
+        // 1.2 秒后再确认一次，不在可见区就居中重开。
+        Future.delayed(const Duration(milliseconds: 1200), () async {
+          try {
+            final visible = await windowManager.isVisible();
+            final pos = await windowManager.getPosition();
+            final size = await windowManager.getSize();
+            if (visible && await _isPositionVisible(pos, size)) return;
+            logger.w('Window not visible after show (pos=$pos size=$size), recentering');
+            await windowManager.center();
+            await windowManager.show();
+            await windowManager.focus();
+          } catch (e) {
+            logger.w('window visibility fallback failed: $e');
+          }
+        });
       });
 
       windowManager.addListener(WindowChangeListener(appConfiguration));
@@ -51,6 +70,15 @@ class DesktopSupport {
     } catch (e) {
       logger.e('Error during desktop initialization: $e');
     }
+  }
+
+  /// 把窗口拉回主屏居中，并清掉保存的位置（设置页的「重置窗口位置」）。
+  static Future<void> resetWindowPosition(AppConfiguration appConfiguration) async {
+    appConfiguration.windowPosition = null;
+    appConfiguration.flushConfig();
+    await windowManager.center();
+    await windowManager.show();
+    await windowManager.focus();
   }
 
   /// 修复配置文件中可能残留的无效窗口尺寸。
@@ -80,8 +108,13 @@ class DesktopSupport {
       final displays = await screenRetriever.getAllDisplays();
       if (displays.isEmpty || !position.dx.isFinite || !position.dy.isFinite) return false;
 
-      // 至少要有一部分标题栏在某个显示器内，才认为位置可用。
-      const minVisible = 100.0;
+      // 判定改成「标题栏与显示器要有足够重叠」：
+      // 只看左上角点不够 —— 多屏 + 不同缩放比时窗口宽度会变，左上角刚好压在
+      // 某个显示器边缘、实际内容整块落在屏幕外，用户看到的就是「打开了但没窗口」
+      // （上游 #984）。
+      const titleBarHeight = 40.0;
+      const minOverlapW = 120.0;
+      const minOverlapH = 20.0;
       for (final display in displays) {
         final origin = display.visiblePosition ?? Offset.zero;
         final size = display.visibleSize ?? display.size;
@@ -90,12 +123,9 @@ class DesktopSupport {
         final right = left + size.width;
         final bottom = top + size.height;
 
-        final overlapLeft = position.dx > left - windowSize.width + minVisible;
-        final overlapRight = position.dx < right - minVisible;
-        final overlapTop = position.dy >= top;
-        final overlapBottom = position.dy < bottom - minVisible;
-
-        if (overlapLeft && overlapRight && overlapTop && overlapBottom) {
+        final overlapW = min(position.dx + windowSize.width, right) - max(position.dx, left);
+        final overlapH = min(position.dy + titleBarHeight, bottom) - max(position.dy, top);
+        if (overlapW >= minOverlapW && overlapH >= minOverlapH) {
           return true;
         }
       }

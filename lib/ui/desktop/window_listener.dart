@@ -36,6 +36,15 @@ class WindowChangeListener extends WindowListener {
   void onWindowMoved() async {
     final windowPosition = await windowManager.getPosition();
     logger.d("windowPosition: $windowPosition");
+    // 最小化 / 关闭动画期间 Windows 会给 (-32000, -32000) 这类哨兵坐标：
+    // 存进配置后下次启动窗口就在屏幕外，表现为「打开了但没有窗口」（上游 #984）。
+    if (!windowPosition.dx.isFinite ||
+        !windowPosition.dy.isFinite ||
+        windowPosition.dx.abs() > 20000 ||
+        windowPosition.dy.abs() > 20000) {
+      logger.w('Ignore suspicious window position: $windowPosition');
+      return;
+    }
     appConfiguration.windowPosition = windowPosition;
     appConfiguration.flushConfig();
   }

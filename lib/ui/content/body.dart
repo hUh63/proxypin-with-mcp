@@ -772,7 +772,12 @@ String _formatTextBodyIsolate(Map<String, String> args) {
 class _BodyState extends State<_Body> {
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
-  static const int _virtualizedThreshold = 100000;
+  /// 超过这个字符数就换虚拟化渲染。
+  ///
+  /// 原来是 100000，但非虚拟化路径会把整段文本一次性构建成 TextSpan 再交给
+  /// SelectableText 布局：80KB 的 body（上游 #986）在 Windows 上就足够卡到
+  /// 「程序无响应」。32KB 是「肉眼还看不出差别、但已经明显更流畅」的分界。
+  static const int _virtualizedThreshold = 32000;
 
   late ViewType viewType;
   HttpMessage? message;
@@ -1002,6 +1007,53 @@ class _BodyState extends State<_Body> {
     }
   }
 
+  /// 单行超过这个长度就按 [_wrapAt] 折行显示。
+  ///
+  /// Flutter 的文本布局是「按行」做的：一行几十万字符（压缩后的 JS/CSS、
+  /// 不含换行的日志）会让一次布局扫描整段，界面直接僵住。折行只影响显示，
+  /// 但要复制原文请用「复制」菜单（它读的是 message.body）。
+  static const int _maxLineChars = 4096;
+  static const int _wrapAt = 512;
+
+  static String _wrapLongLines(String text) {
+    if (text.length <= _maxLineChars) return text;
+    // 快路径：没有超长行就原样返回，别为普通文本白跑一遍。
+    var hasLong = false;
+    var pos = 0;
+    while (pos < text.length) {
+      final nl = text.indexOf('\n', pos);
+      final end = nl < 0 ? text.length : nl;
+      if (end - pos > _maxLineChars) {
+        hasLong = true;
+        break;
+      }
+      pos = end + 1;
+    }
+    if (!hasLong) return text;
+
+    final out = StringBuffer();
+    var start = 0;
+    while (start <= text.length) {
+      var end = text.indexOf('\n', start);
+      if (end < 0) end = text.length;
+      if (end - start > _maxLineChars) {
+        var p = start;
+        while (p < end) {
+          final q = min(p + _wrapAt, end);
+          out.write(text.substring(p, q));
+          out.write('\n');
+          p = q;
+        }
+      } else {
+        out.write(text.substring(start, end));
+        out.write('\n');
+      }
+      if (end >= text.length) break;
+      start = end + 1;
+    }
+    return out.toString();
+  }
+
   Widget _buildTextBodyViewer(
     ViewType type,
     String text, {
@@ -1017,9 +1069,10 @@ class _BodyState extends State<_Body> {
       initialData: text.substring(0, min(text.length, 10000)), // Show a preview while formatting
       futureFormatted,
       (formattedText) {
-        if (showVirtualized) {
+        final displayText = _wrapLongLines(formattedText);
+        if (showVirtualized || displayText.length > _virtualizedThreshold) {
           return VirtualizedHighlightText(
-            text: formattedText,
+            text: displayText,
             language: language,
             searchController: widget.searchController,
             scrollController: widget.scrollController,
@@ -1028,7 +1081,7 @@ class _BodyState extends State<_Body> {
 
         return HighlightTextWidget(
             language: language,
-            text: formattedText,
+            text: displayText,
             searchController: widget.searchController,
             contextMenuBuilder: bodyContextMenu);
       },
@@ -1124,11 +1177,23 @@ class HexViewer extends StatelessWidget {
 
   const HexViewer({super.key, required this.data, this.bytesPerRow = 16, required this.searchController});
 
+  /// 超过这个字节数就用虚拟化渲染（hex 文本是原始数据的 4~5 倍，全量构建
+  /// TextSpan 会直接把界面卡住 —— 上游 #986 的 80KB body 就是这里最慢）。
+  static const int _virtualizeAbove = 8 * 1024;
+
   @override
   Widget build(BuildContext context) {
+    final text = _formatHex(data, bytesPerRow);
+    if (data.length > _virtualizeAbove) {
+      return VirtualizedHighlightText(
+        text: text,
+        style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
+        searchController: searchController,
+      );
+    }
     return HighlightTextWidget(
         style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
-        text: _formatHex(data, bytesPerRow),
+        text: text,
         searchController: searchController,
         contextMenuBuilder: bodyContextMenu);
   }

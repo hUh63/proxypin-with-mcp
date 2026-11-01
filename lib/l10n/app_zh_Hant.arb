@@ -521,8 +521,8 @@
   "textDiff": "文字比對",
   "textEditor": "文字編輯",
   "compare": "比對",
-  "diffOriginal": "原文",
-  "diffChanged": "新文",
+  "diffOriginal": "原檔案",
+  "diffChanged": "新檔案",
   "diffIdentical": "兩段文字完全相同",
   "text": "文字",
   "format": "格式化",
@@ -4898,5 +4898,8 @@
   "editorTrimOnSave": "儲存時修剪行尾空白",
   "editorTrimOnSaveDesc": "寫盤前去掉每行末尾的空格與定位字元",
   "mergeApplyToDiff": "應用到對比頁",
-  "mergeReplaceRight": "用合併結果替換右側內容？"
+  "mergeReplaceRight": "用合併結果替換右側內容？",
+  "mcpLoopbackUrl": "本機回環位址（同機使用）",
+  "resetWindowPosition": "重設視窗位置",
+  "resetWindowPositionDesc": "把視窗移回主螢幕中央（拔掉副螢幕後應用開啟看不到視窗時用這個）"
 }

@@ -28,6 +28,7 @@ import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/component/ws_traffic_port_dialog.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/network/util/windows_takeover.dart';
+import 'package:proxypin/utils/desktop_support.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/content/mcp_task_manager_page.dart';
 import 'package:proxypin/ui/content/websocket_intercept_manager.dart';
@@ -220,6 +221,24 @@ class _PreferenceState extends State<Preference> {
                   title: Text(localizations.memoryCleanup, style: titleStyle),
                   subtitle: Text(localizations.memoryCleanupSubtitle, style: subtitleStyle),
                   trailing: memoryCleanup(context, localizations)),
+              // 窗口跑到屏幕外时（拔掉副屏 / 多屏 DPI 不一致）用户的自救入口。
+              ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(localizations.resetWindowPosition, style: titleStyle),
+                  subtitle: Text(localizations.resetWindowPositionDesc, style: subtitleStyle),
+                  trailing: IconButton(
+                      icon: const Icon(Icons.screen_rotation_alt, size: 20),
+                      tooltip: localizations.resetWindowPosition,
+                      onPressed: () async {
+                        try {
+                          await DesktopSupport.resetWindowPosition(appConfiguration);
+                          if (context.mounted) {
+                            FlutterToastr.show(localizations.success, context);
+                          }
+                        } catch (e) {
+                          logger.w('reset window position failed', error: e);
+                        }
+                      })),
 
               const Divider(),
               // WebSocket 实时流量推送（上游 #756）

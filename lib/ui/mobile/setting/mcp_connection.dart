@@ -525,10 +525,14 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     final loc = AppLocalizations.of(context)!;
     final mcpServer = McpServer();
     final port = _configuredPort;
-    final ip = _deviceIp ?? '127.0.0.1';
+    final allowLan = Configuration.loaded?.mcpAllowLan ?? false;
+    // 只监听本机时，对外可用的地址就是 127.0.0.1；开了局域网才用设备 IP。
+    final ip = allowLan ? (_deviceIp ?? '127.0.0.1') : '127.0.0.1';
     final apiUrl = 'http://$ip:$port/mcp';
     final sseUrl = 'http://$ip:$port/sse';
     final healthUrl = 'http://$ip:$port/health';
+    // 同机 MCP 客户端（#985）用这个地址最稳：换 Wi-Fi / 开热点都不受影响。
+    final loopbackUrl = 'http://127.0.0.1:$port/mcp';
     final isRunning = mcpServer.isRunning;
     final lastError = mcpServer.lastError;
 
@@ -817,6 +821,15 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                         trailing: IconButton(
                           icon: const Icon(Icons.copy, size: 20),
                           onPressed: () => _copyText(apiUrl, loc.mcpConnApiUrlCopied),
+                        ),
+                      ),
+                      const Divider(height: 0),
+                      ListTile(
+                        title: Text(loc.mcpLoopbackUrl),
+                        subtitle: Text(loopbackUrl),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.copy, size: 20),
+                          onPressed: () => _copyText(loopbackUrl, loc.mcpConnApiUrlCopied),
                         ),
                       ),
                       const Divider(height: 0),

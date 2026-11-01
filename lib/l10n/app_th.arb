@@ -351,8 +351,8 @@
   "textDiff": "เปรียบเทียบข้อความ",
   "textEditor": "แก้ไขข้อความ",
   "compare": "เปรียบเทียบ",
-  "diffOriginal": "ต้นฉบับ",
-  "diffChanged": "แก้ไขแล้ว",
+  "diffOriginal": "Original file",
+  "diffChanged": "New file",
   "diffIdentical": "ข้อความทั้งสองเหมือนกันทุกประการ",
   "text": "ข้อความ",
   "format": "จัดรูปแบบ",
@@ -3097,5 +3097,8 @@
   "editorTrimOnSave": "Trim trailing whitespace on save",
   "editorTrimOnSaveDesc": "Strip spaces and tabs at the end of every line before writing the file",
   "mergeApplyToDiff": "Apply to compare",
-  "mergeReplaceRight": "Replace the right pane with the merged result?"
+  "mergeReplaceRight": "Replace the right pane with the merged result?",
+  "mcpLoopbackUrl": "URL loopback (อุปกรณ์เดียวกัน)",
+  "resetWindowPosition": "Reset window position",
+  "resetWindowPositionDesc": "Move the window back to the center of the main screen (use this if the app opens with no visible window after unplugging a monitor)"
 }

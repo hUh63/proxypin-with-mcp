@@ -37,7 +37,6 @@ import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/utils/text_diff.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
-import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/smart_completion.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -81,9 +80,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
   bool _ignoreCase = false;
   bool _ignoreWhitespace = false;
 
-  /// 对齐并排视图（逐行对齐、差异上底色）：这是主视图，默认开。
-  /// 想直接编辑两侧文本时切到「编辑视图」（原码流视图）。
-  bool _aligned = true;
+  /// 对齐并排视图（逐行对齐、差异上底色）。
+  ///
+  /// 默认**关**（进页面就落在编辑态）：对比页最常见的动作是「贴/改两段文本」，
+  /// 一进来是只读的对齐视图，很容易让人以为这里不能输入。想并排看差异时点
+  /// 工具栏的对比按钮切过去，选择会记住。
+  bool _aligned = false;
+  static const String _alignedKey = 'text_diff_aligned_v1';
+
+  /// 两栏的文件名（打开文件后显示在顶部标签里：「原文件 · xxx.txt」）。
+  String _leftName = '';
+  String _rightName = '';
 
   /// 显示字号（底部 +/- 调节）。
   double _fontSize = 13.5;
@@ -96,6 +103,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 防止「A 带动 B、B 又带动 A」的回路。
   bool _syncingScroll = false;
+
+  /// 右侧「差异密度条」只在滚动时出现，停止 1.1 秒后淡出。
+  ///
+  /// 用户反馈：它常驻在右边，看起来像一条滚动条，还占横向空间。功能（点哪跳哪）
+  /// 保留，只是平时不挡视线。
+  final ValueNotifier<bool> _densityVisible = ValueNotifier<bool>(false);
+  Timer? _densityTimer;
+
+  void _bumpDensity() {
+    _densityVisible.value = true;
+    _densityTimer?.cancel();
+    _densityTimer = Timer(const Duration(milliseconds: 1100), () {
+      if (mounted) _densityVisible.value = false;
+    });
+  }
 
   /// 双指缩放状态。
   final Map<int, Offset> _pointers = <int, Offset>{};
@@ -182,6 +204,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (!mounted || v == null || v == _sideBySide) return;
       setState(() => _sideBySide = v);
     }).catchError((_) => null));
+    unawaited(SharedPreferencesAsync().getBool(_alignedKey).then((v) {
+      if (!mounted || v == null || v == _aligned) return;
+      setState(() => _aligned = v);
+    }).catchError((_) => null));
 
     _left.addListener(_onLeftChanged);
     _right.addListener(_onRightChanged);
@@ -208,6 +234,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _rightH.dispose();
     _persistTimer?.cancel();
     _longPressTimer?.cancel();
+    _densityTimer?.cancel();
+    _densityVisible.dispose();
     _left.removeListener(_onLeftChanged);
     _right.removeListener(_onRightChanged);
     _leftUndo.removeListener(_onUndoChanged);
@@ -640,6 +668,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
     try {
       final content = await File(path).readAsString();
       target.text = content;
+      if (!mounted) return;
+      final name = path.split(Platform.pathSeparator).last;
+      setState(() {
+        if (identical(target, _left)) {
+          _leftName = name;
+        } else {
+          _rightName = name;
+        }
+      });
     } catch (e) {
       _toast('${localizations.fail}: $e');
     }
@@ -760,6 +797,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
+  /// 对齐视图 ↔ 编辑视图，并把选择记住。
+  void _toggleAligned() {
+    final next = !_aligned;
+    setState(() => _aligned = next);
+    unawaited(SharedPreferencesAsync().setBool(_alignedKey, next));
+  }
+
   void _changeFontSize(double delta) {
     final next = (_fontSize + delta).clamp(11.0, 22.0);
     if (next == _fontSize) return;
@@ -825,6 +869,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _applyAll(fromLeft: false);
           case 'exportReport':
             unawaited(_exportReport());
+          case 'zoomIn':
+            _changeFontSize(1);
+          case 'zoomOut':
+            _changeFontSize(-1);
+          case 'stats':
+            _showDiffStats();
           case 'diffList':
             _showDiffList();
           case 'hexDiff':
@@ -860,6 +910,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'foldUnchanged',
             checked: _foldUnchanged,
             child: Text(localizations.diffFoldUnchanged)),
+        PopupMenuItem(value: 'zoomIn', child: Text(localizations.editorZoomIn)),
+        PopupMenuItem(value: 'zoomOut', child: Text(localizations.editorZoomOut)),
+        PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
+        const PopupMenuDivider(),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
@@ -885,50 +939,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
-  /// 底部操作栏：`<` 上一处、`→` 下一处、`+/-` 字号、`*` 切编辑、`=` 统计、`/` 查找。
+  /// 底部只剩「聚焦单块」时的操作条。
+  ///
+  /// 原来这里还有一行 `<` `→` `+` `-` `*` `=` `/` 的符号按钮，除了字号 / 统计 /
+  /// 查找之外全部与工具栏重复，和上面的快捷输入行叠在一起像「两个符号栏」。这些
+  /// 动作已分别挪到工具栏（查找）与「更多」菜单（放大 / 缩小 / 统计）。
   Widget _bottomBar() {
-    Widget btn(String label, String tip, VoidCallback? onTap, {bool active = false}) {
-      final color = active ? Theme.of(context).colorScheme.primary : null;
-      return Expanded(
-        child: Tooltip(
-          message: tip,
-          child: InkWell(
-            onTap: onTap,
-            child: Container(
-              height: 34,
-              alignment: Alignment.center,
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontFamily: 'monospace',
-                  color: onTap == null ? Colors.grey : color,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     if (_focusBlock != null && _focusBlock! < _blocks.length) return _focusBar();
-
-    final hasDiff = _blocks.isNotEmpty;
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.4))),
-      ),
-      child: Row(children: [
-        btn('<', localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
-        btn('→', localizations.diffNext, hasDiff ? () => _navigate(1) : null),
-        btn('+', localizations.editorZoomIn, () => _changeFontSize(1)),
-        btn('-', localizations.editorZoomOut, () => _changeFontSize(-1)),
-        btn('*', localizations.compare, () => setState(() => _aligned = !_aligned), active: _aligned),
-        btn('=', localizations.editorStats, _showDiffStats),
-        btn('/', localizations.search, () => _toggleFind(_leftActive ? _findLeft : _findRight)),
-      ]),
-    );
+    return const SizedBox.shrink();
   }
 
   /// 聚焦模式的底部条：当前第几处 + 「用右侧 / 用左侧」+ 退出。
@@ -1009,9 +1027,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
         _iconBtn(Icons.swap_horiz, localizations.diffSwapSides, _swapSides),
         _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
         _iconBtn(Icons.keyboard_arrow_down, localizations.diffNext, hasDiff ? () => _navigate(1) : null),
+        _iconBtn(Icons.search, localizations.search,
+            () => _toggleFind(_leftActive ? _findLeft : _findRight)),
         _iconBtn(Icons.save_outlined, localizations.diffSaveRight, _saveResult),
-        _iconBtn(Icons.edit_outlined, localizations.diffEditMode,
-            () => setState(() => _aligned = !_aligned), tint: _aligned ? null : color),
+        // 对齐（并排对比）↔ 编辑：图标跟着当前状态换，点一下切过去。
+        _iconBtn(
+            _aligned ? Icons.edit_outlined : Icons.compare_arrows,
+            _aligned ? localizations.diffEditMode : localizations.compare,
+            _toggleAligned,
+            tint: _aligned ? color : null),
         _moreMenu(),
       ]),
     );
@@ -1033,39 +1057,54 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
   }
 
-  /// 文件名行：左「原文」、中间差异计数、右「修改后」（对应图片里的布局）。
+  /// 文件名行：左「原文件」、中间差异计数、右「新文件」。
+  ///
+  /// 打开过文件时标签后面带上文件名（「原文件 · a.txt」），不用猜哪边是哪份。
+  /// 整行限制字体放大倍数：系统字体调到 1.3 倍以上时，这一行会被挤到只剩半个
+  /// 字（用户反馈过「新文件」显示不全）。
   Widget _fileBar() {
     final total = _blocks.length;
     final pos = total == 0 ? 0 : (_navIndex < 0 ? 1 : _navIndex + 1);
     final color = Theme.of(context).colorScheme;
+
+    Widget label(String base, String name, {TextAlign align = TextAlign.left}) {
+      return Expanded(
+        child: Text(
+          name.isEmpty ? base : '$base · $name',
+          textAlign: align,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 11.5, color: color.onSurfaceVariant),
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 3, 10, 3),
       color: color.surfaceContainerHighest.withValues(alpha: 0.4),
-      child: Row(children: [
-        Expanded(
-          child: Text(localizations.diffOriginal,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11.5, color: color.onSurfaceVariant)),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-          decoration: BoxDecoration(
-            color: color.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(9),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.15,
+        child: Row(children: [
+          label(localizations.diffOriginal, _leftName),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+            decoration: BoxDecoration(
+              color: color.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Text('$pos/$total',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: color.primary,
+                    fontWeight: FontWeight.w600)),
           ),
-          child: Text('$pos/$total',
-              style: TextStyle(
-                  fontSize: 11, fontFamily: 'monospace', color: color.primary, fontWeight: FontWeight.w600)),
-        ),
-        Expanded(
-          child: Text(localizations.diffChanged,
-              textAlign: TextAlign.right,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11.5, color: color.onSurfaceVariant)),
-        ),
-      ]),
+          const SizedBox(width: 6),
+          label(localizations.diffChanged, _rightName, align: TextAlign.right),
+        ]),
+      ),
     );
   }
 
@@ -1646,7 +1685,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 右侧「差异密度条」：把每一行的类型按比例画成色块，点哪里滚到哪里（VS 的 overview ruler）。
   Widget _densityBar(List<DiffRow> rows) {
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
-    return LayoutBuilder(builder: (context, c) {
+    // 平时隐藏（用户反馈它常驻在右边像条滚动条），滚动时淡入、停 1.1 秒淡出。
+    // 占位宽度保留 9dp，避免显隐时整页横向跳动。
+    final bar = LayoutBuilder(builder: (context, c) {
       // 监听滚动控制器画「当前视口」的滑块（滚动时不需要整页 setState）。
       return ListenableBuilder(
         listenable: _leftV,
@@ -1681,6 +1722,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
         },
       );
     });
+    return ValueListenableBuilder<bool>(
+      valueListenable: _densityVisible,
+      builder: (context, visible, child) => AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: const Duration(milliseconds: 180),
+        child: IgnorePointer(ignoring: !visible, child: child),
+      ),
+      child: bar,
+    );
   }
 
   void _scrollToRowIndex(int i) {
@@ -1823,8 +1873,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   // ---------- 纵向联动 ----------
 
-  void _syncFromLeft() => _syncVertical(_leftV, _rightV);
-  void _syncFromRight() => _syncVertical(_rightV, _leftV);
+  void _syncFromLeft() {
+    _bumpDensity();
+    _syncVertical(_leftV, _rightV);
+  }
+
+  void _syncFromRight() {
+    _bumpDensity();
+    _syncVertical(_rightV, _leftV);
+  }
 
   /// 两侧行数、行高完全一致，所以「同一像素位置」就是「同一对齐行」。
   void _syncVertical(ScrollController from, ScrollController to) {

@@ -309,8 +309,8 @@
   "textDiff": "Text Diff",
   "textEditor": "Text Editor",
   "compare": "Compare",
-  "diffOriginal": "Original",
-  "diffChanged": "Changed",
+  "diffOriginal": "Original file",
+  "diffChanged": "New file",
   "diffIdentical": "Two texts are identical",
   "text": "Text",
   "format": "Format",
@@ -5321,5 +5321,8 @@
   "editorTrimOnSave": "Trim trailing whitespace on save",
   "editorTrimOnSaveDesc": "Strip spaces and tabs at the end of every line before writing the file",
   "mergeApplyToDiff": "Apply to compare",
-  "mergeReplaceRight": "Replace the right pane with the merged result?"
+  "mergeReplaceRight": "Replace the right pane with the merged result?",
+  "mcpLoopbackUrl": "Loopback URL (same device)",
+  "resetWindowPosition": "Reset window position",
+  "resetWindowPositionDesc": "Move the window back to the center of the main screen (use this if the app opens with no visible window after unplugging a monitor)"
 }
