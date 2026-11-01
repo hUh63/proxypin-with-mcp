@@ -34,6 +34,7 @@ import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
+import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/utils/text_diff.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
@@ -116,6 +117,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 聚焦模式：只显示某一处差异（±[_focusContext] 行上下文），
   /// 配合底部「← 用右侧 / 用左侧 →」逐个块过一遍——多轮改动后逐块确认最省心。
   int? _focusBlock;
+
+  /// 折叠「连续未变」的段落（VS Code 的 Fold Unchanged Regions）。
+  bool _foldUnchanged = false;
+
+  /// 已被用户手动展开的折叠段（值是折叠段在未折叠列表里的起始下标）。
+  final Set<int> _expandedFolds = <int>{};
 
   /// 聚焦模式保留的上下文行数。
   static const int _focusContext = 3;
@@ -403,6 +410,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       setState(() {
         _blocks = blocks;
         _navIndex = -1;
+        _expandedFolds.clear();
         // 块数变了：聚焦下标越界就退出聚焦，否则保持在原块上。
         if (_focusBlock != null && _focusBlock! >= blocks.length) _focusBlock = null;
         _summary = stats.identical
@@ -817,6 +825,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'hexDiff':
             unawaited(Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const HexDiffPage())));
+          case 'foldUnchanged':
+            setState(() {
+              _foldUnchanged = !_foldUnchanged;
+              _expandedFolds.clear();
+            });
+          case 'threeWay':
+            unawaited(Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ThreeWayMergePage())));
           case 'syntax':
             unawaited(_checkSyntax());
           case 'swapLayout':
@@ -836,9 +852,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
         CheckedPopupMenuItem(
             value: 'syncH', checked: _syncH, child: Text(localizations.diffSyncHScroll)),
+        CheckedPopupMenuItem(
+            value: 'foldUnchanged',
+            checked: _foldUnchanged,
+            child: Text(localizations.diffFoldUnchanged)),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
+        PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(
             value: 'focus', checked: _focusBlock != null, child: Text(localizations.diffFocus)),
@@ -1549,7 +1570,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (fb != null && fb >= 0 && fb < _blocks.length) {
       return _focusRows(rows, _blocks[fb]);
     }
-    if (!_onlyDiff) return rows;
+    if (!_onlyDiff) return _foldUnchanged ? _foldRuns(rows) : rows;
     final keep = <int>{};
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].type == DiffRowType.equal) continue;
@@ -1575,6 +1596,44 @@ class _TextDiffPageState extends State<TextDiffPage> {
       }
     }
     return out;
+  }
+
+  /// 折叠连续未变的段落：连续等值行超过 [foldThreshold] 折成一行摘要，点击展开。
+  ///
+  /// 这是 VS Code「Fold Unchanged Regions」/ Beyond Compare「忽略未更改行」的等价物：
+  /// 长文件里真正需要看的往往只有几处，其余段落没必要占屏。
+  List<DiffRow> _foldRuns(List<DiffRow> rows) {
+    const foldThreshold = 6;
+    final out = <DiffRow>[];
+    var i = 0;
+    while (i < rows.length) {
+      if (rows[i].type != DiffRowType.equal) {
+        out.add(rows[i]);
+        i++;
+        continue;
+      }
+      var j = i;
+      while (j < rows.length && rows[j].type == DiffRowType.equal) {
+        j++;
+      }
+      final count = j - i;
+      if (count > foldThreshold && !_expandedFolds.contains(i)) {
+        final label = '⋯  $count ${localizations.diffUnchangedLines}';
+        out.add(DiffRow(DiffRowType.equal, null, label, null, label, foldFrom: i));
+      } else {
+        out.addAll(rows.sublist(i, j));
+      }
+      i = j;
+    }
+    return out;
+  }
+
+  /// 展开 / 收起一个折叠段。
+  void _toggleFold(int from) {
+    if (!mounted) return;
+    setState(() {
+      if (!_expandedFolds.add(from)) _expandedFolds.remove(from);
+    });
   }
 
   /// 右侧「差异密度条」：把每一行的类型按比例画成色块，点哪里滚到哪里（VS 的 overview ruler）。
@@ -1664,8 +1723,20 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 controller: vCtrl,
                 itemExtent: _rowHeight,
                 itemCount: rows.length,
-                itemBuilder: (_, i) =>
-                    _alignedRow(rows[i], left: left, isCurrent: i == current),
+                itemBuilder: (_, i) {
+                  final row = rows[i];
+                  final cell = _alignedRow(row, left: left, isCurrent: i == current);
+                  if (!row.isFold) return cell;
+                  // 折叠摘要行：点一下就展开这一段（两侧都能点）。
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _toggleFold(row.foldFrom!),
+                    child: Tooltip(
+                      message: localizations.diffFoldExpandHint,
+                      child: cell,
+                    ),
+                  );
+                },
               ),
             ),
           );

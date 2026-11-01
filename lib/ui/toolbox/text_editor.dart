@@ -1873,7 +1873,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       case 'selectNext':
         _addNextOccurrence();
       case 'gotoDef':
-        _gotoDefinition();
+        unawaited(_gotoDefinition());
       case 'upper':
         _editSelections((v) => v.toUpperCase());
       case 'lower':
@@ -2404,7 +2404,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 同文件「转到定义」：光标在某个名字上时，去找它的声明并跳过去。
   ///
   /// 没有工程索引，只在当前文件里找——多数时候够用（改自己写的函数最常干的就是这个）。
-  void _gotoDefinition() {
+  Future<void> _gotoDefinition() async {
     final controller = _controller;
     if (controller == null) return;
     final text = controller.text;
@@ -2418,7 +2418,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     final at = _findDeclaration(text, name, range.start);
     if (at == null) {
-      _toast(localizations.editorNoDefinition);
+      // 同文件里没有声明 → 去其它已打开文档 / 同目录文件里找（跨文件「转到实现」）。
+      // 只有一处定义时直接跳过去，不会多弹一层列表。
+      await _showReferences(declarationsOnly: true);
       return;
     }
     controller.selection = TextSelection.collapsed(offset: at);
@@ -2429,6 +2431,19 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// [skipOffset] 是当前光标所在的词，找不到别的声明时不要「跳到自己」。
   static int? _findDeclaration(String text, String name, int skipOffset) {
+    for (final at in _declarationOffsets(text, name)) {
+      // 光标所在的这一处多半就是「当前这个名字」本身，别跳到自己。
+      if ((at - skipOffset).abs() < 1) continue;
+      return at;
+    }
+    return null;
+  }
+
+  /// [name] 在文档里的**所有**声明位置（下标）。
+  ///
+  /// 与 [_findDeclaration] 同一套形态正则，区别是全量返回 —— 「工作区查找引用」
+  /// 要靠它给每条命中打「定义 / 引用」标记。
+  static List<int> _declarationOffsets(String text, String name) {
     final escaped = RegExp.escape(name);
     final patterns = <RegExp>[
       RegExp(r'\b(?:class|struct|interface|enum|record|namespace)\s+' + escaped + r'\b'),
@@ -2437,17 +2452,28 @@ class _TextEditorPageState extends State<TextEditorPage> {
           + escaped +
           r'\b\s*(?:=|;|,)'),
     ];
+    final out = <int>[];
     for (final re in patterns) {
       for (final m in re.allMatches(text)) {
         final at = m.start + m.group(0)!.indexOf(name);
-        if ((at - skipOffset).abs() < 1) continue;
+        if (out.contains(at)) continue;
         // 函数形态要确认前面确实是「声明」（`Foo();` 是调用，不是定义）。
         if (re.pattern.contains(r'\(') && !_looksLikeDeclHead(text, m.start)) continue;
-        return at;
+        out.add(at);
       }
     }
-    return null;
+    return out;
   }
+
+  /// 「工作区扫描」按扩展名跳过的二进制 / 归档文件。
+  static const List<String> _skipScanExts = [
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svgz',
+    '.pdf', '.zip', '.apk', '.aab', '.jar', '.aar', '.so', '.dll', '.dylib',
+    '.class', '.dex', '.mp3', '.mp4', '.mov', '.avi', '.mkv', '.m4a', '.wav',
+    '.ttf', '.otf', '.woff', '.woff2', '.exe', '.bin', '.dat', '.db', '.sqlite',
+    '.xlsx', '.docx', '.pptx', '.doc', '.xls', '.ppt', '.7z', '.rar', '.gz', '.bz2',
+    '.a', '.o', '.obj', '.keystore', '.jks', '.p12', '.pfx', '.crx', '.pak',
+  ];
 
   // ------------------------------ 参考高亮（括号配对 / 当前词） ------------------------------
 
@@ -3705,7 +3731,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 「查找所有引用」（VS 的 Shift+F12）：把这个词在全文出现的位置列出来。
   ///
   /// 和查找面板的区别是它**只找整词**、且直接从当前位置出发，不用先输入。
-  Future<void> _showReferences() async {
+  Future<void> _showReferences({bool declarationsOnly = false}) async {
     final controller = _controller;
     final doc = _doc;
     if (controller == null || doc == null) return;
@@ -3713,82 +3739,210 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final caret = controller.selection.baseOffset;
     final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
     final name = text.substring(range.start, range.end);
-    if (name.isEmpty) {
-      _toast(localizations.editorReferencesEmpty);
+    if (!_isSymbolName(name)) {
+      _toast(declarationsOnly ? localizations.editorNoDefinition : localizations.editorReferencesEmpty);
       return;
     }
-    final hits = <int>[];
-    final wordChar = RegExp(r'[\w$]');
-    var from = 0;
-    while (hits.length < 200) {
-      final at = text.indexOf(name, from);
-      if (at < 0) break;
-      // 只认整词：`Count` 不该命中 `Counter`。
-      final before = at == 0 ? '' : text[at - 1];
-      final afterAt = at + name.length;
-      final after = afterAt >= text.length ? '' : text[afterAt];
-      final ok = (before.isEmpty || !wordChar.hasMatch(before)) &&
-          (after.isEmpty || !wordChar.hasMatch(after));
-      if (ok) hits.add(at);
-      from = at + name.length;
-    }
-    if (hits.isEmpty) {
-      _toast(localizations.editorReferencesEmpty);
-      return;
-    }
-    if (!mounted) return;
-    final lines = <int>[];
-    var scan = 0;
-    var line = 0;
-    for (final at in hits) {
-      for (var i = scan; i < at && i < text.length; i++) {
-        if (text.codeUnitAt(i) == 10) line++;
+
+    final wordRe = RegExp(r'\b' + RegExp.escape(name) + r'\b');
+    final hits = <_RefHit>[];
+    final scanned = <String>{};
+
+    void scan(String content, String label, String? path, bool current) {
+      // 超大文本跳过：几 MB 的日志里做整词扫描既慢又没有意义。
+      if (content.length > 2000000) return;
+      final defOffsets = _declarationOffsets(content, name).toSet();
+      var count = 0;
+      var lastLineStart = 0;
+      var lastLine = 0;
+      for (final m in wordRe.allMatches(content)) {
+        if (count++ > 500) break;
+        final at = m.start;
+        final isDef = defOffsets.contains(at);
+        if (declarationsOnly && !isDef) continue;
+        // 行号用「上一个命中 → 本次命中」增量数换行，避免每处都从头扫。
+        for (var i = lastLineStart; i < at; i++) {
+          if (content.codeUnitAt(i) == 10) lastLine++;
+        }
+        lastLineStart = at;
+        var lineEnd = content.indexOf('\n', at);
+        if (lineEnd < 0) lineEnd = content.length;
+        var lineStart = content.lastIndexOf('\n', at) + 1;
+        if (lineStart < 0) lineStart = 0;
+        hits.add(_RefHit(
+          path: path,
+          label: label,
+          line: lastLine + 1,
+          text: content.substring(lineStart, lineEnd).trim(),
+          offset: at,
+          isDefinition: isDef,
+          isCurrent: current,
+        ));
       }
-      scan = at;
-      lines.add(line);
     }
+
+    // ① 已打开的文档：内存里就有，也包含当前文档本身。
+    for (final d in _docs.docs) {
+      final key = d.path ?? 'mem:${d.id}';
+      if (!scanned.add(key)) continue;
+      scan(d.text, d.name, d.path, identical(d, doc));
+    }
+
+    // ② 当前文件所在目录（不递归）：单文件 ≤1MB、最多 300 个，二进制按扩展名跳过。
+    final basePath = doc.path;
+    if (basePath != null) {
+      try {
+        final dir = File(basePath).parent;
+        if (await dir.exists()) {
+          var files = 0;
+          await for (final e in dir.list(followLinks: false)) {
+            if (files >= 300) break;
+            if (e is! File) continue;
+            if (!scanned.add(e.path)) continue;
+            final lower = e.path.toLowerCase();
+            if (_skipScanExts.any(lower.endsWith)) continue;
+            try {
+              if (await e.length() > 1024 * 1024) continue;
+              files++;
+              final content = await e.readAsString();
+              scan(content, e.path.split(Platform.pathSeparator).last, e.path, false);
+            } catch (_) {
+              // 编码不是 UTF-8 / 文件恰好被删：跳过即可，不影响其它文件。
+            }
+          }
+        }
+      } catch (e) {
+        logger.w('workspace scan failed', error: e);
+      }
+    }
+
+    if (!mounted) return;
+    if (hits.isEmpty) {
+      _toast(declarationsOnly
+          ? localizations.editorNoDefinition
+          : localizations.editorReferencesEmpty);
+      return;
+    }
+
+    // 定义优先、当前文件优先、行号升序 —— 第一条就是最可能要去的那个。
+    hits.sort((a, b) {
+      if (a.isDefinition != b.isDefinition) return a.isDefinition ? -1 : 1;
+      if (a.isCurrent != b.isCurrent) return a.isCurrent ? -1 : 1;
+      final byLabel = a.label.compareTo(b.label);
+      return byLabel != 0 ? byLabel : a.line.compareTo(b.line);
+    });
+
+    // 「转到实现」且只有唯一一处定义：直接跳过去，不弹列表。
+    if (declarationsOnly && hits.length == 1) {
+      await _openRefHit(hits.first);
+      return;
+    }
+
+    final multiFile = hits.map((h) => h.label).toSet().length > 1;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (ctx) => ListView.builder(
-        itemCount: hits.length,
-        itemBuilder: (ctx, i) {
-          final at = hits[i];
-          final snippet = _lineTextAt(text, lines[i]).trim();
-          return ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.format_list_bulleted, size: 16),
-            title: Text(snippet, maxLines: 1,
-                overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text('L${lines[i] + 1}', style: const TextStyle(fontSize: 11)),
-              IconButton(
-                icon: const Icon(Icons.visibility_outlined, size: 16),
-                tooltip: localizations.editorPeekDefinition,
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  unawaited(_showPeekAt(at: at, title: name));
-                },
+      isScrollControlled: true,
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.75),
+        child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+            child: Row(children: [
+              Expanded(
+                child: Text(
+                  declarationsOnly
+                      ? localizations.editorDefinitionsOf(name)
+                      : localizations.editorReferencesOf(name, hits.length),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              Text('${hits.length}',
+                  style: TextStyle(fontSize: 11, color: Theme.of(ctx).colorScheme.outline)),
             ]),
-            onTap: () {
-              Navigator.pop(ctx);
-              final len = controller.text.length;
-              controller.selection =
-                  TextSelection(baseOffset: at.clamp(0, len), extentOffset: (at + name.length).clamp(0, len));
-              controller.scrollToLine(lines[i]);
-            },
-          );
-        },
+          ),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: hits.length,
+              itemBuilder: (ctx, i) {
+                final h = hits[i];
+                return ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  leading: Icon(
+                    h.isDefinition ? Icons.my_location_outlined : Icons.format_list_bulleted,
+                    size: 16,
+                    color: h.isDefinition ? Theme.of(ctx).colorScheme.primary : null,
+                  ),
+                  title: Text(h.text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                  subtitle: Text(
+                    multiFile ? '${h.label} · L${h.line}' : 'L${h.line}',
+                    style: const TextStyle(fontSize: 10.5),
+                  ),
+                  trailing: h.isCurrent
+                      ? IconButton(
+                          icon: const Icon(Icons.visibility_outlined, size: 16),
+                          tooltip: localizations.editorPeekDefinition,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            unawaited(_showPeekAt(at: h.offset, title: name));
+                          },
+                        )
+                      : null,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    unawaited(_openRefHit(h, selectLength: name.length));
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+        ),
       ),
     );
   }
 
-  /// 取某一行的原文（引用列表的摘要用）。
+  /// 跳到一条跨文件命中：文件已打开就直接切过去，否则先按路径打开，再定位。
+  Future<void> _openRefHit(_RefHit hit, {int selectLength = 0}) async {
+    final path = hit.path;
+    if (path != null) {
+      EditorDocument? target;
+      for (final d in _docs.docs) {
+        if (d.path == path) {
+          target = d;
+          break;
+        }
+      }
+      if (target != null) {
+        if (!identical(target, _doc)) _activate(target);
+      } else {
+        await _openPath(path);
+      }
+    }
+    // 切换 / 打开文档是异步的（还会重建 controller），等一帧再定位。
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    if (!mounted) return;
+    final c = _controller;
+    if (c == null) return;
+    final len = c.text.length;
+    if (hit.offset > len) return;
+    final end = (hit.offset + selectLength).clamp(hit.offset, len);
+    c.selection = TextSelection(baseOffset: hit.offset, extentOffset: end);
+    c.scrollToLine(_lineOfOffset(c.text, hit.offset));
+  }
+
   static String _lineTextAt(String text, int line) {
     final start = _offsetOfLine(text, line);
     var end = text.indexOf('\n', start);
@@ -4403,7 +4557,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
       path = picked?.path;
     }
     if (path == null) return;
+    await _openPath(path);
+  }
 
+  /// 按路径打开文件（「打开文件」与「工作区跳转」共用这一条路径）：
+  /// 媒体 / 压缩包 / 二进制走预览，文本走带容错解码，超大文件先问一句。
+  Future<void> _openPath(String path) async {
     // 媒体 / 压缩包 / 未知二进制：当文本读只会得到乱码（甚至卡死），直接进预览。
     // HTML 与文本类仍然进编辑器——那些是要改的。
     final kind = filePreviewKindOf(path);
@@ -6207,7 +6366,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         case 'selectAllOccurrences':
           _selectAllOccurrences();
         case 'gotoDef':
-          _gotoDefinition();
+          unawaited(_gotoDefinition());
         case 'lineOps':
           _showLineOpsMenu();
         case 'caseOps':
@@ -7882,4 +8041,38 @@ String? _formatInIsolate(List<Object> args) {
     case FormatKind.none:
       return null;
   }
+}
+
+/// 「工作区查找引用」的一条命中。
+class _RefHit {
+  /// 文件路径；仅存在于编辑器内存、尚未落盘的文档为 null。
+  final String? path;
+
+  /// 显示用的文件名。
+  final String label;
+
+  /// 1-based 行号。
+  final int line;
+
+  /// 该行内容（已 trim）。
+  final String text;
+
+  /// 命中处的字符偏移（用于跳转与选中）。
+  final int offset;
+
+  /// 是否是该符号的声明（否则只是引用）。
+  final bool isDefinition;
+
+  /// 是否属于当前正在编辑的文档（决定要不要给「速览」按钮）。
+  final bool isCurrent;
+
+  const _RefHit({
+    required this.path,
+    required this.label,
+    required this.line,
+    required this.text,
+    required this.offset,
+    required this.isDefinition,
+    required this.isCurrent,
+  });
 }

@@ -585,7 +585,15 @@ class DiffRow {
   final int? rightLine; // 1-based
   final String? rightText;
 
-  const DiffRow(this.type, this.leftLine, this.leftText, this.rightLine, this.rightText);
+  /// 非 null 表示这是「折叠未变区域」的摘要行：值是它所代表的原始行区间起点
+  /// （在未折叠的行列表里的下标），点击它即展开这一段。见 UI 侧 `_visibleRows`。
+  final int? foldFrom;
+
+  const DiffRow(this.type, this.leftLine, this.leftText, this.rightLine, this.rightText,
+      {this.foldFrom});
+
+  /// 是否是「N 行未变」的折叠摘要行（可点击展开）。
+  bool get isFold => foldFrom != null;
 }
 
 /// 把两段文本转成**逐行对齐**的行列表：equal 同行；一段删除 + 一段新增按**相似度**
@@ -640,4 +648,219 @@ List<DiffRow> alignedDiffRows(String left, String right,
     }
   }
   return rows;
+}
+
+
+// ==================== 三方合并 ====================
+
+/// 三方合并里某个变更区的取值来源。
+enum MergeChoice {
+  /// 用「我的」这一版。
+  mine,
+
+  /// 用「他的」这一版。
+  theirs,
+
+  /// 两边都不采纳，保留基线内容。
+  base,
+}
+
+/// 三方合并（base / mine / theirs）里的一**个变更区**：基线行区间
+/// `[baseStart, baseEnd)` 分别被 my / theirs 换成 [mineLines] / [theirsLines]。
+///
+/// 与 git 的 hunk 同义：只覆盖「至少一侧改过」的行段，未改动的部分不进这个列表。
+class MergeRegion {
+  /// 基线起始行号（0-based，含）。
+  final int baseStart;
+
+  /// 基线结束行号（0-based，不含）。纯插入时 `baseStart == baseEnd`。
+  final int baseEnd;
+
+  /// 基线在该区间的原始行。
+  final List<String> baseLines;
+
+  /// 「我的」在该区间对应的行（已含我在区间内的插入 / 排除我的删除）。
+  final List<String> mineLines;
+
+  /// 「他的」在该区间对应的行。
+  final List<String> theirsLines;
+
+  /// 用户当前的选择。冲突区默认取 [MergeChoice.mine]，方便「先全用我的、再逐条改」。
+  MergeChoice choice;
+
+  MergeRegion({
+    required this.baseStart,
+    required this.baseEnd,
+    required this.baseLines,
+    required this.mineLines,
+    required this.theirsLines,
+    MergeChoice? choice,
+  }) : choice = choice ?? MergeChoice.mine;
+
+  /// 我在这个区间里改过内容。
+  bool get mineChanged => !sameLineLists(mineLines, baseLines);
+
+  /// 他在这区间里改过内容。
+  bool get theirsChanged => !sameLineLists(theirsLines, baseLines);
+
+  /// 两侧都改、且改成了不同结果 —— 需要人工决策。
+  bool get conflict => mineChanged && theirsChanged && !sameLineLists(mineLines, theirsLines);
+
+  /// 不需要人工决策（只一侧改，或两侧改成了同一个结果）。
+  bool get autoResolved => !conflict;
+
+  /// 本区最终会输出的行。
+  List<String> get chosenLines => switch (choice) {
+        MergeChoice.mine => mineLines,
+        MergeChoice.theirs => theirsLines,
+        MergeChoice.base => baseLines,
+      };
+}
+
+/// [mergeThreeWay] 的结果。
+class MergeResult {
+  /// 基线全文按 `\n` 切出的行。
+  final List<String> baseLines;
+  final List<String> mineLines;
+  final List<String> theirsLines;
+
+  /// 全部变更区，按 [MergeRegion.baseStart] 升序、互不重叠。
+  final List<MergeRegion> regions;
+
+  const MergeResult({
+    required this.baseLines,
+    required this.mineLines,
+    required this.theirsLines,
+    required this.regions,
+  });
+
+  /// 需要人工决策的区数。
+  int get conflicts => regions.where((r) => r.conflict).length;
+
+  /// 自动解决的区数。
+  int get autoCount => regions.length - conflicts;
+
+  bool get hasConflict => conflicts > 0;
+
+  /// 按当前选择拼出合并结果。
+  ///
+  /// [markers] 为 true 时冲突区输出 git 风格的 `<<<<<<< / ======= / >>>>>>>` 标记，
+  /// 方便丢给外部工具或人工二次处理；否则直接输出所选内容。
+  String compose({bool markers = false}) {
+    final out = <String>[];
+    var cursor = 0;
+    for (final r in regions) {
+      if (r.baseStart > cursor) out.addAll(baseLines.sublist(cursor, r.baseStart));
+      if (markers && r.conflict) {
+        out.add('<<<<<<< mine');
+        out.addAll(r.mineLines);
+        out.add('=======');
+        out.addAll(r.theirsLines);
+        out.add('>>>>>>> theirs');
+      } else {
+        out.addAll(r.chosenLines);
+      }
+      cursor = r.baseEnd;
+    }
+    if (cursor < baseLines.length) out.addAll(baseLines.sublist(cursor));
+    return out.join('\n');
+  }
+}
+
+/// 两个行列表内容完全相同（逐行比较）。
+bool sameLineLists(List<String> a, List<String> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
+/// 取「基线区间 `[s, e]` 在这一侧对应的行」。
+///
+/// 闭区间是刻意的：`e` 端点上的**纯插入**属于本区间（例如「删掉 b、换成 X」这种
+/// 改动块，删除是 `[1,2)`、插入点在边界 2，若按半开区间就会把 X 丢掉）。
+/// 相邻区间在 [mergeThreeWay] 里已经先合并成一个，所以不会被两个区间重复收集。
+List<String> _mapRange(List<LineDiff> diffs, int s, int e) {
+  final out = <String>[];
+  var b = 0;
+  for (final d in diffs) {
+    switch (d.type) {
+      case LineDiffType.equal:
+        if (b >= s && b < e) out.add(d.text);
+        b++;
+      case LineDiffType.delete:
+        // 该基线行在自己这一侧被删掉，不进结果（但基线游标要前进）。
+        b++;
+      case LineDiffType.insert:
+        if (b >= s && b <= e) out.add(d.text);
+    }
+  }
+  return out;
+}
+
+/// 三方合并（对标 git merge-file / WinMerge 三栏 / KDiff3 / Meld）。
+///
+/// 做法：分别求 `base→mine`、`base→theirs` 的变更块，按**基线行区间**把两侧的
+/// 变更对齐；区间重叠或首尾相接的合成一个 [MergeRegion]。每区再用内容比较判定
+/// 「只一侧改 / 两侧改成同一结果 / 真冲突」。
+///
+/// 这是 diff3 的常用简化实现：不追求与 git 逐字节一致（git 还做行内合并），
+/// 但对「同一处被两边分别改过」的冲突判定是等价的，足够用于人工合并。
+MergeResult mergeThreeWay(String base, String mine, String theirs,
+    {bool ignoreCase = false, bool ignoreWhitespace = false}) {
+  final baseLines = base.split('\n');
+  final mineLines = mine.split('\n');
+  final theirsLines = theirs.split('\n');
+
+  final diffsM = diffLines(base, mine, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
+  final diffsT = diffLines(base, theirs, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
+
+  final spans = <({int start, int end})>[];
+  for (final b in buildDiffBlocks(diffsM, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace)) {
+    spans.add((start: b.leftStart, end: b.leftStart + b.leftLines.length));
+  }
+  for (final b in buildDiffBlocks(diffsT, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace)) {
+    spans.add((start: b.leftStart, end: b.leftStart + b.leftLines.length));
+  }
+  if (spans.isEmpty) {
+    return MergeResult(
+        baseLines: baseLines, mineLines: mineLines, theirsLines: theirsLines, regions: const []);
+  }
+
+  spans.sort((a, b) => a.start != b.start ? a.start.compareTo(b.start) : a.end.compareTo(b.end));
+  final merged = <({int start, int end})>[];
+  for (final sp in spans) {
+    if (merged.isEmpty) {
+      merged.add(sp);
+      continue;
+    }
+    final last = merged.last;
+    // 重叠、或首尾相接（含纯插入点落在边界上）都并成一区。
+    if (sp.start <= last.end) {
+      merged[merged.length - 1] = (start: last.start, end: sp.end > last.end ? sp.end : last.end);
+    } else {
+      merged.add(sp);
+    }
+  }
+
+  final regions = <MergeRegion>[];
+  for (final m in merged) {
+    final s = m.start.clamp(0, baseLines.length);
+    final e = m.end.clamp(s, baseLines.length);
+    final region = MergeRegion(
+      baseStart: s,
+      baseEnd: e,
+      baseLines: baseLines.sublist(s, e),
+      mineLines: _mapRange(diffsM, s, e),
+      theirsLines: _mapRange(diffsT, s, e),
+    );
+    // 只有「他」改过时默认取「他」——否则自动合并会把他的改动整段丢掉。
+    if (!region.mineChanged && region.theirsChanged) region.choice = MergeChoice.theirs;
+    regions.add(region);
+  }
+
+  return MergeResult(
+      baseLines: baseLines, mineLines: mineLines, theirsLines: theirsLines, regions: regions);
 }

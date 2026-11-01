@@ -5223,5 +5223,70 @@
       }
     }
   },
-  "devSignature": "Signature"
+  "devSignature": "Signature",
+  "diffThreeWay": "Three-way merge",
+  "diffFoldUnchanged": "Fold unchanged regions",
+  "diffFoldExpandHint": "Tap to expand",
+  "mergeBase": "Base",
+  "mergeMine": "Mine",
+  "mergeTheirs": "Theirs",
+  "mergePickFile": "Pick",
+  "mergeChangeFile": "Change",
+  "mergeNotSelected": "Not selected",
+  "mergeStart": "Start merge",
+  "mergeConflicts": "{conflicts} conflict(s) · {auto} auto-merged",
+  "@mergeConflicts": {
+    "placeholders": {
+      "conflicts": {
+        "type": "int"
+      },
+      "auto": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeAutoMerged": "{n} region(s) merged",
+  "@mergeAutoMerged": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeUseMine": "Use mine",
+  "mergeUseTheirs": "Use theirs",
+  "mergeUseBase": "Keep base",
+  "mergeConflict": "Conflict",
+  "mergeAuto": "Auto",
+  "mergeNoChange": "No difference between the three files",
+  "mergeHint": "Pick a base version plus your and theirs edited versions, then tap Start merge. Every changed region is decided one by one; regions changed on both sides become conflicts.",
+  "mergeSave": "Save result",
+  "mergeCopy": "Copy result",
+  "mergePreview": "Preview merged",
+  "mergeUseAllMine": "All mine",
+  "mergeUseAllTheirs": "All theirs",
+  "mergeNeedThreeFiles": "Pick all three files first",
+  "mergeConflictMarkers": "Save with conflict markers",
+  "mergeTooLarge": "File is too large (limit 4 MB)",
+  "mergeSaved": "Saved",
+  "mergeLinesUnit": "lines",
+  "editorDefinitionsOf": "Definitions of {name}",
+  "@editorDefinitionsOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editorReferencesOf": "{n} references · {name}",
+  "@editorReferencesOf": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }
