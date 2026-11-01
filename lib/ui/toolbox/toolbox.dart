@@ -34,6 +34,9 @@ import 'package:proxypin/ui/toolbox/regexp.dart';
 import 'package:proxypin/ui/toolbox/timestamp.dart';
 import 'package:proxypin/ui/toolbox/net_tools.dart';
 import 'package:proxypin/ui/toolbox/convert_page.dart';
+import 'package:proxypin/ui/toolbox/crc_page.dart';
+import 'package:proxypin/ui/toolbox/device_spoof_page.dart';
+import 'package:proxypin/ui/toolbox/artex_page.dart';
 import 'package:proxypin/ui/component/performance_dashboard.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart';
 import 'package:proxypin/utils/platform.dart';
@@ -448,6 +451,31 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.swap_horiz,
                       text: localizations.toolboxConvert,
                       tooltip: localizations.toolboxConvert),
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const CrcPage()));
+                      },
+                      icon: Icons.fingerprint,
+                      text: 'CRC32',
+                      tooltip: 'CRC32 / zip 条目 CRC'),
+                  IconText(
+                      onTap: () {
+                        if (!Platforms.isAndroid()) return;
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const DeviceSpoofPage()));
+                      },
+                      icon: Icons.phone_android,
+                      text: localizations.spoofTitle,
+                      tooltip: localizations.spoofNote),
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const ArtexPage()));
+                      },
+                      icon: Icons.hub_outlined,
+                      text: 'ARTEX',
+                      tooltip: 'ARTEX 控制台'),
                 ],
               ),
               _group(localizations.toolboxGroupRuntime, [

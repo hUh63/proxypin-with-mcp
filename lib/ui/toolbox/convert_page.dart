@@ -25,6 +25,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/num_convert.dart';
+import 'package:proxypin/utils/smali_tool.dart';
 import 'package:proxypin/utils/zh_convert.dart';
 
 class ConvertPage extends StatefulWidget {
@@ -35,7 +36,7 @@ class ConvertPage extends StatefulWidget {
 }
 
 class _ConvertPageState extends State<ConvertPage> with SingleTickerProviderStateMixin {
-  late final TabController _tab = TabController(length: 5, vsync: this);
+  late final TabController _tab = TabController(length: 6, vsync: this);
 
   @override
   void dispose() {
@@ -59,6 +60,7 @@ class _ConvertPageState extends State<ConvertPage> with SingleTickerProviderStat
             Tab(text: loc.convertFloat),
             Tab(text: loc.convertZh),
             Tab(text: loc.convertText),
+            Tab(text: 'Smali'),
           ],
         ),
       ),
@@ -70,6 +72,7 @@ class _ConvertPageState extends State<ConvertPage> with SingleTickerProviderStat
           _FloatTab(),
           _ZhTab(),
           _TextTab(),
+          _SmaliTab(),
         ],
       ),
     );
@@ -430,6 +433,64 @@ class _TextTabState extends State<_TextTab> {
         _chip(loc.convertLower, false, () => _apply('lower')),
         _chip(loc.convertTitle, false, () => _apply('title')),
         _chip(loc.convertSwapCase, false, () => _apply('swap')),
+      ],
+    );
+  }
+}
+
+
+// ---------------- Smali ----------------
+
+class _SmaliTab extends StatefulWidget {
+  const _SmaliTab();
+
+  @override
+  State<_SmaliTab> createState() => _SmaliTabState();
+}
+
+class _SmaliTabState extends State<_SmaliTab> {
+  final _input = TextEditingController();
+  String _out = '';
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  void _apply(String mode) {
+    final loc = AppLocalizations.of(context)!;
+    final text = _input.text;
+    if (text.trim().isEmpty) {
+      setState(() => _out = '');
+      return;
+    }
+    switch (mode) {
+      case 'regex':
+        setState(() => _out = SmaliTool.toRegex(text.trim()));
+      case 'strings':
+        final list = SmaliTool.extractStringConstants(text);
+        setState(() => _out = list.isEmpty ? loc.convertInvalid : list.join('\n'));
+      case 'invokes':
+        final list = SmaliTool.extractInvocations(text);
+        setState(() => _out = list.isEmpty ? loc.convertInvalid : list.join('\n'));
+      case 'java':
+        setState(() => _out = SmaliTool.descriptorsToJava(text.trim()));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    return _ToolScaffold(
+      input: _input,
+      inputHint: loc.convertSmaliHint,
+      output: _out,
+      controls: [
+        _chip(loc.convertSmaliRegex, false, () => _apply('regex')),
+        _chip(loc.convertSmaliStrings, false, () => _apply('strings')),
+        _chip(loc.convertSmaliInvokes, false, () => _apply('invokes')),
+        _chip(loc.convertSmaliJava, false, () => _apply('java')),
       ],
     );
   }
