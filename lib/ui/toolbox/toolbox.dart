@@ -37,6 +37,8 @@ import 'package:proxypin/ui/toolbox/convert_page.dart';
 import 'package:proxypin/ui/toolbox/crc_page.dart';
 import 'package:proxypin/ui/toolbox/device_spoof_page.dart';
 import 'package:proxypin/ui/toolbox/artex_page.dart';
+import 'package:proxypin/ui/toolbox/device_info_page.dart';
+import 'package:proxypin/ui/toolbox/file_split_page.dart';
 import 'package:proxypin/ui/component/performance_dashboard.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart';
 import 'package:proxypin/utils/platform.dart';
@@ -476,6 +478,22 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.hub_outlined,
                       text: 'ARTEX',
                       tooltip: 'ARTEX 控制台'),
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const DeviceInfoPage()));
+                      },
+                      icon: Icons.smartphone,
+                      text: localizations.devTitle,
+                      tooltip: localizations.devTitle),
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const FileSplitPage()));
+                      },
+                      icon: Icons.call_split,
+                      text: localizations.fileSplitTitle,
+                      tooltip: localizations.fileSplitTitle),
                 ],
               ),
               _group(localizations.toolboxGroupRuntime, [

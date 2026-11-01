@@ -1614,6 +1614,22 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   void _scrollToRowIndex(int i) {
     if (!_leftV.hasClients) return;
+    // 点密度条 = 跳到这一行：顺手把「当前第几处差异」也切过去，
+    // 否则点完不知道自己在第几块，接着按「下一处」会从旧位置重新算。
+    final rows = _visibleRows(_alignedRows());
+    if (i >= 0 && i < rows.length && rows[i].type != DiffRowType.equal) {
+      final line = rows[i].leftLine ?? rows[i].rightLine;
+      if (line != null) {
+        final b = _blockAtLine(rows[i].leftLine != null, line - 1);
+        final idx = b == null ? -1 : _blocks.indexOf(b);
+        if (idx >= 0) {
+          setState(() {
+            _navIndex = idx;
+            if (_focusBlock != null) _focusBlock = idx;
+          });
+        }
+      }
+    }
     final target = (i * _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
     _leftV.animateTo(target,
         duration: const Duration(milliseconds: 120), curve: Curves.easeOut);

@@ -3833,6 +3833,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'dedupe', child: Text(localizations.editorDedupeLines)),
         PopupMenuItem(value: 'insertAbove', child: Text(localizations.editorInsertLineAbove)),
         PopupMenuItem(value: 'insertBelow', child: Text(localizations.editorInsertLineBelow)),
+        const PopupMenuDivider(),
+        PopupMenuItem(value: 'indentToSpaces', child: Text(localizations.editorIndentToSpaces)),
+        PopupMenuItem(value: 'indentToTabs', child: Text(localizations.editorIndentToTabs)),
       ],
     );
     if (chosen == null) return;
@@ -3851,6 +3854,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _insertBlankLine(above: true);
       case 'insertBelow':
         _insertBlankLine(above: false);
+      case 'indentToSpaces':
+        _convertIndent(toSpaces: true);
+      case 'indentToTabs':
+        _convertIndent(toSpaces: false);
       default:
         _lineOp(chosen);
     }
@@ -4080,6 +4087,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 在当前行上方 / 下方插入一个空行（VS 的 Ctrl+Enter / Ctrl+Shift+Enter）。
+  /// 全文缩进转换（VS 的 Convert Indentation to Spaces / Tabs）。
+  ///
+  /// 逐行只看**行首**空白：行中间的 Tab 不动（那些是内容，不是缩进）。
+  /// 空格数不是 Tab 大小的整数倍时保留余数，避免把对齐的表格打散。
+  void _convertIndent({required bool toSpaces}) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final tab = _prefs.tabSize.clamp(1, 16).toInt();
+    final buf = StringBuffer();
+    final lines = text.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (toSpaces) {
+        buf.write(line.replaceFirstMapped(RegExp(r'^\t+'), (m) => ' ' * (m.group(0)!.length * tab)));
+      } else {
+        final m = RegExp(r'^ +').firstMatch(line);
+        if (m == null) {
+          buf.write(line);
+        } else {
+          final n = m.group(0)!.length;
+          buf.write('${'\t' * (n ~/ tab)}${' ' * (n % tab)}${line.substring(n)}');
+        }
+      }
+      if (i != lines.length - 1) buf.write('\n');
+    }
+    controller.text = buf.toString();
+    setState(() {});
+    _toast(localizations.editorIndentConverted);
+  }
+
   void _insertBlankLine({required bool above}) {
     final controller = _controller;
     final span = _currentLineSpan();
