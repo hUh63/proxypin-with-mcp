@@ -5791,6 +5791,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('newFile', Icons.note_add_outlined, loc.editorNewFile),
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('save', Icons.save_outlined, loc.save),
+          _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
           PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right, id: 'file')),
           _menuItem('docs', Icons.description_outlined, loc.editorDocuments),
           const PopupMenuDivider(),
@@ -5838,6 +5839,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('bookmarks', Icons.bookmarks_outlined, loc.editorBookmarks),
         _menuItem('clearBookmarks', Icons.bookmark_remove_outlined, loc.editorClearBookmarks),
         _menuItem('nextOccurrence', Icons.select_all, loc.editorSelectNext),
+        _menuItem('selectAllOccurrences', Icons.select_all,
+            loc.editorSelectAllOccurrences),
+        const PopupMenuDivider(),
+        _menuItem('cursorAbove', Icons.keyboard_arrow_up, loc.editorCursorAbove),
+        _menuItem('cursorBelow', Icons.keyboard_arrow_down, loc.editorCursorBelow),
+        _menuItem('clearCursors', Icons.highlight_remove, loc.editorClearCursors),
         ];
       case 'code':
         return [
