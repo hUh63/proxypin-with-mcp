@@ -514,13 +514,7 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
           Text('$lines ${loc.mergeLinesUnit}',
               style: TextStyle(fontSize: 11.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const Spacer(),
-          TextButton.icon(
-            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-            onPressed: () => unawaited(_copy()),
-            icon: const Icon(Icons.copy_outlined, size: 16),
-            label: Text(loc.mergeCopy, style: const TextStyle(fontSize: 12)),
-          ),
-          const SizedBox(width: 4),
+          // 复制放在 AppBar 了：底部三个带文字的按钮在 360dp 屏上会挤出去。
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
             onPressed: r.regions.isEmpty ? null : () => Navigator.of(context).pop(_compose()),
