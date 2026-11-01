@@ -459,6 +459,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _toggleComment();
         return true;
       }
+      // Ctrl+L：选中当前行（VS 同款；带选区时选到整行范围）。
+      if (ctrl && !shift && !alt && key == LogicalKeyboardKey.keyL) {
+        _selectCurrentLine();
+        return true;
+      }
+      // Ctrl+Shift+K：删除当前行。
+      if (ctrl && shift && key == LogicalKeyboardKey.keyK) {
+        _lineOp('delete');
+        return true;
+      }
+      // Shift+Alt+↑ / ↓：把当前行复制到上/下一行。
+      if (shift && alt && (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown)) {
+        _duplicateLine(key == LogicalKeyboardKey.arrowUp);
+        return true;
+      }
       // Ctrl+Alt+↑ / ↓：在上/下一行的同列加一个光标（VS 同款多光标）。
       if (ctrl &&
           alt &&
@@ -3884,6 +3899,39 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _lineOpSingle(op);
     }
     if (mounted) setState(() {});
+  }
+
+  /// 选中当前行（Ctrl+L）：光标在哪行就整行选中，含行尾换行。
+  void _selectCurrentLine() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.extentOffset.clamp(0, text.length);
+    final line = _lineOfOffset(text, caret);
+    final start = _offsetOfLine(text, line);
+    final lineCount = '\n'.allMatches(text).length + 1;
+    final end = line + 1 < lineCount ? _offsetOfLine(text, line + 1) : text.length;
+    controller.selection = TextSelection(baseOffset: start, extentOffset: end);
+    setState(() {});
+  }
+
+  /// 把当前行复制到上/下一行（Shift+Alt+↑↓）。
+  void _duplicateLine(bool above) {
+    final controller = _controller;
+    final span = _currentLineSpan();
+    if (controller == null || span == null) return;
+    final text = controller.text;
+    final line = text.substring(span.start, span.end);
+    if (above) {
+      controller.replaceRange(span.start, span.start, '$line\n');
+      controller.selection = TextSelection.collapsed(offset: span.start);
+    } else {
+      final tail = span.hasNewline ? span.end + 1 : text.length;
+      final insert = span.hasNewline ? '$line\n' : '\n$line';
+      controller.replaceRange(tail, tail, insert);
+      controller.selection = TextSelection.collapsed(offset: tail);
+    }
+    setState(() {});
   }
 
   void _lineOpSingle(String op) {

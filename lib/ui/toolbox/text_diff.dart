@@ -811,6 +811,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _applyAll(fromLeft: false);
           case 'exportReport':
             unawaited(_exportReport());
+          case 'diffList':
+            _showDiffList();
           case 'syntax':
             unawaited(_checkSyntax());
           case 'swapLayout':
@@ -831,6 +833,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         CheckedPopupMenuItem(
             value: 'syncH', checked: _syncH, child: Text(localizations.diffSyncHScroll)),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
+        PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(
             value: 'focus', checked: _focusBlock != null, child: Text(localizations.diffFocus)),
@@ -1309,6 +1312,112 @@ class _TextDiffPageState extends State<TextDiffPage> {
       // 目标栏正在重新布局（maxScrollExtent 还在变），跳过这一帧即可。
     } finally {
       _syncingH = false;
+    }
+  }
+
+  /// 差异列表（WinMerge 的 diff 列表 / Meld 的侧栏）：全部差异一次列出来，
+  /// 点一条就直接跳到那块并把光标放过去。
+  void _showDiffList() {
+    if (_blocks.isEmpty) {
+      _toastText(localizations.diffNoDifference);
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.55,
+          minChildSize: 0.25,
+          maxChildSize: 0.9,
+          builder: (ctx, scroll) => Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 8, 6),
+              child: Row(children: [
+                Text('${localizations.diffList}  (${_blocks.length})',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ]),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.separated(
+                controller: scroll,
+                itemCount: _blocks.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, i) {
+                  final b = _blocks[i];
+                  final added = b.rightLines.length - b.pairs.length;
+                  final deleted = b.leftLines.length - b.pairs.length;
+                  final parts = <String>[];
+                  if (b.pairs.isNotEmpty) parts.add('${localizations.diffModified} ${b.pairs.length}');
+                  if (added > 0) parts.add('${localizations.diffAdded} $added');
+                  if (deleted > 0) parts.add('${localizations.diffDeleted} $deleted');
+                  return ListTile(
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    leading: Text('${i + 1}',
+                        style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                    title: Text(
+                      'L${b.leftStart + 1} ↔ R${b.rightStart + 1}   ${parts.join(' · ')}',
+                      style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
+                    ),
+                    subtitle: _blockPreview(b),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      setState(() {
+                        _navIndex = i;
+                        if (_focusBlock != null) _focusBlock = i;
+                      });
+                      _gotoLine(_left, b.leftStart);
+                      _gotoLine(_right, b.rightStart);
+                      _scrollToCurrentRow();
+                    },
+                  );
+                },
+              ),
+            ),
+          ]),
+        );
+      },
+    );
+  }
+
+  /// 差异列表里每条的一行摘要：优先显示「右侧新内容」，没有就显示左侧被删内容。
+  Widget? _blockPreview(DiffBlock b) {
+    String? text;
+    if (b.rightLines.isNotEmpty) {
+      final idx = b.rightLines.first;
+      if (idx >= 0 && idx < _right.lineCount) text = _lineText(_right, idx);
+    }
+    if (text == null && b.leftLines.isNotEmpty) {
+      final idx = b.leftLines.first;
+      if (idx >= 0 && idx < _left.lineCount) text = _lineText(_left, idx);
+    }
+    if (text == null) return null;
+    return Text(text.trim(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 11, fontFamily: 'monospace'));
+  }
+
+  /// 取某行的文本（不带换行符）。
+  String _lineText(CodeForgeController controller, int line) {
+    try {
+      final start = controller.getLineStartOffset(line);
+      final end = line + 1 < controller.lineCount ? controller.getLineStartOffset(line + 1) : controller.text.length;
+      final raw = controller.text.substring(start.clamp(0, controller.text.length), end.clamp(0, controller.text.length));
+      return raw.endsWith('\n') ? raw.substring(0, raw.length - 1) : raw;
+    } catch (_) {
+      return '';
     }
   }
 

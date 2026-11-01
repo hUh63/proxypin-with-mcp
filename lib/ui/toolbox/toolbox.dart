@@ -32,6 +32,8 @@ import 'package:proxypin/ui/mobile/setting/mcp_connection.dart';
 import 'package:proxypin/ui/toolbox/qr_code_page.dart';
 import 'package:proxypin/ui/toolbox/regexp.dart';
 import 'package:proxypin/ui/toolbox/timestamp.dart';
+import 'package:proxypin/ui/toolbox/net_tools.dart';
+import 'package:proxypin/ui/toolbox/convert_page.dart';
 import 'package:proxypin/ui/component/performance_dashboard.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart';
 import 'package:proxypin/utils/platform.dart';
@@ -427,6 +429,25 @@ class _ToolboxState extends State<Toolbox> {
                           builder: (context) => const CalculatorPage()));
                     },
                   ),
+                ],
+              ),
+              _group(localizations.toolboxGroupDiag, [
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const NetToolsPage()));
+                      },
+                      icon: Icons.wifi_tethering,
+                      text: localizations.netTools,
+                      tooltip: localizations.netTools),
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const ConvertPage()));
+                      },
+                      icon: Icons.swap_horiz,
+                      text: localizations.toolboxConvert,
+                      tooltip: localizations.toolboxConvert),
                 ],
               ),
               _group(localizations.toolboxGroupRuntime, [
