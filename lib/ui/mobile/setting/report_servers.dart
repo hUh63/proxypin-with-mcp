@@ -37,6 +37,7 @@ class _ReportServersPageMobileState extends State<ReportServersPageMobile> {
 
   Future<void> _load() async {
     final manager = await ReportServerManager.instance;
+    if (!mounted) return;
     setState(() {
       _servers = List.of(manager.servers);
       _loading = false;

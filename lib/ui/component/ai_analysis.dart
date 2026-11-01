@@ -621,6 +621,7 @@ class _AiChatPageState extends State<AiChatPage> {
             tooltip: AppLocalizations.of(context)!.aiConfigTooltip,
             onPressed: () async {
               await showAiSettingsDialog(context);
+              if (!mounted) return;
               setState(() {});
             },
           ),

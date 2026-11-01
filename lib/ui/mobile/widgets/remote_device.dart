@@ -255,6 +255,8 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
               remoteDeviceList.removeWhere((it) => it.equals(remoteDevice));
               await setRemoteDeviceList(prefs, remoteDeviceList);
 
+              if (!mounted) return;
+
               setState(() {});
               if (mounted) FlutterToastr.show(localizations.deleteSuccess, context);
             },

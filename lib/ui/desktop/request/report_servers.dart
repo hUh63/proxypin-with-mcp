@@ -289,6 +289,7 @@ class _ReportServersPageState extends State<ReportServersPage> {
     if (server != null) {
       final manager = await ReportServerManager.instance;
       await manager.update(index, server);
+      if (!mounted) return;
       setState(() => _servers[index] = server);
     }
   }
@@ -375,6 +376,7 @@ class _ReportServersPageState extends State<ReportServersPage> {
                                         onChanged: (v) async {
                                           final manager = await ReportServerManager.instance;
                                           await manager.toggleEnabled(entry.key, v);
+                                          if (!mounted) return;
                                           setState(() => _servers[entry.key] = entry.value.copyWith(enabled: v));
                                         },
                                       )))),

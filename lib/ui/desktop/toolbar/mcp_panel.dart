@@ -600,6 +600,7 @@ class _McpServiceDialogState extends State<McpServiceDialog> {
     if (port == null || port == _mcpPortNow) return;
     configuration.mcpPort = port;
     await configuration.flushConfig();
+    if (!mounted) return;
     setState(() => _busy = true);
     try {
       if (McpServer().isRunning) await McpServer().restart();

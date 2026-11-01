@@ -308,6 +308,7 @@ class _HistoryListState extends State<_HistoryListWidget> {
     Navigator.pushNamed(context, "/request_list", arguments: {'item': item}).whenComplete(() async {
       if (item != widget.historyTask.history && item.requests != null && item.requestLength != item.requests?.length) {
         await widget.storage.flushRequests(item, item.requests!);
+        if (!mounted) return;
         setState(() {});
       }
       Future.delayed(const Duration(seconds: 60), () => item.requests = null);

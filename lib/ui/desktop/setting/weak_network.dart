@@ -908,6 +908,7 @@ class _ManageProfilesDialogState extends State<_ManageProfilesDialog> {
             );
             if (saved != null) {
               await m.upsertCustomProfile(saved);
+              if (!mounted) return;
               setState(() {}); // 刷新当前列表
             }
           },

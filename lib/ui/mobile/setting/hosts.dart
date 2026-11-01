@@ -329,6 +329,7 @@ class _HostsPageState extends State<HostsPage> {
     if (items.isEmpty) return;
     return showConfirmDialog(context, onConfirm: () async {
       await widget.hostsManager.removeHosts(items);
+      if (!mounted) return;
       setState(() {
         multiple = false;
         items.clear();

@@ -206,6 +206,7 @@ class _PreferenceState extends State<Preference> {
       final ext = file.path!.split('.').last.toLowerCase();
       final target = await Paths.getPath('splash_bg.$ext');
       await source.copy(target.path);
+      if (!mounted) return;
       setState(() {
         appConfiguration.splashBackgroundPath = target.path;
         appConfiguration.splashBackground = 'custom';

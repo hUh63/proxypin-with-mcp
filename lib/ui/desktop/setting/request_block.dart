@@ -156,6 +156,7 @@ class _RequestBlockState extends State<RequestBlock> {
           child: Text(localizations.delete),
           onTap: () async {
             await widget.requestBlockManager.removeBlockRequest(index);
+            if (!mounted) return;
             setState(() {});
           })
     ]);

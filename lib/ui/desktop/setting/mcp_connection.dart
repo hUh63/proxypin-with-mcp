@@ -111,6 +111,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
   Future<void> _toggleAutoStart(bool enabled) async {
     widget.configuration.mcpAutoStart = enabled;
     await widget.configuration.flushConfig();
+    if (!mounted) return;
     setState(() {
       _mcpAutoStart = enabled;
     });
@@ -119,6 +120,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
   Future<void> _toggleTool(String name, bool enabled) async {
     widget.configuration.mcpToolsEnabled[name] = enabled;
     await widget.configuration.flushConfig();
+    if (!mounted) return;
     setState(() {
       _toolsEnabled[name] = enabled;
     });

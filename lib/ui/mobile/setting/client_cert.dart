@@ -105,6 +105,7 @@ class _MobileClientCertPageState extends State<MobileClientCertPage> {
                 onPressed: () async {
                   item.enabled = !item.enabled;
                   await _manager!.flushConfig();
+                  if (!mounted) return;
                   setState(() {});
                 }),
             const Divider(thickness: 0.5, height: 1),
@@ -113,6 +114,7 @@ class _MobileClientCertPageState extends State<MobileClientCertPage> {
                 onPressed: () {
                   showConfirmDialog(context, onConfirm: () async {
                     await _manager!.remove(item);
+                    if (!mounted) return;
                     setState(() {});
                   });
                 }),
@@ -171,6 +173,7 @@ class _MobileClientCertPageState extends State<MobileClientCertPage> {
                               onChanged: (v) async {
                                 item.enabled = v;
                                 await _manager!.flushConfig();
+                                if (!mounted) return;
                                 setState(() {});
                               })),
                       title: Text(item.name?.isNotEmpty == true ? item.name! : item.host,

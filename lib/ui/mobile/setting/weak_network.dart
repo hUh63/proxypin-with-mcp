@@ -739,6 +739,7 @@ class _MobileManageProfilesPageState extends State<_MobileManageProfilesPage> {
                             );
                             if (saved != null) {
                               await m.upsertCustomProfile(saved);
+                              if (!mounted) return;
                               setState(() {});
                             }
                           },
@@ -767,6 +768,7 @@ class _MobileManageProfilesPageState extends State<_MobileManageProfilesPage> {
           );
           if (saved != null) {
             await m.upsertCustomProfile(saved);
+            if (!mounted) return;
             setState(() {});
           }
         },

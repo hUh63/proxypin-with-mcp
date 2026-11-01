@@ -73,6 +73,7 @@ class _RequestBreakpointPageState extends State<MobileRequestBreakpointPage> {
                                 onChanged: (val) async {
                                   manager.enabled = val;
                                   await _save();
+                                  if (!mounted) return;
                                   setState(() {
                                     enabled = val;
                                   });
@@ -212,6 +213,7 @@ class _RequestBreakpointPageState extends State<MobileRequestBreakpointPage> {
         manager.list.add(rule);
       }
       await _save();
+      if (!mounted) return;
       setState(() {
         rules = manager.list;
       });
@@ -246,6 +248,7 @@ class _RequestBreakpointPageState extends State<MobileRequestBreakpointPage> {
                                 // export selected only
                                 final m = await RequestBreakpointManager.instance;
                                 await _export(m, indexes: selected.toList());
+                                if (!mounted) return;
                                 setState(() {
                                   selected.clear();
                                   selectionMode = false;

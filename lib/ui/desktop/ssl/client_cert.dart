@@ -108,6 +108,7 @@ class _ClientCertDialogState extends State<ClientCertDialog> {
                       onChanged: (value) async {
                         _manager!.enabled = value;
                         await _manager!.flushConfig();
+                        if (!mounted) return;
                         setState(() {});
                       }),
                   const Expanded(child: SizedBox()),
@@ -176,6 +177,7 @@ class _ClientCertDialogState extends State<ClientCertDialog> {
                       onChanged: (val) async {
                         item.enabled = val;
                         await _manager!.flushConfig();
+                        if (!mounted) return;
                         setState(() {});
                       })),
               Container(width: 15),
@@ -212,6 +214,7 @@ class _ClientCertDialogState extends State<ClientCertDialog> {
           onTap: () async {
             item.enabled = !item.enabled;
             await _manager!.flushConfig();
+            if (!mounted) return;
             setState(() {});
           }),
       const PopupMenuDivider(),
@@ -222,6 +225,7 @@ class _ClientCertDialogState extends State<ClientCertDialog> {
   Future<void> _confirmDelete(ClientCertItem item) async {
     showConfirmDialog(context, onConfirm: () async {
       await _manager!.remove(item);
+      if (!mounted) return;
       setState(() {});
     });
   }

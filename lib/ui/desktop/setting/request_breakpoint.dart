@@ -60,6 +60,7 @@ class _RequestBreakpointPageState extends State<RequestBreakpointPage> {
         manager.list.add(rule);
       }
       await _save();
+      if (!mounted) return;
       setState(() {
         this.rules = manager.list;
       });
@@ -317,6 +318,7 @@ class _RequestBreakpointPageState extends State<RequestBreakpointPage> {
             exportRules.add(rules[i]);
           }
           await _export(exportRules);
+          if (!mounted) return;
           setState(() {
             selected.clear();
           });

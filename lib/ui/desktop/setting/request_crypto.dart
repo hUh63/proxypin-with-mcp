@@ -129,6 +129,7 @@ class _RequestCryptoPageState extends State<RequestCryptoPage> {
         await showDialog<CryptoRule>(context: context, barrierDismissible: false, builder: (_) => CryptoRuleDialog());
     if (newRule == null) return;
     await manager.addRule(newRule);
+    if (!mounted) return;
     setState(() {});
     _refreshConfig(force: true);
   }

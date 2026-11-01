@@ -219,6 +219,7 @@ class _MobileHistoryState extends State<MobileHistory> {
       // 用户选中 .saz（桌面明确支持）必然解析失败并提示「导入失败」。
       final isSaz = file.name.toLowerCase().endsWith('.saz');
       var historyItem = isSaz ? await storage.addSazFile(file.xFile) : await storage.addHarFile(file.xFile);
+      if (!mounted) return;
       setState(() {
         toRequestsView(historyItem, storage);
         FlutterToastr.show(localizations.importSuccess, context);
@@ -292,6 +293,7 @@ class _MobileHistoryState extends State<MobileHistory> {
         .then((value) async {
       if (item != widget.historyTask.history && item.requests != null && item.requestLength != item.requests?.length) {
         await storage.flushRequests(item, item.requests!);
+        if (!mounted) return;
         setState(() {});
       }
       Future.delayed(const Duration(seconds: 60), () => item.requests = null);

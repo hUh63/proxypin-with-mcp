@@ -406,6 +406,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     final config = await Configuration.instance;
     config.mcpAutoStart = enabled;
     await config.flushConfig();
+    if (!mounted) return;
     setState(() {
       _mcpAutoStart = enabled;
     });
@@ -421,6 +422,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
     final config = await Configuration.instance;
     config.mcpToolsEnabled[name] = enabled;
     await config.flushConfig();
+    if (!mounted) return;
     setState(() {
       _toolsEnabled[name] = enabled;
     });

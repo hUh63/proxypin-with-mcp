@@ -163,6 +163,7 @@ class RequestRewriteState extends State<RequestRewriteWidget> {
   //刷新
   void refresh() async {
     await widget.requestRewrites.reloadRequestRewrite();
+    if (!mounted) return;
     setState(() {});
   }
 

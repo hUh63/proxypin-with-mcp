@@ -45,6 +45,8 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
     // 确保初始化
     await _ruleManager.init();
     
+    if (!mounted) return;
+    
     setState(() {
       _rules = _ruleManager.rules;
       _globalEnabled = _ruleManager.globalEnabled;
@@ -54,6 +56,7 @@ class _WebSocketRuleManagerPageState extends State<WebSocketRuleManagerPage> {
 
   Future<void> _toggleGlobalEnabled(bool value) async {
     await _ruleManager.setGlobalEnabled(value);
+    if (!mounted) return;
     setState(() => _globalEnabled = value);
   }
 
