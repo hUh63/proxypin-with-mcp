@@ -22,6 +22,7 @@ import 'dart:typed_data';
 import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
@@ -85,8 +86,24 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 显示字号（底部 +/- 调节）。
   double _fontSize = 13.5;
 
-  /// 对齐视图的滚动控制器（跳转差异要按行高精确定位）。
-  final ScrollController _alignedScroll = ScrollController();
+  /// 对齐视图：左右各一个纵向滚动控制器（互相联动）+ 各一个横向滚动控制器（各自独立）。
+  final ScrollController _leftV = ScrollController();
+  final ScrollController _rightV = ScrollController();
+  final ScrollController _leftH = ScrollController();
+  final ScrollController _rightH = ScrollController();
+
+  /// 防止「A 带动 B、B 又带动 A」的回路。
+  bool _syncingScroll = false;
+
+  /// 双指缩放状态。
+  final Map<int, Offset> _pointers = <int, Offset>{};
+  double? _pinchBase;
+  double _pinchStartFont = 13.5;
+
+  /// 内容宽度缓存（估算最长行，缩放后要重算）。
+  double _leftWidth = 0;
+  double _rightWidth = 0;
+  String _widthKey = '';
 
   /// 对齐视图的行缓存：每次 build 重算 diff 太贵（几千行会明显顿）。
   List<DiffRow> _alignedRowsCache = const <DiffRow>[];
@@ -130,6 +147,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _findRight = FindController(_right);
     // 读取失败不影响使用（默认左右并排），但 catchError 必须返回同类型值，
     // 否则会逃逸成未捕获异步错误（这个坑踩过）。
+    _leftV.addListener(_syncFromLeft);
+    _rightV.addListener(_syncFromRight);
     unawaited(SharedPreferencesAsync().getDouble(_fontKey).then((v) {
       if (!mounted || v == null || v == _fontSize) return;
       setState(() => _fontSize = v.clamp(11.0, 22.0));
@@ -158,7 +177,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
-    _alignedScroll.dispose();
+    _leftV.dispose();
+    _rightV.dispose();
+    _leftH.dispose();
+    _rightH.dispose();
     _persistTimer?.cancel();
     _longPressTimer?.cancel();
     _left.removeListener(_onLeftChanged);
@@ -389,14 +411,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _scrollToCurrentRow();
   }
 
-  /// 对齐视图里滚到当前差异（留一行上下文）。
+  /// 对齐视图里滚到当前差异（留一行上下文）。两侧联动，动左边就会带动右边。
   void _scrollToCurrentRow() {
-    if (!_aligned || !_alignedScroll.hasClients) return;
+    if (!_aligned || !_leftV.hasClients) return;
     final i = _currentRowIndex(_alignedRows());
     if (i < 0) return;
-    final target = (i * _rowHeight - _rowHeight).clamp(0.0, _alignedScroll.position.maxScrollExtent);
-    _alignedScroll.animateTo(target,
-        duration: const Duration(milliseconds: 160), curve: Curves.easeOut);
+    final target = (i * _rowHeight - _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
+    _leftV.animateTo(target, duration: const Duration(milliseconds: 160), curve: Curves.easeOut);
   }
 
   /// 把编辑器滚动到 [line]（0-based），并在该行行首放置光标。两侧都会执行，
@@ -1153,8 +1174,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   double get _rowHeight => (_fontSize * 1.65).clamp(19.0, 40.0);
 
-  /// 对齐并排视图：左侧「行号 + 文本」，中间细分隔，右侧同构。
-  /// 差异行上底色（新增绿 / 删除红 / 修改橙），当前差异行左侧加一条主题色竖线。
+  /// 对齐并排视图：左右各一栏（行号 + 文本），两栏纵向滚动联动、
+  /// 横向各自滚动、双指缩放统一字号。
   Widget _alignedView() {
     final rows = _alignedRows();
     if (rows.isEmpty) {
@@ -1162,29 +1183,51 @@ class _TextDiffPageState extends State<TextDiffPage> {
         child: Text(localizations.diffNoDifference, style: TextStyle(color: Colors.grey[600])),
       );
     }
+    _ensureWidths(rows);
     final current = _currentRowIndex(rows);
-    return Scrollbar(
-      controller: _alignedScroll,
-      child: ListView.builder(
-        controller: _alignedScroll,
-        itemExtent: _rowHeight,
-        itemCount: rows.length,
-        itemBuilder: (_, i) => GestureDetector(
-          // 点某一行：把两侧编辑器都定位到这一行（切到编辑视图就落在原处）。
-          onTap: () => _jumpRow(rows[i]),
-          child: _alignedRow(rows[i], isCurrent: i == current),
-        ),
+    final divider = Theme.of(context).dividerColor.withValues(alpha: 0.35);
+    return Row(children: [
+      Expanded(child: _alignedPane(rows, current, left: true)),
+      Container(width: 1, color: divider),
+      Expanded(child: _alignedPane(rows, current, left: false)),
+    ]);
+  }
+
+  /// 一栏：横向可滚（看长行），纵向 ListView（行高固定，便于精确跳转）。
+  Widget _alignedPane(List<DiffRow> rows, int current, {required bool left}) {
+    final vCtrl = left ? _leftV : _rightV;
+    final hCtrl = left ? _leftH : _rightH;
+    final width = left ? _leftWidth : _rightWidth;
+    return Listener(
+      // 用 Listener 而不是 GestureDetector：后者会和滚动手势抢竞技场，
+      // 单指拖动会被当成 scale（pointerCount==1）而滚不动。
+      onPointerDown: _onPinchDown,
+      onPointerMove: _onPinchMove,
+      onPointerUp: _onPinchUp,
+      onPointerCancel: _onPinchUp,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = width > constraints.maxWidth ? width : constraints.maxWidth;
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            controller: hCtrl,
+            child: SizedBox(
+              width: w,
+              child: ListView.builder(
+                controller: vCtrl,
+                itemExtent: _rowHeight,
+                itemCount: rows.length,
+                itemBuilder: (_, i) =>
+                    _alignedRow(rows[i], left: left, isCurrent: i == current),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  /// 点对齐视图的某一行 → 两侧编辑器都滚到对应行（行号缺失的一侧跳过分）。
-  void _jumpRow(DiffRow r) {
-    if (r.leftLine != null) _gotoLine(_left, r.leftLine! - 1);
-    if (r.rightLine != null) _gotoLine(_right, r.rightLine! - 1);
-  }
-
-  Widget _alignedRow(DiffRow r, {required bool isCurrent}) {
+  Widget _alignedRow(DiffRow r, {required bool left, required bool isCurrent}) {
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
     Color? bg;
     switch (r.type) {
@@ -1197,9 +1240,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       case DiffRowType.equal:
         bg = null;
     }
+    final line = left ? r.leftLine : r.rightLine;
+    final text = left ? r.leftText : r.rightText;
     final numStyle = TextStyle(fontSize: _fontSize - 2, color: Colors.grey[600], height: 1.0);
     final textStyle = TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0);
-    final divider = Theme.of(context).dividerColor.withValues(alpha: 0.35);
     return Container(
       decoration: BoxDecoration(
         color: bg,
@@ -1210,60 +1254,109 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 34,
-            child: Text(r.leftLine?.toString() ?? '',
+            child: Text(line?.toString() ?? '',
                 textAlign: TextAlign.right, maxLines: 1, style: numStyle),
           ),
           const SizedBox(width: 5),
-          Expanded(
-            child: Text(r.leftText ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                softWrap: false,
-                style: textStyle),
-          ),
-          Container(width: 1, height: _rowHeight, color: divider),
-          SizedBox(
-            width: 34,
-            child: Text(r.rightLine?.toString() ?? '',
-                textAlign: TextAlign.right, maxLines: 1, style: numStyle),
-          ),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Text(r.rightText ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                softWrap: false,
-                style: textStyle),
-          ),
+          // 不裁剪：横向滚动由外层负责，长行能一直往右看。
+          Text(text ?? '', maxLines: 1, softWrap: false, overflow: TextOverflow.visible,
+              style: textStyle),
         ],
       ),
     );
   }
 
-  Widget _alignedCell(int? line, String? text, Color? bg) {
-    return Container(
-      color: bg,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 38,
-            child: Text(line?.toString() ?? '',
-                textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text ?? '',
-              style: const TextStyle(fontSize: 13, fontFamily: 'monospace', height: 1.25),
-            ),
-          ),
-        ],
-      ),
-    );
+  /// 估算两栏的内容宽度（等宽字体按 0.62 字宽，CJK 记 2 个字宽）。
+  void _ensureWidths(List<DiffRow> rows) {
+    final key = '$_alignedRowsKey|${_fontSize.toStringAsFixed(2)}';
+    if (key == _widthKey) return;
+    _widthKey = key;
+    var maxLeft = 0;
+    var maxRight = 0;
+    for (final r in rows) {
+      final l = _displayUnits(r.leftText);
+      final rt = _displayUnits(r.rightText);
+      if (l > maxLeft) maxLeft = l;
+      if (rt > maxRight) maxRight = rt;
+    }
+    _leftWidth = 39 + maxLeft * _fontSize * 0.62 + 16;
+    _rightWidth = 39 + maxRight * _fontSize * 0.62 + 16;
   }
+
+  static int _displayUnits(String? text) {
+    if (text == null || text.isEmpty) return 0;
+    var units = 0;
+    for (final c in text.codeUnits) {
+      units += c > 0x1100 && (c <= 0x115f || (c >= 0x2e80 && c <= 0xa4cf) || c >= 0xac00) ? 2 : 1;
+    }
+    return units;
+  }
+
+  // ---------- 纵向联动 ----------
+
+  void _syncFromLeft() => _syncVertical(_leftV, _rightV);
+  void _syncFromRight() => _syncVertical(_rightV, _leftV);
+
+  /// 两侧行数、行高完全一致，所以「同一像素位置」就是「同一对齐行」。
+  void _syncVertical(ScrollController from, ScrollController to) {
+    if (_syncingScroll || !from.hasClients || !to.hasClients) return;
+    final max = to.position.maxScrollExtent;
+    if (max <= 0) return;
+    final target = from.offset.clamp(0.0, max);
+    if ((to.offset - target).abs() < 0.5) return;
+    _syncingScroll = true;
+    to.jumpTo(target);
+    _syncingScroll = false;
+  }
+
+  // ---------- 双指缩放（左右统一字号） ----------
+
+  void _onPinchDown(PointerDownEvent e) {
+    _pointers[e.pointer] = e.localPosition;
+    if (_pointers.length == 2) {
+      final pts = _pointers.values.toList();
+      _pinchBase = (pts[0] - pts[1]).distance;
+      _pinchStartFont = _fontSize;
+    }
+  }
+
+  void _onPinchMove(PointerMoveEvent e) {
+    if (!_pointers.containsKey(e.pointer)) return;
+    _pointers[e.pointer] = e.localPosition;
+    if (_pointers.length < 2) return;
+    final base = _pinchBase;
+    if (base == null || base < 1) return;
+    final pts = _pointers.values.toList();
+    final dist = (pts[0] - pts[1]).distance;
+    final next = (_pinchStartFont * dist / base).clamp(9.0, 26.0);
+    if ((next - _fontSize).abs() < 0.25) return;
+    // 缩放时保持「顶部那一行」不动（行高变了，像素位置要跟着换算）。
+    final anchorRow = _leftV.hasClients ? _leftV.offset / _rowHeight : 0.0;
+    final anchorRightRow = _rightV.hasClients ? _rightV.offset / _rowHeight : 0.0;
+    setState(() => _fontSize = next);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final h = _rowHeight;
+      if (_leftV.hasClients) {
+        _leftV.jumpTo((anchorRow * h).clamp(0.0, _leftV.position.maxScrollExtent));
+      }
+      if (_rightV.hasClients) {
+        _rightV.jumpTo((anchorRightRow * h).clamp(0.0, _rightV.position.maxScrollExtent));
+      }
+    });
+  }
+
+  void _onPinchUp(PointerEvent e) {
+    _pointers.remove(e.pointer);
+    if (_pointers.length < 2) _pinchBase = null;
+    if (_pointers.isEmpty) {
+      unawaited(SharedPreferencesAsync().setDouble(_fontKey, _fontSize));
+    }
+  }
+
+
 }
