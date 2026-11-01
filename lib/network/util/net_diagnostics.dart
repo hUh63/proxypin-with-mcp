@@ -223,7 +223,8 @@ class NetDiagnostics {
     try {
       client = HttpClient()..connectionTimeout = timeout;
       // 诊断场景要看到真实证书问题，所以这里**不**跳过校验。
-      final request = await client.head(uri).timeout(timeout);
+      // 注意是 headUrl(Uri)：dart:io 的 HttpClient 没有 head(Uri) 这个重载。
+      final request = await client.headUrl(uri).timeout(timeout);
       request.followRedirects = false;
       final response = await request.close().timeout(timeout);
       final headers = <String, String>{};

@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.67.198 (2026-11-01)
+
+修 v1.67.197 的两个编译错误（都是「猜了 API 名字」惹的）：
+
+1. `HttpClient.head(uri)` —— dart:io 的 `head` 是 `head(host, path, port)` 三个位置参数，
+   按 Uri 传的是 `headUrl(uri)`。
+2. 局域网扫描的 `netScanDone2` 占位符声明是 String，调用处传了 int。
+
 ## v1.67.197 (2026-11-01) — 整合「编码工具箱」与「工具箱」，对比页差异列表，编辑器 VS 快捷键
 
 **新增：网络诊断**（工具箱 → 诊断 → 网络诊断）

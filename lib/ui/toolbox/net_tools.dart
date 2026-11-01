@@ -576,7 +576,7 @@ class _LanTabState extends State<_LanTab> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _lines.add(_cancel ? loc.netStopped : loc.netScanDone2(_lines.length - 1));
+      _lines.add(_cancel ? loc.netStopped : loc.netScanDone2('${_lines.length - 1}'));
     });
   }
 
