@@ -316,6 +316,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
   _Newline _newline = _Newline.lf;
 
   String _lastText = '';
+
+  /// 自动保存（VS Code 的 files.autoSave = afterDelay），默认关。
+  bool _autoSave = false;
+  Timer? _autoSaveTimer;
+  static const Duration _autoSaveDelay = Duration(seconds: 2);
+  static const String _kPrefAutoSave = 'text_editor_autosave_v1';
   bool _confirmingExit = false;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
@@ -382,6 +388,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   @override
   void dispose() {
     _navTimer?.cancel();
+    _autoSaveTimer?.cancel();
     _fileWatchTimer?.cancel();
     _lintTimer?.cancel();
     _rulerTimer?.cancel();
@@ -479,6 +486,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final raw = await SharedPreferencesAsync().getInt(_kPrefRetainMode);
     final nl = await SharedPreferencesAsync().getString(_kPrefNewline);
     final keepIme = await SharedPreferencesAsync().getBool(_kPrefSmoothKeepIme);
+    final autoSave = await SharedPreferencesAsync().getBool(_kPrefAutoSave);
     if (!mounted) return;
     setState(() {
       if (raw != null && raw >= 0 && raw < _RetainMode.values.length) {
@@ -488,6 +496,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _newline = _Newline.values.firstWhere((e) => e.name == nl, orElse: () => _Newline.lf);
       }
       if (keepIme != null) _smoothKeepIme = keepIme;
+      if (autoSave != null) _autoSave = autoSave;
     });
     // 「语法」菜单的显示勾选存的是语言标签。语言表改过名 / 导入了别的版本的配置时，
     // 这些标签可能一个都对不上 —— 那样 `_visibleLangs` 会静默回退成全量，每次 build
@@ -508,6 +517,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   Future<void> _saveRetainMode() async {
     await SharedPreferencesAsync().setInt(_kPrefRetainMode, _retainMode.index);
+  }
+
+  /// 自动保存：改动后 [_autoSaveDelay] 内没有新输入就写回原路径。
+  ///
+  /// 只对「已经落到磁盘上的文档」生效——没路径的文档不能自动弹另存为，
+  /// 那会在用户打字时突然跳一个文件选择框。
+  void _scheduleAutoSave() {
+    _autoSaveTimer?.cancel();
+    if (!_autoSave) return;
+    _autoSaveTimer = Timer(_autoSaveDelay, () {
+      final doc = _doc;
+      if (!mounted || doc == null || !doc.dirty) return;
+      final path = doc.path;
+      if (path == null || path.isEmpty) return;
+      unawaited(_saveDoc(doc));
+    });
+  }
+
+  Future<void> _saveAutoSave() async {
+    await SharedPreferencesAsync().setBool(_kPrefAutoSave, _autoSave);
   }
 
   Future<void> _saveSmoothKeepIme() async {
@@ -898,6 +927,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _scheduleLint();
       _lastBeforeChange = before;
       _maybeAutoPair();
+      _scheduleAutoSave();
       // 语言是嗅探来的话，内容变了可能就该换语言（空 .txt 里粘进 JSON）。
       if (_doc?.langSniffed ?? false) {
         _sniffTimer?.cancel();
@@ -1680,6 +1710,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
   // ---------- 编码 ----------
 
   /// 用指定编码重新读一遍当前文件。
+  /// 状态栏点编码：选一个编码后按它重新解码当前文件（最常用的语义）。
+  Future<void> _pickEncodingFromStatus() async {
+    final picked = await showEncodingPicker(context, _encoding,
+        title: localizations.editorEncoding);
+    if (picked == null) return;
+    await _reloadWithEncoding(picked);
+  }
+
   Future<void> _reloadWithEncoding(EditorEncoding encoding) async {
     final doc = _doc;
     final path = doc?.path;
@@ -2775,6 +2813,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void _addNextOccurrence() {
     final controller = _controller;
     if (controller == null) return;
+    // 反过来：用多选区取代多光标时，先清掉多光标（否则打字仍走 insertAtAllCursors）。
+    if (controller.hasMultiCursors) controller.clearMultiCursors();
     final text = controller.text;
     final sel = controller.selection;
     if (!sel.isValid) return;
@@ -3228,6 +3268,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void _addCursorAtLine(int delta) {
     final controller = _controller;
     if (controller == null) return;
+    // 多选区（Ctrl+D 那条线）和多光标是两套独立状态：同时在的时候打字会
+    // 只写进多光标那几处、选区那一堆不动，看着像丢字。加光标就先收起多选区。
+    if (_multiSel.isNotEmpty) _clearMultiSel();
     final text = controller.text;
     if (text.isEmpty) return;
     final caret = controller.selection.extentOffset.clamp(0, text.length);
@@ -3251,6 +3294,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (controller == null || !controller.hasMultiCursors) return;
     controller.clearMultiCursors();
     setState(() {});
+  }
+
+  /// 与剪贴板比较（VS Code 的 Compare with Clipboard）：不用先存成文件。
+  Future<void> _compareWithClipboard() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final clip = data?.text ?? '';
+    if (!mounted) return;
+    if (clip.isEmpty) {
+      _toast(localizations.editorClipboardEmpty);
+      return;
+    }
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => TextDiffPage(
+              initialLeft: clip,
+              initialRight: _applyNewline(controller.text, _newlineCharsOf(_doc)),
+            )));
   }
 
   /// 与磁盘上的文件比较（VS 的 Compare with Saved）——有未保存修改时最常用。
@@ -3782,7 +3843,50 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 行操作：VS Code 里是 Ctrl+Shift+K（删除行）、Alt+Shift+↑/↓（移动行）这一组。
   /// 手机上不给快捷键，全部收进菜单——但语义保持一致。
+  /// 行操作（删除 / 复制 / 上移 / 下移 / 合并行）。
+  ///
+  /// 有多光标时对每个光标所在行各做一次（VS 里也是这个行为）。
   void _lineOp(String op) {
+    final controller = _controller;
+    if (controller == null) return;
+    if (controller.hasMultiCursors) {
+      _lineOpAtCursors(op);
+      return;
+    }
+    _lineOpSingle(op);
+  }
+
+  /// 多光标下的行操作：**从下往上**逐行执行，这样上面几行的行号不会被
+  /// 下面的插入/删除挤偏；执行完光标按原列落到最上面那一行。
+  void _lineOpAtCursors(String op) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final lineCount = '\n'.allMatches(text).length + 1;
+    final mainOffset = controller.selection.extentOffset.clamp(0, text.length);
+    final mainLine = _lineOfOffset(text, mainOffset);
+    final cols = <int, int>{};
+    for (final c in controller.multiCursors) {
+      cols[c.line.clamp(0, lineCount - 1)] = c.character;
+    }
+    cols[mainLine] = mainOffset - _offsetOfLine(text, mainLine);
+    final ordered = cols.keys.toList()..sort((a, b) => b.compareTo(a));
+    controller.clearMultiCursors();
+    for (final line in ordered) {
+      final t = controller.text;
+      final lc = '\n'.allMatches(t).length + 1;
+      if (line >= lc) continue;
+      final start = _offsetOfLine(t, line);
+      final end = line + 1 < lc ? _offsetOfLine(t, line + 1) - 1 : t.length;
+      final room = end > start ? end - start : 0;
+      final col = (cols[line] ?? 0).clamp(0, room);
+      controller.selection = TextSelection.collapsed(offset: start + col);
+      _lineOpSingle(op);
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _lineOpSingle(String op) {
     final controller = _controller;
     final span = _currentLineSpan();
     if (controller == null || span == null) return;
@@ -5028,6 +5132,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
       onTapIssues: () => _openConsole(EditorConsoleTab.problems),
       onTapLanguage: _showLanguagePicker,
       onTapIndent: _openSettings,
+      encoding: _encoding.name,
+      newline: _newlineLabel().split(' ').first,
+      onTapEncoding: _pickEncodingFromStatus,
+      onTapNewline: () => unawaited(_pickNewline()),
     );
   }
 
@@ -5109,7 +5217,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (path == null || path.isEmpty) return false;
     try {
       final text = _applyNewline(doc.text, _newlineCharsOf(doc));
-      await File(path).writeAsBytes(await _encodingOf(doc).encode(text));
+      final file = File(path);
+      await file.writeAsBytes(await _encodingOf(doc).encode(text));
+      // 自己写盘不算「外部修改」：顺手把基线 mtime 对齐，否则 3 秒后的
+      // 文件监视会把这刚写的这一次当成别人改的，弹一条误导性提示。
+      try {
+        _lastFileMtime = (await file.stat()).modified.millisecondsSinceEpoch;
+      } catch (_) {}
       doc.dirty = false;
       if (mounted && identical(doc, _doc)) setState(() {});
       return true;
@@ -5792,6 +5906,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('save', Icons.save_outlined, loc.save),
           _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
+          _menuItem('compareClipboard', Icons.content_paste_search,
+              loc.editorCompareClipboard),
+          CheckedPopupMenuItem(
+              value: 'autosave', checked: _autoSave, child: Text(loc.editorAutoSave)),
           PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right, id: 'file')),
           _menuItem('docs', Icons.description_outlined, loc.editorDocuments),
           const PopupMenuDivider(),
@@ -6025,6 +6143,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _clearMultiCursors();
       case 'compareDisk':
         unawaited(_compareWithDisk());
+      case 'compareClipboard':
+        unawaited(_compareWithClipboard());
+      case 'autosave':
+        setState(() => _autoSave = !_autoSave);
+        unawaited(_saveAutoSave());
+        if (_autoSave) _scheduleAutoSave();
       case 'jumpBracket':
         _jumpToMatchingBracket();
       case 'recentEdits':
@@ -7239,6 +7363,12 @@ class _EditorStatusBar extends StatefulWidget {
   final VoidCallback? onTapLanguage;
   final VoidCallback? onTapIndent;
 
+  /// 编码名与换行符（VS 状态栏右半边也有这两段，点一下就能改）。
+  final String? encoding;
+  final String? newline;
+  final VoidCallback? onTapEncoding;
+  final VoidCallback? onTapNewline;
+
   const _EditorStatusBar({
     required this.controller,
     required this.language,
@@ -7248,6 +7378,10 @@ class _EditorStatusBar extends StatefulWidget {
     this.onTapIssues,
     this.onTapLanguage,
     this.onTapIndent,
+    this.encoding,
+    this.newline,
+    this.onTapEncoding,
+    this.onTapNewline,
   });
 
   @override
@@ -7406,6 +7540,26 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
                 ),
               ),
             ),
+            const SizedBox(width: 6),
+            // 换行符：LF / CRLF / CR，点一下换（VS 状态栏的换行段）。
+            if (widget.newline != null)
+              InkWell(
+                onTap: widget.onTapNewline,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(widget.newline!, style: style),
+                ),
+              ),
+            const SizedBox(width: 6),
+            // 编码：窄屏（360dp）放不下，只在宽屏显示，编码入口在「文件」菜单里。
+            if (widget.encoding != null && !compact)
+              InkWell(
+                onTap: widget.onTapEncoding,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(widget.encoding!, style: style),
+                ),
+              ),
             const SizedBox(width: 6),
             // 语言名最后才收缩：点它换语法，是状态栏上最常点的东西。
             Flexible(

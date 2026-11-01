@@ -613,6 +613,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('file', _fileLabel, group: 'file'),
   EditorMenuItem('compareDisk', _compareDiskLabel, group: 'file',
       aliases: 'bdkb 与磁盘比较 compare disk diff saved'),
+  EditorMenuItem('compareClipboard', _compareClipboardLabel, group: 'file',
+      aliases: 'jjb 与剪贴板比较 clipboard diff'),
+  EditorMenuItem('autosave', _autoSaveLabel, group: 'file',
+      aliases: 'zdbc 自动保存 autosave'),
   EditorMenuItem('docs', _docsLabel, group: 'file', aliases: 'wd 文档 documents tabs'),
   EditorMenuItem('close', _closeLabel, group: 'file', aliases: 'gb guanbi close'),
   // 编辑（19 项）
@@ -721,6 +725,8 @@ String _cursorAboveLabel(AppLocalizations l) => l.editorCursorAbove;
 String _cursorBelowLabel(AppLocalizations l) => l.editorCursorBelow;
 String _clearCursorsLabel(AppLocalizations l) => l.editorClearCursors;
 String _compareDiskLabel(AppLocalizations l) => l.editorCompareDisk;
+String _compareClipboardLabel(AppLocalizations l) => l.editorCompareClipboard;
+String _autoSaveLabel(AppLocalizations l) => l.editorAutoSave;
 String _selectAllOccurrencesLabel(AppLocalizations l) => l.editorSelectAllOccurrences;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
@@ -842,6 +848,10 @@ IconData menuIconOf(String id) {
       return Icons.highlight_remove;
     case 'compareDisk':
       return Icons.compare_arrows;
+    case 'compareClipboard':
+      return Icons.content_paste_search;
+    case 'autosave':
+      return Icons.autorenew;
     case 'jumpBracket':
       return Icons.data_object;
     case 'references':

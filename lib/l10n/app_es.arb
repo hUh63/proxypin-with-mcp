@@ -2480,7 +2480,7 @@
   "editorEndLine": "Línea final",
   "editorReplaceLine": "Reemplazar la línea actual con el portapapeles",
   "editorReplacedLine": "Línea actual reemplazada",
-  "editorClipboardEmpty": "El portapapeles no tiene texto",
+  "editorClipboardEmpty": "El portapapeles está vacío",
   "editorToggleComment": "Alternar comentario",
   "editorCommentUnsupported": "La sintaxis actual no admite alternar comentarios",
   "editorInsertSymbol": "Insertar símbolo",
@@ -2914,5 +2914,12 @@
   "editorCompareDisk": "Comparar con guardado",
   "editorCompareDiskNoFile": "Este documento aún no se guardó en un archivo",
   "editorCompareDiskMissing": "Archivo no encontrado en disco",
-  "editorMultiCursorCount": "{n} cursores"
+  "editorMultiCursorCount": "{n} cursores",
+  "editorCompareClipboard": "Comparar con el portapapeles",
+  "editorAutoSave": "Guardado automático (2s)",
+  "diffFocus": "Enfocar",
+  "diffUseLeft": "Usar izquierda",
+  "diffUseRight": "Usar derecha",
+  "diffApplyAllLeft": "Todo: izquierda → derecha",
+  "diffApplyAllRight": "Todo: derecha → izquierda"
 }

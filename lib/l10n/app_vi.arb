@@ -2480,7 +2480,7 @@
   "editorEndLine": "Dòng kết thúc",
   "editorReplaceLine": "Thay dòng hiện tại bằng clipboard",
   "editorReplacedLine": "Đã thay dòng hiện tại",
-  "editorClipboardEmpty": "Clipboard không có văn bản",
+  "editorClipboardEmpty": "Clipboard trống",
   "editorToggleComment": "Bật/tắt chú thích",
   "editorCommentUnsupported": "Cú pháp hiện tại không hỗ trợ bật/tắt chú thích",
   "editorInsertSymbol": "Chèn ký hiệu",
@@ -2914,5 +2914,12 @@
   "editorCompareDisk": "So sánh với tệp đã lưu",
   "editorCompareDiskNoFile": "Tài liệu này chưa được lưu thành tệp",
   "editorCompareDiskMissing": "Không tìm thấy tệp trên đĩa",
-  "editorMultiCursorCount": "{n} con trỏ"
+  "editorMultiCursorCount": "{n} con trỏ",
+  "editorCompareClipboard": "So sánh với clipboard",
+  "editorAutoSave": "Tự động lưu (2 giây)",
+  "diffFocus": "Tập trung",
+  "diffUseLeft": "Dùng bên trái",
+  "diffUseRight": "Dùng bên phải",
+  "diffApplyAllLeft": "Tất cả: trái → phải",
+  "diffApplyAllRight": "Tất cả: phải → trái"
 }

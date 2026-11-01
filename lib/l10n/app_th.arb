@@ -2480,7 +2480,7 @@
   "editorEndLine": "บรรทัดสิ้นสุด",
   "editorReplaceLine": "แทนที่บรรทัดปัจจุบันด้วยคลิปบอร์ด",
   "editorReplacedLine": "แทนที่บรรทัดปัจจุบันแล้ว",
-  "editorClipboardEmpty": "คลิปบอร์ดไม่มีข้อความ",
+  "editorClipboardEmpty": "คลิปบอร์ดว่างเปล่า",
   "editorToggleComment": "สลับความคิดเห็น",
   "editorCommentUnsupported": "ไวยากรณ์ปัจจุบันไม่รองรับการสลับความคิดเห็น",
   "editorInsertSymbol": "แทรกสัญลักษณ์",
@@ -2914,5 +2914,12 @@
   "editorCompareDisk": "เทียบกับไฟล์ที่บันทึก",
   "editorCompareDiskNoFile": "เอกสารนี้ยังไม่ได้บันทึกเป็นไฟล์",
   "editorCompareDiskMissing": "ไม่พบไฟล์บนดิสก์",
-  "editorMultiCursorCount": "{n} เคอร์เซอร์"
+  "editorMultiCursorCount": "{n} เคอร์เซอร์",
+  "editorCompareClipboard": "เทียบกับคลิปบอร์ด",
+  "editorAutoSave": "บันทึกอัตโนมัติ (2 วิ)",
+  "diffFocus": "โฟกัส",
+  "diffUseLeft": "ใช้ด้านซ้าย",
+  "diffUseRight": "ใช้ด้านขวา",
+  "diffApplyAllLeft": "ทั้งหมด: ซ้าย → ขวา",
+  "diffApplyAllRight": "ทั้งหมด: ขวา → ซ้าย"
 }

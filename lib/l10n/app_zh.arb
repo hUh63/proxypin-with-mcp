@@ -4151,7 +4151,7 @@
   "editorEndLine": "结束行",
   "editorReplaceLine": "替换当前行",
   "editorReplacedLine": "已替换当前行",
-  "editorClipboardEmpty": "剪贴板没有文本",
+  "editorClipboardEmpty": "剪贴板是空的",
   "editorToggleComment": "切换注释",
   "editorCommentUnsupported": "当前语法不支持切换注释",
   "editorInsertSymbol": "插入符号",
@@ -4715,5 +4715,12 @@
   "editorCompareDisk": "与磁盘文件比较",
   "editorCompareDiskNoFile": "这个文档还没保存成文件",
   "editorCompareDiskMissing": "磁盘上找不到这个文件",
-  "editorMultiCursorCount": "{n} 个光标"
+  "editorMultiCursorCount": "{n} 个光标",
+  "editorCompareClipboard": "与剪贴板比较",
+  "editorAutoSave": "自动保存（2 秒）",
+  "diffFocus": "聚焦",
+  "diffUseLeft": "用左侧",
+  "diffUseRight": "用右侧",
+  "diffApplyAllLeft": "全部：左侧覆盖右侧",
+  "diffApplyAllRight": "全部：右侧覆盖左侧"
 }

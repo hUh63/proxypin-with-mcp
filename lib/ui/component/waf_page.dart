@@ -94,6 +94,7 @@ class _WafPageState extends State<WafPage> {
   }
 
   void _toast(String msg, {int seconds = 3}) {
+    if (!mounted) return;
     FlutterToastr.show(msg, context, rootNavigator: true, duration: seconds);
   }
 

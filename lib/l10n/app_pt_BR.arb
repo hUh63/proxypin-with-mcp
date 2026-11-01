@@ -2547,7 +2547,7 @@
   "editorEndLine": "Linha final",
   "editorReplaceLine": "Substituir a linha atual pela área de transferência",
   "editorReplacedLine": "Linha atual substituída",
-  "editorClipboardEmpty": "A área de transferência não tem texto",
+  "editorClipboardEmpty": "A área de transferência está vazia",
   "editorToggleComment": "Alternar comentário",
   "editorCommentUnsupported": "A sintaxe atual não permite alternar comentários",
   "editorInsertSymbol": "Inserir símbolo",
@@ -2915,5 +2915,12 @@
   "editorCompareDisk": "Comparar com salvo",
   "editorCompareDiskNoFile": "Este documento ainda não foi salvo em arquivo",
   "editorCompareDiskMissing": "Arquivo não encontrado no disco",
-  "editorMultiCursorCount": "{n} cursores"
+  "editorMultiCursorCount": "{n} cursores",
+  "editorCompareClipboard": "Comparar com a área de transferência",
+  "editorAutoSave": "Salvar automaticamente (2s)",
+  "diffFocus": "Focar",
+  "diffUseLeft": "Usar esquerda",
+  "diffUseRight": "Usar direita",
+  "diffApplyAllLeft": "Tudo: esquerda → direita",
+  "diffApplyAllRight": "Tudo: direita → esquerda"
 }

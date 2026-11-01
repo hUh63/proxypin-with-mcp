@@ -2480,7 +2480,7 @@
   "editorEndLine": "Baris akhir",
   "editorReplaceLine": "Ganti baris saat ini dengan papan klip",
   "editorReplacedLine": "Baris saat ini diganti",
-  "editorClipboardEmpty": "Papan klip tidak berisi teks",
+  "editorClipboardEmpty": "Papan klip kosong",
   "editorToggleComment": "Alihkan komentar",
   "editorCommentUnsupported": "Sintaks saat ini tidak mendukung alih komentar",
   "editorInsertSymbol": "Sisipkan simbol",
@@ -2914,5 +2914,12 @@
   "editorCompareDisk": "Bandingkan dengan tersimpan",
   "editorCompareDiskNoFile": "Dokumen ini belum disimpan ke file",
   "editorCompareDiskMissing": "File tidak ditemukan di disk",
-  "editorMultiCursorCount": "{n} kursor"
+  "editorMultiCursorCount": "{n} kursor",
+  "editorCompareClipboard": "Bandingkan dengan papan klip",
+  "editorAutoSave": "Simpan otomatis (2 dtk)",
+  "diffFocus": "Fokus",
+  "diffUseLeft": "Pakai kiri",
+  "diffUseRight": "Pakai kanan",
+  "diffApplyAllLeft": "Semua: kiri → kanan",
+  "diffApplyAllRight": "Semua: kanan → kiri"
 }

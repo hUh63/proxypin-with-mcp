@@ -112,6 +112,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
   bool _syncH = false;
   bool _syncingH = false;
 
+  /// 聚焦模式：只显示某一处差异（±[_focusContext] 行上下文），
+  /// 配合底部「← 用右侧 / 用左侧 →」逐个块过一遍——多轮改动后逐块确认最省心。
+  int? _focusBlock;
+
+  /// 聚焦模式保留的上下文行数。
+  static const int _focusContext = 3;
+
   /// 对齐视图的行缓存：每次 build 重算 diff 太贵（几千行会明显顿）。
   List<DiffRow> _alignedRowsCache = const <DiffRow>[];
   String _alignedRowsKey = '';
@@ -395,6 +402,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
       setState(() {
         _blocks = blocks;
         _navIndex = -1;
+        // 块数变了：聚焦下标越界就退出聚焦，否则保持在原块上。
+        if (_focusBlock != null && _focusBlock! >= blocks.length) _focusBlock = null;
         _summary = stats.identical
             ? localizations.diffIdentical
             : localizations.diffSummaryDetail(stats.added, stats.deleted, stats.modified);
@@ -413,7 +422,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
       index = (index + delta) % _blocks.length;
       if (index < 0) index += _blocks.length;
     }
-    setState(() => _navIndex = index);
+    setState(() {
+      _navIndex = index;
+      // 聚焦模式下「上一处/下一处」直接切到那一块。
+      if (_focusBlock != null) _focusBlock = index;
+    });
 
     final b = _blocks[index];
     _gotoLine(_left, b.leftStart);
@@ -784,6 +797,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'syncH':
             setState(() => _syncH = !_syncH);
             if (_syncH) _syncHorizontal(_leftH, _rightH);
+          case 'focus':
+            setState(() {
+              if (_focusBlock != null) {
+                _focusBlock = null;
+              } else if (_blocks.isNotEmpty) {
+                _focusBlock = _navIndex >= 0 ? _navIndex : 0;
+              }
+            });
+          case 'allFromLeft':
+            _applyAll(fromLeft: true);
+          case 'allFromRight':
+            _applyAll(fromLeft: false);
           case 'exportReport':
             unawaited(_exportReport());
           case 'syntax':
@@ -806,6 +831,19 @@ class _TextDiffPageState extends State<TextDiffPage> {
         CheckedPopupMenuItem(
             value: 'syncH', checked: _syncH, child: Text(localizations.diffSyncHScroll)),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
+        const PopupMenuDivider(),
+        CheckedPopupMenuItem(
+            value: 'focus', checked: _focusBlock != null, child: Text(localizations.diffFocus)),
+        PopupMenuItem(
+          value: 'allFromLeft',
+          enabled: _blocks.isNotEmpty,
+          child: Text(localizations.diffApplyAllLeft),
+        ),
+        PopupMenuItem(
+          value: 'allFromRight',
+          enabled: _blocks.isNotEmpty,
+          child: Text(localizations.diffApplyAllRight),
+        ),
         PopupMenuItem(value: 'swapLayout', child: Text(
             _sideBySide ? localizations.diffStacked : localizations.diffSideBySide)),
         PopupMenuItem(value: 'syntax', child: Text(localizations.diffSyntaxCheck)),
@@ -841,6 +879,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
       );
     }
 
+    if (_focusBlock != null && _focusBlock! < _blocks.length) return _focusBar();
+
     final hasDiff = _blocks.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
@@ -854,6 +894,41 @@ class _TextDiffPageState extends State<TextDiffPage> {
         btn('*', localizations.compare, () => setState(() => _aligned = !_aligned), active: _aligned),
         btn('=', localizations.editorStats, _showDiffStats),
         btn('/', localizations.search, () => _toggleFind(_leftActive ? _findLeft : _findRight)),
+      ]),
+    );
+  }
+
+  /// 聚焦模式的底部条：当前第几处 + 「用右侧 / 用左侧」+ 退出。
+  Widget _focusBar() {
+    final idx = _focusBlock ?? 0;
+    final theme = Theme.of(context);
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.4))),
+        color: theme.colorScheme.primary.withValues(alpha: 0.04),
+      ),
+      child: Row(children: [
+        const SizedBox(width: 10),
+        Text('${localizations.diffFocus} ${idx + 1}/${_blocks.length}',
+            style: TextStyle(fontSize: 12, color: theme.colorScheme.primary)),
+        const Spacer(),
+        TextButton(
+          onPressed: () => _applyBlock(_blocks[idx], fromLeft: false),
+          child: Text('← ${localizations.diffUseRight}',
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+        ),
+        TextButton(
+          onPressed: () => _applyBlock(_blocks[idx], fromLeft: true),
+          child: Text('${localizations.diffUseLeft} →',
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+        ),
+        IconButton(
+          tooltip: localizations.cancel,
+          icon: const Icon(Icons.close, size: 17),
+          onPressed: () => setState(() => _focusBlock = null),
+        ),
+        const SizedBox(width: 2),
       ]),
     );
   }
@@ -1286,8 +1361,80 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
   }
 
+  /// 聚焦模式下的一屏：这一处差异 + 前后各 [_focusContext] 行上下文。
+  List<DiffRow> _focusRows(List<DiffRow> rows, DiffBlock b) {
+    final wantLeft = b.leftStart + 1;
+    final wantRight = b.rightStart + 1;
+    var start = -1;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].leftLine == wantLeft || rows[i].rightLine == wantRight) {
+        start = i;
+        break;
+      }
+    }
+    if (start < 0) return rows;
+    var count = b.leftLines.length + b.rightLines.length;
+    if (count < 1) count = 1;
+    final from = (start - _focusContext).clamp(0, rows.length);
+    final to = (start + count + _focusContext).clamp(0, rows.length);
+    if (to <= from) return rows;
+    return rows.sublist(from, to);
+  }
+
+  /// 全部接受：把一侧的每一处差异一次性搬到另一侧（Beyond Compare 的 All Left / All Right）。
+  ///
+  /// 逐块改写会因为 `_compare()` 重建块表而错位，所以这里先按**目标侧偏移**
+  /// 算出所有替换，再从后往前一次性拼出新文本。
+  void _applyAll({required bool fromLeft}) {
+    if (_blocks.isEmpty) return;
+    if (!mounted) return;
+    final src = fromLeft ? _left : _right;
+    final dst = fromLeft ? _right : _left;
+    final ops = <({int start, int end, String text})>[];
+    for (final b in _blocks) {
+      final srcStart = fromLeft ? b.leftStart : b.rightStart;
+      final srcCount = fromLeft ? b.leftLines.length : b.rightLines.length;
+      final dstStart = fromLeft ? b.rightStart : b.leftStart;
+      final dstCount = fromLeft ? b.rightLines.length : b.leftLines.length;
+      try {
+        final sOff = src.getLineStartOffset(srcStart.clamp(0, src.lineCount - 1));
+        final sEnd = srcStart + srcCount < src.lineCount
+            ? src.getLineStartOffset(srcStart + srcCount)
+            : src.text.length;
+        final dOff = dst.getLineStartOffset(dstStart.clamp(0, dst.lineCount - 1));
+        final dEnd = dstStart + dstCount < dst.lineCount
+            ? dst.getLineStartOffset(dstStart + dstCount)
+            : dst.text.length;
+        ops.add((start: dOff, end: dEnd, text: src.text.substring(sOff, sEnd)));
+      } catch (_) {
+        continue;
+      }
+    }
+    if (ops.isEmpty) return;
+    ops.sort((a, b) => b.start.compareTo(a.start));
+    var text = dst.text;
+    var lastStart = text.length + 1;
+    var applied = 0;
+    for (final op in ops) {
+      // 与前一个已应用区间重叠就跳过（正常不会发生，纯防御）。
+      if (op.end > lastStart || op.start > op.end) continue;
+      text = text.replaceRange(op.start, op.end, op.text);
+      lastStart = op.start;
+      applied++;
+    }
+    if (applied == 0) return;
+    dst.text = text;
+    setState(() => _focusBlock = null);
+    _compare();
+    _toast(localizations.diffApplied);
+  }
+
   /// 只显示差异时：保留每个差异块前后各一行上下文，其余折成一行占位。
   List<DiffRow> _visibleRows(List<DiffRow> rows) {
+    final fb = _focusBlock;
+    if (fb != null && fb >= 0 && fb < _blocks.length) {
+      return _focusRows(rows, _blocks[fb]);
+    }
     if (!_onlyDiff) return rows;
     final keep = <int>{};
     for (var i = 0; i < rows.length; i++) {

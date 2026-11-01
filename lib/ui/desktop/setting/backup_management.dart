@@ -272,6 +272,7 @@ class _DesktopBackupManagementState extends State<DesktopBackupManagement> {
         await Process.run('xdg-open', [backupDir]);
       }
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(localizations.backupDirNotFound)),
       );

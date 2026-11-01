@@ -2545,7 +2545,7 @@
   "editorEndLine": "結束行",
   "editorReplaceLine": "替換當前行",
   "editorReplacedLine": "已替換當前行",
-  "editorClipboardEmpty": "剪貼簿沒有文字",
+  "editorClipboardEmpty": "剪貼簿是空的",
   "editorToggleComment": "切換註釋",
   "editorCommentUnsupported": "當前語法不支援切換註釋",
   "editorInsertSymbol": "插入符號",
@@ -4715,5 +4715,12 @@
   "editorCompareDisk": "與磁碟檔案比較",
   "editorCompareDiskNoFile": "這個文件還沒儲存成檔案",
   "editorCompareDiskMissing": "磁碟上找不到這個檔案",
-  "editorMultiCursorCount": "{n} 個游標"
+  "editorMultiCursorCount": "{n} 個游標",
+  "editorCompareClipboard": "與剪貼簿比較",
+  "editorAutoSave": "自動儲存（2 秒）",
+  "diffFocus": "聚焦",
+  "diffUseLeft": "用左側",
+  "diffUseRight": "用右側",
+  "diffApplyAllLeft": "全部：左側覆蓋右側",
+  "diffApplyAllRight": "全部：右側覆蓋左側"
 }

@@ -4211,7 +4211,7 @@
   "editorEndLine": "End line",
   "editorReplaceLine": "Replace current line with clipboard",
   "editorReplacedLine": "Current line replaced",
-  "editorClipboardEmpty": "Clipboard has no text",
+  "editorClipboardEmpty": "Clipboard is empty",
   "editorToggleComment": "Toggle comment",
   "editorCommentUnsupported": "The current syntax does not support comment toggling",
   "editorInsertSymbol": "Insert symbol",
@@ -5032,5 +5032,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "editorCompareClipboard": "Compare with clipboard",
+  "editorAutoSave": "Auto save (2s)",
+  "diffFocus": "Focus",
+  "diffUseLeft": "Use left",
+  "diffUseRight": "Use right",
+  "diffApplyAllLeft": "All: left → right",
+  "diffApplyAllRight": "All: right → left"
 }

@@ -101,6 +101,8 @@ class _CloudPageState extends State<CloudPage> {
   }
 
   void _toast(String msg, {int seconds = 5, bool error = false}) {
+    // 确认框 / 云端请求的回调里会调到这里，那时页面可能已经关掉了。
+    if (!mounted) return;
     // backgroundColor 是非空参数，不能传 null，所以按状态分两次调用
     if (error) {
       FlutterToastr.show(msg, context,
