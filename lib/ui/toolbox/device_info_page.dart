@@ -103,7 +103,8 @@ class _DeviceInfoPageState extends State<DeviceInfoPage> {
         add(loc.devSystem, 'os', '${m.osRelease}');
       } else if (Platform.isLinux) {
         final l = await plugin.linuxInfo;
-        add(loc.devSystem, 'distro', l.prettyName);
+        // prettyName 可能为空（容器里的精简发行版），别让它变成 null 传给 add。
+        add(loc.devSystem, 'distro', l.prettyName ?? '');
         // device_info_plus 的 LinuxDeviceInfo 没有 kernelVersion 字段，
         // 能拿到的是发行版名与版本号。
         add(loc.devSystem, 'version', l.version);
