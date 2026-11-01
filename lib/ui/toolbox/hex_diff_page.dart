@@ -64,7 +64,12 @@ class _HexDiffPageState extends State<HexDiffPage> {
     FlutterToastr.show(msg, context, duration: 2);
   }
 
+  /// 重入保护：连点「选择文件」会叠两个系统文件面板。
+  bool _picking = false;
+
   Future<void> _pick({required bool left}) async {
+    if (_picking) return;
+    _picking = true;
     final loc = AppLocalizations.of(context)!;
     try {
       final f = await FilePicker.pickFile();
@@ -89,6 +94,8 @@ class _HexDiffPageState extends State<HexDiffPage> {
       _compute();
     } catch (e) {
       _toast('$e');
+    } finally {
+      _picking = false;
     }
   }
 

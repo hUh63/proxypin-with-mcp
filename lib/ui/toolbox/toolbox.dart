@@ -39,6 +39,7 @@ import 'package:proxypin/ui/toolbox/device_spoof_page.dart';
 import 'package:proxypin/ui/toolbox/artex_page.dart';
 import 'package:proxypin/ui/toolbox/device_info_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
+import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/ui/toolbox/file_split_page.dart';
 import 'package:proxypin/ui/component/performance_dashboard.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart';
@@ -495,6 +496,14 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.compare_arrows,
                       text: localizations.hexDiffTitle,
                       tooltip: localizations.hexDiffTitle),
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const ThreeWayMergePage()));
+                      },
+                      icon: Icons.merge_type,
+                      text: localizations.diffThreeWay,
+                      tooltip: localizations.diffThreeWay),
                   IconText(
                       onTap: () {
                         Navigator.of(context).push(MaterialPageRoute(

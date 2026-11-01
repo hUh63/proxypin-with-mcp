@@ -66,7 +66,12 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
     FlutterToastr.show(msg, context, duration: 2);
   }
 
+  /// 文件选择器重入保护：ListTile 与「选择」按钮都能触发，连点会弹两个系统面板。
+  bool _picking = false;
+
   Future<void> _pick(int which) async {
+    if (_picking) return;
+    _picking = true;
     final loc = localizations;
     try {
       final f = await FilePicker.pickFile();
@@ -94,6 +99,8 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
       });
     } catch (e) {
       _toast('$e');
+    } finally {
+      _picking = false;
     }
   }
 
