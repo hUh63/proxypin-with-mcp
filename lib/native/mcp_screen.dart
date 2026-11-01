@@ -113,6 +113,17 @@ class McpScreen {
     return await _channel.invokeMethod('requestRootAuthorization').timeout(const Duration(seconds: 60));
   }
 
+  /// 本应用自己的签名指纹（包名 + MD5 / SHA-1 / SHA-256）。
+  /// 非 Android 平台返回空 Map。
+  static Future<Map<String, dynamic>> getOwnSignature() async {
+    try {
+      final r = await _channel.invokeMethod('getOwnSignature');
+      return r is Map ? Map<String, dynamic>.from(r) : const {};
+    } catch (_) {
+      return const {};
+    }
+  }
+
   /// 执行 Shell 命令
   /// [mode] 权限模式: root / shizuku / dhizuku / auto（默认 auto）
   /// [useSu] 是否使用 root 权限（mode 未指定时的兼容参数）

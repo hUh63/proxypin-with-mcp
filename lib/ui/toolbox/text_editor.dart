@@ -3908,6 +3908,80 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (mounted) setState(() {});
   }
 
+  /// 折叠到第 N 层（VS 的 Ctrl+K Ctrl+2）：
+  /// 先全展开，再把「缩进层级正好等于 N」的块折起来 —— 更深的块跟着父块一起隐藏，
+  /// 视觉上就是「只显示到第 N 层」，和 VS 的语义一致。
+  Future<void> _showFoldLevelPicker() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final loc = localizations;
+    final level = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(loc.editorFoldToLevel, style: const TextStyle(fontSize: 15)),
+        children: [
+          for (var i = 1; i <= 5; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, i),
+              child: Text('${loc.editorFoldLevelN('$i')}'),
+            ),
+        ],
+      ),
+    );
+    if (level == null || !mounted) return;
+    _foldToLevel(level);
+  }
+
+  void _foldToLevel(int level) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    try {
+      controller.unfoldAll();
+    } catch (_) {}
+    // 一次扫完算出每行的缩进层级（逐行 _offsetOfLine 会是 O(n²)）。
+    final tab = _prefs.tabSize.clamp(1, 16).toInt();
+    final levels = <int, int>{};
+    var line = 0;
+    var width = 0;
+    var inIndent = true;
+    for (var i = 0; i < text.length; i++) {
+      final c = text.codeUnitAt(i);
+      if (c == 10) {
+        levels[line] = width ~/ tab;
+        line++;
+        width = 0;
+        inIndent = true;
+        continue;
+      }
+      if (!inIndent) continue;
+      if (c == 9) {
+        width += tab;
+      } else if (c == 32) {
+        width += 1;
+      } else {
+        levels[line] = width ~/ tab;
+        inIndent = false;
+      }
+    }
+    levels[line] = width ~/ tab;
+
+    final keys = controller.foldings.keys.toList()..sort();
+    var folded = 0;
+    for (final l in keys) {
+      if ((levels[l] ?? -1) != level) continue;
+      try {
+        controller.toggleFold(l);
+        folded++;
+      } catch (_) {
+        // 该行没有可折叠区域（或折叠没启用），跳过即可。
+      }
+    }
+    setState(() {});
+    _toast(localizations.editorFoldLevelDone('$level', '$folded'));
+  }
+
   /// 选中当前行（Ctrl+L）：光标在哪行就整行选中，含行尾换行。
   void _selectCurrentLine() {
     final controller = _controller;
@@ -6066,6 +6140,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           const PopupMenuDivider(),
           _menuItem('foldAll', Icons.unfold_less, loc.editorFoldAll),
           _menuItem('unfoldAll', Icons.unfold_more, loc.editorUnfoldAll),
+          _menuItem('foldLevel', Icons.format_indent_decrease, loc.editorFoldToLevel),
           _menuItem('minify', Icons.compress, loc.editorMinify),
           _menuItem('minifyAggressive', Icons.compress, loc.editorMinifyAggressive),
         ];
@@ -6185,6 +6260,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _controller?.foldAll();
         case 'unfoldAll':
           _controller?.unfoldAll();
+      case 'foldLevel':
+        unawaited(_showFoldLevelPicker());
         case 'references':
           unawaited(_showReferences());
         case 'close':

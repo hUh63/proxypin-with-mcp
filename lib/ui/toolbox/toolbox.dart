@@ -38,6 +38,7 @@ import 'package:proxypin/ui/toolbox/crc_page.dart';
 import 'package:proxypin/ui/toolbox/device_spoof_page.dart';
 import 'package:proxypin/ui/toolbox/artex_page.dart';
 import 'package:proxypin/ui/toolbox/device_info_page.dart';
+import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/ui/toolbox/file_split_page.dart';
 import 'package:proxypin/ui/component/performance_dashboard.dart';
 import 'package:proxypin/ui/component/log_viewer_page.dart';
@@ -486,6 +487,14 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.smartphone,
                       text: localizations.devTitle,
                       tooltip: localizations.devTitle),
+                  IconText(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const HexDiffPage()));
+                      },
+                      icon: Icons.compare_arrows,
+                      text: localizations.hexDiffTitle,
+                      tooltip: localizations.hexDiffTitle),
                   IconText(
                       onTap: () {
                         Navigator.of(context).push(MaterialPageRoute(

@@ -3043,5 +3043,13 @@
   "fileMergeDone": "Merged {n} parts into {b} bytes",
   "editorIndentToSpaces": "Indent → spaces",
   "editorIndentToTabs": "Indent → tabs",
-  "editorIndentConverted": "Indentation converted"
+  "editorIndentConverted": "Indentation converted",
+  "editorFoldToLevel": "Fold to level",
+  "editorFoldLevelDone": "Level {level}: folded {n} blocks",
+  "editorFoldLevelN": "Level {n}",
+  "hexDiffTitle": "Hex compare",
+  "hexDiffPickTwo": "Pick two files to compare",
+  "hexDiffRows": "diff rows",
+  "hexTooLarge": "File too large (max {n} MB)",
+  "devSignature": "Signature"
 }

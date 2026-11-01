@@ -18,6 +18,7 @@ import com.rosan.dhizuku.api.Dhizuku
 import com.rosan.dhizuku.api.DhizukuRequestPermissionListener
 import rikka.shizuku.Shizuku
 import java.io.BufferedReader
+import java.security.MessageDigest
 import java.io.InputStreamReader
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -268,6 +269,7 @@ class McpPlugin : FlutterPlugin {
                 inputText(text)
             }
             "screenshot" -> screenshot()
+            "getOwnSignature" -> result.success(ownSignature())
             "openAccessibilitySettings" -> openAccessibilitySettings()
             "openShizukuSettings" -> openShizukuSettings()
             "requestShizukuAuthorization" -> requestShizukuAuthorization()
@@ -285,6 +287,47 @@ class McpPlugin : FlutterPlugin {
     }
 
     // ==================== Device Info ====================
+
+    /**
+     * 本应用自己的签名指纹（MD5 / SHA-1 / SHA-256），每字节用冒号分隔，和 keytool 输出一致。
+     *
+     * 用来核对「装上去的包是不是我签的那个」—— 比看图标的可信度高得多，
+     * 也是接入第三方 SDK 时最常见的自检项。
+     */
+    private fun ownSignature(): Map<String, Any> {
+        val ctx = context ?: return mapOf<String, Any>("ok" to false)
+        return try {
+            val pm = ctx.packageManager
+            val pkg = ctx.packageName
+            val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                pm.getPackageInfo(pkg, PackageManager.GET_SIGNING_CERTIFICATES)
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES)
+            }
+            val cert: ByteArray? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.signingInfo?.apkContentsSigners?.firstOrNull()?.toByteArray()
+            } else {
+                @Suppress("DEPRECATION")
+                info.signatures?.firstOrNull()?.toByteArray()
+            }
+            if (cert == null || cert.isEmpty()) {
+                return mapOf<String, Any>("ok" to false)
+            }
+            fun digest(alg: String): String = MessageDigest.getInstance(alg)
+                .digest(cert)
+                .joinToString(":") { "%02X".format(it.toInt() and 0xFF) }
+            mapOf<String, Any>(
+                "ok" to true,
+                "packageName" to pkg,
+                "md5" to digest("MD5"),
+                "sha1" to digest("SHA-1"),
+                "sha256" to digest("SHA-256")
+            )
+        } catch (e: Exception) {
+            mapOf<String, Any>("ok" to false, "error" to (e.message ?: ""))
+        }
+    }
 
     private fun getDeviceInfo(): Map<String, Any> {
         val model = Build.MODEL ?: "unknown"

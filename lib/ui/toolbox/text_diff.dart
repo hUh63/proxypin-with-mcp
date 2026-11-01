@@ -33,6 +33,7 @@ import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
+import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/utils/text_diff.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
@@ -813,6 +814,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportReport());
           case 'diffList':
             _showDiffList();
+          case 'hexDiff':
+            unawaited(Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const HexDiffPage())));
           case 'syntax':
             unawaited(_checkSyntax());
           case 'swapLayout':
@@ -834,6 +838,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'syncH', checked: _syncH, child: Text(localizations.diffSyncHScroll)),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
+        PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(
             value: 'focus', checked: _focusBlock != null, child: Text(localizations.diffFocus)),

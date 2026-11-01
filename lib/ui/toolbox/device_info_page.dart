@@ -115,6 +115,17 @@ class _DeviceInfoPageState extends State<DeviceInfoPage> {
       add(loc.devSystem, 'error', '$e');
     }
 
+    // ---- 签名（只 Android）----
+    if (Platforms.isAndroid()) {
+      final sig = await McpScreen.getOwnSignature();
+      if (sig['ok'] == true) {
+        add(loc.devSignature, 'package', '${sig['packageName'] ?? ''}');
+        add(loc.devSignature, 'MD5', '${sig['md5'] ?? ''}');
+        add(loc.devSignature, 'SHA-1', '${sig['sha1'] ?? ''}');
+        add(loc.devSignature, 'SHA-256', '${sig['sha256'] ?? ''}');
+      }
+    }
+
     // ---- CPU ----
     add(loc.devCpu, 'cores', '${Platform.numberOfProcessors}');
     if (Platforms.isAndroid() || Platform.isLinux) {

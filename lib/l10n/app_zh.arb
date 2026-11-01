@@ -4843,5 +4843,13 @@
   "fileMergeDone": "已合并 {n} 片，共 {b} 字节",
   "editorIndentToSpaces": "缩进 → 空格",
   "editorIndentToTabs": "缩进 → Tab",
-  "editorIndentConverted": "缩进已转换"
+  "editorIndentConverted": "缩进已转换",
+  "editorFoldToLevel": "折叠到层级",
+  "editorFoldLevelDone": "第 {level} 层：折叠了 {n} 处",
+  "editorFoldLevelN": "第 {n} 层",
+  "hexDiffTitle": "十六进制对比",
+  "hexDiffPickTwo": "选两个文件开始对比",
+  "hexDiffRows": "差异行",
+  "hexTooLarge": "文件太大（最多 {n} MB）",
+  "devSignature": "签名"
 }

@@ -5191,5 +5191,37 @@
   },
   "editorIndentToSpaces": "Indent → spaces",
   "editorIndentToTabs": "Indent → tabs",
-  "editorIndentConverted": "Indentation converted"
+  "editorIndentConverted": "Indentation converted",
+  "editorFoldToLevel": "Fold to level",
+  "editorFoldLevelDone": "Level {level}: folded {n} blocks",
+  "editorFoldLevelN": "Level {n}",
+  "@editorFoldLevelDone": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "@editorFoldLevelN": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "hexDiffTitle": "Hex compare",
+  "hexDiffPickTwo": "Pick two files to compare",
+  "hexDiffRows": "diff rows",
+  "hexTooLarge": "File too large (max {n} MB)",
+  "@hexTooLarge": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "devSignature": "Signature"
 }

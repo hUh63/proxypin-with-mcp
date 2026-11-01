@@ -659,6 +659,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
   EditorMenuItem('foldAll', _foldAllLabel, group: 'code', aliases: 'zd 折叠 fold collapse'),
   EditorMenuItem('unfoldAll', _unfoldAllLabel, group: 'code', aliases: 'zk 展开 unfold expand'),
+  EditorMenuItem('foldLevel', _foldToLevelLabel, group: 'code',
+      aliases: 'zd 折叠到层级 fold level outline'),
   EditorMenuItem('minify', _minifyLabel, group: 'code', aliases: 'ys 压缩 minify'),
   EditorMenuItem('minifyAggressive', _minifyAggressiveLabel, group: 'code', aliases: 'ys 深度压缩 minify'),
   // 视图（12 项）
@@ -724,6 +726,7 @@ String _nextOccurrenceLabel(AppLocalizations l) => l.editorSelectNext;
 String _cursorAboveLabel(AppLocalizations l) => l.editorCursorAbove;
 String _cursorBelowLabel(AppLocalizations l) => l.editorCursorBelow;
 String _clearCursorsLabel(AppLocalizations l) => l.editorClearCursors;
+String _foldToLevelLabel(AppLocalizations l) => l.editorFoldToLevel;
 String _compareDiskLabel(AppLocalizations l) => l.editorCompareDisk;
 String _compareClipboardLabel(AppLocalizations l) => l.editorCompareClipboard;
 String _autoSaveLabel(AppLocalizations l) => l.editorAutoSave;
@@ -846,6 +849,8 @@ IconData menuIconOf(String id) {
       return Icons.keyboard_arrow_down;
     case 'clearCursors':
       return Icons.highlight_remove;
+    case 'foldLevel':
+      return Icons.format_indent_decrease;
     case 'compareDisk':
       return Icons.compare_arrows;
     case 'compareClipboard':
