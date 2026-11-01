@@ -2737,22 +2737,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final ranges = _allSelectionRanges();
     if (ranges.isEmpty) return;
     final text = controller.text;
-    final buffer = StringBuffer();
-    var cursor = 0;
     final after = <({int start, int end})>[];
-    for (final r in ranges) {
-      buffer.write(text.substring(cursor, r.start));
+    // 从后往前替换：前面的偏移不受影响，而且每段是一次 replaceRange，
+    // 撤销的时候是「一段」而不是「整篇回到打开时」。
+    for (var i = ranges.length - 1; i >= 0; i--) {
+      final r = ranges[i];
       final replaced = transform(text.substring(r.start, r.end));
-      final at = buffer.length;
-      buffer.write(replaced);
-      after.add((start: at, end: at + replaced.length));
-      cursor = r.end;
+      controller.replaceRange(r.start, r.end, replaced);
+      after.insert(0, (start: r.start, end: r.start + replaced.length));
     }
-    buffer.write(text.substring(cursor));
-    final result = buffer.toString();
     _multiSel.clear();
     _multiWord = '';
-    controller.text = result;
+    final result = controller.text;
     if (after.isNotEmpty) {
       // 光标落在最后一处（VS 里改完焦点也留在最后一个光标上）。
       final last = after.last;
@@ -3749,7 +3745,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
           .map((l) {
             if (l.trim().isEmpty) return l;
             if (allCommented) {
-              final idx = l.indexOf(token!);
+              // 只在行首缩进之后找 token：`var url = "http://x";` 里也有 `//`，
+              // 直接 indexOf 会把字符串里的那段当成注释删掉。
+              final indentLen = l.length - l.trimLeft().length;
+              var idx = l.indexOf(token!, indentLen);
+              if (idx < 0) idx = l.indexOf(token!);
               var rest = l.substring(idx + token.length);
               if (rest.startsWith(' ')) rest = rest.substring(1);
               return l.substring(0, idx) + rest;
@@ -4350,6 +4350,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
         case FormatKind.css:
           result = CSS.pretty(text);
         case FormatKind.js:
+          // JS 美化走内置 JS runtime（平台通道），没法丢 isolate：大文件直接劝退。
+          if (text.length > 500000) {
+            if (!quiet) _toast(localizations.editorTooLargeToFormat);
+            return;
+          }
           result = await JsDeobfuscator.beautify(text);
         case FormatKind.brace:
           // 通用大括号缩进重排：只改每行前导空白，正文逐字保留。

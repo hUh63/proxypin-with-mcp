@@ -279,6 +279,10 @@ class EditorDocuments {
           // 有这段「上下文」就能在恢复时找回来（纯偏移只能瞎猜）。
           'bookmarks': d.bookmarks.map((b) {
             final o = b.clamp(0, d.text.length);
+            // 上下文已经在内存里维护着（页面侧跟着改动平移），直接用；
+            // 只有刚加、还没同步过的书签才现场算一遍。
+            final cached = d.bookmarkHeads[b];
+            if (cached != null) return {'o': o, 'h': cached};
             final start = (o - 20).clamp(0, o);
             final end = (o + 20).clamp(o, d.text.length);
             return {
