@@ -1674,6 +1674,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
         label: (n) => '⋯  $n ${localizations.diffUnchangedLines}',
       );
 
+  /// 双击对齐视图的某一行 → 切到编辑视图并把光标放到对应行。
+  void _editAtRow(DiffRow row, {required bool left}) {
+    final line = left ? row.leftLine : row.rightLine;
+    if (line == null || line <= 0) return;
+    if (_aligned) {
+      setState(() => _aligned = false);
+      unawaited(SharedPreferencesAsync().setBool(_alignedKey, false));
+    }
+    // 编辑视图是另一套 widget 树（CodeForge 重建），等这一帧画完再定位。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _gotoLine(left ? _left : _right, line - 1);
+    });
+  }
+
   /// 展开 / 收起一个折叠段。
   void _toggleFold(int from) {
     if (!mounted) return;
@@ -1783,7 +1798,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 itemBuilder: (_, i) {
                   final row = rows[i];
                   final cell = _alignedRow(row, left: left, isCurrent: i == current);
-                  if (!row.isFold) return cell;
+                  if (!row.isFold) {
+                    // 双击任意一行 → 切回编辑视图并跳到这一行（对齐视图是只读的，
+                    // 看到差异想改的时候不用先切模式再自己找位置）。
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onDoubleTap: () => _editAtRow(row, left: left),
+                      child: cell,
+                    );
+                  }
                   // 折叠摘要行：点一下就展开这一段（两侧都能点）。
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,

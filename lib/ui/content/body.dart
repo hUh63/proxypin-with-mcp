@@ -1033,22 +1033,23 @@ class _BodyState extends State<_Body> {
 
     final out = StringBuffer();
     var start = 0;
-    while (start <= text.length) {
+    while (start < text.length) {
       var end = text.indexOf('\n', start);
-      if (end < 0) end = text.length;
+      // 最后一段没有换行结尾：不要凭空补一个（否则显示会多出空行）。
+      final isLast = end < 0;
+      if (isLast) end = text.length;
       if (end - start > _maxLineChars) {
         var p = start;
         while (p < end) {
           final q = min(p + _wrapAt, end);
           out.write(text.substring(p, q));
-          out.write('\n');
+          if (q < end || !isLast) out.write('\n');
           p = q;
         }
       } else {
         out.write(text.substring(start, end));
-        out.write('\n');
+        if (!isLast) out.write('\n');
       }
-      if (end >= text.length) break;
       start = end + 1;
     }
     return out.toString();
