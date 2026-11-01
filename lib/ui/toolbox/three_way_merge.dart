@@ -110,6 +110,7 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
     if (!mounted) return;
     setState(() {
       _result = result;
+      _composeCache = null;
       _busy = false;
     });
   }
@@ -121,10 +122,21 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
       for (final g in r.regions) {
         g.choice = choice;
       }
+      _composeCache = null;
     });
   }
 
-  String _compose({bool markers = false}) => _result?.compose(markers: markers) ?? '';
+  /// 合并结果缓存：底部栏每帧都要算行数，几 MB 的文本每次重建都拼一遍太亏。
+  /// 任何一次「换选择」都要清掉。
+  String? _composeCache;
+
+  String _compose({bool markers = false}) {
+    final r = _result;
+    if (r == null) return '';
+    // 带标记的版本只用于导出，不缓存（不常调）。
+    if (markers) return r.compose(markers: true);
+    return _composeCache ??= r.compose();
+  }
 
   Future<void> _save({bool markers = false}) async {
     final r = _result;
@@ -426,7 +438,10 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
       child: GestureDetector(
         onTap: () {
           if (!mounted) return;
-          setState(() => r.choice = value);
+          setState(() {
+            r.choice = value;
+            _composeCache = null;
+          });
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 5),

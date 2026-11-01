@@ -47,6 +47,7 @@ import 'package:proxypin/ui/component/lint_rules_dialog.dart';
 import 'package:proxypin/ui/toolbox/editor_console.dart';
 import 'package:proxypin/utils/custom_lang.dart';
 import 'package:proxypin/utils/lang_meta.dart';
+import 'package:proxypin/utils/naming_case.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
 import 'package:proxypin/ui/toolbox/text_editor_settings.dart';
 import 'package:proxypin/ui/toolbox/text_editor_menus.dart';
@@ -4409,64 +4410,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
       'upper' => chunk.toUpperCase(),
       'lower' => chunk.toLowerCase(),
       'camel' || 'pascal' || 'snake' || 'kebab' || 'constant' =>
-        _joinIdentifier(_splitIdentifier(chunk), mode),
+        convertNamingCase(chunk, namingCaseOf(mode)!),
       _ => _titleCase(chunk),
     };
     if (converted == chunk) return;
     controller.replaceRange(start, end, converted);
     controller.selection = TextSelection(baseOffset: start, extentOffset: start + converted.length);
-  }
-
-  /// 把标识符拆成词：camelCase / PascalCase / snake_case / kebab-case / 空格分隔都能拆。
-  ///
-  /// 规则（够用的简化版）：
-  ///   · 非字母数字一律当分隔符；
-  ///   · 小写→大写处断词（camel|Case）；
-  ///   · 连续大写后接小写时在最后一个大写前断（HTTP|Server）。
-  static List<String> _splitIdentifier(String s) {
-    final words = <String>[];
-    final buf = StringBuffer();
-    void flush() {
-      if (buf.isNotEmpty) {
-        words.add(buf.toString());
-        buf.clear();
-      }
-    }
-
-    for (var i = 0; i < s.length; i++) {
-      final c = s.codeUnitAt(i);
-      final isUpper = c >= 65 && c <= 90;
-      final isLower = c >= 97 && c <= 122;
-      final isDigit = c >= 48 && c <= 57;
-      if (!isUpper && !isLower && !isDigit) {
-        flush();
-        continue;
-      }
-      if (isUpper && buf.isNotEmpty) {
-        final prev = s.codeUnitAt(i - 1);
-        final prevUpper = prev >= 65 && prev <= 90;
-        final next = i + 1 < s.length ? s.codeUnitAt(i + 1) : -1;
-        final nextLower = next >= 97 && next <= 122;
-        if (!prevUpper || nextLower) flush();
-      }
-      buf.writeCharCode(c);
-    }
-    flush();
-    return words;
-  }
-
-  /// 按风格把词拼回去。
-  static String _joinIdentifier(List<String> words, String style) {
-    if (words.isEmpty) return '';
-    String cap(String w) => w.length <= 1 ? w.toUpperCase() : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
-    return switch (style) {
-      'camel' => '${words.first.toLowerCase()}${words.skip(1).map(cap).join()}',
-      'pascal' => words.map(cap).join(),
-      'snake' => words.map((w) => w.toLowerCase()).join('_'),
-      'kebab' => words.map((w) => w.toLowerCase()).join('-'),
-      'constant' => words.map((w) => w.toUpperCase()).join('_'),
-      _ => words.join(),
-    };
   }
 
   // ------------------------------ VS 的编辑动作补充 ------------------------------
