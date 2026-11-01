@@ -4420,16 +4420,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   // ------------------------------ VS 的编辑动作补充 ------------------------------
 
-  /// 保存时静默修剪行尾空白：不 toast、尽量保住选区（越界就 clamp）。
-  void _trimOnSaveQuiet() {
-    final controller = _controller;
-    if (controller == null) return;
+  /// 把行尾空白去掉（纯文本操作，不改换行符）。
+  static String _stripTrailingWhitespace(String text) => text
+      .split('\n')
+      .map((l) => l.replaceFirst(RegExp(r'[ \t]+$'), ''))
+      .join('\n');
+
+  /// 对任意文档做「保存时修剪行尾空白」：同步改缓冲区（保住光标），不提示。
+  void _trimDocTrailingWhitespace(EditorDocument doc) {
+    final controller = doc.controller;
     final before = controller.text;
     if (before.isEmpty) return;
-    final after = before
-        .split('\n')
-        .map((l) => l.replaceFirst(RegExp(r'[ \t]+$'), ''))
-        .join('\n');
+    final after = _stripTrailingWhitespace(before);
     if (after == before) return;
     final sel = controller.selection;
     final start = sel.isValid ? sel.start.clamp(0, after.length) : null;
@@ -4438,6 +4440,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (start != null && end != null) {
       controller.selection = TextSelection(baseOffset: start, extentOffset: end);
     }
+  }
+
+  /// 保存时静默修剪行尾空白（当前文档）。
+  void _trimOnSaveQuiet() {
+    final doc = _doc;
+    if (doc == null) return;
+    _trimDocTrailingWhitespace(doc);
   }
 
   /// 修剪行尾空白（VS 的 Trim Trailing Whitespace）。
@@ -5684,6 +5693,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<bool> _saveDoc(EditorDocument doc) async {
     final path = doc.path;
     if (path == null || path.isEmpty) return false;
+    // 「保存全部 / 自动保存 / 退出前保存」也走这里，必须遵守和单文件保存一样的规则，
+    // 否则同一份文件换个入口保存，内容就不一样了。
+    if (identical(doc, _doc) && _prefs.formatOnSave && _canFormat) {
+      await _applyFormat(quiet: true);
+      if (!mounted) return false;
+    }
+    if (_prefs.trimOnSave) _trimDocTrailingWhitespace(doc);
     try {
       final text = _applyNewline(doc.text, _newlineCharsOf(doc));
       final file = File(path);
