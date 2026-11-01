@@ -3095,5 +3095,7 @@
   "editorDetectIndent": "Detect indentation",
   "editorIndentDetected": "Indentation: {kind} × {n}",
   "editorTrimOnSave": "Trim trailing whitespace on save",
-  "editorTrimOnSaveDesc": "Strip spaces and tabs at the end of every line before writing the file"
+  "editorTrimOnSaveDesc": "Strip spaces and tabs at the end of every line before writing the file",
+  "mergeApplyToDiff": "Apply to compare",
+  "mergeReplaceRight": "Replace the right pane with the merged result?"
 }

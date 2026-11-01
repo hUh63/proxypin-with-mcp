@@ -39,7 +39,12 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/text_diff.dart';
 
 class ThreeWayMergePage extends StatefulWidget {
-  const ThreeWayMergePage({super.key});
+  /// 从对比页进来时可以预填：左侧当基线、右侧当「我的」，用户只需再选「他的」。
+  /// 这样「比对出差异 → 想合进来」不用重新挑两个文件。
+  final String? initialBase;
+  final String? initialMine;
+
+  const ThreeWayMergePage({super.key, this.initialBase, this.initialMine});
 
   @override
   State<ThreeWayMergePage> createState() => _ThreeWayMergePageState();
@@ -58,6 +63,21 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
 
   MergeResult? _result;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final base = widget.initialBase;
+    final mine = widget.initialMine;
+    if (base != null) {
+      _baseText = base;
+      _baseName = '#left';
+    }
+    if (mine != null) {
+      _mineText = mine;
+      _mineName = '#right';
+    }
+  }
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
@@ -104,7 +124,7 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
     }
   }
 
-  void _merge() {
+  Future<void> _merge() async {
     final b = _baseText;
     final m = _mineText;
     final t = _theirsText;
@@ -113,6 +133,10 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
       return;
     }
     setState(() => _busy = true);
+    // mergeThreeWay 是同步的：先让「合并中」这一帧画出来，否则大文件下用户
+    // 只会觉得按钮点下去没反应。
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+    if (!mounted) return;
     final result = mergeThreeWay(b, m, t);
     if (!mounted) return;
     setState(() {
@@ -208,6 +232,11 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
         title: Text(loc.diffThreeWay),
         actions: [
           IconButton(
+            tooltip: loc.mergeApplyToDiff,
+            icon: const Icon(Icons.check_circle_outline),
+            onPressed: _result == null ? null : () => Navigator.of(context).pop(_compose()),
+          ),
+          IconButton(
             tooltip: loc.mergeCopy,
             icon: const Icon(Icons.copy_all_outlined),
             onPressed: _result == null ? null : () => unawaited(_copy()),
@@ -234,6 +263,7 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
       ),
       body: Column(
         children: [
+          if (_busy) const LinearProgressIndicator(minHeight: 2),
           _filePickers(loc, theme),
           if (_result != null) _summaryBar(loc, theme),
           const Divider(height: 1),
@@ -283,7 +313,7 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
             child: SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _busy ? null : _merge,
+                onPressed: _busy ? null : () => unawaited(_merge()),
                 icon: const Icon(Icons.merge_type, size: 18),
                 label: Text(loc.mergeStart),
               ),
@@ -491,6 +521,13 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
             label: Text(loc.mergeCopy, style: const TextStyle(fontSize: 12)),
           ),
           const SizedBox(width: 4),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+            onPressed: r.regions.isEmpty ? null : () => Navigator.of(context).pop(_compose()),
+            icon: const Icon(Icons.check_circle_outline, size: 16),
+            label: Text(loc.mergeApplyToDiff, style: const TextStyle(fontSize: 12)),
+          ),
+          const SizedBox(width: 6),
           FilledButton.icon(
             style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
             onPressed: r.regions.isEmpty ? null : () => unawaited(_save()),

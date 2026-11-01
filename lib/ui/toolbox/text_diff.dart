@@ -836,8 +836,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
               _expandedFolds.clear();
             });
           case 'threeWay':
-            unawaited(Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ThreeWayMergePage())));
+            unawaited(_openThreeWayMerge());
           case 'syntax':
             unawaited(_checkSyntax());
           case 'swapLayout':
@@ -1344,6 +1343,32 @@ class _TextDiffPageState extends State<TextDiffPage> {
     } finally {
       _syncingH = false;
     }
+  }
+
+  /// 打开三方合并：预填当前左右内容（左=基线、右=我的），返回的合并结果
+  /// 可以选择直接替换右栏，省掉「保存到文件再打开」。
+  Future<void> _openThreeWayMerge() async {
+    final merged = await Navigator.of(context).push<String>(MaterialPageRoute(
+      builder: (_) => ThreeWayMergePage(
+        initialBase: _left.text,
+        initialMine: _right.text,
+      ),
+    ));
+    if (!mounted || merged == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(localizations.mergeReplaceRight),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    if (!mounted || ok != true) return;
+    _right.text = merged;
+    _compare();
+    _toast(localizations.diffApplied);
   }
 
   /// 差异列表（WinMerge 的 diff 列表 / Meld 的侧栏）：全部差异一次列出来，

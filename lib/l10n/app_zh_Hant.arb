@@ -4896,5 +4896,7 @@
   "editorDetectIndent": "按內容偵測縮排",
   "editorIndentDetected": "縮排已設為 {kind} × {n}",
   "editorTrimOnSave": "儲存時修剪行尾空白",
-  "editorTrimOnSaveDesc": "寫盤前去掉每行末尾的空格與定位字元"
+  "editorTrimOnSaveDesc": "寫盤前去掉每行末尾的空格與定位字元",
+  "mergeApplyToDiff": "應用到對比頁",
+  "mergeReplaceRight": "用合併結果替換右側內容？"
 }

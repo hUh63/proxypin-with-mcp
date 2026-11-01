@@ -4896,5 +4896,7 @@
   "editorDetectIndent": "按内容检测缩进",
   "editorIndentDetected": "缩进已设为 {kind} × {n}",
   "editorTrimOnSave": "保存时修剪行尾空白",
-  "editorTrimOnSaveDesc": "写盘前去掉每行末尾的空格与制表符"
+  "editorTrimOnSaveDesc": "写盘前去掉每行末尾的空格与制表符",
+  "mergeApplyToDiff": "应用到对比页",
+  "mergeReplaceRight": "用合并结果替换右侧内容？"
 }
