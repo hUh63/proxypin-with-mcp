@@ -14,7 +14,6 @@ import 'dart:io';
 
 import 'package:proxypin/ui/component/kernel_capture_dialog.dart';
 import 'package:proxypin/ui/component/repeat_queue_page.dart';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:proxypin/network/util/logger.dart';

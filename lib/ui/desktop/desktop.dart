@@ -34,7 +34,6 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
-import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
 import 'package:proxypin/network/util/windows_takeover.dart';
 import 'package:proxypin/storage/histories.dart';

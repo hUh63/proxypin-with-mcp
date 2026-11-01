@@ -30,7 +30,6 @@ import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/ui/component/invisible_char_highlighter.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/lint_binding.dart';
-import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
 import 'package:proxypin/utils/tool_snippets.dart';

@@ -48,6 +48,7 @@ import 'package:proxypin/ui/toolbox/editor_console.dart';
 import 'package:proxypin/utils/custom_lang.dart';
 import 'package:proxypin/utils/lang_meta.dart';
 import 'package:proxypin/utils/naming_case.dart';
+import 'package:proxypin/utils/text_edit_ops.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
 import 'package:proxypin/ui/toolbox/text_editor_settings.dart';
 import 'package:proxypin/ui/toolbox/text_editor_menus.dart';
@@ -4424,18 +4425,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   // ------------------------------ VS 的编辑动作补充 ------------------------------
 
-  /// 把行尾空白去掉（纯文本操作，不改换行符）。
-  static String _stripTrailingWhitespace(String text) => text
-      .split('\n')
-      .map((l) => l.replaceFirst(RegExp(r'[ \t]+$'), ''))
-      .join('\n');
-
   /// 对任意文档做「保存时修剪行尾空白」：同步改缓冲区（保住光标），不提示。
   void _trimDocTrailingWhitespace(EditorDocument doc) {
     final controller = doc.controller;
     final before = controller.text;
     if (before.isEmpty) return;
-    final after = _stripTrailingWhitespace(before);
+    final after = stripTrailingWhitespace(before);
     if (after == before) return;
     final sel = controller.selection;
     final start = sel.isValid ? sel.start.clamp(0, after.length) : null;
@@ -4529,7 +4524,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void _detectIndent() {
     final text = _controller?.text ?? '';
     if (text.isEmpty) return;
-    final (useTabs, size) = _guessIndent(text);
+    final (useTabs, size) = guessIndent(text);
     // 缩进是全局偏好（跟着 Tab 键走），不是某份文档的属性。
     unawaited(TextEditorPrefsStore.update(
         TextEditorPrefsStore.notifier.value.copyWith(useTabs: useTabs, tabSize: size)));
@@ -4537,33 +4532,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
     setState(() {});
     // 生成的参数顺序 = arb 里占位符出现顺序（{kind} 在前），别调反。
     _toast(localizations.editorIndentDetected(useTabs ? 'Tab' : 'Space', size));
-  }
-
-  /// 猜缩进：制表符行多就用 Tab，否则取「最小的非零空格缩进」当 tabSize。
-  static (bool, int) _guessIndent(String text) {
-    var tabLines = 0;
-    var spaceLines = 0;
-    var minSpace = 0;
-    final lines = text.split('\n');
-    final limit = lines.length > 3000 ? 3000 : lines.length;
-    for (var i = 0; i < limit; i++) {
-      final line = lines[i];
-      if (line.trim().isEmpty) continue;
-      if (line.startsWith('\t')) {
-        tabLines++;
-        continue;
-      }
-      var n = 0;
-      while (n < line.length && line.codeUnitAt(n) == 32) {
-        n++;
-      }
-      if (n == 0) continue;
-      spaceLines++;
-      if (minSpace == 0 || n < minSpace) minSpace = n;
-    }
-    if (tabLines > spaceLines) return (true, 4);
-    if (minSpace >= 2 && minSpace <= 8) return (false, minSpace);
-    return (false, 4);
   }
 
   /// 光标处的「词」范围；不在词上时退化成光标所在的一个字符。
