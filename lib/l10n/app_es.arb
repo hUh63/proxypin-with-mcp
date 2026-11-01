@@ -2879,5 +2879,6 @@
   "editorRestorePartial": "No se pudieron restaurar {n} documentos conservados",
   "editorOpenReadOnly": "Abrir en solo lectura",
   "editorTooLargeToFormat": "El archivo es demasiado grande para formatear",
-  "editorTooLargeToProcess": "El archivo es demasiado grande para esta operación"
+  "editorTooLargeToProcess": "El archivo es demasiado grande para esta operación",
+  "editorPasteTooLarge": "El contenido del portapapeles es demasiado grande"
 }

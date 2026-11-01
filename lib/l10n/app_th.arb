@@ -2879,5 +2879,6 @@
   "editorRestorePartial": "กู้คืนเอกสารที่เก็บไว้ {n} ฉบับไม่สำเร็จ",
   "editorOpenReadOnly": "เปิดแบบอ่านอย่างเดียว",
   "editorTooLargeToFormat": "ไฟล์ใหญ่เกินกว่าจะจัดรูปแบบ",
-  "editorTooLargeToProcess": "ไฟล์ใหญ่เกินไปสำหรับการดำเนินการนี้"
+  "editorTooLargeToProcess": "ไฟล์ใหญ่เกินไปสำหรับการดำเนินการนี้",
+  "editorPasteTooLarge": "เนื้อหาคลิปบอร์ดใหญ่เกินกว่าจะวาง"
 }

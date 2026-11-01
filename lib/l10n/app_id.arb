@@ -2879,5 +2879,6 @@
   "editorRestorePartial": "{n} dokumen tersimpan gagal dipulihkan",
   "editorOpenReadOnly": "Buka hanya-baca",
   "editorTooLargeToFormat": "File terlalu besar untuk diformat",
-  "editorTooLargeToProcess": "File terlalu besar untuk operasi ini"
+  "editorTooLargeToProcess": "File terlalu besar untuk operasi ini",
+  "editorPasteTooLarge": "Isi papan klip terlalu besar untuk ditempel"
 }

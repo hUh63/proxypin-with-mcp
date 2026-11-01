@@ -4680,5 +4680,6 @@
   "editorRestorePartial": "有 {n} 份保留文件沒能復原",
   "editorOpenReadOnly": "唯讀預覽",
   "editorTooLargeToFormat": "檔案太大，已略過格式化",
-  "editorTooLargeToProcess": "檔案太大，已略過此操作"
+  "editorTooLargeToProcess": "檔案太大，已略過此操作",
+  "editorPasteTooLarge": "剪貼簿內容太大，無法貼上"
 }

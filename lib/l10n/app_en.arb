@@ -4970,5 +4970,6 @@
   },
   "editorOpenReadOnly": "Open read-only",
   "editorTooLargeToFormat": "File is too large to format",
-  "editorTooLargeToProcess": "File is too large for this operation"
+  "editorTooLargeToProcess": "File is too large for this operation",
+  "editorPasteTooLarge": "Clipboard content is too large to paste"
 }

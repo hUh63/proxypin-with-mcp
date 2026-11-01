@@ -4680,5 +4680,6 @@
   "editorRestorePartial": "有 {n} 份保留文档没能恢复",
   "editorOpenReadOnly": "只读预览",
   "editorTooLargeToFormat": "文件太大，已跳过格式化",
-  "editorTooLargeToProcess": "文件太大，已跳过该操作"
+  "editorTooLargeToProcess": "文件太大，已跳过该操作",
+  "editorPasteTooLarge": "剪贴板内容太大，无法粘贴"
 }

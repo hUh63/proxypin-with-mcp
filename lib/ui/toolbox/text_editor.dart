@@ -616,6 +616,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return d.start;
   }
 
+  /// 书签上下文用 `左20\u0000右20` 存：单看左边，「}`」这种行根本区分不开。
+  static ({String left, String right}) _splitHead(String head) {
+    final at = head.indexOf('\u0000');
+    if (at < 0) return (left: head, right: '');
+    return (left: head.substring(0, at), right: head.substring(at + 1));
+  }
+
+  /// 按上下文在新文本里找回书签位置：左右两侧都要对得上，多个候选取离 [near] 最近的。
+  static int? _locateByHead(String text, String head, int near) {
+    final parts = _splitHead(head);
+    if (parts.left.isEmpty && parts.right.isEmpty) return null;
+    final needle = parts.left.isNotEmpty ? parts.left : parts.right;
+    var best = -1;
+    var bestDist = 0;
+    var at = text.indexOf(needle);
+    // 出现次数不可能太多；给个上限防止极端文本（同一字符重复）里白跑。
+    var guard = 0;
+    while (at >= 0 && guard++ < 200) {
+      final cand = parts.left.isNotEmpty ? at + parts.left.length : at;
+      final okRight = parts.right.isEmpty || text.startsWith(parts.right, cand);
+      if (okRight) {
+        final dist = (cand - near).abs();
+        if (best < 0 || dist < bestDist) {
+          best = cand;
+          bestDist = dist;
+        }
+      }
+      at = text.indexOf(needle, at + 1);
+    }
+    return best < 0 ? null : best;
+  }
+
   /// 在 [text] 里找 [head] 的所有出现，返回离 [near] 最近的那个（找不到返回 -1）。
   ///
   /// 只取第一个的话，同一句上下文出现两次就会定位到前面那份，书签直接跳走。
@@ -641,9 +673,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final text = doc.text;
     doc.bookmarkHeads.clear();
     for (final o in doc.bookmarks) {
-      final end = o.clamp(0, text.length);
-      final start = (end - 20).clamp(0, end);
-      doc.bookmarkHeads[o] = text.substring(start, end);
+      final mid = o.clamp(0, text.length);
+      final start = (mid - 20).clamp(0, mid);
+      final end = (mid + 20).clamp(mid, text.length);
+      doc.bookmarkHeads[o] = '${text.substring(start, mid)}\u0000${text.substring(mid, end)}';
     }
   }
 
@@ -656,9 +689,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     for (final o in doc.bookmarks) {
       final head = heads[o];
       if (head != null && head.isNotEmpty) {
-        final at = _nearestIndexOf(text, head, o);
-        if (at >= 0) {
-          moved.add(at + head.length);
+        final at = _locateByHead(text, head, o);
+        if (at != null) {
+          moved.add(at);
           continue;
         }
       }
@@ -725,11 +758,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           for (final offset in bookmarks) {
             final head = heads0?[offset];
             if (bigChange && head != null && head.isNotEmpty) {
-              final at = _nearestIndexOf(text, head, offset);
-              if (at >= 0) {
-                final dest = at + head.length;
-                moved.add(dest);
-                movedHeads[dest] = head;
+              final at = _locateByHead(text, head, offset);
+              if (at != null) {
+                moved.add(at);
+                movedHeads[at] = head;
                 continue;
               }
             }
@@ -1416,16 +1448,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final clip = data?.text ?? '';
     if (clip.isEmpty) return;
+    // 剪贴板里有几十 MB（比如整个日志文件）时，插进去等于让编辑器卡死。
+    if (clip.length > 5000000) {
+      _toast(localizations.editorPasteTooLarge);
+      return;
+    }
     final text = controller.text;
     final sel = controller.selection;
-    if (sel.isValid && !sel.isCollapsed) {
-      controller.text = text.replaceRange(sel.start, sel.end, clip);
-      controller.selection = TextSelection.collapsed(offset: sel.start + clip.length);
-    } else {
-      final offset = sel.isValid ? sel.start : text.length;
-      controller.text = text.replaceRange(offset, offset, clip);
-      controller.selection = TextSelection.collapsed(offset: offset + clip.length);
-    }
+    final start = sel.isValid && !sel.isCollapsed ? sel.start : (sel.isValid ? sel.start : text.length);
+    final end = sel.isValid && !sel.isCollapsed ? sel.end : start;
+    controller.replaceRange(start, end, clip);
+    controller.selection = TextSelection.collapsed(offset: start + clip.length);
   }
 
   void _selectAll() {
@@ -1973,14 +2006,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (controller == null) return;
     final text = controller.text;
     final sel = controller.selection;
-    if (sel.isValid && !sel.isCollapsed) {
-      controller.text = text.replaceRange(sel.start, sel.end, insert);
-      controller.selection = TextSelection.collapsed(offset: sel.start + insert.length);
-    } else {
-      final offset = sel.isValid ? sel.start : text.length;
-      controller.text = text.replaceRange(offset, offset, insert);
-      controller.selection = TextSelection.collapsed(offset: offset + insert.length);
-    }
+    // 用 replaceRange 而不是「整份 text 赋值」：撤销粒度是一段，不是整篇。
+    final start = sel.isValid && !sel.isCollapsed ? sel.start : (sel.isValid ? sel.start : text.length);
+    final end = sel.isValid && !sel.isCollapsed ? sel.end : start;
+    controller.replaceRange(start, end, insert);
+    controller.selection = TextSelection.collapsed(offset: start + insert.length);
   }
 
   /// 打开搜索时默认收起（不展开替换行）。
@@ -4131,8 +4161,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (_looksLikeYaml(head)) return _labelOfLangKey('yaml');
     if (t.startsWith('---')) return _labelOfLangKey('yaml');
     if (t.startsWith('#!')) {
-      if (t.contains('python')) return _labelOfLangKey('python');
-      if (t.contains('node')) return _labelOfLangKey('javascript');
+      // 解析 `#!/usr/bin/env node` / `#!/usr/bin/python3` 这类，只认解释器本身。
+      // 原来用 contains('node')，路径里带 node_modules 的脚本会被误判。
+      final firstLine = t.split('\n').first;
+      final m = RegExp(r'^#!\s*(\S+)(?:\s+(.*))?$').firstMatch(firstLine);
+      var cmd = (m?.group(1) ?? '').split('/').last;
+      final arg = (m?.group(2) ?? '').trim();
+      if (cmd == 'env' && arg.isNotEmpty) {
+        cmd = arg.split(RegExp(r'\s+')).firstWhere((e) => !e.startsWith('-'), orElse: () => '');
+      }
+      if (cmd.startsWith('python') || cmd.startsWith('pypy')) return _labelOfLangKey('python');
+      if (cmd == 'node' || cmd == 'nodejs' || cmd == 'deno' || cmd == 'bun') {
+        return _labelOfLangKey('javascript');
+      }
+      if (cmd == 'ruby') return _labelOfLangKey('ruby');
+      if (cmd == 'perl') return _labelOfLangKey('perl');
+      if (cmd == 'php') return _labelOfLangKey('php');
+      if (cmd == 'lua') return _labelOfLangKey('lua');
       return _labelOfLangKey('bash');
     }
     return null;
@@ -4259,7 +4304,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final text = controller.text;
     if (text.trim().isEmpty) return;
     // 全量格式化是同步正则 + 重新拼串，几 MB 会把界面卡住好几秒。
-    if (text.length > 2000000) {
+    // 超过这个量级连 isolate 传输都开始肉疼了。
+    if (text.length > 5000000) {
       if (!quiet) _toast(localizations.editorTooLargeToFormat);
       return;
     }
@@ -4289,6 +4335,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     String? result;
     try {
+      if (text.length > 1000000 && _formatKind != FormatKind.js &&
+          _formatKind != FormatKind.none) {
+        // JSON / XML / CSS / 大括号重排都是纯函数：大文本丢 isolate，界面不卡。
+        result = await compute(_formatInIsolate,
+            <Object>[_formatKind.index, text, _prefs.tabSize, _prefs.useTabs]);
+        if (!mounted) return;
+      } else {
       switch (_formatKind) {
         case FormatKind.json:
           result = JSON.pretty(text);
@@ -4304,6 +4357,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         case FormatKind.none:
           if (!quiet) _toast(localizations.editorFormatUnsupported);
           return;
+      }
       }
     } catch (e) {
       if (!quiet) _toast('${localizations.fail}: $e');
@@ -4364,6 +4418,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ? await compute(_minifyInIsolate, <String>[doc.langLabel, text])
         : CodeMinifier.minify(doc.langLabel, text);
     if (!mounted) return;
+    // isolate 算的这段时间里文档可能已被关闭（controller 已 dispose，写回会抛异常）。
+    if (!_docs.docs.any((d) => identical(d, doc))) return;
     if (result == null) {
       _toast(localizations.editorMinifyUnsupported);
       return;
@@ -4395,6 +4451,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ? await compute(_compilerMinifyInIsolate, text)
         : JsCompiler.minify(text);
     if (!mounted) return;
+    if (!_docs.docs.any((d) => identical(d, doc))) return;
     if (result == null) {
       _toast(localizations.editorMinifyAggressiveUnsupported);
       return;
@@ -7092,3 +7149,25 @@ String? _minifyInIsolate(List<String> args) => CodeMinifier.minify(args[0], args
 
 /// 激进压缩（JS 编译器前端）的 isolate 入口。
 String? _compilerMinifyInIsolate(String text) => JsCompiler.minify(text);
+
+/// 格式化（JSON / XML / CSS / 大括号重排）的 isolate 入口。
+/// 参数：`[FormatKind.index, 正文, tabSize, useTabs]`；JS 美化是 async，不走这里。
+String? _formatInIsolate(List<Object> args) {
+  final kind = FormatKind.values[args[0] as int];
+  final text = args[1] as String;
+  final tabSize = args[2] as int;
+  final useTabs = args[3] as bool;
+  switch (kind) {
+    case FormatKind.json:
+      return JSON.pretty(text);
+    case FormatKind.xml:
+      return XmlDocument.parse(text).toXmlString(pretty: true, indent: '  ');
+    case FormatKind.css:
+      return CSS.pretty(text);
+    case FormatKind.brace:
+      return reindentBraces(text, tabSize: tabSize, useTabs: useTabs);
+    case FormatKind.js:
+    case FormatKind.none:
+      return null;
+  }
+}

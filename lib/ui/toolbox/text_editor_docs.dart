@@ -279,8 +279,12 @@ class EditorDocuments {
           // 有这段「上下文」就能在恢复时找回来（纯偏移只能瞎猜）。
           'bookmarks': d.bookmarks.map((b) {
             final o = b.clamp(0, d.text.length);
-            final head = o >= 20 ? d.text.substring(o - 20, o) : d.text.substring(0, o);
-            return {'o': o, 'h': head};
+            final start = (o - 20).clamp(0, o);
+            final end = (o + 20).clamp(o, d.text.length);
+            return {
+              'o': o,
+              'h': '${d.text.substring(start, o)}\u0000${d.text.substring(o, end)}',
+            };
           }).toList(),
           // 换行符与编码也要一起记：否则恢复后一保存，CRLF 文件被写成 LF、
           // GBK 文件被写成 UTF-8。
@@ -319,12 +323,26 @@ class EditorDocuments {
     if (rawOffset is! int) return null;
     final head = mark['h'];
     if (head is String && head.isNotEmpty) {
+      final sep = head.indexOf('\u0000');
+      final left = sep < 0 ? head : head.substring(0, sep);
+      final right = sep < 0 ? '' : head.substring(sep + 1);
       final o = rawOffset;
-      if (o >= head.length && o <= text.length && text.substring(o - head.length, o) == head) {
-        return o;
+      // 先按原偏移校验「左边的上下文 + 右边的上下文」都对得上。
+      final leftOk = left.isEmpty ||
+          (o >= left.length && o <= text.length && text.substring(o - left.length, o) == left);
+      final rightOk = right.isEmpty || text.startsWith(right, o.clamp(0, text.length));
+      if (leftOk && rightOk) return o;
+      // 对不上就全文找（取第一个左右都对得上的位置）。
+      if (left.isNotEmpty || right.isNotEmpty) {
+        final needle = left.isNotEmpty ? left : right;
+        var at = text.indexOf(needle);
+        var guard = 0;
+        while (at >= 0 && guard++ < 200) {
+          final cand = left.isNotEmpty ? at + left.length : at;
+          if (right.isEmpty || text.startsWith(right, cand)) return cand;
+          at = text.indexOf(needle, at + 1);
+        }
       }
-      final at = text.indexOf(head);
-      if (at >= 0) return at + head.length;
     }
     return (rawOffset >= 0 && rawOffset <= text.length) ? rawOffset : null;
   }

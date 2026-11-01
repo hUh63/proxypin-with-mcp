@@ -2879,5 +2879,6 @@
   "editorRestorePartial": "Không khôi phục được {n} tài liệu đã giữ",
   "editorOpenReadOnly": "Mở chỉ đọc",
   "editorTooLargeToFormat": "Tệp quá lớn để định dạng",
-  "editorTooLargeToProcess": "Tệp quá lớn cho thao tác này"
+  "editorTooLargeToProcess": "Tệp quá lớn cho thao tác này",
+  "editorPasteTooLarge": "Nội dung bộ nhớ tạm quá lớn để dán"
 }
