@@ -779,11 +779,12 @@ class SmartSuggestions {
   static List<String> _symbolsFor(String language, String key) {
     final k = key.toLowerCase();
     final l = language.toLowerCase();
-    bool is(List<String> names) => names.contains(k) || names.contains(l);
-    if (is(const ['python', 'ruby'])) return _pythonSymbols;
-    if (is(const ['lua'])) return _luaSymbols;
-    if (is(const ['sql', 'mysql', 'pgsql'])) return _sqlSymbols;
-    if (is(const ['bash', 'shell', 'sh', 'zsh', 'powershell'])) return _shellSymbols;
+    // 注意：不能把这个局部函数叫 `is` —— 那是 Dart 的运算符关键字。
+    bool named(List<String> names) => names.contains(k) || names.contains(l);
+    if (named(const ['python', 'ruby'])) return _pythonSymbols;
+    if (named(const ['lua'])) return _luaSymbols;
+    if (named(const ['sql', 'mysql', 'pgsql'])) return _sqlSymbols;
+    if (named(const ['bash', 'shell', 'sh', 'zsh', 'powershell'])) return _shellSymbols;
     return _cLikeSymbols;
   }
 
