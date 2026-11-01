@@ -109,22 +109,24 @@ class _HexDiffPageState extends State<HexDiffPage> {
     for (var off = 0; off < maxLen; off += _rowBytes) {
       final leftEnd = off + _rowBytes > a.length ? a.length : off + _rowBytes;
       final rightEnd = off + _rowBytes > b.length ? b.length : off + _rowBytes;
-      final leftSlice = a.sublist(off, leftEnd);
-      final rightSlice = b.sublist(off, rightEnd);
-      var diff = leftSlice.length != rightSlice.length;
-      final marks = <int>{};
+      final leftLen = leftEnd - off;
+      final rightLen = rightEnd - off;
+      var diff = leftLen != rightLen;
+      // 差异位置用**位掩码**记（一行只有 16 个位置）：1M 行时比 Set<int> 省几十 MB，
+      // 也不再为每一行复制两份 16 字节的小数组（那是 200 万个对象）。
+      var mask = 0;
       if (!diff) {
-        for (var i = 0; i < leftSlice.length; i++) {
-          if (leftSlice[i] != rightSlice[i]) {
-            marks.add(i);
+        for (var i = 0; i < leftLen; i++) {
+          if (a[off + i] != b[off + i]) {
+            mask |= 1 << i;
             diff = true;
           }
         }
       }
       if (diff) {
-        rows.add(_HexRow(offset: off, left: leftSlice, right: rightSlice, marks: marks));
+        rows.add(_HexRow(offset: off, leftLen: leftLen, rightLen: rightLen, marks: mask));
       } else if (!_onlyDiff) {
-        rows.add(_HexRow(offset: off, left: leftSlice, right: rightSlice, marks: const {}));
+        rows.add(_HexRow(offset: off, leftLen: leftLen, rightLen: rightLen, marks: 0));
       }
     }
     setState(() {
@@ -221,9 +223,9 @@ class _HexDiffPageState extends State<HexDiffPage> {
                                   style: mono.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant, fontSize: 11)),
                             ),
-                            Expanded(child: _hexCells(r.left, r.marks, mono, theme)),
+                            Expanded(child: _hexCells(_left!, r.offset, r.leftLen, r.marks, mono, theme)),
                             const SizedBox(width: 6),
-                            Expanded(child: _hexCells(r.right, r.marks, mono, theme)),
+                            Expanded(child: _hexCells(_right!, r.offset, r.rightLen, r.marks, mono, theme)),
                           ]),
                         );
                       },
@@ -252,22 +254,26 @@ class _HexDiffPageState extends State<HexDiffPage> {
     );
   }
 
-  /// 一行 16 个字节格；[marks] 里的位置标红。
-  Widget _hexCells(Uint8List bytes, Set<int> marks, TextStyle mono, ThemeData theme) {
+  /// 一行 16 个字节格；[mask] 里的位置标红。
+  ///
+  /// 直接读原始 buffer 的 `[offset, offset + len)` 窗口，不复制切片 —— 大文件
+  /// （几 MB 就是几十万行）下每行复制一次会觉得滚动发涩。
+  Widget _hexCells(
+      Uint8List bytes, int offset, int len, int mask, TextStyle mono, ThemeData theme) {
     return Wrap(spacing: 2, runSpacing: 1, children: [
-      for (var i = 0; i < bytes.length; i++)
+      for (var i = 0; i < len; i++)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 1),
-          decoration: marks.contains(i)
+          decoration: (mask >> i) & 1 == 1
               ? BoxDecoration(
                   color: theme.colorScheme.error.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(2),
                 )
               : null,
-          child: Text(bytes[i].toRadixString(16).padLeft(2, '0').toUpperCase(),
+          child: Text(bytes[offset + i].toRadixString(16).padLeft(2, '0').toUpperCase(),
               style: mono.copyWith(
-                color: marks.contains(i) ? theme.colorScheme.error : null,
-                fontWeight: marks.contains(i) ? FontWeight.w600 : FontWeight.w400,
+                color: (mask >> i) & 1 == 1 ? theme.colorScheme.error : null,
+                fontWeight: (mask >> i) & 1 == 1 ? FontWeight.w600 : FontWeight.w400,
               )),
         ),
     ]);
@@ -277,20 +283,23 @@ class _HexDiffPageState extends State<HexDiffPage> {
       off.toRadixString(16).toUpperCase().padLeft(8, '0');
 }
 
-/// 对齐后的一行（左右各 16 字节 + 差异位置）。
+/// 对齐后的一行（起始偏移 + 两侧长度 + 差异位掩码）。
+///
+/// 刻意**不持有字节副本**：原始内容在 State 的 `_left` / `_right` 里，
+/// 行对象只记位置。一个 16MB 的文件会有 100 万行，每行存两份 16 字节数组
+/// 等于凭空造出 200 万个对象 —— 这是之前滚动卡顿与内存压力的主因。
 class _HexRow {
   final int offset;
-  final Uint8List left;
-  final Uint8List right;
+  final int leftLen;
+  final int rightLen;
 
-  /// 左右共同的字节位置（0..15）里哪些不同。
-  final Set<int> marks;
-
+  /// 位掩码：第 i 位为 1 表示第 i 个字节不同（i ∈ 0..15）。
+  final int marks;
 
   const _HexRow({
     required this.offset,
-    required this.left,
-    required this.right,
+    required this.leftLen,
+    required this.rightLen,
     required this.marks,
   });
 }

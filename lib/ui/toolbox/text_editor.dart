@@ -3855,7 +3855,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 child: Text(
                   declarationsOnly
                       ? localizations.editorDefinitionsOf(name)
-                      : localizations.editorReferencesOf(name, hits.length),
+                      : localizations.editorReferencesOf(hits.length, name),
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

@@ -132,7 +132,9 @@ class _ExternalProxyDialogState extends State<ExternalProxyDialog> {
                             LengthLimitingTextInputFormatter(5),
                             FilteringTextInputFormatter.allow(RegExp("[0-9]"))
                           ],
-                          onChanged: (val) => externalProxy.port = int.parse(val),
+                          // 删空输入框时 val 是 ''，int.parse('') 会抛 FormatException
+                          //（每敲一下解析一次 = 一删就崩）。
+                          onChanged: (val) => externalProxy.port = int.tryParse(val),
                           validator: (val) => val == null || val.isEmpty ? localizations.cannotBeEmpty : null,
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(horizontal: 8),

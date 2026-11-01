@@ -167,7 +167,14 @@ class RewriteReplaceState extends State<MobileRewriteReplace> {
   Widget body() {
     bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
     var rewriteItem = items.firstWhere(
-        (item) => item.type == RewriteType.replaceRequestBody || item.type == RewriteType.replaceResponseBody);
+        (item) => item.type == RewriteType.replaceRequestBody || item.type == RewriteType.replaceResponseBody,
+        orElse: () {
+          // 规则里可能没有 body 项（老数据 / 导入 / 用户删过）：原来这里直接抛
+          // StateError，整个编辑页白屏。补一个默认项并挂进列表。
+          final created = RewriteItem(RewriteType.replaceRequestBody, false);
+          items.add(created);
+          return created;
+        });
 
     return ListView(physics: const ClampingScrollPhysics(), children: [
       Row(mainAxisAlignment: MainAxisAlignment.start, crossAxisAlignment: CrossAxisAlignment.center, children: [
@@ -292,7 +299,13 @@ class RewriteReplaceState extends State<MobileRewriteReplace> {
   //headers
   Widget headers() {
     var rewriteItem = items.firstWhere(
-        (item) => item.type == RewriteType.replaceRequestHeader || item.type == RewriteType.replaceResponseHeader);
+        (item) => item.type == RewriteType.replaceRequestHeader || item.type == RewriteType.replaceResponseHeader,
+        orElse: () {
+          // 同上：缺 header 项时补默认项，别让整页白屏。
+          final created = RewriteItem(RewriteType.replaceRequestHeader, false);
+          items.add(created);
+          return created;
+        });
 
     return ListView(physics: const ClampingScrollPhysics(), children: [
       Row(mainAxisAlignment: MainAxisAlignment.start, crossAxisAlignment: CrossAxisAlignment.center, children: [

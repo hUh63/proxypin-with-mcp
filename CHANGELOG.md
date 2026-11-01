@@ -24,7 +24,13 @@
 排查（第九轮）：
 - 三方合并的自动合并曾把「只有他改过」的区段整段丢掉（默认 choice 恒为 mine），已修；
 - `_openFile` 抽出 `_openPath(path)`，供「工作区跳转」按路径打开复用；
-- arb 死键 12 个（历史遗留，不影响功能）。
+- **十六进制对比内存**：`_HexRow` 不再为每行复制两份 16 字节切片（16MB 文件 = 200 万个
+  小 Uint8List），改为只存 offset + 长度 + 差异位掩码，渲染时按 offset 读原始 buffer；
+- **移动端外部代理端口**：`int.parse(val)` 改 `int.tryParse`（删空输入框即抛）；
+- **扫二维码连接设备**：`host!` / `int.parse(port!)` 改安全解析，残缺二维码不再崩；
+- **改写规则编辑页**：`body()` / `headers()` 的 `firstWhere` 缺 orElse，规则里没有
+  对应项时整页白屏（StateError），桌面 + 移动各补默认项；
+- l10n：`editorReferencesOf` 参数顺序传反（编译错），已修。
 
 ## v1.67.205 (2026-11-01)
 

@@ -440,16 +440,29 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
     }
 
     if (scanRes.startsWith("http")) {
-      launchUrl(Uri.parse(scanRes), mode: LaunchMode.externalApplication);
+      // 扫到的 URL 可能畸形（二维码残缺 / 手输），Uri.parse 会直接抛。
+      final uri = Uri.tryParse(scanRes);
+      if (uri != null) {
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (e) {
+          logger.w('launch scanned url failed', error: e);
+        }
+      }
       return;
     }
 
     if (scanRes.startsWith("proxypin://connect")) {
-      Uri uri = Uri.parse(scanRes);
-      var host = uri.queryParameters['host'];
-      var port = uri.queryParameters['port'];
-
-      doConnect(host!, int.parse(port!));
+      // host / port 都来自二维码：缺字段或端口非法时 `host!` / `int.parse` 会崩，
+      // 这里统一按「无效二维码」处理。
+      final uri = Uri.tryParse(scanRes);
+      final host = uri?.queryParameters['host'];
+      final port = int.tryParse(uri?.queryParameters['port'] ?? '');
+      if (uri == null || host == null || host.isEmpty || port == null || port <= 0 || port > 65535) {
+        if (mounted) FlutterToastr.show(localizations.invalidQRCode, context);
+        return;
+      }
+      doConnect(host, port);
       return;
     }
 
