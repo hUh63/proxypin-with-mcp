@@ -36,6 +36,7 @@ import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/utils/text_diff.dart';
+import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/utils/smart_completion.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -666,8 +667,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
     if (path == null) return;
     try {
-      final content = await File(path).readAsString();
-      target.text = content;
+      // 不能直接 readAsString（严格 UTF-8）：GBK 的 .txt/.properties 会直接抛，
+      // 用户看到的就是「文件打不开」。走带容错解码的公共入口。
+      final content = await readTextFileLenient(File(path));
+      target.text = content.text;
       if (!mounted) return;
       final name = path.split(Platform.pathSeparator).last;
       setState(() {

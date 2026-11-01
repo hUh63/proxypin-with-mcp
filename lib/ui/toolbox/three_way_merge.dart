@@ -37,6 +37,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/text_diff.dart';
+import 'package:proxypin/utils/text_file_reader.dart';
 
 class ThreeWayMergePage extends StatefulWidget {
   /// 从对比页进来时可以预填：左侧当基线、右侧当「我的」，用户只需再选「他的」。
@@ -101,7 +102,8 @@ class _ThreeWayMergePageState extends State<ThreeWayMergePage> {
         _toast(loc.mergeTooLarge);
         return;
       }
-      final text = await file.readAsString();
+      // 同对比页：GBK 文本不能走严格 UTF-8 的 readAsString。
+      final text = (await readTextFileLenient(file)).text;
       if (!mounted) return;
       setState(() {
         switch (which) {
