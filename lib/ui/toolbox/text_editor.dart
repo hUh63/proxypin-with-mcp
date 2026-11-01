@@ -3934,6 +3934,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         if (!identical(target, _doc)) _activate(target);
       } else {
         await _openPath(path);
+        if (!mounted) return;
+        // 点中的可能是二进制 / 压缩包，`_openPath` 会转去预览页而不切文档；
+        // 这种情况下再「定位」就会跳到当前文档的错误位置，直接收手。
+        if (_doc?.path != path) return;
       }
     }
     // 切换 / 打开文档是异步的（还会重建 controller），等一帧再定位。

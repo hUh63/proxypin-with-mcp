@@ -662,6 +662,44 @@ List<DiffRow> alignedDiffRows(String left, String right,
 }
 
 
+/// 把**连续未变**的行折叠成一行摘要（对标 VS Code 的 Fold Unchanged Regions）。
+///
+/// - 连续等值行超过 [threshold] 才折；
+/// - [expanded] 里存的是「被折叠段在未折叠列表里的起始下标」，用户可以逐段展开；
+/// - 摘要文案由 [label] 给（引擎不碰 i18n）。
+///
+/// 返回的新列表里，折叠行是 `DiffRow(equal, null, label, null, label, foldFrom: 起点)`，
+/// UI 侧靠 `DiffRow.isFold` / `DiffRow.foldFrom` 判断并可点击展开。
+List<DiffRow> foldUnchangedRuns(
+  List<DiffRow> rows, {
+  int threshold = 6,
+  Set<int> expanded = const {},
+  required String Function(int count) label,
+}) {
+  final out = <DiffRow>[];
+  var i = 0;
+  while (i < rows.length) {
+    if (rows[i].type != DiffRowType.equal) {
+      out.add(rows[i]);
+      i++;
+      continue;
+    }
+    var j = i;
+    while (j < rows.length && rows[j].type == DiffRowType.equal) {
+      j++;
+    }
+    final count = j - i;
+    if (count > threshold && !expanded.contains(i)) {
+      final text = label(count);
+      out.add(DiffRow(DiffRowType.equal, null, text, null, text, foldFrom: i));
+    } else {
+      out.addAll(rows.sublist(i, j));
+    }
+    i = j;
+  }
+  return out;
+}
+
 // ==================== 三方合并 ====================
 
 /// 三方合并里某个变更区的取值来源。

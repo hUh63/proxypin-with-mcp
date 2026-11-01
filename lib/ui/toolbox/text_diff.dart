@@ -1628,35 +1628,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
     return out;
   }
 
-  /// 折叠连续未变的段落：连续等值行超过 [foldThreshold] 折成一行摘要，点击展开。
-  ///
-  /// 这是 VS Code「Fold Unchanged Regions」/ Beyond Compare「忽略未更改行」的等价物：
-  /// 长文件里真正需要看的往往只有几处，其余段落没必要占屏。
-  List<DiffRow> _foldRuns(List<DiffRow> rows) {
-    const foldThreshold = 6;
-    final out = <DiffRow>[];
-    var i = 0;
-    while (i < rows.length) {
-      if (rows[i].type != DiffRowType.equal) {
-        out.add(rows[i]);
-        i++;
-        continue;
-      }
-      var j = i;
-      while (j < rows.length && rows[j].type == DiffRowType.equal) {
-        j++;
-      }
-      final count = j - i;
-      if (count > foldThreshold && !_expandedFolds.contains(i)) {
-        final label = '⋯  $count ${localizations.diffUnchangedLines}';
-        out.add(DiffRow(DiffRowType.equal, null, label, null, label, foldFrom: i));
-      } else {
-        out.addAll(rows.sublist(i, j));
-      }
-      i = j;
-    }
-    return out;
-  }
+  /// 折叠连续未变的段落（引擎侧 [foldUnchangedRuns]，这里只提供文案）。
+  List<DiffRow> _foldRuns(List<DiffRow> rows) => foldUnchangedRuns(
+        rows,
+        expanded: _expandedFolds,
+        label: (n) => '⋯  $n ${localizations.diffUnchangedLines}',
+      );
 
   /// 展开 / 收起一个折叠段。
   void _toggleFold(int from) {
