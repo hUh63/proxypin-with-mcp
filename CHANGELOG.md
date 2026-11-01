@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.67.203 (2026-11-01)
+
+`add()` 改成收 `String?`：device_info_plus 各平台的字段可空性不一致（Linux 的
+`prettyName` / `version` 都是可空的），逐个写 `?? ''` 只会漏，统一在入口兜住。
+
 ## v1.67.202 (2026-11-01)
 
 修 `LinuxDeviceInfo.prettyName` 可能为 null（容器里的精简发行版）导致的编译错误。

@@ -72,9 +72,12 @@ class _DeviceInfoPageState extends State<DeviceInfoPage> {
   Future<void> _load() async {
     final loc = AppLocalizations.of(context)!;
     final rows = <({String group, String key, String value})>[];
-    void add(String g, String k, String v) {
-      if (v.trim().isEmpty) return;
-      rows.add((group: g, key: k, value: v.trim()));
+    // 收 String? —— device_info_plus 各平台的字段可空性不一致（Linux 的
+    // prettyName / version 都是可空的），这里统一兜住，调用处不用逐个写 ?? ''。
+    void add(String g, String k, String? v) {
+      final s = (v ?? '').trim();
+      if (s.isEmpty) return;
+      rows.add((group: g, key: k, value: s));
     }
 
     // ---- 系统 ----
@@ -103,8 +106,7 @@ class _DeviceInfoPageState extends State<DeviceInfoPage> {
         add(loc.devSystem, 'os', '${m.osRelease}');
       } else if (Platform.isLinux) {
         final l = await plugin.linuxInfo;
-        // prettyName 可能为空（容器里的精简发行版），别让它变成 null 传给 add。
-        add(loc.devSystem, 'distro', l.prettyName ?? '');
+        add(loc.devSystem, 'distro', l.prettyName);
         // device_info_plus 的 LinuxDeviceInfo 没有 kernelVersion 字段，
         // 能拿到的是发行版名与版本号。
         add(loc.devSystem, 'version', l.version);
