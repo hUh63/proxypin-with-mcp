@@ -3561,9 +3561,35 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'up', child: Text(localizations.editorMoveLineUp)),
         PopupMenuItem(value: 'down', child: Text(localizations.editorMoveLineDown)),
         PopupMenuItem(value: 'join', child: Text(localizations.editorJoinLine)),
+        const PopupMenuDivider(),
+        PopupMenuItem(value: 'indent', child: Text(localizations.editorIndent)),
+        PopupMenuItem(value: 'outdent', child: Text(localizations.editorOutdent)),
+        PopupMenuItem(value: 'sortAsc', child: Text(localizations.editorSortAsc)),
+        PopupMenuItem(value: 'sortDesc', child: Text(localizations.editorSortDesc)),
+        PopupMenuItem(value: 'dedupe', child: Text(localizations.editorDedupeLines)),
+        PopupMenuItem(value: 'insertAbove', child: Text(localizations.editorInsertLineAbove)),
+        PopupMenuItem(value: 'insertBelow', child: Text(localizations.editorInsertLineBelow)),
       ],
     );
-    if (chosen != null) _lineOp(chosen);
+    if (chosen == null) return;
+    switch (chosen) {
+      case 'indent':
+        _indentLines(outdent: false);
+      case 'outdent':
+        _indentLines(outdent: true);
+      case 'sortAsc':
+        _sortLines(ascending: true);
+      case 'sortDesc':
+        _sortLines(ascending: false);
+      case 'dedupe':
+        _dedupeLines();
+      case 'insertAbove':
+        _insertBlankLine(above: true);
+      case 'insertBelow':
+        _insertBlankLine(above: false);
+      default:
+        _lineOp(chosen);
+    }
   }
 
   /// 行操作：VS Code 里是 Ctrl+Shift+K（删除行）、Alt+Shift+↑/↓（移动行）这一组。
@@ -3614,6 +3640,118 @@ class _TextEditorPageState extends State<TextEditorPage> {
         // 合并时去掉下一行的前导缩进（VS 也这么做），否则接出来一长串空格。
         final next = text.substring(nextStart, nextEnd).trimLeft();
         controller.replaceRange(span.end, nextEnd, next);
+    }
+  }
+
+  /// 缩进 / 反缩进：有选区就作用于选中的全部行，否则当前行。
+  void _indentLines({required bool outdent}) {
+    final controller = _controller;
+    final span = _currentLineSpan();
+    if (controller == null || span == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    var start = span.start;
+    var end = span.end;
+    if (sel.isValid && sel.start != sel.end) {
+      final a = sel.start.clamp(0, text.length);
+      final b = sel.end.clamp(0, text.length);
+      start = a == 0 ? 0 : text.lastIndexOf('\n', a - 1) + 1;
+      final nl = text.indexOf('\n', b);
+      end = nl < 0 ? text.length : nl;
+    }
+    final block = text.substring(start, end);
+    final unit = _prefs.useTabs ? '\t' : ' ' * _prefs.tabSize;
+    final out = block.split('\n').map((l) {
+      if (!outdent) return '$unit$l';
+      if (l.startsWith(unit)) return l.substring(unit.length);
+      // 不足一个单位的（混用空格 / Tab 的文件）能去多少去多少。
+      var i = 0;
+      while (i < l.length && i < _prefs.tabSize && l[i] == ' ') {
+        i++;
+      }
+      return l.substring(i);
+    }).join('\n');
+    if (out == block) return;
+    controller.replaceRange(start, end, out);
+    controller.selection = TextSelection(baseOffset: start, extentOffset: start + out.length);
+  }
+
+  /// 行排序（VS 的 Sort Lines）：有选区排选中行，否则整篇。
+  void _sortLines({required bool ascending}) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    var start = 0;
+    var end = text.length;
+    if (sel.isValid && sel.start != sel.end) {
+      final a = sel.start.clamp(0, text.length);
+      final b = sel.end.clamp(0, text.length);
+      start = a == 0 ? 0 : text.lastIndexOf('\n', a - 1) + 1;
+      final nl = text.indexOf('\n', b);
+      end = nl < 0 ? text.length : nl;
+    }
+    if (end <= start) return;
+    final lines = text.substring(start, end).split('\n');
+    if (lines.length < 2) return;
+    final sorted = List<String>.from(lines);
+    ascending ? sorted.sort() : sorted.sort((x, y) => y.compareTo(x));
+    final out = sorted.join('\n');
+    if (out == lines.join('\n')) return;
+    controller.replaceRange(start, end, out);
+    controller.selection = TextSelection(baseOffset: start, extentOffset: start + out.length);
+  }
+
+  /// 删除重复行（保留首次出现）；有选区时只处理选中部分。
+  void _dedupeLines() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    var start = 0;
+    var end = text.length;
+    if (sel.isValid && sel.start != sel.end) {
+      final a = sel.start.clamp(0, text.length);
+      final b = sel.end.clamp(0, text.length);
+      start = a == 0 ? 0 : text.lastIndexOf('\n', a - 1) + 1;
+      final nl = text.indexOf('\n', b);
+      end = nl < 0 ? text.length : nl;
+    }
+    if (end <= start) return;
+    final lines = text.substring(start, end).split('\n');
+    final seen = <String>{};
+    final kept = <String>[];
+    for (final l in lines) {
+      // 空行不参与去重（否则整篇的空行全没了，观感很差）。
+      if (l.trim().isEmpty) {
+        kept.add(l);
+        continue;
+      }
+      if (seen.add(l)) kept.add(l);
+    }
+    if (kept.length == lines.length) {
+      _toast(localizations.editorDedupeNone);
+      return;
+    }
+    final out = kept.join('\n');
+    controller.replaceRange(start, end, out);
+    controller.selection = TextSelection(baseOffset: start, extentOffset: start + out.length);
+    _toast(localizations.editorDedupeDone('${lines.length - kept.length}'));
+  }
+
+  /// 在当前行上方 / 下方插入一个空行（VS 的 Ctrl+Enter / Ctrl+Shift+Enter）。
+  void _insertBlankLine({required bool above}) {
+    final controller = _controller;
+    final span = _currentLineSpan();
+    if (controller == null || span == null) return;
+    if (above) {
+      controller.replaceRange(span.start, span.start, '\n');
+      controller.selection = TextSelection.collapsed(offset: span.start);
+    } else {
+      // 行尾（有换行时就是换行符的位置，末行则是文本末尾）插一个换行 → 下方多一个空行。
+      final at = span.end;
+      controller.replaceRange(at, at, '\n');
+      controller.selection = TextSelection.collapsed(offset: at + 1);
     }
   }
 

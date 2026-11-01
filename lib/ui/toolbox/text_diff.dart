@@ -17,6 +17,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
@@ -61,6 +62,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 并排还是上下。默认并排（左右两侧），用户切过就记住。
   static const String _sideKey = 'text_diff_side_by_side_v1';
+  static const String _fontKey = 'text_diff_font_size_v1';
   bool _sideBySide = true;
 
   late final CodeForgeController _left;
@@ -76,8 +78,19 @@ class _TextDiffPageState extends State<TextDiffPage> {
   bool _ignoreCase = false;
   bool _ignoreWhitespace = false;
 
-  /// 对齐并排视图（逐行对齐、差异上底色），用于快速看清多段差异的对应关系。
-  bool _aligned = false;
+  /// 对齐并排视图（逐行对齐、差异上底色）：这是主视图，默认开。
+  /// 想直接编辑两侧文本时切到「编辑视图」（原码流视图）。
+  bool _aligned = true;
+
+  /// 显示字号（底部 +/- 调节）。
+  double _fontSize = 13.5;
+
+  /// 对齐视图的滚动控制器（跳转差异要按行高精确定位）。
+  final ScrollController _alignedScroll = ScrollController();
+
+  /// 对齐视图的行缓存：每次 build 重算 diff 太贵（几千行会明显顿）。
+  List<DiffRow> _alignedRowsCache = const <DiffRow>[];
+  String _alignedRowsKey = '';
   String? _summary;
 
   /// 差异块（用于导航、分类与整块替换）。
@@ -117,6 +130,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _findRight = FindController(_right);
     // 读取失败不影响使用（默认左右并排），但 catchError 必须返回同类型值，
     // 否则会逃逸成未捕获异步错误（这个坑踩过）。
+    unawaited(SharedPreferencesAsync().getDouble(_fontKey).then((v) {
+      if (!mounted || v == null || v == _fontSize) return;
+      setState(() => _fontSize = v.clamp(11.0, 22.0));
+    }).catchError((_) => null));
     unawaited(SharedPreferencesAsync().getBool(_sideKey).then((v) {
       if (!mounted || v == null || v == _sideBySide) return;
       setState(() => _sideBySide = v);
@@ -141,6 +158,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
+    _alignedScroll.dispose();
     _persistTimer?.cancel();
     _longPressTimer?.cancel();
     _left.removeListener(_onLeftChanged);
@@ -368,6 +386,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final b = _blocks[index];
     _gotoLine(_left, b.leftStart);
     _gotoLine(_right, b.rightStart);
+    _scrollToCurrentRow();
+  }
+
+  /// 对齐视图里滚到当前差异（留一行上下文）。
+  void _scrollToCurrentRow() {
+    if (!_aligned || !_alignedScroll.hasClients) return;
+    final i = _currentRowIndex(_alignedRows());
+    if (i < 0) return;
+    final target = (i * _rowHeight - _rowHeight).clamp(0.0, _alignedScroll.position.maxScrollExtent);
+    _alignedScroll.animateTo(target,
+        duration: const Duration(milliseconds: 160), curve: Curves.easeOut);
   }
 
   /// 把编辑器滚动到 [line]（0-based），并在该行行首放置光标。两侧都会执行，
@@ -629,21 +658,22 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 ),
               ),
         body: Column(children: [
+          _fileBar(),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _legend(),
-              const SizedBox(width: 4),
-              Expanded(child: Align(alignment: Alignment.topRight, child: _toolbar())),
+              Expanded(child: _legend()),
+              _toolbar(),
             ],
           ),
           const Divider(height: 1, thickness: 0.3),
           Expanded(
             child: _aligned
                 ? _alignedView()
-                // 默认左右两侧对比（和桌面的 diff 工具一致），窄屏也照样并排；
-                // 觉得太挤的可以用工具栏那个按钮切成上下。
-                : (_sideBySide ? _wideLayout() : _narrowLayout()),
+                // 默认对齐视图（逐行对齐 + 行号列）；两侧都还空着时退回编辑视图，
+                // 否则用户进来连输入框都看不到，得先去点 ✏️。
+                : (!_aligned || (_left.text.isEmpty && _right.text.isEmpty))
+                    ? (_sideBySide ? _wideLayout() : _narrowLayout())
+                    : _alignedView(),
           ),
           if (_summary != null)
             Container(
@@ -659,7 +689,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   ),
               ]),
             ),
-          _snippetBar(),
+          // 快捷插入只在编辑视图有意义（对齐视图是只读渲染）。
+          if (!_aligned) _snippetBar(),
+          _bottomBar(),
           AnimatedBuilder(
             animation: Listenable.merge([_findLeft, _findRight]),
             builder: (_, __) => FindPanelView(
@@ -668,6 +700,121 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ]),
       ),
     );
+  }
+
+  void _changeFontSize(double delta) {
+    final next = (_fontSize + delta).clamp(11.0, 22.0);
+    if (next == _fontSize) return;
+    setState(() => _fontSize = next);
+    unawaited(SharedPreferencesAsync().setDouble(_fontKey, next));
+  }
+
+  /// 交换左右（工具栏的 ↔）。文本、快照、标注一起换。
+  void _swapSides() {
+    final l = _left.text;
+    final r = _right.text;
+    _left.text = r;
+    _right.text = l;
+    _leftSnapshot = _right.text;
+    _rightSnapshot = _left.text;
+    _navIndex = -1;
+    _compare();
+    setState(() {});
+    _toastText(localizations.diffSwapped);
+  }
+
+  void _toastText(String msg) {
+    if (!mounted) return;
+    FlutterToastr.show(msg, context, duration: 2);
+  }
+
+  /// 顶部「更多」菜单：把不常用的开关收进来，主栏只留最常用的几个。
+  Widget _moreMenu() {
+    final color = Theme.of(context).colorScheme.primary;
+    return PopupMenuButton<String>(
+      tooltip: localizations.more,
+      icon: const Icon(Icons.more_vert, size: 20),
+      onSelected: (v) {
+        switch (v) {
+          case 'ignoreCase':
+            setState(() => _ignoreCase = !_ignoreCase);
+            _compare();
+          case 'ignoreSpace':
+            setState(() => _ignoreWhitespace = !_ignoreWhitespace);
+            _compare();
+          case 'wrap':
+            setState(() => _wrap = !_wrap);
+          case 'syntax':
+            unawaited(_checkSyntax());
+          case 'swapLayout':
+            final next = !_sideBySide;
+            setState(() => _sideBySide = next);
+            unawaited(SharedPreferencesAsync().setBool(_sideKey, next));
+          case 'clear':
+            _clearAll();
+        }
+      },
+      itemBuilder: (_) => [
+        CheckedPopupMenuItem(value: 'ignoreCase', checked: _ignoreCase, child: Text(localizations.diffIgnoreCase)),
+        CheckedPopupMenuItem(
+            value: 'ignoreSpace', checked: _ignoreWhitespace, child: Text(localizations.diffIgnoreWhitespace)),
+        CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
+        PopupMenuItem(value: 'swapLayout', child: Text(
+            _sideBySide ? localizations.diffStacked : localizations.diffSideBySide)),
+        PopupMenuItem(value: 'syntax', child: Text(localizations.diffSyntaxCheck)),
+        PopupMenuItem(value: 'clear', child: Text(localizations.clear)),
+      ],
+    );
+  }
+
+  /// 底部操作栏：`<` 上一处、`→` 下一处、`+/-` 字号、`*` 切编辑、`=` 统计、`/` 查找。
+  Widget _bottomBar() {
+    Widget btn(String label, String tip, VoidCallback? onTap, {bool active = false}) {
+      final color = active ? Theme.of(context).colorScheme.primary : null;
+      return Expanded(
+        child: Tooltip(
+          message: tip,
+          child: InkWell(
+            onTap: onTap,
+            child: Container(
+              height: 34,
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontFamily: 'monospace',
+                  color: onTap == null ? Colors.grey : color,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final hasDiff = _blocks.isNotEmpty;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.4))),
+      ),
+      child: Row(children: [
+        btn('<', localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
+        btn('→', localizations.diffNext, hasDiff ? () => _navigate(1) : null),
+        btn('+', localizations.editorZoomIn, () => _changeFontSize(1)),
+        btn('-', localizations.editorZoomOut, () => _changeFontSize(-1)),
+        btn('*', localizations.compare, () => setState(() => _aligned = !_aligned), active: _aligned),
+        btn('=', localizations.editorStats, _showDiffStats),
+        btn('/', localizations.search, () => _toggleFind(_leftActive ? _findLeft : _findRight)),
+      ]),
+    );
+  }
+
+  void _showDiffStats() {
+    final stats = diffStats(_blocks);
+    _toastText(localizations.diffStatsSummary(
+        '${stats.added}', '${stats.deleted}', '${stats.modified}'));
   }
 
   /// 左上角图例：三行「颜色 + 文本」的小号示例，固定显示（不横向滑动）。
@@ -702,68 +849,68 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final hasDiff = _blocks.isNotEmpty;
     final activeUndo = _leftActive ? _leftUndo : _rightUndo;
     return Container(
-      padding: const EdgeInsets.only(top: 2, bottom: 2, right: 12),
-      child: Wrap(
-        spacing: 0,
-        runSpacing: 0,
-        children: [
-          AnimatedBuilder(
-            animation: Listenable.merge([_findLeft, _findRight]),
-            builder: (_, __) {
-              final f = _leftActive ? _findLeft : _findRight;
-              return _iconBtn(Icons.search, localizations.search, () => _toggleFind(f),
-                  tint: f.isActive ? color : null);
-            },
+      padding: const EdgeInsets.only(right: 4),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        _iconBtn(Icons.swap_horiz, localizations.diffSwapSides, _swapSides),
+        _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
+        _iconBtn(Icons.keyboard_arrow_down, localizations.diffNext, hasDiff ? () => _navigate(1) : null),
+        _iconBtn(Icons.save_outlined, localizations.diffSaveRight, _saveResult),
+        _iconBtn(Icons.edit_outlined, localizations.diffEditMode,
+            () => setState(() => _aligned = !_aligned), tint: _aligned ? null : color),
+        _moreMenu(),
+      ]),
+    );
+  }
+
+  /// 保存「修改后」那一侧的文本到文件（图片里的 💾）。
+  Future<void> _saveResult() async {
+    final text = _right.text;
+    if (text.isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    try {
+      await FilePicker.saveFile(
+          fileName: 'diff-right.txt', bytes: Uint8List.fromList(utf8.encode(text)));
+      if (mounted) _toastText(localizations.copied);
+    } catch (e) {
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
+  /// 文件名行：左「原文」、中间差异计数、右「修改后」（对应图片里的布局）。
+  Widget _fileBar() {
+    final total = _blocks.length;
+    final pos = total == 0 ? 0 : (_navIndex < 0 ? 1 : _navIndex + 1);
+    final color = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 3, 10, 3),
+      color: color.surfaceContainerHighest.withValues(alpha: 0.4),
+      child: Row(children: [
+        Expanded(
+          child: Text(localizations.diffOriginal,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: color.onSurfaceVariant)),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+          decoration: BoxDecoration(
+            color: color.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(9),
           ),
-          _iconBtn(Icons.undo, localizations.editorUndo, activeUndo.canUndo ? _undo : null),
-          _iconBtn(Icons.redo, localizations.editorRedo, activeUndo.canRedo ? _redo : null),
-          _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
-          _iconBtn(Icons.keyboard_arrow_down, localizations.diffNext, hasDiff ? () => _navigate(1) : null),
-          _iconBtn(Icons.compare_arrows, localizations.compare, _onTextChange),
-          _iconBtn(
-            Icons.text_format,
-            localizations.diffIgnoreCase,
-            () {
-              setState(() => _ignoreCase = !_ignoreCase);
-              _compare();
-            },
-            tint: _ignoreCase ? color : null,
-          ),
-          _iconBtn(
-            Icons.space_bar,
-            localizations.diffIgnoreWhitespace,
-            () {
-              setState(() => _ignoreWhitespace = !_ignoreWhitespace);
-              _compare();
-            },
-            tint: _ignoreWhitespace ? color : null,
-          ),
-          _iconBtn(Icons.delete_outline, localizations.clear, _clearAll),
-          _iconBtn(
-            Icons.wrap_text,
-            localizations.wordWrap,
-            () => setState(() => _wrap = !_wrap),
-            tint: _wrap ? color : null,
-          ),
-          _iconBtn(
-            _sideBySide ? Icons.horizontal_split : Icons.vertical_split,
-            _sideBySide ? localizations.diffStacked : localizations.diffSideBySide,
-            () {
-              final next = !_sideBySide;
-              setState(() => _sideBySide = next);
-              unawaited(SharedPreferencesAsync().setBool(_sideKey, next));
-            },
-            tint: _sideBySide ? null : color,
-          ),
-          _iconBtn(
-            Icons.view_column_outlined,
-            localizations.diffAlignedView,
-            () => setState(() => _aligned = !_aligned),
-            tint: _aligned ? color : null,
-          ),
-          _iconBtn(Icons.fact_check_outlined, localizations.diffSyntaxCheck, _checkSyntax),
-        ],
-      ),
+          child: Text('$pos/$total',
+              style: TextStyle(
+                  fontSize: 11, fontFamily: 'monospace', color: color.primary, fontWeight: FontWeight.w600)),
+        ),
+        Expanded(
+          child: Text(localizations.diffChanged,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: color.onSurfaceVariant)),
+        ),
+      ]),
     );
   }
 
@@ -982,47 +1129,106 @@ class _TextDiffPageState extends State<TextDiffPage> {
     ]);
   }
 
-  /// 对齐并排视图：逐行对齐左右（缺失侧留空），差异行上底色。
-  /// 解决窄屏 / 行数不等时「各显示自己行号、多段差异看不出对应关系」的问题。
-  Widget _alignedView() {
-    final rows = alignedDiffRows(_left.text, _right.text,
+  /// 对齐视图的行（带缓存）：文本或忽略选项变了才重算。
+  List<DiffRow> _alignedRows() {
+    final key = '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace';
+    if (key == _alignedRowsKey) return _alignedRowsCache;
+    _alignedRowsKey = key;
+    _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
         ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
+    return _alignedRowsCache;
+  }
+
+  /// 当前差异块在「对齐行列表」里的行号（找不到返回 -1）。
+  int _currentRowIndex(List<DiffRow> rows) {
+    if (_navIndex < 0 || _navIndex >= _blocks.length) return -1;
+    final b = _blocks[_navIndex];
+    final wantLeft = b.leftStart + 1;
+    final wantRight = b.rightStart + 1;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].leftLine == wantLeft || rows[i].rightLine == wantRight) return i;
+    }
+    return -1;
+  }
+
+  double get _rowHeight => (_fontSize * 1.65).clamp(19.0, 40.0);
+
+  /// 对齐并排视图：左侧「行号 + 文本」，中间细分隔，右侧同构。
+  /// 差异行上底色（新增绿 / 删除红 / 修改橙），当前差异行左侧加一条主题色竖线。
+  Widget _alignedView() {
+    final rows = _alignedRows();
     if (rows.isEmpty) {
       return Center(
         child: Text(localizations.diffNoDifference, style: TextStyle(color: Colors.grey[600])),
       );
     }
-    final isDark = Theme.brightnessOf(context) == Brightness.dark;
-    Color? bgOf(DiffRowType t) {
-      switch (t) {
-        case DiffRowType.added:
-          return Colors.green.withValues(alpha: isDark ? 0.22 : 0.15);
-        case DiffRowType.deleted:
-          return Colors.red.withValues(alpha: isDark ? 0.22 : 0.15);
-        case DiffRowType.modified:
-          return Colors.orange.withValues(alpha: isDark ? 0.22 : 0.15);
-        case DiffRowType.equal:
-          return null;
-      }
-    }
-
+    final current = _currentRowIndex(rows);
     return Scrollbar(
+      controller: _alignedScroll,
       child: ListView.builder(
+        controller: _alignedScroll,
+        itemExtent: _rowHeight,
         itemCount: rows.length,
-        itemBuilder: (_, i) {
-          final r = rows[i];
-          final bg = bgOf(r.type);
-          return IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: _alignedCell(r.leftLine, r.leftText, bg)),
-                const VerticalDivider(width: 1, thickness: 0.2),
-                Expanded(child: _alignedCell(r.rightLine, r.rightText, bg)),
-              ],
-            ),
-          );
-        },
+        itemBuilder: (_, i) => _alignedRow(rows[i], isCurrent: i == current),
+      ),
+    );
+  }
+
+  Widget _alignedRow(DiffRow r, {required bool isCurrent}) {
+    final isDark = Theme.brightnessOf(context) == Brightness.dark;
+    Color? bg;
+    switch (r.type) {
+      case DiffRowType.added:
+        bg = Colors.green.withValues(alpha: isDark ? 0.20 : 0.16);
+      case DiffRowType.deleted:
+        bg = Colors.red.withValues(alpha: isDark ? 0.22 : 0.14);
+      case DiffRowType.modified:
+        bg = Colors.orange.withValues(alpha: isDark ? 0.18 : 0.12);
+      case DiffRowType.equal:
+        bg = null;
+    }
+    final numStyle = TextStyle(fontSize: _fontSize - 2, color: Colors.grey[600], height: 1.0);
+    final textStyle = TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0);
+    final divider = Theme.of(context).dividerColor.withValues(alpha: 0.35);
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(
+          left: BorderSide(
+              color: isCurrent ? Theme.of(context).colorScheme.primary : Colors.transparent,
+              width: 2),
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 34,
+            child: Text(r.leftLine?.toString() ?? '',
+                textAlign: TextAlign.right, maxLines: 1, style: numStyle),
+          ),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(r.leftText ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                softWrap: false,
+                style: textStyle),
+          ),
+          Container(width: 1, height: _rowHeight, color: divider),
+          SizedBox(
+            width: 34,
+            child: Text(r.rightLine?.toString() ?? '',
+                textAlign: TextAlign.right, maxLines: 1, style: numStyle),
+          ),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(r.rightText ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                softWrap: false,
+                style: textStyle),
+          ),
+        ],
       ),
     );
   }

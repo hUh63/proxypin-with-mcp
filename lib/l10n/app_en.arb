@@ -4973,5 +4973,42 @@
   "editorTooLargeToProcess": "File is too large for this operation",
   "editorPasteTooLarge": "Clipboard content is too large to paste",
   "diffSideBySide": "Side by side",
-  "diffStacked": "Stacked"
+  "diffStacked": "Stacked",
+  "more": "More",
+  "editorZoomIn": "Zoom in",
+  "editorZoomOut": "Zoom out",
+  "diffSwapSides": "Swap sides",
+  "diffSwapped": "Sides swapped",
+  "diffSaveRight": "Save right side",
+  "diffEditMode": "Edit",
+  "diffStatsSummary": "+{a} -{d} ~{m}",
+  "@diffStatsSummary": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "d": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "editorIndent": "Indent",
+  "editorOutdent": "Outdent",
+  "editorSortAsc": "Sort lines A→Z",
+  "editorSortDesc": "Sort lines Z→A",
+  "editorDedupeLines": "Remove duplicate lines",
+  "editorDedupeNone": "No duplicate lines",
+  "editorInsertLineAbove": "Insert line above",
+  "editorInsertLineBelow": "Insert line below",
+  "editorDedupeDone": "Removed {n} duplicate line(s)",
+  "@editorDedupeDone": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
 }

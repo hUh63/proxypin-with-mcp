@@ -2882,5 +2882,22 @@
   "editorTooLargeToProcess": "File terlalu besar untuk operasi ini",
   "editorPasteTooLarge": "Isi papan klip terlalu besar untuk ditempel",
   "diffSideBySide": "Berdampingan",
-  "diffStacked": "Bertumpuk"
+  "diffStacked": "Bertumpuk",
+  "more": "Lainnya",
+  "editorZoomIn": "Perbesar",
+  "editorZoomOut": "Perkecil",
+  "diffSwapSides": "Tukar sisi",
+  "diffSwapped": "Sisi ditukar",
+  "diffSaveRight": "Simpan sisi kanan",
+  "diffEditMode": "Edit",
+  "diffStatsSummary": "+{a} -{d} ~{m}",
+  "editorIndent": "Indentasi",
+  "editorOutdent": "Kurangi indentasi",
+  "editorSortAsc": "Urutkan baris A→Z",
+  "editorSortDesc": "Urutkan baris Z→A",
+  "editorDedupeLines": "Hapus baris duplikat",
+  "editorDedupeNone": "Tidak ada baris duplikat",
+  "editorInsertLineAbove": "Sisipkan baris di atas",
+  "editorInsertLineBelow": "Sisipkan baris di bawah",
+  "editorDedupeDone": "{n} baris duplikat dihapus"
 }

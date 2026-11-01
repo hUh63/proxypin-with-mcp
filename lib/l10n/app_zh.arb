@@ -4683,5 +4683,22 @@
   "editorTooLargeToProcess": "文件太大，已跳过该操作",
   "editorPasteTooLarge": "剪贴板内容太大，无法粘贴",
   "diffSideBySide": "左右并排",
-  "diffStacked": "上下堆叠"
+  "diffStacked": "上下堆叠",
+  "more": "更多",
+  "editorZoomIn": "放大字号",
+  "editorZoomOut": "缩小字号",
+  "diffSwapSides": "交换左右",
+  "diffSwapped": "已交换左右",
+  "diffSaveRight": "保存右侧文本",
+  "diffEditMode": "编辑",
+  "diffStatsSummary": "新增 {a} · 删除 {d} · 修改 {m}",
+  "editorIndent": "增加缩进",
+  "editorOutdent": "减少缩进",
+  "editorSortAsc": "行排序 A→Z",
+  "editorSortDesc": "行排序 Z→A",
+  "editorDedupeLines": "删除重复行",
+  "editorDedupeNone": "没有重复行",
+  "editorInsertLineAbove": "在上方插入行",
+  "editorInsertLineBelow": "在下方插入行",
+  "editorDedupeDone": "已删除 {n} 行重复内容"
 }

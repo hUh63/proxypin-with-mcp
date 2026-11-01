@@ -2882,5 +2882,22 @@
   "editorTooLargeToProcess": "Tệp quá lớn cho thao tác này",
   "editorPasteTooLarge": "Nội dung bộ nhớ tạm quá lớn để dán",
   "diffSideBySide": "Song song",
-  "diffStacked": "Xếp chồng"
+  "diffStacked": "Xếp chồng",
+  "more": "Thêm",
+  "editorZoomIn": "Phóng to",
+  "editorZoomOut": "Thu nhỏ",
+  "diffSwapSides": "Đổi bên",
+  "diffSwapped": "Đã đổi bên",
+  "diffSaveRight": "Lưu bên phải",
+  "diffEditMode": "Chỉnh sửa",
+  "diffStatsSummary": "+{a} -{d} ~{m}",
+  "editorIndent": "Thụt lề",
+  "editorOutdent": "Bỏ thụt lề",
+  "editorSortAsc": "Sắp xếp dòng A→Z",
+  "editorSortDesc": "Sắp xếp dòng Z→A",
+  "editorDedupeLines": "Xóa dòng trùng",
+  "editorDedupeNone": "Không có dòng trùng",
+  "editorInsertLineAbove": "Chèn dòng phía trên",
+  "editorInsertLineBelow": "Chèn dòng phía dưới",
+  "editorDedupeDone": "Đã xóa {n} dòng trùng"
 }

@@ -2882,5 +2882,22 @@
   "editorTooLargeToProcess": "ไฟล์ใหญ่เกินไปสำหรับการดำเนินการนี้",
   "editorPasteTooLarge": "เนื้อหาคลิปบอร์ดใหญ่เกินกว่าจะวาง",
   "diffSideBySide": "เคียงข้างกัน",
-  "diffStacked": "ซ้อนกัน"
+  "diffStacked": "ซ้อนกัน",
+  "more": "เพิ่มเติม",
+  "editorZoomIn": "ขยาย",
+  "editorZoomOut": "ย่อ",
+  "diffSwapSides": "สลับด้าน",
+  "diffSwapped": "สลับด้านแล้ว",
+  "diffSaveRight": "บันทึกด้านขวา",
+  "diffEditMode": "แก้ไข",
+  "diffStatsSummary": "+{a} -{d} ~{m}",
+  "editorIndent": "เพิ่มการเยื้อง",
+  "editorOutdent": "ลดการเยื้อง",
+  "editorSortAsc": "เรียงบรรทัด A→Z",
+  "editorSortDesc": "เรียงบรรทัด Z→A",
+  "editorDedupeLines": "ลบบรรทัดซ้ำ",
+  "editorDedupeNone": "ไม่มีบรรทัดซ้ำ",
+  "editorInsertLineAbove": "แทรกบรรทัดด้านบน",
+  "editorInsertLineBelow": "แทรกบรรทัดด้านล่าง",
+  "editorDedupeDone": "ลบบรรทัดซ้ำ {n} บรรทัด"
 }

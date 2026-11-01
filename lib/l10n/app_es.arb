@@ -2882,5 +2882,22 @@
   "editorTooLargeToProcess": "El archivo es demasiado grande para esta operación",
   "editorPasteTooLarge": "El contenido del portapapeles es demasiado grande",
   "diffSideBySide": "Lado a lado",
-  "diffStacked": "Apilado"
+  "diffStacked": "Apilado",
+  "more": "Más",
+  "editorZoomIn": "Ampliar",
+  "editorZoomOut": "Reducir",
+  "diffSwapSides": "Intercambiar lados",
+  "diffSwapped": "Lados intercambiados",
+  "diffSaveRight": "Guardar lado derecho",
+  "diffEditMode": "Editar",
+  "diffStatsSummary": "+{a} -{d} ~{m}",
+  "editorIndent": "Sangrar",
+  "editorOutdent": "Desangrar",
+  "editorSortAsc": "Ordenar líneas A→Z",
+  "editorSortDesc": "Ordenar líneas Z→A",
+  "editorDedupeLines": "Eliminar líneas duplicadas",
+  "editorDedupeNone": "Sin líneas duplicadas",
+  "editorInsertLineAbove": "Insertar línea arriba",
+  "editorInsertLineBelow": "Insertar línea abajo",
+  "editorDedupeDone": "Se eliminaron {n} líneas duplicadas"
 }
