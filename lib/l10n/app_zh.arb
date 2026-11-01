@@ -4704,5 +4704,16 @@
   "editorAutoPair": "自动补全成对符号",
   "editorSelectAllOccurrences": "选中所有出现处",
   "diffOnlyChanges": "只显示差异",
-  "diffUnchangedLines": "行未变"
+  "diffUnchangedLines": "行未变",
+  "diffSyncHScroll": "同步横向滚动",
+  "diffExportReport": "导出差异报告",
+  "diffReport": "差异报告",
+  "diffReportSaved": "差异报告已保存",
+  "editorCursorAbove": "在上方加光标",
+  "editorCursorBelow": "在下方加光标",
+  "editorClearCursors": "清除多光标",
+  "editorCompareDisk": "与磁盘文件比较",
+  "editorCompareDiskNoFile": "这个文档还没保存成文件",
+  "editorCompareDiskMissing": "磁盘上找不到这个文件",
+  "editorMultiCursorCount": "{n} 个光标"
 }

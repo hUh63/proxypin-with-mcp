@@ -2903,5 +2903,16 @@
   "editorAutoPair": "Tự đóng dấu ngoặc",
   "editorSelectAllOccurrences": "Chọn tất cả lần xuất hiện",
   "diffOnlyChanges": "Chỉ hiện khác biệt",
-  "diffUnchangedLines": "dòng không đổi"
+  "diffUnchangedLines": "dòng không đổi",
+  "diffSyncHScroll": "Đồng bộ cuộn ngang",
+  "diffExportReport": "Xuất báo cáo khác biệt",
+  "diffReport": "Báo cáo khác biệt",
+  "diffReportSaved": "Đã lưu báo cáo khác biệt",
+  "editorCursorAbove": "Thêm con trỏ phía trên",
+  "editorCursorBelow": "Thêm con trỏ phía dưới",
+  "editorClearCursors": "Xóa nhiều con trỏ",
+  "editorCompareDisk": "So sánh với tệp đã lưu",
+  "editorCompareDiskNoFile": "Tài liệu này chưa được lưu thành tệp",
+  "editorCompareDiskMissing": "Không tìm thấy tệp trên đĩa",
+  "editorMultiCursorCount": "{n} con trỏ"
 }

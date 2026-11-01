@@ -2903,5 +2903,16 @@
   "editorAutoPair": "ปิดวงเล็บอัตโนมัติ",
   "editorSelectAllOccurrences": "เลือกที่ปรากฏทั้งหมด",
   "diffOnlyChanges": "แสดงเฉพาะที่ต่าง",
-  "diffUnchangedLines": "บรรทัดที่ไม่เปลี่ยน"
+  "diffUnchangedLines": "บรรทัดที่ไม่เปลี่ยน",
+  "diffSyncHScroll": "ซิงค์การเลื่อนแนวนอน",
+  "diffExportReport": "ส่งออกรายงานความต่าง",
+  "diffReport": "รายงานความต่าง",
+  "diffReportSaved": "บันทึกรายงานความต่างแล้ว",
+  "editorCursorAbove": "เพิ่มเคอร์เซอร์ด้านบน",
+  "editorCursorBelow": "เพิ่มเคอร์เซอร์ด้านล่าง",
+  "editorClearCursors": "ล้างเคอร์เซอร์หลายตัว",
+  "editorCompareDisk": "เทียบกับไฟล์ที่บันทึก",
+  "editorCompareDiskNoFile": "เอกสารนี้ยังไม่ได้บันทึกเป็นไฟล์",
+  "editorCompareDiskMissing": "ไม่พบไฟล์บนดิสก์",
+  "editorMultiCursorCount": "{n} เคอร์เซอร์"
 }

@@ -5014,5 +5014,23 @@
   "editorAutoPair": "Auto-close brackets",
   "editorSelectAllOccurrences": "Select all occurrences",
   "diffOnlyChanges": "Only show changes",
-  "diffUnchangedLines": "unchanged lines"
+  "diffUnchangedLines": "unchanged lines",
+  "diffSyncHScroll": "Sync horizontal scroll",
+  "diffExportReport": "Export diff report",
+  "diffReport": "Diff report",
+  "diffReportSaved": "Diff report saved",
+  "editorCursorAbove": "Add cursor above",
+  "editorCursorBelow": "Add cursor below",
+  "editorClearCursors": "Clear multi cursors",
+  "editorCompareDisk": "Compare with saved",
+  "editorCompareDiskNoFile": "This document is not saved to a file yet",
+  "editorCompareDiskMissing": "File not found on disk",
+  "editorMultiCursorCount": "{n} cursors",
+  "@editorMultiCursorCount": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
 }

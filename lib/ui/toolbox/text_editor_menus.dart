@@ -611,6 +611,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('open', _openLabel, group: 'file', aliases: 'dk dakai open load'),
   EditorMenuItem('save', _saveLabel, group: 'file', aliases: 'bc baocun save write'),
   EditorMenuItem('file', _fileLabel, group: 'file'),
+  EditorMenuItem('compareDisk', _compareDiskLabel, group: 'file',
+      aliases: 'bdkb 与磁盘比较 compare disk diff saved'),
   EditorMenuItem('docs', _docsLabel, group: 'file', aliases: 'wd 文档 documents tabs'),
   EditorMenuItem('close', _closeLabel, group: 'file', aliases: 'gb guanbi close'),
   // 编辑（19 项）
@@ -633,6 +635,12 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('nextOccurrence', _nextOccurrenceLabel, group: 'edit', aliases: 'xy 下一个 occurrence dul'),
   EditorMenuItem('selectAllOccurrences', _selectAllOccurrencesLabel, group: 'edit',
       aliases: 'qxsuoyou 选中所有 occurrence select all'),
+  EditorMenuItem('cursorAbove', _cursorAboveLabel, group: 'edit',
+      aliases: 'gjg 加光标 above cursor'),
+  EditorMenuItem('cursorBelow', _cursorBelowLabel, group: 'edit',
+      aliases: 'gjg 加光标 below cursor'),
+  EditorMenuItem('clearCursors', _clearCursorsLabel, group: 'edit',
+      aliases: 'qcgj 清除光标 clear cursors'),
   EditorMenuItem('lineOps', _lineOpsLabel, group: 'edit', aliases: 'hhang 行操作 line'),
   EditorMenuItem('caseOps', _caseOpsLabel, group: 'edit', aliases: 'dx 大小写 case upper lower'),
   // 代码（13 项）
@@ -709,6 +717,10 @@ String _renameLabel(AppLocalizations l) => l.editorRename;
 String _foldAllLabel(AppLocalizations l) => l.editorFoldAll;
 String _unfoldAllLabel(AppLocalizations l) => l.editorUnfoldAll;
 String _nextOccurrenceLabel(AppLocalizations l) => l.editorSelectNext;
+String _cursorAboveLabel(AppLocalizations l) => l.editorCursorAbove;
+String _cursorBelowLabel(AppLocalizations l) => l.editorCursorBelow;
+String _clearCursorsLabel(AppLocalizations l) => l.editorClearCursors;
+String _compareDiskLabel(AppLocalizations l) => l.editorCompareDisk;
 String _selectAllOccurrencesLabel(AppLocalizations l) => l.editorSelectAllOccurrences;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
@@ -822,6 +834,14 @@ IconData menuIconOf(String id) {
       return Icons.visibility;
     case 'expandSel':
       return Icons.open_in_full;
+    case 'cursorAbove':
+      return Icons.keyboard_arrow_up;
+    case 'cursorBelow':
+      return Icons.keyboard_arrow_down;
+    case 'clearCursors':
+      return Icons.highlight_remove;
+    case 'compareDisk':
+      return Icons.compare_arrows;
     case 'jumpBracket':
       return Icons.data_object;
     case 'references':

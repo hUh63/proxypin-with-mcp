@@ -2903,5 +2903,16 @@
   "editorAutoPair": "Cerrar paréntesis automáticamente",
   "editorSelectAllOccurrences": "Seleccionar todas las apariciones",
   "diffOnlyChanges": "Solo cambios",
-  "diffUnchangedLines": "líneas sin cambios"
+  "diffUnchangedLines": "líneas sin cambios",
+  "diffSyncHScroll": "Sincronizar desplazamiento horizontal",
+  "diffExportReport": "Exportar informe de diferencias",
+  "diffReport": "Informe de diferencias",
+  "diffReportSaved": "Informe de diferencias guardado",
+  "editorCursorAbove": "Añadir cursor arriba",
+  "editorCursorBelow": "Añadir cursor abajo",
+  "editorClearCursors": "Quitar cursores múltiples",
+  "editorCompareDisk": "Comparar con guardado",
+  "editorCompareDiskNoFile": "Este documento aún no se guardó en un archivo",
+  "editorCompareDiskMissing": "Archivo no encontrado en disco",
+  "editorMultiCursorCount": "{n} cursores"
 }

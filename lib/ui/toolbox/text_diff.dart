@@ -108,6 +108,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 只显示差异（相同行折叠成一行占位），对应 VS diff 的 hide unchanged。
   bool _onlyDiff = false;
 
+  /// 同步横向滚动：一栏往右看长行时另一栏跟着走（默认关，两栏独立更常用）。
+  bool _syncH = false;
+  bool _syncingH = false;
+
   /// 对齐视图的行缓存：每次 build 重算 diff 太贵（几千行会明显顿）。
   List<DiffRow> _alignedRowsCache = const <DiffRow>[];
   String _alignedRowsKey = '';
@@ -152,6 +156,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 否则会逃逸成未捕获异步错误（这个坑踩过）。
     _leftV.addListener(_syncFromLeft);
     _rightV.addListener(_syncFromRight);
+    // 横向同步：常驻监听，开关关闭时 `_syncHorizontal` 第一行就返回。
+    _leftH.addListener(() => _syncHorizontal(_leftH, _rightH));
+    _rightH.addListener(() => _syncHorizontal(_rightH, _leftH));
     unawaited(SharedPreferencesAsync().getDouble(_fontKey).then((v) {
       if (!mounted || v == null || v == _fontSize) return;
       setState(() => _fontSize = v.clamp(11.0, 22.0));
@@ -774,6 +781,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
             setState(() => _wrap = !_wrap);
           case 'onlyDiff':
             setState(() => _onlyDiff = !_onlyDiff);
+          case 'syncH':
+            setState(() => _syncH = !_syncH);
+            if (_syncH) _syncHorizontal(_leftH, _rightH);
+          case 'exportReport':
+            unawaited(_exportReport());
           case 'syntax':
             unawaited(_checkSyntax());
           case 'swapLayout':
@@ -791,6 +803,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
         CheckedPopupMenuItem(
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
+        CheckedPopupMenuItem(
+            value: 'syncH', checked: _syncH, child: Text(localizations.diffSyncHScroll)),
+        PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'swapLayout', child: Text(
             _sideBySide ? localizations.diffStacked : localizations.diffSideBySide)),
         PopupMenuItem(value: 'syntax', child: Text(localizations.diffSyntaxCheck)),
@@ -1203,6 +1218,72 @@ class _TextDiffPageState extends State<TextDiffPage> {
       Expanded(child: _alignedPane(rows, current, left: false)),
       _densityBar(rows),
     ]);
+  }
+
+  /// 同步横向滚动：把 src 的偏移镜像到 dst（`_syncingH` 防回路）。
+  void _syncHorizontal(ScrollController src, ScrollController dst) {
+    if (!_syncH || _syncingH || !src.hasClients || !dst.hasClients) return;
+    final max = dst.position.maxScrollExtent;
+    if (max <= 0) return;
+    final target = src.offset.clamp(0.0, max);
+    if ((dst.offset - target).abs() < 0.5) return;
+    _syncingH = true;
+    try {
+      dst.jumpTo(target);
+    } catch (_) {
+      // 目标栏正在重新布局（maxScrollExtent 还在变），跳过这一帧即可。
+    } finally {
+      _syncingH = false;
+    }
+  }
+
+  /// 导出差异报告（Markdown，unified diff 风格）：存档 / 贴 issue 都能用。
+  Future<void> _exportReport() async {
+    final rows = _alignedRows();
+    if (rows.isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    final buf = StringBuffer();
+    final changed = rows.where((r) => r.type != DiffRowType.equal).length;
+    buf.writeln('# ${localizations.diffReport}');
+    buf.writeln('# ${DateTime.now()} · ${rows.length} rows · $changed changed');
+    if (_ignoreCase || _ignoreWhitespace) {
+      buf.writeln('# ignore: '
+          '${_ignoreCase ? 'case ' : ''}${_ignoreWhitespace ? 'whitespace' : ''}');
+    }
+    buf.writeln();
+    var inBlock = false;
+    for (final r in rows) {
+      if (r.type == DiffRowType.equal) {
+        inBlock = false;
+        continue;
+      }
+      if (!inBlock) {
+        inBlock = true;
+        buf.writeln('@@ L${r.leftLine ?? '-'} / R${r.rightLine ?? '-'} @@');
+      }
+      switch (r.type) {
+        case DiffRowType.deleted:
+          buf.writeln('- ${r.leftText ?? ''}');
+        case DiffRowType.added:
+          buf.writeln('+ ${r.rightText ?? ''}');
+        case DiffRowType.modified:
+          buf.writeln('- ${r.leftText ?? ''}');
+          buf.writeln('+ ${r.rightText ?? ''}');
+        case DiffRowType.equal:
+          break;
+      }
+    }
+    try {
+      final saved = await FilePicker.saveFile(
+          fileName: 'diff-report.md',
+          bytes: Uint8List.fromList(utf8.encode(buf.toString())));
+      if (!mounted) return;
+      if (saved != null) _toastText(localizations.diffReportSaved);
+    } catch (e) {
+      _toastText('${localizations.fail}: $e');
+    }
   }
 
   /// 只显示差异时：保留每个差异块前后各一行上下文，其余折成一行占位。

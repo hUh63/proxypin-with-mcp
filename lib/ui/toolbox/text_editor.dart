@@ -33,6 +33,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
+import 'package:proxypin/ui/toolbox/text_diff.dart';
 import 'package:proxypin/utils/code_minifier.dart';
 import 'package:proxypin/utils/js_compiler.dart';
 import 'package:proxypin/utils/css_formatter.dart';
@@ -449,6 +450,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       if (ctrl && key == LogicalKeyboardKey.slash) {
         _toggleComment();
+        return true;
+      }
+      // Ctrl+Alt+↑ / ↓：在上/下一行的同列加一个光标（VS 同款多光标）。
+      if (ctrl &&
+          alt &&
+          (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown)) {
+        _addCursorAtLine(key == LogicalKeyboardKey.arrowUp ? -1 : 1);
         return true;
       }
       // Alt+↑ / Alt+↓：上下移动当前行。
@@ -3213,6 +3221,70 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return inSingle || inDouble;
   }
 
+  /// 在上一行 / 下一行的**同列**位置再加一个光标（VS 的 Ctrl+Alt+↑↓）。
+  ///
+  /// 内核 controller 本身就支持多光标（打字走 insertAtAllCursors、退格走
+  /// backspaceAtAllCursors、code_area 里也逐个画光标），这里只补 UI 入口。
+  void _addCursorAtLine(int delta) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final caret = controller.selection.extentOffset.clamp(0, text.length);
+    final lineCount = '\n'.allMatches(text).length + 1;
+    final curLine = _lineOfOffset(text, caret);
+    final target = curLine + delta;
+    if (target < 0 || target >= lineCount) return;
+    final curStart = _offsetOfLine(text, curLine);
+    final targetStart = _offsetOfLine(text, target);
+    // 目标行长度（不含换行符；末行没有换行符）。
+    final targetEnd =
+        target + 1 >= lineCount ? text.length : _offsetOfLine(text, target + 1) - 1;
+    final col = (caret - curStart).clamp(0, targetEnd - targetStart);
+    controller.addMultiCursor(target, col);
+    _toast(localizations.editorMultiCursorCount('${controller.multiCursors.length + 1}'));
+    setState(() {});
+  }
+
+  void _clearMultiCursors() {
+    final controller = _controller;
+    if (controller == null || !controller.hasMultiCursors) return;
+    controller.clearMultiCursors();
+    setState(() {});
+  }
+
+  /// 与磁盘上的文件比较（VS 的 Compare with Saved）——有未保存修改时最常用。
+  Future<void> _compareWithDisk() async {
+    final doc = _doc;
+    final controller = _controller;
+    if (doc == null || controller == null) return;
+    final path = doc.path;
+    if (path == null || path.isEmpty) {
+      _toast(localizations.editorCompareDiskNoFile);
+      return;
+    }
+    try {
+      final file = File(path);
+      if (!await file.exists()) {
+        if (!mounted) return;
+        _toast(localizations.editorCompareDiskMissing);
+        return;
+      }
+      final bytes = await file.readAsBytes();
+      final (diskText, _) = await _decodeForOpen(bytes, prefer: doc.encodingName);
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => TextDiffPage(
+                initialLeft: diskText,
+                initialRight:
+                    _applyNewline(controller.text, _newlineCharsOf(doc)),
+              )));
+    } catch (e) {
+      if (!mounted) return;
+      _toast('${localizations.fail}: $e');
+    }
+  }
+
   void _expandSelection() {
     final controller = _controller;
     if (controller == null) return;
@@ -5938,6 +6010,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_peekDefinition());
       case 'expandSel':
         _expandSelection();
+      case 'cursorAbove':
+        _addCursorAtLine(-1);
+      case 'cursorBelow':
+        _addCursorAtLine(1);
+      case 'clearCursors':
+        _clearMultiCursors();
+      case 'compareDisk':
+        unawaited(_compareWithDisk());
       case 'jumpBracket':
         _jumpToMatchingBracket();
       case 'recentEdits':
@@ -7267,6 +7347,11 @@ class _EditorStatusBarState extends State<_EditorStatusBar> {
             if (selected > 0) ...[
               const SizedBox(width: 6),
               Text('($selected)', style: TextStyle(fontSize: 10.5, color: theme.colorScheme.primary)),
+            ],
+            if (widget.controller.hasMultiCursors) ...[
+              const SizedBox(width: 6),
+              Text('${widget.controller.multiCursors.length + 1} ⌖',
+                  style: TextStyle(fontSize: 10.5, color: theme.colorScheme.tertiary)),
             ],
             const Spacer(),
             if (widget.report != null) ...[

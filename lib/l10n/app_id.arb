@@ -2903,5 +2903,16 @@
   "editorAutoPair": "Tutup tanda kurung otomatis",
   "editorSelectAllOccurrences": "Pilih semua kemunculan",
   "diffOnlyChanges": "Hanya perubahan",
-  "diffUnchangedLines": "baris tidak berubah"
+  "diffUnchangedLines": "baris tidak berubah",
+  "diffSyncHScroll": "Sinkronkan gulir horizontal",
+  "diffExportReport": "Ekspor laporan perbedaan",
+  "diffReport": "Laporan perbedaan",
+  "diffReportSaved": "Laporan perbedaan disimpan",
+  "editorCursorAbove": "Tambah kursor di atas",
+  "editorCursorBelow": "Tambah kursor di bawah",
+  "editorClearCursors": "Hapus banyak kursor",
+  "editorCompareDisk": "Bandingkan dengan tersimpan",
+  "editorCompareDiskNoFile": "Dokumen ini belum disimpan ke file",
+  "editorCompareDiskMissing": "File tidak ditemukan di disk",
+  "editorMultiCursorCount": "{n} kursor"
 }

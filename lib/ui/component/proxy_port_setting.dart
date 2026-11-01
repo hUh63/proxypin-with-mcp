@@ -44,9 +44,17 @@ class _PortState extends State<PortWidget> {
 
         // 先落盘再重启：重启期间用户切走页面（组件 dispose）也不会丢配置。
         await widget.proxyServer.configuration.flushConfig();
+        // 这中间用户可能已经切走页面：之后不能再碰 context / localizations，
+        // 否则「Looking up a deactivated widget's ancestor is unsafe」。
+        if (!mounted) return;
         if (widget.proxyServer.isRunning) {
-          String message = localizations.proxyPortRepeat(widget.proxyServer.port);
-          await widget.proxyServer.restart().catchError((e) => FlutterToastr.show(message, context, duration: 3));
+          final message = localizations.proxyPortRepeat(widget.proxyServer.port);
+          try {
+            await widget.proxyServer.restart();
+          } catch (e) {
+            if (!mounted) return;
+            FlutterToastr.show(message, context, duration: 3);
+          }
         }
       }
     });

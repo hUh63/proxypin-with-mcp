@@ -4704,5 +4704,16 @@
   "editorAutoPair": "自動補全成對符號",
   "editorSelectAllOccurrences": "選取所有出現處",
   "diffOnlyChanges": "只顯示差異",
-  "diffUnchangedLines": "行未變"
+  "diffUnchangedLines": "行未變",
+  "diffSyncHScroll": "同步橫向捲動",
+  "diffExportReport": "匯出差異報告",
+  "diffReport": "差異報告",
+  "diffReportSaved": "差異報告已儲存",
+  "editorCursorAbove": "在上方加游標",
+  "editorCursorBelow": "在下方加游標",
+  "editorClearCursors": "清除多游標",
+  "editorCompareDisk": "與磁碟檔案比較",
+  "editorCompareDiskNoFile": "這個文件還沒儲存成檔案",
+  "editorCompareDiskMissing": "磁碟上找不到這個檔案",
+  "editorMultiCursorCount": "{n} 個游標"
 }
