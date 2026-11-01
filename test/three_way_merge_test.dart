@@ -124,14 +124,25 @@ void main() {
       expect(r.compose(markers: true), '1\n2\nTHREE');
     });
 
-    test('忽略空白后两侧一致 → 不算冲突', () {
+    test('忽略空白后两侧一致 → 视为未改动，保留基线', () {
       const base = 'a\nb\nc';
       const mine = 'a\n  b  \nc';
       const theirs = 'a\n\tb\nc';
       final r = mergeThreeWay(base, mine, theirs, ignoreWhitespace: true);
       expect(r.conflicts, 0);
-      // 内容按「我的」输出
-      expect(r.compose(), 'a\n  b  \nc');
+      // 忽略空白 = 两边都「没改」，所以没有变更区，compose 就是基线原文。
+      expect(r.regions, isEmpty);
+      expect(r.compose(), 'a\nb\nc');
+    });
+
+    test('忽略空白时「我的」有实质改动 → 输出我这一版原文', () {
+      const base = 'a\nb\nc';
+      const mine = 'a\n  B  \nc';
+      const theirs = 'a\nb\nc';
+      final r = mergeThreeWay(base, mine, theirs, ignoreWhitespace: true);
+      expect(r.conflicts, 0);
+      // 输出的是「我」这一版原文（含它的空白），不会把空白吃掉。
+      expect(r.compose(), 'a\n  B  \nc');
     });
   });
 }

@@ -176,6 +176,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.formatOnSave,
                 onChanged: (v) => _apply(prefs.copyWith(formatOnSave: v)),
               ),
+              _switchTile(
+                icon: Icons.cleaning_services_outlined,
+                title: localizations.editorTrimOnSave,
+                subtitle: localizations.editorTrimOnSaveDesc,
+                value: prefs.trimOnSave,
+                onChanged: (v) => _apply(prefs.copyWith(trimOnSave: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsGesture),
               _switchTile(

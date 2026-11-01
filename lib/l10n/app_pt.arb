@@ -3082,5 +3082,19 @@
   "mergeSaved": "Saved",
   "mergeLinesUnit": "lines",
   "editorDefinitionsOf": "Definitions of {name}",
-  "editorReferencesOf": "{n} references · {name}"
+  "editorReferencesOf": "{n} references · {name}",
+  "editorCamelCase": "camelCase",
+  "editorPascalCase": "PascalCase",
+  "editorSnakeCase": "snake_case",
+  "editorKebabCase": "kebab-case",
+  "editorConstantCase": "CONSTANT_CASE",
+  "editorTrimTrailing": "Trim trailing whitespace",
+  "editorTrimmed": "Trimmed {n} line(s)",
+  "editorNothingToTrim": "No trailing whitespace",
+  "editorSelectToBracket": "Select to matching bracket",
+  "editorNoBracket": "Cursor is not on a bracket",
+  "editorDetectIndent": "Detect indentation",
+  "editorIndentDetected": "Indentation: {kind} × {n}",
+  "editorTrimOnSave": "Trim trailing whitespace on save",
+  "editorTrimOnSaveDesc": "Strip spaces and tabs at the end of every line before writing the file"
 }

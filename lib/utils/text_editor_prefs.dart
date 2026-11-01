@@ -50,6 +50,9 @@ class TextEditorPrefs {
   /// 保存时先按语言格式化（VS 的 format on save）。默认关：它会改用户原文。
   final bool formatOnSave;
 
+  /// 保存时去掉每行行尾空白（VS Code 的 files.trimTrailingWhitespace）。默认关。
+  final bool trimOnSave;
+
   /// 底部控制台面板的高度（手机上调过之后要记住，否则每次重开又变回去）。
   final double consoleHeight;
 
@@ -147,6 +150,7 @@ class TextEditorPrefs {
     this.styleLint = false,
     this.highlightOccurrences = true,
     this.formatOnSave = false,
+    this.trimOnSave = false,
     this.consoleHeight = 232,
     this.lintGrouped = false,
     this.lintCollapsed = false,
@@ -182,6 +186,7 @@ class TextEditorPrefs {
     bool? styleLint,
     bool? highlightOccurrences,
     bool? formatOnSave,
+    bool? trimOnSave,
     double? consoleHeight,
     bool? lintGrouped,
     bool? lintCollapsed,
@@ -216,6 +221,7 @@ class TextEditorPrefs {
       styleLint: styleLint ?? this.styleLint,
       highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
       formatOnSave: formatOnSave ?? this.formatOnSave,
+      trimOnSave: trimOnSave ?? this.trimOnSave,
       consoleHeight: consoleHeight ?? this.consoleHeight,
       lintGrouped: lintGrouped ?? this.lintGrouped,
       lintCollapsed: lintCollapsed ?? this.lintCollapsed,
@@ -252,6 +258,7 @@ class TextEditorPrefs {
         'styleLint': styleLint,
         'highlightOccurrences': highlightOccurrences,
         'formatOnSave': formatOnSave,
+        'trimOnSave': trimOnSave,
         'consoleHeight': consoleHeight,
         'lintGrouped': lintGrouped,
         'lintCollapsed': lintCollapsed,
@@ -293,6 +300,7 @@ class TextEditorPrefs {
       styleLint: json['styleLint'] as bool? ?? false,
       highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
       formatOnSave: json['formatOnSave'] as bool? ?? false,
+      trimOnSave: json['trimOnSave'] as bool? ?? false,
       consoleHeight: (json['consoleHeight'] as num?)?.toDouble() ?? 232,
       lintGrouped: json['lintGrouped'] as bool? ?? false,
       lintCollapsed: json['lintCollapsed'] as bool? ?? false,

@@ -632,6 +632,12 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('comment', _commentLabel, group: 'edit', aliases: 'zs zhushi comment'),
   EditorMenuItem('expandSel', _expandSelLabel, group: 'edit', aliases: 'kx 扩大选区 expand selection'),
   EditorMenuItem('jumpBracket', _jumpBracketLabel, group: 'edit', aliases: 'tkw 括号 bracket match'),
+  EditorMenuItem('selectToBracket', _selectToBracketLabel, group: 'edit',
+      aliases: 'xzkh 选择到括号 select bracket'),
+  EditorMenuItem('trimTrailing', _trimTrailingLabel, group: 'edit',
+      aliases: 'xwjw 行尾空白 trim whitespace'),
+  EditorMenuItem('detectIndent', _detectIndentLabel, group: 'view',
+      aliases: 'jcsj 检测缩进 detect indent'),
   EditorMenuItem('toggleBookmark', _toggleBookmarkLabel, group: 'edit', aliases: 'sj 书签 bookmark'),
   EditorMenuItem('nextBookmark', _nextBookmarkLabel, group: 'edit', aliases: 'xysj 下一个书签 bookmark'),
   EditorMenuItem('bookmarks', _bookmarksLabel, group: 'edit', aliases: 'sjlb 书签列表 bookmark'),
@@ -733,6 +739,9 @@ String _autoSaveLabel(AppLocalizations l) => l.editorAutoSave;
 String _selectAllOccurrencesLabel(AppLocalizations l) => l.editorSelectAllOccurrences;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
+String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
+String _trimTrailingLabel(AppLocalizations l) => l.editorTrimTrailing;
+String _detectIndentLabel(AppLocalizations l) => l.editorDetectIndent;
 String _lintLabel(AppLocalizations l) => l.editorLint;
 String _lintIssuesLabel(AppLocalizations l) => l.editorLintIssues;
 String _consoleLabel(AppLocalizations l) => l.editorConsole;
@@ -823,6 +832,12 @@ IconData menuIconOf(String id) {
       return Icons.format_list_numbered;
     case 'caseOps':
       return Icons.text_fields;
+    case 'selectToBracket':
+      return Icons.select_all;
+    case 'trimTrailing':
+      return Icons.cleaning_services_outlined;
+    case 'detectIndent':
+      return Icons.format_indent_increase;
     case 'nextOccurrence':
       return Icons.select_all;
     case 'selectAllOccurrences':

@@ -1787,6 +1787,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       await _applyFormat(quiet: true);
       if (!mounted) return;
     }
+    // VS Code 的 files.trimTrailingWhitespace：落盘前把行尾空白去掉。
+    if (_prefs.trimOnSave) _trimOnSaveQuiet();
 
     final text = _applyNewline(controller.text, _newlineCharsOf(doc));
     final bytes = await encoding.encode(text);
@@ -4371,6 +4373,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'upper', child: Text(localizations.editorUpperCase)),
         PopupMenuItem(value: 'lower', child: Text(localizations.editorLowerCase)),
         PopupMenuItem(value: 'title', child: Text(localizations.editorTitleCase)),
+        const PopupMenuDivider(),
+        // 命名风格（VS Code 的 Transform to Camel/Pascal/Snake/Kebab/Constant Case）
+        PopupMenuItem(value: 'camel', child: Text(localizations.editorCamelCase)),
+        PopupMenuItem(value: 'pascal', child: Text(localizations.editorPascalCase)),
+        PopupMenuItem(value: 'snake', child: Text(localizations.editorSnakeCase)),
+        PopupMenuItem(value: 'kebab', child: Text(localizations.editorKebabCase)),
+        PopupMenuItem(value: 'constant', child: Text(localizations.editorConstantCase)),
       ],
     );
     if (chosen != null) _changeCase(chosen);
@@ -4397,11 +4406,196 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final converted = switch (mode) {
       'upper' => chunk.toUpperCase(),
       'lower' => chunk.toLowerCase(),
+      'camel' || 'pascal' || 'snake' || 'kebab' || 'constant' =>
+        _joinIdentifier(_splitIdentifier(chunk), mode),
       _ => _titleCase(chunk),
     };
     if (converted == chunk) return;
     controller.replaceRange(start, end, converted);
     controller.selection = TextSelection(baseOffset: start, extentOffset: start + converted.length);
+  }
+
+  /// 把标识符拆成词：camelCase / PascalCase / snake_case / kebab-case / 空格分隔都能拆。
+  ///
+  /// 规则（够用的简化版）：
+  ///   · 非字母数字一律当分隔符；
+  ///   · 小写→大写处断词（camel|Case）；
+  ///   · 连续大写后接小写时在最后一个大写前断（HTTP|Server）。
+  static List<String> _splitIdentifier(String s) {
+    final words = <String>[];
+    final buf = StringBuffer();
+    void flush() {
+      if (buf.isNotEmpty) {
+        words.add(buf.toString());
+        buf.clear();
+      }
+    }
+
+    for (var i = 0; i < s.length; i++) {
+      final c = s.codeUnitAt(i);
+      final isUpper = c >= 65 && c <= 90;
+      final isLower = c >= 97 && c <= 122;
+      final isDigit = c >= 48 && c <= 57;
+      if (!isUpper && !isLower && !isDigit) {
+        flush();
+        continue;
+      }
+      if (isUpper && buf.isNotEmpty) {
+        final prev = s.codeUnitAt(i - 1);
+        final prevUpper = prev >= 65 && prev <= 90;
+        final next = i + 1 < s.length ? s.codeUnitAt(i + 1) : -1;
+        final nextLower = next >= 97 && next <= 122;
+        if (!prevUpper || nextLower) flush();
+      }
+      buf.writeCharCode(c);
+    }
+    flush();
+    return words;
+  }
+
+  /// 按风格把词拼回去。
+  static String _joinIdentifier(List<String> words, String style) {
+    if (words.isEmpty) return '';
+    String cap(String w) => w.length <= 1 ? w.toUpperCase() : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
+    return switch (style) {
+      'camel' => '${words.first.toLowerCase()}${words.skip(1).map(cap).join()}',
+      'pascal' => words.map(cap).join(),
+      'snake' => words.map((w) => w.toLowerCase()).join('_'),
+      'kebab' => words.map((w) => w.toLowerCase()).join('-'),
+      'constant' => words.map((w) => w.toUpperCase()).join('_'),
+      _ => words.join(),
+    };
+  }
+
+  // ------------------------------ VS 的编辑动作补充 ------------------------------
+
+  /// 保存时静默修剪行尾空白：不 toast、尽量保住选区（越界就 clamp）。
+  void _trimOnSaveQuiet() {
+    final controller = _controller;
+    if (controller == null) return;
+    final before = controller.text;
+    if (before.isEmpty) return;
+    final after = before
+        .split('\n')
+        .map((l) => l.replaceFirst(RegExp(r'[ \t]+$'), ''))
+        .join('\n');
+    if (after == before) return;
+    final sel = controller.selection;
+    final start = sel.isValid ? sel.start.clamp(0, after.length) : null;
+    final end = sel.isValid ? sel.end.clamp(0, after.length) : null;
+    controller.replaceRange(0, before.length, after);
+    if (start != null && end != null) {
+      controller.selection = TextSelection(baseOffset: start, extentOffset: end);
+    }
+  }
+
+  /// 修剪行尾空白（VS 的 Trim Trailing Whitespace）。
+  ///
+  /// 有选区只处理选区覆盖到的行，没选区处理全文 —— 和 VS 一致，
+  /// 免得「想清理这三行」把整篇都改了。
+  void _trimTrailingWhitespace() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    var from = 0;
+    var to = text.length;
+    if (sel.isValid && !sel.isCollapsed) {
+      final s0 = sel.start.clamp(0, text.length);
+      final e0 = sel.end.clamp(s0, text.length);
+      from = text.lastIndexOf('\n', s0) + 1;
+      final nl = text.indexOf('\n', e0);
+      to = nl < 0 ? text.length : nl;
+    }
+    final lines = text.substring(from, to).split('\n');
+    var changed = 0;
+    final trailing = RegExp(r'[ \t]+$');
+    for (var i = 0; i < lines.length; i++) {
+      final trimmed = lines[i].replaceFirst(trailing, '');
+      if (trimmed != lines[i]) {
+        lines[i] = trimmed;
+        changed++;
+      }
+    }
+    if (changed == 0) {
+      _toast(localizations.editorNothingToTrim);
+      return;
+    }
+    final replaced = lines.join('\n');
+    controller.replaceRange(from, to, replaced);
+    final end = (from + replaced.length).clamp(0, controller.text.length);
+    controller.selection = TextSelection.collapsed(offset: end);
+    _toast(localizations.editorTrimmed(changed));
+  }
+
+  /// 选中从光标处括号到它配对括号之间的内容（VS 的 Ctrl+Shift+\ 的「选择到括号」）。
+  void _selectToBracket() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.extentOffset;
+    if (caret < 0 || caret > text.length) return;
+    const opens = '([{';
+    const closes = ')]}';
+    int? pos;
+    if (caret < text.length && (opens.contains(text[caret]) || closes.contains(text[caret]))) {
+      pos = caret;
+    } else if (caret > 0 && (opens.contains(text[caret - 1]) || closes.contains(text[caret - 1]))) {
+      pos = caret - 1;
+    }
+    if (pos == null) {
+      _toast(localizations.editorNoBracket);
+      return;
+    }
+    final ch = text[pos];
+    final other = opens.contains(ch)
+        ? _findClosing(text, pos, ch)
+        : _findOpening(text, pos, ch);
+    if (other == null) {
+      _toast(localizations.editorNoBracket);
+      return;
+    }
+    final start = pos < other ? pos : other;
+    final end = (pos < other ? other : pos) + 1;
+    controller.selection = TextSelection(baseOffset: start, extentOffset: end);
+    controller.scrollToLine(_lineOfOffset(text, start));
+  }
+
+  /// 按文件内容猜缩进（VS 的 Detect Indentation）。
+  void _detectIndent() {
+    final text = _controller?.text ?? '';
+    if (text.isEmpty) return;
+    final (useTabs, size) = _guessIndent(text);
+    setState(() => _prefs = _prefs.copyWith(useTabs: useTabs, tabSize: size));
+    unawaited(TextEditorPrefsStore.update(_prefs));
+    _toast(localizations.editorIndentDetected(size, useTabs ? 'Tab' : 'Space'));
+  }
+
+  /// 猜缩进：制表符行多就用 Tab，否则取「最小的非零空格缩进」当 tabSize。
+  static (bool, int) _guessIndent(String text) {
+    var tabLines = 0;
+    var spaceLines = 0;
+    var minSpace = 0;
+    final lines = text.split('\n');
+    final limit = lines.length > 3000 ? 3000 : lines.length;
+    for (var i = 0; i < limit; i++) {
+      final line = lines[i];
+      if (line.trim().isEmpty) continue;
+      if (line.startsWith('\t')) {
+        tabLines++;
+        continue;
+      }
+      var n = 0;
+      while (n < line.length && line.codeUnitAt(n) == 32) {
+        n++;
+      }
+      if (n == 0) continue;
+      spaceLines++;
+      if (minSpace == 0 || n < minSpace) minSpace = n;
+    }
+    if (tabLines > spaceLines) return (true, 4);
+    if (minSpace >= 2 && minSpace <= 8) return (false, minSpace);
+    return (false, 4);
   }
 
   /// 光标处的「词」范围；不在词上时退化成光标所在的一个字符。
@@ -6272,6 +6466,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right, id: 'caseOps')),
           _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
+        _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
+        _menuItem('trimTrailing', Icons.cleaning_services_outlined, loc.editorTrimTrailing),
         PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
         _menuItem('toggleBookmark', Icons.bookmark_add_outlined, loc.editorToggleBookmark),
         _menuItem('bookmarks', Icons.bookmarks_outlined, loc.editorBookmarks),
@@ -6319,6 +6515,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           CheckedPopupMenuItem(
               value: 'unicode', checked: _showUnicode, child: Text(loc.editorShowUnicodeSpecial)),
           _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
+          _menuItem('detectIndent', Icons.format_indent_increase, loc.editorDetectIndent),
           const PopupMenuDivider(),
           _menuItem('syntax', Icons.code, loc.editorMoreSyntax),
           PopupMenuItem(
@@ -6474,6 +6671,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         if (_autoSave) _scheduleAutoSave();
       case 'jumpBracket':
         _jumpToMatchingBracket();
+      case 'selectToBracket':
+        _selectToBracket();
+      case 'trimTrailing':
+        _trimTrailingWhitespace();
+      case 'detectIndent':
+        _detectIndent();
       case 'recentEdits':
         unawaited(_showRecentEdits());
       case 'toggleBookmark':

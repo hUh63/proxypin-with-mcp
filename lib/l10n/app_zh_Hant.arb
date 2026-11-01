@@ -4882,5 +4882,19 @@
   "mergeSaved": "已儲存",
   "mergeLinesUnit": "行",
   "editorDefinitionsOf": "「{name}」的定義",
-  "editorReferencesOf": "{n} 處引用 · {name}"
+  "editorReferencesOf": "{n} 處引用 · {name}",
+  "editorCamelCase": "駝峰命名 camelCase",
+  "editorPascalCase": "帕斯卡 PascalCase",
+  "editorSnakeCase": "底線 snake_case",
+  "editorKebabCase": "短橫線 kebab-case",
+  "editorConstantCase": "常量 CONSTANT_CASE",
+  "editorTrimTrailing": "修剪行尾空白",
+  "editorTrimmed": "已修剪 {n} 行行尾空白",
+  "editorNothingToTrim": "沒有行尾空白",
+  "editorSelectToBracket": "選中到配對括號",
+  "editorNoBracket": "游標不在括號上",
+  "editorDetectIndent": "按內容偵測縮排",
+  "editorIndentDetected": "縮排已設為 {kind} × {n}",
+  "editorTrimOnSave": "儲存時修剪行尾空白",
+  "editorTrimOnSaveDesc": "寫盤前去掉每行末尾的空格與定位字元"
 }

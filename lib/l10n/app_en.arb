@@ -5288,5 +5288,36 @@
         "type": "String"
       }
     }
-  }
+  },
+  "editorCamelCase": "camelCase",
+  "editorPascalCase": "PascalCase",
+  "editorSnakeCase": "snake_case",
+  "editorKebabCase": "kebab-case",
+  "editorConstantCase": "CONSTANT_CASE",
+  "editorTrimTrailing": "Trim trailing whitespace",
+  "editorTrimmed": "Trimmed {n} line(s)",
+  "@editorTrimmed": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorNothingToTrim": "No trailing whitespace",
+  "editorSelectToBracket": "Select to matching bracket",
+  "editorNoBracket": "Cursor is not on a bracket",
+  "editorDetectIndent": "Detect indentation",
+  "editorIndentDetected": "Indentation: {kind} × {n}",
+  "@editorIndentDetected": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorTrimOnSave": "Trim trailing whitespace on save",
+  "editorTrimOnSaveDesc": "Strip spaces and tabs at the end of every line before writing the file"
 }
