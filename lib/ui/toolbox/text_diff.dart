@@ -378,7 +378,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
       for (final pair in b.pairs) {
         final ll = b.leftLines[pair.left];
         final rl = b.rightLines[pair.right];
-        final cd = diffChars(_left.getLineText(ll), _right.getLineText(rl));
+        final lt = _left.getLineText(ll);
+        final rt = _right.getLineText(rl);
+        // 字符级 LCS 也是 O(m·n)：压缩过的单行文件（几十万字符）必须跳过，
+        // 否则一按「对比」就卡死。整行底色仍然会画，只是没有逐字高亮。
+        if (lt.length > 3000 || rt.length > 3000) continue;
+        final cd = diffChars(lt, rt);
         final lo = _left.getLineStartOffset(ll);
         final ro = _right.getLineStartOffset(rl);
         for (final r in cd.leftRanges) {

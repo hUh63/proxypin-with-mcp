@@ -279,6 +279,17 @@ int _similarityScore(String l, String r) {
   final m = a.length;
   final n = b.length;
   if (m == 0 || n == 0) return 0;
+  // 超长行（压缩后的 JS/CSS 一行十几万字符）做字符级 LCS 是 O(m·n)：10⁵×10⁵
+  // 直接把 isolate 卡死。这类行反正整行都算「修改」，配不配对结果一样，
+  // 用「共同前缀比例」给个粗分即可。
+  if (m > 2000 || n > 2000) {
+    final lim = m < n ? m : n;
+    var same = 0;
+    while (same < lim && a[same] == b[same]) {
+      same++;
+    }
+    return (same * 1000) ~/ lim;
+  }
   var prev = List<int>.filled(n + 1, 0);
   for (var i = 1; i <= m; i++) {
     final cur = List<int>.filled(n + 1, 0);

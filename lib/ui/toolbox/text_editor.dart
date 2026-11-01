@@ -3753,7 +3753,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     void scan(String content, String label, String? path, bool current) {
       // 超大文本跳过：几 MB 的日志里做整词扫描既慢又没有意义。
       if (content.length > 2000000) return;
-      final defOffsets = _declarationOffsets(content, name).toSet();
+      // 「是不是声明」要跑 3 套正则全文扫描，只对中等大小的文件做（大文件只当引用）。
+      final defOffsets =
+          content.length <= 500000 ? _declarationOffsets(content, name).toSet() : <int>{};
       var count = 0;
       var lastLineStart = 0;
       var lastLine = 0;
@@ -4566,9 +4568,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final text = _controller?.text ?? '';
     if (text.isEmpty) return;
     final (useTabs, size) = _guessIndent(text);
-    setState(() => _prefs = _prefs.copyWith(useTabs: useTabs, tabSize: size));
-    unawaited(TextEditorPrefsStore.update(_prefs));
-    _toast(localizations.editorIndentDetected(size, useTabs ? 'Tab' : 'Space'));
+    // 缩进是全局偏好（跟着 Tab 键走），不是某份文档的属性。
+    unawaited(TextEditorPrefsStore.update(
+        TextEditorPrefsStore.notifier.value.copyWith(useTabs: useTabs, tabSize: size)));
+    if (!mounted) return;
+    setState(() {});
+    // 生成的参数顺序 = arb 里占位符出现顺序（{kind} 在前），别调反。
+    _toast(localizations.editorIndentDetected(useTabs ? 'Tab' : 'Space', size));
   }
 
   /// 猜缩进：制表符行多就用 Tab，否则取「最小的非零空格缩进」当 tabSize。
