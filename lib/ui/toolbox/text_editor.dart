@@ -1910,6 +1910,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<void> _showSpecialReport() async {
     final controller = _controller;
     if (controller == null) return;
+    if (_tooLargeForSync(controller.text, limit: 2000000)) return;
     final hits = SpecialCharScanner.scan(controller.text);
     final counts = <int, int>{};
     for (final h in hits) {
@@ -2250,7 +2251,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (caret < 0 || caret > text.length) return;
     final range = _wordRangeAt(text, caret);
     final name = text.substring(range.start, range.end);
-    if (name.isEmpty) {
+    if (!_isSymbolName(name)) {
       _toast(localizations.editorNoDefinition);
       return;
     }
@@ -2331,7 +2332,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
 
     // 3) 当前词的所有出现
-    if (_prefs.highlightOccurrences) {
+    //    大文件（>50 万字符）里这一步每次光标移动都要全文扫一遍，直接把开关忽略掉；
+    //    括号配对仍然保留（那只扫光标附近）。
+    if (_prefs.highlightOccurrences && text.length <= 500000) {
       var start = sel.isValid ? sel.start : caret;
       var end = sel.isValid ? sel.end : caret;
       if (start == end) {
@@ -2342,10 +2345,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (end > start) {
         final word = text.substring(start, end);
         if (word.length >= 2 && word.length <= 60 && !word.contains('\n')) {
-          var count = 0;
-          for (var i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + word.length)) {
-            list.add(SearchHighlight(start: i, end: i + word.length));
-            if (++count >= 200) break;
+          // 先数一遍（上限 201）：`return`、`}` 这种满屏都是的词全部上色反而看不清重点。
+          var total = 0;
+          for (var i = text.indexOf(word); i >= 0 && total <= 200; i = text.indexOf(word, i + word.length)) {
+            total++;
+          }
+          if (total <= 200) {
+            for (var i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + word.length)) {
+              list.add(SearchHighlight(start: i, end: i + word.length));
+            }
           }
         }
       }
@@ -2796,7 +2804,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final caret = controller.selection.baseOffset;
     final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
     final name = text.substring(range.start, range.end);
-    if (name.isEmpty) return;
+    // 光标停在空白/标点上时，`_wordRangeAt` 会返回那一个字符：
+    // 不拦住的话「重命名」会预填一个空格，确认后全文件的空格全被替换。
+    if (!_isSymbolName(name)) return;
     if (_findDeclaration(text, name, range.start) == null) {
       _toast(localizations.editorRenameNoDecl);
       return;
@@ -3650,6 +3660,32 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 光标处的「词」范围；不在词上时退化成光标所在的一个字符。
+  /// 名称是否像个标识符。
+  ///
+  /// `_wordRangeAt` 在空白/标点上会返回那一个字符，直接拿去用会出两种事：
+  /// 「转到定义」去搜一个空格；「重命名」预填一个空格，确认后全文件的空格都被换成新名字。
+  static bool _isSymbolName(String name) {
+    if (name.isEmpty) return false;
+    final first = name.codeUnitAt(0);
+    final okFirst = (first >= 0x41 && first <= 0x5a) ||
+        (first >= 0x61 && first <= 0x7a) ||
+        first == 0x5f ||
+        first == 0x24 ||
+        first > 0x7f;
+    if (!okFirst) return false;
+    for (var i = 1; i < name.length; i++) {
+      final c = name.codeUnitAt(i);
+      final ok = (c >= 0x30 && c <= 0x39) ||
+          (c >= 0x41 && c <= 0x5a) ||
+          (c >= 0x61 && c <= 0x7a) ||
+          c == 0x5f ||
+          c == 0x24 ||
+          c > 0x7f;
+      if (!ok) return false;
+    }
+    return true;
+  }
+
   static ({int start, int end}) _wordRangeAt(String text, int offset) {
     bool isWord(int c) =>
         (c >= 0x30 && c <= 0x39) ||
@@ -7166,6 +7202,11 @@ String? _formatInIsolate(List<Object> args) {
     case FormatKind.json:
       return JSON.pretty(text);
     case FormatKind.xml:
+      // XML 解析会整棵树建在内存里（比原文大好几倍）：元素特别多时先劝退，
+      // 抛出去的异常主线程会转成提示。
+      if ('<'.allMatches(text).length > 200000) {
+        throw StateError('too many elements to format');
+      }
       return XmlDocument.parse(text).toXmlString(pretty: true, indent: '  ');
     case FormatKind.css:
       return CSS.pretty(text);
