@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.67.201 (2026-11-01)
+
+修 v1.67.200 的三个问题：
+
+1. 「设备信息」页在 `initState` 里取 `AppLocalizations`（依赖 InheritedWidget），
+   打开就抛异常 —— 挪到 `didChangeDependencies`，只跑一次。
+2. `LinuxDeviceInfo.kernelVersion` 不存在（是 `version`），Linux 构建因此编译失败。
+3. 文件合并原先把结果整个读进内存再「另存为」，几百 MB 会把内存打满；改成留在应用
+   目录 + 分享按钮（走路径，不读内存）。分片大小也加了 256MB 上限。
+
 ## v1.67.200 (2026-11-01)
 
 **设备信息**（工具箱 → 诊断 → 设备信息）

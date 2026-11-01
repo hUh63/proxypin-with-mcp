@@ -46,9 +46,15 @@ class _DeviceInfoPageState extends State<DeviceInfoPage> {
   final List<({String group, String key, String value})> _rows = [];
   bool _loading = true;
 
+  bool _started = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 不能在 initState 里取 AppLocalizations（会依赖 InheritedWidget），
+    // 放到 didChangeDependencies 里只跑一次。
+    if (_started) return;
+    _started = true;
     _load();
   }
 
@@ -98,7 +104,9 @@ class _DeviceInfoPageState extends State<DeviceInfoPage> {
       } else if (Platform.isLinux) {
         final l = await plugin.linuxInfo;
         add(loc.devSystem, 'distro', l.prettyName);
-        add(loc.devSystem, 'kernel', l.kernelVersion);
+        // device_info_plus 的 LinuxDeviceInfo 没有 kernelVersion 字段，
+        // 能拿到的是发行版名与版本号。
+        add(loc.devSystem, 'version', l.version);
       }
     } catch (e) {
       add(loc.devSystem, 'error', '$e');

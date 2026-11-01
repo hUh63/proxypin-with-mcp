@@ -44,6 +44,8 @@ class _FileSplitPageState extends State<FileSplitPage> with SingleTickerProvider
   double _progress = 0;
   bool _busy = false;
   bool _cancel = false;
+  String? _mergedPath;
+  int _mergedBytes = 0;
 
   @override
   void dispose() {
@@ -96,7 +98,8 @@ class _FileSplitPageState extends State<FileSplitPage> with SingleTickerProvider
               isCancelled: () => _cancel)
           : await FileSplitter.splitBySize(src,
               outDir: outDir,
-              chunkSize: (mb * 1024 * 1024).round().clamp(1, 1 << 32),
+              // 上限 256MB：分片是整块读进内存再写出，再大就是拿内存赌运气。
+              chunkSize: (mb * 1024 * 1024).round().clamp(1, 256 * 1024 * 1024),
               onProgress: _onProgress,
               isCancelled: () => _cancel);
       if (!mounted) return;
@@ -146,14 +149,17 @@ class _FileSplitPageState extends State<FileSplitPage> with SingleTickerProvider
         _busy = true;
         _progress = 0;
       });
-      final merged = '${dir.path}${Platform.pathSeparator}merged_${DateTime.now().millisecondsSinceEpoch}.bin';
+      final docs = await getApplicationDocumentsDirectory();
+      final merged = '${docs.path}${Platform.pathSeparator}merged_${DateTime.now().millisecondsSinceEpoch}.bin';
       final size = await FileSplitter.merge(parts, outPath: merged, onProgress: _onProgress);
       if (!mounted) return;
-      setState(() => _busy = false);
-      // 合并完直接给系统「另存为」，用户能自己挑要去哪。
-      await FilePicker.saveFile(
-          fileName: 'merged.bin', bytes: await File(merged).readAsBytes());
-      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _mergedPath = merged;
+        _mergedBytes = size;
+      });
+      // 不把合并结果读进内存再「另存为」：几百 MB 会直接把内存打满。
+      // 留在应用目录里给路径 + 分享按钮，效果一样。
       _toast(loc.fileMergeDone('${parts.length}', '$size'));
     } catch (e) {
       if (!mounted) return;
@@ -266,11 +272,34 @@ class _FileSplitPageState extends State<FileSplitPage> with SingleTickerProvider
           if (_busy) ...[
             LinearProgressIndicator(value: _progress == 0 ? null : _progress),
           ] else
-            FilledButton.tonalIcon(
-              onPressed: _merge,
-              icon: const Icon(Icons.call_merge, size: 16),
-              label: Text(loc.fileMergeDo),
-            ),
+            Row(children: [
+              FilledButton.tonalIcon(
+                onPressed: _merge,
+                icon: const Icon(Icons.call_merge, size: 16),
+                label: Text(loc.fileMergeDo),
+              ),
+              const SizedBox(width: 8),
+              if (_mergedPath != null)
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await SharePlus.instance
+                          .share(ShareParams(files: [XFile(_mergedPath!)]));
+                    } catch (e) {
+                      _toast('$e');
+                    }
+                  },
+                  icon: const Icon(Icons.ios_share, size: 15),
+                  label: Text(loc.share),
+                ),
+            ]),
+          if (_mergedPath != null) ...[
+            const SizedBox(height: 8),
+            SelectableText(_mergedPath!,
+                style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace')),
+            Text('$_mergedBytes B',
+                style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+          ],
         ]),
       ]),
     );
