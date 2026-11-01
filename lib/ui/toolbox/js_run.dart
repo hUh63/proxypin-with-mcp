@@ -86,8 +86,8 @@ class _JavaScriptState extends State<JavaScript> {
     String output = args.join(' ');
     if (level == 'info') level = 'warn';
     setState(() {
-      outLines.add(Text(output, style: TextStyle(color: level == 'error' ? Colors.red : Colors.white, fontSize: 13)));
-      print(outLines);
+      outLines.add(Text(output,
+          style: TextStyle(color: level == 'error' ? Colors.red : Colors.white, fontSize: 13)));
     });
   }
 

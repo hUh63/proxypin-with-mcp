@@ -223,7 +223,9 @@ class MacSystemProxy implements SystemProxy {
       'networksetup -setproxybypassdomains $quotedName $bypass',
       'networksetup -setsocksfirewallproxystate $quotedName off',
     ];
-    print("Running commands:\n${commands.where((c) => c.isNotEmpty).join('\n')}");
+    // 原来这里是 print：设置系统代理每次都会往 stdout 打一串命令，桌面发布版
+    // 也一样（print 在 release 里照样输出），既吵又暴露用户网络配置。
+    logger.d("Running commands:\n${commands.where((c) => c.isNotEmpty).join('\n')}");
     var results = await Process.run('bash', ['-c', _concatCommands(commands)]);
     logger.d('set proxyServer, name: $_hardwarePort, exitCode: ${results.exitCode}, stdout: ${results.stdout}');
     bool success = results.exitCode == 0;
