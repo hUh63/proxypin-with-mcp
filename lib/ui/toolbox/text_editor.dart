@@ -420,6 +420,40 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       return false;
     }
+    // 下面这组是 VS 的常用快捷键，外接键盘时全靠它（手机上没有）。
+    if (event is KeyDownEvent) {
+      final kb = HardwareKeyboard.instance;
+      final ctrl = kb.isControlPressed || kb.isMetaPressed;
+      final shift = kb.isShiftPressed;
+      final alt = kb.isAltPressed;
+      final key = event.logicalKey;
+      // Tab / Shift+Tab：编辑器里 Tab 只能用来缩进，不能切焦点。
+      if (key == LogicalKeyboardKey.tab && !ctrl && !alt) {
+        _indentLines(outdent: shift);
+        return true;
+      }
+      if (ctrl && key == LogicalKeyboardKey.keyS) {
+        unawaited(_download());
+        return true;
+      }
+      if (ctrl && key == LogicalKeyboardKey.keyF) {
+        _toggleFind();
+        return true;
+      }
+      if (ctrl && key == LogicalKeyboardKey.keyG) {
+        unawaited(_selectToLine());
+        return true;
+      }
+      if (ctrl && key == LogicalKeyboardKey.slash) {
+        _toggleComment();
+        return true;
+      }
+      // Alt+↑ / Alt+↓：上下移动当前行。
+      if (alt && (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown)) {
+        _lineOp(key == LogicalKeyboardKey.arrowUp ? 'up' : 'down');
+        return true;
+      }
+    }
     if (widget.windowId == null) return false;
     if ((HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed) &&
         event.logicalKey == LogicalKeyboardKey.keyW) {
