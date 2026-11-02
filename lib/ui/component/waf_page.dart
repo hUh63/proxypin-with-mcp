@@ -19,6 +19,8 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/util/waf_bypass.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/waf_probe.dart';
+import 'package:proxypin/ui/component/request_pick_sheet.dart';
+import 'package:proxypin/ui/component/tool_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// WAF 载荷变异 + 主动探测页。
@@ -240,6 +242,25 @@ class _WafPageState extends State<WafPage> {
     await _runBatch(session);
   }
 
+  /// 从抓包里挑一条请求，填好 URL / method / body。
+  Future<void> _pickTarget() async {
+    final req = await RequestPickSheet.show(context);
+    if (req == null || !mounted) return;
+    String body = '';
+    try {
+      body = await req.decodeBodyString();
+    } catch (_) {
+      body = '';
+    }
+    if (!mounted) return;
+    setState(() {
+      _url.text = req.requestUrl;
+      final m = req.methodLabel.toUpperCase();
+      if (const ['GET', 'POST', 'PUT'].contains(m)) _method = m;
+      if (body.isNotEmpty) _body.text = body;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -252,6 +273,20 @@ class _WafPageState extends State<WafPage> {
         padding: const EdgeInsets.all(12),
         children: [
           _notice(),
+          const SizedBox(height: 10),
+          ToolIntro(
+            margin: EdgeInsets.zero,
+            text: 'WAF 变异探测：拿一条真实请求，按规则变形后逐批发送，看哪些变体没被拦。',
+            input: '目标 URL（支持 {{PAYLOAD}} 占位）+ 变形规则',
+            output: '每个变体的状态码/长度/耗时，命中的会标出来',
+            help: '正常用法：先从抓包挑一条会被 WAF 拦的请求 → 选几条变形规则 → 小批量试（默认 10 条一批）→ '
+                '看哪条变体绕过了。别一次开全部规则，容易触发风控把 IP 封了。',
+            presets: [
+              ToolPreset('从抓包选目标', () async {
+                await _pickTarget();
+              }),
+            ],
+          ),
           const SizedBox(height: 12),
           _fingerprintCard(),
           const SizedBox(height: 12),

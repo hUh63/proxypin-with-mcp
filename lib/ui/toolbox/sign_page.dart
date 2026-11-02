@@ -148,6 +148,23 @@ class _SignTabState extends State<_SignTab> {
     }
   }
 
+  /// 从抓包列表挑一条请求，自动填 URL 与 body（省得在手机上抄）。
+  Future<void> _pickFromCapture() async {
+    final req = await RequestPickSheet.show(context);
+    if (req == null || !mounted) return;
+    String body = '';
+    try {
+      body = await req.decodeBodyString();
+    } catch (_) {
+      body = '';
+    }
+    if (!mounted) return;
+    setState(() {
+      _url.text = req.requestUrl;
+      if (body.isNotEmpty) _body.text = body;
+    });
+  }
+
   void _copyAll() {
     if (_result.isEmpty) return;
     final text = _result.entries.map((e) => '${e.key}: ${e.value}').join('\n');
@@ -158,6 +175,23 @@ class _SignTabState extends State<_SignTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(15), children: [
+      ToolIntro(
+        margin: EdgeInsets.zero,
+        text: '把一条抓到的 API 请求（URL + body）粘进来，生成可直接用的字节系签名头。',
+        input: '请求 URL（含 ?query）；POST 请求把 body 一并填上',
+        output: 'X-Gorgon / X-Khronos / X-Argus 等签名头，可整段复制',
+        onExample: () => setState(() {
+          _url.text =
+              'https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id=1&aid=1128&version_code=300904&device_platform=android';
+          _body.text = '';
+        }),
+        presets: [
+          ToolPreset('Android', () => setState(() => _platform = 'android')),
+          ToolPreset('iOS', () => setState(() => _platform = 'ios')),
+        ],
+        help: '签名只与 URL 的 query、body 和设备参数有关：query 里的参数顺序不要重排，'
+            '签名才和服务端算出来的一致。要换 App 版本/设备号，去「参数」页改。',
+      ),
       Row(children: [
         Text(localizations.signPlatform),
         const SizedBox(width: 12),
@@ -170,7 +204,20 @@ class _SignTabState extends State<_SignTab> {
           onChanged: (v) => setState(() => _platform = v!),
         ),
       ]),
-      const SizedBox(height: 10),
+      const SizedBox(height: 8),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: _pickFromCapture,
+          icon: const Icon(Icons.inbox_outlined, size: 16),
+          label: const Text('从抓包选择', style: TextStyle(fontSize: 12)),
+          style: OutlinedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+          ),
+        ),
+      ),
+      const SizedBox(height: 6),
       TextField(
         controller: _url,
         minLines: 1,
@@ -293,6 +340,17 @@ class _WebBogusTabState extends State<_WebBogusTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(15), children: [
+      ToolIntro(
+        margin: EdgeInsets.zero,
+        text: '网页版（douyin.com）的 a_bogus / X-Bogus 签名：粘网页端请求的 query 即可。',
+        input: '网页端请求 URL，例如 /aweme/v1/web/aweme/detail/?...',
+        output: 'a_bogus（含 X-Bogus 兼容写法）',
+        onExample: () => setState(() {
+          _query.text =
+              'https://www.douyin.com/aweme/v1/web/aweme/detail/?aweme_id=1&device_platform=webapp&aid=6383&channel=channel_pc_web';
+        }),
+        help: '网页端签名和 App 端不是一套：web 用 a_bogus，App 用 X-Gorgon。粘错端会算出来但对不上服务端。',
+      ),
       TextField(
         controller: _query,
         minLines: 1,
@@ -379,6 +437,13 @@ class _ParamsTabState extends State<_ParamsTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(15), children: [
+      ToolIntro(
+        margin: EdgeInsets.zero,
+        text: '签名参数：这些值会参与签名计算，和抓包里的保持一致才能对上服务端。',
+        input: 'AID / App 版本 / versionCode / License ID / MSSDK 版本',
+        output: '无需输出——改完回「签名」页重新计算即可',
+        help: '默认值取自常见公开版本；如果你抓的是特定版本 App，把这些值抄成抓包 set-cookie/query 里的即可。',
+      ),
       Text(localizations.signParamsHint, style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
       const SizedBox(height: 14),
       _field('AID', _aid),
@@ -476,6 +541,19 @@ class _MedusaTabState extends State<_MedusaTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(15), children: [
+      ToolIntro(
+        margin: EdgeInsets.zero,
+        text: 'X-Medusa 签名：需要完整 URL（含 query），可选覆盖设备信息与 lanusk。',
+        input: '完整请求 URL；设备信息（JSON，选填）',
+        output: 'X-Medusa 头',
+        onExample: () => setState(() {
+          _url.text =
+              'https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/aweme/post/?sec_user_id=1&max_cursor=0&count=20&aid=1233';
+          _device.text = '';
+          _lanusk.text = '';
+        }),
+        help: '设备信息留空会用内置默认设备；填 JSON 时只需要和抓包里的候选字段一致，多余的会被忽略。',
+      ),
       Text(localizations.signMedusaHint, style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
       const SizedBox(height: 14),
       TextField(
@@ -591,6 +669,16 @@ class _TtEncryptTabState extends State<_TtEncryptTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(15), children: [
+      ToolIntro(
+        margin: EdgeInsets.zero,
+        text: 'TTEncrypt v5 载荷加/解密：粘十六进制密文（或明文）直接转换。',
+        input: '十六进制字符串（可含空格/换行）',
+        output: '转换后的十六进制或明文',
+        onExample: () => setState(() {
+          _input.text = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f';
+        }),
+        help: 'kestream 随机时同一份明文每次结果不同，属正常；要逐字节比对请用测试向量。',
+      ),
       Text(localizations.signTtHint, style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
       const SizedBox(height: 14),
       TextField(

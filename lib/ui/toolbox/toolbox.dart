@@ -36,6 +36,7 @@ import 'package:proxypin/ui/toolbox/convert_page.dart';
 import 'package:proxypin/ui/toolbox/crc_page.dart';
 import 'package:proxypin/ui/toolbox/device_spoof_page.dart';
 import 'package:proxypin/ui/toolbox/artex_page.dart';
+import 'package:proxypin/ui/toolbox/artex_webview.dart';
 import 'package:proxypin/ui/toolbox/device_info_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
@@ -473,8 +474,10 @@ class _ToolboxState extends State<Toolbox> {
                       tooltip: localizations.spoofNote),
                   IconText(
                       onTap: () {
+                        // 直接进 ARTEX 自己的前端（本地托管 + WebView），
+                        // 和官方 App 一致；原生面板在右上角菜单里。
                         Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => const ArtexPage()));
+                            builder: (context) => const ArtexWebPage()));
                       },
                       icon: Icons.hub_outlined,
                       text: 'ARTEX',

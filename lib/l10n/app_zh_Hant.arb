@@ -4979,5 +4979,16 @@
   "editorTermNoRuntime": "這個語言沒有本機執行環境，只能用運算式求值",
   "editorTermMultiline": "多行輸入",
   "editorTermMultilineHint": "Enter 換行，點 ▶ 執行",
-  "artexConsole": "ARTEX 主控台"
+  "artexConsole": "ARTEX 主控台",
+  "artexBackendAddress": "後端位址",
+  "artexBackendHint": "填 ARTEX 後端位址，例如 http://127.0.0.1:8787；留空則使用內建離線示範站。",
+  "artexDemoMode": "已切到離線示範站",
+  "artexStartFailed": "啟動失敗",
+  "artexServerStopped": "本機頁面服務已停止",
+  "artexOpenInBrowser": "用瀏覽器開啟",
+  "artexNativePanel": "原生面板",
+  "artexStopServer": "停止本機頁面服務",
+  "artexBackendOfflineHint": "後端未連通 —— 點這裡本機啟動（先 PG 再 ARTEX），起來後會自動重載。",
+  "artexWebViewDesktopHint": "這個平台沒有 WebView，同一個頁面已在 127.0.0.1 上跑著，用瀏覽器開啟即可。",
+  "securityAuditAiHint": "AI 給建議（只產生文字，不改設定）"
 }

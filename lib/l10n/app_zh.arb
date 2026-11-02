@@ -4979,5 +4979,16 @@
   "editorTermNoRuntime": "这个语言没有本地运行时，只能用表达式求值",
   "editorTermMultiline": "多行输入",
   "editorTermMultilineHint": "回车换行，点 ▶ 执行",
-  "artexConsole": "ARTEX 控制台"
+  "artexConsole": "ARTEX 控制台",
+  "artexBackendAddress": "后端地址",
+  "artexBackendHint": "填 ARTEX 后端地址，例如 http://127.0.0.1:8787；留空则使用内置离线演示站。",
+  "artexDemoMode": "已切到离线演示站",
+  "artexStartFailed": "启动失败",
+  "artexServerStopped": "本地页面服务已停止",
+  "artexOpenInBrowser": "用浏览器打开",
+  "artexNativePanel": "原生面板",
+  "artexStopServer": "停止本地页面服务",
+  "artexBackendOfflineHint": "后端未连通 —— 点这里本地启动（先 PG 再 ARTEX），起来后会自动重载。",
+  "artexWebViewDesktopHint": "这个平台没有 WebView，同一个页面已在 127.0.0.1 上跑着，用浏览器打开即可。",
+  "securityAuditAiHint": "AI 给建议（只生成文字，不改配置）"
 }

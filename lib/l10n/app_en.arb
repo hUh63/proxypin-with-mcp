@@ -5430,5 +5430,16 @@
   "editorTermNoRuntime": "No local runtime for this language — only expression eval is available",
   "editorTermMultiline": "Multiline input",
   "editorTermMultilineHint": "Enter inserts a newline — tap ▶ to run",
-  "artexConsole": "ARTEX console"
+  "artexConsole": "ARTEX console",
+  "artexBackendAddress": "Backend address",
+  "artexBackendHint": "Point it at your ARTEX backend, e.g. http://127.0.0.1:8787. Leave empty to browse the built-in offline demo.",
+  "artexDemoMode": "Offline demo mode",
+  "artexStartFailed": "Start failed",
+  "artexServerStopped": "Local web server stopped",
+  "artexOpenInBrowser": "Open in browser",
+  "artexNativePanel": "Native panels",
+  "artexStopServer": "Stop local web server",
+  "artexBackendOfflineHint": "Backend not reachable — tap to start ARTEX locally (PG + ARTEX), then it reloads.",
+  "artexWebViewDesktopHint": "No WebView on this platform — the same page is served on 127.0.0.1, open it in your browser.",
+  "securityAuditAiHint": "AI suggestions (text only, no config changes)"
 }

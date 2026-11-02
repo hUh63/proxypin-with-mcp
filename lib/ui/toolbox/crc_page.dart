@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/ui/component/tool_kit.dart';
 import 'package:proxypin/utils/smali_tool.dart';
 
 class CrcPage extends StatefulWidget {
@@ -147,6 +148,15 @@ class _CrcPageState extends State<CrcPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
         children: [
+          ToolIntro(
+            margin: EdgeInsets.zero,
+            text: '算文件 CRC32、看 zip/apk 里每个条目的 CRC，必要时只改那 4 个字节（不重新打包）。',
+            input: '选一个文件（任意文件算整体 CRC；zip/apk 额外列出条目）',
+            output: '整体 CRC32 + 条目表；选中条目可改成指定值并另存',
+            help: '常见用法：服务端/校验工具只比对条目 CRC 时，验证「改内容不改 CRC」是否被放行。'
+                '改写只动中央目录里的 4 字节，文件其余部分完全不变；改完用右上角另存，不覆盖原文件。',
+          ),
+          const SizedBox(height: 6),
           Row(children: [
             FilledButton.tonalIcon(
               onPressed: _pick,

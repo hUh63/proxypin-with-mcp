@@ -125,15 +125,31 @@ class _SecurityAuditPageState extends State<SecurityAuditPage> {
               label: Text(localizations.securityAuditExport),
             ),
           const SizedBox(width: 8),
-          IconButton(
-            tooltip: localizations.aiTitle,
-            onPressed: report == null ? null : () => _aiAnalyze(report),
-            icon: const Icon(Icons.auto_awesome, size: 20),
-          ),
+          // 「AI 建议」从主按钮挪进菜单：它不是主流程，且在 AppBar 上放个 ✨ 图标
+          // 让人以为要联网/自动改配置。现在是显式的一条菜单项，只产出建议文本。
           IconButton(
             tooltip: localizations.auditPageVerifyTooltip,
             onPressed: _verifying ? null : _verify,
             icon: const Icon(Icons.travel_explore, size: 20),
+          ),
+          PopupMenuButton<String>(
+            tooltip: localizations.more,
+            onSelected: (v) {
+              if (v == 'ai' && report != null) _aiAnalyze(report);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'ai',
+                enabled: report != null,
+                child: Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 16),
+                    const SizedBox(width: 8),
+                    Text(localizations.securityAuditAiHint),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 4),
         ],
