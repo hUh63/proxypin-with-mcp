@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.67.227 (2026-11-03) — ARTEX 工具参数模板
+
+1. **webpt 十件套参数模板**：服务端 `params` 只给描述、没有默认值时，运行对话框按
+   `artexWebptTemplates` 预制一套键名与示例值（port_scan 的 `ports: 1-1000 / banner: 1`、
+   dir_brute 的 `extensions: php,html,bak`、xss 的 `q: FUZZ`、ssrf 的 `mode: metadata`…），
+   与 Termux 里脚本参数、SKILL.md 的调用形态一致 —— 点开就能填，不用先猜参数名。
+2. 修复后 CI：Quality（analyze + 单测）、Build APK、Build Linux DEB、Desktop smoke、
+   Windows 构建全绿；iOS / macOS 两个 job 是 runner 取消（cancelled），非代码失败。
+
 ## v1.67.226 (2026-11-03) — 编译修复
 
 上一版三处编译错误（CI 首轮全红）：

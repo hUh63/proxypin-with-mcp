@@ -960,6 +960,10 @@ class _ArtexToolsPanelState extends State<ArtexToolsPanel> {
         if (d != null) prefill[k] = d;
       }
     });
+    if (prefill.isEmpty) {
+      final tpl = artexWebptTemplates[tool.key];
+      if (tpl != null) prefill.addAll(tpl);
+    }
     final ctrl = TextEditingController(
         text: prefill.isEmpty ? '{\n  \n}' : _pretty.convert(prefill));
     final result = await showModalBottomSheet<ArtexRunResult>(
@@ -1157,6 +1161,23 @@ class _ArtexToolsPanelState extends State<ArtexToolsPanel> {
     );
   }
 }
+
+/// webpt 十件套的参数模板（服务端没给默认值时用它兜底预制）。
+///
+/// 这些键名与 Termux `$HOME/webpt/scripts/tools/` 里的脚本参数一致，也是
+/// SKILL.md 里实测过的调用形态 —— 用户点「运行」不用先猜参数名。
+const Map<String, Map<String, dynamic>> artexWebptTemplates = {
+  'webpt_port_scan': {'target': '', 'ports': '1-1000', 'banner': '1'},
+  'webpt_subdomain_enum': {'domain': '', 'wordlist': 'none'},
+  'webpt_dir_brute': {'url': '', 'wordlist': '', 'extensions': 'php,html,bak'},
+  'webpt_sqli_detect': {'url': '', 'body': 'none', 'method': 'GET'},
+  'webpt_xss_detect': {'url': '', 'q': 'FUZZ', 'method': 'GET'},
+  'webpt_ssrf_probe': {'url': '', 'mode': 'metadata'},
+  'webpt_jwt_attack': {'token': '', 'mode': 'none', 'wordlist': 'none'},
+  'webpt_password_spray': {'url': '', 'users': '', 'passwords': ''},
+  'webpt_webshell_gen': {'lang': 'php', 'pass': '', 'mode': 'simple', 'filename': ''},
+  'webpt_hash_id': {'hash': ''},
+};
 
 /// `jsonDecode` 出来的 Map 统一成 `Map<String, dynamic>`。
 Map<String, dynamic> artexMapFrom(Map<dynamic, dynamic> m) =>
