@@ -4912,5 +4912,8 @@
   "diffOnlyAdded": "只看新增",
   "diffOnlyDeleted": "只看删除",
   "diffOnlyModified": "只看修改",
-  "diffExportHtmlReport": "导出 HTML 报告"
+  "diffExportHtmlReport": "导出 HTML 报告",
+  "diffHistory": "最近对比",
+  "diffHistoryEmpty": "还没有对比记录",
+  "diffHistoryRestore": "用这次记录替换当前左右两侧？"
 }

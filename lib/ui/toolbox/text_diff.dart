@@ -63,6 +63,11 @@ class TextDiffPage extends StatefulWidget {
 class _TextDiffPageState extends State<TextDiffPage> {
   static const String _storeKey = 'text_diff_content_v1';
 
+  /// 最近几次对比的快照（最多 5 组）：「刚才那两段怎么改的」可以回看。
+  static const String _historyKey = 'text_diff_history_v1';
+  static const int _historyLimit = 5;
+  bool _historyWriting = false;
+
   /// 并排还是上下。默认并排（左右两侧），用户切过就记住。
   static const String _sideKey = 'text_diff_side_by_side_v1';
   static const String _fontKey = 'text_diff_font_size_v1';
@@ -325,6 +330,129 @@ class _TextDiffPageState extends State<TextDiffPage> {
       final sp = await SharedPreferences.getInstance();
       await sp.setString(_storeKey, jsonEncode({'left': _left.text, 'right': _right.text}));
     } catch (_) {}
+    unawaited(_pushHistory());
+  }
+
+  /// 把当前这对文本压进「最近对比」历史（同内容不重复，最多 5 组）。
+  Future<void> _pushHistory() async {
+    final left = _left.text;
+    final right = _right.text;
+    if (left.isEmpty && right.isEmpty) return;
+    // 太大的不存：SharedPreferences 不是给几 MB 文本用的。
+    if (left.length + right.length > 400000) return;
+    if (_historyWriting) return;
+    _historyWriting = true;
+    try {
+      final sp = await SharedPreferencesAsync();
+      final raw = await sp.getString(_historyKey);
+      final list = <Map<String, dynamic>>[];
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          for (final e in jsonDecode(raw) as List) {
+            if (e is Map) list.add(Map<String, dynamic>.from(e));
+          }
+        } catch (_) {
+          // 历史坏了就当没有，别影响主流程
+        }
+      }
+      if (list.isNotEmpty && list.first['left'] == left && list.first['right'] == right) return;
+      list.insert(0, {
+        'left': left,
+        'right': right,
+        'time': DateTime.now().millisecondsSinceEpoch,
+      });
+      while (list.length > _historyLimit) {
+        list.removeLast();
+      }
+      await sp.setString(_historyKey, jsonEncode(list));
+    } catch (_) {
+      // 历史只是便利功能，失败静默
+    } finally {
+      _historyWriting = false;
+    }
+  }
+
+  /// 最近对比记录：点一条把左右两侧恢复成当时的内容。
+  Future<void> _showDiffHistory() async {
+    List<Map<String, dynamic>> list = const [];
+    try {
+      final sp = await SharedPreferencesAsync();
+      final raw = await sp.getString(_historyKey);
+      if (raw != null && raw.isNotEmpty) {
+        list = [
+          for (final e in jsonDecode(raw) as List)
+            if (e is Map) Map<String, dynamic>.from(e),
+        ];
+      }
+    } catch (_) {
+      list = const [];
+    }
+    if (!mounted) return;
+    if (list.isEmpty) {
+      _toastText(localizations.diffHistoryEmpty);
+      return;
+    }
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => ListView.builder(
+        shrinkWrap: true,
+        itemCount: list.length,
+        itemBuilder: (ctx, i) {
+          final item = list[i];
+          final l = (item['left'] as String?) ?? '';
+          final r = (item['right'] as String?) ?? '';
+          final time = item['time'] is int
+              ? DateTime.fromMillisecondsSinceEpoch(item['time'] as int)
+              : null;
+          final firstLine = (r.isEmpty ? l : r).split('\n').first.trim();
+          return ListTile(
+            dense: true,
+            leading: Text('${i + 1}', style: const TextStyle(fontSize: 11)),
+            title: Text(
+              firstLine.isEmpty ? localizations.diffHistoryEmpty : firstLine,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
+            ),
+            subtitle: Text(
+              '${time == null ? '' : _historyTime(time)}  '
+              'L${l.isEmpty ? 0 : '\n'.allMatches(l).length + 1} / '
+              'R${r.isEmpty ? 0 : '\n'.allMatches(r).length + 1}',
+              style: const TextStyle(fontSize: 10.5),
+            ),
+            onTap: () => Navigator.pop(ctx, i),
+          );
+        },
+      ),
+    );
+    if (!mounted || picked == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(localizations.diffHistoryRestore),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    if (!mounted || ok != true) return;
+    final item = list[picked];
+    _left.text = (item['left'] as String?) ?? '';
+    _right.text = (item['right'] as String?) ?? '';
+    _leftUndo.clear();
+    _rightUndo.clear();
+    _leftName = '';
+    _rightName = '';
+    _navIndex = -1;
+    _compare();
+    setState(() {});
+  }
+
+  static String _historyTime(DateTime t) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
   }
 
   Future<void> _clearPersist() async {
@@ -896,6 +1024,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             setState(() => _typeFilter = _typeFilter == 'modified' ? null : 'modified');
           case 'exportHtml':
             unawaited(_exportHtmlReport());
+          case 'history':
+            unawaited(_showDiffHistory());
           case 'diffList':
             _showDiffList();
           case 'hexDiff':
@@ -953,6 +1083,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
+        PopupMenuItem(value: 'history', child: Text(localizations.diffHistory)),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(
             value: 'focus', checked: _focusBlock != null, child: Text(localizations.diffFocus)),

@@ -5342,5 +5342,8 @@
   "diffOnlyAdded": "Only added lines",
   "diffOnlyDeleted": "Only deleted lines",
   "diffOnlyModified": "Only modified lines",
-  "diffExportHtmlReport": "Export HTML report"
+  "diffExportHtmlReport": "Export HTML report",
+  "diffHistory": "Recent compares",
+  "diffHistoryEmpty": "No history yet",
+  "diffHistoryRestore": "Replace both sides with this snapshot?"
 }
