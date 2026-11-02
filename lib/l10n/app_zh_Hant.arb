@@ -4779,7 +4779,7 @@
   "artexPasswordHint": "使用者名稱固定為 ARTEX",
   "artexConnect": "連線",
   "artexConnected": "已連線",
-  "artexHint": "填你自己的 ARTEX 伺服器位址；網頁主控台走系統瀏覽器開啟（帶 token，不用再登一次）。",
+  "artexHint": "填你 ARTEX 執行個體的位址（Termux 裡跑就是 127.0.0.1:8787）。開著 ARTEX_TRUST_LOOPBACK=1 時本機回環不需要密碼。",
   "artexNoAddress": "請先填伺服器位址",
   "artexNeedPassword": "需要密碼",
   "artexNotInitialized": "密碼還沒初始化，請先到網頁端設定",

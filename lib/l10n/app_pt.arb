@@ -2979,7 +2979,7 @@
   "artexPasswordHint": "default user is ARTEX",
   "artexConnect": "Connect",
   "artexConnected": "Connected",
-  "artexHint": "Fill in your ARTEX server address; the web console opens in the system browser (with token, no second login).",
+  "artexHint": "Point this at your ARTEX instance — Termux runs it on 127.0.0.1:8787. With ARTEX_TRUST_LOOPBACK=1 loopback needs no password.",
   "artexNoAddress": "Fill in the server address first",
   "artexNeedPassword": "Password required",
   "artexNotInitialized": "Password not initialized yet — open the console and set it first",

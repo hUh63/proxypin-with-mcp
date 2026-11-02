@@ -4779,7 +4779,7 @@
   "artexPasswordHint": "用户名固定为 ARTEX",
   "artexConnect": "连接",
   "artexConnected": "已连接",
-  "artexHint": "填你自己的 ARTEX 服务端地址；网页控制台走系统浏览器打开（带 token，不用再登一次）。",
+  "artexHint": "填你 ARTEX 实例的地址（Termux 里跑就是 127.0.0.1:8787）。开着 ARTEX_TRUST_LOOPBACK=1 时本机回环不需要密码。",
   "artexNoAddress": "请先填服务端地址",
   "artexNeedPassword": "需要密码",
   "artexNotInitialized": "密码还没初始化，请先到网页端设置",
