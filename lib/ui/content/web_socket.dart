@@ -19,26 +19,48 @@ import '../component/json/json_viewer.dart';
 import '../component/json/theme.dart';
 
 ///以聊天对话框样式展示websocket消息
-class Websocket extends StatelessWidget {
+class Websocket extends StatefulWidget {
   final ValueWrap<HttpRequest> request;
   final ValueWrap<HttpResponse> response;
 
   const Websocket(this.request, this.response, {super.key});
 
   @override
+  State<Websocket> createState() => _WebsocketState();
+}
+
+class _WebsocketState extends State<Websocket> {
+  List<WebSocketFrame> _merged = const <WebSocketFrame>[];
+  String _mergedKey = '';
+
+  /// 合并两侧的帧并按时间排序，结果按「帧数 + 最后一帧时间」缓存。
+  ///
+  /// 原来直接在 build 里 `List.from` + `addAll` + `sort()`：长连接（每秒几百帧、
+  /// 单侧上限 2 万帧）时每来一帧都要复制 4 万个元素再全量排序，主 isolate 会被
+  /// 一直占着 —— 表现就是「点开 WebSocket 请求后界面很卡」。
+  List<WebSocketFrame> _mergeMessages(HttpRequest? req, HttpResponse? resp) {
+    final reqFrames = req?.messages ?? const <WebSocketFrame>[];
+    final respFrames = resp?.messages ?? const <WebSocketFrame>[];
+    final key = '${reqFrames.length}|${respFrames.length}|'
+        '${reqFrames.isEmpty ? 0 : reqFrames.last.time.millisecondsSinceEpoch}|'
+        '${respFrames.isEmpty ? 0 : respFrames.last.time.millisecondsSinceEpoch}';
+    if (key == _mergedKey) return _merged;
+    _mergedKey = key;
+    // 两侧各自按时间追加（近似有序），这里仍做一次排序保证交错顺序正确。
+    _merged = <WebSocketFrame>[...reqFrames, ...respFrames]
+      ..sort((a, b) => a.time.compareTo(b.time));
+    return _merged;
+  }
+
+  @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
-    var request = this.request.get();
+    final request = widget.request.get();
     if (request == null) {
       return const SizedBox();
     }
-    List<WebSocketFrame> messages = List.from(request.messages);
-    var response = this.response.get();
-    if (response != null) {
-      messages.addAll(response.messages);
-    }
-    messages.sort((a, b) => a.time.compareTo(b.time));
+    final messages = _mergeMessages(request, widget.response.get());
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 15),

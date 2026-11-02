@@ -653,6 +653,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (_left.text.isEmpty && _right.text.isEmpty) return;
     _left.text = '';
     _right.text = '';
+    _leftName = '';
+    _rightName = '';
     _leftUndo.clear();
     _rightUndo.clear();
     _clearHighlights();
@@ -826,6 +828,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _right.text = l;
     _leftSnapshot = _right.text;
     _rightSnapshot = _left.text;
+    // 文件名跟着内容走，否则「原文件 · a.txt」会指向交换后的另一份内容。
+    final ln = _leftName;
+    _leftName = _rightName;
+    _rightName = ln;
     _navIndex = -1;
     _compare();
     // 交换后两栏内容宽度可能完全变了，横向偏移要归零，否则可能停在空白处。
