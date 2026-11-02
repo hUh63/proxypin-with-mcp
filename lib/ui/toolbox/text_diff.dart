@@ -314,6 +314,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (!mounted) return;
       _left.text = l;
       _right.text = r;
+      // 文件名也要一起恢复：「原文件 · a.txt / 新文件 · b.txt」是这一页的主要
+      // 信息之一，只存正文的话下次进来标签就退回「原文件/新文件」。
+      _leftName = (m['leftName'] as String?) ?? '';
+      _rightName = (m['rightName'] as String?) ?? '';
       _compare();
     } catch (_) {
       // 忽略损坏的存档
@@ -328,7 +332,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
   Future<void> _persistNow() async {
     try {
       final sp = await SharedPreferences.getInstance();
-      await sp.setString(_storeKey, jsonEncode({'left': _left.text, 'right': _right.text}));
+      await sp.setString(
+          _storeKey,
+          jsonEncode({
+            'left': _left.text,
+            'right': _right.text,
+            'leftName': _leftName,
+            'rightName': _rightName,
+          }));
     } catch (_) {}
     unawaited(_pushHistory());
   }

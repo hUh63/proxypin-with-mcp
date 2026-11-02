@@ -37,6 +37,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/calc_engine.dart';
 import 'package:proxypin/network/util/grpc_decoder.dart';
 import 'package:proxypin/network/util/capture_diagnose.dart';
+import 'package:proxypin/network/util/artex_client.dart';
 import 'package:proxypin/l10n/app_localizations_en.dart';
 import 'package:proxypin/network/util/security_audit.dart';
 import 'package:proxypin/network/util/security_rule_store.dart';
@@ -1468,6 +1469,7 @@ class McpServer {
 
   /// 工具分组（用于 get_tool_catalog）：按能力归类，便于模型快速定位工具。
   String _toolGroup(String name) {
+    if (name.startsWith('artex_')) return 'artex';
     if (name.startsWith('tap_') ||
         name.startsWith('swipe_') ||
         name.startsWith('input_') ||
@@ -1532,6 +1534,203 @@ class McpServer {
       return 'capture';
     }
     return 'other';
+  }
+
+  /// ARTEX（Termux 里的 headless 渗透工具箱）工具。
+  ///
+  /// 全部走 REST：地址/token 与界面共用 [Configuration]（`artexBaseUrl`），所以
+  /// 用户在 ARTEX 页面连过一次之后，AI 这边不需要任何额外配置就能接管。
+  /// 本机回环（ARTEX_TRUST_LOOPBACK=1）免 token，空 token 也照常可用。
+  Future<Map<String, dynamic>> _executeArtexTool(
+      String name, Map<String, dynamic> args) async {
+    final conf = await Configuration.instance;
+    final raw = conf.artexBaseUrl.trim();
+    final base = raw.isEmpty ? 'http://127.0.0.1:8787' : raw;
+    final client = ArtexClient(base, token: conf.artexToken);
+    try {
+      switch (name) {
+        case 'artex_health':
+          final h = await client.health();
+          return {
+            'status': h.ok ? 'success' : 'error',
+            'ok': h.ok,
+            if (h.service.isNotEmpty) 'service': h.service,
+            if (h.version.isNotEmpty) 'version': h.version,
+            'latency_ms': h.ms,
+            'base_url': base,
+          };
+
+        case 'artex_stats':
+          return {'status': 'success', 'stats': await client.stats()};
+
+        case 'artex_list_tasks':
+          final status = mcpAsString(args['status']);
+          final limit = (mcpAsInt(args['limit']) ?? 50).clamp(1, 200).toInt();
+          final r = await client.tasks(
+            status: (status == null || status.isEmpty) ? null : status,
+            limit: limit,
+          );
+          return {
+            'status': 'success',
+            'count': r.tasks.length,
+            if (r.active.isNotEmpty) 'active_task': r.active,
+            'tasks': r.tasks.map(artexTaskBrief).toList(),
+          };
+
+        case 'artex_get_task':
+          final id = mcpAsString(args['id']);
+          if (id == null || id.isEmpty) return {'error': 'id is required'};
+          final detail = await client.task(id);
+          return {
+            'status': 'success',
+            'task': detail.isEmpty ? {'id': id} : detail,
+          };
+
+        case 'artex_create_task':
+          final description = mcpAsString(args['description']);
+          if (description == null || description.trim().isEmpty) {
+            return {'error': 'description is required (write the IP/domain inside it)'};
+          }
+          final created = await client.createTask(
+            description: description.trim(),
+            goal: mcpAsString(args['goal']) ?? '',
+            name: mcpAsString(args['name']) ?? '',
+          );
+          final id = '${created['id'] ?? created['task_id'] ?? ''}';
+          return {
+            'status': 'success',
+            if (id.isNotEmpty) 'task_id': id,
+            'note': 'If no site/scope was created the description did not contain a parsable '
+                'host - add the IP/domain and retry.',
+            'raw': created,
+          };
+
+        case 'artex_control_task':
+          final id = mcpAsString(args['id']);
+          final action = mcpAsString(args['action']);
+          if (id == null || id.isEmpty) return {'error': 'id is required'};
+          if (action != 'pause' && action != 'resume') {
+            return {'error': 'action must be pause or resume'};
+          }
+          final r = await client.controlTask(id, action);
+          return {'status': 'success', 'action': action, 'task_id': id, 'raw': r};
+
+        case 'artex_add_goal':
+          final id = mcpAsString(args['id']);
+          final goal = mcpAsString(args['goal']);
+          if (id == null || id.isEmpty) return {'error': 'id is required'};
+          if (goal == null || goal.trim().isEmpty) return {'error': 'goal is required'};
+          final r = await client.addGoal(id, goal.trim());
+          return {'status': 'success', 'task_id': id, 'raw': r};
+
+        case 'artex_list_findings':
+          final taskId = mcpAsString(args['task_id']);
+          final limit = (mcpAsInt(args['limit']) ?? 100).clamp(1, 500).toInt();
+          final list = await client.findings(
+            taskId: (taskId == null || taskId.isEmpty) ? null : taskId,
+            limit: limit,
+          );
+          return {
+            'status': 'success',
+            'count': list.length,
+            'findings': list.map(artexFindingBrief).toList(),
+          };
+
+        case 'artex_get_finding':
+          final id = mcpAsString(args['id']);
+          if (id == null || id.isEmpty) return {'error': 'id is required'};
+          final detail = await client.finding(id);
+          return {
+            'status': detail.isEmpty ? 'error' : 'success',
+            'finding': detail.isEmpty ? {'id': id} : detail,
+          };
+
+        case 'artex_logs':
+          final limit = (mcpAsInt(args['limit']) ?? 50).clamp(1, 300).toInt();
+          final lines = await client.logs(limit: limit);
+          return {
+            'status': 'success',
+            'count': lines.length,
+            'lines': lines.map((e) => e.text).toList(),
+          };
+
+        case 'artex_list_tools':
+          final tools = await client.tools();
+          return {
+            'status': 'success',
+            'count': tools.length,
+            'tools': tools
+                .map((t) => {
+                      'tool_key': t.key,
+                      'kind': t.kind,
+                      if (t.description.isNotEmpty) 'description': t.description,
+                      if (t.params.isNotEmpty) 'params': t.params.keys.toList(),
+                    })
+                .toList(),
+          };
+
+        case 'artex_run_tool':
+          final key = mcpAsString(args['tool_key']);
+          if (key == null || key.isEmpty) return {'error': 'tool_key is required'};
+          final params = mcpAsMap(args['params']) ?? <String, dynamic>{};
+          final r = await client.runTool(key, params);
+          final out = r.output.length > 20000
+              ? '${r.output.substring(0, 20000)}\n…(truncated)'
+              : r.output;
+          return {
+            'status': r.ok ? 'success' : 'error',
+            'tool_key': key,
+            'ok': r.ok,
+            'exit_code': r.exitCode,
+            'duration_ms': r.ms,
+            'output': out,
+          };
+
+        case 'artex_workspace_list':
+          final taskId = mcpAsString(args['task_id']);
+          if (taskId == null || taskId.isEmpty) return {'error': 'task_id is required'};
+          final files = await client.workspace(taskId);
+          return {
+            'status': 'success',
+            'count': files.length,
+            'files': files
+                .map((f) => {
+                      'path': f.path,
+                      'size': f.size,
+                      if (f.isDir) 'dir': true,
+                    })
+                .toList(),
+          };
+
+        case 'artex_workspace_read':
+          final taskId = mcpAsString(args['task_id']);
+          final path = mcpAsString(args['path']);
+          if (taskId == null || taskId.isEmpty) return {'error': 'task_id is required'};
+          if (path == null || path.isEmpty) return {'error': 'path is required'};
+          final content = await client.readWorkspace(taskId, path);
+          final clipped = content.length > 40000
+              ? '${content.substring(0, 40000)}\n…(truncated)'
+              : content;
+          return {
+            'status': 'success',
+            'task_id': taskId,
+            'path': path,
+            'bytes': content.length,
+            'content': clipped,
+          };
+
+        default:
+          throw ToolException('Unknown ARTEX tool: $name');
+      }
+    } on ArtexException catch (e) {
+      return {
+        'error': 'ARTEX: ${e.message}',
+        'hint': 'Is ARTEX running? Open the ARTEX page and use "Start locally", or check '
+            'artex_health. Base URL: $base',
+      };
+    } on ToolException catch (e) {
+      return {'error': e.message};
+    }
   }
 
   Future<dynamic> _executeOfficialTool(String name, Map<String, dynamic> args) async {
@@ -3801,6 +4000,9 @@ class McpServer {
         // 已被 _shadowedOfficialTools 从 tools/list 移除（因此没有 inputSchema，
         // 参数校验会被完全跳过），default 分支却仍能转给官方实现 —— AI 只要猜中
         // 名字就能不可撤销地清空用户抓包列表，且返回 success。
+        if (name.startsWith('artex_')) {
+          return await _executeArtexTool(name, args);
+        }
         final declared = _getToolsList().any((tool) => tool['name'] == name);
         if (!declared) {
           // 抛异常而不是返回 error map：调用方（_runTool / tools/call）会把它转成

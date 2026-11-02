@@ -1406,5 +1406,178 @@ request_id from get_recent_requests or search_requests.''',
           'required': ['action'],
         },
       },
+      {
+        'name': 'artex_health',
+        'description':
+            'ARTEX is a headless pentest toolbox running in Termux (:8787 API, :8788 capture '
+                'proxy). Call this to check the service is alive and which version it reports. '
+                'Its built-in LLM engine is always idle - YOU are the brain, ARTEX only stores '
+                'tasks/findings and hosts the tool pool.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+      {
+        'name': 'artex_stats',
+        'description': 'ARTEX global counters (tasks, assets, findings, engine mode, LLM state). '
+            'Avoid hammering it while a task is running - the bridge blocks on slow queries.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+      {
+        'name': 'artex_list_tasks',
+        'description': 'List ARTEX tasks so you can resume an old one instead of creating a duplicate.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'status': {
+              'type': 'string',
+              'description': 'Filter: created/running/paused/done (omit for all)',
+            },
+            'limit': {'type': 'integer', 'minimum': 1, 'maximum': 200},
+          },
+        },
+      },
+      {
+        'name': 'artex_get_task',
+        'description': 'Get one ARTEX task in full (intent, goals, scope, progress).',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'id': {'type': 'string', 'description': 'Task id'},
+          },
+          'required': ['id'],
+        },
+      },
+      {
+        'name': 'artex_create_task',
+        'description':
+            'Create an ARTEX task. IMPORTANT: put the IP/domain into `description` - ARTEX seeds '
+                'the site/scope by parsing it, so a vague description creates no scope at all. '
+                'Ask the user for the authorisation basis first.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'description': {
+              'type': 'string',
+              'description': 'What to test, with the target IP/domain written inside',
+            },
+            'goal': {
+              'type': 'string',
+              'description': 'One verifiable goal, e.g. "find a login entry"',
+            },
+            'name': {'type': 'string', 'description': 'Optional short name'},
+          },
+          'required': ['description'],
+        },
+      },
+      {
+        'name': 'artex_control_task',
+        'description': 'Pause or resume an ARTEX task.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'id': {'type': 'string'},
+            'action': {'type': 'string', 'enum': ['pause', 'resume']},
+          },
+          'required': ['id', 'action'],
+        },
+      },
+      {
+        'name': 'artex_add_goal',
+        'description': 'Append (or revive) a goal on an ARTEX task - use it when a finding suggests '
+            'a new direction.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'id': {'type': 'string'},
+            'goal': {'type': 'string', 'description': 'One verifiable goal'},
+          },
+          'required': ['id', 'goal'],
+        },
+      },
+      {
+        'name': 'artex_list_findings',
+        'description': 'List ARTEX findings (id/severity/title). Use artex_get_finding for detail.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'task_id': {'type': 'string', 'description': 'Omit for all tasks'},
+            'limit': {'type': 'integer', 'minimum': 1, 'maximum': 500},
+          },
+        },
+      },
+      {
+        'name': 'artex_get_finding',
+        'description': 'Get one ARTEX finding with its raw evidence payload.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'id': {'type': 'string'},
+          },
+          'required': ['id'],
+        },
+      },
+      {
+        'name': 'artex_logs',
+        'description': 'ARTEX engine log tail. Keep limit small (30-50): the ring buffer caps at '
+            '3000 lines and polling too often slows the bridge down.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'limit': {'type': 'integer', 'minimum': 1, 'maximum': 300},
+          },
+        },
+      },
+      {
+        'name': 'artex_list_tools',
+        'description': 'List the ARTEX tool pool (built-in ~71 + the webpt ten). Run one with '
+            'artex_run_tool.',
+        'inputSchema': {'type': 'object', 'properties': {}},
+      },
+      {
+        'name': 'artex_run_tool',
+        'description':
+            'Run one ARTEX tool directly (bypasses the idle engine). params is passed through as '
+                'the tool parameter object - e.g. {"target":"1.2.3.4","ports":"1-1000","banner":"1"} '
+                'for webpt_port_scan. Synchronous and blocking: keep scans small (a full 1-65535 '
+                'port scan blows the bridge timeout).',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'tool_key': {
+              'type': 'string',
+              'description': 'e.g. webpt_port_scan / webpt_subdomain_enum / webpt_dir_brute / '
+                  'webpt_sqli_detect / webpt_xss_detect / webpt_ssrf_probe / webpt_jwt_attack / '
+                  'webpt_hash_id / webpt_password_spray / webpt_webshell_gen',
+            },
+            'params': {
+              'type': 'object',
+              'description': 'Tool parameters, keys must match the tool definition',
+            },
+          },
+          'required': ['tool_key'],
+        },
+      },
+      {
+        'name': 'artex_workspace_list',
+        'description': 'List the artefact files a task wrote into its workspace.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'task_id': {'type': 'string'},
+          },
+          'required': ['task_id'],
+        },
+      },
+      {
+        'name': 'artex_workspace_read',
+        'description': 'Read one workspace file (text). Use it to pull reports/evidence out.',
+        'inputSchema': {
+          'type': 'object',
+          'properties': {
+            'task_id': {'type': 'string'},
+            'path': {'type': 'string', 'description': 'Path relative to the task workspace'},
+          },
+          'required': ['task_id', 'path'],
+        },
+      },
   ];
 }

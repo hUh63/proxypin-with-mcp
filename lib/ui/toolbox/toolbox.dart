@@ -478,7 +478,7 @@ class _ToolboxState extends State<Toolbox> {
                       },
                       icon: Icons.hub_outlined,
                       text: 'ARTEX',
-                      tooltip: 'ARTEX 控制台'),
+                      tooltip: localizations.artexConsole),
                   IconText(
                       onTap: () {
                         Navigator.of(context).push(MaterialPageRoute(

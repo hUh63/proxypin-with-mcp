@@ -1,5 +1,50 @@
 # Changelog
 
+## v1.67.225 (2026-11-03)
+
+**ARTEX 页面重做**（按 Termux 里那套真实形态：headless Go 服务 + 15 个能力）、
+**符号栏改成符号面板**、**控制台升级成真终端**，外加对比页/编辑器的补强与第十轮排查。
+
+ARTEX（这次是重写，不是修补）：
+1. **客户端覆盖全部 15 个能力**：health / stats / tasks（列表、详情、创建、pause/resume、
+   追加目标）/ findings（列表 + 详情）/ logs / llm status / workspace（列目录 + 读文件）/
+   tool pool（内置 + webpt 十件套）/ run_tool 直跑。七个面板：概览、任务、发现、工具、
+   日志、工作区、本地运行。
+2. **本地运行**（新 lib/network/util/artex_service.dart）：用 root 调
+   `su <termux用户> -c '…'`，先起 PostgreSQL 再起 ARTEX（顺序不能反），命令与在 Termux
+   里手敲的逐字一致（PATH / HOME / LD_PRELOAD 三件套 + ARTEX_TRUST_LOOPBACK=1）；
+   支持一键启动/停止/重启、单独启停 PG、探测 Termux uid、tail 运行日志。
+3. **参数不再写死**：`base_url` 走 `/api/*` 多候选路径（`/api/findings` 与
+   `/api/tasks/{id}/findings` 都试），字段解析一律宽松 + 保留原始 JSON（详情页可看 raw），
+   服务端升级/字段改名不会把页面搞白。
+4. **AI 也能控**：新增 13 个 MCP 工具 `artex_health / stats / list_tasks / get_task /
+   create_task / control_task / add_goal / list_findings / get_finding / logs /
+   list_tools / run_tool / workspace_list / workspace_read`，与界面共用同一份
+   `Configuration.artexBaseUrl`，用户在页面连过一次，AI 侧不用再配。
+   `create_task` 的描述里必须写 IP/域名（ARTEX 靠它建 scope），工具描述里已明确要求。
+
+编辑器：
+5. **控制台 → 终端**：提示符 `❯`、多行模式（Enter 换行、▶ 执行）、命令
+   `/run`（跑整个文件）`/stdin a|b|c`（追加标准输入）`/stdin-clear` `/clear` `/reset`
+   `/lang` `/copy` `/help`。JS 后端预置 `readLine() / readInt() / readFloat() / print()`，
+   用全局队列模拟 stdin，脚本读走多少行会同步回界面 —— 「程序从标准输入读、往标准输出写」
+   这套交互真能跑。`Ctrl+`` 切终端、`Ctrl+Shift+`` 切问题页。
+6. **符号栏拉起来就是符号面板**：展开态不再同时保留底部那条符号栏（之前等于同一个东西
+   出现两次还白占 36dp），面板头部补了「收起」按钮。
+
+对比页：
+7. **文件名跟着存档走**：`原文件 · a.txt` / `新文件 · b.txt` 的标签名现在和正文一起持久化
+   （之前只存正文，重开就退回「原文件 / 新文件」）。
+
+排查（第十轮，覆盖全库静态扫描）：
+- `await …` 后 `setState` 无 `mounted`：全库 0 处新增（上一轮已修 41 处）；
+- `firstWhere` 无 `orElse` 的 11 处逐个核对，均为「在 try 内」或「有 orElse」的误报；
+- `int.parse / double.parse` 25 处逐个核对：`timestamp` 与 `encoder` 已在 try/长度守卫内，
+  `cipher` 的十六进制解码走统一 try/catch（失败给「加解密失败」提示），无裸崩风险；
+- `Timer.periodic` 全库均有 cancel；`TextEditingController` 无「build 里新建」模式；
+- **ARTEX 会话销毁竞态**：页面退出瞬间还在飞的请求会 `notifyListeners()` → ChangeNotifier
+  在 dispose 之后 notify 会抛 used-after-dispose，改为统一走 `_notify()` 守卫。
+
 ## v1.67.206 (2026-11-01)
 
 文本对比页 + 文本编辑器各补一批「对标桌面工具」的能力，并做第九轮排查。

@@ -5345,5 +5345,90 @@
   "diffExportHtmlReport": "Export HTML report",
   "diffHistory": "Recent compares",
   "diffHistoryEmpty": "No history yet",
-  "diffHistoryRestore": "Replace both sides with this snapshot?"
+  "diffHistoryRestore": "Replace both sides with this snapshot?",
+  "artexTabOverview": "Overview",
+  "artexTabTasks": "Tasks",
+  "artexTabFindings": "Findings",
+  "artexTabTools": "Tools",
+  "artexTabLogs": "Logs",
+  "artexTabWorkspace": "Workspace",
+  "artexTabService": "Local run",
+  "artexDisconnect": "Disconnect",
+  "artexCreateTask": "New task",
+  "artexTaskDesc": "Description",
+  "artexTaskDescHint": "Write the IP/domain into the description — ARTEX seeds scope from it, vague text creates no site.",
+  "artexTaskGoal": "Goal",
+  "artexTaskCreated": "Task created",
+  "artexAddGoal": "Add goal",
+  "artexGoalHint": "One verifiable goal, e.g. find a login entry",
+  "artexPause": "Pause",
+  "artexResume": "Resume",
+  "artexNoTasks": "No tasks yet",
+  "artexNoFindings": "No findings",
+  "artexNoLogs": "No logs",
+  "artexNoTools": "No tools in the pool",
+  "artexNoWorkspace": "No files",
+  "artexRawJson": "Raw JSON",
+  "artexSearchTool": "Search tools",
+  "artexToolKindCustom": "Custom",
+  "artexRunTool": "Run tool",
+  "artexRunParams": "Parameters (JSON)",
+  "artexRunParamsHint": "Keys must match the tool's params; empty object runs the defaults",
+  "artexRun": "Run",
+  "artexAutoRefresh": "Auto refresh",
+  "artexPickTask": "Pick a task",
+  "artexLoading": "Loading…",
+  "artexServiceStatus": "Status",
+  "artexLocalTitle": "Run ARTEX locally",
+  "artexLocalHint": "ARTEX lives in Termux — this starts PostgreSQL then ARTEX with root, exactly like typing it in a Termux shell.",
+  "artexDetect": "Detect",
+  "artexDetectFailed": "Termux not found (or no root)",
+  "artexStartLocal": "Start locally",
+  "artexStarting": "Starting PostgreSQL + ARTEX…",
+  "artexNotAndroid": "Local run is Android only",
+  "artexRemoteOnlyHint": "On desktop just point the address at a remote ARTEX instance.",
+  "artexRunningNow": "Running",
+  "artexStoppedNow": "Stopped",
+  "artexTermuxUser": "Termux user",
+  "artexTermuxUserHint": "Leave empty to use u0_a353",
+  "artexRestart": "Restart",
+  "artexStartPg": "Start PG",
+  "artexStopPg": "Stop PG",
+  "artexTailLog": "Service log",
+  "artexWorkflow": "How it works",
+  "artexWorkflowBody": "1) Start PostgreSQL, then ARTEX (order matters).\n2) Create a task and put the IP/domain in the description so a scope is built.\n3) Recon with the webpt tools: port scan → subdomain enum → dir brute.\n4) Pick a detector by parameter shape (sqli / xss with FUZZ / ssrf).\n5) Poll the task, read logs and findings every few minutes; add goals as you learn more.\n6) Export artefacts from the workspace at the end.",
+  "editorTerminal": "Terminal",
+  "editorTermHelp": "Terminal commands: /run run the file · /stdin a|b|c queue stdin · /stdin-clear · /clear · /reset · /lang · /copy · /help",
+  "editorTermReset": "Runtime reset — variables and queued stdin are gone",
+  "editorTermStdin": "Standard input",
+  "editorTermStdinHint": "One line per input, read by readLine()/readInt() in order",
+  "editorTermStdinCount": "{n} line(s) queued",
+  "@editorTermStdinCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorTermStdinAdded": "Queued {n} line(s)",
+  "@editorTermStdinAdded": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorTermStdinCleared": "Stdin cleared",
+  "editorTermUnknown": "Unknown command: {cmd} (try /help)",
+  "@editorTermUnknown": {
+    "placeholders": {
+      "cmd": {
+        "type": "String"
+      }
+    }
+  },
+  "editorTermNoRuntime": "No local runtime for this language — only expression eval is available",
+  "editorTermMultiline": "Multiline input",
+  "editorTermMultilineHint": "Enter inserts a newline — tap ▶ to run",
+  "artexConsole": "ARTEX console"
 }

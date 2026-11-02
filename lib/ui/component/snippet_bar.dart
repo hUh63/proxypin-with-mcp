@@ -299,6 +299,7 @@ class _SnippetBarState extends State<SnippetBar> {
                 }),
                 const Spacer(),
                 _iconBtn(Icons.tune, localizations.editorManage, _manage),
+                _iconBtn(Icons.keyboard_arrow_down, localizations.close, _toggle),
               ],
             ),
             const SizedBox(height: 4),
@@ -444,7 +445,9 @@ class _SnippetBarState extends State<SnippetBar> {
             ),
           ),
         ),
-        _collapsedRow(),
+        // 展开态就是「面板」，不再额外保留一条符号栏 —— 之前两者同时存在，
+        // 视觉上等于同一个东西出现两次，且底部那行还白占 36dp。
+        if (_extent <= 0) _collapsedRow(),
       ],
     );
   }

@@ -454,6 +454,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _toggleFind();
         return true;
       }
+      // Ctrl+`：切到「终端」（VS Code 同款），再按一次关掉。
+      if (ctrl && key == LogicalKeyboardKey.backquote) {
+        if (_consoleOpen) {
+          setState(() => _consoleOpen = false);
+        } else {
+          _openConsole(EditorConsoleTab.console);
+        }
+        return true;
+      }
+      // Ctrl+Shift+`：切到「问题」页签。
+      if (ctrl && shift && key == LogicalKeyboardKey.backquote) {
+        _openConsole(EditorConsoleTab.problems);
+        return true;
+      }
       if (ctrl && key == LogicalKeyboardKey.keyG) {
         unawaited(_selectToLine());
         return true;

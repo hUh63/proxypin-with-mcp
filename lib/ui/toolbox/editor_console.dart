@@ -132,6 +132,12 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   JavascriptRuntime? _rt;
   bool _running = false;
 
+  /// 多行输入模式（终端里写 for/if 这种多语句时用；Enter 换行，▶ 才执行）。
+  bool _multiline = false;
+
+  /// JS 侧的 stdin 预置（readLine/readInt/print）只装一次。
+  bool _preludeReady = false;
+
   /// 控制台状态（输出 / 命令历史 / 会话变量）——由文档持有。
   ConsoleState get _state => widget.state;
 
@@ -228,6 +234,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       final callbacks = JavascriptRuntime.channelFunctionsRegistered[created.getEngineInstanceId()];
       callbacks?["ConsoleLog"] = _onConsoleLog;
       _rt = created;
+      _installPrelude(created);
       return created;
     } catch (e) {
       _append('$e', ConsoleLineKind.error);
@@ -249,6 +256,62 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       _append('$e', ConsoleLineKind.error);
     }
     return null;
+  }
+
+  /// 给 QuickJS 装一套「终端」预置：readLine / readInt / readFloat / print。
+  ///
+  /// 浏览器沙箱没有真 stdin，所以用全局队列 `__ppStdin` 模拟：`/stdin 5 7` 先压
+  /// 两行进队列，脚本里 `const a = readInt()` 就能依次取到 —— 这样「程序从标准
+  /// 输入读、往标准输出写」的交互在手机/桌面上都能真跑起来。
+  void _installPrelude(JavascriptRuntime rt) {
+    if (_preludeReady) return;
+    try {
+      rt.evaluate(_preludeSource);
+      _preludeReady = true;
+    } catch (e) {
+      _append('prelude: $e', ConsoleLineKind.error);
+    }
+  }
+
+  /// 预置脚本本体（一次性装进 JS 全局）。
+  static const String _preludeSource =
+      'globalThis.__ppStdin = globalThis.__ppStdin || [];'
+      'if (!globalThis.__ppPrelude) {'
+      'globalThis.__ppPrelude = 1;'
+      'globalThis.readLine = function () { return globalThis.__ppStdin.length ? '
+      'String(globalThis.__ppStdin.shift()) : null; };'
+      'globalThis.readInt = function () { var v = globalThis.readLine(); '
+      'if (v === null) return null; var n = parseInt(v, 10); return isNaN(n) ? null : n; };'
+      'globalThis.readFloat = function () { var v = globalThis.readLine(); '
+      'if (v === null) return null; var n = parseFloat(v); return isNaN(n) ? null : n; };'
+      'globalThis.print = function () { '
+      'console.log(Array.prototype.slice.call(arguments).join(" ")); };'
+      'globalThis.__ppRemaining = function () { return JSON.stringify(globalThis.__ppStdin); };'
+      '}';
+
+  /// 把控制台里的 stdin 队列灌进 JS，运行完再用 [_pullStdin] 取回剩下的。
+  void _pushStdin(JavascriptRuntime rt) {
+    try {
+      rt.evaluate('globalThis.__ppStdin = ${jsonEncode(_state.stdin)}');
+    } catch (_) {
+      // 预置没装上时忽略
+    }
+  }
+
+  void _pullStdin(JavascriptRuntime rt) {
+    try {
+      final r = rt.evaluate('globalThis.__ppRemaining ? globalThis.__ppRemaining() : "[]"');
+      final raw = r.stringResult;
+      if (raw == null || raw.isEmpty) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        _state.stdin
+          ..clear()
+          ..addAll(decoded.map((e) => '$e'));
+      }
+    } catch (_) {
+      // 忽略
+    }
   }
 
   void _append(String text, [ConsoleLineKind kind = ConsoleLineKind.output]) {
@@ -276,6 +339,11 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       _append('> $source', ConsoleLineKind.prompt);
       _state.remember(source);
     }
+    // 以 / 开头的是终端命令，不送去求值（/help /clear /run /stdin …）
+    if (source.startsWith('/')) {
+      await _terminalCommand(source);
+      return;
+    }
     setState(() => _running = true);
     try {
       if (_backend == ConsoleBackend.expr) {
@@ -292,6 +360,8 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
 
       final rt = _ensureRuntime();
       if (rt == null) return;
+      // 终端语义：先把 stdin 队列灌进去，跑完再取回剩余的（脚本读走多少一目了然）
+      _pushStdin(rt);
       final selection = widget.readSelection?.call() ?? '';
       if (selection.isNotEmpty) {
         try {
@@ -317,7 +387,118 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     } catch (e) {
       _append('$e', ConsoleLineKind.error);
     } finally {
+      final rt = _rt;
+      if (rt != null) _pullStdin(rt);
       if (mounted) setState(() => _running = false);
+    }
+  }
+
+  /// 重置 JS 运行时（`/reset` 用：变量、预置、剩余 stdin 全部清掉）。
+  void _resetRuntime() {
+    _preludeReady = false;
+    _rt?.dispose();
+    _rt = null;
+  }
+
+  /// 编辑 stdin 队列（给脚本喂输入）。
+  Future<void> _editStdin() async {
+    final loc = localizations;
+    final ctrl = TextEditingController(text: _state.stdin.join('\n'));
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.editorTermStdin),
+        content: TextField(
+          controller: ctrl,
+          minLines: 4,
+          maxLines: 10,
+          style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5),
+          decoration: InputDecoration(
+            hintText: loc.editorTermStdinHint,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(loc.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(loc.save),
+          ),
+        ],
+      ),
+    );
+    final text = ctrl.text;
+    ctrl.dispose();
+    if (ok != true) return;
+    setState(() {
+      _state.clearStdin();
+      _state.pushStdin(text
+          .split('\n')
+          .map((e) => e.trimRight())
+          .where((e) => e.isNotEmpty));
+    });
+    // 立刻同步给运行中的 JS（没跑过脚本时队列就是全部输入）
+    final rt = _rt;
+    if (rt != null) _pushStdin(rt);
+  }
+
+  /// 终端命令。都是「本地动作」，永远不会被送去求值。
+  Future<void> _terminalCommand(String raw) async {
+    final loc = localizations;
+    final space = raw.indexOf(' ');
+    final cmd = (space < 0 ? raw : raw.substring(0, space)).toLowerCase();
+    final rest = space < 0 ? '' : raw.substring(space + 1).trim();
+    switch (cmd) {
+      case '/help':
+      case '/?':
+        _append(loc.editorTermHelp, ConsoleLineKind.note);
+        return;
+      case '/clear':
+        setState(_state.clearOutput);
+        return;
+      case '/reset':
+        setState(_state.reset);
+        _resetRuntime();
+        _append(loc.editorTermReset, ConsoleLineKind.note);
+        return;
+      case '/run':
+        if (_backend != ConsoleBackend.js) {
+          _append(loc.editorTermNoRuntime, ConsoleLineKind.warn);
+          return;
+        }
+        await _run(widget.readDocument(), echo: false);
+        return;
+      case '/stdin':
+        if (rest.isEmpty) {
+          _append(loc.editorTermStdinCount(_state.stdin.length), ConsoleLineKind.note);
+          return;
+        }
+        // 多个值用 | 分隔（值里可能含空格）
+        final lines = rest
+            .split('|')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList(growable: false);
+        _state.pushStdin(lines);
+        _append(loc.editorTermStdinAdded(lines.length), ConsoleLineKind.note);
+        return;
+      case '/stdin-clear':
+        setState(_state.clearStdin);
+        _append(loc.editorTermStdinCleared, ConsoleLineKind.note);
+        return;
+      case '/lang':
+        _append(
+            '${widget.language} · ${_backend == ConsoleBackend.js ? 'JS runtime' : 'expression'}',
+            ConsoleLineKind.note);
+        return;
+      case '/copy':
+        await _copyOutput();
+        return;
+      default:
+        _append(loc.editorTermUnknown(cmd), ConsoleLineKind.error);
     }
   }
 
@@ -493,7 +674,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
         tab(localizations.editorLintIssues, EditorConsoleTab.problems,
             problems > 0 ? '$problems' : null, badgeColor),
         if (widget.programming)
-          tab(localizations.editorConsole, EditorConsoleTab.console, null, null),
+          tab(localizations.editorTerminal, EditorConsoleTab.console, null, null),
         // 窄屏（360dp）上这条按钮区会超出宽度：问题页有 7 个图标按钮 + 2 个页签。
         // 包一层「右对齐 + 横向可滑」，挤不下就滑过去，不会再出 Row overflow 的黄黑条。
         Expanded(
@@ -789,8 +970,10 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
+                    // 终端首屏直接把命令列出来（/run /stdin /reset…），
+                    // 比一句「输入表达式执行」有用得多。
                     _backend == ConsoleBackend.js
-                        ? localizations.editorConsoleHint
+                        ? localizations.editorTermHelp
                         : localizations.editorConsoleExprHint,
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
@@ -830,24 +1013,65 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       Padding(
         padding: const EdgeInsets.fromLTRB(8, 2, 4, 6),
         child: Row(children: [
-          Expanded(
-            child: SizedBox(
-              height: 34,
-              child: TextField(
-                controller: _input,
-                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: localizations.editorConsoleInputHint,
-                  hintStyle: const TextStyle(fontSize: 12),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  border: const OutlineInputBorder(),
-                ),
-                onSubmitted: (value) {
-                  unawaited(_run(value));
-                  _input.clear();
-                },
+          // 终端提示符：和真正的 shell 一样，「❯」后面才是用户输入
+          Padding(
+            padding: const EdgeInsets.only(right: 6, left: 2),
+            child: Text(
+              _multiline ? '…' : '❯',
+              style: TextStyle(
+                fontSize: 14,
+                height: 1,
+                fontFamily: 'monospace',
+                color: theme.colorScheme.primary,
               ),
+            ),
+          ),
+          Expanded(
+            child: TextField(
+              controller: _input,
+              minLines: 1,
+              maxLines: _multiline ? 4 : 1,
+              textInputAction:
+                  _multiline ? TextInputAction.newline : TextInputAction.done,
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: _multiline
+                    ? localizations.editorTermMultilineHint
+                    : localizations.editorConsoleInputHint,
+                hintStyle: const TextStyle(fontSize: 12),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: const OutlineInputBorder(),
+              ),
+              onSubmitted: (value) {
+                if (_multiline) return;
+                unawaited(_run(value));
+                _input.clear();
+              },
+            ),
+          ),
+          // 多行模式（写 for/if 这种多语句时用 Enter 换行，▶ 才执行）
+          IconButton(
+            tooltip: localizations.editorTermMultiline,
+            onPressed: () => setState(() => _multiline = !_multiline),
+            icon: Icon(_multiline ? Icons.wrap_text : Icons.notes, size: 16),
+            color: _multiline ? theme.colorScheme.primary : null,
+            visualDensity: VisualDensity.compact,
+          ),
+          // stdin 队列：给脚本喂标准输入
+          InkWell(
+            onTap: _editStdin,
+            customBorder: const CircleBorder(),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.keyboard_return, size: 16,
+                    color: _state.stdin.isEmpty ? null : theme.colorScheme.primary),
+                if (_state.stdin.isNotEmpty)
+                  Text('${_state.stdin.length}',
+                      style: TextStyle(
+                          fontSize: 9.5, color: theme.colorScheme.primary)),
+              ]),
             ),
           ),
           IconButton(

@@ -78,6 +78,24 @@ class ConsoleState {
   /// 最近一次成功的结果（「插入到编辑器」用）。
   String? lastResult;
 
+  /// 终端模式下「喂给脚本的标准输入」队列。
+  ///
+  /// 真终端里程序用 readLine/stdin 拿输入，浏览器里的沙箱没有真 stdin，所以这
+  /// 里用队列模拟：`/stdin 10 20` 先压两行，脚本里的 `readLine()` 依次取走。
+  /// 运行结束后把 JS 侧剩下的行同步回来（`/stdin` 会不会被消耗掉一目了然）。
+  final List<String> stdin = <String>[];
+
+  void pushStdin(Iterable<String> lines) {
+    for (final l in lines) {
+      stdin.add(l);
+    }
+    if (stdin.length > 500) stdin.removeRange(0, stdin.length - 500);
+  }
+
+  void clearStdin() {
+    stdin.clear();
+  }
+
   /// 追加一行。
   void append(String text, ConsoleLineKind kind) {
     lines.add(ConsoleLine(text, kind));

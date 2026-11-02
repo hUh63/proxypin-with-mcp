@@ -150,6 +150,17 @@ class Configuration {
   /// 是否要求访问令牌（默认开启）。关闭后同一局域网内任何设备都能读取实时流量。
   bool wsTrafficAuthEnabled = true;
 
+  //ARTEX（Termux 里的 headless 渗透工具箱）客户端配置。UI 与 MCP 的 artex_* 工具
+  //共用这一份，避免两边各存一份地址/token 互相漂移。
+  String artexBaseUrl = 'http://127.0.0.1:8787';
+  String? artexToken;
+  String artexTermuxUser = ''; // 空 = 用默认 u0_a353
+
+  //ARTEX 本地运行参数（默认值与 Termux 里实测的启动命令一致）
+  String artexAddr = '127.0.0.1:8787';
+  String artexProxyAddr = '127.0.0.1:8788';
+  String artexPgDsn = 'postgres://postgres@127.0.0.1:5432/artex?sslmode=disable';
+
   //双向认证 mTLS（与上游服务器 TLS 握手时提供客户端证书，上游 #366）
   bool mtlsEnabled = false;
   String? mtlsChainPath; // 客户端证书链 PEM
@@ -217,6 +228,12 @@ class Configuration {
     wsTrafficToken = config['wsTrafficToken'] as String?;
     // 老配置里没有这个键：默认按「开启鉴权」处理（缺键时保持安全默认值）。
     wsTrafficAuthEnabled = config['wsTrafficAuthEnabled'] != false;
+    artexBaseUrl = config['artexBaseUrl'] ?? artexBaseUrl;
+    artexToken = config['artexToken'] as String?;
+    artexTermuxUser = config['artexTermuxUser'] ?? artexTermuxUser;
+    artexAddr = config['artexAddr'] ?? artexAddr;
+    artexProxyAddr = config['artexProxyAddr'] ?? artexProxyAddr;
+    artexPgDsn = config['artexPgDsn'] ?? artexPgDsn;
     mtlsEnabled = config['mtlsEnabled'] ?? false;
     mtlsChainPath = config['mtlsChainPath'];
     mtlsKeyPath = config['mtlsKeyPath'];
@@ -357,6 +374,12 @@ class Configuration {
       'wsTrafficHistoryEnabled': wsTrafficHistoryEnabled,
       if (wsTrafficToken != null) 'wsTrafficToken': wsTrafficToken,
       'wsTrafficAuthEnabled': wsTrafficAuthEnabled,
+      'artexBaseUrl': artexBaseUrl,
+      if (artexToken != null) 'artexToken': artexToken,
+      'artexTermuxUser': artexTermuxUser,
+      'artexAddr': artexAddr,
+      'artexProxyAddr': artexProxyAddr,
+      'artexPgDsn': artexPgDsn,
       'mtlsEnabled': mtlsEnabled,
       if (mtlsChainPath != null) 'mtlsChainPath': mtlsChainPath,
       if (mtlsKeyPath != null) 'mtlsKeyPath': mtlsKeyPath,
