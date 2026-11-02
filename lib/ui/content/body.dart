@@ -779,6 +779,32 @@ class _BodyState extends State<_Body> {
   /// 「程序无响应」。32KB 是「肉眼还看不出差别、但已经明显更流畅」的分界。
   static const int _virtualizedThreshold = 32000;
 
+  /// 解码 / 格式化的 Future 缓存。
+  ///
+  /// 这两步（有界解码里可能带解压，格式化走 isolate 美化 JSON）如果每次 build 都
+  /// 新建 Future，那么滚动、搜索、切 tab 引起的任何一次 setState 都会重跑一遍 ——
+  /// 大 body 上肉眼可见（上游 #986 的「无响应」里也有这一份）。
+  String _decodeKey = '';
+  Future<String>? _decodeFuture;
+  String _formatKey = '';
+  Future<String>? _formatFuture;
+
+  Future<String> _decodedBody(HttpMessage message) {
+    final key = '${message.hashCode}|${message.body?.length ?? 0}|${message.bodyDecoded}';
+    if (key == _decodeKey && _decodeFuture != null) return _decodeFuture!;
+    _decodeKey = key;
+    _decodeFuture = message.decodeBodyStringBounded();
+    return _decodeFuture!;
+  }
+
+  Future<String> _formattedBody(ViewType type, String text) {
+    final key = '${type.name}|${text.length}|${text.hashCode}';
+    if (key == _formatKey && _formatFuture != null) return _formatFuture!;
+    _formatKey = key;
+    _formatFuture = _formatTextBody(type, text);
+    return _formatFuture!;
+  }
+
   late ViewType viewType;
   HttpMessage? message;
 
@@ -923,7 +949,10 @@ class _BodyState extends State<_Body> {
       return const Center(child: Text("video not support preview"));
     }
     if (type == ViewType.hex) {
-      return HexViewer(data: Uint8List.fromList(message.body!), searchController: widget.searchController);
+      // body 本来就是 Uint8List 时别再复制一份（80KB 以上会变成每帧都拷一次）。
+      final raw = message.body!;
+      final data = raw is Uint8List ? raw : Uint8List.fromList(raw);
+      return HexViewer(data: data, searchController: widget.searchController);
     }
 
     if (type == ViewType.formUrl) {
@@ -933,7 +962,7 @@ class _BodyState extends State<_Body> {
           contextMenuBuilder: bodyContextMenu);
     }
 
-    final viewer = futureWidget(message.decodeBodyStringBounded(), initialData: message.bodyPreview, (body) {
+    final viewer = futureWidget(_decodedBody(message), initialData: message.bodyPreview, (body) {
       try {
         if (type == ViewType.jsonText) {
           var jsonObject = json.decode(body);
@@ -1064,7 +1093,7 @@ class _BodyState extends State<_Body> {
     final showVirtualized = text.length > _virtualizedThreshold;
 
     // Format asynchronously (may use compute)
-    final futureFormatted = _formatTextBody(type, text);
+    final futureFormatted = _formattedBody(type, text);
 
     return futureWidget(
       initialData: text.substring(0, min(text.length, 10000)), // Show a preview while formatting
