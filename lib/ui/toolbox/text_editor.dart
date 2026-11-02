@@ -47,6 +47,7 @@ import 'package:proxypin/ui/component/lint_rules_dialog.dart';
 import 'package:proxypin/ui/toolbox/editor_console.dart';
 import 'package:proxypin/utils/custom_lang.dart';
 import 'package:proxypin/utils/lang_meta.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:proxypin/utils/naming_case.dart';
 import 'package:proxypin/utils/text_edit_ops.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
@@ -3545,30 +3546,71 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorSymbolsEmpty);
       return;
     }
+    // 加一个过滤框：几千行的文件里符号列表能有上百条，翻着找不如打两个字。
+    var query = '';
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (ctx) => ListView.builder(
-        itemCount: items.length,
-        itemBuilder: (ctx, i) {
-          final it = items[i];
-          final indent = ((it.indent ~/ 4).clamp(0, 6)) * 10.0;
-          return Padding(
-            padding: EdgeInsets.only(left: indent),
-            child: ListTile(
-              dense: true,
-              visualDensity: VisualDensity.compact,
-              leading: Icon(_symbolIcon(it.kind), size: 18),
-              title: Text(it.name, style: const TextStyle(fontSize: 13)),
-              trailing: Text('L${it.line + 1}', style: const TextStyle(fontSize: 11)),
-              onTap: () {
-                Navigator.pop(ctx);
-                final len = controller.text.length;
-                controller.selection =
-                    TextSelection.collapsed(offset: it.offset.clamp(0, len));
-                controller.scrollToLine(it.line);
-              },
-            ),
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final q = query.toLowerCase();
+          final filtered = q.isEmpty
+              ? items
+              : items.where((it) => it.name.toLowerCase().contains(q)).toList(growable: false);
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.8),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                child: TextField(
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    hintText: localizations.editorSymbolsFilter,
+                    border: const OutlineInputBorder(),
+                    suffixText: '${filtered.length}/${items.length}',
+                    suffixStyle: const TextStyle(fontSize: 11),
+                  ),
+                  onChanged: (v) => setSheet(() => query = v.trim()),
+                ),
+              ),
+              Flexible(
+                child: filtered.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(localizations.editorSymbolsEmpty,
+                            style: const TextStyle(fontSize: 12.5)),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        itemBuilder: (ctx, i) {
+                          final it = filtered[i];
+                          final indent = ((it.indent ~/ 4).clamp(0, 6)) * 10.0;
+                          return Padding(
+                            padding: EdgeInsets.only(left: indent),
+                            child: ListTile(
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                              leading: Icon(_symbolIcon(it.kind), size: 18),
+                              title: Text(it.name, style: const TextStyle(fontSize: 13)),
+                              trailing: Text('L${it.line + 1}',
+                                  style: const TextStyle(fontSize: 11)),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                final len = controller.text.length;
+                                controller.selection =
+                                    TextSelection.collapsed(offset: it.offset.clamp(0, len));
+                                controller.scrollToLine(it.line);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ]),
           );
         },
       ),
@@ -4519,6 +4561,88 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.selection = TextSelection(baseOffset: start, extentOffset: end);
     controller.scrollToLine(_lineOfOffset(text, start));
   }
+
+  /// 列选择：在选区覆盖的每一行的「选区起始列」各加一个光标。
+  ///
+  /// 手机上没法按住 Alt 拖框，但「先选一段、再按列加光标」效果一样 ——
+  /// 对齐的配置表、日志、CSV 批量改同一列时很省事（VS Code 的 Add Cursors to Line Ends
+  /// / 列选择）。
+  void _addColumnCursors() {
+    final c = _controller;
+    if (c == null) return;
+    final text = c.text;
+    final sel = c.selection;
+    if (!sel.isValid || sel.isCollapsed) {
+      _toast(localizations.editorColumnNeedSelection);
+      return;
+    }
+    final start = sel.start.clamp(0, text.length);
+    final end = sel.end.clamp(start, text.length);
+    final firstLineStart = text.lastIndexOf('\n', start) + 1;
+    final column = start - firstLineStart;
+    var line = _lineOfOffset(text, start);
+    var offset = start;
+    var added = 0;
+    try {
+      c.clearMultiCursors();
+      while (true) {
+        // 第一行就是光标本身，只给后面的行补光标。
+        if (added > 0) c.addMultiCursor(line, column);
+        added++;
+        if (added > 5000) break; // 兜底：别让一次误操作造出上万个光标
+        final nl = text.indexOf('\n', offset);
+        if (nl < 0 || nl >= end) break;
+        offset = nl + 1;
+        line++;
+      }
+    } catch (e) {
+      logger.w('column cursors failed', error: e);
+    }
+    if (added <= 1) {
+      _toast(localizations.editorColumnNeedMultiLine);
+      return;
+    }
+    _toast(localizations.editorColumnCursors(added));
+  }
+
+  /// 打开光标处（或选中内容）的 http(s) 链接。
+  Future<void> _openLinkAtCursor() async {
+    final c = _controller;
+    if (c == null) return;
+    final text = c.text;
+    final sel = c.selection;
+    String candidate;
+    if (sel.isValid && !sel.isCollapsed) {
+      candidate = text.substring(sel.start.clamp(0, text.length), sel.end.clamp(0, text.length));
+    } else {
+      var s0 = sel.extentOffset.clamp(0, text.length);
+      var e0 = s0;
+      while (s0 > 0 && !_isUrlBoundary(text.codeUnitAt(s0 - 1))) {
+        s0--;
+      }
+      while (e0 < text.length && !_isUrlBoundary(text.codeUnitAt(e0))) {
+        e0++;
+      }
+      candidate = text.substring(s0, e0);
+    }
+    // 句尾标点不该算进链接（"见 https://a.com/x." 这类）。
+    candidate = candidate.trim().replaceAll(RegExp(r'[。，、；：）」』】>]+$'), '');
+    final uri = Uri.tryParse(candidate);
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https') || uri.host.isEmpty) {
+      _toast(localizations.editorNoLink);
+      return;
+    }
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      _toast('${e}');
+    }
+  }
+
+  static bool _isUrlBoundary(int c) =>
+      c == 32 || c == 9 || c == 10 || c == 13 || c == 34 || c == 39 ||
+      c == 40 || c == 41 || c == 60 || c == 62 || c == 91 || c == 93 ||
+      c == 123 || c == 125 || c == 0x3000;
 
   /// 按文件内容猜缩进（VS 的 Detect Indentation）。
   void _detectIndent() {
@@ -6410,6 +6534,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
+        _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
+        _menuItem('openLink', Icons.link, loc.editorOpenLink),
         _menuItem('trimTrailing', Icons.cleaning_services_outlined, loc.editorTrimTrailing),
         PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
         _menuItem('toggleBookmark', Icons.bookmark_add_outlined, loc.editorToggleBookmark),
@@ -6616,6 +6742,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _jumpToMatchingBracket();
       case 'selectToBracket':
         _selectToBracket();
+      case 'columnCursors':
+        _addColumnCursors();
+      case 'openLink':
+        unawaited(_openLinkAtCursor());
       case 'trimTrailing':
         _trimTrailingWhitespace();
       case 'detectIndent':

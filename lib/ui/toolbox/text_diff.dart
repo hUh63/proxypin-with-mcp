@@ -147,6 +147,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 已被用户手动展开的折叠段（值是折叠段在未折叠列表里的起始下标）。
   final Set<int> _expandedFolds = <int>{};
 
+  /// 只看某一类差异（`added` / `deleted` / `modified`）；null = 全部。
+  /// 对标 Beyond Compare 的「只显示新增/删除/修改」过滤。
+  String? _typeFilter;
+
   /// 聚焦模式保留的上下文行数。
   static const int _focusContext = 3;
 
@@ -878,6 +882,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _changeFontSize(-1);
           case 'stats':
             _showDiffStats();
+          case 'filterAdd':
+            setState(() => _typeFilter = _typeFilter == 'added' ? null : 'added');
+          case 'filterDel':
+            setState(() => _typeFilter = _typeFilter == 'deleted' ? null : 'deleted');
+          case 'filterMod':
+            setState(() => _typeFilter = _typeFilter == 'modified' ? null : 'modified');
+          case 'exportHtml':
+            unawaited(_exportHtmlReport());
           case 'diffList':
             _showDiffList();
           case 'hexDiff':
@@ -917,7 +929,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'zoomOut', child: Text(localizations.editorZoomOut)),
         PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
         const PopupMenuDivider(),
+        CheckedPopupMenuItem(
+            value: 'filterAdd',
+            checked: _typeFilter == 'added',
+            child: Text(localizations.diffOnlyAdded)),
+        CheckedPopupMenuItem(
+            value: 'filterDel',
+            checked: _typeFilter == 'deleted',
+            child: Text(localizations.diffOnlyDeleted)),
+        CheckedPopupMenuItem(
+            value: 'filterMod',
+            checked: _typeFilter == 'modified',
+            child: Text(localizations.diffOnlyModified)),
+        const PopupMenuDivider(),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
+        PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
@@ -1109,6 +1135,78 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ]),
       ),
     );
+  }
+
+  /// 导出 HTML 报告（对标 Beyond Compare / WinMerge 的 HTML 报告）。
+  ///
+  /// 并排表格 + 底色 + 行号，双击就能在浏览器里看，也能直接发给别人 ——
+  /// Markdown 报告适合贴 issue，HTML 适合「让人一眼看出改了哪」。
+  Future<void> _exportHtmlReport() async {
+    final rows = _alignedRows();
+    if (rows.isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    const maxRows = 8000;
+    final shown = rows.length > maxRows ? rows.sublist(0, maxRows) : rows;
+    final changed = rows.where((r) => r.type != DiffRowType.equal).length;
+    final esc = const HtmlEscape().convert;
+
+    final sb = StringBuffer()
+      ..writeln('<!DOCTYPE html>')
+      ..writeln('<html lang="en"><head><meta charset="utf-8">')
+      ..writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
+      ..writeln('<title>Diff report</title>')
+      ..writeln([
+        '<style>',
+        'body{margin:0;padding:16px;font:13px/1.5 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1b1b1b;background:#fff}',
+        'h1{font-size:17px;margin:0 0 2px}',
+        '.meta{color:#6b6b6b;font-size:12px;margin-bottom:12px}',
+        'table{border-collapse:collapse;width:100%;table-layout:fixed}',
+        'td{font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;vertical-align:top;padding:1px 6px;border-bottom:1px solid #f0f0f0}',
+        'td.ln{width:54px;text-align:right;color:#9a9a9a;background:#fafafa}',
+        'tr.eq td{background:#fff}',
+        'tr.del td{background:#ffecec}',
+        'tr.add td{background:#eaffea}',
+        'tr.mod td{background:#fff8e1}',
+        '.hint{color:#9a9a9a;font-size:11px;margin-top:10px}',
+        '</style></head><body>'
+      ].join('\n'))
+      ..writeln('<h1>Diff report</h1>')
+      ..writeln('<div class="meta">${rows.length} rows &middot; $changed changed'
+          '${_ignoreCase ? ' &middot; ignore case' : ''}'
+          '${_ignoreWhitespace ? ' &middot; ignore whitespace' : ''}</div>')
+      ..writeln('<table>');
+
+    for (final r in shown) {
+      final cls = switch (r.type) {
+        DiffRowType.equal => 'eq',
+        DiffRowType.added => 'add',
+        DiffRowType.deleted => 'del',
+        DiffRowType.modified => 'mod',
+      };
+      final left = r.leftText == null ? '' : esc(r.leftText!);
+      final right = r.rightText == null ? '' : esc(r.rightText!);
+      sb.writeln('<tr class="$cls">'
+          '<td class="ln">${r.leftLine ?? ''}</td><td>${left.isEmpty ? '&nbsp;' : left}</td>'
+          '<td class="ln">${r.rightLine ?? ''}</td><td>${right.isEmpty ? '&nbsp;' : right}</td>'
+          '</tr>');
+    }
+    sb.writeln('</table>');
+    if (rows.length > maxRows) {
+      sb.writeln('<div class="hint">Only the first $maxRows rows are included '
+          '(${rows.length} total).</div>');
+    }
+    sb.writeln('</body></html>');
+
+    try {
+      await FilePicker.saveFile(
+          fileName: 'diff-report.html',
+          bytes: Uint8List.fromList(utf8.encode(sb.toString())));
+      if (mounted) _toast(localizations.copied);
+    } catch (e) {
+      _toast('${localizations.fail}: $e');
+    }
   }
 
   /// 对两侧文本做静态语法检查。
@@ -1642,10 +1740,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (fb != null && fb >= 0 && fb < _blocks.length) {
       return _focusRows(rows, _blocks[fb]);
     }
-    if (!_onlyDiff) return _foldUnchanged ? _foldRuns(rows) : rows;
+    if (!_onlyDiff && _typeFilter == null) {
+      return _foldUnchanged ? _foldRuns(rows) : rows;
+    }
     final keep = <int>{};
     for (var i = 0; i < rows.length; i++) {
-      if (rows[i].type == DiffRowType.equal) continue;
+      final type = rows[i].type;
+      if (type == DiffRowType.equal) continue;
+      if (_typeFilter != null && type.name != _typeFilter) continue;
       for (var d = -1; d <= 1; d++) {
         final j = i + d;
         if (j >= 0 && j < rows.length) keep.add(j);

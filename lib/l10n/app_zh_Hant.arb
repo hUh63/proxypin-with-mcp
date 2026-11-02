@@ -4901,5 +4901,16 @@
   "mergeReplaceRight": "用合併結果替換右側內容？",
   "mcpLoopbackUrl": "本機回環位址（同機使用）",
   "resetWindowPosition": "重設視窗位置",
-  "resetWindowPositionDesc": "把視窗移回主螢幕中央（拔掉副螢幕後應用開啟看不到視窗時用這個）"
+  "resetWindowPositionDesc": "把視窗移回主螢幕中央（拔掉副螢幕後應用開啟看不到視窗時用這個）",
+  "editorSymbolsFilter": "篩選符號",
+  "editorColumnSelect": "按欄新增游標",
+  "editorColumnNeedSelection": "先選中一段跨多行的文字",
+  "editorColumnNeedMultiLine": "選區至少要跨兩行",
+  "editorColumnCursors": "已新增 {n} 個游標",
+  "editorOpenLink": "開啟連結",
+  "editorNoLink": "游標處不是 http(s) 連結",
+  "diffOnlyAdded": "只看新增",
+  "diffOnlyDeleted": "只看刪除",
+  "diffOnlyModified": "只看修改",
+  "diffExportHtmlReport": "匯出 HTML 報告"
 }

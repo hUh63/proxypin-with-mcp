@@ -5324,5 +5324,23 @@
   "mergeReplaceRight": "Replace the right pane with the merged result?",
   "mcpLoopbackUrl": "Loopback URL (same device)",
   "resetWindowPosition": "Reset window position",
-  "resetWindowPositionDesc": "Move the window back to the center of the main screen (use this if the app opens with no visible window after unplugging a monitor)"
+  "resetWindowPositionDesc": "Move the window back to the center of the main screen (use this if the app opens with no visible window after unplugging a monitor)",
+  "editorSymbolsFilter": "Filter symbols",
+  "editorColumnSelect": "Add cursors by column",
+  "editorColumnNeedSelection": "Select a block spanning multiple lines first",
+  "editorColumnNeedMultiLine": "Selection must span at least two lines",
+  "editorColumnCursors": "{n} cursors added",
+  "@editorColumnCursors": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorOpenLink": "Open link",
+  "editorNoLink": "Cursor is not on an http(s) link",
+  "diffOnlyAdded": "Only added lines",
+  "diffOnlyDeleted": "Only deleted lines",
+  "diffOnlyModified": "Only modified lines",
+  "diffExportHtmlReport": "Export HTML report"
 }
