@@ -469,7 +469,14 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
           _append(loc.editorTermNoRuntime, ConsoleLineKind.warn);
           return;
         }
-        await _run(widget.readDocument(), echo: false);
+        final doc = widget.readDocument();
+        // 整篇丢给 QuickJS 会是同步解析：几十万字符能把 UI 卡住十几秒，
+        // 这里设个上限，超了就明确告诉用户（而不是「点了没反应」）。
+        if (doc.length > 200000) {
+          _append(loc.editorTooLargeToProcess, ConsoleLineKind.warn);
+          return;
+        }
+        await _run(doc, echo: false);
         return;
       case '/stdin':
         if (rest.isEmpty) {

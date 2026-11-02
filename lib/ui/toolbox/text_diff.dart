@@ -900,7 +900,19 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   centerTitle: true,
                 ),
               ),
-        body: Column(children: [
+        // 桌面快捷键（对齐 Beyond Compare / Meld 的习惯）：
+        //   F7 / Alt+↓ 下一处差异，Shift+F7 / Alt+↑ 上一处。
+        // 只包 body，不动输入框自己的按键行为。
+        body: CallbackShortcuts(
+          bindings: <ShortcutActivator, VoidCallback>{
+            const SingleActivator(LogicalKeyboardKey.f7): () => _navigate(1),
+            const SingleActivator(LogicalKeyboardKey.f7, shift: true): () => _navigate(-1),
+            const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): () => _navigate(1),
+            const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): () => _navigate(-1),
+          },
+          child: Focus(
+            autofocus: true,
+            child: Column(children: [
           _fileBar(),
           Row(
             children: [
@@ -941,6 +953,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 controller: _leftActive ? _findLeft : _findRight),
           ),
         ]),
+          ),
+        ),
       ),
     );
   }
