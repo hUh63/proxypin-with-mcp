@@ -46,6 +46,7 @@
 //
 // 本机回环（ARTEX_TRUST_LOOPBACK=1）免 token，所以空 token 也照常发请求。
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 

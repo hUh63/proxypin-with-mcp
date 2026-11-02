@@ -1609,7 +1609,7 @@ class McpServer {
           final id = mcpAsString(args['id']);
           final action = mcpAsString(args['action']);
           if (id == null || id.isEmpty) return {'error': 'id is required'};
-          if (action != 'pause' && action != 'resume') {
+          if (action == null || (action != 'pause' && action != 'resume')) {
             return {'error': 'action must be pause or resume'};
           }
           final r = await client.controlTask(id, action);

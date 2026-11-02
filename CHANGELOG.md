@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.67.226 (2026-11-03) — 编译修复
+
+上一版三处编译错误（CI 首轮全红）：
+1. `artex_client.dart` 用了 `TimeoutException` 但没 import `dart:async`；
+2. `artex_service.dart` 的 `status()` 里拼接 shell 命令时最后一段少了分号
+   （`Expected to find ';'`）；
+3. `mcp_server.dart` 的 `artex_control_task` 把 `String?` 传给需要 `String` 的
+   `controlTask`，改成先判空再收窄类型。
+
 ## v1.67.225 (2026-11-03)
 
 **ARTEX 页面重做**（按 Termux 里那套真实形态：headless Go 服务 + 15 个能力）、

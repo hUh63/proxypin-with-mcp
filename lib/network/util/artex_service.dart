@@ -185,7 +185,7 @@ class ArtexService {
     final cmd = 'echo "ROOT=\$(id -u)"; '
         'echo "PID=\$(pgrep -f artex-bin/artex 2>/dev/null | head -n1)"; '
         'echo "ARTC=\$(pgrep -c -f artex-bin/artex 2>/dev/null)"; '
-        'echo "PGC=\$(pgrep -c -f postgres 2>/dev/null)"; '
+        'echo "PGC=\$(pgrep -c -f postgres 2>/dev/null)";';
 
     final r = await asTermux(u, cmd, timeout: const Duration(seconds: 25));
     String pick(String key) {
