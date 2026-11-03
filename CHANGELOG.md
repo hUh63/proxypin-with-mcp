@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.67.231 (2026-11-03) — 编译修复
+
+1. `sign_page.dart` 用的是相对 import（`../component/...`），新加的 `tool_kit` /
+   `request_pick_sheet` 没被带进来 → 上一版 10 处「isn't defined」。
+2. `RequestPickSheet` 构造漏了 `scroll` 命名参数（字段声明了但构造没接上）。
+3. 顺带把 MCP 客户端的发现/日志端点对齐 2.2.7：
+   `/api/exploration/findings`、`/api/exploration/findings/{id}`、`/api/logs/history`，
+   老路径仍作为兜底。
+
 ## v1.67.230 (2026-11-03)
 
 **ARTEX 直接跑官方前端**、**六个「很 AI」的工具页改成正常人能用**、第十一轮排查。

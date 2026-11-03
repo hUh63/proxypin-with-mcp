@@ -557,6 +557,8 @@ class ArtexClient {
 
   Future<List<ArtexFinding>> findings({String? taskId, int limit = 200}) async {
     final data = await _sendAny('GET', [
+      // 2.2.7（官方 APK 那套前端）把发现挂在 exploration 下，老版本是 /api/findings
+      '/api/exploration/findings',
       if (taskId != null && taskId.isNotEmpty) '/api/tasks/$taskId/findings',
       '/api/findings',
     ], query: {
@@ -575,7 +577,11 @@ class ArtexClient {
   }
 
   Future<Map<String, dynamic>> finding(String id) async {
-    final data = await _sendAny('GET', ['/api/findings/$id', '/api/finding/$id']);
+    final data = await _sendAny('GET', [
+      '/api/exploration/findings/$id',
+      '/api/findings/$id',
+      '/api/finding/$id',
+    ]);
     return artexMap(data);
   }
 
@@ -583,6 +589,7 @@ class ArtexClient {
 
   Future<List<ArtexLogLine>> logs({int limit = 50}) async {
     final data = await _sendAny('GET', const [
+      '/api/logs/history',
       '/api/logs',
       '/api/engine/logs',
       '/api/log',

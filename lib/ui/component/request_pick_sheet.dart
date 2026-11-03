@@ -30,7 +30,7 @@ class RequestPickSheet extends StatefulWidget {
   /// 展示条数上限（最近的在前）。
   final int limit;
 
-  const RequestPickSheet({super.key, this.limit = 500});
+  const RequestPickSheet({super.key, this.limit = 500, this.scroll});
 
   /// 弹出选择器；用户取消返回 null。
   static Future<HttpRequest?> show(BuildContext context, {int limit = 500}) {
