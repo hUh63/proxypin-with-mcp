@@ -1049,6 +1049,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             setState(() => _typeFilter = _typeFilter == 'modified' ? null : 'modified');
           case 'exportHtml':
             unawaited(_exportHtmlReport());
+          case 'exportPatch':
+            unawaited(_exportPatch());
           case 'history':
             unawaited(_showDiffHistory());
           case 'diffList':
@@ -1105,6 +1107,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         const PopupMenuDivider(),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
+        PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
@@ -1780,6 +1783,85 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 导出差异报告（Markdown，unified diff 风格）：存档 / 贴 issue 都能用。
+  /// 导出标准 unified diff（`--- a/x +++ b/x @@ ... @@`），可直接 `git apply` /
+  /// `patch -p1`。桌面工具（Beyond Compare / Meld）都有这个出口，用来把差异交给
+  /// CI 或同事的机器。
+  Future<void> _exportPatch() async {
+    final rows = _alignedRows();
+    if (rows.isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    final text = _unifiedDiff(rows);
+    try {
+      final saved = await FilePicker.saveFile(
+          fileName: 'changes.patch', bytes: Uint8List.fromList(utf8.encode(text)));
+      if (!mounted) return;
+      if (saved != null) _toastText(localizations.diffReportSaved);
+    } catch (e) {
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
+  String _unifiedDiff(List<DiffRow> rows) {
+    final lName = _leftName.isEmpty ? 'original' : _leftName;
+    final rName = _rightName.isEmpty ? 'modified' : _rightName;
+    final out = StringBuffer()
+      ..writeln('--- a/$lName')
+      ..writeln('+++ b/$rName');
+    final changed = <int>[];
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].type != DiffRowType.equal) changed.add(i);
+    }
+    if (changed.isEmpty) return out.toString();
+    // 相邻变更（间隔 <= 2*context+1）合成一个 hunk
+    const context = 3;
+    var start = changed.first;
+    var end = changed.first;
+    for (final i in changed.skip(1)) {
+      if (i - end <= context * 2 + 1) {
+        end = i;
+      } else {
+        _writeHunk(out, rows, start, end, context);
+        start = i;
+        end = i;
+      }
+    }
+    _writeHunk(out, rows, start, end, context);
+    return out.toString();
+  }
+
+  void _writeHunk(StringBuffer out, List<DiffRow> rows, int from, int to, int context) {
+    final first = from - context < 0 ? 0 : from - context;
+    final last = to + context >= rows.length ? rows.length - 1 : to + context;
+    int? lStart;
+    int? rStart;
+    var lCount = 0;
+    var rCount = 0;
+    for (var i = first; i <= last; i++) {
+      final r = rows[i];
+      if (lStart == null && r.leftLine != null) lStart = r.leftLine;
+      if (rStart == null && r.rightLine != null) rStart = r.rightLine;
+      if (r.type != DiffRowType.added && r.leftLine != null) lCount++;
+      if (r.type != DiffRowType.deleted && r.rightLine != null) rCount++;
+    }
+    out.writeln('@@ -${lStart ?? 1},$lCount +${rStart ?? 1},$rCount @@');
+    for (var i = first; i <= last; i++) {
+      final r = rows[i];
+      switch (r.type) {
+        case DiffRowType.deleted:
+          out.writeln('-${r.leftText ?? ''}');
+        case DiffRowType.added:
+          out.writeln('+${r.rightText ?? ''}');
+        case DiffRowType.modified:
+          out.writeln('-${r.leftText ?? ''}');
+          out.writeln('+${r.rightText ?? ''}');
+        case DiffRowType.equal:
+          out.writeln(' ${r.leftText ?? r.rightText ?? ''}');
+      }
+    }
+  }
+
   Future<void> _exportReport() async {
     final rows = _alignedRows();
     if (rows.isEmpty) {

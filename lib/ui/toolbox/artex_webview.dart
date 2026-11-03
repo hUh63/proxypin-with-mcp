@@ -331,7 +331,19 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return Scaffold(
+    return PopScope(
+      // 返回键先退 WebView 的历史（前端是单页应用，直接退出会丢掉当前页）
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final web = _web;
+        if (web != null && await web.canGoBack()) {
+          await web.goBack();
+          return;
+        }
+        if (mounted) Navigator.of(context).pop();
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('ARTEX'),
         actions: [
@@ -383,6 +395,7 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
                   width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
             )
           : null,
+      ),
     );
   }
 

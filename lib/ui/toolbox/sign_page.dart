@@ -710,22 +710,13 @@ class _TtEncryptTabState extends State<_TtEncryptTab> {
         ),
       ]),
       const SizedBox(height: 16),
-      if (_result.isNotEmpty) ...[
-        Row(children: [
-          Text(localizations.signHeaders, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-          const Spacer(),
-          TextButton.icon(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: _result));
-              FlutterToastr.show(localizations.copied, context);
-            },
-            icon: const Icon(Icons.copy, size: 16),
-            label: Text(localizations.signCopyAll),
-          ),
-        ]),
-        const SizedBox(height: 4),
-        SelectableText(_result, style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5)),
-      ],
+      ToolResultBox(
+        title: localizations.signHeaders,
+        value: _result,
+        emptyHint: '加密/解密结果会出现在这里',
+        saveName: 'ttencrypt',
+        minHeight: 90,
+      ),
     ]);
   }
 }

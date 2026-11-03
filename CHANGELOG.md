@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.67.232 (2026-11-03)
+
+1. **对比页导出 `.patch`**：标准 unified diff（`--- a/x` / `+++ b/x` / `@@ -l,c +r,c @@`，
+   3 行上下文，相邻变更合块），可直接 `git apply` / `patch -p1` —— Beyond Compare、
+   Meld 都有这个出口，用来把差异交给 CI 或同事的机器。
+2. **TTEncrypt 结果**改用固定结果区（等宽 + 复制 + 保存），不再是「一段 SelectableText」。
+3. **ARTEX WebView 返回键**：先退前端历史（单页应用），退不动才关页面。
+4. 补 l10n：`diffExportPatch`。
+
 ## v1.67.231 (2026-11-03) — 编译修复
 
 1. `sign_page.dart` 用的是相对 import（`../component/...`），新加的 `tool_kit` /

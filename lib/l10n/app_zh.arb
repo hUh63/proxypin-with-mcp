@@ -4990,5 +4990,6 @@
   "artexStopServer": "停止本地页面服务",
   "artexBackendOfflineHint": "后端未连通 —— 点这里本地启动（先 PG 再 ARTEX），起来后会自动重载。",
   "artexWebViewDesktopHint": "这个平台没有 WebView，同一个页面已在 127.0.0.1 上跑着，用浏览器打开即可。",
-  "securityAuditAiHint": "AI 给建议（只生成文字，不改配置）"
+  "securityAuditAiHint": "AI 给建议（只生成文字，不改配置）",
+  "diffExportPatch": "导出 .patch"
 }
