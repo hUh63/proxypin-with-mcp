@@ -3190,5 +3190,9 @@
   "artexBackendOfflineHint": "Backend not reachable — tap to start ARTEX locally (PG + ARTEX), then it reloads.",
   "artexWebViewDesktopHint": "No WebView on this platform — the same page is served on 127.0.0.1, open it in your browser.",
   "securityAuditAiHint": "AI suggestions (text only, no config changes)",
-  "diffExportPatch": "Export .patch"
+  "diffExportPatch": "Export .patch",
+  "artexEmbeddedMode": "Built-in server (standalone)",
+  "artexEmbeddedHint": "Runs fully on this device: data stays in the app, no Termux / root / PostgreSQL needed.",
+  "artexEmbeddedOn": "Standalone · data stored on this device",
+  "artexNoRootSwitch": "No root/su on this device — switched to the built-in server."
 }

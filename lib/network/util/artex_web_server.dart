@@ -36,6 +36,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:proxypin/network/util/artex_local_backend.dart';
 import 'package:proxypin/network/util/logger.dart';
 
 class ArtexWebServer {
@@ -229,15 +230,14 @@ class ArtexWebServer {
   // ---------------------------------------------------------------- 反代
 
   /// 把 `/api/**` 转发到 [proxyBase]，流式回吐（SSE 依赖这个）。
+  ///
+  /// [proxyBase] 为空（独立模式）或外部后端连不上时，交给 App 内置的
+  /// [ArtexLocalBackend] —— 这样「前后端都在 App 里」，不需要 Termux/root/PG。
   Future<void> _proxy(HttpRequest request) async {
     final base = proxyBase.trim();
     final response = request.response;
     if (base.isEmpty) {
-      // 没配后端：明确告诉前端 503，让它走 demo 数据而不是一直转圈
-      response.statusCode = HttpStatus.serviceUnavailable;
-      response.headers.contentType = ContentType.json;
-      response.write('{"error":"no backend configured"}');
-      await response.close();
+      await ArtexLocalBackend.instance.handle(request);
       return;
     }
 
@@ -297,13 +297,19 @@ class ArtexWebServer {
       }
       await response.close();
     } catch (e) {
-      logger.w('[ArtexWeb] proxy ${request.uri.path} failed: $e');
+      logger.w('[ArtexWeb] proxy ${request.uri.path} failed: $e -> embedded fallback');
+      // 外部后端不可用：降级到内置服务端（响应已开始写的场景除外）
       try {
-        response.statusCode = HttpStatus.badGateway;
-        response.write('{"error":"${e.toString().replaceAll('"', "'")}"}');
-        await response.close();
-      } catch (_) {
-        // 响应头已经发出去 / 连接已断：只能放弃
+        await ArtexLocalBackend.instance.handle(request);
+      } catch (inner) {
+        logger.w('[ArtexWeb] embedded fallback failed: $inner');
+        try {
+          response.statusCode = HttpStatus.badGateway;
+          response.write('{"error":"${e.toString().replaceAll('"', "'")}"}');
+          await response.close();
+        } catch (_) {
+          // 响应头已经发出去 / 连接已断：只能放弃
+        }
       }
     } finally {
       client?.close(force: false);

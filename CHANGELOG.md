@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.67.233 (2026-11-03)
+
+**ARTEX 变成独立工具**：前后端都在 App 里，不再依赖 Termux / root / PostgreSQL。
+
+1. **内置服务端**（新 `lib/network/util/artex_local_backend.dart`，纯 Dart）：
+   `/api/health`、`/api/auth|users|setup`（本地单用户免密）、`/api/tasks` 增删改查、
+   `/api/tasks/{id}/control|goals|chat`、`/api/exploration/findings`、`/api/logs/history`、
+   `/api/conversations`，未知端点返回**结构合法的空响应**（GET→空集合，其它→`{}`），
+   前端不会白屏。任务/发现/日志/会话落 App 私有目录的 JSON（1.2s 合并写盘）。
+   `/api/**/stream` 保持 SSE 长连接 + 15s 心跳。
+2. **默认就是独立模式**：`Configuration.artexEmbedded`（默认 true）→ 本地页面服务的
+   `/api` 直接由内置服务端处理；填了外部后端地址才走反代，且外部不可达时**自动降级**
+   到内置服务端（不会转圈）。
+3. **没有 root 不再报错**：`su` 不存在时原来直接抛
+   `ProcessException: No such file or directory`（`su -c su u0_a353 -c '...'`）。
+   现在 `_sh()` 识别 "No such file / Permission denied" 返回 `PROXYPIN_NO_SU` 标记，
+   界面检测到就**自动切到内置服务端**并提示「这台设备没有 root，已切换」。
+4. **后端地址对话框**：新增「内置服务端（独立运行）」开关，关掉才显示外部地址输入框。
+   顶部状态条：独立模式显示绿色「独立运行 · 数据存在本机」，外部模式不可达才显示红色
+   提示 + 本地启动。
+5. 顺带修掉一个我自己埋的 SSE 缺陷：SSE 都是 GET、请求体为空，原先用
+   `request.listen` 的 onDone 判断断开会让心跳在第一秒就停掉（日志页不再刷新）。
+
 ## v1.67.232 (2026-11-03)
 
 1. **对比页导出 `.patch`**：标准 unified diff（`--- a/x` / `+++ b/x` / `@@ -l,c +r,c @@`，

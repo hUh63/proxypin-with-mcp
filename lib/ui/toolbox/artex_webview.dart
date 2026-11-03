@@ -61,6 +61,9 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
   int _progress = 0;
   bool _starting = false;
   bool _backendUp = false;
+
+  /// true = 用 App 内置服务端（独立运行）；false = 连外部 ARTEX 后端。
+  bool _embedded = true;
   String _baseUrl = 'http://127.0.0.1:8787';
 
   @override
@@ -83,6 +86,7 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
   Future<void> _bootstrap() async {
     try {
       final conf = await Configuration.instance;
+      _embedded = conf.artexEmbedded;
       _baseUrl = conf.artexBaseUrl.trim().isEmpty ? 'http://127.0.0.1:8787' : conf.artexBaseUrl.trim();
     } catch (_) {
       // 配置读不到就用默认值
@@ -90,7 +94,7 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
     final server = ArtexWebServer.instance;
     int port;
     try {
-      port = await server.start(base: _baseUrl);
+      port = await server.start(base: _embedded ? '' : _baseUrl);
     } catch (e) {
       if (!mounted) return;
       _toast('ARTEX web: $e');
@@ -134,6 +138,11 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
   }
 
   Future<void> _probeBackend() async {
+    if (_embedded) {
+      // 内置服务端由本进程提供，天然可用
+      if (mounted) setState(() => _backendUp = true);
+      return;
+    }
     final base = _baseUrl.trim();
     if (base.isEmpty) {
       if (mounted) setState(() => _backendUp = false);
@@ -182,26 +191,41 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
   Future<void> _editBackend() async {
     final loc = AppLocalizations.of(context)!;
     final ctrl = TextEditingController(text: _baseUrl);
+    var useEmbedded = _embedded;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.artexBackendAddress),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: ctrl,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                hintText: 'http://127.0.0.1:8787',
-                border: OutlineInputBorder(),
+        content: StatefulBuilder(
+          builder: (ctx2, setLocal) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: useEmbedded,
+                title: Text(loc.artexEmbeddedMode,
+                    style: const TextStyle(fontSize: 13.5)),
+                subtitle: Text(loc.artexEmbeddedHint,
+                    style: const TextStyle(fontSize: 11.5)),
+                onChanged: (v) => setLocal(() => useEmbedded = v),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(loc.artexBackendHint,
-                style: TextStyle(fontSize: 12, color: Theme.of(ctx).hintColor)),
-          ],
+              if (!useEmbedded) ...[
+                const SizedBox(height: 6),
+                TextField(
+                  controller: ctrl,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    hintText: 'http://127.0.0.1:8787',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(loc.artexBackendHint,
+                    style: TextStyle(fontSize: 12, color: Theme.of(ctx).hintColor)),
+              ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -218,17 +242,17 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
     final text = ctrl.text.trim();
     ctrl.dispose();
     if (ok != true) return;
-    _baseUrl = text;
-    ArtexWebServer.instance.proxyBase = text;
+    _embedded = useEmbedded;
+    if (text.isNotEmpty) _baseUrl = text;
+    ArtexWebServer.instance.proxyBase = useEmbedded ? '' : _baseUrl;
     try {
       final conf = await Configuration.instance;
-      conf.artexBaseUrl = text;
+      conf.artexEmbedded = useEmbedded;
+      if (text.isNotEmpty) conf.artexBaseUrl = text;
       await conf.flushConfig();
     } catch (_) {}
     await _reload();
-    if (mounted) {
-      _toast(text.isEmpty ? loc.artexDemoMode : loc.artexConnected);
-    }
+    if (mounted) _toast(useEmbedded ? loc.artexEmbeddedOn : loc.artexConnected);
   }
 
   /// 本地运行：起 PG + ARTEX，成功后自动重载（这就是「软件里直接跑起来」）。
@@ -241,6 +265,12 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
     if (_starting) return;
     setState(() => _starting = true);
     try {
+      // 没有 root 就别让用户看一堆 ProcessException：直接切内置服务端
+      final rooted = await ArtexService.hasRoot();
+      if (!rooted) {
+        await _switchToEmbedded(loc.artexNoRootSwitch);
+        return;
+      }
       var user = '';
       try {
         final conf = await Configuration.instance;
@@ -264,6 +294,11 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
         if (_backendUp) break;
       }
       if (!mounted) return;
+      if (pg.output.contains(ArtexService.noRootMarker) ||
+          art.output.contains(ArtexService.noRootMarker)) {
+        await _switchToEmbedded(loc.artexNoRootSwitch);
+        return;
+      }
       if (_backendUp) {
         _toast(loc.artexConnected);
         await _reload();
@@ -295,6 +330,21 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
     } finally {
       if (mounted) setState(() => _starting = false);
     }
+  }
+
+  /// 切到内置服务端并重载（无 root / 外部后端不可用时用）。
+  Future<void> _switchToEmbedded(String message) async {
+    _embedded = true;
+    ArtexWebServer.instance.proxyBase = '';
+    try {
+      final conf = await Configuration.instance;
+      conf.artexEmbedded = true;
+      await conf.flushConfig();
+    } catch (_) {}
+    await _probeBackend();
+    await _reload();
+    if (!mounted) return;
+    _toast(message);
   }
 
   /// 从 baseUrl 里抠出「主机:端口」，端口按需替换。
@@ -371,7 +421,8 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
           PopupMenuButton<String>(
             onSelected: (v) => unawaited(_menuAction(v)),
             itemBuilder: (_) => [
-              PopupMenuItem(value: 'local', child: Text(loc.artexStartLocal)),
+              if (!_embedded)
+                PopupMenuItem(value: 'local', child: Text(loc.artexStartLocal)),
               PopupMenuItem(value: 'browser', child: Text(loc.artexOpenInBrowser)),
               const PopupMenuDivider(),
               PopupMenuItem(value: 'native', child: Text(loc.artexNativePanel)),
@@ -384,7 +435,7 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
         children: [
           if (_progress > 0 && _progress < 100)
             LinearProgressIndicator(value: _progress / 100, minHeight: 2),
-          if (!_backendUp) _offlineBanner(loc),
+          if (!_backendUp || _embedded) _modeBanner(loc),
           Expanded(child: _content(loc)),
         ],
       ),
@@ -399,9 +450,36 @@ class _ArtexWebPageState extends State<ArtexWebPage> {
     );
   }
 
-  /// 后端没起来时的提示条（一键本地运行）。
-  Widget _offlineBanner(AppLocalizations loc) {
+  /// 顶部状态条：
+  ///   * 内置服务端 → 绿色「独立运行」条（点一下看说明）；
+  ///   * 外部后端不可达 → 红色提示 + 「本地启动」。
+  Widget _modeBanner(AppLocalizations loc) {
     final theme = Theme.of(context);
+    if (_embedded) {
+      return Material(
+        color: theme.colorScheme.primaryContainer,
+        child: InkWell(
+          onTap: _editBackend,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            child: Row(
+              children: [
+                Icon(Icons.offline_bolt_outlined,
+                    size: 17, color: theme.colorScheme.onPrimaryContainer),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(loc.artexEmbeddedOn,
+                      style: TextStyle(
+                          fontSize: 12, color: theme.colorScheme.onPrimaryContainer)),
+                ),
+                Icon(Icons.chevron_right,
+                    size: 16, color: theme.colorScheme.onPrimaryContainer),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Material(
       color: theme.colorScheme.errorContainer,
       child: InkWell(

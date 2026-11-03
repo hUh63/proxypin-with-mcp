@@ -25,6 +25,7 @@ import 'package:flutter/foundation.dart';
 import 'package:proxypin/network/util/artex_client.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/util/artex_service.dart';
+import 'package:proxypin/network/util/artex_web_server.dart';
 
 class ArtexSession extends ChangeNotifier {
   String baseUrl = 'http://127.0.0.1:8787';
@@ -87,9 +88,19 @@ class ArtexSession extends ChangeNotifier {
   Future<void> loadPrefs() async {
     try {
       final conf = await Configuration.instance;
-      baseUrl = conf.artexBaseUrl.trim().isEmpty
-          ? 'http://127.0.0.1:8787'
-          : conf.artexBaseUrl.trim();
+      if (conf.artexEmbedded) {
+        // 内置服务端：原生面板也走本地页面服务（它已经把 /api 接到内置后端）
+        try {
+          await ArtexWebServer.instance.start(base: '');
+          baseUrl = ArtexWebServer.instance.origin;
+        } catch (_) {
+          baseUrl = 'http://127.0.0.1:8787';
+        }
+      } else {
+        baseUrl = conf.artexBaseUrl.trim().isEmpty
+            ? 'http://127.0.0.1:8787'
+            : conf.artexBaseUrl.trim();
+      }
       final t = conf.artexToken;
       token = (t == null || t.isEmpty) ? null : t;
       termuxUser = conf.artexTermuxUser;

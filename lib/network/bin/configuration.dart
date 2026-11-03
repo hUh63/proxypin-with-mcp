@@ -161,6 +161,10 @@ class Configuration {
   String artexProxyAddr = '127.0.0.1:8788';
   String artexPgDsn = 'postgres://postgres@127.0.0.1:5432/artex?sslmode=disable';
 
+  /// 使用 App 内置服务端（Dart 实现，本机 JSON 存储）。
+  /// true = 独立运行，不需要 Termux/root/PG；false = 连外部 ARTEX 后端。
+  bool artexEmbedded = true;
+
   //双向认证 mTLS（与上游服务器 TLS 握手时提供客户端证书，上游 #366）
   bool mtlsEnabled = false;
   String? mtlsChainPath; // 客户端证书链 PEM
@@ -234,6 +238,7 @@ class Configuration {
     artexAddr = config['artexAddr'] ?? artexAddr;
     artexProxyAddr = config['artexProxyAddr'] ?? artexProxyAddr;
     artexPgDsn = config['artexPgDsn'] ?? artexPgDsn;
+    artexEmbedded = config['artexEmbedded'] ?? true;
     mtlsEnabled = config['mtlsEnabled'] ?? false;
     mtlsChainPath = config['mtlsChainPath'];
     mtlsKeyPath = config['mtlsKeyPath'];
@@ -380,6 +385,7 @@ class Configuration {
       'artexAddr': artexAddr,
       'artexProxyAddr': artexProxyAddr,
       'artexPgDsn': artexPgDsn,
+      'artexEmbedded': artexEmbedded,
       'mtlsEnabled': mtlsEnabled,
       if (mtlsChainPath != null) 'mtlsChainPath': mtlsChainPath,
       if (mtlsKeyPath != null) 'mtlsKeyPath': mtlsKeyPath,

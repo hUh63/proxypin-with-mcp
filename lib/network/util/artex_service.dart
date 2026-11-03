@@ -79,6 +79,9 @@ class ArtexService {
   /// Termux 的默认 uid（多数机器上就是这个，探测失败时的兜底）。
   static const String defaultTermuxUser = 'u0_a353';
 
+  /// 没有 su / 没 root 时返回的标记（调用方据此切到内置服务端，而不是弹异常）。
+  static const String noRootMarker = 'PROXYPIN_NO_SU';
+
   static const String _termuxData = '/data/data/com.termux';
   static const String _home = '/data/data/com.termux/files/home';
   static const String _bin = '/data/data/com.termux/files/usr/bin';
@@ -107,6 +110,13 @@ class ArtexService {
       );
       final out = '${r.stdout}${r.stderr}'.trim();
       return (r.exitCode, out);
+    } on ProcessException catch (e) {
+      // 设备没 root / 没装 su 时 Process.run 抛 ProcessException
+      // （"No such file or directory"）——这不是异常，是常态，给个可判定的标记。
+      final missing = e.message.toLowerCase().contains('no such file') ||
+          e.message.toLowerCase().contains('permission denied');
+      logger.w('[ArtexService] su unavailable: ${e.message}');
+      return (-1, missing ? noRootMarker : e.message);
     } catch (e) {
       logger.w('[ArtexService] su failed: $e');
       return (-1, '$e');

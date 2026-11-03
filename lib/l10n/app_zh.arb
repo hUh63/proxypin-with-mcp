@@ -4991,5 +4991,9 @@
   "artexBackendOfflineHint": "后端未连通 —— 点这里本地启动（先 PG 再 ARTEX），起来后会自动重载。",
   "artexWebViewDesktopHint": "这个平台没有 WebView，同一个页面已在 127.0.0.1 上跑着，用浏览器打开即可。",
   "securityAuditAiHint": "AI 给建议（只生成文字，不改配置）",
-  "diffExportPatch": "导出 .patch"
+  "diffExportPatch": "导出 .patch",
+  "artexEmbeddedMode": "内置服务端（独立运行）",
+  "artexEmbeddedHint": "完全跑在本机：数据存在 App 里，不需要 Termux / root / PostgreSQL。",
+  "artexEmbeddedOn": "独立运行 · 数据存在本机",
+  "artexNoRootSwitch": "这台设备没有 root（找不到 su），已切换到内置服务端。"
 }
