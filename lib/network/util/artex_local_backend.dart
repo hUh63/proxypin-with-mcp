@@ -33,6 +33,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/components/ai_analyzer.dart';
 import 'package:proxypin/network/util/logger.dart';
 
 class ArtexLocalBackend {
@@ -60,9 +62,85 @@ class ArtexLocalBackend {
         'findings': _findings.length,
         'conversations': _conversations.length,
         'engine_mode': 'embedded',
-        'llm_configured': false,
+        'llm_configured': aiReady,
         'workers': 0,
       };
+
+  // ------------------------------------------------------------------ AI
+  //
+  // ARTEX 自己不内置模型：**复用 App「设置 → AI 分析」那套 OpenAI 兼容配置**
+  // （Configuration.aiEnabled / aiBaseUrl / aiApiKey / aiModel）。
+  // 这样用户在设置里填一次，抓包分析、AI 对话、ARTEX 三处都能用，不用重复配。
+
+  bool get aiReady => AiAnalyzer.isConfigured;
+
+  Map<String, dynamic> get llmSummary {
+    final c = Configuration.loaded;
+    return {
+      'ok': true,
+      'provider': 'proxypin-ai',
+      'engine': 'embedded',
+      'source': 'app-settings',
+      'enabled': c?.aiEnabled ?? false,
+      'configured': aiReady,
+      'base_url': c?.aiBaseUrl ?? '',
+      'model': c?.aiModel ?? '',
+      'has_key': (c?.aiApiKey ?? '').isNotEmpty,
+      'agent': c?.aiAgentEnabled ?? false,
+      'label': aiReady ? '已配置（App 设置）' : '未配置',
+    };
+  }
+
+  /// 前端改 AI 配置时写回 App 设置（与设置页同一份，不另存一套）。
+  Future<Map<String, dynamic>> _applyLlmConfig(Map<String, dynamic> body) async {
+    // 前端可能把配置包一层（{llm:{...}} / {config:{...}}），先摊平。
+    var src = body;
+    for (final k in const ['llm', 'config', 'data', 'settings']) {
+      final inner = body[k];
+      if (inner is Map) {
+        src = {...body, ...inner.map((key, v) => MapEntry('$key', v))};
+        break;
+      }
+    }
+    final c = await Configuration.instance;
+    final base = '${src['base_url'] ?? src['baseUrl'] ?? src['endpoint'] ?? ''}'.trim();
+    final model = '${src['model'] ?? src['model_name'] ?? ''}'.trim();
+    final key = '${src['api_key'] ?? src['apiKey'] ?? src['key'] ?? ''}'.trim();
+    if (base.isNotEmpty) c.aiBaseUrl = base;
+    if (model.isNotEmpty) c.aiModel = model;
+    if (key.isNotEmpty) c.aiApiKey = key;
+    if (src.containsKey('enabled')) c.aiEnabled = src['enabled'] == true;
+    if (src.containsKey('agent')) c.aiAgentEnabled = src['agent'] == true;
+    // 填了地址和 key 却忘了打开开关：直接替用户打开，否则「配好了还是不能用」。
+    if (c.aiApiKey.isNotEmpty && c.aiBaseUrl.isNotEmpty) c.aiEnabled = true;
+    await c.flushConfig();
+    _log('info', 'llm', 'AI 配置已更新（来自 ARTEX 前端）');
+    return llmSummary;
+  }
+
+  /// 统一 AI 调用：异常转成可读中文，不让前端拿到 HTML 错误页。
+  Future<({bool ok, String text})> _ask(String prompt,
+      {List<Map<String, String>> history = const []}) async {
+    if (!aiReady) {
+      return (
+        ok: false,
+        text: '还没有配置 AI。请到 App「设置 → MCP Connection → AI 分析」'
+            '填写接口地址、API Key 和模型；填好后这里的对话、分析和任务指令都能直接用。'
+      );
+    }
+    try {
+      final messages = <Map<String, String>>[
+        ...history,
+        {'role': 'user', 'content': prompt},
+      ];
+      final text = await AiAnalyzer.chat(messages);
+      return (ok: true, text: text);
+    } catch (e) {
+      logger.w('$e');
+      return (ok: false, text: 'AI 调用失败：$e');
+    }
+  }
+
 
   // ------------------------------------------------------------------ 存储
 
@@ -228,13 +306,79 @@ class ArtexLocalBackend {
 
     // 健康检查（前端用它决定「后端在不在」）
     if (path == '/api/health') {
+      final llm = llmSummary;
       _json(request, {
         'ok': true,
         'status': 'ok',
         'service': 'artex',
         'version': 'embedded',
         'engine': 'embedded',
-        'llm_configured': false,
+        'llm_configured': aiReady,
+        'llm': llm,
+      });
+      return true;
+    }
+
+    // ---------------- AI（复用 App 设置里的 OpenAI 兼容配置） ----------------
+    if (path == '/api/llm' ||
+        path == '/api/llm/status' ||
+        path == '/api/llm/config' ||
+        path == '/api/settings/llm' ||
+        path == '/api/system/llm' ||
+        path == '/api/engine/status') {
+      if (method == 'GET') {
+        _json(request, llmSummary);
+      } else {
+        _json(request, {'ok': true, ...await _applyLlmConfig(body)});
+      }
+      return true;
+    }
+
+    // 测试连通性：发一句最短的话，判断「能连上 + 能返回」
+    if (path == '/api/llm/test' || path == '/api/llm/ping') {
+      final r = await _ask('回复两个字：可用');
+      _log(r.ok ? 'info' : 'warn', 'llm', r.ok ? 'AI 自检通过' : 'AI 自检失败');
+      _json(request, {'ok': r.ok, 'reply': r.text, 'configured': aiReady});
+      return true;
+    }
+
+    // AI 前端对话页/悬浮助手：POST {messages:[{role,content}]} 或 {message:"..."}
+    if (path == '/api/chat' ||
+        path == '/api/llm/chat' ||
+        path == '/api/assistant/chat' ||
+        path == '/api/agent/chat') {
+      final history = <Map<String, String>>[];
+      final raw = body['messages'];
+      if (raw is List) {
+        for (final m in raw) {
+          if (m is Map) {
+            final role = '${m['role'] ?? 'user'}';
+            final content = '${m['content'] ?? m['text'] ?? ''}';
+            if (content.isEmpty) continue;
+            history.add({
+              'role': role == 'assistant' || role == 'system' ? role : 'user',
+              'content': content,
+            });
+          }
+        }
+      }
+      var prompt = '${body['message'] ?? body['prompt'] ?? body['content'] ?? ''}'.trim();
+      if (prompt.isEmpty && history.isNotEmpty) {
+        final last = history.removeLast();
+        prompt = last['content'] ?? '';
+      }
+      if (prompt.isEmpty) {
+        _json(request, {'ok': false, 'error': 'message is empty'}, status: 400);
+        return true;
+      }
+      final r = await _ask(prompt, history: history.take(20).toList());
+      if (r.ok) _log('info', 'llm', 'AI 对话：${_short(prompt, 40)}');
+      _json(request, {
+        'ok': r.ok,
+        'content': r.text,
+        'reply': r.text,
+        'message': {'role': 'assistant', 'content': r.text},
+        'configured': aiReady,
       });
       return true;
     }
@@ -357,8 +501,12 @@ class ArtexLocalBackend {
           _json(request, {'ok': true, 'goals': task['goals'] ?? const <String>[]});
           return true;
         case 'chat':
-          // 没有本地 LLM：把用户消息记进会话，回一条明确说明（不假装在跑）
-          final text = '${body['message'] ?? body['content'] ?? ''}';
+          // 真调 AI（App 设置里那套接口）。没有配置就给明确指引，不假装在跑。
+          final text = '${body['message'] ?? body['content'] ?? ''}'.trim();
+          if (text.isEmpty) {
+            _json(request, {'ok': false, 'error': 'message is empty'}, status: 400);
+            return true;
+          }
           if (_conversations.length > 2000) {
             _conversations.removeRange(0, _conversations.length - 2000);
           }
@@ -369,15 +517,54 @@ class ArtexLocalBackend {
             'content': text,
             'created_at': DateTime.now().toUtc().toIso8601String(),
           });
+          final convs =
+              _conversations.where((c) => '${c['task_id']}' == id).toList();
+          final recent = convs.length > 12
+              ? convs.sublist(convs.length - 12)
+              : convs;
+          final history = <Map<String, String>>[
+            for (final m in recent)
+              if ('${m['content'] ?? ''}'.trim().isNotEmpty)
+                {
+                  'role': '${m['role']}' == 'assistant' ? 'assistant' : 'user',
+                  'content': '${m['content']}',
+                }
+          ];
+          if (history.isNotEmpty) history.removeLast(); // 刚写入的这条由 prompt 带
+          final fCount =
+              _findings.where((f) => '${f['task_id']}' == id).length;
+          final ctx = StringBuffer()
+            ..writeln('【ARTEX 任务上下文】')
+            ..writeln('名称：${task['name'] ?? task['title'] ?? id}')
+            ..writeln('状态：${task['status'] ?? 'created'}')
+            ..writeln('目标：${task['goal'] ?? (task['goals'] is List ? (task['goals'] as List).join('；') : '')}')
+            ..writeln('已知发现：$fCount 条')
+            ..writeln()
+            ..writeln(text);
+          final r = await _ask(ctx.toString(), history: history);
+          if (r.ok) {
+            _conversations.add({
+              'id': 'conv-${_seq++}',
+              'task_id': id,
+              'role': 'assistant',
+              'content': r.text,
+              'created_at': DateTime.now().toUtc().toIso8601String(),
+            });
+            task['last_activity_unix'] =
+                DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            task['updated_at'] = DateTime.now().toUtc().toIso8601String();
+            _log('info', 'task', '任务 $id AI 对话回复');
+          } else {
+            _log('warn', 'task', '任务 $id AI 对话失败');
+          }
           _scheduleSave();
           _json(request, {
-            'ok': true,
+            'ok': r.ok,
+            'configured': aiReady,
+            'content': r.text,
+            'reply': r.text,
             'messages': [
-              {
-                'role': 'assistant',
-                'content': '当前是 App 内置服务端：没有接 LLM，也不会自动执行工具。'
-                    '任务与发现都记在本机，需要真实扫描请在设置里填外部后端地址。',
-              }
+              {'role': 'assistant', 'content': r.text}
             ],
           });
           return true;
@@ -418,7 +605,22 @@ class ArtexLocalBackend {
     }
 
     if (path.startsWith('/api/conversations')) {
-      _json(request, {'conversations': _conversations, 'total': _conversations.length});
+      final rest = path.substring('/api/conversations'.length);
+      final id = rest.startsWith('/') ? rest.substring(1) : '';
+      final taskId = query['task_id'] ??
+          query['taskId'] ??
+          (id.startsWith('task-') ? id : '');
+      var list = _conversations;
+      if (taskId.isNotEmpty) {
+        list = list.where((c) => '${c['task_id']}' == taskId).toList();
+      } else if (id.isNotEmpty) {
+        list = list.where((c) => '${c['id']}' == id).toList();
+      }
+      _json(request, {
+        'conversations': list,
+        'messages': list,
+        'total': list.length,
+      });
       return true;
     }
 
@@ -446,6 +648,11 @@ class ArtexLocalBackend {
     return true;
   }
 
+  static String _short(String s, int max) {
+    final t = s.replaceAll('\n', ' ').trim();
+    return t.length <= max ? t : '${t.substring(0, max)}…';
+  }
+
   String _activeTaskId() {
     for (final t in _tasks) {
       final s = '${t['status']}';
@@ -454,8 +661,7 @@ class ArtexLocalBackend {
     return '';
   }
 
-  void _log(String level, String tag, String text) {
-    _logs.add({
+  void _log(String level, String tag, String text) {    _logs.add({
       'seq': _seq++,
       'ts': DateTime.now().toUtc().toIso8601String(),
       'level': level,

@@ -610,6 +610,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('newFile', _newFileLabel, group: 'file', aliases: 'xj xinjian new file'),
   EditorMenuItem('open', _openLabel, group: 'file', aliases: 'dk dakai open load'),
   EditorMenuItem('save', _saveLabel, group: 'file', aliases: 'bc baocun save write'),
+  EditorMenuItem('saveAll', _saveAllLabel, group: 'file',
+      aliases: 'bcqb 保存全部 save all'),
   EditorMenuItem('file', _fileLabel, group: 'file'),
   EditorMenuItem('compareDisk', _compareDiskLabel, group: 'file',
       aliases: 'bdkb 与磁盘比较 compare disk diff saved'),
@@ -658,6 +660,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('lineOps', _lineOpsLabel, group: 'edit', aliases: 'hhang 行操作 line'),
   EditorMenuItem('caseOps', _caseOpsLabel, group: 'edit', aliases: 'dx 大小写 case upper lower'),
   // 代码（13 项）
+  EditorMenuItem('aiAssist', _aiAssistLabel, group: 'code',
+      aliases: 'ai fz 辅助 assist explain comment review tests'),
   EditorMenuItem('format', _formatLabel, group: 'code', aliases: 'gs geshihua format beautify indent'),
   EditorMenuItem('formatSel', _formatSelLabel, group: 'code', aliases: 'gs 选中格式化 format selection'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
@@ -717,6 +721,8 @@ String _closeLabel(AppLocalizations l) => l.editorCloseFile;
 String _newFileLabel(AppLocalizations l) => l.editorNewFile;
 String _openLabel(AppLocalizations l) => l.selectFile;
 String _saveLabel(AppLocalizations l) => l.save;
+String _saveAllLabel(AppLocalizations l) => l.editorSaveAll;
+String _aiAssistLabel(AppLocalizations l) => l.editorAiAssist;
 String _docsLabel(AppLocalizations l) => l.editorDocuments;
 String _undoLabel(AppLocalizations l) => l.editorUndo;
 String _redoLabel(AppLocalizations l) => l.editorRedo;

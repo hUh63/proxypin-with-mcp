@@ -156,6 +156,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对标 Beyond Compare 的「只显示新增/删除/修改」过滤。
   String? _typeFilter;
 
+  /// 把空格显示成 `·`、Tab 显示成 `→`（仅对齐视图/只读预览）。
+  /// 「看起来一模一样却标了修改」基本都是尾随空格或 Tab/空格混用，肉眼看不出来。
+  bool _showSpace = false;
+
+  /// 词级（字符级）高亮：关掉只看整行，几万行的超大文件更顺。
+  bool _wordDiff = true;
+
   /// 聚焦模式保留的上下文行数。
   static const int _focusContext = 3;
 
@@ -546,7 +553,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ));
       }
 
-      // 配对行做字符级高亮。
+      // 配对行做字符级高亮（词级开关关掉时只保留整行底色）。
+      if (!_wordDiff) continue;
       for (final pair in b.pairs) {
         final ll = b.leftLines[pair.left];
         final rl = b.rightLines[pair.right];
@@ -1073,6 +1081,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(SharedPreferencesAsync().setBool(_sideKey, next));
           case 'clear':
             _clearAll();
+          case 'showSpace':
+            setState(() => _showSpace = !_showSpace);
+          case 'wordDiff':
+            setState(() => _wordDiff = !_wordDiff);
+            _compare();
+          case 'gotoLine':
+            unawaited(_gotoLineDialog());
         }
       },
       itemBuilder: (_) => [
@@ -1088,6 +1103,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'foldUnchanged',
             checked: _foldUnchanged,
             child: Text(localizations.diffFoldUnchanged)),
+        CheckedPopupMenuItem(
+            value: 'showSpace',
+            checked: _showSpace,
+            child: Text(localizations.diffShowWhitespace)),
+        CheckedPopupMenuItem(
+            value: 'wordDiff',
+            checked: _wordDiff,
+            child: Text(localizations.diffWordDiff)),
+        PopupMenuItem(value: 'gotoLine', child: Text(localizations.diffGotoLine)),
         PopupMenuItem(value: 'zoomIn', child: Text(localizations.editorZoomIn)),
         PopupMenuItem(value: 'zoomOut', child: Text(localizations.editorZoomOut)),
         PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
@@ -1176,6 +1200,42 @@ class _TextDiffPageState extends State<TextDiffPage> {
         const SizedBox(width: 2),
       ]),
     );
+  }
+
+  /// 跳转到指定行（两侧同步，按各自行数 clamp）。
+  Future<void> _gotoLineDialog() async {
+    final loc = localizations;
+    final c = TextEditingController();
+    final n = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.diffGotoLine),
+        content: TextField(
+          controller: c,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: loc.diffGotoLineHint,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+          onSubmitted: (v) => Navigator.of(ctx).pop(int.tryParse(v.trim())),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(loc.cancel)),
+          FilledButton(
+              onPressed: () =>
+                  Navigator.of(ctx).pop(int.tryParse(c.text.trim())),
+              child: Text(loc.confirm)),
+        ],
+      ),
+    );
+    c.dispose();
+    if (n == null || n <= 0) return;
+    _gotoLine(_left, n - 1);
+    _gotoLine(_right, n - 1);
   }
 
   void _showDiffStats() {
@@ -2188,7 +2248,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         bg = null;
     }
     final line = left ? r.leftLine : r.rightLine;
-    final text = left ? r.leftText : r.rightText;
+    final raw = (left ? r.leftText : r.rightText) ?? '';
+    final text = _showSpace ? _visualizeSpace(raw) : raw;
     final numStyle = TextStyle(fontSize: _fontSize - 2, color: Colors.grey[600], height: 1.0);
     final textStyle = TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0);
     return Container(
@@ -2210,7 +2271,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
           ),
           const SizedBox(width: 5),
           // 不裁剪：横向滚动由外层负责，长行能一直往右看。
-          Text(text ?? '', maxLines: 1, softWrap: false, overflow: TextOverflow.visible,
+          Text(text, maxLines: 1, softWrap: false, overflow: TextOverflow.visible,
               style: textStyle),
         ],
       ),
@@ -2232,6 +2293,26 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
     _leftWidth = 39 + maxLeft * _fontSize * 0.62 + 16;
     _rightWidth = 39 + maxRight * _fontSize * 0.62 + 16;
+  }
+
+  /// 空格的两种「看不见的差别」：尾随空格、Tab 与空格混用。
+  /// 显示成 · 与 → 之后一眼能看出来，且不改变字符宽度（便于对齐）。
+  static String _visualizeSpace(String text) {
+    if (text.isEmpty) return text;
+    final buf = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final c = text.codeUnitAt(i);
+      if (c == 0x20) {
+        buf.write('\u00b7'); // ·
+      } else if (c == 0x09) {
+        buf.write('\u2192'); // →
+      } else if (c == 0x00a0) {
+        buf.write('\u00b7'); // 不换行空格同样是「看不见的空白」
+      } else {
+        buf.writeCharCode(c);
+      }
+    }
+    return buf.toString();
   }
 
   static int _displayUnits(String? text) {

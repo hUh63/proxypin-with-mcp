@@ -373,6 +373,8 @@ class ArtexClient {
     HttpClient? client;
     try {
       client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+      // 连的是本机/内网 ARTEX，不能让它绕进 App 自己的抓包代理。
+      client.findProxy = (_) => 'DIRECT';
       // 自签证书 / 内网 IP 常见，这里不阻断（用户连的是自己的实例）。
       client.badCertificateCallback = (cert, host, port) => true;
       final req = await client
@@ -493,6 +495,85 @@ class ArtexClient {
 
   /// 任意 GET（高级/调试用）。
   Future<dynamic> rawGet(String path) => _send('GET', path);
+
+  // ------------------------------ AI ------------------------------
+
+  /// 与 AI 对话。内置服务端会直接用 App「设置 → AI 分析」里的那套接口，
+  /// 不需要单独填 ARTEX 的模型配置。
+  Future<String> chat(String message,
+      {String taskId = '', List<Map<String, String>> history = const []}) async {
+    final body = <String, dynamic>{
+      'message': message,
+      'content': message,
+      if (history.isNotEmpty) 'messages': history,
+    };
+    final paths = taskId.isEmpty
+        ? const ['/api/chat', '/api/llm/chat', '/api/assistant/chat']
+        : ['/api/tasks/$taskId/chat'];
+    final data = await _sendAny('POST', paths,
+        body: body, timeout: const Duration(seconds: 150));
+    final m = artexMap(data);
+
+    final msg = m['message'];
+    if (msg is Map) {
+      final c = artexFirstText(artexMap(msg), const ['content', 'text']);
+      if (c.isNotEmpty) return c;
+    }
+    final text = artexFirstText(m, const ['content', 'reply', 'text', 'answer']);
+    if (text.isNotEmpty) return text;
+    final list = m['messages'];
+    if (list is List && list.isNotEmpty) {
+      final last = list.last;
+      if (last is Map) {
+        final c = artexFirstText(artexMap(last), const ['content', 'text']);
+        if (c.isNotEmpty) return c;
+      }
+    }
+    if (m['ok'] == false) {
+      throw ArtexException(artexFirstText(m, const ['error', 'hint', 'message']));
+    }
+    return '';
+  }
+
+  /// AI 配置状态（值来自 App 设置，只读为主）。
+  Future<Map<String, dynamic>> llmConfig() async {
+    final data = await _sendAny('GET', const [
+      '/api/llm/config',
+      '/api/llm/status',
+      '/api/settings/llm',
+    ]);
+    return artexMap(data);
+  }
+
+  /// 保存 AI 配置（内置服务端会写回 App 设置）。
+  Future<Map<String, dynamic>> updateLlmConfig({
+    String? baseUrl,
+    String? model,
+    String? apiKey,
+    bool? enabled,
+  }) async {
+    final data = await _send('POST', '/api/llm/config', body: {
+      if (baseUrl != null && baseUrl.isNotEmpty) 'base_url': baseUrl,
+      if (model != null && model.isNotEmpty) 'model': model,
+      if (apiKey != null && apiKey.isNotEmpty) 'api_key': apiKey,
+      if (enabled != null) 'enabled': enabled,
+    });
+    return artexMap(data);
+  }
+
+  /// 连通性自检：返回 (ok, 说明)。
+  Future<({bool ok, String text})> testLlm() async {
+    try {
+      final data = await _send('POST', '/api/llm/test',
+          body: const <String, dynamic>{}, timeout: const Duration(seconds: 60));
+      final m = artexMap(data);
+      final ok = m['ok'] == true;
+      final text = artexFirstText(m, const ['reply', 'content', 'error', 'hint']);
+      return (ok: ok, text: text);
+    } on ArtexException catch (e) {
+      return (ok: false, text: e.message);
+    }
+  }
 
   // ------------------------------ 任务 ------------------------------
 

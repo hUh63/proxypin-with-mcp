@@ -34,6 +34,7 @@ import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/artex_service.dart';
 import 'package:proxypin/network/util/artex_session.dart';
+import 'package:proxypin/ui/component/ai_analysis.dart';
 import 'package:proxypin/ui/toolbox/artex_panels.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -167,6 +168,11 @@ class _ArtexPageState extends State<ArtexPage> with SingleTickerProviderStateMix
       appBar: AppBar(
         title: const Text('ARTEX'),
         actions: [
+          IconButton(
+            tooltip: loc.artexAiTitle,
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => ArtexChatSheet.show(context, _session),
+          ),
           if (connected)
             IconButton(
               tooltip: loc.refresh,
@@ -211,7 +217,7 @@ class _ArtexPageState extends State<ArtexPage> with SingleTickerProviderStateMix
                   Tab(text: loc.artexTabTools),
                   Tab(text: loc.artexTabLogs),
                   Tab(text: loc.artexTabWorkspace),
-                  Tab(text: loc.artexTabService),
+                  Tab(text: loc.artexAiTitle),
                 ],
               )
             : null,
@@ -307,63 +313,56 @@ class _ArtexPageState extends State<ArtexPage> with SingleTickerProviderStateMix
           ),
         ),
         const SizedBox(height: 10),
-        if (ArtexService.supported)
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.terminal, size: 20),
-                  title: Text(loc.artexLocalTitle),
-                  subtitle: Text(loc.artexLocalHint,
-                      style: theme.textTheme.bodySmall),
+        // 独立运行不需要 Termux：这里只放「AI 配置」和「内置服务端」两件事。
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: Icon(
+                  _session.aiReady ? Icons.smart_toy : Icons.smart_toy_outlined,
+                  size: 20,
+                  color: _session.aiReady
+                      ? Colors.green
+                      : theme.colorScheme.error,
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final u = await ArtexService.detectTermuxUser();
-                            if (!mounted) return;
-                            if (u.isNotEmpty) {
-                              _session.termuxUser = u;
-                              await _session.savePrefs();
-                              _toast('Termux: $u');
-                            } else {
-                              _toast(loc.artexDetectFailed);
-                            }
-                          },
-                          icon: const Icon(Icons.search, size: 18),
-                          label: Text(loc.artexDetect),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            _toast(loc.artexStarting);
-                            final pg = await ArtexService.startPg(_session.termuxUser);
-                            final art = await ArtexService.startArtex(_session.termuxUser);
-                            if (!mounted) return;
-                            _toast('${pg.output.split('\n').first}\n'
-                                '${art.output.split('\n').first}');
-                            await _session.refreshService(withLog: true);
-                            // 服务起来后自动连一次
-                            await Future<void>.delayed(const Duration(seconds: 2));
-                            if (!mounted) return;
-                            await _connect();
-                          },
-                          icon: const Icon(Icons.play_arrow, size: 18),
-                          label: Text(loc.artexStartLocal),
-                        ),
-                      ),
-                    ],
+                title: Text(_session.aiReady
+                    ? loc.artexAiConfigured
+                    : loc.artexAiNotConfigured),
+                subtitle: Text(
+                  _session.aiReady ? _session.aiLabel : loc.artexAiShared,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final saved = await showAiSettingsDialog(context);
+                      if (!mounted) return;
+                      setState(() {});
+                      if (saved == true) _toast(loc.artexAiSaved);
+                    },
+                    icon: const Icon(Icons.tune, size: 18),
+                    label: Text(loc.artexAiOpen),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
+        const SizedBox(height: 10),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.dns, size: 20),
+            title: Text(loc.artexEmbeddedTitle),
+            subtitle: Text(loc.artexEmbeddedBody,
+                style: theme.textTheme.bodySmall?.copyWith(height: 1.5)),
+          ),
+        ),
         if (!ArtexService.supported)
           Card(
             child: ListTile(

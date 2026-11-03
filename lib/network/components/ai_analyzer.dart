@@ -25,8 +25,11 @@ class AiAnalyzer {
   }
 
   /// 多轮对话：messages 为 [{role, content}]；agentMode 时注入 ProxyPin 工具协议
+  ///
+  /// [systemOverride] 用于「不是分析抓包」的场景（编辑器里的 AI 辅助），
+  /// 传了就替换默认的安全分析师设定，其余行为不变。
   static Future<String> chat(List<Map<String, String>> messages,
-      {bool agentMode = false}) async {
+      {bool agentMode = false, String? systemOverride}) async {
     final config = Configuration.loaded;
     if (config == null || !config.aiEnabled || config.aiApiKey.isEmpty) {
       throw Exception('尚未配置 AI 服务：请到「设置 → MCP Connection → AI 分析」填写接口地址与 API Key');
@@ -41,6 +44,10 @@ class AiAnalyzer {
         : '$raw/chat/completions';
 
     final client = HttpClient();
+    // 本 App 自己就是抓包代理：开了 VPN/系统代理时，AI 请求会被送进自己的
+    // 代理链（规则改写、断点、弱网都可能把它拦掉），表现为「AI 一直失败」。
+    // AI 流量必须直连。
+    client.findProxy = (_) => 'DIRECT';
     try {
       final request2 = await client.postUrl(Uri.parse(endpoint));
       request2.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
@@ -49,7 +56,10 @@ class AiAnalyzer {
         'model': config.aiModel,
         'temperature': 0.3,
         'messages': [
-          {'role': 'system', 'content': agentPrompt(agentMode)},
+          {
+            'role': 'system',
+            'content': systemOverride ?? agentPrompt(agentMode),
+          },
           ...messages,
         ],
       })));

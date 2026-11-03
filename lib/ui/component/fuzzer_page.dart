@@ -245,7 +245,7 @@ class _FuzzerPageState extends State<FuzzerPage> {
       ),
       body: Column(
         children: [
-          _buildTips(cs),
+          _buildSteps(cs),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -280,30 +280,13 @@ class _FuzzerPageState extends State<FuzzerPage> {
                 ),
                 for (var i = 0; i < _injections.length; i++) _buildInjectionCard(cs, i),
                 const SizedBox(height: 6),
-                _buildRunBar(cs),
+                _buildRules(cs),
                 const SizedBox(height: 12),
                 _buildResults(cs),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTips(ColorScheme cs) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      color: cs.primary.withValues(alpha: 0.05),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, size: 14, color: cs.primary),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(localizations.fuzzerTips,
-                style: TextStyle(fontSize: 11.5, height: 1.35, color: cs.onSurfaceVariant)),
-          ),
+          _buildStickyBar(cs),
         ],
       ),
     );
@@ -456,74 +439,157 @@ class _FuzzerPageState extends State<FuzzerPage> {
     );
   }
 
-  Widget _buildRunBar(ColorScheme cs) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
+  /// 常驻底部操作条：不管列表滚到哪，「开始」都在手边。
+  ///
+  /// 以前这排按钮在列表中间，注入项一多就得滚半天才找得到 ——
+  /// 手动 Fuzz 最常做的动作却被藏在滚动区里。
+  Widget _buildStickyBar(ColorScheme cs) {
+    final combinationCount = RequestFuzzer.combinationCount(_activeInjections);
+    return Material(
+      color: cs.surface,
+      elevation: 6,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            FilledButton.icon(
-              onPressed: _running ? null : _start,
-              icon: const Icon(Icons.play_arrow, size: 18),
-              label: Text(localizations.fuzzerStart),
-            ),
-            OutlinedButton.icon(
-              onPressed: _running ? _stop : null,
-              icon: const Icon(Icons.stop, size: 18),
-              label: Text(localizations.fuzzerStop),
-            ),
             Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(localizations.fuzzerInterval, style: const TextStyle(fontSize: 12.5)),
+                FilledButton.icon(
+                  onPressed: _running ? null : _start,
+                  icon: Icon(_running ? Icons.hourglass_top : Icons.play_arrow, size: 18),
+                  label: Text(localizations.fuzzerStart),
+                ),
+                const SizedBox(width: 8),
+                if (_running)
+                  OutlinedButton.icon(
+                    onPressed: _stop,
+                    icon: const Icon(Icons.stop, size: 18),
+                    label: Text(localizations.fuzzerStop),
+                  ),
+                const Spacer(),
+                if (combinationCount > 0)
+                  Flexible(
+                    child: Text(
+                      '${localizations.fuzzerCombinations}: $combinationCount',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: combinationCount > RequestFuzzer.maxCombinations
+                              ? cs.error
+                              : cs.onSurfaceVariant),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Text(localizations.fuzzerInterval, style: const TextStyle(fontSize: 12)),
                 const SizedBox(width: 6),
                 SizedBox(
-                  width: 76,
+                  width: 68,
                   child: TextField(
                     controller: _intervalController,
                     enabled: !_running,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, suffixText: 'ms'),
+                    decoration: const InputDecoration(
+                        border: OutlineInputBorder(), isDense: true, suffixText: 'ms'),
                     style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: InkWell(
+                    onTap: _running
+                        ? null
+                        : () => setState(() => _sendBaseline = !_sendBaseline),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _sendBaseline ? Icons.check_box : Icons.check_box_outline_blank,
+                          size: 18,
+                          color: _sendBaseline ? cs.primary : cs.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            localizations.fuzzerSendBaseline,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        // 开关单独一行：Switch 标准高度 48，硬塞进小盒子会被裁切
-        InkWell(
-          onTap: _running ? null : () => setState(() => _sendBaseline = !_sendBaseline),
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 44,
-                  height: 28,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: Switch(
-                      value: _sendBaseline,
-                      onChanged: _running ? null : (value) => setState(() => _sendBaseline = value),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(localizations.fuzzerSendBaseline, style: const TextStyle(fontSize: 12.5)),
-              ],
+      ),
+    );
+  }
+
+  /// 三步引导条：第一次用的人不需要读说明书，照着 1→2→3 点就行。
+  Widget _buildSteps(ColorScheme cs) {
+    final hasRequest = _templates.isNotEmpty;
+    final hasValues = _activeInjections.any((i) => i.values.isNotEmpty);
+    final hasResult = _results.isNotEmpty;
+    Widget step(int n, String text, bool done, bool active) {
+      final color = done ? cs.primary : (active ? cs.primary : cs.outline);
+      return Expanded(
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done ? cs.primary : Colors.transparent,
+                border: Border.all(color: color, width: 1.2),
+              ),
+              child: Text(
+                done ? '✓' : '$n',
+                style: TextStyle(fontSize: 10, color: done ? cs.onPrimary : color),
+              ),
             ),
-          ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.2,
+                  color: active || done ? cs.onSurface : cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 6),
-        _buildRules(cs),
-      ],
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+      color: cs.primary.withValues(alpha: 0.05),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          step(1, localizations.fuzzerStepPick, hasRequest, !hasRequest),
+          Icon(Icons.chevron_right, size: 14, color: cs.outline),
+          step(2, localizations.fuzzerStepValues, hasValues, hasRequest && !hasValues),
+          Icon(Icons.chevron_right, size: 14, color: cs.outline),
+          step(3, localizations.fuzzerStepRun, hasResult, hasValues && !hasResult),
+        ],
+      ),
     );
   }
 

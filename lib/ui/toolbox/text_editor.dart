@@ -69,6 +69,7 @@ import 'package:proxypin/ui/component/lint_issue_bar.dart';
 import 'package:proxypin/ui/toolbox/html_preview.dart';
 import 'package:proxypin/ui/toolbox/media_preview.dart';
 import 'package:proxypin/ui/toolbox/file_preview.dart';
+import 'package:proxypin/ui/toolbox/editor_ai_assist.dart';
 
 /// 文本编辑工具：CodeForge 编辑器 + 多文档 + 语言高亮 + 正则查找替换。
 ///
@@ -447,7 +448,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
         return true;
       }
       if (ctrl && key == LogicalKeyboardKey.keyS) {
-        unawaited(_download());
+        // Ctrl+Alt+S = 保存全部（VS Code 的 Ctrl+K S 在移动/外接键盘上不好按）
+        if (alt) {
+          unawaited(_saveAllDirty());
+        } else {
+          unawaited(_download());
+        }
+        return true;
+      }
+      // Ctrl+Alt+A：AI 辅助（选中代码 → 解释/注释/审查/测试/改写）
+      if (ctrl && alt && key == LogicalKeyboardKey.keyA) {
+        unawaited(_showAiAssist());
         return true;
       }
       if (ctrl && key == LogicalKeyboardKey.keyF) {
@@ -1374,6 +1385,43 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 当前选区文本（控制台里的 `$0`）。
+  /// AI 辅助：选中就处理选中，没选中就整篇（弹层里会截断到 12000 字符）。
+  ///
+  /// 用的是 App「设置 → AI 分析」那套接口，不额外配置。
+  Future<void> _showAiAssist() async {
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final selected = _selectedText();
+    final hasSel = selected.isNotEmpty;
+    final text = hasSel ? selected : controller.text;
+    if (text.trim().isEmpty) {
+      _toast(localizations.editorAiIdle);
+      return;
+    }
+    final selStart = controller.selection.start;
+    final selEnd = controller.selection.end;
+    await showEditorAiAssist(
+      context,
+      text: text,
+      language: _doc?.langLabel ?? '',
+      onInsert: (result) {
+        final c = _doc?.controller;
+        if (c == null || result.isEmpty) return;
+        final offset = c.selection.isValid ? c.selection.start : c.text.length;
+        c.replaceRange(offset, offset, result);
+      },
+      onReplace: hasSel
+          ? (result) {
+              final c = _doc?.controller;
+              if (c == null || result.isEmpty) return;
+              final s = selStart.clamp(0, c.text.length);
+              final e = selEnd.clamp(s, c.text.length);
+              c.replaceRange(s, e, result);
+            }
+          : null,
+    );
+  }
+
   String _selectedText() {
     final controller = _doc?.controller;
     if (controller == null) return '';
@@ -6500,6 +6548,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('newFile', Icons.note_add_outlined, loc.editorNewFile),
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('save', Icons.save_outlined, loc.save),
+          _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
           _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
           _menuItem('compareClipboard', Icons.content_paste_search,
               loc.editorCompareClipboard),
@@ -6565,6 +6614,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ];
       case 'code':
         return [
+          // AI 辅助放最前：这是 VS2026/Cursor 里使用频率最高的一档。
+          _menuItem('aiAssist', Icons.auto_awesome, loc.editorAiAssist),
+          const PopupMenuDivider(),
           if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
           _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
           if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
@@ -6714,6 +6766,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_openFile());
       case 'save':
         unawaited(_download());
+      case 'saveAll':
+        unawaited(_saveAllDirty());
+      case 'aiAssist':
+        unawaited(_showAiAssist());
       case 'docs':
         _scaffoldKey.currentState?.openDrawer();
       case 'undo':

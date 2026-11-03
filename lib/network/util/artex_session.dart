@@ -22,8 +22,9 @@
 // ChangeNotifier 后每个面板自己 listen，互不牵连。
 
 import 'package:flutter/foundation.dart';
-import 'package:proxypin/network/util/artex_client.dart';
 import 'package:proxypin/network/bin/configuration.dart';
+import 'package:proxypin/network/components/ai_analyzer.dart';
+import 'package:proxypin/network/util/artex_client.dart';
 import 'package:proxypin/network/util/artex_service.dart';
 import 'package:proxypin/network/util/artex_web_server.dart';
 
@@ -187,6 +188,11 @@ class ArtexSession extends ChangeNotifier {
     try {
       health = await c.health();
       stats = await c.stats();
+      try {
+        llm = await c.llmStatus();
+      } catch (_) {
+        // 老后端没有 /api/llm/status：保留上一次的值，不影响其它面板
+      }
       final t = await c.tasks();
       tasks = t.tasks;
       activeTask = t.active;
@@ -302,6 +308,78 @@ class ArtexSession extends ChangeNotifier {
     }
   }
 
+  // ---------------------------------------------------------------- AI
+  //
+  // ARTEX 不再需要单独配模型：直接用 App「设置 → AI 分析」那套 OpenAI 兼容
+  // 配置（Configuration.aiEnabled / aiBaseUrl / aiApiKey / aiModel）。这里只做
+  // 状态展示与转发，配置本身永远只有一份。
+
+  bool get aiReady => AiAnalyzer.isConfigured;
+
+  /// 给界面看的一行摘要：模型 · 地址（未配置时说明去哪配）。
+  String get aiLabel {
+    final c = Configuration.loaded;
+    if (c == null) return '';
+    if (!aiReady) return '未配置';
+    return '${c.aiModel} · ${c.aiBaseUrl}';
+  }
+
+  /// 自检：能连上并且能返回内容才算通过。
+  Future<({bool ok, String text})> testAi() async {
+    final c = client;
+    if (c != null && connected) {
+      final r = await c.testLlm();
+      return r;
+    }
+    if (!aiReady) {
+      return (
+        ok: false,
+        text: '还没有配置 AI：请在「设置 → MCP Connection → AI 分析」填写接口地址、API Key 和模型。'
+      );
+    }
+    try {
+      final t = await AiAnalyzer.chat([
+        {'role': 'user', 'content': '回复两个字：可用'}
+      ]);
+      return (ok: true, text: t);
+    } catch (e) {
+      return (ok: false, text: 'AI 调用失败：$e');
+    }
+  }
+
+  /// 对话：优先经过后端（内置时它也只是转发到同一套 App AI 配置），
+  /// 后端没连上就直接调 App 的 AI，保证「打开就能问」。
+  Future<({bool ok, String text})> chat(String text, {String taskId = ''}) async {
+    final msg = text.trim();
+    if (msg.isEmpty) return (ok: false, text: '内容为空');
+    final c = client;
+    if (c != null && connected) {
+      try {
+        return (ok: true, text: await c.chat(msg, taskId: taskId));
+      } on ArtexException catch (e) {
+        // 后端不支持 /api/chat 时退回直连，而不是把 404 甩给用户
+        if (!e.message.startsWith('HTTP 404') &&
+            !e.message.startsWith('HTTP 405')) {
+          return (ok: false, text: e.message);
+        }
+      }
+    }
+    if (!aiReady) {
+      return (
+        ok: false,
+        text: '还没有配置 AI：请在「设置 → MCP Connection → AI 分析」填写接口地址、API Key 和模型。'
+      );
+    }
+    try {
+      final r = await AiAnalyzer.chat([
+        {'role': 'user', 'content': msg}
+      ]);
+      return (ok: true, text: r);
+    } catch (e) {
+      return (ok: false, text: 'AI 调用失败：$e');
+    }
+  }
+
   Future<ArtexRunResult> runTool(String key, Map<String, dynamic> params) async {
     final c = client;
     if (c == null) {
@@ -317,8 +395,7 @@ class ArtexSession extends ChangeNotifier {
   }
 
   /// 本地服务：状态 + 日志尾巴一起刷新。
-  Future<void> refreshService({bool withLog = false}) async {
-    service = await ArtexService.status(termuxUser);
+  Future<void> refreshService({bool withLog = false}) async {    service = await ArtexService.status(termuxUser);
     if (withLog) {
       final r = await ArtexService.tailLog(termuxUser);
       serviceLog = r.output;
