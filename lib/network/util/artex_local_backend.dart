@@ -134,6 +134,73 @@ class ArtexLocalBackend {
 
   Future<void> flush() => _save();
 
+  /// 内置工具池（来自「ARTEX 渗透系统运维与作战链路」的 webpt 十件套）。
+  ///
+  /// 内置服务端**不执行**这些脚本（没有 shell / 目标环境），但把清单返回给前端，
+  /// 「系统 → 工具」页面不会是空的；点运行会得到一句明确说明，而不是 404。
+  static const List<Map<String, dynamic>> builtinTools = [
+    {
+      'tool_key': 'webpt_port_scan',
+      'name': '端口扫描',
+      'description': 'TCP 端口扫描 + banner 抓取',
+      'params': {'target': '', 'ports': '1-1000', 'banner': '1'},
+    },
+    {
+      'tool_key': 'webpt_subdomain_enum',
+      'name': '子域枚举',
+      'description': 'crt.sh 证书透明日志优先，再查字典',
+      'params': {'domain': '', 'wordlist': 'none'},
+    },
+    {
+      'tool_key': 'webpt_dir_brute',
+      'name': '目录爆破',
+      'description': '按扩展名扫目录/备份文件',
+      'params': {'url': '', 'wordlist': '', 'extensions': 'php,html,bak'},
+    },
+    {
+      'tool_key': 'webpt_sqli_detect',
+      'name': 'SQL 注入探测',
+      'description': '按参数形态探测 SQLi',
+      'params': {'url': '', 'body': 'none', 'method': 'GET'},
+    },
+    {
+      'tool_key': 'webpt_xss_detect',
+      'name': 'XSS 探测',
+      'description': '参数值放 FUZZ 占位',
+      'params': {'url': '', 'method': 'GET'},
+    },
+    {
+      'tool_key': 'webpt_ssrf_probe',
+      'name': 'SSRF 探测',
+      'description': '云元数据 / 内网回连',
+      'params': {'url': '', 'mode': 'metadata'},
+    },
+    {
+      'tool_key': 'webpt_jwt_attack',
+      'name': 'JWT 攻击',
+      'description': 'none / kid / 弱口令爆破',
+      'params': {'token': '', 'mode': 'none', 'wordlist': 'none'},
+    },
+    {
+      'tool_key': 'webpt_password_spray',
+      'name': '口令喷洒',
+      'description': '慢速喷洒（仅授权目标）',
+      'params': {'url': '', 'users': '', 'passwords': ''},
+    },
+    {
+      'tool_key': 'webpt_webshell_gen',
+      'name': 'WebShell 生成',
+      'description': '仅授权测试，产物落在工作区',
+      'params': {'lang': 'php', 'pass': '', 'mode': 'simple', 'filename': ''},
+    },
+    {
+      'tool_key': 'webpt_hash_id',
+      'name': '哈希识别',
+      'description': '识别类型并给出 hashcat mode',
+      'params': {'hash': ''},
+    },
+  ];
+
   // ------------------------------------------------------------------ 路由
 
   bool get _isApi => true;
@@ -352,6 +419,21 @@ class ArtexLocalBackend {
 
     if (path.startsWith('/api/conversations')) {
       _json(request, {'conversations': _conversations, 'total': _conversations.length});
+      return true;
+    }
+
+    // 工具池：返回内置清单；真正执行需要外部后端
+    if (path == '/api/tools' || path == '/api/tools/custom' || path == '/api/tool-pool') {
+      _json(request, {'tools': builtinTools, 'total': builtinTools.length});
+      return true;
+    }
+    if (path.startsWith('/api/tools') && method != 'GET') {
+      _json(request, {
+        'ok': false,
+        'error': 'embedded backend does not run scanners',
+        'hint': '内置服务端只负责任务/发现/日志的本地记录；'
+            '要真正执行 webpt 工具，请在「后端地址」里关掉内置模式并填外部 ARTEX 后端。',
+      }, status: 200);
       return true;
     }
 
