@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.67.234 (2026-11-03) — 第十二轮排查（新增代码）
+
+1. **`ToolResultBox` 保存用的是 `String.codeUnits`（UTF-16 单元）**：中文结果会写成乱码，
+   改 `utf8.encode`。
+2. **`RequestPickSheet` 的 `requestUrl` 可能抛**（畸形 URI 拼装），列表会整页崩；
+   加 `_urlOf()` 兜底（退回 scheme://host+path）。
+3. **内置服务端容量上限**：任务 500 / 发现 2000 / 会话 2000，长时间使用不会无限增长。
+4. 全库复扫：`await → setState` 缺 `mounted` 0 处新增；`Timer.periodic` 全部有 cancel；
+   `ChangeNotifier` 里只有 6 个应用级单例没有 dispose 守卫（生命周期与进程一致，无风险）。
+
 ## v1.67.233 (2026-11-03)
 
 **ARTEX 变成独立工具**：前后端都在 App 里，不再依赖 Termux / root / PostgreSQL。

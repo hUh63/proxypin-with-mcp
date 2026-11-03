@@ -239,6 +239,8 @@ class ArtexLocalBackend {
         'embedded': true,
       };
       _tasks.insert(0, task);
+      // 长时间使用不会无限增长（内置存储是给「本机记录」用的）
+      if (_tasks.length > 500) _tasks.removeRange(500, _tasks.length);
       _log('info', 'task', '创建任务 $id（内置服务端）');
       _scheduleSave();
       _json(request, {'ok': true, ...task});
@@ -290,6 +292,9 @@ class ArtexLocalBackend {
         case 'chat':
           // 没有本地 LLM：把用户消息记进会话，回一条明确说明（不假装在跑）
           final text = '${body['message'] ?? body['content'] ?? ''}';
+          if (_conversations.length > 2000) {
+            _conversations.removeRange(0, _conversations.length - 2000);
+          }
           _conversations.add({
             'id': 'conv-${_seq++}',
             'task_id': id,
@@ -384,6 +389,7 @@ class ArtexLocalBackend {
       'created_at': DateTime.now().toUtc().toIso8601String(),
       ...finding,
     });
+    if (_findings.length > 2000) _findings.removeRange(2000, _findings.length);
     _scheduleSave();
   }
 

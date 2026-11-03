@@ -75,12 +75,21 @@ class _RequestPickSheetState extends State<RequestPickSheet> {
     super.dispose();
   }
 
+  /// `requestUrl` 是拼出来的，畸形 URI 会抛，列表不能因此整页崩。
+  static String _urlOf(HttpRequest r) {
+    try {
+      return r.requestUrl;
+    } catch (_) {
+      return '${r.hostAndPort?.scheme ?? 'http'}://${r.hostAndPort?.host ?? '?'}${r.path}';
+    }
+  }
+
   List<HttpRequest> get _visible {
     final q = _search.text.trim().toLowerCase();
     if (q.isEmpty) return _all;
     return _all
         .where((r) =>
-            r.requestUrl.toLowerCase().contains(q) ||
+            _urlOf(r).toLowerCase().contains(q) ||
             r.methodLabel.toLowerCase().contains(q))
         .toList(growable: false);
   }
@@ -148,7 +157,7 @@ class _RequestPickSheetState extends State<RequestPickSheet> {
                                 fontWeight: FontWeight.w700,
                                 color: theme.colorScheme.primary)),
                       ),
-                      title: Text(r.requestUrl,
+                      title: Text(_urlOf(r),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),

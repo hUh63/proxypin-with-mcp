@@ -28,6 +28,7 @@
 //   2. [ToolStepHeader]——多步流程（选目标 → 选策略 → 看结果）显式编号；
 //   3. [ToolResultBox]——固定在一块的结果区，等宽字体 + 复制 + 保存，别再用对话框。
 
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -249,7 +250,8 @@ class ToolResultBox extends StatelessWidget {
       final name = '${(saveName == null || saveName!.isEmpty) ? 'result' : saveName!}.txt';
       final saved = await FilePicker.saveFile(
         fileName: name,
-        bytes: Uint8List.fromList(value.codeUnits),
+        // 必须用 UTF-8：codeUnits 是 UTF-16 单元，中文会写成乱码
+        bytes: Uint8List.fromList(utf8.encode(value)),
       );
       if (saved == null) return;
       if (!context.mounted) return;
