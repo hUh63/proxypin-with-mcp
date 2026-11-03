@@ -145,7 +145,9 @@ class WorkspaceServer {
     Object? body,
     Duration timeout = const Duration(seconds: 20),
   }) async {
-    final client = HttpClient()..connectionTimeout = timeout;
+    final client = HttpClient()
+      ..connectionTimeout = timeout
+      ..findProxy = ((_) => 'DIRECT');
     try {
       final request = await client.openUrl(method, uri).timeout(timeout);
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');

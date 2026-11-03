@@ -196,7 +196,9 @@ class WindivertDriver {
   }) async {
     final url = await _resolveZipUrl();
     log?.call('下载 $url');
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 20);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 20)
+      ..findProxy = ((_) => 'DIRECT');
     try {
       final req = await client.getUrl(Uri.parse(url));
       req.headers.set('User-Agent', 'proxypin');
@@ -274,7 +276,9 @@ class WindivertDriver {
   }
 
   static Future<String> _resolveZipUrl() async {
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15)
+      ..findProxy = ((_) => 'DIRECT');
     try {
       final req = await client.getUrl(Uri.parse('https://api.github.com/repos/basil00/Divert/releases/latest'));
       req.headers.set('Accept', 'application/vnd.github+json');

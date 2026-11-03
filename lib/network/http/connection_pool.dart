@@ -321,10 +321,12 @@ class ConnectionPool {
       }
       
       // 创建新连接
+      // 上游连接绝对不能读系统代理（那正是本 App），否则自己连自己。
       final client = HttpClient()
         ..connectionTimeout = _config.connectionTimeout
         ..idleTimeout = _config.idleTimeout
-        ..maxConnectionsPerHost = _config.maxConnectionsPerHost;
+        ..maxConnectionsPerHost = _config.maxConnectionsPerHost
+        ..findProxy = ((_) => 'DIRECT');
       
       final conn = _PooledConnection(
         client: client,

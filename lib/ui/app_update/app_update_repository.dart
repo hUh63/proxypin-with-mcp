@@ -14,7 +14,8 @@ import 'constants.dart';
 import 'new_version_dialog.dart';
 
 class AppUpdateRepository {
-  static final HttpClient httpClient = HttpClient();
+  // 更新检查直连：避免被自己的代理抓包/规则改写。
+  static final HttpClient httpClient = HttpClient()..findProxy = ((_) => 'DIRECT');
 
   /// 最近一次检查时间戳（毫秒）。用于限制自动检查频率，避免每次启动
   /// 都打 GitHub 未认证接口（60 次/小时/IP），从而频繁触发 403 限流。

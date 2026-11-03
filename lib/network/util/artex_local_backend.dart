@@ -220,7 +220,8 @@ class ArtexLocalBackend {
     {
       'tool_key': 'webpt_port_scan',
       'name': '端口扫描',
-      'description': 'TCP 端口扫描 + banner 抓取',
+      'description': 'TCP 端口扫描 + banner 抓取（内置可运行：限 200 端口 / 32 并发）',
+      'local': true,
       'params': {'target': '', 'ports': '1-1000', 'banner': '1'},
     },
     {
@@ -274,7 +275,8 @@ class ArtexLocalBackend {
     {
       'tool_key': 'webpt_hash_id',
       'name': '哈希识别',
-      'description': '识别类型并给出 hashcat mode',
+      'description': '识别类型并给出 hashcat mode（内置可运行）',
+      'local': true,
       'params': {'hash': ''},
     },
   ];
@@ -630,11 +632,26 @@ class ArtexLocalBackend {
       return true;
     }
     if (path.startsWith('/api/tools') && method != 'GET') {
+      // 少数几个纯本地就能干活的工具真的执行（不需要 shell / 外部后端），
+      // 其余明确说明不执行 —— 这比「全都不能跑」有用得多。
+      final key = '${body['tool_key'] ?? body['key'] ?? body['name'] ?? ''}';
+      final rawParams = body['params'] ?? body['arguments'];
+      final params = rawParams is Map
+          ? rawParams.map((k, v) => MapEntry('$k', v))
+          : <String, dynamic>{};
+      final started = DateTime.now();
+      final result = await _runBuiltinTool(key, params);
+      if (result != null) {
+        result['ms'] = DateTime.now().difference(started).inMilliseconds;
+        _log('info', 'tool', '本机执行 $key → ${result['ok'] == true ? 'ok' : 'fail'}');
+        _json(request, result);
+        return true;
+      }
       _json(request, {
         'ok': false,
         'error': 'embedded backend does not run scanners',
-        'hint': '内置服务端只负责任务/发现/日志的本地记录；'
-            '要真正执行 webpt 工具，请在「后端地址」里关掉内置模式并填外部 ARTEX 后端。',
+        'hint': '内置服务端只在本机执行「哈希识别」「端口扫描」，并记录任务/发现/日志；'
+            '其余 webpt 工具需要目标机器上的 shell 环境，请在「高级」里配外部后端。',
       }, status: 200);
       return true;
     }
@@ -646,6 +663,172 @@ class ArtexLocalBackend {
       _json(request, <String, dynamic>{'ok': true});
     }
     return true;
+  }
+
+  // ------------------------------------------------------------ 本机工具
+  //
+  // 只有「不需要 shell、不产生攻击流量」的少数工具能在纯 Dart 里做：
+  //   * 哈希识别 —— 纯字符串判断；
+  //   * 端口扫描 —— Socket.connect，限 200 端口 / 32 并发 / 单口 700ms。
+  // 其余 webpt 脚本必须跑在目标机器上，内置后端只回一句明确说明。
+
+  Future<Map<String, dynamic>?> _runBuiltinTool(
+      String key, Map<String, dynamic> params) async {
+    switch (key) {
+      case 'webpt_hash_id':
+        return _hashId('${params['hash'] ?? params['value'] ?? ''}');
+      case 'webpt_port_scan':
+        return _portScan(
+          '${params['target'] ?? params['host'] ?? ''}',
+          '${params['ports'] ?? '1-1000'}',
+          '${params['banner'] ?? '1'}' != '0',
+        );
+      default:
+        return null;
+    }
+  }
+
+  static Map<String, dynamic> _hashId(String raw) {
+    final h = raw.trim();
+    if (h.isEmpty) {
+      return {'ok': false, 'error': 'hash 为空'};
+    }
+    const modes = {
+      'MD5': '0',
+      'NTLM': '1000',
+      'SHA-1': '100',
+      'SHA-224': '1300',
+      'SHA-256': '1400',
+      'SHA-384': '10800',
+      'SHA-512': '1700',
+      'bcrypt': '3200',
+      'MD5 crypt': '500',
+      'SHA-256 crypt': '7400',
+      'SHA-512 crypt': '1800',
+      'Argon2': '无（hashcat 需单独模式）',
+    };
+    String type = '';
+    if (h.startsWith(r'$2a$') || h.startsWith(r'$2b$') || h.startsWith(r'$2y$')) {
+      type = 'bcrypt';
+    } else if (h.startsWith(r'$argon2')) {
+      type = 'Argon2';
+    } else if (h.startsWith(r'$1$')) {
+      type = 'MD5 crypt';
+    } else if (h.startsWith(r'$5$')) {
+      type = 'SHA-256 crypt';
+    } else if (h.startsWith(r'$6$')) {
+      type = 'SHA-512 crypt';
+    } else if (RegExp(r'^[0-9a-fA-F]+$').hasMatch(h)) {
+      type = switch (h.length) {
+        32 => 'MD5',
+        40 => 'SHA-1',
+        56 => 'SHA-224',
+        64 => 'SHA-256',
+        96 => 'SHA-384',
+        128 => 'SHA-512',
+        _ => '',
+      };
+    }
+    final hexOnly = RegExp(r'^[0-9a-fA-F]+$').hasMatch(h);
+    if (type.isEmpty) {
+      return {
+        'ok': true,
+        'output': '识别不出：长度 ${h.length}，${hexOnly ? '看起来是十六进制但长度不匹配常见算法' : '含有非十六进制字符'}。\n'
+            '常见长度：MD5/NTLM 32、SHA-1 40、SHA-256 64、SHA-512 128。',
+        'type': '',
+      };
+    }
+    // 32 位十六进制既可能是 MD5 也可能是 NTLM，长度无法区分。
+    final hint = type == 'MD5' ? '（也可能是 NTLM，hashcat 分别用 0 / 1000）' : '';
+    return {
+      'ok': true,
+      'type': type,
+      'output': '类型：$type$hint\n长度：${h.length}\nhashcat mode：${modes[type] ?? '未知'}',
+    };
+  }
+
+  static List<int> _parsePorts(String spec) {
+    final out = <int>{};
+    for (final part in spec.split(',')) {
+      final s = part.trim();
+      if (s.isEmpty) continue;
+      final dash = s.indexOf('-');
+      if (dash > 0) {
+        final a = int.tryParse(s.substring(0, dash).trim());
+        final b = int.tryParse(s.substring(dash + 1).trim());
+        if (a == null || b == null) continue;
+        final lo = a < b ? a : b;
+        final hi = a < b ? b : a;
+        for (var p = lo; p <= hi && out.length < 200; p++) {
+          if (p > 0 && p < 65536) out.add(p);
+        }
+      } else {
+        final p = int.tryParse(s);
+        if (p != null && p > 0 && p < 65536) out.add(p);
+      }
+      if (out.length >= 200) break;
+    }
+    final list = out.toList()..sort();
+    return list;
+  }
+
+  /// 端口扫描：32 并发、单口 700ms、上限 200 个端口 —— 用户主动、限速，
+  /// 不做无限并发（那既慢又容易被对方当成攻击）。
+  Future<Map<String, dynamic>> _portScan(
+      String target, String ports, bool banner) async {
+    final host = target.trim();
+    if (host.isEmpty) {
+      return {'ok': false, 'error': 'target 为空'};
+    }
+    final list = _parsePorts(ports);
+    if (list.isEmpty) {
+      return {'ok': false, 'error': 'ports 解析为空（示例：80,443 或 1-1000）'};
+    }
+    final queue = List<int>.from(list);
+    final open = <int, String>{};
+    Future<void> worker() async {
+      while (queue.isNotEmpty) {
+        final port = queue.removeAt(0);
+        Socket? socket;
+        try {
+          socket = await Socket.connect(host, port,
+              timeout: const Duration(milliseconds: 700));
+          var head = '';
+          if (banner) {
+            try {
+              socket.write('HEAD / HTTP/1.0\r\nHost: $host\r\n\r\n');
+              await socket.flush();
+              final data = await socket.first.timeout(const Duration(milliseconds: 500));
+              head = utf8.decode(data, allowMalformed: true)
+                  .split('\n')
+                  .first
+                  .trim();
+            } catch (_) {
+              // 非 HTTP 服务不回包很正常
+            }
+          }
+          open[port] = head;
+        } catch (_) {
+          // 关闭 / 过滤 —— 正常结果
+        } finally {
+          try {
+            socket?.destroy();
+          } catch (_) {}
+        }
+      }
+    }
+
+    final workers = list.length < 32 ? list.length : 32;
+    await Future.wait(List<Future<void>>.generate(workers, (_) => worker()));
+    final ordered = open.keys.toList()..sort();
+    final buf = StringBuffer()
+      ..writeln('$host：扫描 ${list.length} 个端口，开放 ${ordered.length} 个');
+    for (final p in ordered) {
+      final h = open[p] ?? '';
+      buf.writeln(h.isEmpty ? '  $p/tcp open' : '  $p/tcp open  $h');
+    }
+    if (ordered.isEmpty) buf.writeln('  （没有开放端口，或被防火墙过滤）');
+    return {'ok': true, 'output': buf.toString(), 'open': ordered};
   }
 
   static String _short(String s, int max) {

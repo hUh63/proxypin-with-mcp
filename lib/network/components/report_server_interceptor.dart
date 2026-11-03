@@ -31,7 +31,8 @@ import 'manager/report_server_manager.dart';
 class ReportServerInterceptor extends Interceptor {
   Future<ReportServerManager> get reportServerManager async => await ReportServerManager.instance;
 
-  static HttpClient httpClient = HttpClient();
+  // 上报服务器是 App 自己的后端，不能被 App 自己的代理再抓一遍。
+  static HttpClient httpClient = HttpClient()..findProxy = ((_) => 'DIRECT');
 
   @override
   int get priority => 1000;

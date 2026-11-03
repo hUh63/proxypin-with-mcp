@@ -221,7 +221,10 @@ class NetDiagnostics {
     }
     HttpClient? client;
     try {
-      client = HttpClient()..connectionTimeout = timeout;
+      client = HttpClient()
+        ..connectionTimeout = timeout
+        // 诊断工具要看到真实网络结果，不能绕进 App 自己的抓包代理
+        ..findProxy = ((_) => 'DIRECT');
       // 诊断场景要看到真实证书问题，所以这里**不**跳过校验。
       // 注意是 headUrl(Uri)：dart:io 的 HttpClient 没有 head(Uri) 这个重载。
       final request = await client.headUrl(uri).timeout(timeout);

@@ -189,6 +189,8 @@ class DesktopUpdateService {
     final client = HttpClient();
     _httpClient = client;
     client.userAgent = 'ProxyPin-Updater';
+    // 下载更新包直连，别绕进自己的代理。
+    client.findProxy = ((_) => 'DIRECT');
 
     final request = await client.getUrl(uri);
     final response = await request.close();

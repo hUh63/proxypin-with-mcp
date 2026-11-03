@@ -106,7 +106,9 @@ class SecurityVerifier {
   /// 证书不校验 —— 我们只看响应头，不想因为自签证书而拿不到结果。
   static Future<VerifyResult> verifyHost(String host,
       {Duration timeout = const Duration(seconds: 12)}) async {
-    final client = HttpClient()..connectionTimeout = timeout;
+    final client = HttpClient()
+      ..connectionTimeout = timeout
+      ..findProxy = ((_) => 'DIRECT');
     client.badCertificateCallback = (cert, h, p) => true;
     try {
       final request = await client.getUrl(Uri.parse('https://$host/'));
