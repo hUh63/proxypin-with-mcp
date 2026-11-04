@@ -5508,5 +5508,29 @@
   "editorQuickOpenNeedFile": "Open or save a file first — quick open lists its folder",
   "editorClipHistory": "Clipboard history",
   "editorClipHistoryEmpty": "Nothing copied yet",
-  "diffFileTruncated": "File is larger than 8 MB — only the first 8 MB was compared"
+  "diffFileTruncated": "File is larger than 8 MB — only the first 8 MB was compared",
+  "editorCompilerLog": "Translate compiler log",
+  "compilerLogTitle": "Compiler diagnostics",
+  "compilerLogHint": "Paste gcc / clang / cl output — messages are translated and positions detected",
+  "compilerLogParse": "Parse",
+  "compilerLogPaste": "Paste",
+  "compilerLogEmpty": "No errors or warnings found — is this really compiler output?",
+  "compilerLogSummary": "{errors} errors · {warnings} warnings",
+  "compilerLogCopyAll": "Copy translated log",
+  "compilerLogJump": "Go",
+  "@compilerLogSummary": {
+    "placeholders": {
+      "errors": {
+        "type": "String"
+      },
+      "warnings": {
+        "type": "String"
+      }
+    }
+  },
+  "editorBrowser": "Browse folder",
+  "editorBrowserUp": "Up one level",
+  "editorBrowserFilter": "Filter by name",
+  "editorBrowserEmpty": "Nothing to open in this folder",
+  "editorBrowserNoRoot": "No folder to browse — open a file first"
 }

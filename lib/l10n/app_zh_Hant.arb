@@ -5047,5 +5047,19 @@
   "editorQuickOpenNeedFile": "先開啟或儲存一個檔案：快速開啟只列它所在的目錄",
   "editorClipHistory": "剪貼簿歷史",
   "editorClipHistoryEmpty": "還沒有複製過內容",
-  "diffFileTruncated": "檔案超過 8MB，只比較了前 8MB"
+  "diffFileTruncated": "檔案超過 8MB，只比較了前 8MB",
+  "editorCompilerLog": "編譯日誌中文化",
+  "compilerLogTitle": "編譯診斷",
+  "compilerLogHint": "貼上 gcc / clang / cl 的編譯輸出，自動翻譯成中文並辨識位置",
+  "compilerLogParse": "解析翻譯",
+  "compilerLogPaste": "貼上",
+  "compilerLogEmpty": "沒有辨識到錯誤或警告（確認一下是不是編譯輸出）",
+  "compilerLogSummary": "{errors} 個錯誤 · {warnings} 個警告",
+  "compilerLogCopyAll": "複製中文清單",
+  "compilerLogJump": "定位",
+  "editorBrowser": "瀏覽資料夾",
+  "editorBrowserUp": "上一層",
+  "editorBrowserFilter": "篩選檔名",
+  "editorBrowserEmpty": "這個目錄裡沒有可開啟的檔案",
+  "editorBrowserNoRoot": "沒有可瀏覽的目錄：先開啟一個檔案"
 }

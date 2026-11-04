@@ -71,6 +71,9 @@ import 'package:proxypin/ui/toolbox/media_preview.dart';
 import 'package:proxypin/ui/toolbox/file_preview.dart';
 import 'package:proxypin/ui/toolbox/editor_ai_assist.dart';
 import 'package:proxypin/ui/toolbox/editor_quick_open.dart';
+import 'package:proxypin/ui/toolbox/compiler_log_page.dart';
+import 'package:proxypin/ui/toolbox/editor_file_browser.dart';
+import 'package:path_provider/path_provider.dart' show getApplicationDocumentsDirectory;
 
 /// 文本编辑工具：CodeForge 编辑器 + 多文档 + 语言高亮 + 正则查找替换。
 ///
@@ -1391,6 +1394,46 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 当前选区文本（控制台里的 `$0`）。
+  /// 打开文件夹：一层一跳地浏览目录，点文件直接打开（VS 的解决方案资源管理器
+  /// 在手机上的可用形态）。
+  Future<void> _showFileBrowser() async {
+    final path = _doc?.path;
+    Directory root;
+    if (path != null && path.isNotEmpty) {
+      root = File(path).parent;
+    } else {
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        root = dir;
+      } catch (_) {
+        _toast(localizations.editorBrowserNoRoot);
+        return;
+      }
+    }
+    final picked = await showEditorFileBrowser(context, root: root);
+    if (picked == null || !mounted) return;
+    await _openPath(picked);
+  }
+
+  /// 编译日志中文化：粘贴 gcc/clang 输出，翻成中文并能定位回本文件。
+  Future<void> _showCompilerLog() async {
+    final entry = await CompilerLogPage.show(context, currentPath: _doc?.path ?? '');
+    if (entry == null || !mounted) return;
+    final line = entry.line;
+    if (line == null) return;
+    final controller = _controller;
+    if (controller == null) return;
+    final target = (line - 1).clamp(0, controller.lineCount - 1);
+    try {
+      final start = controller.getLineStartOffset(target);
+      final offset = (start + (entry.column ?? 1) - 1).clamp(0, controller.text.length);
+      controller.selection = TextSelection.collapsed(offset: offset);
+      controller.scrollToLine(target);
+    } catch (_) {
+      // 行号越界：忽略
+    }
+  }
+
   /// 快速打开：列当前文件所在目录的文本文件，打字即时过滤（VS 的 Ctrl+P）。
   Future<void> _showQuickOpen() async {
     final path = _doc?.path;
@@ -6640,6 +6683,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('save', Icons.save_outlined, loc.save),
           _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
           _menuItem('quickOpen', Icons.bolt, loc.editorQuickOpen),
+          _menuItem('browse', Icons.folder_open_outlined, loc.editorBrowser),
           _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
           _menuItem('compareClipboard', Icons.content_paste_search,
               loc.editorCompareClipboard),
@@ -6761,6 +6805,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('lintIssues', Icons.error_outline, loc.editorLintIssues),
           _menuItem('console', Icons.terminal, loc.editorConsole),
           _menuItem('lintRules', Icons.rule, loc.editorLintAllRules),
+          _menuItem('compilerLog', Icons.translate, loc.editorCompilerLog),
         ];
     }
     return const [];
@@ -6866,6 +6911,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_showQuickOpen());
       case 'clipHistory':
         unawaited(_showClipHistory());
+      case 'compilerLog':
+        unawaited(_showCompilerLog());
+      case 'browse':
+        unawaited(_showFileBrowser());
       case 'docs':
         _scaffoldKey.currentState?.openDrawer();
       case 'undo':

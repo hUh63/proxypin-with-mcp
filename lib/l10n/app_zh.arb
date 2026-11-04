@@ -5047,5 +5047,19 @@
   "editorQuickOpenNeedFile": "先打开或保存一个文件：快速打开只列它所在的目录",
   "editorClipHistory": "剪贴板历史",
   "editorClipHistoryEmpty": "还没有复制过内容",
-  "diffFileTruncated": "文件超过 8MB，只比较了前 8MB"
+  "diffFileTruncated": "文件超过 8MB，只比较了前 8MB",
+  "editorCompilerLog": "编译日志中文化",
+  "compilerLogTitle": "编译诊断",
+  "compilerLogHint": "粘贴 gcc / clang / cl 的编译输出，自动翻译成中文并识别位置",
+  "compilerLogParse": "解析翻译",
+  "compilerLogPaste": "粘贴",
+  "compilerLogEmpty": "没有识别到错误或警告（确认一下是不是编译输出）",
+  "compilerLogSummary": "{errors} 个错误 · {warnings} 个警告",
+  "compilerLogCopyAll": "复制中文清单",
+  "compilerLogJump": "定位",
+  "editorBrowser": "浏览文件夹",
+  "editorBrowserUp": "上一级",
+  "editorBrowserFilter": "筛选文件名",
+  "editorBrowserEmpty": "这个目录里没有可打开的文件",
+  "editorBrowserNoRoot": "没有可浏览的目录：先打开一个文件"
 }

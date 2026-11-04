@@ -614,6 +614,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'bcqb 保存全部 save all'),
   EditorMenuItem('quickOpen', _quickOpenLabel, group: 'file',
       aliases: 'ksdk 快速打开 quick open ctrlp'),
+  EditorMenuItem('browse', _browseLabel, group: 'file',
+      aliases: 'llwjj 浏览文件夹 browser folder explorer'),
   EditorMenuItem('file', _fileLabel, group: 'file'),
   EditorMenuItem('compareDisk', _compareDiskLabel, group: 'file',
       aliases: 'bdkb 与磁盘比较 compare disk diff saved'),
@@ -699,6 +701,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('lintIssues', _lintIssuesLabel, group: 'inspect', aliases: 'wt 问题 issues problems'),
   EditorMenuItem('console', _consoleLabel, group: 'inspect', aliases: 'kzt 控制台 console'),
   EditorMenuItem('lintRules', _lintRulesLabel, group: 'inspect', aliases: 'gz 检查规则 rules'),
+  EditorMenuItem('compilerLog', _compilerLogLabel, group: 'inspect',
+      aliases: 'bj 编译 诊断 compiler log translate zh'),
 ];
 
 String _fileLabel(AppLocalizations l) => l.editorMoreFile;
@@ -727,6 +731,8 @@ String _openLabel(AppLocalizations l) => l.selectFile;
 String _saveLabel(AppLocalizations l) => l.save;
 String _saveAllLabel(AppLocalizations l) => l.editorSaveAll;
 String _quickOpenLabel(AppLocalizations l) => l.editorQuickOpen;
+String _browseLabel(AppLocalizations l) => l.editorBrowser;
+String _compilerLogLabel(AppLocalizations l) => l.editorCompilerLog;
 String _clipHistoryLabel(AppLocalizations l) => l.editorClipHistory;
 String _aiAssistLabel(AppLocalizations l) => l.editorAiAssist;
 String _docsLabel(AppLocalizations l) => l.editorDocuments;
