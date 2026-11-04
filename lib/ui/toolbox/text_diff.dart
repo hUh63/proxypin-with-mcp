@@ -54,7 +54,17 @@ class TextDiffPage extends StatefulWidget {
   final String? initialLeft;
   final String? initialRight;
 
-  const TextDiffPage({super.key, this.windowId, this.initialLeft, this.initialRight});
+  /// 是否把内容写进「上次对比」（默认是）。从别处临时比较一段选区时传 false，
+  /// 否则退出后用户原来的对比内容会被这段选区顶掉。
+  final bool persist;
+
+  const TextDiffPage({
+    super.key,
+    this.windowId,
+    this.initialLeft,
+    this.initialRight,
+    this.persist = true,
+  });
 
   @override
   State<TextDiffPage> createState() => _TextDiffPageState();
@@ -313,6 +323,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   // ---------- 持久化 ----------
 
   Future<void> _restoreIfNeeded() async {
+    if (!widget.persist) return;
     if (widget.initialLeft != null || widget.initialRight != null) return;
     try {
       final sp = await SharedPreferences.getInstance();
@@ -341,6 +352,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   Future<void> _persistNow() async {
+    if (!widget.persist) return;
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setString(
@@ -1104,6 +1116,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'gotoLine':
             unawaited(_gotoLineDialog());
+          case 'compareSelection':
+            unawaited(_compareSelection());
         }
       },
       itemBuilder: (_) => [
@@ -1132,6 +1146,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             checked: _wordDiff,
             child: Text(localizations.diffWordDiff)),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.diffGotoLine)),
+        PopupMenuItem(
+            value: 'compareSelection',
+            child: Text(localizations.diffCompareSelection)),
         PopupMenuItem(value: 'zoomIn', child: Text(localizations.editorZoomIn)),
         PopupMenuItem(value: 'zoomOut', child: Text(localizations.editorZoomOut)),
         PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
@@ -1221,6 +1238,28 @@ class _TextDiffPageState extends State<TextDiffPage> {
         const SizedBox(width: 2),
       ]),
     );
+  }
+
+  /// 只比较两侧各自选中的段落：单独开一个临时对比页（不覆盖「上次对比」）。
+  Future<void> _compareSelection() async {
+    String selOf(CodeForgeController c) {
+      final sel = c.selection;
+      if (!sel.isValid || sel.isCollapsed) return '';
+      final len = c.text.length;
+      final a = sel.start.clamp(0, len);
+      final b = sel.end.clamp(0, len);
+      return a <= b ? c.text.substring(a, b) : c.text.substring(b, a);
+    }
+
+    final l = selOf(_left);
+    final r = selOf(_right);
+    if (l.isEmpty && r.isEmpty) {
+      _toastText(localizations.diffSelectFirst);
+      return;
+    }
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => TextDiffPage(initialLeft: l, initialRight: r, persist: false),
+    ));
   }
 
   /// 跳转到指定行（两侧同步，按各自行数 clamp）。

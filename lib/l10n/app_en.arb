@@ -5532,5 +5532,7 @@
   "editorBrowserUp": "Up one level",
   "editorBrowserFilter": "Filter by name",
   "editorBrowserEmpty": "Nothing to open in this folder",
-  "editorBrowserNoRoot": "No folder to browse — open a file first"
+  "editorBrowserNoRoot": "No folder to browse — open a file first",
+  "diffCompareSelection": "Compare selection",
+  "diffSelectFirst": "Select the range to compare on either side first"
 }
