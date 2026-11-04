@@ -5046,5 +5046,6 @@
   "editorQuickOpenNoMatch": "沒有符合的檔案",
   "editorQuickOpenNeedFile": "先開啟或儲存一個檔案：快速開啟只列它所在的目錄",
   "editorClipHistory": "剪貼簿歷史",
-  "editorClipHistoryEmpty": "還沒有複製過內容"
+  "editorClipHistoryEmpty": "還沒有複製過內容",
+  "diffFileTruncated": "檔案超過 8MB，只比較了前 8MB"
 }

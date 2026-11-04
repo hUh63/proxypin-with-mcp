@@ -842,6 +842,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
           _rightName = name;
         }
       });
+      // 超过 8MB 只读了前 8MB：不提示的话，用户会拿着「后半段都一样」的结论做决定。
+      if (content.truncated) _toast(localizations.diffFileTruncated);
     } catch (e) {
       _toast('${localizations.fail}: $e');
     }

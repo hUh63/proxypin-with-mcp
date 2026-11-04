@@ -5507,5 +5507,6 @@
   "editorQuickOpenNoMatch": "No matching files",
   "editorQuickOpenNeedFile": "Open or save a file first — quick open lists its folder",
   "editorClipHistory": "Clipboard history",
-  "editorClipHistoryEmpty": "Nothing copied yet"
+  "editorClipHistoryEmpty": "Nothing copied yet",
+  "diffFileTruncated": "File is larger than 8 MB — only the first 8 MB was compared"
 }

@@ -5046,5 +5046,6 @@
   "editorQuickOpenNoMatch": "没有匹配的文件",
   "editorQuickOpenNeedFile": "先打开或保存一个文件：快速打开只列它所在的目录",
   "editorClipHistory": "剪贴板历史",
-  "editorClipHistoryEmpty": "还没有复制过内容"
+  "editorClipHistoryEmpty": "还没有复制过内容",
+  "diffFileTruncated": "文件超过 8MB，只比较了前 8MB"
 }
