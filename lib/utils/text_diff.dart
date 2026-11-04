@@ -60,21 +60,35 @@ class LineDiff {
 }
 
 /// 归一化 key：仅用于「是否相同」的比较，不改变显示文本。
-String _normKey(String s, bool ignoreCase, bool ignoreWhitespace) {
+String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
+    [bool ignoreTrailingWhitespace = false]) {
   var k = s;
-  if (ignoreWhitespace) k = k.replaceAll(_whiteSpace, '');
+  // 行尾 \r 是「换行符风格」不是内容：CRLF 与 LF 的文件必须逐行能对上，
+  // 否则整篇都会被标成修改（Windows/macOS 互传文件时最常踩）。
+  if (k.endsWith('\r')) k = k.substring(0, k.length - 1);
+  if (ignoreWhitespace) {
+    k = k.replaceAll(_whiteSpace, '');
+  } else if (ignoreTrailingWhitespace) {
+    k = k.trimRight();
+  }
   if (ignoreCase) k = k.toLowerCase();
   return k;
 }
 
 /// 计算两段文本的行级差异，按出现顺序返回。
 List<LineDiff> diffLines(String left, String right,
-    {bool ignoreCase = false, bool ignoreWhitespace = false}) {
+    {bool ignoreCase = false,
+    bool ignoreWhitespace = false,
+    bool ignoreTrailingWhitespace = false}) {
   // 用 split('\n') 而不是 LineSplitter：保留尾部空行的差异（"a\n" vs "a"）
   final a = left.split('\n');
   final b = right.split('\n');
-  final aK = a.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
-  final bK = b.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
+  final aK = a
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .toList();
+  final bK = b
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .toList();
   final out = <LineDiff>[];
   _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
   return out;
@@ -310,8 +324,9 @@ int _similarityScore(String l, String r) {
 
 /// 在一段「删除行 × 新增行」之间做**相似度加权 LCS 配对**：
 /// 保序（不交叉），只把相似度 ≥ [_pairSimilarity] 的行配成「修改」。
-List<({int left, int right})> _pairLines(
-    List<String> leftTexts, List<String> rightTexts, bool ignoreCase, bool ignoreWhitespace) {
+List<({int left, int right})> _pairLines(List<String> leftTexts,
+    List<String> rightTexts, bool ignoreCase, bool ignoreWhitespace,
+    [bool ignoreTrailingWhitespace = false]) {
   final m = leftTexts.length;
   final n = rightTexts.length;
   if (m == 0 || n == 0) return const <({int left, int right})>[];
@@ -322,8 +337,12 @@ List<({int left, int right})> _pairLines(
     return [for (var k = 0; k < cnt; k++) (left: k, right: k)];
   }
 
-  final lk = leftTexts.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
-  final rk = rightTexts.map((s) => _normKey(s, ignoreCase, ignoreWhitespace)).toList();
+  final lk = leftTexts
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .toList();
+  final rk = rightTexts
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .toList();
 
   final sim = List.generate(m, (_) => List<int>.filled(n, 0));
   for (var i = 0; i < m; i++) {
@@ -502,7 +521,9 @@ class DiffBlock {
 /// 块内做相似度配对（[ignoreCase] / [ignoreWhitespace] 一起参与配对判定）。
 /// 这是 UI 侧「新增 / 修改 / 删除」分类与上一处 / 下一处导航的唯一真源。
 List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
-    {bool ignoreCase = false, bool ignoreWhitespace = false}) {
+    {bool ignoreCase = false,
+    bool ignoreWhitespace = false,
+    bool ignoreTrailingWhitespace = false}) {
   final blocks = <DiffBlock>[];
   List<int>? leftLines;
   List<int>? rightLines;
@@ -514,7 +535,8 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
 
   void flush() {
     if (leftLines != null) {
-      final pairs = _pairLines(leftTexts ?? const [], rightTexts ?? const [], ignoreCase, ignoreWhitespace);
+      final pairs = _pairLines(leftTexts ?? const [], rightTexts ?? const [],
+          ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace);
       blocks.add(DiffBlock(
         leftStart: leftStart!,
         rightStart: rightStart!,
@@ -611,8 +633,13 @@ class DiffRow {
 /// 配对成 modified，没配上的行分别作为 deleted / added。用来渲染左右行号对齐的
 /// 并排视图，解决「各显示自己行号、多段差异看不出对应关系」的问题。
 List<DiffRow> alignedDiffRows(String left, String right,
-    {bool ignoreCase = false, bool ignoreWhitespace = false}) {
-  final diffs = diffLines(left, right, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
+    {bool ignoreCase = false,
+    bool ignoreWhitespace = false,
+    bool ignoreTrailingWhitespace = false}) {
+  final diffs = diffLines(left, right,
+      ignoreCase: ignoreCase,
+      ignoreWhitespace: ignoreWhitespace,
+      ignoreTrailingWhitespace: ignoreTrailingWhitespace);
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {
@@ -641,6 +668,7 @@ List<DiffRow> alignedDiffRows(String left, String right,
       ins.map((e) => e.text).toList(),
       ignoreCase,
       ignoreWhitespace,
+      ignoreTrailingWhitespace,
     );
     // 按左行顺序输出：配对的算 modified，没配上的算 deleted；右侧未配对的算 added。
     final leftToRight = <int, int>{for (final p in pairs) p.left: p.right};

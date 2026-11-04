@@ -5481,5 +5481,31 @@
   "editorAiInsert": "Insert at cursor",
   "fuzzerStepPick": "1. Pick a request",
   "fuzzerStepValues": "2. Set the field and values",
-  "fuzzerStepRun": "3. Run and compare responses"
+  "fuzzerStepRun": "3. Run and compare responses",
+  "diffIgnoreTrailing": "Ignore trailing whitespace",
+  "diffExportCsv": "Export change list (CSV)",
+  "diffCsvType": "Type",
+  "diffCsvLeft": "Left line",
+  "diffCsvRight": "Right line",
+  "diffCsvLeftText": "Left text",
+  "diffCsvRightText": "Right text",
+  "diffNewlineMismatch": "Line endings differ: left {left}, right {right} (carriage returns are ignored when comparing)",
+  "diffNoChange": "No differences",
+  "@diffNewlineMismatch": {
+    "placeholders": {
+      "left": {
+        "type": "String"
+      },
+      "right": {
+        "type": "String"
+      }
+    }
+  },
+  "editorQuickOpen": "Quick open",
+  "editorQuickOpenHint": "Type a file name",
+  "editorQuickOpenEmpty": "No text files in this folder",
+  "editorQuickOpenNoMatch": "No matching files",
+  "editorQuickOpenNeedFile": "Open or save a file first — quick open lists its folder",
+  "editorClipHistory": "Clipboard history",
+  "editorClipHistoryEmpty": "Nothing copied yet"
 }

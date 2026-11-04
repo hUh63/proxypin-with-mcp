@@ -227,13 +227,15 @@ class ArtexLocalBackend {
     {
       'tool_key': 'webpt_subdomain_enum',
       'name': '子域枚举',
-      'description': 'crt.sh 证书透明日志优先，再查字典',
+      'description': 'DNS 解析常见前缀（含泛解析检测，内置可运行）',
+      'local': true,
       'params': {'domain': '', 'wordlist': 'none'},
     },
     {
       'tool_key': 'webpt_dir_brute',
       'name': '目录爆破',
-      'description': '按扩展名扫目录/备份文件',
+      'description': '按常见/自定义路径探目录（限 80 条 / 6 并发，内置可运行）',
+      'local': true,
       'params': {'url': '', 'wordlist': '', 'extensions': 'php,html,bak'},
     },
     {
@@ -683,6 +685,13 @@ class ArtexLocalBackend {
           '${params['ports'] ?? '1-1000'}',
           '${params['banner'] ?? '1'}' != '0',
         );
+      case 'webpt_subdomain_enum':
+        return _subdomainEnum('${params['domain'] ?? params['target'] ?? ''}');
+      case 'webpt_dir_brute':
+        return _dirBrute(
+          '${params['url'] ?? params['target'] ?? ''}',
+          '${params['wordlist'] ?? ''}',
+        );
       default:
         return null;
     }
@@ -829,6 +838,160 @@ class ArtexLocalBackend {
     }
     if (ordered.isEmpty) buf.writeln('  （没有开放端口，或被防火墙过滤）');
     return {'ok': true, 'output': buf.toString(), 'open': ordered};
+  }
+
+  // ---------------------------------------------------------- 子域枚举
+
+  /// 常用前缀：不带任何「攻击载荷」性质，就是互联网上最常见的服务名。
+  /// 用户要更全就自己传 wordlist。
+  static const List<String> _subPrefixes = [
+    'www', 'm', 'mobile', 'api', 'app', 'admin', 'manage', 'portal', 'login',
+    'sso', 'auth', 'account', 'user', 'mail', 'smtp', 'imap', 'pop', 'webmail',
+    'dev', 'test', 'stage', 'staging', 'uat', 'beta', 'demo', 'sandbox',
+    'prod', 'pre', 'preview', 'release', 'git', 'gitlab', 'jenkins', 'ci',
+    'cd', 'build', 'monitor', 'status', 'grafana', 'kibana', 'log', 'logs',
+    'db', 'mysql', 'redis', 'mongo', 'es', 'search', 'static', 'cdn', 'img',
+    'image', 'upload', 'download', 'file', 'files', 'oss', 'media', 'video',
+    'pay', 'payment', 'order', 'shop', 'store', 'blog', 'news', 'help',
+    'support', 'docs', 'doc', 'wiki', 'oa', 'erp', 'crm', 'hr', 'mailgw',
+  ];
+
+  Future<Map<String, dynamic>> _subdomainEnum(String raw) async {
+    var domain = raw.trim().toLowerCase();
+    if (domain.isEmpty) return {'ok': false, 'error': 'domain 为空'};
+    domain = domain.replaceFirst(RegExp(r'^[a-z]+://'), '');
+    final slash = domain.indexOf('/');
+    if (slash > 0) domain = domain.substring(0, slash);
+    if (domain.startsWith('www.')) domain = domain.substring(4);
+    if (!domain.contains('.')) {
+      return {'ok': false, 'error': '域名格式不对，示例：example.com'};
+    }
+
+    // 泛解析检测：随便挑一个几乎不可能存在的子域，能解析说明 *.domain 全通，
+    // 这时枚举出来的「命中」全是假的 —— 必须告诉用户，否则等于在骗人。
+    var wildcard = false;
+    try {
+      final probe = await InternetAddress.lookup(
+              'nx-${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}.$domain')
+          .timeout(const Duration(milliseconds: 1500));
+      wildcard = probe.isNotEmpty;
+    } catch (_) {
+      wildcard = false;
+    }
+
+    final queue = List<String>.from(_subPrefixes);
+    final hits = <String>[];
+    Future<void> worker() async {
+      while (queue.isNotEmpty) {
+        final prefix = queue.removeAt(0);
+        final host = '$prefix.$domain';
+        try {
+          final list =
+              await InternetAddress.lookup(host).timeout(const Duration(milliseconds: 1500));
+          if (list.isNotEmpty) hits.add('$host → ${list.first.address}');
+        } catch (_) {
+          // 解析失败就是没有，正常
+        }
+      }
+    }
+
+    await Future.wait(List<Future<void>>.generate(16, (_) => worker()));
+    hits.sort();
+    final buf = StringBuffer()
+      ..writeln('$domain：查 ${_subPrefixes.length} 个常见前缀，命中 ${hits.length} 个');
+    if (wildcard) {
+      buf.writeln('⚠ 该域名疑似泛解析（任意子域都能解析），下面的结果不可信，'
+          '请用真实 DNS 记录核对。');
+    }
+    for (final h in hits) {
+      buf.writeln('  $h');
+    }
+    if (hits.isEmpty && !wildcard) buf.writeln('  （没有命中）');
+    return {'ok': true, 'output': buf.toString(), 'hits': hits, 'wildcard': wildcard};
+  }
+
+  // ---------------------------------------------------------- 目录探测
+
+  /// 兜底路径：都是「站点常见的公开入口」，不含任何绕过/攻击性质的名字。
+  static const List<String> _defaultDirs = [
+    'admin', 'login', 'api', 'api/v1', 'api/v2', 'user', 'account', 'home',
+    'index.php', 'index.html', 'robots.txt', 'sitemap.xml', 'favicon.ico',
+    'static/', 'assets/', 'css/', 'js/', 'images/', 'img/', 'upload/', 'uploads/',
+    'backup/', 'bak/', 'old/', 'test/', 'dev/', 'tmp/', 'logs/', 'log/',
+    'config/', 'conf/', 'data/', 'db/', 'install/', 'setup/', 'console/',
+    'manage/', 'about', 'contact', 'search', 'news', 'help', 'status',
+  ];
+
+  Future<Map<String, dynamic>> _dirBrute(String raw, String words) async {
+    var base = raw.trim();
+    if (base.isEmpty) return {'ok': false, 'error': 'url 为空'};
+    if (!base.startsWith('http://') && !base.startsWith('https://')) {
+      base = 'http://$base';
+    }
+    if (!base.endsWith('/')) base = '$base/';
+    final uri = Uri.tryParse(base);
+    if (uri == null || uri.host.isEmpty) {
+      return {'ok': false, 'error': 'url 不合法，示例：https://example.com/'};
+    }
+
+    final custom = words
+        .split(RegExp(r'[,\s]+'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final paths = (custom.isEmpty ? _defaultDirs : custom).take(80).toList();
+
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 5)
+      ..findProxy = ((_) => 'DIRECT') // 探目标站必须直连，否则结果是代理的
+      ..badCertificateCallback = (cert, host, port) => true;
+
+    final queue = List<String>.from(paths);
+    final found = <String>[];
+    Future<void> worker() async {
+      while (queue.isNotEmpty) {
+        final path = queue.removeAt(0);
+        final url = '$base${path.startsWith('/') ? path.substring(1) : path}';
+        try {
+          final req = await client.getUrl(Uri.parse(url));
+          req.followRedirects = false;
+          req.headers.set(HttpHeaders.userAgentHeader, 'Mozilla/5.0 (compatible; ARTEX)');
+          final resp = await req.close().timeout(const Duration(seconds: 5));
+          final code = resp.statusCode;
+          final len = resp.contentLength;
+          // 只读第一个块就够（要的是状态码），整份 drain 遇到大文件会卡很久。
+          try {
+            await resp
+                .take(1)
+                .drain<void>()
+                .timeout(const Duration(seconds: 3), onTimeout: () {});
+          } catch (_) {
+            // body 读不完不影响结论
+          }
+          // 404 之外都值得看一眼；401/403 说明路径存在只是要权限。
+          if (code != 404) {
+            found.add('  $code  $path${len >= 0 ? '  ($len B)' : ''}');
+          }
+        } catch (_) {
+          // 超时/连接失败：跳过
+        }
+      }
+    }
+
+    final started = DateTime.now();
+    // 8 并发 × 5s 超时 × 80 条 ≈ 最坏 50s，仍在常见 HTTP 客户端超时之内
+    await Future.wait(List<Future<void>>.generate(8, (_) => worker()));
+    client.close(force: true);
+    final ms = DateTime.now().difference(started).inMilliseconds;
+    found.sort();
+    final buf = StringBuffer()
+      ..writeln('$base：探测 ${paths.length} 条路径（$ms ms），非 404 共 ${found.length} 条'
+          '${custom.isEmpty ? '（用内置常见路径，可在 wordlist 里自定义）' : ''}');
+    for (final f in found) {
+      buf.writeln(f);
+    }
+    if (found.isEmpty) buf.writeln('  （全部 404 / 连接失败）');
+    return {'ok': true, 'output': buf.toString(), 'found': found};
   }
 
   static String _short(String s, int max) {

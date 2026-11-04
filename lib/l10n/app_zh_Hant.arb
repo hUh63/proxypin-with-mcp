@@ -5030,5 +5030,21 @@
   "editorAiInsert": "插入到游標",
   "fuzzerStepPick": "① 選一條要試的請求",
   "fuzzerStepValues": "② 填要改的位置和取值",
-  "fuzzerStepRun": "③ 開始，對比回應差異"
+  "fuzzerStepRun": "③ 開始，對比回應差異",
+  "diffIgnoreTrailing": "忽略行尾空白",
+  "diffExportCsv": "匯出差異清單 (CSV)",
+  "diffCsvType": "類型",
+  "diffCsvLeft": "左行號",
+  "diffCsvRight": "右行號",
+  "diffCsvLeftText": "左側內容",
+  "diffCsvRightText": "右側內容",
+  "diffNewlineMismatch": "換行符不同：左 {left} · 右 {right}（比較時已按行忽略回車）",
+  "diffNoChange": "沒有差異",
+  "editorQuickOpen": "快速開啟檔案",
+  "editorQuickOpenHint": "輸入檔名篩選",
+  "editorQuickOpenEmpty": "這個目錄沒有可開啟的文字檔",
+  "editorQuickOpenNoMatch": "沒有符合的檔案",
+  "editorQuickOpenNeedFile": "先開啟或儲存一個檔案：快速開啟只列它所在的目錄",
+  "editorClipHistory": "剪貼簿歷史",
+  "editorClipHistoryEmpty": "還沒有複製過內容"
 }

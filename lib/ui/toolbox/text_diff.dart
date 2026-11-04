@@ -163,6 +163,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 词级（字符级）高亮：关掉只看整行，几万行的超大文件更顺。
   bool _wordDiff = true;
 
+  /// 忽略行尾空白：只抹掉每行末尾的空格/Tab，行内差异仍然比。
+  /// （「忽略空白」是全量抹空白，适合格式化后的对比；这个是更精准的那一档。）
+  bool _ignoreTrailing = false;
+
   /// 聚焦模式保留的上下文行数。
   static const int _focusContext = 3;
 
@@ -500,8 +504,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _rightSnapshot = _right.text;
 
     final diffs = diffLines(_left.text, _right.text,
-        ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
-    final blocks = buildDiffBlocks(diffs, ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
+        ignoreCase: _ignoreCase,
+        ignoreWhitespace: _ignoreWhitespace,
+        ignoreTrailingWhitespace: _ignoreTrailing);
+    final blocks = buildDiffBlocks(diffs,
+        ignoreCase: _ignoreCase,
+        ignoreWhitespace: _ignoreWhitespace,
+        ignoreTrailingWhitespace: _ignoreTrailing);
     final stats = diffStats(blocks);
 
     final addBg = Colors.green.withValues(alpha: 0.16);
@@ -1022,6 +1031,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'ignoreSpace':
             setState(() => _ignoreWhitespace = !_ignoreWhitespace);
             _compare();
+          case 'ignoreTrailing':
+            setState(() => _ignoreTrailing = !_ignoreTrailing);
+            _compare();
           case 'wrap':
             setState(() => _wrap = !_wrap);
           case 'onlyDiff':
@@ -1059,6 +1071,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportHtmlReport());
           case 'exportPatch':
             unawaited(_exportPatch());
+          case 'exportCsv':
+            unawaited(_exportCsv());
           case 'history':
             unawaited(_showDiffHistory());
           case 'diffList':
@@ -1094,6 +1108,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
         CheckedPopupMenuItem(value: 'ignoreCase', checked: _ignoreCase, child: Text(localizations.diffIgnoreCase)),
         CheckedPopupMenuItem(
             value: 'ignoreSpace', checked: _ignoreWhitespace, child: Text(localizations.diffIgnoreWhitespace)),
+        CheckedPopupMenuItem(
+            value: 'ignoreTrailing',
+            checked: _ignoreTrailing,
+            child: Text(localizations.diffIgnoreTrailing)),
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
         CheckedPopupMenuItem(
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
@@ -1132,6 +1150,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
+        PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
@@ -1240,8 +1259,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   void _showDiffStats() {
     final stats = diffStats(_blocks);
-    _toastText(localizations.diffStatsSummary(
-        '${stats.added}', '${stats.deleted}', '${stats.modified}'));
+    final summary = localizations.diffStatsSummary(
+        '${stats.added}', '${stats.deleted}', '${stats.modified}');
+    _toastText('$summary${_newlineHint()}');
+  }
+
+  /// 两侧换行符风格不同时补一句提示：这是「看着一样却全标红」的第二大原因
+  /// （第一大是行尾空格）。比较本身已经忽略行尾 \r，这里只是解释现象。
+  String _newlineHint() {
+    final l = _left.text.contains('\r\n');
+    final r = _right.text.contains('\r\n');
+    if (l == r) return '';
+    return '\n${localizations.diffNewlineMismatch(l ? 'CRLF' : 'LF', r ? 'CRLF' : 'LF')}';
   }
 
   /// 左上角图例：三行「颜色 + 文本」的小号示例，固定显示（不横向滑动）。
@@ -1651,11 +1680,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 对齐视图的行（带缓存）：文本或忽略选项变了才重算。
   List<DiffRow> _alignedRows() {
-    final key = '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace';
+    final key =
+        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|$_ignoreTrailing';
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
-        ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
+        ignoreCase: _ignoreCase,
+        ignoreWhitespace: _ignoreWhitespace,
+        ignoreTrailingWhitespace: _ignoreTrailing);
     return _alignedRowsCache;
   }
 
@@ -1835,8 +1867,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
     try {
       final start = controller.getLineStartOffset(line);
       final end = line + 1 < controller.lineCount ? controller.getLineStartOffset(line + 1) : controller.text.length;
-      final raw = controller.text.substring(start.clamp(0, controller.text.length), end.clamp(0, controller.text.length));
-      return raw.endsWith('\n') ? raw.substring(0, raw.length - 1) : raw;
+      var raw = controller.text.substring(
+          start.clamp(0, controller.text.length), end.clamp(0, controller.text.length));
+      if (raw.endsWith('\n')) raw = raw.substring(0, raw.length - 1);
+      // 行尾 \r 在并排视图里不可见，但会让复制出来的文本带脏字符。
+      return raw.endsWith('\r') ? raw.substring(0, raw.length - 1) : raw;
     } catch (_) {
       return '';
     }
@@ -1846,6 +1881,59 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 导出标准 unified diff（`--- a/x +++ b/x @@ ... @@`），可直接 `git apply` /
   /// `patch -p1`。桌面工具（Beyond Compare / Meld）都有这个出口，用来把差异交给
   /// CI 或同事的机器。
+  /// 导出差异清单 CSV：给「要贴到工单/Excel 里逐条确认」的场景。
+  ///
+  /// 只导差异行（含上下文？不带 —— 清单只列改动本身最有用）。
+  /// 带 UTF-8 BOM + 防公式注入，Excel 直接双击打开不乱码。
+  Future<void> _exportCsv() async {
+    final rows = _alignedRows();
+    final changed = rows.where((r) => r.type != DiffRowType.equal).toList();
+    if (changed.isEmpty) {
+      _toastText(localizations.diffNoChange);
+      return;
+    }
+    final loc = localizations;
+    final buf = StringBuffer()
+      ..writeln('${_csv(loc.diffCsvType)},${_csv(loc.diffCsvLeft)},'
+          '${_csv(loc.diffCsvRight)},${_csv(loc.diffCsvLeftText)},'
+          '${_csv(loc.diffCsvRightText)}');
+    for (final r in changed) {
+      buf.writeln([
+        _csv(switch (r.type) {
+          DiffRowType.added => loc.diffOnlyAdded,
+          DiffRowType.deleted => loc.diffOnlyDeleted,
+          DiffRowType.modified => loc.diffOnlyModified,
+          DiffRowType.equal => '',
+        }),
+        _csv(r.leftLine?.toString() ?? ''),
+        _csv(r.rightLine?.toString() ?? ''),
+        _csv(r.leftText ?? ''),
+        _csv(r.rightText ?? ''),
+      ].join(','));
+    }
+    try {
+      // BOM：Windows Excel 打开无 BOM 的 UTF-8 CSV 会按 GBK 解码，中文全乱。
+      final bytes = Uint8List.fromList([0xEF, 0xBB, 0xBF, ...utf8.encode(buf.toString())]);
+      final saved = await FilePicker.saveFile(fileName: 'diff-changes.csv', bytes: bytes);
+      if (!mounted) return;
+      if (saved != null) _toastText(localizations.diffReportSaved);
+    } catch (e) {
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
+  /// CSV 单元格：转义引号 + 以 = + - @ 开头的加单引号（防 Excel 公式注入）。
+  static String _csv(String s) {
+    var v = s.replaceAll('\r', '').replaceAll('\n', ' ');
+    if (v.startsWith('=') || v.startsWith('+') || v.startsWith('-') || v.startsWith('@')) {
+      v = "'$v";
+    }
+    if (v.contains(',') || v.contains('"') || v.contains(' ')) {
+      return '"${v.replaceAll('"', '""')}"';
+    }
+    return v;
+  }
+
   Future<void> _exportPatch() async {
     final rows = _alignedRows();
     if (rows.isEmpty) {

@@ -612,6 +612,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('save', _saveLabel, group: 'file', aliases: 'bc baocun save write'),
   EditorMenuItem('saveAll', _saveAllLabel, group: 'file',
       aliases: 'bcqb 保存全部 save all'),
+  EditorMenuItem('quickOpen', _quickOpenLabel, group: 'file',
+      aliases: 'ksdk 快速打开 quick open ctrlp'),
   EditorMenuItem('file', _fileLabel, group: 'file'),
   EditorMenuItem('compareDisk', _compareDiskLabel, group: 'file',
       aliases: 'bdkb 与磁盘比较 compare disk diff saved'),
@@ -629,6 +631,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('navForward', _navForwardLabel, group: 'edit', aliases: 'qj 前进 forward'),
   EditorMenuItem('recentEdits', _recentEditsLabel, group: 'edit'),
   EditorMenuItem('copy', _copyLabel, group: 'edit', aliases: 'fz fuzhi copy'),
+  EditorMenuItem('clipHistory', _clipHistoryLabel, group: 'edit',
+      aliases: 'jtb 剪贴板 clipboard paste'),
   EditorMenuItem('clear', _clearLabel, group: 'edit', aliases: 'ql qingkong clear'),
   EditorMenuItem('replaceLine', _replaceLineLabel, group: 'edit', aliases: 'th 替换行 replace line'),
   EditorMenuItem('comment', _commentLabel, group: 'edit', aliases: 'zs zhushi comment'),
@@ -722,6 +726,8 @@ String _newFileLabel(AppLocalizations l) => l.editorNewFile;
 String _openLabel(AppLocalizations l) => l.selectFile;
 String _saveLabel(AppLocalizations l) => l.save;
 String _saveAllLabel(AppLocalizations l) => l.editorSaveAll;
+String _quickOpenLabel(AppLocalizations l) => l.editorQuickOpen;
+String _clipHistoryLabel(AppLocalizations l) => l.editorClipHistory;
 String _aiAssistLabel(AppLocalizations l) => l.editorAiAssist;
 String _docsLabel(AppLocalizations l) => l.editorDocuments;
 String _undoLabel(AppLocalizations l) => l.editorUndo;

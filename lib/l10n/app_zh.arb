@@ -5030,5 +5030,21 @@
   "editorAiInsert": "插入到光标",
   "fuzzerStepPick": "① 选一条要试的请求",
   "fuzzerStepValues": "② 填要改的位置和取值",
-  "fuzzerStepRun": "③ 开始，对比响应差异"
+  "fuzzerStepRun": "③ 开始，对比响应差异",
+  "diffIgnoreTrailing": "忽略行尾空白",
+  "diffExportCsv": "导出差异清单 (CSV)",
+  "diffCsvType": "类型",
+  "diffCsvLeft": "左行号",
+  "diffCsvRight": "右行号",
+  "diffCsvLeftText": "左侧内容",
+  "diffCsvRightText": "右侧内容",
+  "diffNewlineMismatch": "换行符不同：左 {left} · 右 {right}（比较时已按行忽略回车）",
+  "diffNoChange": "没有差异",
+  "editorQuickOpen": "快速打开文件",
+  "editorQuickOpenHint": "输入文件名筛选",
+  "editorQuickOpenEmpty": "这个目录没有可打开的文本文件",
+  "editorQuickOpenNoMatch": "没有匹配的文件",
+  "editorQuickOpenNeedFile": "先打开或保存一个文件：快速打开只列它所在的目录",
+  "editorClipHistory": "剪贴板历史",
+  "editorClipHistoryEmpty": "还没有复制过内容"
 }

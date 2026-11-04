@@ -70,6 +70,7 @@ import 'package:proxypin/ui/toolbox/html_preview.dart';
 import 'package:proxypin/ui/toolbox/media_preview.dart';
 import 'package:proxypin/ui/toolbox/file_preview.dart';
 import 'package:proxypin/ui/toolbox/editor_ai_assist.dart';
+import 'package:proxypin/ui/toolbox/editor_quick_open.dart';
 
 /// 文本编辑工具：CodeForge 编辑器 + 多文档 + 语言高亮 + 正则查找替换。
 ///
@@ -463,6 +464,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       if (ctrl && key == LogicalKeyboardKey.keyF) {
         _toggleFind();
+        return true;
+      }
+      // Ctrl+P：快速打开同目录文件（VS/VS Code 同款）
+      if (ctrl && key == LogicalKeyboardKey.keyP) {
+        unawaited(_showQuickOpen());
         return true;
       }
       // Ctrl+`：切到「终端」（VS Code 同款），再按一次关掉。
@@ -1385,6 +1391,89 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 当前选区文本（控制台里的 `$0`）。
+  /// 快速打开：列当前文件所在目录的文本文件，打字即时过滤（VS 的 Ctrl+P）。
+  Future<void> _showQuickOpen() async {
+    final path = _doc?.path;
+    if (path == null || path.isEmpty) {
+      _toast(localizations.editorQuickOpenNeedFile);
+      return;
+    }
+    final picked = await showEditorQuickOpen(context, dir: File(path).parent);
+    if (picked == null || !mounted) return;
+    await _openPath(picked);
+  }
+
+  // 剪贴板历史：只在内存里留最近 20 条（剪贴板内容可能含密钥，不落盘）。
+  static const int _clipMax = 20;
+  static const int _clipMaxChars = 200000;
+  final List<String> _clipHistory = <String>[];
+
+  void _rememberClip(String text) {
+    if (text.isEmpty || text.length > _clipMaxChars) return;
+    _clipHistory.remove(text);
+    _clipHistory.insert(0, text);
+    if (_clipHistory.length > _clipMax) {
+      _clipHistory.removeRange(_clipMax, _clipHistory.length);
+    }
+  }
+
+  Future<void> _showClipHistory() async {
+    final loc = localizations;
+    if (_clipHistory.isEmpty) {
+      _toast(loc.editorClipHistoryEmpty);
+      return;
+    }
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => SizedBox(
+        height: MediaQuery.of(ctx).size.height * 0.7,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 6),
+              child: Row(children: [
+                const Icon(Icons.content_paste, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: Text(loc.editorClipHistory,
+                    style: Theme.of(ctx).textTheme.titleSmall)),
+                IconButton(
+                  tooltip: loc.close,
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () => Navigator.of(ctx).maybePop(),
+                ),
+              ]),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.separated(
+                itemCount: _clipHistory.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (c, i) {
+                  final text = _clipHistory[i];
+                  final first = text.split('\n').first.trim();
+                  return ListTile(
+                    dense: true,
+                    title: Text(first.isEmpty ? '…' : first,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace')),
+                    subtitle: Text('${text.length}',
+                        style: const TextStyle(fontSize: 11)),
+                    onTap: () => Navigator.of(c).pop(text),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    _insertAtCursor(picked);
+  }
+
   /// AI 辅助：选中就处理选中，没选中就整篇（弹层里会截断到 12000 字符）。
   ///
   /// 用的是 App「设置 → AI 分析」那套接口，不额外配置。
@@ -5343,6 +5432,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     if (text.isEmpty) return;
     Clipboard.setData(ClipboardData(text: text));
+    _rememberClip(text);
     _toast(localizations.copied);
   }
 
@@ -6549,6 +6639,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('save', Icons.save_outlined, loc.save),
           _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
+          _menuItem('quickOpen', Icons.bolt, loc.editorQuickOpen),
           _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
           _menuItem('compareClipboard', Icons.content_paste_search,
               loc.editorCompareClipboard),
@@ -6588,6 +6679,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                           : Theme.of(context).disabledColor))),
           const PopupMenuDivider(),
           _menuItem('copy', Icons.content_copy, loc.copy),
+          _menuItem('clipHistory', Icons.content_paste, loc.editorClipHistory),
           _menuItem('clear', Icons.backspace_outlined, loc.clear),
           _menuItem('replaceLine', Icons.sync_alt, loc.editorReplaceLine),
           const PopupMenuDivider(),
@@ -6770,6 +6862,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_saveAllDirty());
       case 'aiAssist':
         unawaited(_showAiAssist());
+      case 'quickOpen':
+        unawaited(_showQuickOpen());
+      case 'clipHistory':
+        unawaited(_showClipHistory());
       case 'docs':
         _scaffoldKey.currentState?.openDrawer();
       case 'undo':
