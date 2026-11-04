@@ -5063,5 +5063,8 @@
   "editorBrowserEmpty": "這個目錄裡沒有可開啟的檔案",
   "editorBrowserNoRoot": "沒有可瀏覽的目錄：先開啟一個檔案",
   "diffCompareSelection": "比較選取段落",
-  "diffSelectFirst": "先在左側或右側選取要比的段落"
+  "diffSelectFirst": "先在左側或右側選取要比的段落",
+  "artexAddrLabel": "監聽位址",
+  "artexProxyLabel": "代理連接埠",
+  "artexPgDsnLabel": "PG 連線字串"
 }

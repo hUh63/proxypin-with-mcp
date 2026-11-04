@@ -3262,5 +3262,8 @@
   "editorBrowserEmpty": "Nothing to open in this folder",
   "editorBrowserNoRoot": "No folder to browse — open a file first",
   "diffCompareSelection": "Compare selection",
-  "diffSelectFirst": "Select the range to compare on either side first"
+  "diffSelectFirst": "Select the range to compare on either side first",
+  "artexAddrLabel": "Listen address",
+  "artexProxyLabel": "Proxy port",
+  "artexPgDsnLabel": "Postgres DSN"
 }

@@ -33,6 +33,11 @@ class ArtexSession extends ChangeNotifier {
   String termuxUser = '';
   String? token;
 
+  /// 外部后端（Termux）启动参数：以前只存在配置里没人用，现在「高级」里能改。
+  String artexAddr = '127.0.0.1:8787';
+  String artexProxyAddr = '127.0.0.1:8788';
+  String artexPgDsn = 'postgres://postgres@127.0.0.1:5432/artex?sslmode=disable';
+
   ArtexClient? client;
 
   ArtexHealth? health;
@@ -105,6 +110,9 @@ class ArtexSession extends ChangeNotifier {
       final t = conf.artexToken;
       token = (t == null || t.isEmpty) ? null : t;
       termuxUser = conf.artexTermuxUser;
+      artexAddr = conf.artexAddr;
+      artexProxyAddr = conf.artexProxyAddr;
+      artexPgDsn = conf.artexPgDsn;
     } catch (e) {
       debugPrint('artex loadPrefs: $e');
     }
@@ -117,6 +125,9 @@ class ArtexSession extends ChangeNotifier {
       conf.artexBaseUrl = baseUrl.trim();
       conf.artexToken = (token == null || token!.isEmpty) ? null : token;
       conf.artexTermuxUser = termuxUser;
+      if (artexAddr.trim().isNotEmpty) conf.artexAddr = artexAddr.trim();
+      if (artexProxyAddr.trim().isNotEmpty) conf.artexProxyAddr = artexProxyAddr.trim();
+      if (artexPgDsn.trim().isNotEmpty) conf.artexPgDsn = artexPgDsn.trim();
       await conf.flushConfig();
     } catch (e) {
       debugPrint('artex savePrefs: $e');

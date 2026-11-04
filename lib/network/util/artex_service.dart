@@ -31,6 +31,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/util/logger.dart';
 
 /// 一次 shell 操作的结果。
@@ -164,16 +165,29 @@ class ArtexService {
     return asTermux(user, 'pg_ctl -D \$HOME/pgdata -m fast stop 2>&1 || true');
   }
 
+  static String _pick(String? a, String? b, String fallback) {
+    final v = (a ?? '').trim().isNotEmpty ? a!.trim() : (b ?? '').trim();
+    return v.isEmpty ? fallback : v;
+  }
+
   /// 启 ARTEX（命令与 SKILL.md 实测版本逐字一致）。
+  ///
+  /// 端口 / DSN 优先用调用方传入的，其次读 [Configuration]（「高级」里可改），
+  /// 最后才是硬编码默认值 —— 以前这三个参数没人传，配置项等于摆设。
   static Future<ArtexServiceResult> startArtex(
     String user, {
-    String addr = '127.0.0.1:8787',
-    String proxy = '127.0.0.1:8788',
-    String pgDsn = 'postgres://postgres@127.0.0.1:5432/artex?sslmode=disable',
+    String? addr,
+    String? proxy,
+    String? pgDsn,
   }) {
-    final cmd = 'export ARTEX_PG_DSN="$pgDsn"; export ARTEX_TRUST_LOOPBACK=1; '
+    final conf = Configuration.loaded;
+    final a = _pick(addr, conf?.artexAddr, '127.0.0.1:8787');
+    final p = _pick(proxy, conf?.artexProxyAddr, '127.0.0.1:8788');
+    final d = _pick(pgDsn, conf?.artexPgDsn,
+        'postgres://postgres@127.0.0.1:5432/artex?sslmode=disable');
+    final cmd = 'export ARTEX_PG_DSN="$d"; export ARTEX_TRUST_LOOPBACK=1; '
         'cd \$HOME/artex-bin && '
-        'nohup ./artex -addr $addr -proxy $proxy > \$HOME/artex.log 2>&1 & echo PID=\$!';
+        'nohup ./artex -addr $a -proxy $p > \$HOME/artex.log 2>&1 & echo PID=\$!';
     final r = asTermux(user, cmd, timeout: const Duration(seconds: 45));
     return r;
   }

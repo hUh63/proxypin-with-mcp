@@ -1479,6 +1479,9 @@ class ArtexServicePanel extends StatefulWidget {
 
 class _ArtexServicePanelState extends State<ArtexServicePanel> {
   final _user = TextEditingController();
+  final _addr = TextEditingController();
+  final _proxy = TextEditingController();
+  final _dsn = TextEditingController();
   bool _busy = false;
   bool _testing = false;
   bool _advanced = false;
@@ -1487,6 +1490,9 @@ class _ArtexServicePanelState extends State<ArtexServicePanel> {
   void initState() {
     super.initState();
     _user.text = widget.session.termuxUser;
+    _addr.text = widget.session.artexAddr;
+    _proxy.text = widget.session.artexProxyAddr;
+    _dsn.text = widget.session.artexPgDsn;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) widget.session.refreshService();
     });
@@ -1495,10 +1501,15 @@ class _ArtexServicePanelState extends State<ArtexServicePanel> {
   @override
   void dispose() {
     _user.dispose();
+    _addr.dispose();
+    _proxy.dispose();
+    _dsn.dispose();
     super.dispose();
   }
 
   Future<void> _run(Future<ArtexServiceResult> Function() action) async {
+    // 先把「高级」里改过的地址/端口落盘，再执行命令。
+    await widget.session.savePrefs();
     setState(() => _busy = true);
     final r = await action();
     if (!mounted) return;
@@ -1706,6 +1717,51 @@ class _ArtexServicePanelState extends State<ArtexServicePanel> {
               },
             ),
           ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _addr,
+                decoration: InputDecoration(
+                  isDense: true,
+                  labelText: loc.artexAddrLabel,
+                  border: const OutlineInputBorder(),
+                ),
+                style: const TextStyle(fontSize: 12),
+                onChanged: (v) => s.artexAddr = v,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _proxy,
+                decoration: InputDecoration(
+                  isDense: true,
+                  labelText: loc.artexProxyLabel,
+                  border: const OutlineInputBorder(),
+                ),
+                style: const TextStyle(fontSize: 12),
+                onChanged: (v) => s.artexProxyAddr = v,
+              ),
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: TextField(
+          controller: _dsn,
+          decoration: InputDecoration(
+            isDense: true,
+            labelText: loc.artexPgDsnLabel,
+            border: const OutlineInputBorder(),
+          ),
+          style: const TextStyle(fontSize: 12),
+          onChanged: (v) => s.artexPgDsn = v,
         ),
       ),
       Padding(
