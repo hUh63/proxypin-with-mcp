@@ -104,6 +104,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
   bool _aligned = false;
   static const String _alignedKey = 'text_diff_aligned_v1';
 
+  /// 并排视图里左右两栏的宽度比例（0.15 ~ 0.85）：拖中间那条分隔线改。
+  /// 手机上两栏等宽时，一边长行一边短行很常见，能拖一下就好读多了。
+  double _splitRatio = 0.5;
+  static const String _splitKey = 'text_diff_split_v1';
+
   /// 两栏的文件名（打开文件后显示在顶部标签里：「原文件 · xxx.txt」）。
   String _leftName = '';
   String _rightName = '';
@@ -241,6 +246,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
     unawaited(SharedPreferencesAsync().getBool(_alignedKey).then((v) {
       if (!mounted || v == null || v == _aligned) return;
       setState(() => _aligned = v);
+    }).catchError((_) => null));
+    unawaited(SharedPreferencesAsync().getDouble(_splitKey).then((v) {
+      if (!mounted || v == null || v == _splitRatio) return;
+      setState(() => _splitRatio = v.clamp(0.15, 0.85));
     }).catchError((_) => null));
 
     _left.addListener(_onLeftChanged);
@@ -1088,6 +1097,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportHtmlReport());
           case 'exportPatch':
             unawaited(_exportPatch());
+          case 'copyPatch':
+            unawaited(_copyUnifiedDiff());
           case 'exportCsv':
             unawaited(_exportCsv());
           case 'history':
@@ -1178,6 +1189,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
+        PopupMenuItem(value: 'copyPatch', child: Text(localizations.diffCopyPatch)),
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
@@ -1434,6 +1446,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
                     color: color.primary,
                     fontWeight: FontWeight.w600)),
           ),
+          if (_blocks.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            Text(
+              _statsText(),
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: color.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(width: 6),
           label(localizations.diffChanged, _rightName, align: TextAlign.right),
         ]),
@@ -1649,11 +1672,39 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   Widget _wideLayout() {
-    return Row(children: [
-      Expanded(child: _editor(_left, localizations.diffOriginal, isLeft: true)),
-      const VerticalDivider(width: 1, thickness: 0.3),
-      Expanded(child: _editor(_right, localizations.diffChanged, isLeft: false)),
-    ]);
+    return LayoutBuilder(builder: (ctx, c) {
+      final w = c.maxWidth;
+      // flex 用整数：0.5 → 500/500。夹住是为了不让某一侧被拖到看不见。
+      final leftFlex = (_splitRatio * 1000).round().clamp(150, 850);
+      return Row(children: [
+        Expanded(flex: leftFlex, child: _editor(_left, localizations.diffOriginal, isLeft: true)),
+        // 拖动条：视觉 1px，触摸区 9px（手指能按到，又不像分栏手柄那么笨重）。
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragUpdate: (d) {
+            if (w <= 0) return;
+            setState(() => _splitRatio = (_splitRatio + d.delta.dx / w).clamp(0.15, 0.85));
+          },
+          // setDouble 返回 Future<void>，catchError 的 handler 不能返回 null
+          // （那样会抛「error handler must return a value of the future's type」）。
+          onHorizontalDragEnd: (_) => unawaited(
+              SharedPreferencesAsync().setDouble(_splitKey, _splitRatio).catchError((Object _) {})),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.resizeColumn,
+            child: SizedBox(
+              width: 9,
+              child: Center(
+                child: Container(
+                  width: 1,
+                  color: Theme.of(ctx).dividerColor.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(flex: 1000 - leftFlex, child: _editor(_right, localizations.diffChanged, isLeft: false)),
+      ]);
+    });
   }
 
   Widget _narrowLayout() {
@@ -2061,6 +2112,31 @@ class _TextDiffPageState extends State<TextDiffPage> {
       return '"${v.replaceAll('"', '""')}"';
     }
     return v;
+  }
+
+  /// 增 / 删 / 改的行数，常显在顶部（`+3 −2 ~1`）。按 blocks 缓存，别每次 build 重算。
+  List<DiffBlock>? _statsFor;
+  String _statsLabel = '';
+
+  String _statsText() {
+    if (!identical(_statsFor, _blocks)) {
+      _statsFor = _blocks;
+      final st = diffStats(_blocks);
+      _statsLabel = '+${st.added} −${st.deleted} ~${st.modified}';
+    }
+    return _statsLabel;
+  }
+
+  /// 把 unified diff 复制到剪贴板：手机上「发给别人看我改了什么」最常用的路径。
+  Future<void> _copyUnifiedDiff() async {
+    final text = _unifiedDiff(_alignedRows());
+    if (text.trim().isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    _toastText(localizations.copied);
   }
 
   Future<void> _exportPatch() async {

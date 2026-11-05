@@ -5069,5 +5069,10 @@
   "artexPgDsnLabel": "PG 连接串",
   "editorRainbowBrackets": "全篇括号着色",
   "editorRainbowBracketsDesc": "按嵌套深度给所有括号上色（VS 的括号对着色）；大文件（>20 万字符）自动只保留当前层",
-  "diffUnifiedView": "统一视图（单栏）"
+  "diffUnifiedView": "统一视图（单栏）",
+  "editorMinimap": "代码缩略图",
+  "editorMinimapDesc": "右侧显示整篇缩略图，点或拖哪就滚到哪。窄屏建议关掉",
+  "editorStickyScroll": "粘性滚动",
+  "editorStickyScrollDesc": "滚动时把「类 / 函数」名钉在顶部，点它可以跳回去",
+  "diffCopyPatch": "复制差异（patch）"
 }

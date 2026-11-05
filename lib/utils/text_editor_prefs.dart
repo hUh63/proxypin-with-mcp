@@ -51,6 +51,13 @@ class TextEditorPrefs {
   /// 关掉的话只保留「包住光标的那几层」的配对高亮。
   final bool rainbowBrackets;
 
+  /// 右侧代码缩略图（minimap）：整篇压缩成一条，点哪跳哪。
+  /// 手机窄屏默认关，桌面/平板可以打开。
+  final bool minimap;
+
+  /// 粘性滚动：滚到哪，包含这一行的「函数 / 类」钉在顶部（VS Code 的 sticky scroll）。
+  final bool stickyScroll;
+
   /// 保存时先按语言格式化（VS 的 format on save）。默认关：它会改用户原文。
   final bool formatOnSave;
 
@@ -154,6 +161,8 @@ class TextEditorPrefs {
     this.styleLint = false,
     this.highlightOccurrences = true,
     this.rainbowBrackets = true,
+    this.minimap = false,
+    this.stickyScroll = true,
     this.formatOnSave = false,
     this.trimOnSave = false,
     this.consoleHeight = 232,
@@ -191,6 +200,8 @@ class TextEditorPrefs {
     bool? styleLint,
     bool? highlightOccurrences,
     bool? rainbowBrackets,
+    bool? minimap,
+    bool? stickyScroll,
     bool? formatOnSave,
     bool? trimOnSave,
     double? consoleHeight,
@@ -227,6 +238,8 @@ class TextEditorPrefs {
       styleLint: styleLint ?? this.styleLint,
       highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
       rainbowBrackets: rainbowBrackets ?? this.rainbowBrackets,
+      minimap: minimap ?? this.minimap,
+      stickyScroll: stickyScroll ?? this.stickyScroll,
       formatOnSave: formatOnSave ?? this.formatOnSave,
       trimOnSave: trimOnSave ?? this.trimOnSave,
       consoleHeight: consoleHeight ?? this.consoleHeight,
@@ -265,6 +278,8 @@ class TextEditorPrefs {
         'styleLint': styleLint,
         'highlightOccurrences': highlightOccurrences,
         'rainbowBrackets': rainbowBrackets,
+        'minimap': minimap,
+        'stickyScroll': stickyScroll,
         'formatOnSave': formatOnSave,
         'trimOnSave': trimOnSave,
         'consoleHeight': consoleHeight,
@@ -308,6 +323,8 @@ class TextEditorPrefs {
       styleLint: json['styleLint'] as bool? ?? false,
       highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
       rainbowBrackets: json['rainbowBrackets'] as bool? ?? true,
+      minimap: json['minimap'] as bool? ?? false,
+      stickyScroll: json['stickyScroll'] as bool? ?? true,
       formatOnSave: json['formatOnSave'] as bool? ?? false,
       trimOnSave: json['trimOnSave'] as bool? ?? false,
       consoleHeight: (json['consoleHeight'] as num?)?.toDouble() ?? 232,

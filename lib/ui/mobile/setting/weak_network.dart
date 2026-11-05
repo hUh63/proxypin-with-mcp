@@ -373,6 +373,7 @@ class _MobileRuleEditPageState extends State<_MobileRuleEditPage> {
                     if (v == null) return;
                     if (v == _kNewProfileValue) {
                       final created = await widget.onCreateProfile();
+                      if (!mounted) return;
                       if (created != null) setState(() => _profileId = created.id);
                       return;
                     }

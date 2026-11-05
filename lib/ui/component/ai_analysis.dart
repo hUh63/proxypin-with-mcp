@@ -960,6 +960,7 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                     final content = await File(file!.path!).readAsString();
                     final data = jsonDecode(content);
                     if (data is! Map<String, dynamic>) throw Exception('格式需为 JSON 对象');
+                    if (!mounted) return;
                     setState(() {
                       if (data['baseUrl'] is String) {
                         baseUrlController.text = data['baseUrl'];

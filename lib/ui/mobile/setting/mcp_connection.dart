@@ -396,6 +396,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
       await McpServer().stop();
     }
 
+    if (!mounted) return;
     setState(() {
       _mcpEnabled = enabled;
     });
@@ -452,6 +453,7 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
       await McpServer().restart();
     }
 
+    if (!mounted) return;
     setState(() {
       _configuredPort = newPort;
     });

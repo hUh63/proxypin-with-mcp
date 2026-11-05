@@ -315,6 +315,7 @@ class _CryptoRuleListState extends State<CryptoRuleList> {
       await manager.updateRule(index, updated);
     }
     _refreshConfig(force: true);
+    if (!mounted) return;
     setState(() {});
   }
 

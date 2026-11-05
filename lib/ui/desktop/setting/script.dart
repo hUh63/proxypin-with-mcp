@@ -228,6 +228,12 @@ class _ScriptConsoleState extends State<ScriptConsoleWidget> {
   final ScrollController _scrollController = ScrollController();
   bool scrollEnd = true;
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -236,6 +242,9 @@ class _ScriptConsoleState extends State<ScriptConsoleWidget> {
     DesktopMultiWindow.invokeMainWindowMethod("registerConsoleLog", widget.windowId);
     DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       if (call.method == 'consoleLog') {
+        // 多窗口的方法处理器是全局静态的，窗口关掉之后它还在；
+        // 这时再收到 consoleLog 直接丢掉，否则 setState 会打到已 dispose 的 State。
+        if (!mounted) return "ok";
         setState(() {
           var logInfo = LogInfo(call.arguments['level'], call.arguments['output']);
           logs.add(logInfo);
@@ -1009,6 +1018,7 @@ class _ScriptListState extends State<ScriptList> {
         await scriptManager.removeScript(idx);
       }
 
+      if (!mounted) return;
       setState(() {
         selected.clear();
       });

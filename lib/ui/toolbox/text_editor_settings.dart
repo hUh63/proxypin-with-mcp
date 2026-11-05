@@ -177,6 +177,20 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 onChanged: (v) => _apply(prefs.copyWith(rainbowBrackets: v)),
               ),
               _switchTile(
+                icon: Icons.view_sidebar_outlined,
+                title: localizations.editorMinimap,
+                subtitle: localizations.editorMinimapDesc,
+                value: prefs.minimap,
+                onChanged: (v) => _apply(prefs.copyWith(minimap: v)),
+              ),
+              _switchTile(
+                icon: Icons.vertical_align_top,
+                title: localizations.editorStickyScroll,
+                subtitle: localizations.editorStickyScrollDesc,
+                value: prefs.stickyScroll,
+                onChanged: (v) => _apply(prefs.copyWith(stickyScroll: v)),
+              ),
+              _switchTile(
                 icon: Icons.save_as_outlined,
                 title: localizations.editorFormatOnSave,
                 subtitle: localizations.editorFormatOnSaveDesc,

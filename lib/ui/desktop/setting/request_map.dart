@@ -432,6 +432,7 @@ class _RequestMapListState extends State<RequestMapList> {
         await manager.deleteRule(idx);
       }
 
+      if (!mounted) return;
       setState(() {
         selected.clear();
       });

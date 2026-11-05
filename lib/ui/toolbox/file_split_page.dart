@@ -64,6 +64,7 @@ class _FileSplitPageState extends State<FileSplitPage> with SingleTickerProvider
     try {
       final f = await FilePicker.pickFile();
       if (f == null) return;
+      if (!mounted) return;
       setState(() {
         _source = File(f.xFile.path);
         _parts = [];

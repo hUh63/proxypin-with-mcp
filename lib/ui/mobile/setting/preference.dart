@@ -332,7 +332,7 @@ class _PreferenceState extends State<Preference> {
                 setState(() => loading = true);
                 final ok = await Mtls.load(chain, key);
                 if (!ok) {
-                  setState(() => loading = false);
+                  if (mounted) setState(() => loading = false);
                   if (context.mounted) {
                     FlutterToastr.show(localizations.prefMtlsLoadFailed, context, backgroundColor: Colors.red);
                   }
@@ -401,6 +401,7 @@ class _PreferenceState extends State<Preference> {
     final ok = await proxyServer.applyWsTraffic();
     if (value && !ok) {
       // 启动失败（多为端口被占用）：回滚开关，避免"开着但没服务"
+      if (!mounted) return;
       setState(() => configuration.wsTrafficEnabled = false);
       configuration.flushConfig();
     }

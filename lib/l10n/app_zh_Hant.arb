@@ -5069,5 +5069,10 @@
   "artexPgDsnLabel": "PG 連線字串",
   "editorRainbowBrackets": "全篇括號著色",
   "editorRainbowBracketsDesc": "依巢狀深度給所有括號上色（VS 的括號對稱著色）；大檔案（>20 萬字元）自動只保留目前層",
-  "diffUnifiedView": "統一檢視（單欄）"
+  "diffUnifiedView": "統一檢視（單欄）",
+  "editorMinimap": "程式碼縮略圖",
+  "editorMinimapDesc": "右側顯示整篇縮略圖，點或拖哪就滾到哪。窄螢幕建議關閉",
+  "editorStickyScroll": "黏性滾動",
+  "editorStickyScrollDesc": "滾動時把「類 / 函式」名釘在頂部，點它可以跳回去",
+  "diffCopyPatch": "複製差異（patch）"
 }

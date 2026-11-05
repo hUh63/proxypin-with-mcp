@@ -119,6 +119,7 @@ class _JavaScriptState extends State<JavaScript> {
                         if (path != null) {
                           File file = File(path);
                           String content = await file.readAsString();
+                          if (!mounted) return;
                           code.text = content;
                           setState(() {});
                         }

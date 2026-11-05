@@ -3268,5 +3268,10 @@
   "artexPgDsnLabel": "Postgres DSN",
   "editorRainbowBrackets": "Rainbow brackets",
   "editorRainbowBracketsDesc": "Color every bracket by nesting depth (VS bracket pair colorization). Large files (>200k chars) keep only the current level.",
-  "diffUnifiedView": "Unified view (single column)"
+  "diffUnifiedView": "Unified view (single column)",
+  "editorMinimap": "Minimap",
+  "editorMinimapDesc": "Show a whole-file minimap on the right; tap or drag to scroll. Turn off on narrow screens",
+  "editorStickyScroll": "Sticky scroll",
+  "editorStickyScrollDesc": "Pin the enclosing class / function name to the top while scrolling; tap to jump back",
+  "diffCopyPatch": "Copy diff as patch"
 }

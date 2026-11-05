@@ -344,6 +344,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       await _terminalCommand(source);
       return;
     }
+    if (!mounted) return;
     setState(() => _running = true);
     try {
       if (_backend == ConsoleBackend.expr) {

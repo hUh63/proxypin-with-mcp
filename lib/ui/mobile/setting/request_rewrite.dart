@@ -464,6 +464,7 @@ class _RequestRuleListState extends State<RequestRuleList> {
         await widget.requestRewrites.removeIndex([value]);
       }
       widget.requestRewrites.flushRequestRewriteConfig();
+      if (!mounted) return;
       setState(() {
         multiple = false;
         selected.clear();

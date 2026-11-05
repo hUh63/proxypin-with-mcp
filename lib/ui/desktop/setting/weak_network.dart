@@ -288,6 +288,7 @@ class _WeakNetworkDialogState extends State<WeakNetworkDialog> {
             if (v == null) return;
             if (v == _kNewProfileValue) {
               final created = await _createProfile();
+              if (!mounted) return;
               if (created != null) {
                 setState(() => r.profileId = created.id);
                 m.flushConfig();

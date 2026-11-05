@@ -391,10 +391,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (Platforms.isDesktop()) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
     }
+    // 纵向滚动位置 → minimap 视口框 / 粘性滚动。
+    _vScroll.addListener(_onVScroll);
   }
 
   @override
   void dispose() {
+    _vScroll.removeListener(_onVScroll);
+    _vScroll.dispose();
     _navTimer?.cancel();
     _autoSaveTimer?.cancel();
     _fileWatchTimer?.cancel();
@@ -403,6 +407,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _sniffTimer?.cancel();
     _docScroll.dispose();
     _tabScroll.dispose();
+    _scrollTick.dispose();
+    _stickyTrail.dispose();
     SmartCompletion.enabled.removeListener(_onSmartCompletionChanged);
     TextEditorPrefsStore.notifier.removeListener(_onEditorPrefsChanged);
     _doc?.controller.removeListener(_onControllerChanged);
@@ -669,6 +675,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _syncCaretLine();
     _refreshExtraHighlights();
     _refreshSymbolCache();
+    // 换文档：粘性滚动的「上次顶部行」失效，重算一次（否则条上还挂着上一篇的类名）。
+    _stickyLine = -1;
+    _syncSticky();
   }
 
   // ---------- 外部改动 / 删除检测 ----------
@@ -2791,6 +2800,28 @@ class _TextEditorPageState extends State<TextEditorPage> {
   String _bracketScanKey = '';
   List<SearchHighlight> _bracketScanCache = const <SearchHighlight>[];
 
+  // ── minimap / 粘性滚动 ──────────────────────────────────────────────
+  // 纵向滚动的像素偏移与视口像素高：minimap 的视口框、粘性滚动的「顶部行」都靠它。
+  double _vOffset = 0;
+  double _vViewportH = 0;
+  // 每滚一点就递增，驱动 minimap 局部重绘（不走 setState，否则整页重建会卡）。
+  final ValueNotifier<int> _scrollTick = ValueNotifier<int>(0);
+  // 粘性滚动当前钉住的那条符号链。只在「顶部行变了」时更新。
+  final ValueNotifier<List<_SymbolItem>> _stickyTrail = ValueNotifier<List<_SymbolItem>>(const []);
+  int _stickyLine = -1;
+  // 交给 CodeForge 用的纵向 ScrollController（内核支持外部注入）。
+  // 用 controller 而不是拦 ScrollNotification：内核内部如果 return true 就把通知吞了。
+  final ScrollController _vScroll = ScrollController();
+
+  bool get _minimapOn => _prefs.minimap && !_smooth;
+  bool get _stickyOn => _prefs.stickyScroll && !_smooth;
+
+  /// 单行像素高：CodeForge 的 _lineHeight = fontSize × textStyle.height。
+  double get _linePixelHeight {
+    final h = _prefs.fontSize * _prefs.lineHeight;
+    return h <= 0 ? 16 : h;
+  }
+
   /// 全篇括号按嵌套深度着色（VS 的 bracket pair colorization）。
   ///
   /// 单遍扫描，跳过字符串 / 行注释 / 块注释。两处限制：
@@ -2907,6 +2938,129 @@ class _TextEditorPageState extends State<TextEditorPage> {
       pos = open;
     }
     return out;
+  }
+
+  // ------------------------------ minimap / 粘性滚动 ------------------------------
+
+  /// 纵向滚动回调：只记数值，滚动时绝不 setState（滚一帧重建整页会明显卡）。
+  void _onVScroll() {
+    final ps = _vScroll.positions;
+    if (ps.isEmpty) return;
+    // 用 positions.last 而不是 position：Key 变化重建的瞬间可能挂着两个 position。
+    final p = ps.last;
+    final off = p.pixels;
+    final vh = p.viewportDimension;
+    if ((off - _vOffset).abs() < 0.5 && (vh - _vViewportH).abs() < 0.5) return;
+    _vOffset = off;
+    _vViewportH = vh;
+    if (_minimapOn) _scrollTick.value++;
+    _syncSticky();
+  }
+
+  /// 粘性滚动：视口顶部那行属于哪条符号链（`Class › Method`），变了才更新。
+  ///
+  /// 用 ValueNotifier 而不是 setState：滚动过程中这里会被调用几十次，
+  /// 每次重建整个编辑器页面的话滚动手感就废了。
+  void _syncSticky() {
+    if (!_stickyOn) {
+      if (_stickyTrail.value.isNotEmpty) _stickyTrail.value = const <_SymbolItem>[];
+      return;
+    }
+    final doc = _doc;
+    if (doc == null) return;
+    final topLine = (_vOffset / _linePixelHeight).floor() + 1;
+    if (topLine == _stickyLine) return;
+    _stickyLine = topLine;
+    final items = _collectSymbols(doc.text);
+    _stickyTrail.value = items.isEmpty ? const <_SymbolItem>[] : _symbolTrail(items, topLine);
+  }
+
+  /// 顶部钉住的那条面包屑（VS Code 的 sticky scroll）。
+  Widget _stickyBar() {
+    return ValueListenableBuilder<List<_SymbolItem>>(
+      valueListenable: _stickyTrail,
+      builder: (ctx, trail, __) {
+        if (trail.isEmpty) return const SizedBox.shrink();
+        final color = Theme.of(ctx).colorScheme;
+        // 只显示最后两层：手机宽度有限，再往上挤就全是省略号了。
+        final shown = trail.length > 2 ? trail.sublist(trail.length - 2) : trail;
+        return Container(
+          height: 22,
+          padding: const EdgeInsets.only(left: 6),
+          decoration: BoxDecoration(
+            color: color.surface.withValues(alpha: 0.94),
+            border: Border(bottom: BorderSide(color: Theme.of(ctx).dividerColor, width: 0.4)),
+          ),
+          child: Row(children: [
+            for (var i = 0; i < shown.length; i++) ...[
+              if (i > 0) Icon(Icons.chevron_right, size: 12, color: color.onSurfaceVariant),
+              Flexible(
+                child: InkWell(
+                  onTap: () => _controller?.scrollToLine(shown[i].line),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+                    child: Text(
+                      shown[i].name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 10.5, color: color.onSurfaceVariant),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ]),
+        );
+      },
+    );
+  }
+
+  /// 右侧代码缩略图：整篇压成一条，点哪滚哪，拖动也能滚。
+  Widget _minimap(String text) {
+    final color = Theme.of(context).colorScheme;
+    return LayoutBuilder(builder: (ctx, c) {
+      final h = c.maxHeight;
+      void jumpTo(double dy) {
+        if (h <= 0 || text.isEmpty) return;
+        final total = _lineCountOf(text);
+        if (total <= 1) return;
+        final line = (dy / h * total).floor().clamp(0, total - 1).toInt();
+        _controller?.scrollToLine(line);
+      }
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (d) => jumpTo(d.localPosition.dy),
+        onVerticalDragUpdate: (d) => jumpTo(d.localPosition.dy),
+        child: Container(
+          decoration: BoxDecoration(
+            color: color.surfaceContainerHighest.withValues(alpha: 0.45),
+            border: Border(left: BorderSide(color: Theme.of(ctx).dividerColor, width: 0.5)),
+          ),
+          child: ValueListenableBuilder<int>(
+            valueListenable: _scrollTick,
+            builder: (ctx2, _, __) => CustomPaint(
+              painter: _MiniMapPainter(
+                text: text,
+                lineH: _linePixelHeight,
+                offset: _vOffset,
+                viewportH: _vViewportH,
+                fg: color.onSurface,
+                accent: color.primary,
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  static int _lineCountOf(String text) {
+    var n = 1;
+    for (var i = 0; i < text.length; i++) {
+      if (text.codeUnitAt(i) == 10) n++;
+    }
+    return n;
   }
 
   // ------------------------------ 参数签名提示 ------------------------------
@@ -7681,11 +7835,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           }
         : baseTheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Container(
-        decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor)),
-        child: CodeForge(
+    final editor = CodeForge(
           // CodeForge 的 language / lineWrap 是 late final，切换得新 key 重建；
           // controller / findController / undoController 在文档对象持有，重建不丢数据。
           key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme-'
@@ -7718,8 +7868,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
           enterSuggestion: _prefs.enterSuggestion,
           suggestionMaxHeight: _prefs.suggestionMaxHeight,
           customContextMenuItems: _floatMenuItems(),
+          verticalScrollController: _vScroll,
           onGutterLineLongPress: _handleGutterLongPress,
-        ),
+        );
+
+    Widget body = editor;
+    if (_minimapOn) {
+      body = Row(children: [
+        Expanded(child: editor),
+        SizedBox(width: 56, child: _minimap(controller.text)),
+      ]);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Container(
+        decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor)),
+        child: Stack(children: [
+          Positioned.fill(child: body),
+          // 粘性滚动钉在最上层：覆盖式，和 VS Code 一样让正文从下面穿过去。
+          if (_stickyOn) Positioned(left: 0, right: _minimapOn ? 56 : 0, top: 0, child: _stickyBar()),
+        ]),
       ),
     );
   }
@@ -8665,4 +8834,101 @@ class _RefHit {
     required this.isDefinition,
     required this.isCurrent,
   });
+}
+
+/// 右侧缩略图（minimap）的画笔：把整篇按行压成竖条。
+///
+/// 两个上限：行数 > 5 万或文本 > 20 万字符时只画视口框——那种规模逐行画
+/// 不比不画更清楚，还会吃掉滚动帧率。
+class _MiniMapPainter extends CustomPainter {
+  _MiniMapPainter({
+    required this.text,
+    required this.lineH,
+    required this.offset,
+    required this.viewportH,
+    required this.fg,
+    required this.accent,
+  });
+
+  final String text;
+  final double lineH;
+  final double offset;
+  final double viewportH;
+  final Color fg;
+  final Color accent;
+
+  int get _lines {
+    var n = 1;
+    for (var i = 0; i < text.length; i++) {
+      if (text.codeUnitAt(i) == 10) n++;
+    }
+    return n;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.height <= 0 || size.width <= 0) return;
+    final total = _lines;
+    final totalPx = lineH * total;
+    if (totalPx <= 0) return;
+
+    if (total <= 50000 && text.length <= 200000) {
+      // 每个像素行只记「这一格里最长的非空行」，避免逐行画几万个矩形。
+      final rows = size.height.ceil() + 1;
+      final widths = List<double>.filled(rows, 0);
+      var line = 0;
+      var start = 0;
+      var maxLen = 1.0;
+      for (var i = 0; i <= text.length; i++) {
+        if (i == text.length || text.codeUnitAt(i) == 10) {
+          final len = (i - start).toDouble();
+          if (len > 0) {
+            var y = (line / total * size.height).floor();
+            if (y < 0) y = 0;
+            if (y < rows && len > widths[y]) {
+              widths[y] = len;
+              if (len > maxLen) maxLen = len;
+            }
+          }
+          line++;
+          start = i + 1;
+        }
+      }
+      final paint = Paint()..color = fg.withValues(alpha: 0.42);
+      final usable = size.width - 4;
+      for (var y = 0; y < rows && y < size.height; y++) {
+        final w = widths[y];
+        if (w <= 0) continue;
+        // 长行按比例压缩：一行 300 字符不该把整条涂满。
+        final ratio = w <= 40 ? w / 40 : (0.55 + 0.45 * (w / maxLen));
+        canvas.drawRect(
+          Rect.fromLTWH(2, y.toDouble(), (usable * ratio).clamp(1.0, usable).toDouble(), 1),
+          paint,
+        );
+      }
+    }
+
+    // 视口框：不管内容画没画，位置指示都要有。
+    final top = (offset / totalPx * size.height).clamp(0.0, size.height).toDouble();
+    final room = (size.height - top).clamp(0.0, size.height).toDouble();
+    final boxH = (viewportH / totalPx * size.height).clamp(room >= 6 ? 6.0 : room, room).toDouble();
+    final box = Rect.fromLTWH(0, top, size.width, boxH);
+    canvas.drawRect(box, Paint()..color = accent.withValues(alpha: 0.14));
+    canvas.drawRect(
+      box,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8
+        ..color = accent.withValues(alpha: 0.5),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniMapPainter old) =>
+      !identical(old.text, text) ||
+      old.lineH != lineH ||
+      old.offset != offset ||
+      old.viewportH != viewportH ||
+      old.fg != fg ||
+      old.accent != accent;
 }

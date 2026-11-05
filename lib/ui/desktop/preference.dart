@@ -98,6 +98,7 @@ class _PreferenceState extends State<Preference> {
     final ok = await ProxyServer.current?.applyWsTraffic() ?? false;
     if (value && !ok) {
       // 启动失败（多为端口被占用）：回滚开关，避免"开着但没服务"
+      if (!mounted) return;
       setState(() => configuration.wsTrafficEnabled = false);
       configuration.flushConfig();
     }

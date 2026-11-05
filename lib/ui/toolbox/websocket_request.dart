@@ -168,6 +168,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
       if (bytes.isEmpty) return;
       _socket?.add(bytes);
       _messages.add(_WsMessage(true, bytes.toList(), true, time: DateTime.now()));
+      if (!mounted) return;
       setState(() {});
       _scheduleScroll();
       if (mounted) {
@@ -396,6 +397,7 @@ class _WebSocketRequestPageState extends State<WebSocketRequestPage> {
                   child: InkWell(
                     onTap: () async {
                       await _animateToBottom();
+                      if (!mounted) return;
                       if (!_isNearBottom) {
                         setState(() {
                           _isNearBottom = true;

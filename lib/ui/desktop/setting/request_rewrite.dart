@@ -463,6 +463,7 @@ class _RequestRuleListState extends State<RequestRuleList> {
         MultiWindow.invokeRefreshRewrite(Operation.delete, index: value);
       }
 
+      if (!mounted) return;
       setState(() {
         selected.clear();
       });
@@ -528,6 +529,7 @@ class _RequestRuleListState extends State<RequestRuleList> {
           onTap: () async {
             await widget.requestRewrites.removeIndex([index]);
             MultiWindow.invokeRefreshRewrite(Operation.delete, index: index);
+            if (!mounted) return;
             // setState(() {});
           })
     ]).then((value) {

@@ -1153,6 +1153,7 @@ class _ScriptListState extends State<ScriptList> {
         await scriptManager.removeScript(idx);
       }
 
+      if (!mounted) return;
       setState(() {
         selected.clear();
       });

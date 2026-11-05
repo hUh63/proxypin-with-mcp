@@ -53,6 +53,7 @@ class _WebSocketInterceptManagerState extends State<WebSocketInterceptManager> {
   Future<void> _initRuleManager() async {
     await _ruleManager.init();
     // 读盘是异步的：用户点开页面后立刻返回时 State 已经销毁，直接 setState 会抛
+    if (!mounted) return;
     // "setState() called after dispose()"。
     if (!mounted) return;
     setState(() {

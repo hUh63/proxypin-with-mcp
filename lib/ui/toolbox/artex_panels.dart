@@ -1510,6 +1510,7 @@ class _ArtexServicePanelState extends State<ArtexServicePanel> {
   Future<void> _run(Future<ArtexServiceResult> Function() action) async {
     // 先把「高级」里改过的地址/端口落盘，再执行命令。
     await widget.session.savePrefs();
+    if (!mounted) return;
     setState(() => _busy = true);
     final r = await action();
     if (!mounted) return;

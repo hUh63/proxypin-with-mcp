@@ -103,6 +103,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
       await McpServer().stop();
     }
 
+    if (!mounted) return;
     setState(() {
       _mcpEnabled = enabled;
     });
@@ -146,6 +147,7 @@ class _DesktopMcpConnectionState extends State<DesktopMcpConnection> {
       await McpServer().restart();
     }
 
+    if (!mounted) return;
     setState(() {
       _configuredPort = newPort;
     });

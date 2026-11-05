@@ -1008,6 +1008,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                   cronExpression: repeatMode == 'cron' ? cronController.text.trim() : null,
                 );
                 await _scheduler.saveTasks();
+                if (!mounted) return;
                 Navigator.pop(context);
                 FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoTaskAdded, context,
                     duration: 2, backgroundColor: Colors.green);
