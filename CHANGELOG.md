@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.67.247 (2026-11-05) — 修 ai_analysis 的 mounted 误用
+
+`ai_analysis` 的「从文件导入配置」在 `showDialog` 的 `StatefulBuilder` 里，
+那里没有 `State.mounted`（外层是顶层函数），改用 `BuildContext.mounted`。
+
 ## v1.67.246 (2026-11-05) — 修 v1.67.245 引入的编译错误
 
 上一版批量补 `TextEditingController.dispose()` 时，`environment.dart` 那处插错了位置

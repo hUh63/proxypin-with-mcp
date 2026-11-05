@@ -961,7 +961,9 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
                     final content = await File(file!.path!).readAsString();
                     final data = jsonDecode(content);
                     if (data is! Map<String, dynamic>) throw Exception('格式需为 JSON 对象');
-                    if (!mounted) return;
+                    // 这里是 showDialog 的 builder 内部（StatefulBuilder），拿不到 State.mounted，
+                    // 用 BuildContext.mounted 判断对话框是否还在。
+                    if (!context.mounted) return;
                     setState(() {
                       if (data['baseUrl'] is String) {
                         baseUrlController.text = data['baseUrl'];
