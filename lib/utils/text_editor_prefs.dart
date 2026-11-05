@@ -58,6 +58,9 @@ class TextEditorPrefs {
   /// 粘性滚动：滚到哪，包含这一行的「函数 / 类」钉在顶部（VS Code 的 sticky scroll）。
   final bool stickyScroll;
 
+  /// 内联 diff：行号栏标出「相对磁盘改了哪几行」（绿=新增 蓝=修改 红=删除）。
+  final bool inlineDiff;
+
   /// 保存时先按语言格式化（VS 的 format on save）。默认关：它会改用户原文。
   final bool formatOnSave;
 
@@ -163,6 +166,7 @@ class TextEditorPrefs {
     this.rainbowBrackets = true,
     this.minimap = false,
     this.stickyScroll = true,
+    this.inlineDiff = true,
     this.formatOnSave = false,
     this.trimOnSave = false,
     this.consoleHeight = 232,
@@ -202,6 +206,7 @@ class TextEditorPrefs {
     bool? rainbowBrackets,
     bool? minimap,
     bool? stickyScroll,
+    bool? inlineDiff,
     bool? formatOnSave,
     bool? trimOnSave,
     double? consoleHeight,
@@ -240,6 +245,7 @@ class TextEditorPrefs {
       rainbowBrackets: rainbowBrackets ?? this.rainbowBrackets,
       minimap: minimap ?? this.minimap,
       stickyScroll: stickyScroll ?? this.stickyScroll,
+      inlineDiff: inlineDiff ?? this.inlineDiff,
       formatOnSave: formatOnSave ?? this.formatOnSave,
       trimOnSave: trimOnSave ?? this.trimOnSave,
       consoleHeight: consoleHeight ?? this.consoleHeight,
@@ -280,6 +286,7 @@ class TextEditorPrefs {
         'rainbowBrackets': rainbowBrackets,
         'minimap': minimap,
         'stickyScroll': stickyScroll,
+        'inlineDiff': inlineDiff,
         'formatOnSave': formatOnSave,
         'trimOnSave': trimOnSave,
         'consoleHeight': consoleHeight,
@@ -325,6 +332,7 @@ class TextEditorPrefs {
       rainbowBrackets: json['rainbowBrackets'] as bool? ?? true,
       minimap: json['minimap'] as bool? ?? false,
       stickyScroll: json['stickyScroll'] as bool? ?? true,
+      inlineDiff: json['inlineDiff'] as bool? ?? true,
       formatOnSave: json['formatOnSave'] as bool? ?? false,
       trimOnSave: json['trimOnSave'] as bool? ?? false,
       consoleHeight: (json['consoleHeight'] as num?)?.toDouble() ?? 232,

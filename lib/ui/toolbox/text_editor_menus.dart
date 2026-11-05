@@ -646,6 +646,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'xwjw 行尾空白 trim whitespace'),
   EditorMenuItem('detectIndent', _detectIndentLabel, group: 'view',
       aliases: 'jcsj 检测缩进 detect indent'),
+  EditorMenuItem('diskChange', _diskChangeLabel, group: 'view',
+      aliases: 'gd 改动 磁盘 diff disk change'),
   EditorMenuItem('columnCursors', _columnCursorsLabel, group: 'edit',
       aliases: 'lgx 列选择 多光标 column cursors'),
   EditorMenuItem('openLink', _openLinkLabel, group: 'edit',
@@ -764,6 +766,7 @@ String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
 String _trimTrailingLabel(AppLocalizations l) => l.editorTrimTrailing;
 String _detectIndentLabel(AppLocalizations l) => l.editorDetectIndent;
+String _diskChangeLabel(AppLocalizations l) => l.editorDiskChange;
 String _columnCursorsLabel(AppLocalizations l) => l.editorColumnSelect;
 String _openLinkLabel(AppLocalizations l) => l.editorOpenLink;
 String _lintLabel(AppLocalizations l) => l.editorLint;
@@ -866,6 +869,8 @@ IconData menuIconOf(String id) {
       return Icons.cleaning_services_outlined;
     case 'detectIndent':
       return Icons.format_indent_increase;
+    case 'diskChange':
+      return Icons.difference_outlined;
     case 'nextOccurrence':
       return Icons.select_all;
     case 'selectAllOccurrences':

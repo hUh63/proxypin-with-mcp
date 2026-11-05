@@ -58,6 +58,11 @@ class EditorDocument {
   /// 是每份文件自己的属性，放在页面里会被切文档顺手清掉。
   bool dirty = false;
 
+  /// 磁盘上的内容（打开 / 保存 / 重载时同步）。用来算「相对磁盘改了哪些行」，
+  /// 行号栏画绿 / 蓝 / 红三条标记（VS 的源代码管理差异条）。
+  /// 按文档存：切来切去时每份文件有自己的基线。
+  String? diskBaseline;
+
   late final CodeForgeController controller;
   late final UndoRedoController undoController;
   late final FindController findController;

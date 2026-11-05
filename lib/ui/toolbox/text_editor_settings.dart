@@ -184,6 +184,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 onChanged: (v) => _apply(prefs.copyWith(minimap: v)),
               ),
               _switchTile(
+                icon: Icons.difference_outlined,
+                title: localizations.editorInlineDiff,
+                subtitle: localizations.editorInlineDiffDesc,
+                value: prefs.inlineDiff,
+                onChanged: (v) => _apply(prefs.copyWith(inlineDiff: v)),
+              ),
+              _switchTile(
                 icon: Icons.vertical_align_top,
                 title: localizations.editorStickyScroll,
                 subtitle: localizations.editorStickyScrollDesc,

@@ -5074,5 +5074,18 @@
   "editorMinimapDesc": "右侧显示整篇缩略图，点或拖哪就滚到哪。窄屏建议关掉",
   "editorStickyScroll": "粘性滚动",
   "editorStickyScrollDesc": "滚动时把「类 / 函数」名钉在顶部，点它可以跳回去",
-  "diffCopyPatch": "复制差异（patch）"
+  "diffCopyPatch": "复制差异（patch）",
+  "diffIgnoreBlankLines": "忽略空白行差异",
+  "editorInlineDiff": "行号栏改动标记",
+  "editorInlineDiffDesc": "和磁盘上的版本比，新增行标绿、修改标蓝、删除标红（仅在文件不太大时生效）",
+  "diffReloadFiles": "从磁盘重新加载",
+  "diffNoFileToReload": "两侧都不是从文件打开的，没法重新加载",
+  "diffReloaded": "已重新加载 {n} 个文件",
+  "editorDiskChange": "看这行改了什么",
+  "editorDiskChangeOld": "磁盘上原来是",
+  "editorDiskChangeNew": "现在的内容是",
+  "editorDiskChangeAdded": "（磁盘上没有这一行，是新增的）",
+  "editorDiskChangeDeleted": "（这几行已被删掉）",
+  "editorNoDiskBaseline": "这个文档还没关联磁盘文件",
+  "editorNoChangeHere": "这一行没有改动"
 }

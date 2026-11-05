@@ -109,9 +109,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
   double _splitRatio = 0.5;
   static const String _splitKey = 'text_diff_split_v1';
 
+  /// 忽略空白行：一边多几个空行不算差异（Beyond Compare 的同名选项）。
+  bool _ignoreBlank = false;
+
   /// 两栏的文件名（打开文件后显示在顶部标签里：「原文件 · xxx.txt」）。
   String _leftName = '';
   String _rightName = '';
+
+  /// 两侧文件的完整路径（只有「从文件打开」的那侧有）。重新加载要用。
+  String _leftPath = '';
+  String _rightPath = '';
 
   /// 显示字号（底部 +/- 调节）。
   double _fontSize = 13.5;
@@ -530,11 +537,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final diffs = diffLines(_left.text, _right.text,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
-        ignoreTrailingWhitespace: _ignoreTrailing);
+        ignoreTrailingWhitespace: _ignoreTrailing,
+        ignoreBlankLines: _ignoreBlank);
     final blocks = buildDiffBlocks(diffs,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
-        ignoreTrailingWhitespace: _ignoreTrailing);
+        ignoreTrailingWhitespace: _ignoreTrailing,
+        ignoreBlankLines: _ignoreBlank);
     final stats = diffStats(blocks);
 
     final addBg = Colors.green.withValues(alpha: 0.16);
@@ -835,6 +844,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _right.text = '';
     _leftName = '';
     _rightName = '';
+    _leftPath = '';
+    _rightPath = '';
     _leftUndo.clear();
     _rightUndo.clear();
     _clearHighlights();
@@ -862,8 +873,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       setState(() {
         if (identical(target, _left)) {
           _leftName = name;
+          _leftPath = path!;
         } else {
           _rightName = name;
+          _rightPath = path!;
         }
       });
       // 超过 8MB 只读了前 8MB：不提示的话，用户会拿着「后半段都一样」的结论做决定。
@@ -871,6 +884,32 @@ class _TextDiffPageState extends State<TextDiffPage> {
     } catch (e) {
       _toast('${localizations.fail}: $e');
     }
+  }
+
+  /// 从磁盘重新读两侧（文件在编辑器/别的工具里改过之后，回到这里刷新）。
+  Future<void> _reloadFromDisk() async {
+    if (_leftPath.isEmpty && _rightPath.isEmpty) {
+      _toastText(localizations.diffNoFileToReload);
+      return;
+    }
+    var n = 0;
+    for (final isLeft in [true, false]) {
+      final path = isLeft ? _leftPath : _rightPath;
+      if (path.isEmpty) continue;
+      try {
+        final content = await readTextFileLenient(File(path));
+        if (!mounted) return;
+        (isLeft ? _left : _right).text = content.text;
+        n++;
+      } catch (e) {
+        if (!mounted) return;
+        _toast('${localizations.fail}: $e');
+      }
+    }
+    if (!mounted) return;
+    setState(() => _navIndex = -1);
+    _compare();
+    _toastText(localizations.diffReloaded(n));
   }
 
   void _toast(String msg) {
@@ -1028,6 +1067,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final ln = _leftName;
     _leftName = _rightName;
     _rightName = ln;
+    final lp = _leftPath;
+    _leftPath = _rightPath;
+    _rightPath = lp;
     _navIndex = -1;
     _compare();
     // 交换后两栏内容宽度可能完全变了，横向偏移要归零，否则可能停在空白处。
@@ -1059,6 +1101,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'ignoreTrailing':
             setState(() => _ignoreTrailing = !_ignoreTrailing);
+          case 'ignoreBlank':
+            setState(() => _ignoreBlank = !_ignoreBlank);
             _compare();
           case 'wrap':
             setState(() => _wrap = !_wrap);
@@ -1099,6 +1143,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportPatch());
           case 'copyPatch':
             unawaited(_copyUnifiedDiff());
+          case 'reloadFiles':
+            unawaited(_reloadFromDisk());
           case 'exportCsv':
             unawaited(_exportCsv());
           case 'history':
@@ -1144,6 +1190,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'ignoreTrailing',
             checked: _ignoreTrailing,
             child: Text(localizations.diffIgnoreTrailing)),
+        CheckedPopupMenuItem(
+            value: 'ignoreBlank',
+            checked: _ignoreBlank,
+            child: Text(localizations.diffIgnoreBlankLines)),
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
         CheckedPopupMenuItem(
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
@@ -1190,6 +1240,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
         PopupMenuItem(value: 'copyPatch', child: Text(localizations.diffCopyPatch)),
+        PopupMenuItem(value: 'reloadFiles', child: Text(localizations.diffReloadFiles)),
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
@@ -1782,13 +1833,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐视图的行（带缓存）：文本或忽略选项变了才重算。
   List<DiffRow> _alignedRows() {
     final key =
-        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|$_ignoreTrailing';
+        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|$_ignoreTrailing|$_ignoreBlank';
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
-        ignoreTrailingWhitespace: _ignoreTrailing);
+        ignoreTrailingWhitespace: _ignoreTrailing,
+        ignoreBlankLines: _ignoreBlank);
     return _alignedRowsCache;
   }
 

@@ -3274,5 +3274,18 @@
   "editorMinimapDesc": "Show a whole-file minimap on the right; tap or drag to scroll. Turn off on narrow screens",
   "editorStickyScroll": "Sticky scroll",
   "editorStickyScrollDesc": "Pin the enclosing class / function name to the top while scrolling; tap to jump back",
-  "diffCopyPatch": "Copy diff as patch"
+  "diffCopyPatch": "Copy diff as patch",
+  "diffIgnoreBlankLines": "Ignore blank-line differences",
+  "editorInlineDiff": "Gutter change marks",
+  "editorInlineDiffDesc": "Compare with the on-disk version: added green, modified blue, deleted red (small files only)",
+  "diffReloadFiles": "Reload from disk",
+  "diffNoFileToReload": "Neither side was opened from a file",
+  "diffReloaded": "Reloaded {n} file(s)",
+  "editorDiskChange": "Show change at caret",
+  "editorDiskChangeOld": "On disk",
+  "editorDiskChangeNew": "Now",
+  "editorDiskChangeAdded": "(not on disk — newly added)",
+  "editorDiskChangeDeleted": "(these lines were deleted)",
+  "editorNoDiskBaseline": "This document is not linked to a file on disk",
+  "editorNoChangeHere": "No change on this line"
 }

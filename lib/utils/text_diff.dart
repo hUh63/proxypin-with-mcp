@@ -61,8 +61,11 @@ class LineDiff {
 
 /// 归一化 key：仅用于「是否相同」的比较，不改变显示文本。
 String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
-    [bool ignoreTrailingWhitespace = false]) {
+    [bool ignoreTrailingWhitespace = false, bool ignoreBlankLines = false]) {
   var k = s;
+  // 忽略空白行：整篇的空行都归一成空串，于是「一边多几个空行」不再算差异。
+  // 只影响比较用的 key，显示仍是原文（Beyond Compare 的「忽略空白行」）。
+  if (ignoreBlankLines && k.trim().isEmpty) return '';
   // 行尾 \r 是「换行符风格」不是内容：CRLF 与 LF 的文件必须逐行能对上，
   // 否则整篇都会被标成修改（Windows/macOS 互传文件时最常踩）。
   if (k.endsWith('\r')) k = k.substring(0, k.length - 1);
@@ -79,15 +82,16 @@ String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
 List<LineDiff> diffLines(String left, String right,
     {bool ignoreCase = false,
     bool ignoreWhitespace = false,
-    bool ignoreTrailingWhitespace = false}) {
+    bool ignoreTrailingWhitespace = false,
+    bool ignoreBlankLines = false}) {
   // 用 split('\n') 而不是 LineSplitter：保留尾部空行的差异（"a\n" vs "a"）
   final a = left.split('\n');
   final b = right.split('\n');
   final aK = a
-      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines))
       .toList();
   final bK = b
-      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines))
       .toList();
   final out = <LineDiff>[];
   _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
@@ -326,7 +330,7 @@ int _similarityScore(String l, String r) {
 /// 保序（不交叉），只把相似度 ≥ [_pairSimilarity] 的行配成「修改」。
 List<({int left, int right})> _pairLines(List<String> leftTexts,
     List<String> rightTexts, bool ignoreCase, bool ignoreWhitespace,
-    [bool ignoreTrailingWhitespace = false]) {
+    [bool ignoreTrailingWhitespace = false, bool ignoreBlankLines = false]) {
   final m = leftTexts.length;
   final n = rightTexts.length;
   if (m == 0 || n == 0) return const <({int left, int right})>[];
@@ -338,10 +342,10 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
   }
 
   final lk = leftTexts
-      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines))
       .toList();
   final rk = rightTexts
-      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace))
+      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines))
       .toList();
 
   final sim = List.generate(m, (_) => List<int>.filled(n, 0));
@@ -523,7 +527,8 @@ class DiffBlock {
 List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
     {bool ignoreCase = false,
     bool ignoreWhitespace = false,
-    bool ignoreTrailingWhitespace = false}) {
+    bool ignoreTrailingWhitespace = false,
+    bool ignoreBlankLines = false}) {
   final blocks = <DiffBlock>[];
   List<int>? leftLines;
   List<int>? rightLines;
@@ -536,7 +541,7 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
   void flush() {
     if (leftLines != null) {
       final pairs = _pairLines(leftTexts ?? const [], rightTexts ?? const [],
-          ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace);
+          ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines);
       blocks.add(DiffBlock(
         leftStart: leftStart!,
         rightStart: rightStart!,
@@ -635,11 +640,13 @@ class DiffRow {
 List<DiffRow> alignedDiffRows(String left, String right,
     {bool ignoreCase = false,
     bool ignoreWhitespace = false,
-    bool ignoreTrailingWhitespace = false}) {
+    bool ignoreTrailingWhitespace = false,
+    bool ignoreBlankLines = false}) {
   final diffs = diffLines(left, right,
       ignoreCase: ignoreCase,
       ignoreWhitespace: ignoreWhitespace,
-      ignoreTrailingWhitespace: ignoreTrailingWhitespace);
+      ignoreTrailingWhitespace: ignoreTrailingWhitespace,
+      ignoreBlankLines: ignoreBlankLines);
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {

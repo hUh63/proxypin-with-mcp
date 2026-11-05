@@ -34,6 +34,8 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/ui/toolbox/text_diff.dart';
+// diff 引擎（DiffBlock / diffLines / buildDiffBlocks）：内联改动标记要用。
+import 'package:proxypin/utils/text_diff.dart' show DiffBlock, buildDiffBlocks, diffLines;
 import 'package:proxypin/utils/code_minifier.dart';
 import 'package:proxypin/utils/js_compiler.dart';
 import 'package:proxypin/utils/css_formatter.dart';
@@ -405,6 +407,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _lintTimer?.cancel();
     _rulerTimer?.cancel();
     _sniffTimer?.cancel();
+    _diffTimer?.cancel();
     _docScroll.dispose();
     _tabScroll.dispose();
     _scrollTick.dispose();
@@ -986,6 +989,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (!_dirty) setState(() => _dirty = true);
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
       _scheduleLint();
+      // 内联改动标记（相对磁盘）也要跟着更新：同一行内打字不跨行，
+      // 光靠「光标行变化」那条路刷不出来。
+      _scheduleDiffRefresh();
       _lastBeforeChange = before;
       _maybeAutoPair();
       _scheduleAutoSave();
@@ -1251,6 +1257,158 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 两者共用 controller 的 lineDecoration 通道，只能一起重建——谁单独 clear 一次
   /// 都会把对方抹掉（以前就是这么丢的）。
+  // 内联 diff 缓存：装饰刷新很频繁（每次编辑 + 光标移动），基线/文本没变就别重算。
+  String? _diffCacheBase;
+  int _diffCacheHash = 0;
+  Map<int, int> _diffMarks = const <int, int>{};
+  Timer? _diffTimer;
+
+  /// 打字时重算全篇 diff 太贵，攒 700ms 再刷一次行号栏标记。
+  void _scheduleDiffRefresh() {
+    if (!_prefs.inlineDiff) return;
+    if (_doc?.diskBaseline == null) return;
+    _diffTimer?.cancel();
+    _diffTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!mounted) return;
+      _refreshDecorations();
+    });
+  }
+
+  /// 相对磁盘基线的改动标记：0-based 行 → 0 新增 / 1 修改 / 2 删除。
+  ///
+  /// 只在「开关开着 + 有基线 + 文本不太大」时算：这是整篇比较，
+  /// 十万行的文件每敲一个字都重算会明显卡。8 万字符（约两千行）是舒适区。
+  Map<int, int> _inlineDiffMarks(String text) {
+    if (!_prefs.inlineDiff) {
+      if (_diffMarks.isNotEmpty) {
+        _diffMarks = const <int, int>{};
+        _diffCacheBase = null;
+      }
+      return _diffMarks;
+    }
+    final base = _doc?.diskBaseline;
+    if (base == null || base.isEmpty) return const <int, int>{};
+    if (text.length > 80000 || base.length > 80000) return const <int, int>{};
+    final h = text.hashCode * 31 + base.hashCode;
+    if (h == _diffCacheHash && identical(_diffCacheBase, base)) return _diffMarks;
+    _diffCacheHash = h;
+    _diffCacheBase = base;
+
+    final diffs = diffLines(base, text);
+    final marks = <int, int>{};
+    if (diffs.isNotEmpty) {
+      for (final b in buildDiffBlocks(diffs)) {
+        if (b.rightLines.isEmpty && b.leftLines.isEmpty) continue;
+        for (var j = 0; j < b.rightLines.length; j++) {
+          // 配对上的算「改写」，没配上的算「纯新增」。
+          marks[b.rightLines[j]] = b.leftLocalOfRight(j) == null ? 0 : 1;
+        }
+        // 纯删除：标在删除发生处的上一行（和 VS Code 一样表示「这里少了几行」）。
+        if (b.leftLines.length > b.pairs.length) {
+          final at = b.rightStart > 0 ? b.rightStart - 1 : 0;
+          marks.putIfAbsent(at, () => 2);
+        }
+      }
+    }
+    _diffMarks = marks;
+    return marks;
+  }
+
+  /// 看「光标这一行相对磁盘上原来是什么」。
+  ///
+  /// 手机上没有 hover，VS 的 Peek Changes 只能换个入口：光标定位 + 菜单。
+  Future<void> _showDiskChangeAtCaret() async {
+    final doc = _doc;
+    final base = doc?.diskBaseline;
+    if (doc == null || base == null || base.isEmpty) {
+      _toast(localizations.editorNoDiskBaseline);
+      return;
+    }
+    final text = doc.text;
+    if (text.length > 80000 || base.length > 80000) {
+      _toast(localizations.editorTooLargeToProcess);
+      return;
+    }
+    final line = _caretLine < 0 ? 0 : _caretLine;
+    final blocks = buildDiffBlocks(diffLines(base, text));
+    DiffBlock? hit;
+    for (final b in blocks) {
+      if (b.rightLines.contains(line)) {
+        hit = b;
+        break;
+      }
+      // 纯删除块标在「少了几行」的位置（右起点上一行）。
+      if (b.leftLines.length > b.pairs.length && b.rightStart - 1 == line) {
+        hit = b;
+        break;
+      }
+    }
+    if (hit == null) {
+      _toast(localizations.editorNoChangeHere);
+      return;
+    }
+    final baseLines = base.split('\n');
+    final nowLines = text.split('\n');
+    final oldText = hit.leftLines.map((i) => i < baseLines.length ? baseLines[i] : '').join('\n');
+    final newText = hit.rightLines.map((i) => i < nowLines.length ? nowLines[i] : '').join('\n');
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(localizations.editorDiskChange, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 10),
+              _diskChangeBlock(
+                ctx,
+                localizations.editorDiskChangeOld,
+                oldText.isEmpty ? localizations.editorDiskChangeAdded : oldText,
+                const Color(0xFFC62828),
+              ),
+              const SizedBox(height: 10),
+              _diskChangeBlock(
+                ctx,
+                localizations.editorDiskChangeNew,
+                newText.isEmpty ? localizations.editorDiskChangeDeleted : newText,
+                const Color(0xFF2E7D32),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _diskChangeBlock(BuildContext ctx, String title, String body, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Container(width: 3, height: 12, color: color),
+          const SizedBox(width: 6),
+          Text(title, style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+        ]),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            body,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.35),
+          ),
+        ),
+      ],
+    );
+  }
+
   void _refreshDecorations() {
     final controller = _doc?.controller;
     if (controller == null || !mounted) return;
@@ -1291,6 +1449,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
           color: Colors.amber,
         ));
       }
+    }
+
+    // 内联 diff：行号栏标出相对磁盘改了哪几行（VS 源代码管理的差异条）。
+    // 画在 lint 之前：同一行既有改动又有错误时，错误那条（更宽/更亮的红）盖住它更合理。
+    final marks = _inlineDiffMarks(_doc?.text ?? '');
+    if (marks.isNotEmpty) {
+      marks.forEach((line, kind) {
+        gutters.add(GutterDecoration(
+          id: 'diff-$line',
+          startLine: line,
+          endLine: line,
+          type: GutterDecorationType.colorBar,
+          color: switch (kind) {
+            0 => const Color(0xFF2E7D32), // 新增
+            1 => const Color(0xFF1565C0), // 修改
+            _ => const Color(0xFFC62828), // 删除（标在「少了几行」的位置）
+          },
+          width: 2.6,
+        ));
+      });
     }
 
     final report = _doc?.lint;
@@ -5342,6 +5520,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         doc.encodingName = detected.name;
         unawaited(TextEditorPrefsStore.update(_prefs.copyWith(encodingName: detected.name)));
       }
+      doc.diskBaseline = content;
       _activate(doc);
       final pageLimit =
           _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
@@ -6260,7 +6439,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _lastFileMtime = (await file.stat()).modified.millisecondsSinceEpoch;
       } catch (_) {}
       doc.dirty = false;
-      if (mounted && identical(doc, _doc)) setState(() {});
+      // 刚写下去的内容就是新的磁盘基线：改动标记（绿/蓝/红）应当全清。
+      doc.diskBaseline = doc.text;
+      if (mounted && identical(doc, _doc)) {
+        _refreshDecorations();
+        setState(() {});
+      }
       return true;
     } catch (e) {
       _toast('$e');
@@ -7046,6 +7230,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               value: 'unicode', checked: _showUnicode, child: Text(loc.editorShowUnicodeSpecial)),
           _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
           _menuItem('detectIndent', Icons.format_indent_increase, loc.editorDetectIndent),
+          _menuItem('diskChange', Icons.difference_outlined, loc.editorDiskChange),
           const PopupMenuDivider(),
           _menuItem('syntax', Icons.code, loc.editorMoreSyntax),
           PopupMenuItem(
@@ -7121,6 +7306,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _setShowUnicode(!_showUnicode);
         case 'report':
           _showSpecialReport();
+        case 'diskChange':
+          unawaited(_showDiskChangeAtCaret());
         case 'replaceLine':
           _replaceCurrentLine();
         case 'lint':
@@ -7570,6 +7757,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _lastText = text;
         _dirty = false;
       });
+      // 重载 = 回到磁盘内容，基线同步，改动标记清空。
+      doc.diskBaseline = text;
+      _refreshDecorations();
       // 重载后旧的撤销栈指向的是被丢弃的内容，撤销回去等于「变回旧版本」。
       doc.undoController.clear();
       // 正文可能整份换了位置，书签按上下文重新找。
