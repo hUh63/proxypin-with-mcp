@@ -2462,10 +2462,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ],
       ),
     );
+    // 先把两个输入框的值取出来再 dispose：dispose 之后再读 .text 会抛
+    // 「A TextEditingController was used after being disposed」。
+    final startText = startCtl.text.trim();
+    final endText = endCtl.text.trim();
+    startCtl.dispose();
+    endCtl.dispose();
     if (ok != true) return;
 
-    final start = (int.tryParse(startCtl.text.trim()) ?? 1).clamp(1, total);
-    final end = (int.tryParse(endCtl.text.trim()) ?? total).clamp(1, total);
+    final start = (int.tryParse(startText) ?? 1).clamp(1, total);
+    final end = (int.tryParse(endText) ?? total).clamp(1, total);
     final a = start <= end ? start : end;
     final b = start <= end ? end : start;
 

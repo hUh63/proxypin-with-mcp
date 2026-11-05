@@ -90,9 +90,9 @@ class _MobileEnvironmentPageState extends State<MobileEnvironmentPage> {
     Navigator.of(context).maybePop();
   }
 
-  Future<String?> _promptText({required String title, required String hint, String initial = ''}) {
+  Future<String?> _promptText({required String title, required String hint, String initial = ''}) async {
     final controller = TextEditingController(text: initial);
-    return showDialog<String>(
+    final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title, style: const TextStyle(fontSize: 15)),
@@ -107,6 +107,8 @@ class _MobileEnvironmentPageState extends State<MobileEnvironmentPage> {
         ],
       ),
     );
+    controller.dispose();
+    return result;
   }
 
   void _addEnvironment() async {

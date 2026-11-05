@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.67.246 (2026-11-05) — 修 v1.67.245 引入的编译错误
+
+上一版批量补 `TextEditingController.dispose()` 时，`environment.dart` 那处插错了位置
+（插到了下一个函数里，且原来的 `_promptText` 是 `return showDialog(...)`，没有可插入点）。
+现在 `_promptText` 改成 `async + await`，先取结果再 dispose 再 return；
+`text_editor` 的「选择到行」也改成「先把两个输入框的值读出来再 dispose」
+（dispose 之后再读 `.text` 会抛 `used after being disposed`）。
+
 ## v1.67.245 (2026-11-05) — 编辑器：minimap + 粘性滚动；对比页：拖动分栏 / 统计 / 复制 patch
 
 1. **编辑器 minimap（右侧缩略图）**：整篇按行压成一条，点或拖就能滚过去，视口框跟着动。

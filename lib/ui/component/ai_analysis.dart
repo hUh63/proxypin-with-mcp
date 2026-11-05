@@ -435,6 +435,7 @@ class _AiChatPageState extends State<AiChatPage> {
         ],
       ),
     );
+    controller.dispose();
     if (text != null && text.isNotEmpty) {
       setState(() =>
           _attachments.add(_Attachment.text(AppLocalizations.of(context)!.text, text)));

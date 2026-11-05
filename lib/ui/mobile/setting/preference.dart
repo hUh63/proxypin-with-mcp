@@ -244,6 +244,7 @@ class _PreferenceState extends State<Preference> {
         ],
       ),
     );
+    controller.dispose();
     if (result == null) return;
     setState(() => appConfiguration.splashSubtitle = result.isEmpty ? null : result);
     appConfiguration.flushConfig();
@@ -352,6 +353,8 @@ class _PreferenceState extends State<Preference> {
         ),
       ),
     );
+    chainController.dispose();
+    keyController.dispose();
 
     if (result == true && mounted) {
       setState(() {});

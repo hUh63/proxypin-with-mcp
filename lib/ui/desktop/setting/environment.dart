@@ -118,9 +118,9 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
     });
   }
 
-  Future<String?> _promptText({required String title, required String hint, String initial = ''}) {
+  Future<String?> _promptText({required String title, required String hint, String initial = ''}) async {
     final controller = TextEditingController(text: initial);
-    return showDialog<String>(
+    final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title, style: const TextStyle(fontSize: 15)),
@@ -136,6 +136,8 @@ class _EnvironmentDialogState extends State<EnvironmentDialog> {
         ],
       ),
     );
+    controller.dispose();
+    return result;
   }
 
   Future<bool?> _confirm(String message) {
