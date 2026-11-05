@@ -47,6 +47,10 @@ class TextEditorPrefs {
   /// 光标所在词在全文的所有出现处是否淡淡标出来（VS 的行为）。
   final bool highlightOccurrences;
 
+  /// 全篇括号按嵌套深度着色（VS 的 bracket pair colorization）。
+  /// 关掉的话只保留「包住光标的那几层」的配对高亮。
+  final bool rainbowBrackets;
+
   /// 保存时先按语言格式化（VS 的 format on save）。默认关：它会改用户原文。
   final bool formatOnSave;
 
@@ -149,6 +153,7 @@ class TextEditorPrefs {
     this.highlightCurrentLine = true,
     this.styleLint = false,
     this.highlightOccurrences = true,
+    this.rainbowBrackets = true,
     this.formatOnSave = false,
     this.trimOnSave = false,
     this.consoleHeight = 232,
@@ -185,6 +190,7 @@ class TextEditorPrefs {
     bool? highlightCurrentLine,
     bool? styleLint,
     bool? highlightOccurrences,
+    bool? rainbowBrackets,
     bool? formatOnSave,
     bool? trimOnSave,
     double? consoleHeight,
@@ -220,6 +226,7 @@ class TextEditorPrefs {
       highlightCurrentLine: highlightCurrentLine ?? this.highlightCurrentLine,
       styleLint: styleLint ?? this.styleLint,
       highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
+      rainbowBrackets: rainbowBrackets ?? this.rainbowBrackets,
       formatOnSave: formatOnSave ?? this.formatOnSave,
       trimOnSave: trimOnSave ?? this.trimOnSave,
       consoleHeight: consoleHeight ?? this.consoleHeight,
@@ -257,6 +264,7 @@ class TextEditorPrefs {
         'highlightCurrentLine': highlightCurrentLine,
         'styleLint': styleLint,
         'highlightOccurrences': highlightOccurrences,
+        'rainbowBrackets': rainbowBrackets,
         'formatOnSave': formatOnSave,
         'trimOnSave': trimOnSave,
         'consoleHeight': consoleHeight,
@@ -299,6 +307,7 @@ class TextEditorPrefs {
       highlightCurrentLine: json['highlightCurrentLine'] as bool? ?? true,
       styleLint: json['styleLint'] as bool? ?? false,
       highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
+      rainbowBrackets: json['rainbowBrackets'] as bool? ?? true,
       formatOnSave: json['formatOnSave'] as bool? ?? false,
       trimOnSave: json['trimOnSave'] as bool? ?? false,
       consoleHeight: (json['consoleHeight'] as num?)?.toDouble() ?? 232,

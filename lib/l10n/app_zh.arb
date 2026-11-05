@@ -5066,5 +5066,8 @@
   "diffSelectFirst": "先在左侧或右侧选中要比的段落",
   "artexAddrLabel": "监听地址",
   "artexProxyLabel": "代理端口",
-  "artexPgDsnLabel": "PG 连接串"
+  "artexPgDsnLabel": "PG 连接串",
+  "editorRainbowBrackets": "全篇括号着色",
+  "editorRainbowBracketsDesc": "按嵌套深度给所有括号上色（VS 的括号对着色）；大文件（>20 万字符）自动只保留当前层",
+  "diffUnifiedView": "统一视图（单栏）"
 }

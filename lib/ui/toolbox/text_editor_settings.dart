@@ -170,6 +170,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 onChanged: (v) => _apply(prefs.copyWith(highlightOccurrences: v)),
               ),
               _switchTile(
+                icon: Icons.data_object,
+                title: localizations.editorRainbowBrackets,
+                subtitle: localizations.editorRainbowBracketsDesc,
+                value: prefs.rainbowBrackets,
+                onChanged: (v) => _apply(prefs.copyWith(rainbowBrackets: v)),
+              ),
+              _switchTile(
                 icon: Icons.save_as_outlined,
                 title: localizations.editorFormatOnSave,
                 subtitle: localizations.editorFormatOnSaveDesc,

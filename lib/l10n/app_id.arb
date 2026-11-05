@@ -3265,5 +3265,8 @@
   "diffSelectFirst": "Select the range to compare on either side first",
   "artexAddrLabel": "Listen address",
   "artexProxyLabel": "Proxy port",
-  "artexPgDsnLabel": "Postgres DSN"
+  "artexPgDsnLabel": "Postgres DSN",
+  "editorRainbowBrackets": "Rainbow brackets",
+  "editorRainbowBracketsDesc": "Color every bracket by nesting depth (VS bracket pair colorization). Large files (>200k chars) keep only the current level.",
+  "diffUnifiedView": "Unified view (single column)"
 }

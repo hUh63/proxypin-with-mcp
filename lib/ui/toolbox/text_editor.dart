@@ -2688,9 +2688,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final caret = sel.isValid ? sel.extentOffset.clamp(0, text.length) : 0;
     final list = <SearchHighlight>[];
 
-    // 1) 括号配对
-    // 括号嵌套链上色（VS 的 bracket pair colorization）：由内到外各一层颜色。
-    // 只给「包住光标的这几层」上色，不给整篇所有括号铺底色——那只会更花。
+    // 1) 全篇括号着色（可关）：整篇按嵌套深度上淡色，扫一眼就能看出块结构。
+    list.addAll(_allBracketHighlights(text));
+
+    // 1b) 包住光标的括号链：颜色更深，画在全篇之上（后加的会覆盖先画的）。
+    //     全篇那些是「淡底」，这里才是「你现在在哪一层」。
     final chain = _enclosingBracketChain(text, caret);
     for (var i = 0; i < chain.length; i++) {
       final pair = chain[i];
@@ -2757,7 +2759,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     for (var i = 0; i < a.length; i++) {
       if (a[i].start != b[i].start ||
           a[i].end != b[i].end ||
-          a[i].isCurrentMatch != b[i].isCurrentMatch) {
+          a[i].isCurrentMatch != b[i].isCurrentMatch ||
+          a[i].color != b[i].color) {
         return false;
       }
     }
@@ -2770,7 +2773,103 @@ class _TextEditorPageState extends State<TextEditorPage> {
     Color(0x4481C784),
     Color(0x4464B5F6),
     Color(0x44BA68C8),
+    Color(0x44F06292),
+    Color(0x444DD0E1),
   ];
+
+  /// 全篇括号着色用的更淡一档：整篇都有底色时，太重会盖住语法高亮。
+  static const List<Color> _bracketColorsSoft = <Color>[
+    Color(0x26FFB300),
+    Color(0x2681C784),
+    Color(0x2664B5F6),
+    Color(0x26BA68C8),
+    Color(0x26F06292),
+    Color(0x264DD0E1),
+  ];
+
+  // 全篇括号扫描的缓存：光标移动时文本没变就不重扫。
+  String _bracketScanKey = '';
+  List<SearchHighlight> _bracketScanCache = const <SearchHighlight>[];
+
+  /// 全篇括号按嵌套深度着色（VS 的 bracket pair colorization）。
+  ///
+  /// 单遍扫描，跳过字符串 / 行注释 / 块注释。两处限制：
+  ///   * 文本 > 20 万字符不扫（每次移动光标都全文扫一遍会明显卡）；
+  ///   * 最多 3000 个括号（再多的文件本来也看不清颜色）。
+  List<SearchHighlight> _allBracketHighlights(String text) {
+    if (!_prefs.rainbowBrackets || text.length > 200000) {
+      return const <SearchHighlight>[];
+    }
+    final key = '${text.length}|${text.hashCode}';
+    if (key == _bracketScanKey) return _bracketScanCache;
+
+    final out = <SearchHighlight>[];
+    var depth = 0;
+    var i = 0;
+    String? quote;
+    var lineComment = false;
+    var blockComment = false;
+    while (i < text.length && out.length < 3000) {
+      final c = text[i];
+      final next = i + 1 < text.length ? text[i + 1] : '';
+      if (lineComment) {
+        if (c == '\n') lineComment = false;
+        i++;
+        continue;
+      }
+      if (blockComment) {
+        if (c == '*' && next == '/') {
+          blockComment = false;
+          i += 2;
+          continue;
+        }
+        i++;
+        continue;
+      }
+      if (quote != null) {
+        if (c == '\\') {
+          i += 2;
+          continue;
+        }
+        if (c == quote) quote = null;
+        i++;
+        continue;
+      }
+      if (c == '/' && next == '/') {
+        lineComment = true;
+        i += 2;
+        continue;
+      }
+      if (c == '/' && next == '*') {
+        blockComment = true;
+        i += 2;
+        continue;
+      }
+      if (c == '"' || c == "'" || c == '`') {
+        quote = c;
+        i++;
+        continue;
+      }
+      if (c == '(' || c == '[' || c == '{') {
+        out.add(SearchHighlight(
+            start: i, end: i + 1, color: _bracketColorsSoft[depth % _bracketColorsSoft.length]));
+        depth++;
+        i++;
+        continue;
+      }
+      if (c == ')' || c == ']' || c == '}') {
+        if (depth > 0) depth--;
+        out.add(SearchHighlight(
+            start: i, end: i + 1, color: _bracketColorsSoft[depth % _bracketColorsSoft.length]));
+        i++;
+        continue;
+      }
+      i++;
+    }
+    _bracketScanKey = key;
+    _bracketScanCache = out;
+    return out;
+  }
 
   /// 包住光标的括号链，由内到外，最多 [maxDepth] 层。
   ///

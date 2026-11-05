@@ -173,6 +173,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 词级（字符级）高亮：关掉只看整行，几万行的超大文件更顺。
   bool _wordDiff = true;
 
+  /// 统一视图（单栏）：像 git / GitHub 的 unified diff，窄屏上比两栏好读。
+  bool _unified = false;
+
   /// 忽略行尾空白：只抹掉每行末尾的空格/Tab，行内差异仍然比。
   /// （「忽略空白」是全量抹空白，适合格式化后的对比；这个是更精准的那一档。）
   bool _ignoreTrailing = false;
@@ -1118,6 +1121,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_gotoLineDialog());
           case 'compareSelection':
             unawaited(_compareSelection());
+          case 'unifiedView':
+            setState(() => _unified = !_unified);
         }
       },
       itemBuilder: (_) => [
@@ -1149,6 +1154,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(
             value: 'compareSelection',
             child: Text(localizations.diffCompareSelection)),
+        CheckedPopupMenuItem(
+            value: 'unifiedView',
+            checked: _unified,
+            child: Text(localizations.diffUnifiedView)),
         PopupMenuItem(value: 'zoomIn', child: Text(localizations.editorZoomIn)),
         PopupMenuItem(value: 'zoomOut', child: Text(localizations.editorZoomOut)),
         PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
@@ -1755,6 +1764,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         child: Text(localizations.diffNoDifference, style: TextStyle(color: Colors.grey[600])),
       );
     }
+    if (_unified) return _unifiedView(rows);
     _ensureWidths(rows);
     final current = _currentRowIndex(rows);
     final divider = Theme.of(context).dividerColor.withValues(alpha: 0.35);
@@ -1764,6 +1774,84 @@ class _TextDiffPageState extends State<TextDiffPage> {
       Expanded(child: _alignedPane(rows, current, left: false)),
       _densityBar(rows),
     ]);
+  }
+
+  /// 统一视图：单栏上下排，删除行标 -、新增行标 +，修改拆成「- 旧 / + 新」两行。
+  ///
+  /// 手机竖屏上两栏各占一半宽度，长行基本读不了；git 那种单栏反而更清楚。
+  Widget _unifiedView(List<DiffRow> rows) {
+    final lines = <_UnifiedLine>[];
+    for (final r in rows) {
+      switch (r.type) {
+        case DiffRowType.equal:
+          lines.add(_UnifiedLine('  ', r.leftLine ?? r.rightLine, r.leftText ?? '', r.type));
+        case DiffRowType.deleted:
+          lines.add(_UnifiedLine('- ', r.leftLine, r.leftText ?? '', r.type));
+        case DiffRowType.added:
+          lines.add(_UnifiedLine('+ ', r.rightLine, r.rightText ?? '', r.type));
+        case DiffRowType.modified:
+          lines.add(_UnifiedLine('- ', r.leftLine, r.leftText ?? '', DiffRowType.deleted));
+          lines.add(_UnifiedLine('+ ', r.rightLine, r.rightText ?? '', DiffRowType.added));
+      }
+    }
+    // 单栏不横向滚动：超长行用省略号截断（统一视图是「快速扫改动」，
+    // 逐字读长行请切回并排视图或直接看编辑器）。
+    return ListView.builder(
+      itemExtent: _rowHeight,
+      itemCount: lines.length,
+      itemBuilder: (context, i) => _unifiedLine(lines[i]),
+      padding: EdgeInsets.zero,
+    );
+  }
+
+  Widget _unifiedLine(_UnifiedLine l) {
+    final isDark = Theme.brightnessOf(context) == Brightness.dark;
+    Color? bg;
+    switch (l.type) {
+      case DiffRowType.added:
+        bg = Colors.green.withValues(alpha: isDark ? 0.20 : 0.14);
+      case DiffRowType.deleted:
+        bg = Colors.red.withValues(alpha: isDark ? 0.22 : 0.13);
+      case DiffRowType.modified:
+      case DiffRowType.equal:
+        bg = null;
+    }
+    final signColor = switch (l.type) {
+      DiffRowType.added => Colors.green.shade600,
+      DiffRowType.deleted => Colors.red.shade600,
+      _ => Colors.grey,
+    };
+    final raw = l.text;
+    final text = _showSpace ? _visualizeSpace(raw) : raw;
+    return Container(
+      color: bg,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 34,
+            child: Text(l.num?.toString() ?? '',
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                style: TextStyle(fontSize: _fontSize - 2, color: Colors.grey[600], height: 1.0)),
+          ),
+          SizedBox(
+            width: 16,
+            child: Text(l.sign,
+                maxLines: 1,
+                style: TextStyle(
+                    fontSize: _fontSize, color: signColor, fontFamily: 'monospace', height: 1.0)),
+          ),
+          Expanded(
+            child: Text(text,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0)),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 同步横向滚动：把 src 的偏移镜像到 dst（`_syncingH` 防回路）。
@@ -2584,4 +2672,14 @@ class _DensityPainter extends CustomPainter {
       oldDelegate.isDark != isDark ||
       oldDelegate.vpStart != vpStart ||
       oldDelegate.vpEnd != vpEnd;
+}
+
+/// 统一视图里的一行：符号（'  ' / '- ' / '+ '）+ 行号 + 文本。
+class _UnifiedLine {
+  final String sign;
+  final int? num;
+  final String text;
+  final DiffRowType type;
+
+  const _UnifiedLine(this.sign, this.num, this.text, this.type);
 }
