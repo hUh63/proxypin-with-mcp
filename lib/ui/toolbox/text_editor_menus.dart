@@ -966,6 +966,18 @@ IconData menuIconOf(String id) {
     case 'stats':
     case 'report':
       return Icons.analytics_outlined;
+    case 'aiAssist':
+      return Icons.auto_awesome;
+    case 'quickOpen':
+      return Icons.rocket_launch_outlined;
+    case 'browse':
+      return Icons.account_tree_outlined;
+    case 'clipHistory':
+      return Icons.content_paste;
+    case 'compilerLog':
+      return Icons.translate;
+    case 'saveAll':
+      return Icons.save;
     case 'nextBookmark':
     case 'prevBookmark':
     case 'bookmarks':
