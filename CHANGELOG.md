@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.67.250 (2026-11-05) — CI：Release 上传失败不再判红整个 job
+
+排查 iOS / macOS / DEB 偶发「编译打包全成功、只红在上传 Release」：一个 tag 会同时触发
+5 个 workflow，它们并发去 GitHub 创建同一个 Release，API 会有一部分返回 HttpError
+（日志里是 `Unexpected error fetching GitHub release for tag ...`）。
+给这三条上传步骤加 `continue-on-error`（**步骤级**，不是 job 级；APK 那条仍然强制），
+编译/签名/打包的失败依旧会红。
+
 ## v1.67.249 (2026-11-05) — 补齐命令面板缺失的图标
 
 `menuIconOf` 里有 6 个菜单项没有图标（AI 辅助 / 快速打开 / 浏览文件夹 / 剪贴板历史 /
