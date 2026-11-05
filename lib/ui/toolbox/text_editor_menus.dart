@@ -703,6 +703,9 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('lintIssues', _lintIssuesLabel, group: 'inspect', aliases: 'wt 问题 issues problems'),
   EditorMenuItem('console', _consoleLabel, group: 'inspect', aliases: 'kzt 控制台 console'),
   EditorMenuItem('lintRules', _lintRulesLabel, group: 'inspect', aliases: 'gz 检查规则 rules'),
+  EditorMenuItem('toggleBreakpoint', _toggleBreakpointLabel, group: 'inspect',
+      aliases: 'dd 断点 breakpoint'),
+  EditorMenuItem('debug', _debugLabel, group: 'inspect', aliases: 'ts 调试 debug run'),
   EditorMenuItem('compilerLog', _compilerLogLabel, group: 'inspect',
       aliases: 'bj 编译 诊断 compiler log translate zh'),
 ];
@@ -767,6 +770,8 @@ String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
 String _trimTrailingLabel(AppLocalizations l) => l.editorTrimTrailing;
 String _detectIndentLabel(AppLocalizations l) => l.editorDetectIndent;
 String _diskChangeLabel(AppLocalizations l) => l.editorDiskChange;
+String _toggleBreakpointLabel(AppLocalizations l) => l.editorToggleBreakpoint;
+String _debugLabel(AppLocalizations l) => l.editorDebugTab;
 String _columnCursorsLabel(AppLocalizations l) => l.editorColumnSelect;
 String _openLinkLabel(AppLocalizations l) => l.editorOpenLink;
 String _lintLabel(AppLocalizations l) => l.editorLint;
@@ -871,6 +876,10 @@ IconData menuIconOf(String id) {
       return Icons.format_indent_increase;
     case 'diskChange':
       return Icons.difference_outlined;
+    case 'toggleBreakpoint':
+      return Icons.radio_button_unchecked;
+    case 'debug':
+      return Icons.bug_report_outlined;
     case 'nextOccurrence':
       return Icons.select_all;
     case 'selectAllOccurrences':

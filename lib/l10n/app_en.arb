@@ -5565,5 +5565,44 @@
   "editorDiskChangeAdded": "(not on disk — newly added)",
   "editorDiskChangeDeleted": "(these lines were deleted)",
   "editorNoDiskBaseline": "This document is not linked to a file on disk",
-  "editorNoChangeHere": "No change on this line"
+  "editorNoChangeHere": "No change on this line",
+  "editorDebugTab": "Debug",
+  "editorDebugTitle": "Debug (line breakpoints)",
+  "editorDebugRun": "Run to breakpoint",
+  "editorDebugContinue": "Continue",
+  "editorDebugStop": "Stop",
+  "editorDebugClearBreakpoints": "Clear breakpoints",
+  "editorDebugPausedAt": "Paused at line {n}",
+  "@editorDebugPausedAt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorDebugRunning": "Running...",
+  "editorDebugFinished": "Finished (no breakpoint hit)",
+  "editorDebugStopped": "Stopped",
+  "editorDebugHint": "Put the caret on a line and use \"Toggle breakpoint\" from the menu, then press ▶. On a hit you can inspect globals; \"Continue\" re-runs from the start to the next breakpoint (side effects repeat).",
+  "editorDebugNoBreakpoints": "No breakpoints — running the whole file",
+  "editorDebugNoInstrument": "This file cannot be instrumented — running it as-is",
+  "editorDebugNoVars": "(no globals yet)",
+  "editorToggleBreakpoint": "Toggle breakpoint",
+  "editorGoToBreakpoint": "Go to breakpoint",
+  "editorBreakpointAdded": "Breakpoint added at line {n}",
+  "@editorBreakpointAdded": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorBreakpointRemoved": "Breakpoint removed at line {n}",
+  "@editorBreakpointRemoved": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

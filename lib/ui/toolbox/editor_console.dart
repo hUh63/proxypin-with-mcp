@@ -33,9 +33,10 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/ui/toolbox/console_state.dart';
 import 'package:proxypin/utils/expr_eval.dart';
+import 'package:proxypin/utils/js_debug.dart';
 
 /// 底部面板的两个页签。
-enum EditorConsoleTab { problems, console }
+enum EditorConsoleTab { problems, console, debug }
 
 /// 控制台后端。
 enum ConsoleBackend {
@@ -61,6 +62,15 @@ class EditorConsolePanel extends StatefulWidget {
 
   /// 取当前选区文本（控制台里的 `$0`）。
   final String Function()? readSelection;
+
+  /// 断点行（0-based，跟编辑器行号栏一致）。
+  final Set<int> breakpoints;
+
+  /// 断点变更（调试页里增删时回写，让行号栏的红点跟着变）。
+  final ValueChanged<Set<int>>? onBreakpointsChanged;
+
+  /// 从调试页跳到某一行。
+  final ValueChanged<int>? onJumpToLine;
 
   final void Function(LintDiagnostic) onJump;
   final void Function(LintDiagnostic) onFix;
@@ -104,6 +114,9 @@ class EditorConsolePanel extends StatefulWidget {
     required this.jsBackend,
     required this.readDocument,
     this.readSelection,
+    this.breakpoints = const <int>{},
+    this.onBreakpointsChanged,
+    this.onJumpToLine,
     required this.onJump,
     required this.onFix,
     this.onFixAll,
@@ -137,6 +150,13 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
 
   /// JS 侧的 stdin 预置（readLine/readInt/print）只装一次。
   bool _preludeReady = false;
+
+  // ── JS 调试（行级断点）──
+  /// 当前停在第几行（1-based，0 表示没停住）。
+  int _debugLine = 0;
+  bool _debugFinished = true;
+  /// 「继续」时要给这一行加一次「跳过」——引擎没法从异常点恢复，只能重跑。
+  int _debugSkipLine = 0;
 
   /// 控制台状态（输出 / 命令历史 / 会话变量）——由文档持有。
   ConsoleState get _state => widget.state;
@@ -174,8 +194,12 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       _backend = ConsoleBackend.expr;
     }
     // 语言从编程语言切到数据格式（例如 .json）：控制台页签直接收起。
-    if (!widget.programming && _tab == EditorConsoleTab.console) {
+    if (!widget.programming &&
+        (_tab == EditorConsoleTab.console || _tab == EditorConsoleTab.debug)) {
       _tab = EditorConsoleTab.problems;
+    }
+    if (!widget.jsBackend && _tab == EditorConsoleTab.debug) {
+      _tab = EditorConsoleTab.console;
     }
   }
 
@@ -221,6 +245,254 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     if (next >= list.length) next = 0;
     setState(() => _cursor = next);
     widget.onJump(list[next]);
+  }
+
+  // ------------------------------ JS 调试 ------------------------------
+
+  final ScrollController _dbgScroll = ScrollController();
+
+  Widget _debug(ThemeData theme) {
+    final bps = widget.breakpoints.toList()..sort();
+    final paused = _debugLine > 0;
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(10, 2, 4, 0),
+        child: Row(children: [
+          Icon(Icons.bug_report_outlined,
+              size: 13, color: paused ? Colors.orange : Colors.blueGrey),
+          const SizedBox(width: 4),
+          Text(
+            paused ? localizations.editorDebugPausedAt(_debugLine) : localizations.editorDebugTitle,
+            style: TextStyle(fontSize: 10.5, color: paused ? Colors.orange : null),
+          ),
+          const Spacer(),
+          _barIcon(
+            tooltip: localizations.editorDebugRun,
+            onPressed: _running ? null : () => unawaited(_debugRun()),
+            icon: const Icon(Icons.play_arrow, size: 18),
+          ),
+          _barIcon(
+            tooltip: localizations.editorDebugContinue,
+            onPressed: paused && !_running ? () => unawaited(_debugRun(resume: true)) : null,
+            icon: const Icon(Icons.skip_next, size: 17),
+          ),
+          _barIcon(
+            tooltip: localizations.editorDebugStop,
+            onPressed: (paused || _running) ? _debugStop : null,
+            icon: const Icon(Icons.stop, size: 17),
+          ),
+          if (bps.isNotEmpty)
+            _barIcon(
+              tooltip: localizations.editorDebugClearBreakpoints,
+              onPressed: () => widget.onBreakpointsChanged?.call(<int>{}),
+              icon: const Icon(Icons.not_interested, size: 16),
+            ),
+          _barIcon(
+            tooltip: localizations.editorConsoleClear,
+            onPressed: () => setState(_state.reset),
+            icon: const Icon(Icons.delete_outline, size: 16),
+          ),
+        ]),
+      ),
+      if (bps.isNotEmpty)
+        SizedBox(
+          height: 30,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            itemCount: bps.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 4),
+            itemBuilder: (_, i) {
+              final line = bps[i];
+              return InputChip(
+                label: Text('${line + 1}', style: const TextStyle(fontSize: 10.5)),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onPressed: () => widget.onJumpToLine?.call(line),
+                onDeleted: () {
+                  final next = Set<int>.from(widget.breakpoints)..remove(line);
+                  widget.onBreakpointsChanged?.call(next);
+                },
+              );
+            },
+          ),
+        ),
+      Expanded(child: _debugOutput(theme)),
+    ]);
+  }
+
+  Widget _debugOutput(ThemeData theme) {
+    if (_out.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            localizations.editorDebugHint,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
+          ),
+        ),
+      );
+    }
+    return SelectionArea(
+      child: ListView.builder(
+        controller: _dbgScroll,
+        padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+        itemCount: _out.length,
+        itemBuilder: (_, i) {
+          final o = _out[i];
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: Text(
+              o.text,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontFamily: 'monospace',
+                color: _lineColor(theme, o.kind),
+                fontWeight:
+                    o.kind == ConsoleLineKind.prompt ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 插桩后的代码必须还能被解析：不通过就退回原样整篇运行。
+  ///
+  /// 宁可少一个断点，也不能让用户按下调试之后看到的是自己脚本的 SyntaxError。
+  bool _jsParses(JavascriptRuntime rt, String code) {
+    try {
+      final r = rt.evaluate(
+          '(function(){try{new Function(${jsonEncode(code)});return "ok"}catch(e){return "err"}})()');
+      return (r.stringResult ?? '') == 'ok';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 命中时把全局变量打出来（局部变量拿不到——引擎没有作用域内省）。
+  void _appendSnapshot(JavascriptRuntime rt) {
+    try {
+      final r = rt.evaluate('(function(){var out=[];'
+          'for(var k in globalThis){'
+          'if(/^(__pp|console|print|readLine|readInt|readFloat|globalThis)/.test(k))continue;'
+          'if(k.indexOf("__")===0)continue;'
+          'var v=globalThis[k];var t=typeof v;if(t==="function")continue;'
+          'var s;try{s=JSON.stringify(v)}catch(e){s=String(v)}'
+          'if(s===undefined)continue;if(s&&s.length>160)s=s.slice(0,160)+"...";'
+          'out.push(k+" = "+s)}'
+          'return out.join("\\n")})()');
+      final text = r.stringResult ?? '';
+      if (text.trim().isEmpty) {
+        _append(localizations.editorDebugNoVars, ConsoleLineKind.note);
+        return;
+      }
+      for (final line in text.split('\n')) {
+        if (line.trim().isEmpty) continue;
+        _append(line, ConsoleLineKind.result);
+      }
+    } catch (_) {
+      // 快照失败不影响调试本身
+    }
+  }
+
+  Future<void> _debugRun({bool resume = false}) async {
+    if (_running) return;
+    final source = widget.readDocument();
+    if (source.trim().isEmpty) return;
+    final bps = widget.breakpoints;
+    if (!resume) {
+      setState(() {
+        _debugLine = 0;
+        _debugSkipLine = 0;
+      });
+    }
+    if (bps.isEmpty) {
+      _append(localizations.editorDebugNoBreakpoints, ConsoleLineKind.note);
+      // 不要把整篇源码回显到输出里（几百行会把面板刷满）。
+      await _run(source, echo: false);
+      return;
+    }
+    if (_backend != ConsoleBackend.js) {
+      _append(localizations.editorTermNoRuntime, ConsoleLineKind.warn);
+      return;
+    }
+    if (source.length > 200000) {
+      _append(localizations.editorTooLargeToProcess, ConsoleLineKind.warn);
+      return;
+    }
+    setState(() => _running = true);
+    try {
+      final rt = _ensureRuntime();
+      if (rt == null) {
+        _append(localizations.editorTermNoRuntime, ConsoleLineKind.warn);
+        return;
+      }
+      // 「继续」= 把刚才停下的那处断点记成跳过，然后从头重跑到下一个断点。
+      // 引擎没法从异常点恢复，所以副作用（console 输出、外部调用）会重来一遍。
+      if (!resume) {
+        rt.evaluate('globalThis.__ppHits = {}; globalThis.__ppSkip = {};');
+      } else if (_debugSkipLine > 0) {
+        rt.evaluate('globalThis.__ppSkip[$_debugSkipLine] = '
+            '(globalThis.__ppSkip[$_debugSkipLine]||0) + 1;');
+      }
+      rt.evaluate(JsDebug.prelude(bps));
+
+      final instrumented = JsDebug.instrument(source);
+      final useInstrumented = _jsParses(rt, instrumented);
+      if (!useInstrumented) _append(localizations.editorDebugNoInstrument, ConsoleLineKind.warn);
+      _append(
+        '▶ ${localizations.editorDebugRunning}${resume ? ' (${localizations.editorDebugContinue})' : ''}',
+        ConsoleLineKind.prompt,
+      );
+
+      final code = useInstrumented ? instrumented : source;
+      final result = await rt.evaluateAsync(code).timeout(const Duration(seconds: 10));
+      if (!mounted) return;
+      if (result.isError) {
+        final line = JsDebug.breakLineFrom(result.stringResult);
+        if (line != null) {
+          setState(() {
+            _debugLine = line;
+            _debugSkipLine = line;
+          });
+          _append(localizations.editorDebugPausedAt(line), ConsoleLineKind.note);
+          _appendSnapshot(rt);
+        } else {
+          setState(() {
+            _debugLine = 0;
+            _debugSkipLine = 0;
+          });
+          _append(result.stringResult ?? localizations.editorConsoleError, ConsoleLineKind.error);
+        }
+      } else {
+        setState(() {
+          _debugLine = 0;
+          _debugSkipLine = 0;
+        });
+        _append(localizations.editorDebugFinished, ConsoleLineKind.note);
+      }
+    } catch (e) {
+      _append('$e', ConsoleLineKind.error);
+    } finally {
+      if (mounted) {
+        setState(() => _running = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_dbgScroll.hasClients) return;
+          _dbgScroll.jumpTo(_dbgScroll.position.maxScrollExtent);
+        });
+      }
+    }
+  }
+
+  void _debugStop() {
+    setState(() {
+      _debugLine = 0;
+      _debugSkipLine = 0;
+    });
+    _append(localizations.editorDebugStopped, ConsoleLineKind.note);
   }
 
   // ------------------------------ 控制台 ------------------------------
@@ -575,7 +847,13 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       child: Column(children: [
         _dragHandle(theme),
         _header(theme),
-        Expanded(child: _tab == EditorConsoleTab.problems ? _problems(theme) : _console(theme)),
+        Expanded(
+          child: switch (_tab) {
+            EditorConsoleTab.problems => _problems(theme),
+            EditorConsoleTab.console => _console(theme),
+            EditorConsoleTab.debug => _debug(theme),
+          },
+        ),
       ]),
     );
   }
@@ -683,6 +961,9 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
             problems > 0 ? '$problems' : null, badgeColor),
         if (widget.programming)
           tab(localizations.editorTerminal, EditorConsoleTab.console, null, null),
+        if (widget.jsBackend)
+          tab(localizations.editorDebugTab, EditorConsoleTab.debug,
+              _debugLine > 0 ? '$_debugLine' : null, Colors.orange),
         // 窄屏（360dp）上这条按钮区会超出宽度：问题页有 7 个图标按钮 + 2 个页签。
         // 包一层「右对齐 + 横向可滑」，挤不下就滑过去，不会再出 Row overflow 的黄黑条。
         Expanded(

@@ -1314,6 +1314,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return marks;
   }
 
+  /// 在光标行加/删断点。
+  ///
+  /// 只对 JavaScript 有意义：内置引擎没有调试协议，这里做的是「行级插桩 +
+  /// 命中抛异常停下来」（见 utils/js_debug.dart）。
+  void _toggleBreakpointAtCaret() {
+    final line = _caretLine < 0 ? 0 : _caretLine;
+    final added = !_breakpoints.contains(line);
+    setState(() {
+      if (added) {
+        _breakpoints.add(line);
+      } else {
+        _breakpoints.remove(line);
+      }
+    });
+    _refreshDecorations();
+    _toast(added
+        ? localizations.editorBreakpointAdded(line + 1)
+        : localizations.editorBreakpointRemoved(line + 1));
+  }
+
   /// 看「光标这一行相对磁盘上原来是什么」。
   ///
   /// 手机上没有 hover，VS 的 Peek Changes 只能换个入口：光标定位 + 菜单。
@@ -1449,6 +1469,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
           color: Colors.amber,
         ));
       }
+    }
+
+    // 断点：行号栏一个红点（VS 是左侧的实心圆）。
+    for (final line in _breakpoints) {
+      gutters.add(GutterDecoration(
+        id: 'bp-$line',
+        startLine: line,
+        endLine: line,
+        type: GutterDecorationType.dot,
+        color: const Color(0xFFD32F2F),
+      ));
     }
 
     // 内联 diff：行号栏标出相对磁盘改了哪几行（VS 源代码管理的差异条）。
@@ -2996,6 +3027,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   // 交给 CodeForge 用的纵向 ScrollController（内核支持外部注入）。
   // 用 controller 而不是拦 ScrollNotification：内核内部如果 return true 就把通知吞了。
   final ScrollController _vScroll = ScrollController();
+
+  /// 断点行（0-based）。只对 JS 有意义（内置引擎），其它语言点了会提示没有运行时。
+  final Set<int> _breakpoints = <int>{};
 
   bool get _minimapOn => _prefs.minimap && !_smooth;
   bool get _stickyOn => _prefs.stickyScroll && !_smooth;
@@ -6311,6 +6345,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
               initialHeight: _prefs.consoleHeight,
               onHeightChanged: (h) => TextEditorPrefsStore.update(
                   TextEditorPrefsStore.notifier.value.copyWith(consoleHeight: h)),
+              breakpoints: _breakpoints,
+              onBreakpointsChanged: (set) {
+                setState(() {
+                  _breakpoints
+                    ..clear()
+                    ..addAll(set);
+                });
+                _refreshDecorations();
+              },
+              onJumpToLine: (line) => _controller?.scrollToLine(line),
             ),
           if (doc != null)
             AnimatedBuilder(
@@ -7250,6 +7294,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('console', Icons.terminal, loc.editorConsole),
           _menuItem('lintRules', Icons.rule, loc.editorLintAllRules),
           _menuItem('compilerLog', Icons.translate, loc.editorCompilerLog),
+          _menuItem('toggleBreakpoint', Icons.radio_button_unchecked, loc.editorToggleBreakpoint),
+          _menuItem('debug', Icons.bug_report_outlined, loc.editorDebugTab),
         ];
     }
     return const [];
@@ -7308,6 +7354,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _showSpecialReport();
         case 'diskChange':
           unawaited(_showDiskChangeAtCaret());
+        case 'toggleBreakpoint':
+          _toggleBreakpointAtCaret();
+        case 'debug':
+          _openConsole(EditorConsoleTab.debug);
         case 'replaceLine':
           _replaceCurrentLine();
         case 'lint':
