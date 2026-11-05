@@ -22,8 +22,8 @@
 // 可以直接读出来给人看。
 //
 // 三条纪律（都是踩出来的）：
-//   1. **只插确定安全的位置**：行首必须是语句起点，且当前不在「对象字面量 / 参数列表」
-//      里面 —— 否则会插出 `{ a: 1, __ppProbe(3); b: 2 }` 这种语法错。
+//   1. **只插确定安全的位置**：行首必须是语句起点，且当前不在「对象字面量 / 类体 /
+//      函数参数列表」里面 —— 否则会插出 `{ a: 1, __ppProbe(3); b: 2 }` 这种语法错。
 //   2. **插完必须校验**：宿主侧会先用 `new Function(src)` 试解析一遍，不通过就退回
 //      不插桩的整篇运行。宁可少断点，也不能让用户的脚本变成 SyntaxError。
 //   3. 「继续」是**重跑**：JS 引擎没法从异常点恢复，所以继续时把已命中的那处断点
@@ -72,7 +72,7 @@ class JsDebug {
   static String instrument(String src) {
     final lines = src.split('\n');
     final out = <String>[];
-    // 花括号栈：true = 块（可以插），false = 对象字面量 / 参数（不能插）。
+    // 花括号栈：true = 块（可以插），false = 对象字面量 / 类体 / 参数（不能插）。
     final blocks = <bool>[];
     // 上一行是否「语句可以结束」——只有能结束时，下一行才可能是新的语句。
     var prevEnds = true;
@@ -110,9 +110,15 @@ class JsDebug {
 
   /// 扫出 `test('名字', ...)` / `it('名字', ...)` 用例（单引号 / 双引号 / 反引号）。
   static List<JsTestCase> collectTests(String src) {
-    final re = RegExp(r'''(?:^|[^\w.])?(?:test|it)\s*\(\s*(['"`])((?:\\.|(?!\1).)*)\1''');
+    // 名字引号用捕获组，结尾再反向引用一次，保证 `test("a')` 这种不会被当成用例。
+    final re = RegExp('(?:test|it)\\s*\\(\\s*([\'"`])((?:\\\\.|(?!\\1).)*)\\1');
     final out = <JsTestCase>[];
     for (final m in re.allMatches(src)) {
+      // 前一个字符是 `.` 或标识符字符 → 是 obj.test(...) / mytest(...)，不是用例。
+      if (m.start > 0) {
+        final prev = src[m.start - 1];
+        if (prev == '.' || RegExp(r'[A-Za-z0-9_$]').hasMatch(prev)) continue;
+      }
       final name = m.group(2) ?? '';
       if (name.isEmpty) continue;
       final line = '\n'.allMatches(src.substring(0, m.start)).length + 1;
@@ -146,12 +152,10 @@ class JsDebug {
     if (RegExp(r'^[A-Za-z_$][\w$]*:$').hasMatch(s)) return false;
     final last = s[s.length - 1];
     if (last == ';' || last == '{' || last == '}' || last == ':') return true;
-    // `if (x)` / `while (x)` / `foo(a)` 结尾：可能是块头，也可能是完整表达式。
-    if (last == ')') {
-      // 关键字结尾的续行不算（`if (x)` 之后是块，可以插）。
-      return true;
-    }
-    if (last == ',' || last == '(' || last == '[' || last == '=' || last == '=>') {
+    // `if (x)` / `foo(a)` 结尾：块头或完整表达式，都可以从下一行开始插。
+    if (last == ')') return true;
+    // 这些结尾说明语句还没写完。
+    if (last == ',' || last == '(' || last == '[' || last == '=' || last == '>') {
       return false;
     }
     if (s.endsWith('&&') || s.endsWith('||') || s.endsWith('+') || s.endsWith('-')) {
@@ -160,7 +164,7 @@ class JsDebug {
     return false;
   }
 
-  /// 维护花括号栈：判断 `{` 是「块」还是「对象字面量」。
+  /// 维护花括号栈：判断 `{` 是「块」还是「对象字面量 / 类体」。
   static void _trackBlocks(String line, List<bool> blocks) {
     final s = _stripLineComment(line);
     for (var i = 0; i < s.length; i++) {

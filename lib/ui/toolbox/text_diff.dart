@@ -1798,6 +1798,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
             icon: const Icon(Icons.folder_open),
             onPressed: () => _openFileInto(controller),
           ),
+          IconButton(
+            tooltip: localizations.paste,
+            iconSize: 14,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.content_paste),
+            onPressed: () => _pasteInto(controller),
+          ),
         ]),
       ),
       Expanded(
@@ -1871,12 +1880,75 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _ensureWidths(rows);
     final current = _currentRowIndex(rows);
     final divider = Theme.of(context).dividerColor.withValues(alpha: 0.35);
-    return Row(children: [
+    final body = Row(children: [
       Expanded(child: _alignedPane(rows, current, left: true)),
       Container(width: 1, color: divider),
       Expanded(child: _alignedPane(rows, current, left: false)),
       _densityBar(rows),
     ]);
+    // 悬浮的「上一处 / 下一处」：滚下去之后顶部工具栏看不见了，
+    // 手机上想跳到下一处还得先滚回顶部，很别扭（对标 VS Code diff 的右上角那对箭头）。
+    if (_blocks.length < 2) return body;
+    return Stack(children: [
+      Positioned.fill(child: body),
+      Positioned(
+        right: 10,
+        bottom: 10,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          _navFab(Icons.keyboard_arrow_up, () => _navigate(-1), localizations.editorLintPrev),
+          const SizedBox(height: 6),
+          _navFab(Icons.keyboard_arrow_down, () => _navigate(1), localizations.editorLintNext),
+        ]),
+      ),
+    ]);
+  }
+
+  Widget _navFab(IconData icon, VoidCallback onTap, String tooltip) {
+    final color = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: color.primary.withValues(alpha: 0.9),
+        shape: const CircleBorder(),
+        elevation: 3,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(icon, size: 20, color: color.onPrimary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 把剪贴板内容贴进某一侧（手机上「复制一段 → 直接比」比选文件快得多）。
+  Future<void> _pasteInto(CodeForgeController target) async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text ?? '';
+      if (text.isEmpty) {
+        _toastText(localizations.editorClipboardEmpty);
+        return;
+      }
+      target.text = text;
+      if (!mounted) return;
+      setState(() {
+        // 粘贴进来的内容不再对应原来那个文件名。
+        if (identical(target, _left)) {
+          _leftName = '';
+          _leftPath = '';
+        } else {
+          _rightName = '';
+          _rightPath = '';
+        }
+        _navIndex = -1;
+      });
+      _compare();
+    } catch (e) {
+      _toastText('${localizations.fail}: $e');
+    }
   }
 
   /// 统一视图：单栏上下排，删除行标 -、新增行标 +，修改拆成「- 旧 / + 新」两行。
