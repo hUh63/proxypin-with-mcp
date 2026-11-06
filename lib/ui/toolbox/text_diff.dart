@@ -89,6 +89,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 并排还是上下。默认并排（左右两侧），用户切过就记住。
   static const String _sideKey = 'text_diff_side_by_side_v1';
   static const String _fontKey = 'text_diff_font_size_v1';
+
+  /// 自动换行：手机上长行不换行就只能一直往右滑，很费劲。
+  static const String _wrapKey = 'text_diff_wrap_v1';
   bool _sideBySide = true;
 
   late final CodeForgeController _left;
@@ -98,6 +101,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   late final FindController _findLeft;
   late final FindController _findRight;
 
+  /// 自动换行：手机上长行不换行就只能一直往右滑，很费劲。
+  /// 编辑视图（CodeForge 的 lineWrap）和对比视图共用这一个开关。
   bool _wrap = true;
 
   /// 忽略大小写 / 忽略空白：比较时归一化，显示仍是原文。
@@ -110,6 +115,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 一进来是只读的对齐视图，很容易让人以为这里不能输入。想并排看差异时点
   /// 工具栏的对比按钮切过去，选择会记住。
   bool _aligned = false;
+
+  /// 「差异列表」里已看过的块下标（只为 review 进度，不持久化）。
+  final Set<int> _reviewed = {};
   static const String _alignedKey = 'text_diff_aligned_v1';
 
   /// 并排视图里左右两栏的宽度比例（0.15 ~ 0.85）：拖中间那条分隔线改。
@@ -255,6 +263,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 横向同步：常驻监听，开关关闭时 `_syncHorizontal` 第一行就返回。
     _leftH.addListener(() => _syncHorizontal(_leftH, _rightH));
     _rightH.addListener(() => _syncHorizontal(_rightH, _leftH));
+    unawaited(SharedPreferencesAsync().getBool(_wrapKey).then((v) {
+      if (!mounted || v == null || v == _wrap) return;
+      setState(() => _wrap = v);
+    }).catchError((_) => null));
     unawaited(SharedPreferencesAsync().getDouble(_fontKey).then((v) {
       if (!mounted || v == null || v == _fontSize) return;
       setState(() => _fontSize = v.clamp(11.0, 22.0));
@@ -531,6 +543,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   // ---------- 对比 ----------
 
   void _compare() {
+    // 比较内容变了，上一轮的「已看」标记就不再有意义
+    _reviewed.clear();
     if (_left.text.isEmpty && _right.text.isEmpty) {
       if (_summary != null || _blocks.isNotEmpty) {
         setState(() {
@@ -1122,7 +1136,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             setState(() => _ignoreComments = !_ignoreComments);
             _compare();
           case 'wrap':
-            setState(() => _wrap = !_wrap);
+            final next = !_wrap;
+            setState(() => _wrap = next);
+            unawaited(SharedPreferencesAsync().setBool(_wrapKey, next));
           case 'onlyDiff':
             setState(() => _onlyDiff = !_onlyDiff);
           case 'syncH':
@@ -1997,7 +2013,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 单栏不横向滚动：超长行用省略号截断（统一视图是「快速扫改动」，
     // 逐字读长行请切回并排视图或直接看编辑器）。
     return ListView.builder(
-      itemExtent: _rowHeight,
+      itemExtent: _wrap ? null : _rowHeight,
       itemCount: lines.length,
       itemBuilder: (context, i) => _unifiedLine(lines[i]),
       padding: EdgeInsets.zero,
@@ -2044,9 +2060,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
           ),
           Expanded(
             child: Text(text,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
+                maxLines: _wrap ? null : 1,
+                softWrap: _wrap,
+                overflow: _wrap ? TextOverflow.clip : TextOverflow.ellipsis,
                 style: TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0)),
           ),
         ],
@@ -2108,6 +2124,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setSheet) {
         final theme = Theme.of(ctx);
         return DraggableScrollableSheet(
           expand: false,
@@ -2120,7 +2137,22 @@ class _TextDiffPageState extends State<TextDiffPage> {
               child: Row(children: [
                 Text('${localizations.diffList}  (${_blocks.length})',
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 8),
+                if (_reviewed.isNotEmpty)
+                  Text(
+                      localizations.diffReviewedCount(
+                          '${_reviewed.length}', '${_blocks.length}'),
+                      style: TextStyle(
+                          fontSize: 11, color: theme.colorScheme.primary)),
                 const Spacer(),
+                if (_reviewed.isNotEmpty)
+                  IconButton(
+                    tooltip: localizations.diffReviewedReset,
+                    icon: const Icon(Icons.restart_alt, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => setSheet(() => _reviewed.clear()),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
                   padding: EdgeInsets.zero,
@@ -2143,11 +2175,38 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   if (b.pairs.isNotEmpty) parts.add('${localizations.diffModified} ${b.pairs.length}');
                   if (added > 0) parts.add('${localizations.diffAdded} $added');
                   if (deleted > 0) parts.add('${localizations.diffDeleted} $deleted');
+                  final seen = _reviewed.contains(i);
                   return ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
-                    leading: Text('${i + 1}',
-                        style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                    leadingWidth: 62,
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${i + 1}',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: theme.colorScheme.onSurfaceVariant)),
+                        const SizedBox(width: 6),
+                        // 勾一下表示「这块看过了」：大 diff 分几次看的时候，
+                        // 回来能知道看到哪儿了。只存内存，换内容就清空。
+                        InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => setSheet(() {
+                            if (!_reviewed.remove(i)) _reviewed.add(i);
+                          }),
+                          child: Icon(
+                            seen
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            size: 17,
+                            color: seen
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outline,
+                          ),
+                        ),
+                      ],
+                    ),
                     title: Text(
                       'L${b.leftStart + 1} ↔ R${b.rightStart + 1}   ${parts.join(' · ')}',
                       style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
@@ -2169,6 +2228,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
             ),
           ]),
         );
+        });
       },
     );
   }
@@ -2644,7 +2704,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
               width: w,
               child: ListView.builder(
                 controller: vCtrl,
-                itemExtent: _rowHeight,
+                itemExtent: _wrap ? null : _rowHeight,
                 itemCount: rows.length,
                 itemBuilder: (_, i) {
                   final row = rows[i];
@@ -2713,8 +2773,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
           ),
           const SizedBox(width: 5),
           // 不裁剪：横向滚动由外层负责，长行能一直往右看。
-          Text(text, maxLines: 1, softWrap: false, overflow: TextOverflow.visible,
-              style: textStyle),
+          Expanded(
+            child: Text(text,
+                maxLines: _wrap ? null : 1,
+                softWrap: _wrap,
+                overflow: TextOverflow.visible,
+                style: textStyle),
+          ),
         ],
       ),
     );
@@ -2908,3 +2973,4 @@ class _UnifiedLine {
 
   const _UnifiedLine(this.sign, this.num, this.text, this.type);
 }
+

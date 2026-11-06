@@ -5152,5 +5152,19 @@
   "editorRenameDiskNote": "其中 {n} 个未打开的文件会直接写盘",
   "editorRenameUndo": "撤销上次跨文件重命名",
   "editorRenameUndone": "已还原 {n} 个文件",
-  "editorRenameNothingToUndo": "没有可撤销的跨文件重命名"
+  "editorRenameNothingToUndo": "没有可撤销的跨文件重命名",
+  "editorFindInFiles": "多文件查找",
+  "editorFindInFilesHint": "要查找的内容",
+  "editorFindInFilesButton": "查找",
+  "editorFindInFilesEmpty": "没有找到",
+  "editorFindInFilesScope": "范围：已打开的文件 + 当前目录",
+  "editorFindInFilesResult": "{files} 个文件，{hits} 处",
+  "editorFindCaseSensitive": "区分大小写",
+  "editorFindRegex": "正则表达式",
+  "editorFindTruncated": "结果太多，只显示前 {n} 处",
+  "editorSnippets": "插入代码片段",
+  "editorSnippetsHint": "搜索片段",
+  "editorSnippetsEmpty": "这个语言还没有内置片段",
+  "diffReviewedCount": "已看 {n}/{m}",
+  "diffReviewedReset": "重置已看标记"
 }

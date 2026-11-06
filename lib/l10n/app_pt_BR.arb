@@ -3392,5 +3392,46 @@
       }
     }
   },
-  "editorRenameNothingToUndo": "Nothing to undo"
+  "editorRenameNothingToUndo": "Nothing to undo",
+  "editorFindInFiles": "Find in files",
+  "editorFindInFilesHint": "Text or pattern to find",
+  "editorFindInFilesButton": "Find",
+  "editorFindInFilesEmpty": "No match",
+  "editorFindInFilesScope": "Scope: open files + the current folder",
+  "editorFindInFilesResult": "{files} files, {hits} matches",
+  "@editorFindInFilesResult": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      },
+      "hits": {
+        "type": "String"
+      }
+    }
+  },
+  "editorFindCaseSensitive": "Match case",
+  "editorFindRegex": "Regular expression",
+  "editorFindTruncated": "Showing the first {n} matches",
+  "@editorFindTruncated": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "editorSnippets": "Insert code snippet",
+  "editorSnippetsHint": "Filter snippets",
+  "editorSnippetsEmpty": "No built-in snippets for this language yet",
+  "diffReviewedCount": "Seen {n}/{m}",
+  "@diffReviewedCount": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "diffReviewedReset": "Reset review marks"
 }

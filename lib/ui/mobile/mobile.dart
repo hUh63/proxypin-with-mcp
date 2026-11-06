@@ -207,6 +207,8 @@ class MobileHomeState extends State<MobileHomePage> implements EventListener, Li
   @override
   void dispose() {
     AppLifecycleBinding.instance.removeListener(this);
+    // 同桌面版：不摘掉监听，页面销毁后回调会打到已销毁的 State。
+    proxyServer.removeListener(this);
     _remoteHistorySubscription?.cancel();
     final eventSub = _eventBusSubscription;
     if (eventSub != null) EventBus().unsubscribe(eventSub);

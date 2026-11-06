@@ -5152,5 +5152,19 @@
   "editorRenameDiskNote": "其中 {n} 個未開啟的檔案會直接寫入磁碟",
   "editorRenameUndo": "復原上次跨檔案重新命名",
   "editorRenameUndone": "已還原 {n} 個檔案",
-  "editorRenameNothingToUndo": "沒有可復原的跨檔案重新命名"
+  "editorRenameNothingToUndo": "沒有可復原的跨檔案重新命名",
+  "editorFindInFiles": "多檔案尋找",
+  "editorFindInFilesHint": "要尋找的內容",
+  "editorFindInFilesButton": "尋找",
+  "editorFindInFilesEmpty": "沒有找到",
+  "editorFindInFilesScope": "範圍：已開啟的檔案 + 目前目錄",
+  "editorFindInFilesResult": "{files} 個檔案，{hits} 處",
+  "editorFindCaseSensitive": "區分大小寫",
+  "editorFindRegex": "正規表示式",
+  "editorFindTruncated": "結果太多，只顯示前 {n} 處",
+  "editorSnippets": "插入程式碼片段",
+  "editorSnippetsHint": "搜尋片段",
+  "editorSnippetsEmpty": "這個語言還沒有內建片段",
+  "diffReviewedCount": "已看 {n}/{m}",
+  "diffReviewedReset": "重設已看標記"
 }

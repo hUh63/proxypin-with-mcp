@@ -43,6 +43,7 @@ import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/utils/code_snippets.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
 import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
@@ -3713,6 +3714,473 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _runLint();
   }
 
+  /// 插入代码片段（对标 VS 的 IntelliSense snippet）。
+  ///
+  /// 模板按当前语言取，插入时整体按光标行的缩进右移；`$0` 是插入后的光标落点。
+  Future<void> _showSnippets() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final snippets = CodeSnippets.forLanguage(_lang.label, _lang.key);
+    if (snippets.isEmpty) {
+      _toast(localizations.editorSnippetsEmpty);
+      return;
+    }
+    final filter = TextEditingController();
+    final picked = await showModalBottomSheet<CodeSnippet>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final theme = Theme.of(ctx);
+          final q = filter.text.trim().toLowerCase();
+          final list = q.isEmpty
+              ? snippets
+              : snippets
+                  .where((e) =>
+                      e.label.toLowerCase().contains(q) ||
+                      e.body.toLowerCase().contains(q))
+                  .toList();
+          return SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.7,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: filter,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: const OutlineInputBorder(),
+                            hintText: localizations.editorSnippetsHint,
+                            prefixIcon: const Icon(Icons.search, size: 18),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          style: const TextStyle(fontSize: 13),
+                          onChanged: (_) => setSheet(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(_lang.label,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: list.isEmpty
+                      ? Center(
+                          child: Text(localizations.editorSnippetsEmpty,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.colorScheme.onSurfaceVariant)),
+                        )
+                      : ListView.builder(
+                          itemCount: list.length,
+                          itemBuilder: (_, i) {
+                            final sn = list[i];
+                            final preview = sn.body
+                                .split('\n')
+                                .where((l) => l.trim().isNotEmpty)
+                                .take(3)
+                                .map((l) => l.trim())
+                                .join('  ');
+                            return ListTile(
+                              dense: true,
+                              title: Text(sn.label,
+                                  style: const TextStyle(fontSize: 13)),
+                              subtitle: Text(preview,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 11, fontFamily: 'monospace')),
+                              onTap: () => Navigator.pop(ctx, sn),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    filter.dispose();
+    if (picked == null || !mounted) return;
+    _insertSnippet(picked.body);
+  }
+
+  /// 插入一段模板：按当前行缩进整体右移，`$0` 决定光标落点。
+  void _insertSnippet(String raw) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    final start = sel.start < 0 ? text.length : sel.start;
+    final end = sel.end < 0 ? start : sel.end;
+
+    // 当前行的缩进（Tab 也算），模板的每一行都对齐到它下面
+    final lineStart = text.lastIndexOf('\n', (start - 1).clamp(0, text.length)) + 1;
+    final head = text.substring(lineStart, start);
+    final m = RegExp(r'^[ \t]*').firstMatch(head);
+    final indent = m?.group(0) ?? '';
+
+    final lines = raw.split('\n');
+    final buf = StringBuffer(lines.first);
+    for (var i = 1; i < lines.length; i++) {
+      buf.write('\n');
+      // 空行不补缩进，免得存一堆尾随空格
+      if (lines[i].trim().isNotEmpty) buf.write(indent);
+      buf.write(lines[i]);
+    }
+    var body = buf.toString();
+
+    // 光标落点：$0 处；没有 $0 就放到末尾
+    var caret = -1;
+    final zero = body.indexOf(r'$0');
+    if (zero >= 0) {
+      body = body.replaceFirst(r'$0', '');
+      caret = start + zero;
+    } else {
+      caret = start + body.length;
+    }
+    controller.replaceRange(start, end, body);
+    controller.selection = TextSelection.collapsed(
+        offset: caret.clamp(0, controller.text.length));
+    controller.scrollToLine(
+        _lineOfOffset(controller.text, caret.clamp(0, controller.text.length)));
+    _scheduleLint();
+  }
+
+  /// 跨文件操作（重命名 / 多文件查找）的候选范围：
+  /// 已打开的所有文档 + 当前文件同目录下的文本文件（不递归、≤1MB、最多 300 个）。
+  ///
+  /// 这两件事范围必须一致，否则「重命名把 A 文件改了、查找却说 B 文件没提到它」。
+  Future<List<_ScopeFile>> _collectScopeFiles(EditorDocument doc) async {
+    final targets = <_ScopeFile>[];
+    final scanned = <String>{};
+    for (final d in _docs.docs) {
+      final key = d.path ?? 'mem:${d.id}';
+      if (!scanned.add(key)) continue;
+      targets.add(_ScopeFile(label: d.name, path: d.path, doc: d, content: d.text));
+    }
+    final basePath = doc.path;
+    if (basePath != null) {
+      try {
+        final dir = File(basePath).parent;
+        if (await dir.exists()) {
+          var files = 0;
+          await for (final e in dir.list(followLinks: false)) {
+            if (files >= 300) break;
+            if (e is! File) continue;
+            if (!scanned.add(e.path)) continue;
+            final lower = e.path.toLowerCase();
+            if (_skipScanExts.any(lower.endsWith)) continue;
+            try {
+              if (await e.length() > 1024 * 1024) continue;
+              files++;
+              final content = await e.readAsString();
+              targets.add(_ScopeFile(
+                  label: e.path.split(Platform.pathSeparator).last,
+                  path: e.path,
+                  content: content));
+            } catch (_) {
+              // 非 UTF-8 / 刚好被删：跳过这一个
+            }
+          }
+        }
+      } catch (e) {
+        logger.w('scope scan failed', error: e);
+      }
+    }
+    return targets;
+  }
+
+  /// 多文件查找（VS 的 Ctrl+Shift+F，这里范围是「已打开的文件 + 当前目录」）。
+  ///
+  /// 为什么不在每个文件里单独按 Ctrl+F：改个变量名要确认「别处还有没有」时，
+  /// 一个个文件翻是最费事的；这里一次列全，点一条直接跳过去。
+  Future<void> _findInFiles() async {
+    final doc = _doc;
+    if (doc == null) return;
+    final scope = await _collectScopeFiles(doc);
+    if (!mounted) return;
+
+    final input = TextEditingController(text: _fileSearchQuery);
+    input.selection =
+        TextSelection(baseOffset: 0, extentOffset: input.text.length);
+    var caseSensitive = _fileSearchCase;
+    var asRegex = _fileSearchRegex;
+    var hits = <_FileSearchHit>[];
+    var truncated = false;
+    var searched = false;
+
+    String? error;
+
+    void run() {
+      hits = [];
+      truncated = false;
+      searched = true;
+      error = null;
+      final q = input.text;
+      if (q.isEmpty) return;
+      RegExp re;
+      try {
+        re = asRegex
+            ? RegExp(q, caseSensitive: caseSensitive, multiLine: true)
+            : RegExp(RegExp.escape(q), caseSensitive: caseSensitive);
+      } catch (e) {
+        error = '$e';
+        return;
+      }
+      final currentKey = doc.path ?? 'mem:${doc.id}';
+      for (final f in scope) {
+        if (f.content.length > 2000000) continue;      // 2MB 以上的不搜
+        var perFile = 0;
+        var line = 1;
+        var last = 0;
+        for (final m in re.allMatches(f.content)) {
+          if (perFile >= 200 || hits.length >= 2000) {
+            truncated = true;
+            break;
+          }
+          for (var i = last; i < m.start; i++) {
+            if (f.content.codeUnitAt(i) == 10) line++;
+          }
+          last = m.start;
+          var lineEnd = f.content.indexOf('\n', m.start);
+          if (lineEnd < 0) lineEnd = f.content.length;
+          var lineStart = f.content.lastIndexOf('\n', m.start) + 1;
+          if (lineStart < 0) lineStart = 0;
+          hits.add(_FileSearchHit(
+            label: f.label,
+            path: f.path,
+            line: line,
+            offset: m.start,
+            matchLength: m.end - m.start,
+            text: f.content.substring(lineStart, lineEnd).trim(),
+            isCurrent: (f.path ?? 'mem:${f.doc?.id ?? ''}') == currentKey,
+          ));
+          perFile++;
+        }
+        if (hits.length >= 2000) break;
+      }
+      // 当前文件优先，然后按文件名、行号
+      hits.sort((a, b) {
+        if (a.isCurrent != b.isCurrent) return a.isCurrent ? -1 : 1;
+        final byLabel = a.label.compareTo(b.label);
+        return byLabel != 0 ? byLabel : a.line.compareTo(b.line);
+      });
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final theme = Theme.of(ctx);
+          final files = hits.map((h) => h.label).toSet().length;
+          return SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.85,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 10, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: input,
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: const OutlineInputBorder(),
+                            hintText: localizations.editorFindInFilesHint,
+                            prefixIcon: const Icon(Icons.search, size: 18),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          style: const TextStyle(fontSize: 13),
+                          onSubmitted: (_) => setSheet(run),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        tooltip: localizations.editorFindCaseSensitive,
+                        isSelected: caseSensitive,
+                        icon: const Icon(Icons.text_fields, size: 18),
+                        onPressed: () {
+                          setSheet(() {
+                            caseSensitive = !caseSensitive;
+                            run();
+                          });
+                        },
+                      ),
+                      IconButton(
+                        tooltip: localizations.editorFindRegex,
+                        isSelected: asRegex,
+                        icon: const Icon(Icons.code, size: 18),
+                        onPressed: () {
+                          setSheet(() {
+                            asRegex = !asRegex;
+                            run();
+                          });
+                        },
+                      ),
+                      FilledButton(
+                        onPressed: () => setSheet(run),
+                        child: Text(localizations.editorFindInFilesButton),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          error ??
+                              (searched
+                                  ? localizations.editorFindInFilesResult(
+                                      '$files', '${hits.length}')
+                                  : localizations.editorFindInFilesScope),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: error != null
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      if (truncated)
+                        Text(localizations.editorFindTruncated('2000'),
+                            style: TextStyle(
+                                fontSize: 11, color: theme.colorScheme.error)),
+                    ],
+                  ),
+                ),
+                const Divider(height: 12),
+                Expanded(
+                  child: hits.isEmpty
+                      ? Center(
+                          child: Text(
+                            searched
+                                ? localizations.editorFindInFilesEmpty
+                                : localizations.editorFindInFilesScope,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: hits.length,
+                          itemBuilder: (_, i) {
+                            final h = hits[i];
+                            final showLabel = i == 0 || hits[i - 1].label != h.label;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (showLabel)
+                                  Container(
+                                    width: double.infinity,
+                                    color: theme.colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.5),
+                                    padding: const EdgeInsets.fromLTRB(
+                                        14, 4, 14, 4),
+                                    child: Text(
+                                      h.label,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: h.isCurrent
+                                              ? theme.colorScheme.primary
+                                              : theme.colorScheme.onSurfaceVariant),
+                                    ),
+                                  ),
+                                InkWell(
+                                  onTap: () {
+                                    Navigator.pop(ctx);
+                                    unawaited(_openSearchHit(h));
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        22, 5, 12, 5),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 44,
+                                          child: Text('L${h.line}',
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: theme.colorScheme
+                                                      .onSurfaceVariant)),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            h.text,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                fontFamily: 'monospace'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    // 记住这次的查询与开关，下次打开还是它
+    _fileSearchQuery = input.text;
+    _fileSearchCase = caseSensitive;
+    _fileSearchRegex = asRegex;
+    input.dispose();
+  }
+
+  /// 跳到一条「多文件查找」结果：必要时切文档，再定位到具体偏移。
+  Future<void> _openSearchHit(_FileSearchHit h) async {
+    if (h.path != null && _doc?.path != h.path) {
+      await _openPath(h.path!);
+      // 切文档后 CodeForge 要重排一次，等一帧再定位
+      await Future.delayed(const Duration(milliseconds: 60));
+    }
+    if (!mounted) return;
+    if (_doc?.path != null && h.path != null && _doc?.path != h.path) return;
+    _jumpToOffset(h.offset);
+    // 把命中的那一段选中（只是光标落过去的话，长行里还要自己找）
+    final controller = _controller;
+    if (controller != null && h.matchLength > 0) {
+      final text = controller.text;
+      final end = (h.offset + h.matchLength).clamp(0, text.length);
+      final start = h.offset.clamp(0, end);
+      controller.selection =
+          TextSelection(baseOffset: start, extentOffset: end);
+    }
+  }
+
+  /// 「多文件查找」上次的查询与开关：改一次名字往往要连着查好几次。
+  String _fileSearchQuery = '';
+  bool _fileSearchCase = false;
+  bool _fileSearchRegex = false;
+
   /// 上一次「跨文件重命名」写盘前的备份（path -> 原内容），供撤销用。
   static final Map<String, String> _renameBackup = {};
 
@@ -3830,46 +4298,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
 
     // ---- 收集范围 ----
-    final targets = <_RenameTarget>[];
-    final scanned = <String>{};
-    for (final d in _docs.docs) {
-      final key = d.path ?? 'mem:${d.id}';
-      if (!scanned.add(key)) continue;
-      targets.add(_RenameTarget(
-          label: d.name, path: d.path, doc: d, content: d.text));
-    }
-    final basePath = doc.path;
-    if (basePath != null) {
-      try {
-        final dir = File(basePath).parent;
-        if (await dir.exists()) {
-          var files = 0;
-          await for (final e in dir.list(followLinks: false)) {
-            if (files >= 300) break;
-            if (e is! File) continue;
-            if (!scanned.add(e.path)) continue;
-            final lower = e.path.toLowerCase();
-            if (_skipScanExts.any(lower.endsWith)) continue;
-            try {
-              if (await e.length() > 1024 * 1024) continue;
-              files++;
-              final content = await e.readAsString();
-              targets.add(_RenameTarget(
-                  label: e.path.split(Platform.pathSeparator).last,
-                  path: e.path,
-                  content: content));
-            } catch (_) {
-              // 非 UTF-8 / 刚好被删：跳过这一个
-            }
-          }
-        }
-      } catch (e) {
-        logger.w('rename scan failed', error: e);
-      }
-    }
+    final targets = await _collectScopeFiles(doc);
 
     var totalHits = 0;
-    final planned = <_RenameTarget>[];
+    final planned = <_ScopeFile>[];
     for (final t in targets) {
       t.hits = _countWord(t.content, name);
       if (t.hits == 0) continue;
@@ -7563,6 +7995,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('peekDef', Icons.visibility, loc.editorPeekDefinition),
           _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
+          _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
+          _menuItem('findInFiles', Icons.manage_search, loc.editorFindInFiles),
           _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
           _menuItem('undoRename', Icons.undo, loc.editorRenameUndo),
           const PopupMenuDivider(),
@@ -7693,6 +8127,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _openSettings();
         case 'rename':
           unawaited(_renameSymbol());
+        case 'snippets':
+          unawaited(_showSnippets());
+        case 'findInFiles':
+          unawaited(_findInFiles());
         case 'renameEverywhere':
           unawaited(_renameSymbolEverywhere());
         case 'undoRename':
@@ -9368,18 +9806,39 @@ String? _formatInIsolate(List<Object> args) {
 }
 
 /// 「工作区查找引用」的一条命中。
-/// 「跨文件重命名」的一个候选文件。
+/// 「跨文件操作」（重命名 / 多文件查找）的一个候选文件。
 ///
 /// [doc] 非空表示这个文件正开在编辑器里：改它走 controller（可撤销、不落盘）；
 /// 为空表示只有磁盘上的副本，改它就直接写盘并记备份。
-class _RenameTarget {
+/// 「多文件查找」的一条命中。
+class _FileSearchHit {
+  final String label;
+  final String? path;
+  final int line;
+  final int offset;
+  final int matchLength;
+  final String text;
+  final bool isCurrent;
+
+  const _FileSearchHit({
+    required this.label,
+    required this.offset,
+    required this.line,
+    required this.matchLength,
+    required this.text,
+    this.path,
+    this.isCurrent = false,
+  });
+}
+
+class _ScopeFile {
   final String label;
   final String? path;
   final EditorDocument? doc;
   final String content;
   int hits = 0;
 
-  _RenameTarget({
+  _ScopeFile({
     required this.label,
     required this.content,
     this.path,

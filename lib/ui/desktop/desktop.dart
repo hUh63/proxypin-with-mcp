@@ -204,6 +204,9 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
 
   @override
   void dispose() {
+    // 这个页面自己也挂了 proxyServer 的监听（请求到达时刷新详情面板）。
+    // 页面销毁后不摘掉的话，下一次请求会把回调打到已销毁的 State 上。
+    proxyServer.removeListener(this);
     _remoteHistorySubscription?.cancel();
     final eventSub = _eventBusSubscription;
     if (eventSub != null) EventBus().unsubscribe(eventSub);
