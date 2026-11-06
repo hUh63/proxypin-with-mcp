@@ -436,6 +436,13 @@ class _MobileBreakpointRuleEditorState extends State<MobileBreakpointRuleEditor>
   }
 
   @override
+  void dispose() {
+    nameInput.dispose();
+    urlInput.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(

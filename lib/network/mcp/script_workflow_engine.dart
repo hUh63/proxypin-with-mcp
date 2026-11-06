@@ -165,7 +165,11 @@ class ScriptWorkflow {
       visited.add(nodeId);
       recStack.add(nodeId);
 
-      final node = nodes.firstWhere((n) => n.id == nodeId);
+      // 依赖里可能写着不存在的节点 id（手写配置就会这样）：
+      // firstWhere 会抛 StateError，直接让整个工作流执行失败。
+      final matched = nodes.where((n) => n.id == nodeId).toList();
+      if (matched.isEmpty) return false;
+      final node = matched.first;
       for (final depId in node.dependencies) {
         if (hasCycle(depId)) return true;
       }

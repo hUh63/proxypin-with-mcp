@@ -1019,6 +1019,21 @@ Future<bool?> showAiSettingsDialog(BuildContext context) async {
       ),
     ),
   );
+  // 四个临时 controller 必须释放：这个函数在方法里建了一堆 controller，
+  // 没有 State.dispose 可挂，不释放就每打开一次泄漏一批。
+  // 延迟是为了避开退场动画里仍有一次 build（那会儿已 dispose 会抛 used-after-dispose）。
+  Future.delayed(const Duration(milliseconds: 400), () {
+    for (final c in [
+      baseUrlController,
+      keyController,
+      modelController,
+      extraPromptController,
+    ]) {
+      try {
+        c.dispose();
+      } catch (_) {}
+    }
+  });;
 
   if (result == true && context.mounted) {
     FlutterToastr.show(AppLocalizations.of(context)!.aiConfigSaved, context,

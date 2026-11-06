@@ -686,7 +686,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     }
 
     if (!context.mounted) return;
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -1019,7 +1019,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
           ],
         ),
       ),
-    );
+    ).then((_) => _disposeControllersSoon([
+          nameController,
+          repeatCountController,
+          intervalController,
+          cronController,
+        ])));
   }
 
   /// 根据动作类型构造可序列化动作描述（跨重启由执行器还原执行）
@@ -1144,7 +1149,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     ProxyStatus proxyStatus = ProxyStatus.started;
     final thresholdController = TextEditingController(text: '100');
 
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -1273,7 +1278,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
           ],
         ),
       ),
-    );
+    ).then((_) => _disposeControllersSoon([
+          patternController,
+          thresholdController,
+        ])));
   }
 
   void _toggleEventListener(_RegisteredEventListener l, bool enable) {
@@ -1402,7 +1410,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     final actions = List<_ActionRow>.from(
         existing?.actions.map((a) => _ActionRow.fromAction(a)) ?? [_ActionRow()]);
 
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -1631,7 +1639,10 @@ class _McpAutomationPageState extends State<McpAutomationPage>
           ],
         ),
       ),
-    );
+    ).then((_) => _disposeControllersSoon([
+          nameController,
+          descController,
+        ])));
   }
 
   void _toggleRule(Rule rule, bool enable) {
@@ -1864,6 +1875,11 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     }
 
     void buildControllers(Map<String, dynamic> p) {
+      // 切 prompt 时旧的一批必须释放：clear() 只是丢引用，controller 的
+      // native 资源还挂着，切几次就泄漏几批。
+      for (final c in argControllers.values) {
+        c.dispose();
+      }
       argControllers.clear();
       final args = p['arguments'] is List ? (p['arguments'] as List) : const [];
       for (final a in args) {
@@ -1875,7 +1891,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
 
     buildControllers(selected);
 
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -1983,7 +1999,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
           ],
         ),
       ),
-    );
+    ).then((_) => _disposeControllersSoon(List<TextEditingController>.of(argControllers.values))));
   }
 
   void _showPromptResult(BuildContext context, String name, Map<String, dynamic>? result) {
@@ -2732,4 +2748,23 @@ class _ActionRow {
     }
     return Action(type: type, target: t, parameters: params);
   }
+}
+
+/// 对话框关掉之后释放临时 controller。
+///
+/// `showDialog` 在很多地方是 fire-and-forget（用 StatefulBuilder 自己管状态），
+/// 那些 controller 建在方法里、没有 State.dispose 可挂，于是每开一次对话框就泄漏一批。
+/// 这里挂在 showDialog 返回的 Future 上；延迟 400ms 是为了避开退场动画里仍有一次
+/// build（那时 controller 已 dispose 会抛 used-after-dispose）。
+void _disposeControllersSoon(List<TextEditingController> list) {
+  if (list.isEmpty) return;
+  Future.delayed(const Duration(milliseconds: 400), () {
+    for (final c in list) {
+      try {
+        c.dispose();
+      } catch (_) {
+        // 已经释放过（比如同一个 controller 被两条路径挂上）就跳过
+      }
+    }
+  });
 }

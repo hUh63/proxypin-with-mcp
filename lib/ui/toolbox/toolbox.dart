@@ -60,6 +60,7 @@ import 'js_run.dart';
 import 'json_viewer.dart';
 import 'network_diagnostics.dart';
 import 'file_preview.dart';
+import 'dir_diff_page.dart';
 import 'text_diff.dart';
 import 'text_editor.dart';
 import 'websocket_request.dart';
@@ -211,6 +212,18 @@ class _ToolboxState extends State<Toolbox> {
                       },
                       icon: Icons.difference_outlined,
                       text: localizations.textDiff),
+                  IconText(
+                      onTap: () async {
+                        if (Platforms.isMobile()) {
+                          await DirDiffPage.show(context);
+                          return;
+                        }
+                        MultiWindow.openWindow(localizations.dirDiff, 'DirDiffPage',
+                            size: const Size(1000, 700));
+                      },
+                      icon: Icons.folder_copy_outlined,
+                      text: localizations.dirDiff,
+                      tooltip: localizations.dirDiff),
                   IconText(
                       onTap: () async {
                         if (Platforms.isMobile()) {

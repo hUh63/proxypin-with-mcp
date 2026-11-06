@@ -400,6 +400,15 @@ class _InterceptRuleDialogState extends State<InterceptRuleDialog> {
     _interceptResponse = rule.interceptResponse;
   }
 
+  @override
+  void dispose() {
+    // 对话框每次打开都新建两个 controller；原来没有 dispose，
+    // 反复开关这个对话框会一批一批地泄漏。
+    nameInput.dispose();
+    urlInput.dispose();
+    super.dispose();
+  }
+
   InputDecoration decoration(String label, {String? hintText}) {
     return InputDecoration(
         floatingLabelBehavior: FloatingLabelBehavior.always,

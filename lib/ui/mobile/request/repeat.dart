@@ -99,6 +99,8 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
     count.dispose();
     interval.dispose();
     delay.dispose();
+    minInterval.dispose();
+    maxInterval.dispose();
     super.dispose();
   }
 

@@ -33,6 +33,7 @@ import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/ui/component/snippet_bar.dart';
+import 'package:proxypin/ui/toolbox/dir_diff_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/utils/text_diff.dart';
@@ -58,12 +59,19 @@ class TextDiffPage extends StatefulWidget {
   /// 否则退出后用户原来的对比内容会被这段选区顶掉。
   final bool persist;
 
+  /// 两侧的名字（显示在标题栏「原文件 · xxx」处）。目录对比点开某一条时传相对路径，
+  /// 否则两边都只显示「原文件 / 新文件」，看不出在比哪个文件。
+  final String? initialLeftName;
+  final String? initialRightName;
+
   const TextDiffPage({
     super.key,
     this.windowId,
     this.initialLeft,
     this.initialRight,
     this.persist = true,
+    this.initialLeftName,
+    this.initialRightName,
   });
 
   @override
@@ -232,6 +240,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     super.initState();
     _left = CodeForgeController()..text = widget.initialLeft ?? '';
     _right = CodeForgeController()..text = widget.initialRight ?? '';
+    _leftName = widget.initialLeftName ?? '';
+    _rightName = widget.initialRightName ?? '';
     _leftUndo = UndoRedoController();
     _rightUndo = UndoRedoController();
     _left.setUndoController(_leftUndo);
@@ -1166,6 +1176,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
               _foldUnchanged = !_foldUnchanged;
               _expandedFolds.clear();
             });
+          case 'dirDiff':
+            unawaited(DirDiffPage.show(context, windowId: widget.windowId));
           case 'threeWay':
             unawaited(_openThreeWayMerge());
           case 'syntax':
@@ -1255,6 +1267,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
+        PopupMenuItem(value: 'dirDiff', child: Text(localizations.dirDiff)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
         PopupMenuItem(value: 'history', child: Text(localizations.diffHistory)),
         const PopupMenuDivider(),

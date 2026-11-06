@@ -219,6 +219,8 @@ class RequestSequenceState extends State<RequestSequence> with AutomaticKeepAliv
     if (!changing) {
       changing = true;
       Future.delayed(const Duration(milliseconds: 350), () {
+        // 500ms 内可能已经离开这一页：没有这个守卫就是 setState after dispose
+        if (!mounted) return;
         setState(() {
           changing = false;
         });

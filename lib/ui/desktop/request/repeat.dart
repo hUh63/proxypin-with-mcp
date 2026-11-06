@@ -84,6 +84,8 @@ class _CustomRepeatState extends State<CustomRepeatDialog> {
     count.dispose();
     interval.dispose();
     delay.dispose();
+    minInterval.dispose();
+    maxInterval.dispose();
     super.dispose();
   }
 

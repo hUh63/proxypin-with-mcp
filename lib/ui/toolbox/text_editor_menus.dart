@@ -679,6 +679,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('peekDef', _peekDefLabel, group: 'code', aliases: 'sl 速览 peek definition'),
   EditorMenuItem('references', _referencesLabel, group: 'code', aliases: 'yy 引用 references usages'),
   EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
+  EditorMenuItem('renameEverywhere', _renameEverywhereLabel,
+      group: 'code', aliases: 'kwwj 跨文件重命名 renameall'),
+  EditorMenuItem('undoRename', _undoRenameLabel,
+      group: 'code', aliases: 'cx 撤销重命名 undorename'),
   EditorMenuItem('foldAll', _foldAllLabel, group: 'code', aliases: 'zd 折叠 fold collapse'),
   EditorMenuItem('unfoldAll', _unfoldAllLabel, group: 'code', aliases: 'zk 展开 unfold expand'),
   EditorMenuItem('foldLevel', _foldToLevelLabel, group: 'code',
@@ -753,6 +757,8 @@ String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
 String _referencesLabel(AppLocalizations l) => l.editorReferences;
 String _renameLabel(AppLocalizations l) => l.editorRename;
+String _renameEverywhereLabel(AppLocalizations l) => l.editorRenameEverywhere;
+String _undoRenameLabel(AppLocalizations l) => l.editorRenameUndo;
 String _foldAllLabel(AppLocalizations l) => l.editorFoldAll;
 String _unfoldAllLabel(AppLocalizations l) => l.editorUnfoldAll;
 String _nextOccurrenceLabel(AppLocalizations l) => l.editorSelectNext;
@@ -920,6 +926,10 @@ IconData menuIconOf(String id) {
       return Icons.format_list_bulleted;
     case 'rename':
       return Icons.drive_file_rename_outline;
+    case 'renameEverywhere':
+      return Icons.drive_file_move_outline;
+    case 'undoRename':
+      return Icons.undo;
     case 'foldAll':
       return Icons.unfold_less;
     case 'unfoldAll':

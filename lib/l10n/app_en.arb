@@ -5619,5 +5619,87 @@
       }
     }
   },
-  "diffIgnoreComments": "Ignore comment differences (// # *)"
+  "diffIgnoreComments": "Ignore comment differences (// # *)",
+  "dirDiff": "Folder comparison",
+  "dirDiffLeftDir": "Left folder",
+  "dirDiffRightDir": "Right folder",
+  "dirDiffPickDir": "Pick folder",
+  "dirDiffStart": "Compare",
+  "dirDiffScanning": "Scanning…",
+  "dirDiffEmptyDir": "Pick two folders first",
+  "dirDiffSamePath": "Left and right are the same folder",
+  "dirDiffLeftMissing": "Left folder does not exist",
+  "dirDiffRightMissing": "Right folder does not exist",
+  "dirDiffSame": "Same",
+  "dirDiffLeftOnly": "Left only",
+  "dirDiffRightOnly": "Right only",
+  "dirDiffBinary": "Binary differs",
+  "dirDiffError": "Read failed",
+  "dirDiffTruncated": "Too many files, only the first batch was compared",
+  "dirDiffNoDifference": "The two folders are identical",
+  "dirDiffOnlyDiff": "Only differences",
+  "dirDiffFilterHint": "Filter by file name",
+  "dirDiffSkipHint": "Skipped .git / node_modules / build / dist and similar folders",
+  "dirDiffCompare": "Compare",
+  "dirDiffOpenLeft": "Open the left file",
+  "dirDiffOpenRight": "Open the right file",
+  "dirDiffCopyPath": "Copy path",
+  "dirDiffCopyLeftToRight": "Copy left to right",
+  "dirDiffCopyRightToLeft": "Copy right to left",
+  "dirDiffCopyToOther": "Copy to the other side",
+  "dirDiffCopyConfirm": "This overwrites the file on the other side. Continue?",
+  "dirDiffCopied": "Copied",
+  "dirDiffColStatus": "Status",
+  "dirDiffColPath": "Path",
+  "dirDiffColSize": "Size",
+  "editorRenameEverywhere": "Rename everywhere",
+  "editorRenameNeedSymbol": "Put the caret on a name first",
+  "editorRenameScope": "Scope: open files + text files in the same folder",
+  "editorRenamePreview": "Rename {from} to {to} — {files} files, {hits} places",
+  "@editorRenamePreview": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "files": {
+        "type": "String"
+      },
+      "hits": {
+        "type": "String"
+      }
+    }
+  },
+  "editorRenameApply": "Rename",
+  "editorRenameDoneMulti": "Changed {files} files, {hits} places. Unsaved open files still need Ctrl+S",
+  "@editorRenameDoneMulti": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      },
+      "hits": {
+        "type": "String"
+      }
+    }
+  },
+  "editorRenameDiskNote": "{n} file(s) not open in the editor will be written to disk directly",
+  "@editorRenameDiskNote": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "editorRenameUndo": "Undo last rename-everywhere",
+  "editorRenameUndone": "Restored {n} file(s)",
+  "@editorRenameUndone": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "editorRenameNothingToUndo": "Nothing to undo"
 }

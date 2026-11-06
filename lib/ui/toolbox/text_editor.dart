@@ -2525,7 +2525,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
                           tooltip: localizations.editorJumpTo,
                           onPressed: () {
                             Navigator.pop(ctx);
-                            _jumpToOffset(hits.firstWhere((h) => h.code == e.key).index);
+                            // 列表打开后若又跑过一次检查，这个 code 可能已经不在
+                            // hits 里了：firstWhere 会抛 StateError（点一下就红屏），
+                            // 所以这里按 indexWhere 取，找不到就什么都不做。
+                            final idx = hits.indexWhere((h) => h.code == e.key);
+                            if (idx >= 0) _jumpToOffset(hits[idx].index);
                           },
                         ),
                         IconButton(
@@ -3707,6 +3711,311 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.scrollToLine(_lineOfOffset(rebuilt, range.start.clamp(0, rebuilt.length)));
     _toast(localizations.editorRenameDone('$count'));
     _runLint();
+  }
+
+  /// 上一次「跨文件重命名」写盘前的备份（path -> 原内容），供撤销用。
+  static final Map<String, String> _renameBackup = {};
+
+  /// 标识符字符判定。Dart 的 `\b` 只认 ASCII 词字符，这里连同 `$` 与中文一起认，
+  /// 这样「重命名 `名字` 不能命中 `名字2`」也能成立。
+  static bool _isIdentChar(int c) =>
+      (c >= 97 && c <= 122) ||
+      (c >= 65 && c <= 90) ||
+      (c >= 48 && c <= 57) ||
+      c == 95 ||
+      c == 36 ||
+      c > 127;
+
+  static int _countWord(String src, String name) {
+    if (name.isEmpty) return 0;
+    var n = 0;
+    var i = 0;
+    while (true) {
+      final j = src.indexOf(name, i);
+      if (j < 0) break;
+      final before = j > 0 ? src.codeUnitAt(j - 1) : 0;
+      final after =
+          j + name.length < src.length ? src.codeUnitAt(j + name.length) : 0;
+      if (!_isIdentChar(before) && !_isIdentChar(after)) n++;
+      i = j + name.length;
+    }
+    return n;
+  }
+
+  /// 整词替换（不碰 `name2` / `myName` 这类包含关系）。
+  static String _replaceWord(String src, String name, String repl) {
+    if (name.isEmpty || name == repl) return src;
+    final out = StringBuffer();
+    var i = 0;
+    while (true) {
+      final j = src.indexOf(name, i);
+      if (j < 0) {
+        out.write(src.substring(i));
+        break;
+      }
+      final end = j + name.length;
+      final before = j > 0 ? src.codeUnitAt(j - 1) : 0;
+      final after = end < src.length ? src.codeUnitAt(end) : 0;
+      out.write(src.substring(i, j));
+      if (!_isIdentChar(before) && !_isIdentChar(after)) {
+        out.write(repl);
+      } else {
+        out.write(src.substring(j, end));
+      }
+      i = end;
+    }
+    return out.toString();
+  }
+
+  /// 跨文件重命名（桌面 VS 的 Ctrl+R,R）。
+  ///
+  /// 范围与「查找引用」一致：已打开的所有文档 + 当前文件同目录下的文本文件
+  /// （不递归、单文件 ≤1MB、最多 300 个）。
+  ///
+  /// 已打开的文档只改内存（可以 Ctrl+Z 撤销，按 Ctrl+S 才落盘）；
+  /// 没打开的文件直接写盘，并把原内容记进 [_renameBackup] 供「撤销上次重命名」。
+  Future<void> _renameSymbolEverywhere() async {
+    final controller = _controller;
+    final doc = _doc;
+    if (controller == null || doc == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
+    final name = text.substring(range.start, range.end);
+    if (!_isSymbolName(name)) {
+      _toast(localizations.editorRenameNeedSymbol);
+      return;
+    }
+
+    final input = TextEditingController(text: name);
+    input.selection = TextSelection(baseOffset: 0, extentOffset: name.length);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorRenameEverywhere),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: input,
+              autofocus: true,
+              decoration:
+                  InputDecoration(labelText: localizations.editorRenameHint),
+              onSubmitted: (v) => Navigator.pop(ctx, v),
+            ),
+            const SizedBox(height: 10),
+            Text(localizations.editorRenameScope,
+                style: TextStyle(
+                    fontSize: 11.5,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(localizations.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, input.text),
+              child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    input.dispose();
+    if (!mounted) return;
+    if (next == null || next.isEmpty || next == name) return;
+    if (!_isSymbolName(next)) {
+      _toast(localizations.editorRenameNeedSymbol);
+      return;
+    }
+
+    // ---- 收集范围 ----
+    final targets = <_RenameTarget>[];
+    final scanned = <String>{};
+    for (final d in _docs.docs) {
+      final key = d.path ?? 'mem:${d.id}';
+      if (!scanned.add(key)) continue;
+      targets.add(_RenameTarget(
+          label: d.name, path: d.path, doc: d, content: d.text));
+    }
+    final basePath = doc.path;
+    if (basePath != null) {
+      try {
+        final dir = File(basePath).parent;
+        if (await dir.exists()) {
+          var files = 0;
+          await for (final e in dir.list(followLinks: false)) {
+            if (files >= 300) break;
+            if (e is! File) continue;
+            if (!scanned.add(e.path)) continue;
+            final lower = e.path.toLowerCase();
+            if (_skipScanExts.any(lower.endsWith)) continue;
+            try {
+              if (await e.length() > 1024 * 1024) continue;
+              files++;
+              final content = await e.readAsString();
+              targets.add(_RenameTarget(
+                  label: e.path.split(Platform.pathSeparator).last,
+                  path: e.path,
+                  content: content));
+            } catch (_) {
+              // 非 UTF-8 / 刚好被删：跳过这一个
+            }
+          }
+        }
+      } catch (e) {
+        logger.w('rename scan failed', error: e);
+      }
+    }
+
+    var totalHits = 0;
+    final planned = <_RenameTarget>[];
+    for (final t in targets) {
+      t.hits = _countWord(t.content, name);
+      if (t.hits == 0) continue;
+      totalHits += t.hits;
+      planned.add(t);
+    }
+    if (totalHits == 0) {
+      _toast(localizations.editorReferencesEmpty);
+      return;
+    }
+
+    final diskCount = planned.where((t) => t.doc == null).length;
+    if (!mounted) return;
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        localizations.editorRenamePreview(
+                            '$name', '$next', '${planned.length}', '$totalHits'),
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final t in planned)
+                      ListTile(
+                        dense: true,
+                        leading: Icon(
+                          t.doc == null
+                              ? Icons.save_outlined
+                              : Icons.edit_note_outlined,
+                          size: 18,
+                        ),
+                        title: Text(t.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12.5)),
+                        trailing: Text('${t.hits}',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: theme.colorScheme.primary)),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                child: Row(
+                  children: [
+                    if (diskCount > 0)
+                      Expanded(
+                        child: Text(
+                          localizations.editorRenameDiskNote('$diskCount'),
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(localizations.cancel)),
+                    const SizedBox(width: 6),
+                    FilledButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(localizations.editorRenameApply)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (ok != true || !mounted) return;
+
+    // ---- 执行 ----
+    var changedFiles = 0;
+    var changedHits = 0;
+    for (final t in planned) {
+      final replaced = _replaceWord(t.content, name, next);
+      if (replaced == t.content) continue;
+      changedFiles++;
+      changedHits += t.hits;
+      final d = t.doc;
+      if (d != null) {
+        // 走内核 controller：一次编辑进撤销栈，用户 Ctrl+Z 就回去了。
+        d.controller.text = replaced;
+      } else if (t.path != null) {
+        try {
+          _renameBackup[t.path!] = t.content;
+          await File(t.path!).writeAsString(replaced);
+        } catch (e) {
+          logger.w('rename write failed', error: e);
+        }
+      }
+    }
+    if (!mounted) return;
+    final fs = '$changedFiles';
+    final hs = '$changedHits';
+    _toast(localizations.editorRenameDoneMulti(fs, hs));
+    _runLint();
+    _refreshDecorations();
+  }
+
+  /// 撤销上一次跨文件重命名里「已写盘」的那些文件。
+  Future<void> _undoRenameEverywhere() async {
+    if (_renameBackup.isEmpty) {
+      _toast(localizations.editorRenameNothingToUndo);
+      return;
+    }
+    var n = 0;
+    final entries = Map<String, String>.from(_renameBackup);
+    _renameBackup.clear();
+    for (final e in entries.entries) {
+      try {
+        await File(e.key).writeAsString(e.value);
+        n++;
+        // 如果这个文件正开着，内存里也一起还原（否则下次保存会把改名写回去）
+        for (final d in _docs.docs) {
+          if (d.path == e.key) d.controller.text = e.value;
+        }
+      } catch (err) {
+        logger.w('rename undo failed', error: err);
+      }
+    }
+    if (!mounted) return;
+    _toast(localizations.editorRenameUndone('$n'));
+    _refreshDecorations();
   }
 
   /// 多选状态下的一条操作栏：已选几处 + 替换 / 删除 / 大小写 / 取消。
@@ -7254,6 +7563,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('peekDef', Icons.visibility, loc.editorPeekDefinition),
           _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
+          _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
+          _menuItem('undoRename', Icons.undo, loc.editorRenameUndo),
           const PopupMenuDivider(),
           _menuItem('foldAll', Icons.unfold_less, loc.editorFoldAll),
           _menuItem('unfoldAll', Icons.unfold_more, loc.editorUnfoldAll),
@@ -7382,6 +7693,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _openSettings();
         case 'rename':
           unawaited(_renameSymbol());
+        case 'renameEverywhere':
+          unawaited(_renameSymbolEverywhere());
+        case 'undoRename':
+          unawaited(_undoRenameEverywhere());
         case 'formatSel':
           unawaited(_applyFormat(selectionOnly: true));
         case 'foldAll':
@@ -9053,6 +9368,25 @@ String? _formatInIsolate(List<Object> args) {
 }
 
 /// 「工作区查找引用」的一条命中。
+/// 「跨文件重命名」的一个候选文件。
+///
+/// [doc] 非空表示这个文件正开在编辑器里：改它走 controller（可撤销、不落盘）；
+/// 为空表示只有磁盘上的副本，改它就直接写盘并记备份。
+class _RenameTarget {
+  final String label;
+  final String? path;
+  final EditorDocument? doc;
+  final String content;
+  int hits = 0;
+
+  _RenameTarget({
+    required this.label,
+    required this.content,
+    this.path,
+    this.doc,
+  });
+}
+
 class _RefHit {
   /// 文件路径；仅存在于编辑器内存、尚未落盘的文档为 null。
   final String? path;

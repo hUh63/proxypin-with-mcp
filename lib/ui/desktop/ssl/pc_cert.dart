@@ -83,6 +83,12 @@ class _PCCertState extends State<PCCert> with TickerProviderStateMixin {
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return SimpleDialog(
