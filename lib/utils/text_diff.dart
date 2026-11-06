@@ -114,6 +114,38 @@ List<LineDiff> diffLines(String left, String right,
       .toList();
   final out = <LineDiff>[];
   _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
+  if (!ignoreBlankLines) return out;
+  // 「忽略空白行」必须在 diff 之后再做一遍：把整段「只涉及空行」的增删丢掉。
+  // 只在 _normKey 里归一成空串是不够的——那样「右边多两行空行」仍然会算出两处增行，
+  // 只是两行内容都成了空串（第一版就栽在这，用例才把它抓出来）。
+  return _dropBlankOnlyDiffs(
+      out, a, b, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreComments);
+}
+
+/// 丢掉「一整段差异里全是空行」的那些段。
+List<LineDiff> _dropBlankOnlyDiffs(List<LineDiff> diffs, List<String> a, List<String> b,
+    bool ignoreCase, bool ignoreWhitespace, bool ignoreTrailingWhitespace, bool ignoreComments) {
+  bool isBlank(LineDiff d) =>
+      _normKey(d.text, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
+          true, ignoreComments)
+          .isEmpty;
+  final out = <LineDiff>[];
+  var i = 0;
+  while (i < diffs.length) {
+    if (diffs[i].type == LineDiffType.equal) {
+      out.add(diffs[i]);
+      i++;
+      continue;
+    }
+    final start = i;
+    while (i < diffs.length && diffs[i].type != LineDiffType.equal) {
+      i++;
+    }
+    // 段内保留非空行；整段都是空行时整段丢弃（= 这段本来就没差异）。
+    for (var k = start; k < i; k++) {
+      if (!isBlank(diffs[k])) out.add(diffs[k]);
+    }
+  }
   return out;
 }
 

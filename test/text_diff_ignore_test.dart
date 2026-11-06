@@ -69,21 +69,21 @@ void main() {
   });
 
   group('ignoreBlankLines', () {
-    // 这个开关的语义是「空行的内容不参与比较」——空行里带了空格 / Tab 时不算差异。
-    // 它**不是** Beyond Compare 那种「多几个空行也不算差异」：行数仍然要对得上，
-    // 因为对齐视图按行配对，凭空吞行会让左右行号错位。
-    test('空行里带空格 / Tab 不算差异', () {
-      expect(changesOf('a\nb', 'a\n \nb'), greaterThan(0));
+    // 对齐语义按 Beyond Compare 来：空行（不管里面有没有空格 / Tab）只要在差异段里
+    // 就整段忽略，所以「右边多两行空行」不显示差异。真正的内容变化照旧能查出来。
+    test('多出来的空行不算差异', () {
+      expect(changesOf('a\nb', 'a\n\n\nb', ignoreBlankLines: true), 0);
       expect(changesOf('a\nb', 'a\n \nb', ignoreBlankLines: true), 0);
       expect(changesOf('a\n \nb', 'a\n\t\nb', ignoreBlankLines: true), 0);
     });
 
-    test('多出行仍然算差异（按行配对，不能凭空吞行）', () {
-      expect(changesOf('a\nb', 'a\n\n\nb', ignoreBlankLines: true), greaterThan(0));
+    test('不打开开关时照旧算差异', () {
+      expect(changesOf('a\nb', 'a\n\n\nb'), greaterThan(0));
     });
 
-    test('真正的行差异不受影响', () {
+    test('真正的内容变化不受影响', () {
       expect(changesOf('a\nb', 'a\n\nc', ignoreBlankLines: true), greaterThan(0));
+      expect(changesOf('a\nb', 'a\nc', ignoreBlankLines: true), greaterThan(0));
     });
   });
 

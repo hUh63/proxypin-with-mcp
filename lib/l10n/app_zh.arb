@@ -5075,7 +5075,7 @@
   "editorStickyScroll": "粘性滚动",
   "editorStickyScrollDesc": "滚动时把「类 / 函数」名钉在顶部，点它可以跳回去",
   "diffCopyPatch": "复制差异（patch）",
-  "diffIgnoreBlankLines": "忽略空行里的空白（空行与只含空格的行视为相同）",
+  "diffIgnoreBlankLines": "忽略空白行差异",
   "editorInlineDiff": "行号栏改动标记",
   "editorInlineDiffDesc": "和磁盘上的版本比，新增行标绿、修改标蓝、删除标红（仅在文件不太大时生效）",
   "diffReloadFiles": "从磁盘重新加载",

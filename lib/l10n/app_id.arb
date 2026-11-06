@@ -3274,7 +3274,7 @@
   "editorStickyScroll": "Sticky scroll",
   "editorStickyScrollDesc": "Pin the enclosing class / function name to the top while scrolling; tap to jump back",
   "diffCopyPatch": "Copy diff as patch",
-  "diffIgnoreBlankLines": "Ignore whitespace inside blank lines",
+  "diffIgnoreBlankLines": "Ignore blank-line differences",
   "editorInlineDiff": "Gutter change marks",
   "editorInlineDiffDesc": "Compare with the on-disk version: added green, modified blue, deleted red (small files only)",
   "diffReloadFiles": "Reload from disk",
