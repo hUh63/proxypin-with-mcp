@@ -9,6 +9,10 @@ import 'package:proxypin/network/util/logger.dart';
 class UrlPattern {
   UrlPattern._();
 
+  /// 永不匹配的正则。用户规则非法时的统一降级目标：
+  /// 「这条规则不生效」远好过「在请求热路径上抛异常」。
+  static final RegExp never = RegExp(r'(?!)');
+
   /// Convert a user-facing wildcard [pattern] to a [RegExp].
   ///
   /// `*` is expanded to `.*` and the first literal `?` is escaped to `\?`.
@@ -18,7 +22,7 @@ class UrlPattern {
     } catch (e) {
       // 同 toHostRegExp：非法规则退化为永不匹配，不要在请求路径上抛。
       logger.w('非法的 URL 匹配规则，按永不匹配处理: $pattern', error: e);
-      return RegExp(r'(?!)');
+      return never;
     }
   }
 
@@ -42,7 +46,7 @@ class UrlPattern {
       return RegExp(pattern.replaceAll("*", ".*"));
     } catch (e) {
       logger.w('非法的 URL 匹配规则，按永不匹配处理: $pattern', error: e);
-      return RegExp(r'(?!)');
+      return never;
     }
   }
 }

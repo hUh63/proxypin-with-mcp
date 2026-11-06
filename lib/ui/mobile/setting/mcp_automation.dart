@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:http/http.dart' as http;
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/network/util/url_pattern.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
@@ -2603,7 +2604,9 @@ class _ConditionRow {
   Condition toCondition() {
     final v = valueController.text;
     final value = switch (operator) {
-      Operator.matches => RegExp(v),
+      // 用户在输入框里写的正则可能不合法：这里抛的话保存按钮直接红屏，
+      // 降级成「永不匹配」，规则存下来但不生效，用户改回来就好。
+      Operator.matches => _compileRuleRegExp(v),
       Operator.inList || Operator.notInList => v.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
       _ => v,
     };
@@ -2767,4 +2770,13 @@ void _disposeControllersSoon(List<TextEditingController> list) {
       }
     }
   });
+}
+
+/// 编译规则里的正则；非法时返回 [UrlPattern.never]，避免保存时抛异常。
+RegExp _compileRuleRegExp(String pattern) {
+  try {
+    return RegExp(pattern);
+  } catch (_) {
+    return UrlPattern.never;
+  }
 }

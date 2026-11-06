@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/storage/path.dart';
 import 'package:proxypin/network/util/logger.dart';
+import 'package:proxypin/network/util/url_pattern.dart';
 import 'package:proxypin/network/util/serial_file_writer.dart';
 
 class RequestBreakpointRule {
@@ -33,7 +34,18 @@ class RequestBreakpointRule {
     if (!enabled) return false;
     if (this.method != null && method != null && this.method != method)
       return false;
-    return (_urlReg ??= RegExp(this.url)).hasMatch(url);
+    // 用户在设置里填了非法正则（比如只有一个 `[`）时 RegExp 会抛；
+    // 这里在**请求热路径**上，抛一次就是整条抓包链路断。非法规则当「不匹配」。
+    var reg = _urlReg;
+    if (reg == null) {
+      try {
+        reg = RegExp(this.url);
+      } catch (_) {
+        reg = UrlPattern.never;
+      }
+      _urlReg = reg;
+    }
+    return reg.hasMatch(url);
   }
 
   factory RequestBreakpointRule.fromJson(Map<dynamic, dynamic> map) {

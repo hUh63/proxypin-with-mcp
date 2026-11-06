@@ -3433,5 +3433,38 @@
       }
     }
   },
-  "diffReviewedReset": "Reset review marks"
+  "diffReviewedReset": "Reset review marks",
+  "diffMerge": "Merge result",
+  "diffMergeAllRight": "All from right",
+  "diffMergeAllLeft": "All from left",
+  "diffMergeCustom": "Pick per block",
+  "diffMergeUseLeftShort": "L",
+  "diffMergeUseRightShort": "R",
+  "diffMergeToRight": "Write result to the right side",
+  "diffMergeApplied": "Result written to the right side",
+  "diffMergeTooLarge": "Content too large to merge",
+  "editorReplaceInFiles": "Replace in files",
+  "editorReplaceHint": "Replace with",
+  "editorReplaceConfirmBody": "Will replace {hits} places in {files} files. Files not open in the editor are written to disk directly (undo with \"Undo last rename-everywhere\").",
+  "@editorReplaceConfirmBody": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      },
+      "hits": {
+        "type": "String"
+      }
+    }
+  },
+  "editorReplaceDone": "Replaced {hits} places in {files} files",
+  "@editorReplaceDone": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      },
+      "hits": {
+        "type": "String"
+      }
+    }
+  }
 }

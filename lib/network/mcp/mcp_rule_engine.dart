@@ -851,7 +851,7 @@ class McpRuleEngine {
         type: ConditionType.httpRequest,
         field: 'url',
         operator: Operator.matches,
-        value: RegExp(urlPattern),
+        value: _safeRegExp(urlPattern),
       ));
     }
     
@@ -1046,5 +1046,14 @@ class McpRuleEngineExample {
     );
     
     engine.addRule(rule);
+  }
+}
+
+/// 编译用户/脚本给的正则；非法时返回永不匹配的正则（不在规则执行路径上抛）。
+RegExp _safeRegExp(String pattern) {
+  try {
+    return RegExp(pattern);
+  } catch (_) {
+    return RegExp(r'(?!)');
   }
 }

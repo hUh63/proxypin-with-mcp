@@ -4034,6 +4034,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
                           });
                         },
                       ),
+                      IconButton(
+                        tooltip: localizations.editorReplaceInFiles,
+                        icon: const Icon(Icons.find_replace, size: 18),
+                        onPressed: () {
+                          final q = input.text;
+                          if (q.isEmpty) return;
+                          Navigator.pop(ctx);
+                          unawaited(_replaceInFiles(q,
+                              asRegex: asRegex, caseSensitive: caseSensitive));
+                        },
+                      ),
                       FilledButton(
                         onPressed: () => setSheet(run),
                         child: Text(localizations.editorFindInFilesButton),
@@ -4153,6 +4164,113 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _fileSearchCase = caseSensitive;
     _fileSearchRegex = asRegex;
     input.dispose();
+  }
+
+  /// 在文件中替换（多文件查找的姊妹功能）。
+  ///
+  /// 已打开的文档走 controller（能 Ctrl+Z），没打开的写盘并记进 [_renameBackup]，
+  /// 所以「撤销上次跨文件重命名」也能把这些写盘还原回去。
+  Future<void> _replaceInFiles(String pattern,
+      {required bool asRegex, required bool caseSensitive}) async {
+    final doc = _doc;
+    if (doc == null) return;
+    RegExp re;
+    try {
+      re = asRegex
+          ? RegExp(pattern, caseSensitive: caseSensitive, multiLine: true)
+          : RegExp(RegExp.escape(pattern), caseSensitive: caseSensitive);
+    } catch (e) {
+      _toast('$e');
+      return;
+    }
+    final scope = await _collectScopeFiles(doc);
+    if (!mounted) return;
+
+    // 先数一下会动多少地方：替换是不可逆的（除了已打开的文件），得让人看清代价
+    var hitCount = 0;
+    var fileCount = 0;
+    for (final f in scope) {
+      if (f.content.length > 2000000) continue;
+      final n = re.allMatches(f.content).length;
+      if (n > 0) {
+        hitCount += n;
+        fileCount++;
+      }
+    }
+    if (hitCount == 0) {
+      _toast(localizations.editorFindInFilesEmpty);
+      return;
+    }
+
+    final input = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorReplaceInFiles),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: input,
+              autofocus: true,
+              decoration:
+                  InputDecoration(labelText: localizations.editorReplaceHint),
+              onSubmitted: (v) => Navigator.pop(ctx, true),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              localizations.editorReplaceConfirmBody('$fileCount', '$hitCount'),
+              style: TextStyle(
+                  fontSize: 11.5,
+                  color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(localizations.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    // 必须在 dispose 之前取值
+    final replacement = input.text;
+    input.dispose();
+    if (!mounted || ok != true) return;
+
+    var changedFiles = 0;
+    var changedHits = 0;
+    for (final f in scope) {
+      if (f.content.length > 2000000) continue;
+      final matches = re.allMatches(f.content).length;
+      if (matches == 0) continue;
+      // 用 replaceAllMapped 返回字面量：非正则模式下 replaceAll 会把 `$1`
+      // 当成组引用，用户输入的钱符号会凭空消失。
+      final replaced =
+          f.content.replaceAllMapped(re, (_) => replacement);
+      if (replaced == f.content) continue;
+      changedFiles++;
+      changedHits += matches;
+      final d = f.doc;
+      if (d != null) {
+        d.controller.text = replaced;
+      } else if (f.path != null) {
+        try {
+          _renameBackup[f.path!] = f.content;
+          await File(f.path!).writeAsString(replaced);
+        } catch (e) {
+          logger.w('replace write failed', error: e);
+        }
+      }
+    }
+    if (!mounted) return;
+    _toast(localizations.editorReplaceDone('$changedFiles', '$changedHits'));
+    _runLint();
+    _refreshDecorations();
   }
 
   /// 跳到一条「多文件查找」结果：必要时切文档，再定位到具体偏移。

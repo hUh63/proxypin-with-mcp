@@ -1007,3 +1007,46 @@ MergeResult mergeThreeWay(String base, String mine, String theirs,
   return MergeResult(
       baseLines: baseLines, mineLines: mineLines, theirsLines: theirsLines, regions: regions);
 }
+
+/// 双向合并（2-way merge with output）：按 [blocks] 逐块决定用左还是用右，
+/// 块与块之间的相同行沿用左侧，拼出一份**第三份**文本。
+///
+/// 这是对比页「合并结果」的核心，单独放引擎层是为了能测：
+/// 丢行 / 重复插入是这类算法最容易出的错，肉眼很难在几千行里看出来。
+String mergeTwoWay({
+  required List<String> leftLines,
+  required List<String> rightLines,
+  required List<DiffBlock> blocks,
+  required bool Function(int blockIndex) useRight,
+}) {
+  final out = <String>[];
+  var li = 0;
+  for (var bi = 0; bi < blocks.length; bi++) {
+    final b = blocks[bi];
+    // 本块之前的相同区段：两边一致，直接沿用左侧
+    final stop = b.leftLines.isEmpty ? b.leftStart : b.leftLines.first;
+    while (li < stop && li < leftLines.length) {
+      out.add(leftLines[li]);
+      li++;
+    }
+    if (useRight(bi)) {
+      for (final rl in b.rightLines) {
+        if (rl >= 0 && rl < rightLines.length) out.add(rightLines[rl]);
+      }
+    } else {
+      for (final ll in b.leftLines) {
+        if (ll >= 0 && ll < leftLines.length) out.add(leftLines[ll]);
+      }
+    }
+    // 吃掉左侧被本块占用的行；纯新增块（leftLines 为空）不动 li
+    if (b.leftLines.isNotEmpty) {
+      final next = b.leftLines.last + 1;
+      if (next > li) li = next;
+    }
+  }
+  while (li < leftLines.length) {
+    out.add(leftLines[li]);
+    li++;
+  }
+  return out.join('\n');
+}

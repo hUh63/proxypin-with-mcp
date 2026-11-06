@@ -5166,5 +5166,18 @@
   "editorSnippetsHint": "搜索片段",
   "editorSnippetsEmpty": "这个语言还没有内置片段",
   "diffReviewedCount": "已看 {n}/{m}",
-  "diffReviewedReset": "重置已看标记"
+  "diffReviewedReset": "重置已看标记",
+  "diffMerge": "合并结果",
+  "diffMergeAllRight": "全部用右侧",
+  "diffMergeAllLeft": "全部用左侧",
+  "diffMergeCustom": "逐块选择",
+  "diffMergeUseLeftShort": "左",
+  "diffMergeUseRightShort": "右",
+  "diffMergeToRight": "结果写回右侧",
+  "diffMergeApplied": "已把结果写回右侧",
+  "diffMergeTooLarge": "内容太大，无法生成合并结果",
+  "editorReplaceInFiles": "在文件中替换",
+  "editorReplaceHint": "替换为",
+  "editorReplaceConfirmBody": "将在 {files} 个文件里替换 {hits} 处；没打开的文件会直接写盘（可用「撤销上次跨文件重命名」还原）",
+  "editorReplaceDone": "已替换 {files} 个文件、{hits} 处"
 }

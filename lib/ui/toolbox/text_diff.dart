@@ -179,6 +179,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 只显示差异（相同行折叠成一行占位），对应 VS diff 的 hide unchanged。
   bool _onlyDiff = false;
 
+  /// 「合并结果」的策略：0=全部用右侧，1=全部用左侧，2=逐块选择。
+  int _mergeStrategy = 0;
+
+  /// 逐块选择：块下标 → true 用右侧 / false 用左侧（缺省用右侧）。
+  final Map<int, bool> _mergeChoice = {};
+
   /// 同步横向滚动：一栏往右看长行时另一栏跟着走（默认关，两栏独立更常用）。
   bool _syncH = false;
   bool _syncingH = false;
@@ -1192,6 +1198,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
               _foldUnchanged = !_foldUnchanged;
               _expandedFolds.clear();
             });
+          case 'merge':
+            unawaited(_showMergeResult());
           case 'dirDiff':
             unawaited(DirDiffPage.show(context, windowId: widget.windowId));
           case 'threeWay':
@@ -1283,6 +1291,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
+        PopupMenuItem(value: 'merge', child: Text(localizations.diffMerge)),
         PopupMenuItem(value: 'dirDiff', child: Text(localizations.dirDiff)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
         PopupMenuItem(value: 'history', child: Text(localizations.diffHistory)),
@@ -2115,6 +2124,247 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 差异列表（WinMerge 的 diff 列表 / Meld 的侧栏）：全部差异一次列出来，
   /// 点一条就直接跳到那块并把光标放过去。
+  /// 合并结果（2-way merge）：逐块决定用左还是用右，拼出**第三份**文本。
+  ///
+  /// 之前只有「全部接受」「单块应用」，那是把一侧改写成另一侧；这里给一个输出口：
+  /// 生成后可以写回右栏、复制、或导出成文件——改代码时通常要的就是「合并后的那份」。
+  String _buildMergedText(Map<int, bool> choice, int strategy) {
+    // 空文本拆出来是 ['']（一个空行），会让合并结果凭空多一个换行
+    List<String> lines(String t) =>
+        t.isEmpty ? const <String>[] : t.split('\n');
+    return mergeTwoWay(
+      leftLines: lines(_left.text),
+      rightLines: lines(_right.text),
+      blocks: _blocks,
+      useRight: (bi) =>
+          strategy == 0 ? true : (strategy == 1 ? false : (choice[bi] ?? true)),
+    );
+  }
+
+  Future<void> _showMergeResult() async {
+    if (_blocks.isEmpty) {
+      _toastText(localizations.diffNoDifference);
+      return;
+    }
+    if (_left.text.length + _right.text.length > 4000000) {
+      _toastText(localizations.diffMergeTooLarge);
+      return;
+    }
+    if (_mergeChoice.length != _blocks.length) {
+      // 块数量变了（重新比较过）：旧的选择已经没有对应关系
+      _mergeChoice.clear();
+    }
+    var strategy = _mergeStrategy;
+    var merged = _buildMergedText(_mergeChoice, strategy);
+
+    String rebuild(int s) {
+      strategy = s;
+      return _buildMergedText(_mergeChoice, s);
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final theme = Theme.of(ctx);
+          Widget chip(String label, int value) => Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(
+                  label: Text(label, style: const TextStyle(fontSize: 12)),
+                  selected: strategy == value,
+                  onSelected: (_) => setSheet(() => merged = rebuild(value)),
+                ),
+              );
+          return SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.88,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(localizations.diffMerge,
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface)),
+                      ),
+                      Text('${_blocks.length}',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      chip(localizations.diffMergeAllRight, 0),
+                      chip(localizations.diffMergeAllLeft, 1),
+                      chip(localizations.diffMergeCustom, 2),
+                    ],
+                  ),
+                ),
+                if (strategy == 2)
+                  SizedBox(
+                    height: 132,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      itemCount: _blocks.length,
+                      itemBuilder: (_, i) {
+                        final b = _blocks[i];
+                        final useRight = _mergeChoice[i] ?? true;
+                        return InkWell(
+                          onTap: () => setSheet(() {
+                            _mergeChoice[i] = !useRight;
+                            merged = rebuild(2);
+                          }),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 5),
+                            child: Row(
+                              children: [
+                                Text('#${i + 1}',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: theme.colorScheme.onSurfaceVariant)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'L${b.leftStart + 1} ↔ R${b.rightStart + 1}',
+                                    style: const TextStyle(
+                                        fontSize: 11.5,
+                                        fontFamily: 'monospace'),
+                                  ),
+                                ),
+                                _sidePill(
+                                    theme,
+                                    localizations.diffMergeUseLeftShort,
+                                    !useRight),
+                                const SizedBox(width: 4),
+                                _sidePill(
+                                    theme,
+                                    localizations.diffMergeUseRightShort,
+                                    useRight),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                const Divider(height: 8),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        merged.length > 20000
+                            ? '${merged.substring(0, 20000)}\n…'
+                            : merged,
+                        style: TextStyle(
+                            fontSize: _fontSize - 1, fontFamily: 'monospace'),
+                      ),
+                    ),
+                  ),
+                ),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await Clipboard.setData(
+                                  ClipboardData(text: merged));
+                              if (!mounted) return;
+                              _toastText(localizations.copied);
+                            },
+                            icon: const Icon(Icons.copy, size: 16),
+                            label: Text(localizations.copy,
+                                style: const TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              try {
+                                await FilePicker.saveFile(
+                                    fileName: 'merged.txt',
+                                    bytes: utf8.encode(merged));
+                                if (!mounted) return;
+                                _toastText(localizations.diffReportSaved);
+                              } catch (e) {
+                                _toastText('$e');
+                              }
+                            },
+                            icon: const Icon(Icons.save_alt, size: 16),
+                            label: Text(localizations.save,
+                                style: const TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              _right.text = merged;
+                              _mergeStrategy = strategy;
+                              Navigator.pop(ctx);
+                              _compare();
+                              _toastText(localizations.diffMergeApplied);
+                            },
+                            icon: const Icon(Icons.arrow_forward, size: 16),
+                            label: Text(localizations.diffMergeToRight,
+                                style: const TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    _mergeStrategy = strategy;
+  }
+
+  Widget _sidePill(ThemeData theme, String label, bool active) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: active
+            ? theme.colorScheme.primary.withValues(alpha: 0.16)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: active ? theme.colorScheme.primary : theme.dividerColor,
+            width: 0.8),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 10.5,
+              color: active
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant)),
+    );
+  }
+
   void _showDiffList() {
     if (_blocks.isEmpty) {
       _toastText(localizations.diffNoDifference);
