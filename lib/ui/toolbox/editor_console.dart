@@ -137,8 +137,16 @@ class EditorConsolePanel extends StatefulWidget {
 }
 
 class _EditorConsolePanelState extends State<EditorConsolePanel> {
-  late EditorConsoleTab _tab =
-      widget.programming ? widget.initialTab : EditorConsoleTab.problems;
+  late EditorConsoleTab _tab = _initialTabOf(widget);
+
+  static EditorConsoleTab _initialTabOf(EditorConsolePanel w) {
+    if (!w.programming) return EditorConsoleTab.problems;
+    // 非 JS 语言没有调试页签，别把 _tab 设到一个显示不出来的值上。
+    if (w.initialTab == EditorConsoleTab.debug && !w.jsBackend) {
+      return EditorConsoleTab.console;
+    }
+    return w.initialTab;
+  }
   late ConsoleBackend _backend = widget.jsBackend ? ConsoleBackend.js : ConsoleBackend.expr;
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
@@ -188,7 +196,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       _ruleFilter = null;
     }
     if (oldWidget.initialTab != widget.initialTab) {
-      setState(() => _tab = widget.programming ? widget.initialTab : EditorConsoleTab.problems);
+      setState(() => _tab = _initialTabOf(widget));
     }
     if (!widget.jsBackend && _backend == ConsoleBackend.js) {
       _backend = ConsoleBackend.expr;

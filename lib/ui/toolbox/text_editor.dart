@@ -1203,7 +1203,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   void _openConsole(EditorConsoleTab tab) {
     // 非编程语言只能看问题，不能进控制台。
-    final target = _programming ? tab : EditorConsoleTab.problems;
+    var target = _programming ? tab : EditorConsoleTab.problems;
+    // 调试页只对 JS 有效（内置引擎）：别的语言点进来只会看到一个没有页签的面板。
+    if (target == EditorConsoleTab.debug && !_jsBackend) {
+      target = EditorConsoleTab.console;
+    }
     setState(() {
       _consoleOpen = true;
       _consoleTab = target;
