@@ -83,11 +83,18 @@ void main() {
     expect(e.dir, 'pkg/src');
   });
 
-  test('大小不同直接判二进制差异（不读内容）', () async {
-    write(left, 'x.bin', 'aaa');
-    write(right, 'x.bin', 'aaaa');
+  test('大小不同的文本算修改，不误报成二进制', () async {
+    write(left, 'x.txt', 'aaa');
+    write(right, 'x.txt', 'aaaa');
     final r = await DirDiff.compare(left, right);
-    expect(of(r, 'x.bin').status, DirDiffStatus.binaryModified);
+    expect(of(r, 'x.txt').status, DirDiffStatus.modified);
+  });
+
+  test('大小不同的二进制算二进制差异', () async {
+    writeBytes(left, 'z.bin', [1, 2, 0]);
+    writeBytes(right, 'z.bin', [1, 2, 0, 9]);
+    final r = await DirDiff.compare(left, right);
+    expect(of(r, 'z.bin').status, DirDiffStatus.binaryModified);
   });
 
   test('含 0 字节的文件内容不同时算二进制差异', () async {

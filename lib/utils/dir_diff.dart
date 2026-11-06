@@ -192,9 +192,20 @@ class DirDiff {
         continue;
       }
       if (ls != rs) {
+        // 大小不同也要区分「文本改了」和「二进制改了」：只嗅探前 4KB，很便宜。
+        // 一律报「二进制不同」会误导——两个 .dart 文件差一个字符也被说成二进制。
+        var binary = false;
+        try {
+          binary = await _looksBinary(File('$left/$p')) ||
+              await _looksBinary(File('$right/$p'));
+        } catch (_) {
+          // 读不到就按文本处理，让用户点进去自己看
+        }
         entries.add(DirDiffEntry(
             relativePath: p,
-            status: DirDiffStatus.binaryModified,
+            status: binary
+                ? DirDiffStatus.binaryModified
+                : DirDiffStatus.modified,
             leftSize: ls,
             rightSize: rs));
         continue;
