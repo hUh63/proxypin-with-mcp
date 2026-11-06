@@ -2179,7 +2179,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   return ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
-                    leadingWidth: 62,
+                    minLeadingWidth: 52,
                     leading: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

@@ -58,7 +58,7 @@ void main() {
     expect(list.any((s) => s.label == 'HTML5'), isTrue);
   });
 
-  test('每个模板最多一个 $0 占位符', () {
+  test(r'每个模板最多一个 $0 占位符', () {
     for (final lang in const [
       'dart', 'java', 'python', 'javascript', 'go', 'csharp',
       'c', 'cpp', 'php', 'ruby', 'kotlin', 'swift', 'rust',
