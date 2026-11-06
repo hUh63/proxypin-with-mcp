@@ -66,6 +66,63 @@ class JsDebug {
         '};\n';
   }
 
+  /// 极简测试骨架：`test/it/describe/expect` 都装到全局，跑完能取回结果。
+  ///
+  /// 只做「够用的断言」——真正的 Jest 装不进来（要打包几百 KB），而编辑器里
+  /// 想跑的就是「写个用例验证一段逻辑」，toBe / toEqual / toBeTruthy / toContain
+  /// 已经覆盖绝大多数。
+  static const String testHarness = r"""
+globalThis.__ppCases = [];
+globalThis.__ppShow = function (v) {
+  try {
+    if (typeof v === 'string') return JSON.stringify(v);
+    var s = JSON.stringify(v);
+    return s === undefined ? String(v) : s;
+  } catch (e) { return String(v); }
+};
+globalThis.__ppTest = function (name, fn) {
+  globalThis.__ppCases.push([String(name), fn]);
+};
+globalThis.test = globalThis.__ppTest;
+globalThis.it = globalThis.__ppTest;
+globalThis.describe = function (name, fn) { if (typeof fn === 'function') fn(); };
+globalThis.expect = function (a) {
+  function fail(msg) { throw new Error(msg); }
+  var api = {
+    toBe: function (b) { if (a !== b) fail('expect(' + __ppShow(a) + ').toBe(' + __ppShow(b) + ')'); },
+    toEqual: function (b) {
+      var x = JSON.stringify(a), y = JSON.stringify(b);
+      if (x !== y) fail('expect(' + __ppShow(a) + ').toEqual(' + __ppShow(b) + ')');
+    },
+    toBeTruthy: function () { if (!a) fail('expect(' + __ppShow(a) + ').toBeTruthy()'); },
+    toBeFalsy: function () { if (a) fail('expect(' + __ppShow(a) + ').toBeFalsy()'); },
+    toContain: function (b) { if (String(a).indexOf(b) < 0) fail('expect(' + __ppShow(a) + ').toContain(' + __ppShow(b) + ')'); },
+    toBeGreaterThan: function (b) { if (!(a > b)) fail('expect(' + __ppShow(a) + ').toBeGreaterThan(' + __ppShow(b) + ')'); },
+    toBeLessThan: function (b) { if (!(a < b)) fail('expect(' + __ppShow(a) + ').toBeLessThan(' + __ppShow(b) + ')'); },
+    toBeNull: function () { if (a !== null) fail('expect(' + __ppShow(a) + ').toBeNull()'); },
+    toBeUndefined: function () { if (a !== undefined) fail('expect(' + __ppShow(a) + ').toBeUndefined()'); }
+  };
+  api.not = {
+    toBe: function (b) { if (a === b) fail('expect(' + __ppShow(a) + ').not.toBe(' + __ppShow(b) + ')'); },
+    toEqual: function (b) {
+      var x = JSON.stringify(a), y = JSON.stringify(b);
+      if (x === y) fail('expect(' + __ppShow(a) + ').not.toEqual(' + __ppShow(b) + ')');
+    }
+  };
+  return api;
+};
+globalThis.__ppRunCases = function () {
+  var out = [];
+  for (var i = 0; i < globalThis.__ppCases.length; i++) {
+    var c = globalThis.__ppCases[i];
+    var ok = true, msg = '';
+    try { c[1](); } catch (e) { ok = false; msg = (e && e.message) ? String(e.message) : String(e); }
+    out.push([c[0], ok, msg]);
+  }
+  return JSON.stringify(out);
+};
+""";
+
   /// 在安全位置的行首插入探针。
   ///
   /// 返回插桩后的源码；一行都插不进去时原样返回（调用方据此提示「无法插桩」）。

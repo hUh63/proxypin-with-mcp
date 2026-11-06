@@ -5105,5 +5105,10 @@
   "editorToggleBreakpoint": "切換斷點",
   "editorGoToBreakpoint": "跳到斷點",
   "editorBreakpointAdded": "已加斷點 L{n}",
-  "editorBreakpointRemoved": "已移除斷點 L{n}"
+  "editorBreakpointRemoved": "已移除斷點 L{n}",
+  "editorDebugRunTests": "執行用例",
+  "editorDebugNoTests": "這個檔案裡沒有 test(…) / it(…) 用例",
+  "editorDebugTestsLoadFailed": "用例註冊失敗（指令碼本身報錯）",
+  "editorDebugTestsSummary": "用例：{pass} 通過 / {fail} 失敗",
+  "diffIgnoreComments": "忽略註解差異（// # * 開頭）"
 }

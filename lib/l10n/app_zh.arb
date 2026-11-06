@@ -5105,5 +5105,10 @@
   "editorToggleBreakpoint": "切换断点",
   "editorGoToBreakpoint": "跳到断点",
   "editorBreakpointAdded": "已加断点 L{n}",
-  "editorBreakpointRemoved": "已移除断点 L{n}"
+  "editorBreakpointRemoved": "已移除断点 L{n}",
+  "editorDebugRunTests": "运行用例",
+  "editorDebugNoTests": "这个文件里没有 test(…) / it(…) 用例",
+  "editorDebugTestsLoadFailed": "用例注册失败（脚本本身报错）",
+  "editorDebugTestsSummary": "用例：{pass} 通过 / {fail} 失败",
+  "diffIgnoreComments": "忽略注释差异（// # * 开头）"
 }

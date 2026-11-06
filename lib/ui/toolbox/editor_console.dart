@@ -277,6 +277,11 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
             icon: const Icon(Icons.skip_next, size: 17),
           ),
           _barIcon(
+            tooltip: localizations.editorDebugRunTests,
+            onPressed: _running ? null : () => unawaited(_runTests()),
+            icon: const Icon(Icons.science_outlined, size: 17),
+          ),
+          _barIcon(
             tooltip: localizations.editorDebugStop,
             onPressed: (paused || _running) ? _debugStop : null,
             icon: const Icon(Icons.stop, size: 17),
@@ -474,6 +479,73 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
         });
         _append(localizations.editorDebugFinished, ConsoleLineKind.note);
       }
+    } catch (e) {
+      _append('$e', ConsoleLineKind.error);
+    } finally {
+      if (mounted) {
+        setState(() => _running = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_dbgScroll.hasClients) return;
+          _dbgScroll.jumpTo(_dbgScroll.position.maxScrollExtent);
+        });
+      }
+    }
+  }
+
+  /// 跑当前文件里的 `test(...)` / `it(...)` 用例。
+  ///
+  /// 用干净运行时：上一次调试/运行留下的变量不该影响用例。跑之前先装骨架
+  /// （test / it / describe / expect），再 eval 用户代码完成注册，最后统一执行。
+  Future<void> _runTests() async {
+    if (_running) return;
+    final src = widget.readDocument();
+    final cases = JsDebug.collectTests(src);
+    if (cases.isEmpty) {
+      _append(localizations.editorDebugNoTests, ConsoleLineKind.note);
+      return;
+    }
+    if (src.length > 200000) {
+      _append(localizations.editorTooLargeToProcess, ConsoleLineKind.warn);
+      return;
+    }
+    if (_backend != ConsoleBackend.js) {
+      _append(localizations.editorTermNoRuntime, ConsoleLineKind.warn);
+      return;
+    }
+    setState(() => _running = true);
+    try {
+      _resetRuntime();
+      final rt = _ensureRuntime();
+      if (rt == null) {
+        _append(localizations.editorTermNoRuntime, ConsoleLineKind.warn);
+        return;
+      }
+      rt.evaluate(JsDebug.testHarness);
+      try {
+        rt.evaluate(src);
+      } catch (e) {
+        _append('${localizations.editorDebugTestsLoadFailed}: $e', ConsoleLineKind.error);
+        return;
+      }
+      final raw = rt.evaluate('globalThis.__ppRunCases()').stringResult ?? '[]';
+      final list = jsonDecode(raw) as List<dynamic>;
+      var pass = 0;
+      var fail = 0;
+      for (final item in list) {
+        final row = item as List<dynamic>;
+        final name = '${row[0]}';
+        if (row[1] == true) {
+          pass++;
+          _append('✓ $name', ConsoleLineKind.result);
+        } else {
+          fail++;
+          _append('✗ $name — ${row[2]}', ConsoleLineKind.error);
+        }
+      }
+      _append(
+        localizations.editorDebugTestsSummary(pass, fail),
+        fail > 0 ? ConsoleLineKind.warn : ConsoleLineKind.note,
+      );
     } catch (e) {
       _append('$e', ConsoleLineKind.error);
     } finally {

@@ -112,6 +112,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 忽略空白行：一边多几个空行不算差异（Beyond Compare 的同名选项）。
   bool _ignoreBlank = false;
 
+  /// 忽略注释：`//` `*` `#` 开头的行当作空行，行尾 ` //` 之后丢掉。
+  bool _ignoreComments = false;
+
   /// 两栏的文件名（打开文件后显示在顶部标签里：「原文件 · xxx.txt」）。
   String _leftName = '';
   String _rightName = '';
@@ -538,12 +541,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
         ignoreTrailingWhitespace: _ignoreTrailing,
-        ignoreBlankLines: _ignoreBlank);
+        ignoreBlankLines: _ignoreBlank,
+        ignoreComments: _ignoreComments);
     final blocks = buildDiffBlocks(diffs,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
         ignoreTrailingWhitespace: _ignoreTrailing,
-        ignoreBlankLines: _ignoreBlank);
+        ignoreBlankLines: _ignoreBlank,
+        ignoreComments: _ignoreComments);
     final stats = diffStats(blocks);
 
     final addBg = Colors.green.withValues(alpha: 0.16);
@@ -1103,6 +1108,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             setState(() => _ignoreTrailing = !_ignoreTrailing);
           case 'ignoreBlank':
             setState(() => _ignoreBlank = !_ignoreBlank);
+          case 'ignoreComment':
+            setState(() => _ignoreComments = !_ignoreComments);
             _compare();
           case 'wrap':
             setState(() => _wrap = !_wrap);
@@ -1194,6 +1201,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'ignoreBlank',
             checked: _ignoreBlank,
             child: Text(localizations.diffIgnoreBlankLines)),
+        CheckedPopupMenuItem(
+            value: 'ignoreComment',
+            checked: _ignoreComments,
+            child: Text(localizations.diffIgnoreComments)),
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
         CheckedPopupMenuItem(
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
@@ -1842,14 +1853,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐视图的行（带缓存）：文本或忽略选项变了才重算。
   List<DiffRow> _alignedRows() {
     final key =
-        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|$_ignoreTrailing|$_ignoreBlank';
+        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|$_ignoreTrailing|$_ignoreBlank|$_ignoreComments';
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
         ignoreTrailingWhitespace: _ignoreTrailing,
-        ignoreBlankLines: _ignoreBlank);
+        ignoreBlankLines: _ignoreBlank,
+        ignoreComments: _ignoreComments);
     return _alignedRowsCache;
   }
 

@@ -3304,5 +3304,10 @@
   "editorToggleBreakpoint": "Toggle breakpoint",
   "editorGoToBreakpoint": "Go to breakpoint",
   "editorBreakpointAdded": "Breakpoint added at line {n}",
-  "editorBreakpointRemoved": "Breakpoint removed at line {n}"
+  "editorBreakpointRemoved": "Breakpoint removed at line {n}",
+  "editorDebugRunTests": "Run tests",
+  "editorDebugNoTests": "No test(...) / it(...) cases in this file",
+  "editorDebugTestsLoadFailed": "Failed to register tests (script error)",
+  "editorDebugTestsSummary": "Tests: {pass} passed / {fail} failed",
+  "diffIgnoreComments": "Ignore comment differences (// # *)"
 }
