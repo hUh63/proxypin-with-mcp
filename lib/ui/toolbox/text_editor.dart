@@ -49,6 +49,7 @@ import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
+import 'package:proxypin/utils/text_stats.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
 import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
@@ -2817,7 +2818,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         recent: recent,
       ),
     );
-    if (chosen == null || _doc == null) return;
+    if (chosen == null || !mounted || _doc == null) return;
     if (chosen.key == _lang.key && chosen.label == _lang.label) return;
     unawaited(_rememberLang(chosen.label));
     _applyLanguage(chosen);
@@ -4574,7 +4575,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 工作区根目录（可选）。设了之后「查找引用 / 多文件查找 / 跨文件重命名 /
   /// 调用层次 / 在文件中替换」都扫整个目录，而不是只有已打开的文件 + 当前目录。
-  static const String _workspaceKey = 'text_editor_workspace_v1';
+  static const String _workspaceKey = kTextEditorWorkspaceKey;
   String? _workspace;
 
   /// 工作区递归扫描的上限：仓库动辄几万个文件，不设限就是卡死。
@@ -5553,6 +5554,106 @@ class _TextEditorPageState extends State<TextEditorPage> {
                     },
                   ),
                 ),
+              const SizedBox(height: 8),
+            ]),
+          );
+        });
+      },
+    );
+  }
+
+  /// 文档统计（Notepad++ 的「摘要」、VS Code 的 Word Count）。
+  ///
+  /// 有选区时默认看选区的数据 —— 想数「这段多少字」是最常见的用法。
+  Future<void> _showDocStats() async {
+    final controller = _controller;
+    final doc = _doc;
+    if (controller == null || doc == null) return;
+    final text = controller.text;
+    if (text.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    final sel = controller.selection;
+    final hasSelection =
+        sel.isValid && !sel.isCollapsed && sel.start != sel.end;
+    final whole = TextStats.of(text);
+    final part =
+        hasSelection ? TextStats.ofRange(text, sel.start, sel.end) : null;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        var useSelection = hasSelection;
+        return StatefulBuilder(builder: (ctx2, setSheet) {
+          final st = useSelection && part != null ? part : whole;
+          Widget row(IconData icon, String label, String value) => ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                leading: Icon(icon, size: 18),
+                title: Text(label, style: const TextStyle(fontSize: 12.5)),
+                trailing: Text(value,
+                    style:
+                        const TextStyle(fontSize: 13, fontFamily: 'monospace')),
+              );
+          return SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(
+                        '${localizations.editorDocStats} · ${doc.name}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                ]),
+              ),
+              if (hasSelection)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                  child: Row(children: [
+                    ChoiceChip(
+                      label: Text(
+                          '${localizations.statsScopeSelection} (${TextStats.formatCount(part?.chars ?? 0)})',
+                          style: const TextStyle(fontSize: 11)),
+                      selected: useSelection,
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) => setSheet(() => useSelection = true),
+                    ),
+                    const SizedBox(width: 6),
+                    ChoiceChip(
+                      label: Text(localizations.statsScopeAll,
+                          style: const TextStyle(fontSize: 11)),
+                      selected: !useSelection,
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) => setSheet(() => useSelection = false),
+                    ),
+                  ]),
+                ),
+              row(Icons.format_list_numbered, localizations.statsLines,
+                  TextStats.formatCount(st.lines)),
+              row(Icons.short_text, localizations.statsWords,
+                  TextStats.formatCount(st.words)),
+              row(Icons.text_fields, localizations.statsChars,
+                  TextStats.formatCount(st.chars)),
+              row(Icons.space_bar, localizations.statsCharsNoSpace,
+                  TextStats.formatCount(st.charsNoSpace)),
+              row(Icons.data_object, localizations.statsBytes,
+                  TextStats.formatBytes(st.bytes)),
+              row(
+                  Icons.straighten,
+                  localizations.statsLongestLine,
+                  st.maxLineLength == 0
+                      ? '-'
+                      : localizations.statsLongestLineValue(
+                          '${st.longestLine}', '${st.maxLineLength}')),
+              row(Icons.notes, localizations.statsParagraphs,
+                  TextStats.formatCount(st.paragraphs)),
               const SizedBox(height: 8),
             ]),
           );
@@ -8855,6 +8956,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
           _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
           _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
+          _menuItem('stats', Icons.analytics_outlined, loc.editorDocStats),
           _menuItem('findInFiles', Icons.manage_search, loc.editorFindInFiles),
           _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
           _menuItem('undoRename', Icons.undo, loc.editorRenameUndo),
@@ -9073,6 +9175,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _showLocalHistory();
         case 'tasks':
           _showTasks();
+        case 'stats':
+          unawaited(_showDocStats());
       case 'autosave':
         setState(() => _autoSave = !_autoSave);
         unawaited(_saveAutoSave());
@@ -9589,7 +9693,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ),
       ),
     );
-    if (value == null) return;
+    if (value == null || !mounted) return;
     // 改的是文档（保存时按它写回）；同时存成全局偏好，新建文件沿用它。
     final chars = _newlineChars(value);
     setState(() {
@@ -9639,7 +9743,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
             .toList(),
       ),
     );
-    if (value == null) return;
+    if (value == null || !mounted) return;
     setState(() => _retainMode = value);
     await _saveRetainMode();
   }

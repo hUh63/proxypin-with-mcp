@@ -787,6 +787,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     final text = ctrl.text;
     ctrl.dispose();
     if (ok != true) return;
+    if (!mounted) return;
     setState(() {
       _state.clearStdin();
       _state.pushStdin(text

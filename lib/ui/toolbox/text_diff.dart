@@ -737,10 +737,51 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐视图里滚到当前差异（留一行上下文）。两侧联动，动左边就会带动右边。
   void _scrollToCurrentRow() {
     if (!_aligned || !_leftV.hasClients) return;
-    final i = _currentRowIndex(_visibleRows(_alignedRows()));
+    var rows = _visibleRows(_alignedRows());
+    var i = _currentRowIndex(rows);
+    if (i < 0 && _navIndex >= 0 && _navIndex < _blocks.length) {
+      // 目标行落在「折叠未变区域」里：摘要行吃掉了那几行，于是按行号找不到，
+      // 表现为「上一处/下一处按下去了但屏幕没动」。把覆盖它的那一段展开再定位。
+      final b = _blocks[_navIndex];
+      final fold =
+          _foldStartCovering(_alignedRows(), b.leftStart + 1, b.rightStart + 1);
+      if (fold != null && !_expandedFolds.contains(fold)) {
+        setState(() => _expandedFolds.add(fold));
+        rows = _visibleRows(_alignedRows());
+        i = _currentRowIndex(rows);
+      }
+    }
     if (i < 0) return;
     final target = (i * _rowHeight - _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
     _leftV.animateTo(target, duration: const Duration(milliseconds: 160), curve: Curves.easeOut);
+  }
+
+  /// [rows] 是**未折叠**的对齐行表。返回「覆盖这一行、且确实会被折叠成摘要」的那一段
+  /// 的起点下标（`_expandedFolds` 里的值），找不到返回 null。
+  ///
+  /// `foldUnchangedRuns` 只折叠**连续 equal 且长度 > 6** 的段落，这里保持同一判据，
+  /// 否则会去展开一个本来就没折叠的位置（白 setState 一次）。
+  int? _foldStartCovering(List<DiffRow> rows, int wantLeft, int wantRight) {
+    var i = 0;
+    while (i < rows.length) {
+      if (rows[i].type != DiffRowType.equal) {
+        i++;
+        continue;
+      }
+      var j = i;
+      while (j < rows.length && rows[j].type == DiffRowType.equal) {
+        j++;
+      }
+      if (j - i > 6) {
+        for (var k = i; k < j; k++) {
+          if (rows[k].leftLine == wantLeft || rows[k].rightLine == wantRight) {
+            return i;
+          }
+        }
+      }
+      i = j;
+    }
+    return null;
   }
 
   /// 把编辑器滚动到 [line]（0-based），并在该行行首放置光标。两侧都会执行，
@@ -2384,6 +2425,42 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
+  /// 把合并结果直接写回**右侧那个文件的路径**（不是编辑器缓冲区）。
+  ///
+  /// 「另存为」是给新文件用的；这里省掉选路径那一步 —— 三个版本合并完，
+  /// 想让磁盘上那份也跟上，是最自然的收尾动作。
+  Future<void> _writeToRightFile(String text) async {
+    final path = _rightPath;
+    if (path.isEmpty) return;
+    final name = _rightName.isEmpty
+        ? path.split(RegExp(r'[/\\]')).last
+        : _rightName;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(localizations.diffMergeSaveToFile),
+        content: Text(localizations.diffMergeSaveToFileAsk(name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: Text(localizations.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(d, true),
+              child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await File(path).writeAsString(text);
+      if (!mounted) return;
+      _toastText(localizations.diffMergedSaved(name));
+    } catch (e) {
+      if (!mounted) return;
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
   Future<void> _showMergeResult() async {
     if (_blocks.isEmpty) {
       _toastText(localizations.diffNoDifference);
@@ -2439,6 +2516,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
                           style: TextStyle(
                               fontSize: 11,
                               color: theme.colorScheme.onSurfaceVariant)),
+                      // 右侧是从文件打开的：给一个「直接覆盖那个文件」的快捷入口。
+                      if (_rightPath.isNotEmpty)
+                        IconButton(
+                          tooltip: localizations.diffMergeSaveToFile,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.save, size: 18),
+                          onPressed: () => _writeToRightFile(merged),
+                        ),
                     ],
                   ),
                 ),

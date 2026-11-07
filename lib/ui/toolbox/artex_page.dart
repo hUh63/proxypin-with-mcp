@@ -155,6 +155,7 @@ class _ArtexPageState extends State<ArtexPage> with SingleTickerProviderStateMix
     c.dispose();
     if (ok != true || text.isEmpty) return;
     _session.baseUrl = text;
+    if (!mounted) return;
     setState(() => _base.text = text);
     await _session.savePrefs();
     await _connect();

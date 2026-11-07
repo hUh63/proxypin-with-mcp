@@ -3512,5 +3512,19 @@
   "diffFindNoMatch": "ไม่พบที่ตรงกัน",
   "diffMatchCase": "แยกตัวพิมพ์เล็กใหญ่",
   "diffTabWidth": "ความกว้างแท็บ",
-  "diffTabWidthNone": "คงแท็บไว้"
+  "diffTabWidthNone": "คงแท็บไว้",
+  "diffMergeSaveToFile": "บันทึกลงไฟล์ด้านขวา",
+  "diffMergeSaveToFileAsk": "เขียนทับ {name} ด้วยผลรวม?",
+  "diffMergedSaved": "บันทึกไปที่ {name}",
+  "editorDocStats": "สถิติเอกสาร",
+  "statsScopeAll": "ทั้งเอกสาร",
+  "statsScopeSelection": "ที่เลือก",
+  "statsLines": "บรรทัด",
+  "statsWords": "คำ",
+  "statsChars": "ตัวอักษร",
+  "statsCharsNoSpace": "ตัวอักษร (ไม่รวมช่องว่าง)",
+  "statsBytes": "ขนาด",
+  "statsLongestLine": "บรรทัดที่ยาวที่สุด",
+  "statsLongestLineValue": "บรรทัด {line} · {chars} ตัวอักษร",
+  "statsParagraphs": "ย่อหน้า"
 }

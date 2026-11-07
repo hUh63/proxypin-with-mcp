@@ -3512,5 +3512,19 @@
   "diffFindNoMatch": "Không khớp",
   "diffMatchCase": "Phân biệt hoa thường",
   "diffTabWidth": "Độ rộng tab",
-  "diffTabWidthNone": "Giữ nguyên tab"
+  "diffTabWidthNone": "Giữ nguyên tab",
+  "diffMergeSaveToFile": "Lưu vào tệp bên phải",
+  "diffMergeSaveToFileAsk": "Ghi đè {name} bằng kết quả gộp?",
+  "diffMergedSaved": "Đã lưu vào {name}",
+  "editorDocStats": "Thống kê tài liệu",
+  "statsScopeAll": "Toàn bộ tài liệu",
+  "statsScopeSelection": "Vùng chọn",
+  "statsLines": "Số dòng",
+  "statsWords": "Số từ",
+  "statsChars": "Số ký tự",
+  "statsCharsNoSpace": "Ký tự (không khoảng trắng)",
+  "statsBytes": "Kích thước",
+  "statsLongestLine": "Dòng dài nhất",
+  "statsLongestLineValue": "dòng {line} · {chars} ký tự",
+  "statsParagraphs": "Số đoạn"
 }

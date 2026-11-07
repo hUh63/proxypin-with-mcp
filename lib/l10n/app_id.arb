@@ -3512,5 +3512,19 @@
   "diffFindNoMatch": "Tidak ada yang cocok",
   "diffMatchCase": "Bedakan huruf besar",
   "diffTabWidth": "Lebar tab",
-  "diffTabWidthNone": "Biarkan tab"
+  "diffTabWidthNone": "Biarkan tab",
+  "diffMergeSaveToFile": "Simpan ke file kanan",
+  "diffMergeSaveToFileAsk": "Timpa {name} dengan hasil gabungan?",
+  "diffMergedSaved": "Disimpan ke {name}",
+  "editorDocStats": "Statistik dokumen",
+  "statsScopeAll": "Seluruh dokumen",
+  "statsScopeSelection": "Pilihan",
+  "statsLines": "Baris",
+  "statsWords": "Kata",
+  "statsChars": "Karakter",
+  "statsCharsNoSpace": "Karakter (tanpa spasi)",
+  "statsBytes": "Ukuran",
+  "statsLongestLine": "Baris terpanjang",
+  "statsLongestLineValue": "baris {line} · {chars} karakter",
+  "statsParagraphs": "Paragraf"
 }

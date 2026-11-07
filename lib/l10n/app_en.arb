@@ -5822,5 +5822,43 @@
   "diffFindNoMatch": "No match",
   "diffMatchCase": "Match case",
   "diffTabWidth": "Tab width",
-  "diffTabWidthNone": "Keep tabs"
+  "diffTabWidthNone": "Keep tabs",
+  "diffMergeSaveToFile": "Save to right file",
+  "diffMergeSaveToFileAsk": "Overwrite {name} with the merged result?",
+  "@diffMergeSaveToFileAsk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "diffMergedSaved": "Saved to {name}",
+  "@diffMergedSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editorDocStats": "Document stats",
+  "statsScopeAll": "Whole document",
+  "statsScopeSelection": "Selection",
+  "statsLines": "Lines",
+  "statsWords": "Words",
+  "statsChars": "Characters",
+  "statsCharsNoSpace": "Characters (no spaces)",
+  "statsBytes": "Size",
+  "statsLongestLine": "Longest line",
+  "statsLongestLineValue": "line {line} · {chars} chars",
+  "@statsLongestLineValue": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "chars": {
+        "type": "String"
+      }
+    }
+  },
+  "statsParagraphs": "Paragraphs"
 }

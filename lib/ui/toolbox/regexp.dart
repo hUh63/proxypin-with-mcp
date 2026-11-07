@@ -178,6 +178,7 @@ class _RegExpPageState extends State<RegExpPage> {
       ),
     );
     if (result == null) return;
+    if (!mounted) return;
     setState(() => _snippets = result);
     await ToolSnippetStore.save('regexp', result);
   }

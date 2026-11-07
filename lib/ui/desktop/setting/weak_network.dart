@@ -397,6 +397,7 @@ class _WeakNetworkDialogState extends State<WeakNetworkDialog> {
         profileSummary: _profileSummary,
       ),
     );
+    if (!mounted) return;
     setState(() {}); // 弹窗关闭后，同步刷新主面板的数据绑定状态
   }
 }

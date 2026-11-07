@@ -246,6 +246,7 @@ class _PreferenceState extends State<Preference> {
     );
     controller.dispose();
     if (result == null) return;
+    if (!mounted) return;
     setState(() => appConfiguration.splashSubtitle = result.isEmpty ? null : result);
     appConfiguration.flushConfig();
   }

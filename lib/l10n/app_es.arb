@@ -3512,5 +3512,19 @@
   "diffFindNoMatch": "Sin coincidencias",
   "diffMatchCase": "Distinguir mayúsculas",
   "diffTabWidth": "Ancho de tabulación",
-  "diffTabWidthNone": "Mantener tabulaciones"
+  "diffTabWidthNone": "Mantener tabulaciones",
+  "diffMergeSaveToFile": "Guardar en el archivo derecho",
+  "diffMergeSaveToFileAsk": "¿Sobrescribir {name} con el resultado combinado?",
+  "diffMergedSaved": "Guardado en {name}",
+  "editorDocStats": "Estadísticas del documento",
+  "statsScopeAll": "Todo el documento",
+  "statsScopeSelection": "Selección",
+  "statsLines": "Líneas",
+  "statsWords": "Palabras",
+  "statsChars": "Caracteres",
+  "statsCharsNoSpace": "Caracteres (sin espacios)",
+  "statsBytes": "Tamaño",
+  "statsLongestLine": "Línea más larga",
+  "statsLongestLineValue": "línea {line} · {chars} caracteres",
+  "statsParagraphs": "Párrafos"
 }

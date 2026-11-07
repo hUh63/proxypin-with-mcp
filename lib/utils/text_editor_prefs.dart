@@ -22,6 +22,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 文本编辑器的显示 / 排版偏好（「更多 → 设置」里可调，全局共享）。
 ///
 /// 与编辑器实例无关，改完之后所有打开的文档都会用新设置重建编辑区。
+/// 编辑器「工作区」根目录的偏好键。
+///
+/// 编辑器页与目录对比页都要读它，写成一处免得两边字面量漂移（那时会出现
+/// 「编辑器里加了工作区，目录对比里填不出来」这种莫名其妙的现象）。
+const String kTextEditorWorkspaceKey = 'text_editor_workspace_v1';
+
 class TextEditorPrefs {
   /// 字号。
   final double fontSize;

@@ -27,6 +27,7 @@ import 'package:proxypin/ui/toolbox/file_preview.dart';
 import 'package:proxypin/ui/toolbox/text_diff.dart';
 import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/utils/text_file_reader.dart';
+import 'package:proxypin/utils/text_editor_prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 目录对比：选两个文件夹，按相对路径配对，列出「相同 / 修改 / 仅左侧 / 仅右侧 /
@@ -69,6 +70,10 @@ class _DirDiffPageState extends State<DirDiffPage> {
   String _filter = '';
   bool _picking = false;
 
+  /// 编辑器里设过的「工作区」根目录：有的话给一个一键填入的按钮，
+  /// 不用再手动一路点目录选到它（项目对比是最常见的一组目录）。
+  String _workspace = '';
+
   /// 树视图（按目录层级），默认开：文件一多，平铺列表很难看出「哪个目录没同步」。
   static const String _treeKey = 'dir_diff_tree_v1';
   bool _tree = true;
@@ -84,6 +89,12 @@ class _DirDiffPageState extends State<DirDiffPage> {
     unawaited(SharedPreferencesAsync().getBool(_treeKey).then((v) {
       if (!mounted || v == null) return;
       setState(() => _tree = v);
+    }).catchError((_) => null));
+    unawaited(SharedPreferencesAsync()
+        .getString(kTextEditorWorkspaceKey)
+        .then((v) {
+      if (!mounted || v == null || v.isEmpty || v == _workspace) return;
+      setState(() => _workspace = v);
     }).catchError((_) => null));
   }
 
@@ -460,6 +471,20 @@ class _DirDiffPageState extends State<DirDiffPage> {
             style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
           ),
         ),
+        if (_workspace.isNotEmpty)
+          IconButton(
+            tooltip: localizations.editorWorkspace,
+            icon: const Icon(Icons.workspaces_outlined, size: 20),
+            onPressed: () {
+              setState(() {
+                if (left) {
+                  _leftCtrl.text = _workspace;
+                } else {
+                  _rightCtrl.text = _workspace;
+                }
+              });
+            },
+          ),
         IconButton(
           tooltip: localizations.dirDiffPickDir,
           icon: const Icon(Icons.folder_open, size: 20),

@@ -692,6 +692,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'file', aliases: 'bd 比较标签页 与标签页比较 difftab comparetab'),
   EditorMenuItem('tasks', _tasksLabel,
       group: 'inspect', aliases: 'rw 任务列表 todo fixme tasks'),
+  EditorMenuItem('stats', _statsLabel,
+      group: 'edit', aliases: 'tj 文档统计 统计 字数 stats wordcount'),
   EditorMenuItem('findInFiles', _findInFilesLabel,
       group: 'edit', aliases: 'djwj 多文件查找 findinfiles'),
   EditorMenuItem('renameEverywhere', _renameEverywhereLabel,
@@ -778,6 +780,7 @@ String _snippetsLabel(AppLocalizations l) => l.editorSnippets;
 String _historyLabel(AppLocalizations l) => l.editorLocalHistory;
 String _diffTabLabel(AppLocalizations l) => l.editorDiffWithTab;
 String _tasksLabel(AppLocalizations l) => l.editorTasks;
+String _statsLabel(AppLocalizations l) => l.editorDocStats;
 String _findInFilesLabel(AppLocalizations l) => l.editorFindInFiles;
 String _renameEverywhereLabel(AppLocalizations l) => l.editorRenameEverywhere;
 String _undoRenameLabel(AppLocalizations l) => l.editorRenameUndo;
@@ -958,6 +961,8 @@ IconData menuIconOf(String id) {
       return Icons.compare;
     case 'tasks':
       return Icons.checklist;
+    case 'stats':
+      return Icons.analytics_outlined;
     case 'snippets':
       return Icons.auto_awesome_motion;
     case 'findInFiles':

@@ -5209,5 +5209,19 @@
   "diffFindNoMatch": "沒有符合",
   "diffMatchCase": "區分大小寫",
   "diffTabWidth": "Tab 寬度",
-  "diffTabWidthNone": "不展開"
+  "diffTabWidthNone": "不展開",
+  "diffMergeSaveToFile": "儲存到右側檔案",
+  "diffMergeSaveToFileAsk": "用合併結果覆寫 {name}？",
+  "diffMergedSaved": "已寫入 {name}",
+  "editorDocStats": "文件統計",
+  "statsScopeAll": "整篇",
+  "statsScopeSelection": "選取範圍",
+  "statsLines": "行數",
+  "statsWords": "詞數",
+  "statsChars": "字元數",
+  "statsCharsNoSpace": "字元數（不含空白）",
+  "statsBytes": "大小",
+  "statsLongestLine": "最長行",
+  "statsLongestLineValue": "第 {line} 行 · {chars} 字元",
+  "statsParagraphs": "段落數"
 }
