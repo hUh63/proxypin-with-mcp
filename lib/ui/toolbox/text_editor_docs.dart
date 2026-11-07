@@ -19,6 +19,7 @@ import 'dart:io';
 
 import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/utils/editor_config.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/toolbox/console_state.dart';
@@ -51,6 +52,10 @@ class EditorDocument {
 
   /// 连续几次被嗅探判成「纯文本」。连续 3 次就锁定，不再嗅探（避免来回抖）。
   int plainSniffStreak = 0;
+
+  /// 从所在项目的 `.editorconfig` 读到的约定（缩进/换行/行尾空白/末尾换行）。
+  /// 打开文件时加载一次，保存时按它执行 —— 项目约定优先于编辑器的全局偏好。
+  EditorProperties? editorConfig;
 
   /// 有未写回磁盘的修改。
   ///

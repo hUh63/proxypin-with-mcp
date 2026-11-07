@@ -46,6 +46,9 @@ import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/utils/code_snippets.dart';
 import 'package:proxypin/utils/code_symbols.dart';
 import 'package:proxypin/utils/dir_diff.dart';
+import 'package:proxypin/utils/local_history.dart';
+import 'package:proxypin/utils/editor_config.dart';
+import 'package:proxypin/utils/todo_scanner.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
 import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
@@ -5206,6 +5209,407 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 与另一个已打开的标签页比较（VS 的 Compare with Selected / 比较标签页）。
+  Future<void> _compareWithTab() async {
+    final current = _doc;
+    if (current == null) return;
+    final others =
+        EditorDocuments.instance.docs.where((d) => d.id != current.id).toList();
+    if (others.isEmpty) {
+      _toast(localizations.editorDiffNoOtherTab);
+      return;
+    }
+    final picked = await showDialog<EditorDocument>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(localizations.editorDiffWithTab),
+        children: others
+            .map<Widget>((d) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, d),
+                  child: Row(children: [
+                    const Icon(Icons.description_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Text(d.name,
+                            maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    if (d.dirty)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: Text('•'),
+                      ),
+                  ]),
+                ))
+            .toList(),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    // 两侧都是内存里的缓冲区，不做换行符归一（对齐才准）。
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => TextDiffPage(
+              initialLeft: current.text,
+              initialRight: picked.text,
+              initialLeftName: current.name,
+              initialRightName: picked.name,
+            )));
+  }
+
+  /// 本地历史（VS Code 的 Timeline / IDEA 的 Local History 的等价物）。
+  ///
+  /// 每次保存前留一份「磁盘上原来那一份」的快照，不依赖任何版本控制。
+  /// 份数、单份体积都有上限，详见 [LocalHistory]。
+  Future<void> _showLocalHistory() async {
+    final doc = _doc;
+    final controller = _controller;
+    if (doc == null || controller == null) return;
+    final path = doc.path;
+    if (path == null || path.isEmpty) {
+      _toast(localizations.editorLocalHistoryNoFile);
+      return;
+    }
+    final entries = await LocalHistory.list(path);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return StatefulBuilder(builder: (ctx2, setSheet) {
+          return SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(
+                        '${localizations.editorLocalHistory} · ${doc.name} · ${entries.length}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                  if (entries.isNotEmpty)
+                    TextButton(
+                      onPressed: () async {
+                        await LocalHistory.clear(path);
+                        if (!ctx2.mounted) return;
+                        setSheet(() => entries.clear());
+                      },
+                      child: Text(localizations.clear),
+                    ),
+                ]),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(localizations.editorLocalHistoryHint,
+                      style:
+                          TextStyle(fontSize: 11, color: theme.hintColor)),
+                ),
+              ),
+              if (entries.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                  child: Text(localizations.editorLocalHistoryEmpty,
+                      style: TextStyle(color: theme.hintColor)),
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 400),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: entries.length,
+                    itemBuilder: (_, i) {
+                      // 倒序：最新的在最上面。
+                      final e = entries[entries.length - 1 - i];
+                      return ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.history, size: 18),
+                        title: Text(
+                            '${LocalHistory.formatTime(e.time)} · ${LocalHistory.formatBytes(e.bytes)}',
+                            style: const TextStyle(fontSize: 13)),
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                          IconButton(
+                            tooltip: localizations.editorHistoryCompare,
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.compare_arrows, size: 18),
+                            onPressed: () async {
+                              final text =
+                                  await LocalHistory.read(path, e.epoch);
+                              if (!mounted || !ctx.mounted) return;
+                              if (text == null) {
+                                _toast(localizations.editorLocalHistoryMissing);
+                                return;
+                              }
+                              Navigator.pop(ctx);
+                              await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) => TextDiffPage(
+                                            initialLeft: text,
+                                            initialRight: _applyNewline(
+                                                controller.text,
+                                                _newlineCharsOf(doc)),
+                                            initialLeftName:
+                                                '${doc.name} @ ${LocalHistory.formatTime(e.time)}',
+                                            initialRightName: doc.name,
+                                          )));
+                            },
+                          ),
+                          IconButton(
+                            tooltip: localizations.editorLocalHistoryRestore,
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.restore, size: 18),
+                            onPressed: () async {
+                              final text =
+                                  await LocalHistory.read(path, e.epoch);
+                              if (!mounted || !ctx.mounted) return;
+                              if (text == null) {
+                                _toast(localizations.editorLocalHistoryMissing);
+                                return;
+                              }
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (d) => AlertDialog(
+                                  title: Text(
+                                      localizations.editorLocalHistoryRestore),
+                                  content: Text(localizations
+                                      .editorLocalHistoryRestoreAsk),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(d, false),
+                                        child: Text(localizations.cancel)),
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(d, true),
+                                        child: Text(localizations.confirm)),
+                                  ],
+                                ),
+                              );
+                              if (ok != true || !mounted || !ctx.mounted) return;
+                              Navigator.pop(ctx);
+                              controller.value = TextEditingValue(
+                                text: text,
+                                selection:
+                                    const TextSelection.collapsed(offset: 0),
+                              );
+                              _toast(localizations.editorLocalHistoryRestored);
+                            },
+                          ),
+                        ]),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 8),
+            ]),
+          );
+        });
+      },
+    );
+  }
+
+  /// 任务列表：把散落在注释里的 TODO / FIXME 之类集中列出来（VS 的 Task List）。
+  Future<void> _showTasks() async {
+    final controller = _controller;
+    if (controller == null) return;
+    // path / 文件名 / 命中项；当前文件与工作区扫描共用同一种结构。
+    var hits = <({String path, String name, TodoHit hit})>[];
+    var loading = false;
+    String? tagFilter;
+
+    void scanCurrent() {
+      final doc = _doc;
+      if (doc == null) return;
+      hits = TodoScanner.scan(controller.text, limit: 500)
+          .map((h) =>
+              (path: doc.path ?? '', name: doc.name, hit: h))
+          .toList();
+    }
+
+    scanCurrent();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return StatefulBuilder(builder: (ctx2, setSheet) {
+          final filtered = tagFilter == null
+              ? hits
+              : hits.where((e) => e.hit.tag == tagFilter).toList();
+          final counts = TodoScanner.countByTag(
+              hits.map((e) => e.hit).toList());
+          return SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(
+                        '${localizations.editorTasks} · ${filtered.length}/${hits.length}',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                  if (loading)
+                    const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                  else
+                    TextButton.icon(
+                      onPressed: () async {
+                        setSheet(() => loading = true);
+                        final files = await _collectScopeFiles();
+                        final result = <({String path, String name, TodoHit hit})>[];
+                        for (final f in files) {
+                          if (result.length > 2000) break;
+                          try {
+                            final file = File(f);
+                            if (await file.length() > 512 * 1024) continue;
+                            final text = await file.readAsString();
+                            final name = f.split(RegExp(r'[/\\]')).last;
+                            for (final h in TodoScanner.scan(text, limit: 200)) {
+                              result.add((path: f, name: name, hit: h));
+                            }
+                          } catch (_) {}
+                        }
+                        if (!ctx2.mounted) return;
+                        setSheet(() {
+                          hits = result;
+                          loading = false;
+                          tagFilter = null;
+                        });
+                      },
+                      icon: const Icon(Icons.travel_explore, size: 16),
+                      label: Text(localizations.editorTasksScanWorkspace,
+                          style: const TextStyle(fontSize: 12)),
+                    ),
+                ]),
+              ),
+              if (counts.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Wrap(spacing: 6, runSpacing: 4, children: [
+                      ChoiceChip(
+                        label: Text('${localizations.all} (${hits.length})',
+                            style: const TextStyle(fontSize: 11)),
+                        selected: tagFilter == null,
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (_) => setSheet(() => tagFilter = null),
+                      ),
+                      for (final entry in counts.entries)
+                        ChoiceChip(
+                          label: Text('${entry.key} (${entry.value})',
+                              style: const TextStyle(fontSize: 11)),
+                          selected: tagFilter == entry.key,
+                          visualDensity: VisualDensity.compact,
+                          onSelected: (_) =>
+                              setSheet(() => tagFilter = entry.key),
+                        ),
+                    ]),
+                  ),
+                ),
+              if (filtered.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                  child: Text(localizations.editorTasksEmpty,
+                      style: TextStyle(color: theme.hintColor)),
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 400),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final e = filtered[i];
+                      return ListTile(
+                        dense: true,
+                        leading: _taskTagBadge(e.hit.tag),
+                        title: Text(e.hit.text.isEmpty ? e.hit.tag : e.hit.text,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13)),
+                        subtitle: Text('${e.name}:${e.hit.line}',
+                            style: const TextStyle(fontSize: 11)),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          unawaited(
+                              _jumpToTask(e.path, e.hit.line));
+                        },
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 8),
+            ]),
+          );
+        });
+      },
+    );
+  }
+
+  /// 任务标签的小色块：不同类型给不同颜色，扫一眼能分出轻重。
+  Widget _taskTagBadge(String tag) {
+    Color color;
+    switch (tag) {
+      case 'FIXME':
+      case 'BUG':
+        color = const Color(0xFFE53935);
+      case 'HACK':
+      case 'XXX':
+        color = const Color(0xFFFB8C00);
+      case 'TODO':
+        color = const Color(0xFF1E88E5);
+      case 'REVIEW':
+        color = const Color(0xFF8E24AA);
+      default:
+        color = const Color(0xFF43A047);
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(tag,
+          style: TextStyle(
+              fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+    );
+  }
+
+  /// 跳到某个文件里的某一行（跨文件时先打开再跳）。
+  Future<void> _jumpToTask(String path, int line) async {
+    if (path.isNotEmpty && path != _doc?.path) {
+      await _openPath(path);
+      if (!mounted) return;
+      // 打开文档后布局要一帧才完成，等一小会儿再定位。
+      await Future.delayed(const Duration(milliseconds: 80));
+      if (!mounted) return;
+    }
+    _gotoLineNumber(line);
+  }
+
+  /// 跳到第 [line] 行（1 开始）。没走内核的 `scrollToLine`，因为要先算偏移。
+  void _gotoLineNumber(int line) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    var offset = 0;
+    var seen = 1;
+    while (seen < line) {
+      final i = text.indexOf('\n', offset);
+      if (i < 0) break;
+      offset = i + 1;
+      seen++;
+    }
+    _jumpToOffset(offset);
+  }
+
   void _expandSelection() {
     final controller = _controller;
     if (controller == null) return;
@@ -6281,6 +6685,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   // ------------------------------ VS 的编辑动作补充 ------------------------------
 
+  /// 保存时补一个末尾换行（`.editorconfig` 的 `insert_final_newline = true`）。
+  void _ensureFinalNewline(EditorDocument doc) {
+    final controller = doc.controller;
+    final text = controller.text;
+    if (text.isEmpty || text.endsWith('\n') || text.endsWith('\r')) return;
+    controller.replaceRange(text.length, text.length, '\n');
+  }
+
+  /// 状态栏的缩进段：文件所在项目写了 `.editorconfig` 就按它的缩进来显示。
+  String _indentLabelFor(EditorDocument doc) {
+    final cfg = doc.editorConfig;
+    var useTabs = _prefs.useTabs;
+    if (cfg?.indentStyle == 'tab') useTabs = true;
+    if (cfg?.indentStyle == 'space') useTabs = false;
+    final size = cfg?.indentSize ?? cfg?.tabWidth ?? _prefs.tabSize;
+    return useTabs ? 'Tab:$size' : 'Space:$size';
+  }
+
   /// 对任意文档做「保存时修剪行尾空白」：同步改缓冲区（保住光标），不提示。
   void _trimDocTrailingWhitespace(EditorDocument doc) {
     final controller = doc.controller;
@@ -6704,6 +7126,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(TextEditorPrefsStore.update(_prefs.copyWith(encodingName: detected.name)));
       }
       doc.diskBaseline = content;
+      // 项目里的 .editorconfig 优先于编辑器的全局偏好（VS / IDEA 同款行为）。
+      final cfg = await EditorConfig.loadFor(path);
+      if (!mounted) return;
+      if (cfg != null && !cfg.isEmpty) {
+        doc.editorConfig = cfg;
+        final nl = cfg.newlineChars;
+        if (nl != null) doc.newline = nl;
+      }
       _activate(doc);
       final pageLimit =
           _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
@@ -7526,7 +7956,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       controller: doc.controller,
       dirtyCount: _docs.docs.where((d) => d.dirty).length,
       language: _lang.label == 'Plain Text' ? localizations.editorPlainText : _lang.label,
-      indent: _prefs.useTabs ? 'Tab:${_prefs.tabSize}' : 'Space:${_prefs.tabSize}',
+      indent: _indentLabelFor(doc),
       // 纯文本没有「问题」这个概念，不显示 ❌0 ⚠0。
       report: _programming && _lintEnabled ? doc.lint : null,
       onTapIssues: () => _openConsole(EditorConsoleTab.problems),
@@ -7621,9 +8051,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
       await _applyFormat(quiet: true);
       if (!mounted) return false;
     }
-    if (_prefs.trimOnSave) _trimDocTrailingWhitespace(doc);
+    final editorCfg = doc.editorConfig;
+    // 行尾空白 / 末尾换行 / 换行符：项目里写了 .editorconfig 就按它来。
+    if (editorCfg?.trimTrailingWhitespace ?? _prefs.trimOnSave) {
+      _trimDocTrailingWhitespace(doc);
+    }
+    if (editorCfg?.insertFinalNewline == true) _ensureFinalNewline(doc);
+    // 保存前把「磁盘上原来那一份」留进本地历史（VS Code Timeline 的等价物）。
+    // 用 diskBaseline 而不是现在的编辑器内容：历史里要的是「你改之前的版本」。
+    final baseline = doc.diskBaseline;
+    if (baseline != null && baseline != doc.text) {
+      unawaited(LocalHistory.record(path, baseline));
+    }
     try {
-      final text = _applyNewline(doc.text, _newlineCharsOf(doc));
+      final text = _applyNewline(
+          doc.text, editorCfg?.newlineChars ?? _newlineCharsOf(doc));
       final file = File(path);
       await file.writeAsBytes(await _encodingOf(doc).encode(text));
       // 自己写盘不算「外部修改」：顺手把基线 mtime 对齐，否则 3 秒后的
@@ -8324,6 +8766,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
           _menuItem('compareClipboard', Icons.content_paste_search,
               loc.editorCompareClipboard),
+          _menuItem('diffTab', Icons.compare, loc.editorDiffWithTab),
+          _menuItem('history', Icons.history, loc.editorLocalHistory),
           CheckedPopupMenuItem(
               value: 'autosave', checked: _autoSave, child: Text(loc.editorAutoSave)),
           PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right, id: 'file')),
@@ -8452,6 +8896,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('compilerLog', Icons.translate, loc.editorCompilerLog),
           _menuItem('toggleBreakpoint', Icons.radio_button_unchecked, loc.editorToggleBreakpoint),
           _menuItem('debug', Icons.bug_report_outlined, loc.editorDebugTab),
+          const PopupMenuDivider(),
+          _menuItem('tasks', Icons.checklist, loc.editorTasks),
         ];
     }
     return const [];
@@ -8613,6 +9059,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_compareWithDisk());
       case 'compareClipboard':
         unawaited(_compareWithClipboard());
+        case 'diffTab':
+          _compareWithTab();
+        case 'history':
+          _showLocalHistory();
+        case 'tasks':
+          _showTasks();
       case 'autosave':
         setState(() => _autoSave = !_autoSave);
         unawaited(_saveAutoSave());

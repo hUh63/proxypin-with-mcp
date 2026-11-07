@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
@@ -15,11 +17,28 @@ class WindowsToolbar extends StatefulWidget {
 }
 
 class _WindowsToolbarState extends State<WindowsToolbar> with WindowListener {
+  /// 窗口是否最大化。
+  ///
+  /// 原来这里是 `FutureBuilder(future: windowManager.isMaximized())`：每帧现场
+  /// 造一个 Future，而且只 addListener 却没实现 onWindowMaximize/onWindowUnmaximize，
+  /// 于是最大化之后图标还停在「最大化」上（看着像按钮点不动）。
+  bool _maximized = false;
+
   @override
   void initState() {
     windowManager.addListener(this);
     super.initState();
+    unawaited(_refreshMaximized());
   }
+
+  Future<void> _refreshMaximized() async {
+    try {
+      final v = await windowManager.isMaximized();
+      if (!mounted || v == _maximized) return;
+      setState(() => _maximized = v);
+    } catch (_) {}
+  }
+
 
   @override
   void dispose() {
@@ -52,24 +71,20 @@ class _WindowsToolbarState extends State<WindowsToolbar> with WindowListener {
                 windowManager.minimize();
               }
             }),
-        FutureBuilder<bool>(
-            future: windowManager.isMaximized(),
-            builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-              if (snapshot.data == true) {
-                return WindowCaptionButton.unmaximize(
-                  brightness: Theme.brightnessOf(context),
-                  onPressed: () {
-                    windowManager.unmaximize();
-                  },
-                );
-              }
-              return WindowCaptionButton.maximize(
-                brightness: Theme.brightnessOf(context),
-                onPressed: () {
-                  windowManager.maximize();
-                },
-              );
-            }),
+        if (_maximized)
+          WindowCaptionButton.unmaximize(
+            brightness: Theme.brightnessOf(context),
+            onPressed: () {
+              windowManager.unmaximize();
+            },
+          )
+        else
+          WindowCaptionButton.maximize(
+            brightness: Theme.brightnessOf(context),
+            onPressed: () {
+              windowManager.maximize();
+            },
+          ),
         WindowCaptionButton.close(
             brightness: Theme.brightnessOf(context),
             onPressed: () {
@@ -81,12 +96,14 @@ class _WindowsToolbarState extends State<WindowsToolbar> with WindowListener {
 
   @override
   void onWindowMaximize() {
-    setState(() {});
+    if (!mounted || _maximized) return;
+    setState(() => _maximized = true);
   }
 
   @override
   void onWindowUnmaximize() {
-    setState(() {});
+    if (!mounted || !_maximized) return;
+    setState(() => _maximized = false);
   }
 }
 

@@ -142,6 +142,27 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 显示字号（底部 +/- 调节）。
   double _fontSize = 13.5;
 
+  /// 对齐视图里的查找（vs 编辑视图的 FindPanelView：那个只能搜编辑器里的文本，
+  /// 对齐视图是只读渲染，得自己实现一份）。
+  bool _findOpen = false;
+  final TextEditingController _findInput = TextEditingController();
+  String _findQuery = '';
+  bool _findCase = false;
+
+  /// 当前命中在 [_findHitsCache] 里的下标。
+  int _findCursor = 0;
+  List<({bool left, int row})> _findHitsCache = const <({bool left, int row})>[];
+  Set<int> _findHitRows = <int>{};
+  int? _findCurrentRow;
+  String _findHitsKey = '';
+
+  /// Tab 展开成几个空格（0 = 不展开，按原样显示）。
+  ///
+  /// 对比两份缩进风格不同的文件时，`\t` 和空格混用会让两边怎么都对不齐；
+  /// 展开之后至少视觉上能对齐，也顺便看出「Tab 占了几列」。
+  int _tabWidth = 0;
+  static const String _tabWidthKey = 'text_diff_tab_width_v1';
+
   /// 对齐视图：左右各一个纵向滚动控制器（互相联动）+ 各一个横向滚动控制器（各自独立）。
   final ScrollController _leftV = ScrollController();
   final ScrollController _rightV = ScrollController();
@@ -277,6 +298,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (!mounted || v == null || v == _fontSize) return;
       setState(() => _fontSize = v.clamp(11.0, 22.0));
     }).catchError((_) => null));
+    unawaited(SharedPreferencesAsync().getInt(_tabWidthKey).then((v) {
+      if (!mounted || v == null || v == _tabWidth) return;
+      setState(() {
+        _tabWidth = v.clamp(0, 8);
+        _findHitsKey = '';
+      });
+    }).catchError((_) => null));
     unawaited(SharedPreferencesAsync().getBool(_sideKey).then((v) {
       if (!mounted || v == null || v == _sideBySide) return;
       setState(() => _sideBySide = v);
@@ -323,6 +351,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _rightUndo.removeListener(_onUndoChanged);
     _findLeft.dispose();
     _findRight.dispose();
+    _findInput.dispose();
     _left.dispose();
     _right.dispose();
     _leftUndo.dispose();
@@ -1000,6 +1029,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   @override
   Widget build(BuildContext context) {
     bool isNewWindows = widget.windowId != null && Platform.isWindows;
+    // 命中的行要跟着「忽略开关 / 只显示差异 / 聚焦块」一起变，统一在 build
+    // 开头刷一次（带 key，没变就不重算）。
+    _refreshFindHits();
 
     return PopScope(
       canPop: false,
@@ -1064,6 +1096,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
           // 快捷插入只在编辑视图有意义（对齐视图是只读渲染）。
           if (!_aligned) _snippetBar(),
           _bottomBar(),
+          if (_findOpen) _findBar(),
           AnimatedBuilder(
             animation: Listenable.merge([_findLeft, _findRight]),
             builder: (_, __) => FindPanelView(
@@ -1076,11 +1109,188 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
+  /// 命中缓存：文本 / 开关 / 显示范围任何一项变了才重算。
+  void _refreshFindHits() {
+    // 没在查找时直接返回：`_visibleRows` 每次都会新建一张列表，放在 build 里
+    // 无脑调用的话，几万行的对比每帧都要多走一遍（滚动也跟着变卡）。
+    if (_findQuery.isEmpty) {
+      if (_findHitsKey.isNotEmpty) {
+        _findHitsKey = '';
+        _findHitsCache = const <({bool left, int row})>[];
+        _findHitRows = <int>{};
+        _findCurrentRow = null;
+        _findCursor = 0;
+      }
+      return;
+    }
+    final rows = _visibleRows(_alignedRows());
+    final key = '$_findQuery|$_findCase|$_alignedRowsKey|${rows.length}'
+        '|$_onlyDiff|$_focusBlock|$_typeFilter|$_wrap';
+    if (key == _findHitsKey) return;
+    _findHitsKey = key;
+    final hits = <({bool left, int row})>[];
+    final hitRows = <int>{};
+    final needle = _findCase ? _findQuery : _findQuery.toLowerCase();
+    for (var i = 0; i < rows.length; i++) {
+      final l = rows[i].leftText;
+      if (l != null && l.isNotEmpty) {
+        final hay = _findCase ? l : l.toLowerCase();
+        if (hay.contains(needle)) {
+          hits.add((left: true, row: i));
+          hitRows.add(i);
+        }
+      }
+      final r = rows[i].rightText;
+      if (r != null && r.isNotEmpty) {
+        final hay = _findCase ? r : r.toLowerCase();
+        if (hay.contains(needle)) {
+          hits.add((left: false, row: i));
+          hitRows.add(i);
+        }
+      }
+    }
+    _findHitsCache = hits;
+    _findHitRows = hitRows;
+    if (_findCursor >= hits.length) _findCursor = hits.isEmpty ? 0 : hits.length - 1;
+    _findCurrentRow = hits.isEmpty ? null : hits[_findCursor].row;
+  }
+
+  /// 上一处 / 下一处。
+  void _findGo(int delta) {
+    final hits = _findHitsCache;
+    if (hits.isEmpty) {
+      _toastText(localizations.diffFindNoMatch);
+      return;
+    }
+    var next = _findCursor + delta;
+    if (next < 0) next = hits.length - 1;
+    if (next >= hits.length) next = 0;
+    setState(() {
+      _findCursor = next;
+      _findCurrentRow = hits[next].row;
+    });
+    _scrollToRowIndex(hits[next].row);
+  }
+
+  void _closeFind() {
+    setState(() {
+      _findOpen = false;
+      _findQuery = '';
+      _findInput.clear();
+      _findHitRows = <int>{};
+      _findCurrentRow = null;
+      _findHitsCache = const <({bool left, int row})>[];
+      _findHitsKey = '';
+    });
+  }
+
+  /// 对齐视图的查找条（编辑视图仍然用内核的 FindPanelView）。
+  Widget _findBar() {
+    final theme = Theme.of(context);
+    final total = _findHitsCache.length;
+    final pos = total == 0 ? 0 : _findCursor.clamp(0, total - 1) + 1;
+    return Container(
+      height: 42,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        border: Border(
+            top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.4))),
+      ),
+      child: Row(children: [
+        const SizedBox(width: 8),
+        Expanded(
+          child: TextField(
+            controller: _findInput,
+            autofocus: true,
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              hintText: localizations.diffFindInDiff,
+              hintStyle: const TextStyle(fontSize: 13),
+            ),
+            onChanged: (v) {
+              setState(() {
+                _findQuery = v;
+                _findCursor = 0;
+                _findHitsKey = '';
+              });
+              _refreshFindHits();
+              if (_findHitsCache.isNotEmpty) {
+                _scrollToRowIndex(_findHitsCache.first.row);
+              }
+            },
+            onSubmitted: (_) => _findGo(1),
+          ),
+        ),
+        Text(total == 0 ? (localizations.diffFindNoMatch) : '$pos/$total',
+            style: TextStyle(
+                fontSize: 11,
+                color: total == 0
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.primary)),
+        IconButton(
+          tooltip: localizations.diffMatchCase,
+          visualDensity: VisualDensity.compact,
+          icon: Icon(Icons.text_fields,
+              size: 16,
+              color: _findCase ? theme.colorScheme.primary : null),
+          onPressed: () {
+            setState(() {
+              _findCase = !_findCase;
+              _findCursor = 0;
+              _findHitsKey = '';
+            });
+            _refreshFindHits();
+          },
+        ),
+        IconButton(
+          tooltip: localizations.diffPrev,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.keyboard_arrow_up, size: 18),
+          onPressed: total == 0 ? null : () => _findGo(-1),
+        ),
+        IconButton(
+          tooltip: localizations.diffNext,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+          onPressed: total == 0 ? null : () => _findGo(1),
+        ),
+        IconButton(
+          tooltip: localizations.cancel,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.close, size: 17),
+          onPressed: _closeFind,
+        ),
+      ]),
+    );
+  }
+
+  /// 工具栏的搜索按钮：对齐视图走自建查找条，编辑视图走内核的查找面板。
+  void _onSearchButton() {
+    final showingAligned =
+        _aligned || !(_left.text.isEmpty && _right.text.isEmpty);
+    if (!showingAligned) {
+      _toggleFind(_leftActive ? _findLeft : _findRight);
+      return;
+    }
+    setState(() => _findOpen = !_findOpen);
+    if (!_findOpen) _closeFind();
+  }
+
   /// 对齐视图 ↔ 编辑视图，并把选择记住。
   void _toggleAligned() {
     final next = !_aligned;
     setState(() => _aligned = next);
     unawaited(SharedPreferencesAsync().setBool(_alignedKey, next));
+  }
+
+  void _setTabWidth(int width) {
+    setState(() {
+      _tabWidth = width;
+      _findHitsKey = '';
+    });
+    unawaited(SharedPreferencesAsync().setInt(_tabWidthKey, width));
   }
 
   void _changeFontSize(double delta) {
@@ -1136,8 +1346,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'ignoreTrailing':
             setState(() => _ignoreTrailing = !_ignoreTrailing);
+            _compare();
           case 'ignoreBlank':
             setState(() => _ignoreBlank = !_ignoreBlank);
+            _compare();
+          case 'tabKeep':
+            _setTabWidth(0);
+          case 'tab2':
+            _setTabWidth(2);
+          case 'tab4':
+            _setTabWidth(4);
+          case 'tab8':
+            _setTabWidth(8);
           case 'ignoreComment':
             setState(() => _ignoreComments = !_ignoreComments);
             _compare();
@@ -1260,6 +1480,24 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'wordDiff',
             checked: _wordDiff,
             child: Text(localizations.diffWordDiff)),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+            enabled: false,
+            height: 28,
+            child: Text(localizations.diffTabWidth,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.primary))),
+        CheckedPopupMenuItem(
+            value: 'tabKeep',
+            checked: _tabWidth == 0,
+            child: Text(localizations.diffTabWidthNone)),
+        CheckedPopupMenuItem(
+            value: 'tab2', checked: _tabWidth == 2, child: const Text('Tab = 2')),
+        CheckedPopupMenuItem(
+            value: 'tab4', checked: _tabWidth == 4, child: const Text('Tab = 4')),
+        CheckedPopupMenuItem(
+            value: 'tab8', checked: _tabWidth == 8, child: const Text('Tab = 8')),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.diffGotoLine)),
         PopupMenuItem(
             value: 'compareSelection',
@@ -1475,8 +1713,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         _iconBtn(Icons.swap_horiz, localizations.diffSwapSides, _swapSides),
         _iconBtn(Icons.keyboard_arrow_up, localizations.diffPrev, hasDiff ? () => _navigate(-1) : null),
         _iconBtn(Icons.keyboard_arrow_down, localizations.diffNext, hasDiff ? () => _navigate(1) : null),
-        _iconBtn(Icons.search, localizations.search,
-            () => _toggleFind(_leftActive ? _findLeft : _findRight)),
+        _iconBtn(Icons.search, localizations.search, _onSearchButton),
         _iconBtn(Icons.save_outlined, localizations.diffSaveRight, _saveResult),
         // 对齐（并排对比）↔ 编辑：图标跟着当前状态换，点一下切过去。
         _iconBtn(
@@ -2053,7 +2290,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _ => Colors.grey,
     };
     final raw = l.text;
-    final text = _showSpace ? _visualizeSpace(raw) : raw;
+    final text = _renderText(raw);
     return Container(
       color: bg,
       child: Row(
@@ -2975,7 +3212,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 itemCount: rows.length,
                 itemBuilder: (_, i) {
                   final row = rows[i];
-                  final cell = _alignedRow(row, left: left, isCurrent: i == current);
+                  final cell = _alignedRow(row,
+                      left: left, isCurrent: i == current, rowIndex: i);
                   if (!row.isFold) {
                     // 双击任意一行 → 切回编辑视图并跳到这一行（对齐视图是只读的，
                     // 看到差异想改的时候不用先切模式再自己找位置）。
@@ -3003,7 +3241,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
-  Widget _alignedRow(DiffRow r, {required bool left, required bool isCurrent}) {
+  Widget _alignedRow(DiffRow r,
+      {required bool left, required bool isCurrent, int rowIndex = -1}) {
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
     Color? bg;
     switch (r.type) {
@@ -3018,7 +3257,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
     final line = left ? r.leftLine : r.rightLine;
     final raw = (left ? r.leftText : r.rightText) ?? '';
-    final text = _showSpace ? _visualizeSpace(raw) : raw;
+    final text = _renderText(raw);
     final numStyle = TextStyle(fontSize: _fontSize - 2, color: Colors.grey[600], height: 1.0);
     final textStyle = TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0);
     return Container(
@@ -3041,27 +3280,78 @@ class _TextDiffPageState extends State<TextDiffPage> {
           const SizedBox(width: 5),
           // 不裁剪：横向滚动由外层负责，长行能一直往右看。
           Expanded(
-            child: Text(text,
-                maxLines: _wrap ? null : 1,
-                softWrap: _wrap,
-                overflow: TextOverflow.visible,
-                style: textStyle),
+            child: _findQuery.isEmpty
+                ? Text(text,
+                    maxLines: _wrap ? null : 1,
+                    softWrap: _wrap,
+                    overflow: TextOverflow.visible,
+                    style: textStyle)
+                : Text.rich(
+                    _highlightSpan(text, textStyle, rowIndex),
+                    maxLines: _wrap ? null : 1,
+                    softWrap: _wrap,
+                    overflow: TextOverflow.visible),
           ),
         ],
       ),
     );
   }
 
+  /// 把一行文本按查找词切成多段（命中处加底色）。
+  TextSpan _highlightSpan(String text, TextStyle style, int rowIndex) {
+    final q = _findQuery;
+    if (q.isEmpty || text.isEmpty) return TextSpan(text: text, style: style);
+    final base = _findCase ? text : text.toLowerCase();
+    final needle = _findCase ? q : q.toLowerCase();
+    if (needle.isEmpty) return TextSpan(text: text, style: style);
+    final isCurrent = rowIndex >= 0 && rowIndex == _findCurrentRow;
+    final bg = isCurrent
+        ? const Color(0xFFFFA726).withValues(alpha: 0.65)
+        : const Color(0xFFFFEB3B).withValues(alpha: 0.45);
+    final spans = <TextSpan>[];
+    var start = 0;
+    var guard = 0;
+    while (guard++ < 4000) {
+      final i = base.indexOf(needle, start);
+      if (i < 0) break;
+      if (i > start) {
+        spans.add(TextSpan(text: text.substring(start, i), style: style));
+      }
+      spans.add(TextSpan(
+          text: text.substring(i, i + needle.length),
+          style: style.copyWith(backgroundColor: bg)));
+      start = i + needle.length;
+    }
+    if (spans.isEmpty) return TextSpan(text: text, style: style);
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start), style: style));
+    }
+    return TextSpan(children: spans, style: style);
+  }
+
+  /// 这一行最终显示成什么文本（Tab 展开 + 空白可视化）。
+  ///
+  /// 渲染和「算宽度」必须用同一份结果，否则展开 Tab 之后两栏会一栏对齐一栏不对齐。
+  String _renderText(String raw) {
+    var t = raw;
+    if (_tabWidth > 0 && t.contains('\t')) {
+      t = t.replaceAll('\t', ' ' * _tabWidth);
+    }
+    if (_showSpace) t = _visualizeSpace(t);
+    return t;
+  }
+
   /// 估算两栏的内容宽度（等宽字体按 0.62 字宽，CJK 记 2 个字宽）。
   void _ensureWidths(List<DiffRow> rows) {
-    final key = '$_alignedRowsKey|${_fontSize.toStringAsFixed(2)}';
+    final key =
+        '$_alignedRowsKey|${_fontSize.toStringAsFixed(2)}|$_tabWidth|$_showSpace';
     if (key == _widthKey) return;
     _widthKey = key;
     var maxLeft = 0;
     var maxRight = 0;
     for (final r in rows) {
-      final l = _displayUnits(r.leftText);
-      final rt = _displayUnits(r.rightText);
+      final l = _displayUnits(_renderText(r.leftText ?? ''));
+      final rt = _displayUnits(_renderText(r.rightText ?? ''));
       if (l > maxLeft) maxLeft = l;
       if (rt > maxRight) maxRight = rt;
     }

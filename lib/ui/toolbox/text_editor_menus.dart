@@ -685,6 +685,13 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'file', aliases: 'gzz 工作区 workspace root'),
   EditorMenuItem('snippets', _snippetsLabel,
       group: 'code', aliases: 'pd 代码片段 snippet'),
+  EditorMenuItem('history', _historyLabel,
+      group: 'file',
+      aliases: 'ls 历史 本地历史 文件历史 history localhistory timeline'),
+  EditorMenuItem('diffTab', _diffTabLabel,
+      group: 'file', aliases: 'bd 比较标签页 与标签页比较 difftab comparetab'),
+  EditorMenuItem('tasks', _tasksLabel,
+      group: 'inspect', aliases: 'rw 任务列表 todo fixme tasks'),
   EditorMenuItem('findInFiles', _findInFilesLabel,
       group: 'edit', aliases: 'djwj 多文件查找 findinfiles'),
   EditorMenuItem('renameEverywhere', _renameEverywhereLabel,
@@ -768,6 +775,9 @@ String _callHierarchyLabel(AppLocalizations l) => l.editorCallHierarchy;
 String _renameLabel(AppLocalizations l) => l.editorRename;
 String _workspaceLabel(AppLocalizations l) => l.editorWorkspace;
 String _snippetsLabel(AppLocalizations l) => l.editorSnippets;
+String _historyLabel(AppLocalizations l) => l.editorLocalHistory;
+String _diffTabLabel(AppLocalizations l) => l.editorDiffWithTab;
+String _tasksLabel(AppLocalizations l) => l.editorTasks;
 String _findInFilesLabel(AppLocalizations l) => l.editorFindInFiles;
 String _renameEverywhereLabel(AppLocalizations l) => l.editorRenameEverywhere;
 String _undoRenameLabel(AppLocalizations l) => l.editorRenameUndo;
@@ -942,6 +952,12 @@ IconData menuIconOf(String id) {
       return Icons.drive_file_rename_outline;
     case 'workspace':
       return Icons.workspaces_outlined;
+    case 'history':
+      return Icons.history;
+    case 'diffTab':
+      return Icons.compare;
+    case 'tasks':
+      return Icons.checklist;
     case 'snippets':
       return Icons.auto_awesome_motion;
     case 'findInFiles':
