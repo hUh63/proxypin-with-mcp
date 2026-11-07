@@ -577,7 +577,7 @@ class _DirDiffPageState extends State<DirDiffPage> {
         final (node, depth) = flat[i];
         return node.entry != null
             ? _row(node.entry!, theme, depth: depth)
-            : _dirRow(node, theme, depth: depth);
+            : _treeDirRow(node, theme, depth: depth);
       },
     );
   }
@@ -641,7 +641,7 @@ class _DirDiffPageState extends State<DirDiffPage> {
     }
   }
 
-  Widget _dirRow(_DirNode node, ThemeData theme, {int depth = 0}) {
+  Widget _treeDirRow(_DirNode node, ThemeData theme, {int depth = 0}) {
     final collapsed = _expanded.contains(node.path);
     final hasDiff = node.diffCount > 0;
     return InkWell(
