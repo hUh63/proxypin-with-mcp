@@ -5266,7 +5266,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorLocalHistoryNoFile);
       return;
     }
-    final entries = await LocalHistory.list(path);
+    // 拿一份可变副本：`LocalHistory.list` 在「没有历史」时返回的是 const 空列表，
+    // 直接对它 clear() 会抛 UnsupportedError。
+    final entries = List<LocalHistoryEntry>.of(await LocalHistory.list(path));
     if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
