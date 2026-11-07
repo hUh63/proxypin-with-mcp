@@ -53,6 +53,9 @@ class TextStats {
     var line = 1;
     var inWord = false;
     var inParagraph = false;
+    // 当前这一行是否已经有非空白字符 —— 段落只在**空行**处断开，
+    // 换行本身不是段落边界（否则「a\nb」会被算成两段）。
+    var lineHasContent = false;
 
     for (var i = 0; i < text.length; i++) {
       final c = text.codeUnitAt(i);
@@ -64,7 +67,8 @@ class TextStats {
         line++;
         lineLength = 0;
         inWord = false;
-        inParagraph = false;
+        if (!lineHasContent) inParagraph = false;
+        lineHasContent = false;
         // 末尾的换行不算新的一行。
         if (i != text.length - 1) lines++;
         continue;
@@ -76,6 +80,7 @@ class TextStats {
         inWord = false;
       } else {
         charsNoSpace++;
+        lineHasContent = true;
         if (!inWord) {
           words++;
           inWord = true;
