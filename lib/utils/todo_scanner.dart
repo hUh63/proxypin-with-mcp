@@ -46,9 +46,13 @@ class TodoScanner {
   static const String _commentStart =
       r'//+|#+|/\*+|\*+|<!--|--|;+|\{-+';
 
+  // 注意 `(?:$_commentStart)` 这层括号不能省：不加的话 `|` 会把整个正则劈成
+  // 8 个独立分支，前缀 `(?:^|[\s...])` 只约束到第一个分支，剩下 7 个变成「裸
+  // 注释符就命中」，而且捕获组只在最后那个分支里 —— 结果是几乎一条都匹配不到。
   static final RegExp _pattern = RegExp(
-    '(?:^|[\\s(\\[{,;:])$_commentStart\\s*(' + defaultTags.join('|') + r')'
-    r'\b[:\s]*([^\r\n]*)',
+    '(?:^|[\\s(\\[{,;:])(?:$_commentStart)\\s*(' +
+        defaultTags.join('|') +
+        r')(?![A-Za-z0-9_])[:\s]*([^\r\n]*)',
     caseSensitive: false,
   );
 
