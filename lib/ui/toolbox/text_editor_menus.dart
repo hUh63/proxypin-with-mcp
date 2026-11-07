@@ -681,6 +681,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('callHierarchy', _callHierarchyLabel,
       group: 'code', aliases: 'dycc 调用层次 callhierarchy callers'),
   EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
+  EditorMenuItem('workspace', _workspaceLabel,
+      group: 'file', aliases: 'gzz 工作区 workspace root'),
   EditorMenuItem('snippets', _snippetsLabel,
       group: 'code', aliases: 'pd 代码片段 snippet'),
   EditorMenuItem('findInFiles', _findInFilesLabel,
@@ -764,6 +766,7 @@ String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
 String _referencesLabel(AppLocalizations l) => l.editorReferences;
 String _callHierarchyLabel(AppLocalizations l) => l.editorCallHierarchy;
 String _renameLabel(AppLocalizations l) => l.editorRename;
+String _workspaceLabel(AppLocalizations l) => l.editorWorkspace;
 String _snippetsLabel(AppLocalizations l) => l.editorSnippets;
 String _findInFilesLabel(AppLocalizations l) => l.editorFindInFiles;
 String _renameEverywhereLabel(AppLocalizations l) => l.editorRenameEverywhere;
@@ -937,6 +940,8 @@ IconData menuIconOf(String id) {
       return Icons.account_tree_outlined;
     case 'rename':
       return Icons.drive_file_rename_outline;
+    case 'workspace':
+      return Icons.workspaces_outlined;
     case 'snippets':
       return Icons.auto_awesome_motion;
     case 'findInFiles':

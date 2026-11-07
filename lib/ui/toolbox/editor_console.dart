@@ -216,6 +216,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     _input.dispose();
     _searchInput.dispose();
     _scroll.dispose();
+    _dbgScroll.dispose();
     _rt?.dispose();
     _rt = null;
     super.dispose();

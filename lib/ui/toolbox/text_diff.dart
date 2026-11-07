@@ -1198,6 +1198,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
               _foldUnchanged = !_foldUnchanged;
               _expandedFolds.clear();
             });
+          case 'saveLeft':
+            unawaited(_saveSide(left: true));
           case 'merge':
             unawaited(_showMergeResult());
           case 'dirDiff':
@@ -1291,6 +1293,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
+        PopupMenuItem(value: 'saveLeft', child: Text(localizations.diffSaveLeft)),
         PopupMenuItem(value: 'merge', child: Text(localizations.diffMerge)),
         PopupMenuItem(value: 'dirDiff', child: Text(localizations.dirDiff)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
@@ -1486,21 +1489,24 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
-  /// 保存「修改后」那一侧的文本到文件（图片里的 💾）。
-  Future<void> _saveResult() async {
-    final text = _right.text;
+  /// 保存某一侧的文本到文件（工具栏 💾 存右侧，菜单里可以存左侧）。
+  Future<void> _saveSide({required bool left}) async {
+    final text = left ? _left.text : _right.text;
     if (text.isEmpty) {
       _toastText(localizations.cannotBeEmpty);
       return;
     }
     try {
       await FilePicker.saveFile(
-          fileName: 'diff-right.txt', bytes: Uint8List.fromList(utf8.encode(text)));
+          fileName: left ? 'diff-left.txt' : 'diff-right.txt',
+          bytes: Uint8List.fromList(utf8.encode(text)));
       if (mounted) _toastText(localizations.copied);
     } catch (e) {
       _toastText('${localizations.fail}: $e');
     }
   }
+
+  Future<void> _saveResult() => _saveSide(left: false);
 
   /// 文件名行：左「原文件」、中间差异计数、右「新文件」。
   ///
@@ -2581,7 +2587,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (!identical(_statsFor, _blocks)) {
       _statsFor = _blocks;
       final st = diffStats(_blocks);
-      _statsLabel = '+${st.added} −${st.deleted} ~${st.modified}';
+      var label = '+${st.added} −${st.deleted} ~${st.modified}';
+      // 相似度 = 相同行 / 较多一侧的行数。两段文本是同一份文件的两个版本时，
+      // 这个数字比「+3 −2 ~1」更直观（Beyond Compare 也把它放在摘要里）。
+      final total = _left.lineCount > _right.lineCount
+          ? _left.lineCount
+          : _right.lineCount;
+      if (total > 0) {
+        final same = total - st.added - st.deleted - st.modified;
+        final pct = (same * 100 / total).clamp(0, 100).round();
+        label = '$label · $pct%';
+      }
+      _statsLabel = label;
     }
     return _statsLabel;
   }

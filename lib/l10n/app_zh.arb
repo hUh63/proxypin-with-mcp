@@ -5184,5 +5184,11 @@
   "editorCallHierarchy": "调用层次",
   "editorCallHierarchyEmpty": "没有找到调用它的地方",
   "editorCallHierarchySummary": "{callers} 个调用者，{sites} 处调用",
-  "editorTopLevel": "（顶层）"
+  "editorTopLevel": "（顶层）",
+  "editorWorkspace": "工作区",
+  "editorWorkspaceCurrent": "当前工作区：{path}",
+  "editorWorkspaceSet": "选择工作区目录",
+  "editorWorkspaceClear": "清除工作区",
+  "editorWorkspaceHint": "设置工作区后，查找引用、多文件查找、重命名、调用层次都会扫整个目录",
+  "diffSaveLeft": "保存左侧文本"
 }

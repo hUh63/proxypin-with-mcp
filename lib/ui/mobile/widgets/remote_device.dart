@@ -113,6 +113,11 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
 
   bool syncConfig = false;
 
+  /// 设备列表的偏好读取结果缓存一次：`build` 里直接调
+  /// `SharedPreferences.getInstance()` 会每次 setState 都新建 Future，
+  /// FutureBuilder 整棵子树跟着重建（列表会闪一下）。
+  late final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
   /// 连接保活心跳（上游 #521 假连）：定期 ping 远程设备，连续失败自动置为断开
   Timer? _heartbeatTimer;
   int _heartbeatFailures = 0;
@@ -222,7 +227,7 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
             const SizedBox(height: 20),
             Text(localizations.remoteDeviceList, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 10),
-            Expanded(child: futureWidget(SharedPreferences.getInstance(), rows)), //远程设备列表
+            Expanded(child: futureWidget(_prefs, rows)), //远程设备列表
           ],
         ),
       ),

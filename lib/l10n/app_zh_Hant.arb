@@ -5184,5 +5184,11 @@
   "editorCallHierarchy": "呼叫階層",
   "editorCallHierarchyEmpty": "沒有找到呼叫它的地方",
   "editorCallHierarchySummary": "{callers} 個呼叫者，{sites} 處呼叫",
-  "editorTopLevel": "（頂層）"
+  "editorTopLevel": "（頂層）",
+  "editorWorkspace": "工作區",
+  "editorWorkspaceCurrent": "目前工作區：{path}",
+  "editorWorkspaceSet": "選擇工作區目錄",
+  "editorWorkspaceClear": "清除工作區",
+  "editorWorkspaceHint": "設定工作區後，尋找引用、多檔案尋找、重新命名、呼叫階層都會掃整個目錄",
+  "diffSaveLeft": "儲存左側文字"
 }

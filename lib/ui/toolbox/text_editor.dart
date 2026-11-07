@@ -45,6 +45,7 @@ import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/utils/code_snippets.dart';
 import 'package:proxypin/utils/code_symbols.dart';
+import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
 import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
@@ -550,6 +551,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final nl = await SharedPreferencesAsync().getString(_kPrefNewline);
     final keepIme = await SharedPreferencesAsync().getBool(_kPrefSmoothKeepIme);
     final autoSave = await SharedPreferencesAsync().getBool(_kPrefAutoSave);
+    final ws = await SharedPreferencesAsync().getString(_workspaceKey);
     if (!mounted) return;
     setState(() {
       if (raw != null && raw >= 0 && raw < _RetainMode.values.length) {
@@ -560,6 +562,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       if (keepIme != null) _smoothKeepIme = keepIme;
       if (autoSave != null) _autoSave = autoSave;
+      if (ws != null && ws.isNotEmpty) _workspace = ws;
     });
     // 「语法」菜单的显示勾选存的是语言标签。语言表改过名 / 导入了别的版本的配置时，
     // 这些标签可能一个都对不上 —— 那样 `_visibleLangs` 会静默回退成全量，每次 build
@@ -3871,6 +3874,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (!scanned.add(key)) continue;
       targets.add(_ScopeFile(label: d.name, path: d.path, doc: d, content: d.text));
     }
+    // ① 工作区：递归整个目录（上限见 _wsMax*）
+    final ws = _workspace;
+    if (ws != null && ws.isNotEmpty) {
+      final got = await _scanWorkspace(ws, scanned);
+      if (got.isNotEmpty) return targets..addAll(got);
+      // 工作区不可用（被删 / 没权限）时退回下面的「当前目录」
+    }
     final basePath = doc.path;
     if (basePath != null) {
       try {
@@ -3901,6 +3911,101 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
     }
     return targets;
+  }
+
+  /// 递归扫工作区里的文本文件。有上限（文件数 / 单文件大小 / 总字节 / 深度），
+  /// 到限就停 —— 宁可少扫几个，也不要把 UI 卡住几十秒。
+  Future<List<_ScopeFile>> _scanWorkspace(
+      String root, Set<String> scanned) async {
+    final out = <_ScopeFile>[];
+    final dir = Directory(root);
+    if (!await dir.exists()) return out;
+    List<FileSystemEntity> all;
+    try {
+      // listSync 在 C 层递归，比逐层 await for 快一个量级
+      all = dir.listSync(recursive: true, followLinks: false);
+    } catch (e) {
+      logger.w('workspace list failed', error: e);
+      return out;
+    }
+    var totalBytes = 0;
+    final sep = Platform.pathSeparator;
+    for (final e in all) {
+      if (out.length >= _wsMaxFiles) break;
+      if (totalBytes >= _wsMaxTotalBytes) break;
+      if (e is! File) continue;
+      if (!scanned.add(e.path)) continue;
+      final rel = e.path.startsWith(root) ? e.path.substring(root.length) : e.path;
+      // 深度：按分隔符个数算（相对路径的第一段是分隔符）
+      if (sep.allMatches(rel).length > _wsMaxDepth) continue;
+      final lower = e.path.toLowerCase();
+      if (_skipScanExts.any(lower.endsWith)) continue;
+      // 跳过依赖 / 构建产物目录
+      if (DirDiff.defaultSkipDirs.any((d) => rel.contains('$sep$d$sep'))) continue;
+      try {
+        final len = await e.length();
+        if (len == 0 || len > _wsMaxFileBytes) continue;
+        totalBytes += len;
+        final content = await e.readAsString();
+        out.add(_ScopeFile(
+            label: e.path.split(sep).last, path: e.path, content: content));
+      } catch (_) {
+        // 非 UTF-8 / 刚好被删：跳过这一个
+      }
+    }
+    return out;
+  }
+
+  /// 设置 / 更换 / 清除工作区。
+  Future<void> _pickWorkspace() async {
+    final current = _workspace;
+    if (current != null && current.isNotEmpty) {
+      final action = await showModalBottomSheet<String>(
+        context: context,
+        showDragHandle: true,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.folder_open, size: 20),
+                title: Text(localizations.editorWorkspaceCurrent(current),
+                    style: const TextStyle(fontSize: 12)),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.drive_file_move_outline),
+                title: Text(localizations.editorWorkspaceSet),
+                onTap: () => Navigator.pop(ctx, 'set'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: Text(localizations.editorWorkspaceClear),
+                onTap: () => Navigator.pop(ctx, 'clear'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (!mounted || action == null) return;
+      if (action == 'clear') {
+        setState(() => _workspace = null);
+        unawaited(SharedPreferencesAsync().remove(_workspaceKey));
+        _toast(localizations.editorWorkspaceClear);
+        return;
+      }
+    }
+    try {
+      final path = await FilePicker.getDirectoryPath();
+      if (path == null || path.isEmpty) return;
+      if (!mounted) return;
+      setState(() => _workspace = path);
+      unawaited(SharedPreferencesAsync().setString(_workspaceKey, path));
+      _toast(localizations.editorWorkspaceCurrent(path));
+    } catch (e) {
+      _toast('$e');
+    }
   }
 
   /// 多文件查找（VS 的 Ctrl+Shift+F，这里范围是「已打开的文件 + 当前目录」）。
@@ -4463,6 +4568,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
           TextSelection(baseOffset: start, extentOffset: end);
     }
   }
+
+  /// 工作区根目录（可选）。设了之后「查找引用 / 多文件查找 / 跨文件重命名 /
+  /// 调用层次 / 在文件中替换」都扫整个目录，而不是只有已打开的文件 + 当前目录。
+  static const String _workspaceKey = 'text_editor_workspace_v1';
+  String? _workspace;
+
+  /// 工作区递归扫描的上限：仓库动辄几万个文件，不设限就是卡死。
+  static const int _wsMaxFiles = 800;
+  static const int _wsMaxFileBytes = 512 * 1024;
+  static const int _wsMaxTotalBytes = 6 * 1024 * 1024;
+  static const int _wsMaxDepth = 8;
 
   /// 「多文件查找」上次的查询与开关：改一次名字往往要连着查好几次。
   String _fileSearchQuery = '';
@@ -8204,6 +8320,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
           _menuItem('quickOpen', Icons.bolt, loc.editorQuickOpen),
           _menuItem('browse', Icons.folder_open_outlined, loc.editorBrowser),
+          _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
           _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
           _menuItem('compareClipboard', Icons.content_paste_search,
               loc.editorCompareClipboard),
@@ -8284,6 +8401,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
           _menuItem('callHierarchy', Icons.account_tree_outlined, loc.editorCallHierarchy),
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
+          _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
           _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
           _menuItem('findInFiles', Icons.manage_search, loc.editorFindInFiles),
           _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
@@ -8416,6 +8534,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _openSettings();
         case 'rename':
           unawaited(_renameSymbol());
+        case 'workspace':
+          unawaited(_pickWorkspace());
         case 'snippets':
           unawaited(_showSnippets());
         case 'findInFiles':
