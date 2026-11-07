@@ -5268,7 +5268,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     // 拿一份可变副本：`LocalHistory.list` 在「没有历史」时返回的是 const 空列表，
     // 直接对它 clear() 会抛 UnsupportedError。
-    final entries = List<LocalHistoryEntry>.of(await LocalHistory.list(path));
+    final entries = List<LocalSnapshot>.of(await LocalHistory.list(path));
     if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
@@ -5390,11 +5390,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
                               );
                               if (ok != true || !mounted || !ctx.mounted) return;
                               Navigator.pop(ctx);
-                              controller.value = TextEditingValue(
-                                text: text,
-                                selection:
-                                    const TextSelection.collapsed(offset: 0),
-                              );
+                              controller.text = text;
+                              controller.selection =
+                                  const TextSelection.collapsed(offset: 0);
                               _toast(localizations.editorLocalHistoryRestored);
                             },
                           ),
@@ -5463,19 +5461,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
                     TextButton.icon(
                       onPressed: () async {
                         setSheet(() => loading = true);
-                        final files = await _collectScopeFiles();
+                        final doc0 = _doc;
                         final result = <({String path, String name, TodoHit hit})>[];
-                        for (final f in files) {
-                          if (result.length > 2000) break;
-                          try {
-                            final file = File(f);
-                            if (await file.length() > 512 * 1024) continue;
-                            final text = await file.readAsString();
-                            final name = f.split(RegExp(r'[/\\]')).last;
-                            for (final h in TodoScanner.scan(text, limit: 200)) {
-                              result.add((path: f, name: name, hit: h));
+                        if (doc0 != null) {
+                          // `_collectScopeFiles` 已经把内容读好了（工作区 / 同目录 / 已打开），
+                          // 这里直接扫内存，不再逐个文件做主线程 IO。
+                          final scope = await _collectScopeFiles(doc0);
+                          for (final sf in scope) {
+                            if (result.length > 2000) break;
+                            if (TodoScanner.tooLarge(sf.content,
+                                maxBytes: 512 * 1024)) {
+                              continue;
                             }
-                          } catch (_) {}
+                            for (final h in TodoScanner.scan(sf.content,
+                                limit: 200)) {
+                              result.add((
+                                path: sf.path ?? '',
+                                name: sf.label,
+                                hit: h
+                              ));
+                            }
+                          }
                         }
                         if (!ctx2.mounted) return;
                         setSheet(() {

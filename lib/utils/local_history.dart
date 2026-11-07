@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 /// 本地历史里的一份快照。
-class LocalHistoryEntry {
-  const LocalHistoryEntry({
+class LocalSnapshot {
+  const LocalSnapshot({
     required this.epoch,
     required this.bytes,
     required this.lines,
@@ -104,11 +104,11 @@ class LocalHistory {
   }
 
   /// 某个文件的全部快照，按时间**升序**。
-  static Future<List<LocalHistoryEntry>> list(String path) async {
-    if (path.isEmpty) return const <LocalHistoryEntry>[];
+  static Future<List<LocalSnapshot>> list(String path) async {
+    if (path.isEmpty) return const <LocalSnapshot>[];
     final dir = await _dirOf(path);
-    if (dir == null || !dir.existsSync()) return const <LocalHistoryEntry>[];
-    final result = <LocalHistoryEntry>[];
+    if (dir == null || !dir.existsSync()) return const <LocalSnapshot>[];
+    final result = <LocalSnapshot>[];
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         if (entity is! File) continue;
@@ -123,7 +123,7 @@ class LocalHistory {
         } catch (_) {
           continue;
         }
-        result.add(LocalHistoryEntry(epoch: epoch, bytes: bytes, lines: lines));
+        result.add(LocalSnapshot(epoch: epoch, bytes: bytes, lines: lines));
       }
     } catch (_) {}
     result.sort((a, b) => a.epoch.compareTo(b.epoch));
