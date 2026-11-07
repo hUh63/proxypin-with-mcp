@@ -2174,6 +2174,8 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                       onConfirm: () async {
                         setState(() => _workflows.removeAt(index));
                         await _saveWorkflows();
+                        // 存盘期间页面可能已经销毁，别拿失效的 context 弹提示
+                        if (!context.mounted) return;
                         FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoWorkflowDeleted, context,
                             duration: 2, backgroundColor: Colors.green);
                       }),

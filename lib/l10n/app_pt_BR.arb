@@ -3466,5 +3466,20 @@
         "type": "String"
       }
     }
-  }
+  },
+  "dirDiffTree": "Folder tree",
+  "editorCallHierarchy": "Call hierarchy",
+  "editorCallHierarchyEmpty": "Nothing calls this",
+  "editorCallHierarchySummary": "{callers} callers, {sites} calls",
+  "@editorCallHierarchySummary": {
+    "placeholders": {
+      "callers": {
+        "type": "String"
+      },
+      "sites": {
+        "type": "String"
+      }
+    }
+  },
+  "editorTopLevel": "(top level)"
 }

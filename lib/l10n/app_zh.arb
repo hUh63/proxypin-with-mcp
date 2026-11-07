@@ -5179,5 +5179,10 @@
   "editorReplaceInFiles": "在文件中替换",
   "editorReplaceHint": "替换为",
   "editorReplaceConfirmBody": "将在 {files} 个文件里替换 {hits} 处；没打开的文件会直接写盘（可用「撤销上次跨文件重命名」还原）",
-  "editorReplaceDone": "已替换 {files} 个文件、{hits} 处"
+  "editorReplaceDone": "已替换 {files} 个文件、{hits} 处",
+  "dirDiffTree": "目录树",
+  "editorCallHierarchy": "调用层次",
+  "editorCallHierarchyEmpty": "没有找到调用它的地方",
+  "editorCallHierarchySummary": "{callers} 个调用者，{sites} 处调用",
+  "editorTopLevel": "（顶层）"
 }

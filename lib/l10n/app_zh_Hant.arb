@@ -5179,5 +5179,10 @@
   "editorReplaceInFiles": "在檔案中取代",
   "editorReplaceHint": "取代為",
   "editorReplaceConfirmBody": "將在 {files} 個檔案裡取代 {hits} 處；沒開啟的檔案會直接寫入磁碟（可用「復原上次跨檔案重新命名」還原）",
-  "editorReplaceDone": "已取代 {files} 個檔案、{hits} 處"
+  "editorReplaceDone": "已取代 {files} 個檔案、{hits} 處",
+  "dirDiffTree": "目錄樹",
+  "editorCallHierarchy": "呼叫階層",
+  "editorCallHierarchyEmpty": "沒有找到呼叫它的地方",
+  "editorCallHierarchySummary": "{callers} 個呼叫者，{sites} 處呼叫",
+  "editorTopLevel": "（頂層）"
 }

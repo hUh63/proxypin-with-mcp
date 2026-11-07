@@ -44,6 +44,7 @@ import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/utils/code_snippets.dart';
+import 'package:proxypin/utils/code_symbols.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
 import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
@@ -4166,6 +4167,175 @@ class _TextEditorPageState extends State<TextEditorPage> {
     input.dispose();
   }
 
+  /// 调用层次（VS 的 Call Hierarchy）。
+  ///
+  /// 以光标处的名字为根，扫「已打开的文件 + 当前目录」，对每处命中往上找它所在的
+  /// 函数，按「调用者」分组。只做两层（符号 → 调用者 → 调用位置），
+  /// 够回答「谁在用这个东西」，也不需要跨文件语义解析。
+  Future<void> _showCallHierarchy() async {
+    final controller = _controller;
+    final doc = _doc;
+    if (controller == null || doc == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
+    final name = text.substring(range.start, range.end);
+    if (!_isSymbolName(name)) {
+      _toast(localizations.editorRenameNeedSymbol);
+      return;
+    }
+    final re = RegExp(r'\b' + RegExp.escape(name) + r'\b');
+    final scope = await _collectScopeFiles(doc);
+    if (!mounted) return;
+
+    final byCaller = <String, List<_FileSearchHit>>{};
+    var siteCount = 0;
+    for (final f in scope) {
+      if (f.content.length > 2000000) continue;
+      final matches = re.allMatches(f.content);
+      if (matches.isEmpty) continue;
+      final lines = f.content.split('\n');
+      var line = 1;
+      var last = 0;
+      for (final m in matches) {
+        if (siteCount >= 1000) break;
+        for (var i = last; i < m.start; i++) {
+          if (f.content.codeUnitAt(i) == 10) line++;
+        }
+        last = m.start;
+        final caller = CodeSymbols.enclosingCaller(lines, line - 1) ??
+            localizations.editorTopLevel;
+        var lineEnd = f.content.indexOf('\n', m.start);
+        if (lineEnd < 0) lineEnd = f.content.length;
+        var lineStart = f.content.lastIndexOf('\n', m.start) + 1;
+        if (lineStart < 0) lineStart = 0;
+        byCaller.putIfAbsent(caller, () => []).add(_FileSearchHit(
+          label: f.label,
+          path: f.path,
+          line: line,
+          offset: m.start,
+          matchLength: m.end - m.start,
+          text: f.content.substring(lineStart, lineEnd).trim(),
+          isCurrent: (f.path ?? 'mem:${f.doc?.id ?? ''}') ==
+              (doc.path ?? 'mem:${doc.id}'),
+        ));
+        siteCount++;
+      }
+    }
+
+    if (!mounted) return;
+    if (siteCount == 0) {
+      _toast(localizations.editorCallHierarchyEmpty);
+      return;
+    }
+
+    // 调用者多的排前面，同数量按名字
+    final callers = byCaller.keys.toList()
+      ..sort((a, b) {
+        final byLen = byCaller[b]!.length.compareTo(byCaller[a]!.length);
+        return byLen != 0 ? byLen : a.compareTo(b);
+      });
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.8,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${localizations.editorCallHierarchy}: $name',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Text(
+                      localizations.editorCallHierarchySummary(
+                          '${callers.length}', '$siteCount'),
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: callers.length,
+                  itemBuilder: (_, i) {
+                    final caller = callers[i];
+                    final sites = byCaller[caller]!;
+                    return ExpansionTile(
+                      dense: true,
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+                      childrenPadding: EdgeInsets.zero,
+                      initiallyExpanded: i == 0,
+                      leading: const Icon(Icons.functions, size: 16),
+                      title: Text(caller,
+                          style: const TextStyle(
+                              fontSize: 12.5, fontFamily: 'monospace')),
+                      subtitle: Text(
+                        '${sites.length} · ${sites.first.label}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 10.5,
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      children: [
+                        for (final h in sites)
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              unawaited(_openSearchHit(h));
+                            },
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(40, 5, 12, 5),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 42,
+                                    child: Text('L${h.line}',
+                                        style: TextStyle(
+                                            fontSize: 10.5,
+                                            color: theme.colorScheme
+                                                .onSurfaceVariant)),
+                                  ),
+                                  Expanded(
+                                    child: Text(h.text,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontSize: 11.5,
+                                            fontFamily: 'monospace')),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// 在文件中替换（多文件查找的姊妹功能）。
   ///
   /// 已打开的文档走 controller（能 Ctrl+Z），没打开的写盘并记进 [_renameBackup]，
@@ -8112,6 +8282,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('gotoDef', Icons.my_location_outlined, loc.editorGotoDefinition),
         _menuItem('peekDef', Icons.visibility, loc.editorPeekDefinition),
           _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
+          _menuItem('callHierarchy', Icons.account_tree_outlined, loc.editorCallHierarchy),
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
           _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
           _menuItem('findInFiles', Icons.manage_search, loc.editorFindInFiles),
@@ -8263,6 +8434,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_showFoldLevelPicker());
         case 'references':
           unawaited(_showReferences());
+        case 'callHierarchy':
+          unawaited(_showCallHierarchy());
         case 'close':
           final doc = _doc;
           if (doc != null) unawaited(_closeDoc(doc));

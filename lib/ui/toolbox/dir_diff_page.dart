@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -26,6 +27,7 @@ import 'package:proxypin/ui/toolbox/file_preview.dart';
 import 'package:proxypin/ui/toolbox/text_diff.dart';
 import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/utils/text_file_reader.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 目录对比：选两个文件夹，按相对路径配对，列出「相同 / 修改 / 仅左侧 / 仅右侧 /
 /// 二进制不同」。点某一条进入文本对比页（或文件预览）看细粒度差异。
@@ -67,6 +69,11 @@ class _DirDiffPageState extends State<DirDiffPage> {
   String _filter = '';
   bool _picking = false;
 
+  /// 树视图（按目录层级），默认开：文件一多，平铺列表很难看出「哪个目录没同步」。
+  static const String _treeKey = 'dir_diff_tree_v1';
+  bool _tree = true;
+  final Set<String> _expanded = <String>{};
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
@@ -74,6 +81,10 @@ class _DirDiffPageState extends State<DirDiffPage> {
     super.initState();
     _leftCtrl.text = widget.initialLeft ?? '';
     _rightCtrl.text = widget.initialRight ?? '';
+    unawaited(SharedPreferencesAsync().getBool(_treeKey).then((v) {
+      if (!mounted || v == null) return;
+      setState(() => _tree = v);
+    }).catchError((_) => null));
   }
 
   @override
@@ -336,6 +347,18 @@ class _DirDiffPageState extends State<DirDiffPage> {
         title: Text(localizations.dirDiff),
         actions: [
           IconButton(
+            tooltip: localizations.dirDiffTree,
+            isSelected: _tree,
+            icon: const Icon(Icons.account_tree_outlined),
+            selectedIcon: const Icon(Icons.account_tree),
+            onPressed: () {
+              final next = !_tree;
+              setState(() => _tree = next);
+              unawaited(
+                  SharedPreferencesAsync().setBool(_treeKey, next));
+            },
+          ),
+          IconButton(
             tooltip: localizations.dirDiffOnlyDiff,
             isSelected: _onlyDiff,
             icon: const Icon(Icons.filter_alt_outlined),
@@ -535,20 +558,132 @@ class _DirDiffPageState extends State<DirDiffPage> {
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
       );
     }
+    if (!_tree) {
+      return ListView.builder(
+        controller: _scroll,
+        itemCount: items.length,
+        itemBuilder: (_, i) => _row(items[i], theme),
+      );
+    }
+    // 树视图：目录折叠成一行，带「子树里有几处不同」的计数
+    final flat = <(_DirNode, int)>[];
+    for (final root in _buildTree(items)) {
+      _flatten(root, 0, flat);
+    }
     return ListView.builder(
       controller: _scroll,
-      itemCount: items.length,
-      itemBuilder: (_, i) => _row(items[i], theme),
+      itemCount: flat.length,
+      itemBuilder: (_, i) {
+        final (node, depth) = flat[i];
+        return node.entry != null
+            ? _row(node.entry!, theme, depth: depth)
+            : _dirRow(node, theme, depth: depth);
+      },
     );
   }
 
-  Widget _row(DirDiffEntry e, ThemeData theme) {
+  /// 把选中的条目按 `/` 拼成树。
+  List<_DirNode> _buildTree(List<DirDiffEntry> items) {
+    final root = _DirNode('');
+    for (final e in items) {
+      final parts = e.relativePath.split('/');
+      var cur = root;
+      for (var i = 0; i < parts.length - 1; i++) {
+        final name = parts[i];
+        // 不能用 firstWhere + orElse 里 add：遍历中修改 children 会抛
+        // ConcurrentModificationError，先找再补。
+        _DirNode? next;
+        for (final c in cur.children) {
+          if (c.entry == null && c.name == name) {
+            next = c;
+            break;
+          }
+        }
+        if (next == null) {
+          next = _DirNode(name)
+            ..path = cur.path.isEmpty ? name : '${cur.path}/$name';
+          cur.children.add(next);
+        }
+        cur = next;
+      }
+      cur.children.add(_DirNode(parts.last)
+        ..entry = e
+        ..path = e.relativePath);
+    }
+    // 目录在前、名字升序；顺便把「子树差异数」算出来
+    void sortAndCount(_DirNode n) {
+      n.children.sort((a, b) {
+        final ad = a.entry == null ? 0 : 1;
+        final bd = b.entry == null ? 0 : 1;
+        if (ad != bd) return ad - bd;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+      var count = 0;
+      for (final c in n.children) {
+        sortAndCount(c);
+        count += c.diffCount;
+      }
+      n.diffCount = count + (n.entry?.status.isDifferent == true ? 1 : 0);
+    }
+
+    sortAndCount(root);
+    return root.children;
+  }
+
+  /// 按展开状态把树摊平成列表（ListView.builder 用）。
+  void _flatten(_DirNode node, int depth, List<(_DirNode, int)> out) {
+    out.add((node, depth));
+    if (node.entry != null) return;
+    // 默认展开：所有目录初始展开（折叠状态才记在 _expanded 里）
+    if (_expanded.contains(node.path)) return;
+    for (final c in node.children) {
+      _flatten(c, depth + 1, out);
+    }
+  }
+
+  Widget _dirRow(_DirNode node, ThemeData theme, {int depth = 0}) {
+    final collapsed = _expanded.contains(node.path);
+    final hasDiff = node.diffCount > 0;
+    return InkWell(
+      onTap: () => setState(() {
+        if (!_expanded.remove(node.path)) _expanded.add(node.path);
+      }),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12 + depth * 14.0, 7, 8, 7),
+        child: Row(
+          children: [
+            Icon(collapsed ? Icons.chevron_right : Icons.expand_more,
+                size: 16, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 2),
+            Icon(Icons.folder_outlined,
+                size: 16,
+                color: hasDiff
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(node.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13)),
+            ),
+            if (hasDiff)
+              Text('${node.diffCount}',
+                  style: TextStyle(
+                      fontSize: 11, color: theme.colorScheme.primary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _row(DirDiffEntry e, ThemeData theme, {int depth = 0}) {
     final color = _statusColor(e.status);
     return InkWell(
       onTap: () => _openEntry(e),
       onLongPress: () => _showRowMenu(e),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+        padding: EdgeInsets.fromLTRB(12 + depth * 14.0, 8, 6, 8),
         child: Row(
           children: [
             Container(
@@ -678,4 +813,20 @@ class _DirDiffPageState extends State<DirDiffPage> {
         await _copyToOther(e, fromLeft: false);
     }
   }
+}
+
+/// 目录对比树上的一个节点：目录节点 [entry] 为空，文件节点 [entry] 非空。
+class _DirNode {
+  final String name;
+  String path = '';
+
+  /// 文件节点对应的结果条目；目录节点为 null。
+  DirDiffEntry? entry;
+
+  final List<_DirNode> children = [];
+
+  /// 子树里有多少处不同（目录行右侧的数字）。
+  int diffCount = 0;
+
+  _DirNode(this.name);
 }

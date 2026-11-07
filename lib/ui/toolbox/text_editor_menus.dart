@@ -678,6 +678,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('gotoDef', _gotoDefLabel, group: 'code', aliases: 'dy 转到定义 definition'),
   EditorMenuItem('peekDef', _peekDefLabel, group: 'code', aliases: 'sl 速览 peek definition'),
   EditorMenuItem('references', _referencesLabel, group: 'code', aliases: 'yy 引用 references usages'),
+  EditorMenuItem('callHierarchy', _callHierarchyLabel,
+      group: 'code', aliases: 'dycc 调用层次 callhierarchy callers'),
   EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
   EditorMenuItem('snippets', _snippetsLabel,
       group: 'code', aliases: 'pd 代码片段 snippet'),
@@ -760,6 +762,7 @@ String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
 String _referencesLabel(AppLocalizations l) => l.editorReferences;
+String _callHierarchyLabel(AppLocalizations l) => l.editorCallHierarchy;
 String _renameLabel(AppLocalizations l) => l.editorRename;
 String _snippetsLabel(AppLocalizations l) => l.editorSnippets;
 String _findInFilesLabel(AppLocalizations l) => l.editorFindInFiles;
@@ -930,6 +933,8 @@ IconData menuIconOf(String id) {
       return Icons.data_object;
     case 'references':
       return Icons.format_list_bulleted;
+    case 'callHierarchy':
+      return Icons.account_tree_outlined;
     case 'rename':
       return Icons.drive_file_rename_outline;
     case 'snippets':
