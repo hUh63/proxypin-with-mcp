@@ -3971,6 +3971,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+                child: Text(localizations.editorWorkspaceHint,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(ctx).hintColor)),
+              ),
               ListTile(
                 dense: true,
                 leading: const Icon(Icons.folder_open, size: 20),
@@ -7616,6 +7623,105 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 重命名当前文件（改的是磁盘上的文件名，不只是标签）。
+  ///
+  /// 编辑器里原来只能「另存为」——想给文件改个名字得先退出到文件管理器，
+  /// 改完再打开一次，很不顺。
+  Future<void> _renameFile() async {
+    final doc = _doc;
+    final path = doc?.path;
+    if (doc == null || path == null || path.isEmpty) {
+      _toast(localizations.editorNeedFile);
+      return;
+    }
+    final ctrl = TextEditingController(text: doc.name);
+    ctrl.selection =
+        TextSelection(baseOffset: 0, extentOffset: doc.name.length);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorRenameFile),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(labelText: localizations.rename),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(localizations.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text),
+              child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    final trimmed = (name ?? '').trim();
+    if (!mounted || trimmed.isEmpty || trimmed == doc.name) return;
+    if (trimmed.contains('/') || trimmed.contains(Platform.pathSeparator)) {
+      _toast(localizations.editorRenameInvalid);
+      return;
+    }
+    final sep = Platform.pathSeparator;
+    final target = '${File(path).parent.path}$sep$trimmed';
+    if (File(target).existsSync()) {
+      _toast(localizations.editorFileExists);
+      return;
+    }
+    try {
+      await File(path).rename(target);
+      if (!mounted) return;
+      doc.path = target;
+      doc.name = trimmed;
+      // 改名后 mtime/监听都要重新挂到新路径上，否则 3 秒后会弹「文件被外部修改」。
+      _lastFileMtime = null;
+      _restartFileWatch();
+      setState(() {});
+      _toast(localizations.editorRenamed);
+    } catch (e) {
+      if (!mounted) return;
+      _toast('$e');
+    }
+  }
+
+  /// 复制当前文件的完整路径（贴到终端/聊天里最常用的那种）。
+  Future<void> _copyFilePath() async {
+    final path = _doc?.path;
+    if (path == null || path.isEmpty) {
+      _toast(localizations.editorNeedFile);
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: path));
+    if (!mounted) return;
+    _toast(localizations.copied);
+  }
+
+  /// 在系统文件管理器里定位这个文件（桌面端才有）。
+  Future<void> _revealInFolder() async {
+    final path = _doc?.path;
+    if (path == null || path.isEmpty) {
+      _toast(localizations.editorNeedFile);
+      return;
+    }
+    try {
+      if (Platform.isWindows) {
+        await Process.run('explorer', ['/select,$path']);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', ['-R', path]);
+      } else if (Platform.isLinux) {
+        await Process.run('xdg-open', [File(path).parent.path]);
+      } else {
+        if (!mounted) return;
+        _toast(localizations.editorRevealUnsupported);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _toast('$e');
+    }
+  }
+
   /// 复制。有选区就复制选区（VS 的 Edit › Copy 就是这个语义）——
   /// 以前不分区选、永远复制整个文件，选中一段去点「复制」拿到全文，很难理解。
   /// 没有选区时退回「复制全部」，手机上这个更常用。
@@ -8869,6 +8975,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('save', Icons.save_outlined, loc.save),
           _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
+          _menuItem('renameFile', Icons.drive_file_rename_outline,
+              loc.editorRenameFile),
+          _menuItem('copyPath', Icons.link, loc.editorCopyPath),
+          if (Platforms.isDesktop())
+            _menuItem('revealFile', Icons.folder_special, loc.editorRevealFile),
           _menuItem('quickOpen', Icons.bolt, loc.editorQuickOpen),
           _menuItem('browse', Icons.folder_open_outlined, loc.editorBrowser),
           _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
@@ -9177,6 +9288,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _showTasks();
         case 'stats':
           unawaited(_showDocStats());
+        case 'renameFile':
+          unawaited(_renameFile());
+        case 'copyPath':
+          unawaited(_copyFilePath());
+        case 'revealFile':
+          unawaited(_revealInFolder());
       case 'autosave':
         setState(() => _autoSave = !_autoSave);
         unawaited(_saveAutoSave());

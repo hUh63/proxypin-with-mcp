@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.67.266 (2026-11-08) — 文件重命名 / 对比分享 / 全库体检
+
+### 编辑器：文件操作
+- **重命名当前文件**：改的是磁盘上的文件名，不只是标签。改名后会把 mtime 与文件监听
+  重挂到新路径上，否则 3 秒后就会弹一条「文件被外部修改」的假警报；
+- **复制完整路径**（贴到终端、聊天里最常用的那种）；
+- **在文件夹中显示**（仅桌面：Windows 用 `explorer /select`、macOS 用 `open -R`、
+  Linux 用 `xdg-open`）。
+
+### 对比页
+- **分享 unified diff**：走系统分享面板，直接把「我改了什么」发到微信/邮件，
+  不用先复制再手动粘；
+- 差异列表标题上多一项**两侧行数**（`1234 → 1250 行`），一路翻差异时顺带知道
+  改动量级。
+
+### 全库体检（这一轮的重点）
+- **死文件**：527 个 dart 文件，逐个核对 import/part 关系，孤儿 0 个
+  （只有 `mcp_scheduler_example.dart` 是示例文件、本来就不被引用）；
+- **死页面 / 死功能**：90 个 `XxxPage` 类全部有可达入口。特意核实了三个
+  容易漏的——`ApiEndpointPage`（经 `ApiEndpointUtils.showEndpoints` 从请求列表与
+  工具箱进入）、`RequestComparePage`（经 `RequestCompareUtils.showCompare` 从
+  请求列表多选进入）、`ReportServersPage`（经 `showReportServersDialog`）；
+- **依赖**：21 个 direct 依赖里只有 `cupertino_icons` 未被直接引用（Flutter 模板
+  自带、体积可忽略，保留）；
+- **l10n**：清掉 38 个零引用键（9 个语言共 348 条），9 个 arb 的键集现已完全对齐
+  （3353 个键，零缺失）；顺手把上一轮加了却没用上的「工作区」说明文案接到
+  工作区弹层里。
 ## v1.67.265 (2026-11-08) — 折叠区导航 / 合并写回文件 / 文档统计
 
 ### 对比页

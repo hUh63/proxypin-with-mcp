@@ -694,6 +694,12 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'inspect', aliases: 'rw 任务列表 todo fixme tasks'),
   EditorMenuItem('stats', _statsLabel,
       group: 'edit', aliases: 'tj 文档统计 统计 字数 stats wordcount'),
+  EditorMenuItem('renameFile', _renameFileLabel,
+      group: 'file', aliases: 'cwm 重命名文件 renamefile'),
+  EditorMenuItem('copyPath', _copyPathLabel,
+      group: 'file', aliases: 'fzlj 复制路径 copypath'),
+  EditorMenuItem('revealFile', _revealFileLabel,
+      group: 'file', aliases: 'djwjj 在文件夹中显示 revealfolder'),
   EditorMenuItem('findInFiles', _findInFilesLabel,
       group: 'edit', aliases: 'djwj 多文件查找 findinfiles'),
   EditorMenuItem('renameEverywhere', _renameEverywhereLabel,
@@ -781,6 +787,9 @@ String _historyLabel(AppLocalizations l) => l.editorLocalHistory;
 String _diffTabLabel(AppLocalizations l) => l.editorDiffWithTab;
 String _tasksLabel(AppLocalizations l) => l.editorTasks;
 String _statsLabel(AppLocalizations l) => l.editorDocStats;
+String _renameFileLabel(AppLocalizations l) => l.editorRenameFile;
+String _copyPathLabel(AppLocalizations l) => l.editorCopyPath;
+String _revealFileLabel(AppLocalizations l) => l.editorRevealFile;
 String _findInFilesLabel(AppLocalizations l) => l.editorFindInFiles;
 String _renameEverywhereLabel(AppLocalizations l) => l.editorRenameEverywhere;
 String _undoRenameLabel(AppLocalizations l) => l.editorRenameUndo;
@@ -963,6 +972,12 @@ IconData menuIconOf(String id) {
       return Icons.checklist;
     case 'stats':
       return Icons.analytics_outlined;
+    case 'renameFile':
+      return Icons.drive_file_rename_outline;
+    case 'copyPath':
+      return Icons.link;
+    case 'revealFile':
+      return Icons.folder_special;
     case 'snippets':
       return Icons.auto_awesome_motion;
     case 'findInFiles':

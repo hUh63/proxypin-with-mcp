@@ -22,6 +22,7 @@ import 'dart:typed_data';
 import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1443,6 +1444,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportPatch());
           case 'copyPatch':
             unawaited(_copyUnifiedDiff());
+          case 'shareDiff':
+            unawaited(_shareDiff());
           case 'reloadFiles':
             unawaited(_reloadFromDisk());
           case 'exportCsv':
@@ -1568,6 +1571,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
         PopupMenuItem(value: 'copyPatch', child: Text(localizations.diffCopyPatch)),
+        PopupMenuItem(value: 'shareDiff', child: Text(localizations.diffShare)),
         PopupMenuItem(value: 'reloadFiles', child: Text(localizations.diffReloadFiles)),
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
@@ -2718,6 +2722,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 Text('${localizations.diffList}  (${_blocks.length})',
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 const SizedBox(width: 8),
+                // 两侧各多少行：一路翻差异时，能顺便看出「这份文件到底改了多大的量」。
+                Text(
+                    localizations.diffLineCounts(
+                        '${_left.lineCount}', '${_right.lineCount}'),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant)),
                 if (_reviewed.isNotEmpty)
                   Text(
                       localizations.diffReviewedCount(
@@ -2925,6 +2936,23 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _statsLabel = label;
     }
     return _statsLabel;
+  }
+
+  /// 分享 unified diff（走系统分享面板：微信/邮件/文件传输）。
+  ///
+  /// 复制到剪贴板再手动粘到聊天窗口那两步，手机上经常被别的 App 挤掉。
+  Future<void> _shareDiff() async {
+    final text = _unifiedDiff(_alignedRows());
+    if (text.trim().isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    try {
+      await SharePlus.instance.share(ShareParams(text: text));
+    } catch (e) {
+      if (!mounted) return;
+      _toastText('${localizations.fail}: $e');
+    }
   }
 
   /// 把 unified diff 复制到剪贴板：手机上「发给别人看我改了什么」最常用的路径。

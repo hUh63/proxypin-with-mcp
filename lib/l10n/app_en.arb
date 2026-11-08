@@ -3510,18 +3510,6 @@
     }
   },
   "capLimitDesc": "Bodies over the limit keep only the first N bytes (compressed bodies are released entirely), to reduce memory usage during long captures.\nTrimming happens after forwarding completes and does not affect the actual forwarding.",
-  "navBarMultiSeparatorHint": "Use ';' to separate multiple entries",
-  "navBarAiEnabled": "Enabled · {model}",
-  "@navBarAiEnabled": {
-    "placeholders": {
-      "model": {
-        "type": "String"
-      }
-    }
-  },
-  "navBarAiNotConfigured": "Not configured · connect an OpenAI-compatible API to analyze captured requests",
-  "navBarLogSubtitle": "View and export app runtime logs",
-  "navBarDocSubtitle": "Tutorials · specs · dev docs (built-in offline)",
   "updRestartHint": "The app will quit and restart to complete the update.",
   "updPreparing": "Preparing update...",
   "updDownloading": "Downloading update...",
@@ -4184,7 +4172,6 @@
   "editorUntitled": "Untitled",
   "editorNewFile": "New file",
   "editorDocuments": "Documents",
-  "editorDocsHint": "Tap to switch · long-press to reorder · swipe right for actions",
   "editorPin": "Pin",
   "editorUnpin": "Unpin",
   "editorRetain": "Keep file",
@@ -4253,7 +4240,6 @@
   "editorExitRetainTitle": "Keep these files?",
   "editorExitRetainBody": "Some files are not marked as kept and will be removed from the editor on exit.",
   "editorDiscard": "Don't keep",
-  "editorUnsaved": "Unsaved",
   "editorMinify": "Minify code",
   "editorMinifyUnsupported": "Minifying is not supported for this syntax",
   "editorMinified": "Minified: {before} → {after} chars",
@@ -4326,7 +4312,6 @@
   "timingTls": "TLS handshake",
   "timingWait": "Waiting (TTFB)",
   "timingReceive": "Receiving",
-  "timingTotal": "Total",
   "@connRequests": {
     "placeholders": {
       "count": {
@@ -4448,14 +4433,11 @@
   "kernelCaptureDnsRewrite": "DNS rewrite rules",
   "kernelCaptureDnsRewritten": "DNS rewritten",
   "kernelNetfilterBridge": "NetFilter native bridge",
-  "diffAlignedView": "Aligned view",
   "diffNoDifference": "No differences",
   "kernelCaptureBlockQuic": "Block QUIC (UDP/443)",
   "kernelCaptureQuicBlocked": "QUIC blocked",
   "diffIgnoreCase": "Ignore case",
   "diffIgnoreWhitespace": "Ignore whitespace",
-  "snippetExpand": "Expand",
-  "snippetCollapse": "Collapse",
   "snippetCustomLibrary": "Shared symbols",
   "snippetCustomLibraryEmpty": "Shared symbols is empty",
   "findResults": "Results",
@@ -4478,7 +4460,6 @@
   "editorEncoding": "File encoding",
   "editorEncodingReload": "Reload with encoding",
   "editorEncodingSave": "Save encoding",
-  "editorEncodingHint": "Reads and writes the file with the selected encoding. UTF-16 output includes a BOM.",
   "editorSyntaxManager": "Syntax manager",
   "editorLangManagerHint": "Choose which languages appear in the Syntax menu.",
   "syntaxTabBuiltin": "Built-in",
@@ -4662,7 +4643,6 @@
   "requestTime": "Request Time",
   "app": "App",
   "requestUrl": "Request URL",
-  "dragSort": "Drag to Sort",
   "headerValue": "Header Value",
   "queryParams": "Query Params",
   "path": "Path",
@@ -4672,27 +4652,7 @@
   "importClientCert": "Import Client Certificate(.p12)",
   "expires": "Expires",
   "expired": "Expired",
-  "certHashShort": "CA Hash",
-  "diffSummary": "+{added} −{removed}",
-  "@diffSummary": {
-    "placeholders": {
-      "added": {
-        "type": "int"
-      },
-      "removed": {
-        "type": "int"
-      }
-    }
-  },
   "optional": "Optional",
-  "mcpEndpoint": "MCP Endpoint",
-  "mcpLanGuide": "Keep this phone and your computer on the same Wi-Fi, then run one of the commands below in your computer's terminal, or paste the configuration into your AI client's MCP settings.",
-  "mcpLanTokenNote": "The token authorizes full access to the MCP tools. Tap the refresh button next to the token to revoke it and issue a new one.",
-  "mcpOtherClients": "Other AI clients",
-  "mcpOtherClientsHint": "Universal Streamable HTTP config for Cursor, Cline, Gemini CLI, Cherry Studio, VS Code Copilot and other MCP clients. Paste the URL and Bearer token, or the full JSON, into the client's MCP settings.",
-  "mcpOneClick": "One-click setup on your computer",
-  "mcpOneClickHint": "Copy the matching command and run it on the computer: Terminal for macOS/Linux, PowerShell for Windows. It auto-detects installed AI clients (Claude Code, Codex, Cursor, Gemini CLI) and configures them over Wi-Fi.",
-  "mcpRegenerateToken": "Reset token",
   "statusRunning": "Running",
   "statusStopped": "Stopped",
   "replayTasks": "Replay Tasks",
@@ -4753,7 +4713,6 @@
   "image": "Image",
   "filtered": "Filtered",
   "clientAddress": "Client Address",
-  "toolboxGroupDebug": "Debug & Security",
   "toolboxGroupExtend": "More",
   "rules": "Rules",
   "exportWsFrames": "Export WebSocket session",
@@ -4770,9 +4729,7 @@
   "editorLintFixAll": "Fix all",
   "editorConsole": "Console",
   "editorConsoleClear": "Clear",
-  "editorConsoleHint": "Type an expression below and press Enter",
   "editorConsoleInputHint": "Type code, Enter to run",
-  "editorConsoleNoRuntime": "This language has no local runtime, only static checks are available. Switch to JavaScript to execute code.",
   "editorConsoleBackend": "Runtime",
   "editorConsoleRun": "Run",
   "editorConsoleRunDocument": "Run document",
@@ -4796,17 +4753,6 @@
   "diffSyntaxCheck": "Check syntax of both sides",
   "diffSyntaxUnsupported": "Only JSON / XML content can be checked here",
   "editorLintRulesApplyAll": "Apply to all languages",
-  "editorIssuePosition": "Line {line}, col {col}",
-  "@editorIssuePosition": {
-    "placeholders": {
-      "line": {
-        "type": "String"
-      },
-      "col": {
-        "type": "String"
-      }
-    }
-  },
   "editorIssueFix": "Fix",
   "editorIssueMore": "{n} more",
   "@editorIssueMore": {
@@ -4941,7 +4887,6 @@
   "editorCommandPalette": "Command palette",
   "editorCommandPaletteHint": "Type a command…",
   "editorRecentCommands": "Recently used",
-  "editorAllCommands": "All commands",
   "editorLangRecent": "Recently used",
   "editorLangCommon": "Common",
   "editorLangAll": "All languages",
@@ -4960,14 +4905,6 @@
     }
   },
   "editorApplyToAll": "Apply to all open documents",
-  "editorRestorePartial": "Some retained documents ({n}) could not be restored",
-  "@editorRestorePartial": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
   "editorOpenReadOnly": "Open read-only",
   "editorTooLargeToFormat": "File is too large to format",
   "editorTooLargeToProcess": "File is too large for this operation",
@@ -5105,8 +5042,6 @@
   "artexConnected": "Connected",
   "artexHint": "ARTEX runs entirely on this device — front end and back end. No Termux, root or database needed.",
   "artexNoAddress": "Fill in the server address first",
-  "artexNeedPassword": "Password required",
-  "artexNotInitialized": "Password not initialized yet — open the console and set it first",
   "artexOpenConsole": "Open web console",
   "artexVersion": "Version",
   "artexEngine": "Engine",
@@ -5114,7 +5049,6 @@
   "artexYes": "configured",
   "artexNo": "not configured",
   "artexAssets": "Assets",
-  "artexTraffic": "Traffic",
   "artexActiveTask": "Active task",
   "artexTasks": "Tasks",
   "crcPickFile": "Pick file",
@@ -5352,7 +5286,6 @@
   "artexTabTools": "Tools",
   "artexTabLogs": "Logs",
   "artexTabWorkspace": "Workspace",
-  "artexTabService": "Local run",
   "artexDisconnect": "Disconnect",
   "artexCreateTask": "New task",
   "artexTaskDesc": "Description",
@@ -5380,11 +5313,9 @@
   "artexLoading": "Loading…",
   "artexServiceStatus": "Status",
   "artexLocalTitle": "Run ARTEX locally",
-  "artexLocalHint": "Only for connecting to an external ARTEX backend: starts PostgreSQL and ARTEX inside Termux via root.",
   "artexDetect": "Detect",
   "artexDetectFailed": "Termux not found (or no root)",
   "artexStartLocal": "Start locally",
-  "artexStarting": "Starting PostgreSQL + ARTEX…",
   "artexNotAndroid": "Local run is Android only",
   "artexRemoteOnlyHint": "On desktop just point the address at a remote ARTEX instance.",
   "artexRunningNow": "Running",
@@ -5395,7 +5326,6 @@
   "artexStartPg": "Start PG",
   "artexStopPg": "Stop PG",
   "artexTailLog": "Service log",
-  "artexWorkflow": "How it works",
   "artexWorkflowBody": "1) Check AI is configured on the AI tab (same endpoint as Settings → AI analysis).\n2) Create a task and put the IP / domain in the description.\n3) Run port scan, subdomain enum or directory probe on the Tools tab — these three run locally.\n4) Other webpt tools need a shell on the target machine and will say so.\n5) Watch Logs and Findings, add new targets as you go.",
   "editorTerminal": "Terminal",
   "editorTermHelp": "Terminal commands: /run run the file · /stdin a|b|c queue stdin · /stdin-clear · /clear · /reset · /lang · /copy · /help",
@@ -5433,7 +5363,6 @@
   "artexConsole": "ARTEX console",
   "artexBackendAddress": "Backend address",
   "artexBackendHint": "Point it at your ARTEX backend, e.g. http://127.0.0.1:8787. Leave empty to browse the built-in offline demo.",
-  "artexDemoMode": "Offline demo mode",
   "artexStartFailed": "Start failed",
   "artexServerStopped": "Local web server stopped",
   "artexOpenInBrowser": "Open in browser",
@@ -5588,7 +5517,6 @@
   "editorDebugNoInstrument": "This file cannot be instrumented — running it as-is",
   "editorDebugNoVars": "(no globals yet)",
   "editorToggleBreakpoint": "Toggle breakpoint",
-  "editorGoToBreakpoint": "Go to breakpoint",
   "editorBreakpointAdded": "Breakpoint added at line {n}",
   "@editorBreakpointAdded": {
     "placeholders": {
@@ -5860,5 +5788,25 @@
       }
     }
   },
-  "statsParagraphs": "Paragraphs"
+  "statsParagraphs": "Paragraphs",
+  "editorRenameFile": "Rename file",
+  "editorCopyPath": "Copy path",
+  "editorRevealFile": "Show in folder",
+  "editorNeedFile": "Save the file first",
+  "editorFileExists": "A file with that name already exists",
+  "editorRenamed": "File renamed",
+  "editorRenameInvalid": "File name can not contain path separators",
+  "editorRevealUnsupported": "Not supported on this platform",
+  "diffShare": "Share",
+  "diffLineCounts": "{left} → {right} lines",
+  "@diffLineCounts": {
+    "placeholders": {
+      "left": {
+        "type": "String"
+      },
+      "right": {
+        "type": "String"
+      }
+    }
+  }
 }
