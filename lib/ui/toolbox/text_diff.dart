@@ -2294,22 +2294,30 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 手机竖屏上两栏各占一半宽度，长行基本读不了；git 那种单栏反而更清楚。
   Widget _unifiedView(List<DiffRow> rows) {
     final lines = <_UnifiedLine>[];
-    for (final r in rows) {
+    for (var i = 0; i < rows.length; i++) {
+      final r = rows[i];
       switch (r.type) {
         case DiffRowType.equal:
-          lines.add(_UnifiedLine('  ', r.leftLine ?? r.rightLine, r.leftText ?? '', r.type));
+          lines.add(_UnifiedLine(
+              '  ', r.leftLine ?? r.rightLine, r.leftText ?? '', r.type, i));
         case DiffRowType.deleted:
-          lines.add(_UnifiedLine('- ', r.leftLine, r.leftText ?? '', r.type));
+          lines.add(_UnifiedLine('- ', r.leftLine, r.leftText ?? '', r.type, i));
         case DiffRowType.added:
-          lines.add(_UnifiedLine('+ ', r.rightLine, r.rightText ?? '', r.type));
+          lines.add(
+              _UnifiedLine('+ ', r.rightLine, r.rightText ?? '', r.type, i));
         case DiffRowType.modified:
-          lines.add(_UnifiedLine('- ', r.leftLine, r.leftText ?? '', DiffRowType.deleted));
-          lines.add(_UnifiedLine('+ ', r.rightLine, r.rightText ?? '', DiffRowType.added));
+          lines.add(_UnifiedLine(
+              '- ', r.leftLine, r.leftText ?? '', DiffRowType.deleted, i));
+          lines.add(_UnifiedLine(
+              '+ ', r.rightLine, r.rightText ?? '', DiffRowType.added, i));
       }
     }
     // 单栏不横向滚动：超长行用省略号截断（统一视图是「快速扫改动」，
     // 逐字读长行请切回并排视图或直接看编辑器）。
     return ListView.builder(
+      // 复用左栏的滚动控制器：两种视图互斥，同一时刻只有一个挂在树上，
+      // 这样「跳到某处差异 / 跳到命中」在统一视图里也能滚到位。
+      controller: _leftV,
       itemExtent: _wrap ? null : _rowHeight,
       itemCount: lines.length,
       itemBuilder: (context, i) => _unifiedLine(lines[i]),
@@ -2356,11 +2364,27 @@ class _TextDiffPageState extends State<TextDiffPage> {
                     fontSize: _fontSize, color: signColor, fontFamily: 'monospace', height: 1.0)),
           ),
           Expanded(
-            child: Text(text,
-                maxLines: _wrap ? null : 1,
-                softWrap: _wrap,
-                overflow: _wrap ? TextOverflow.clip : TextOverflow.ellipsis,
-                style: TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0)),
+            child: _findQuery.isEmpty
+                ? Text(text,
+                    maxLines: _wrap ? null : 1,
+                    softWrap: _wrap,
+                    overflow:
+                        _wrap ? TextOverflow.clip : TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: _fontSize,
+                        fontFamily: 'monospace',
+                        height: 1.0))
+                : Text.rich(
+                    _highlightSpan(text,
+                        TextStyle(
+                            fontSize: _fontSize,
+                            fontFamily: 'monospace',
+                            height: 1.0),
+                        l.srcRow),
+                    maxLines: _wrap ? null : 1,
+                    softWrap: _wrap,
+                    overflow:
+                        _wrap ? TextOverflow.clip : TextOverflow.ellipsis),
           ),
         ],
       ),
@@ -3296,7 +3320,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
         }
       }
     }
-    final target = (i * _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
+    // 统一视图把 modified 拆成「-」「+」两行，行号要跟着重算。
+    var index = i;
+    if (_unified && i > 0) {
+      index = 0;
+      for (var k = 0; k < i && k < rows.length; k++) {
+        index += rows[k].type == DiffRowType.modified ? 2 : 1;
+      }
+    }
+    final target =
+        (index * _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
     _leftV.animateTo(target,
         duration: const Duration(milliseconds: 120), curve: Curves.easeOut);
   }
@@ -3643,6 +3676,10 @@ class _UnifiedLine {
   final String text;
   final DiffRowType type;
 
-  const _UnifiedLine(this.sign, this.num, this.text, this.type);
+  /// 对应「对齐行表」里的下标 —— 统一视图是展平的（modified 拆成两行），
+  /// 但查找高亮要知道它属于哪一行，所以把来源记下来。
+  final int srcRow;
+
+  const _UnifiedLine(this.sign, this.num, this.text, this.type, this.srcRow);
 }
 

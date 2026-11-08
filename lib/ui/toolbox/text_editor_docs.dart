@@ -57,6 +57,9 @@ class EditorDocument {
   /// 打开文件时加载一次，保存时按它执行 —— 项目约定优先于编辑器的全局偏好。
   EditorProperties? editorConfig;
 
+  /// 上次的光标偏移（只在「从缓存恢复」时用一次，之后以 controller 为准）。
+  int lastCaret = -1;
+
   /// 有未写回磁盘的修改。
   ///
   /// 挂在文档上而不是页面状态里：多文档时切来切去，「这份改没改过」
@@ -304,6 +307,10 @@ class EditorDocuments {
           // GBK 文件被写成 UTF-8。
           'newline': d.newline,
           'encodingName': d.encodingName,
+          // 光标位置：下次冷启动恢复时直接回到上次在看的地方。
+          'caret': d.controller.selection.isValid
+              ? d.controller.selection.baseOffset
+              : d.lastCaret,
         });
       }
       await File('${dir.path}/manifest.json').writeAsString(jsonEncode({
@@ -406,6 +413,8 @@ class EditorDocuments {
           retained: true,
           text: text,
         );
+        final caret = raw['caret'];
+        if (caret is int && caret >= 0) doc.lastCaret = caret;
         final nl = raw['newline'];
         if (nl == '\r\n' || nl == '\r' || nl == '\n') doc.newline = nl as String;
         doc.encodingName = raw['encodingName'] as String?;

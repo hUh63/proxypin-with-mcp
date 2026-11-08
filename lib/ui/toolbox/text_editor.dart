@@ -670,6 +670,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
     });
 
     doc.controller.addListener(_onControllerChanged);
+    // 从缓存恢复的文档回到上次的光标位置。只用一次：之后以 controller 自己
+    // 的 selection 为准（切标签来回时不该把光标拽回老地方）。
+    if (doc.lastCaret >= 0) {
+      final offset = doc.lastCaret.clamp(0, doc.text.length);
+      doc.lastCaret = -1;
+      try {
+        doc.controller.selection = TextSelection.collapsed(offset: offset);
+        doc.controller.scrollToLine(_lineOfOffset(doc.text, offset));
+      } catch (_) {}
+    }
     doc.undoController.addListener(_onUndoChanged);
     _restartFileWatch();
     // 切回旧文档：直接恢复上次的诊断标记，避免「重新检查」造成的闪动。
@@ -3724,7 +3734,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 插入代码片段（对标 VS 的 IntelliSense snippet）。
   ///
-  /// 模板按当前语言取，插入时整体按光标行的缩进右移；`$0` 是插入后的光标落点。
+  /// 模板按当前语言取，插入时整体按光标行的缩进右移；`$0` 是插入后的光标落点，
+  /// `${1:默认值}` 会被选中（Shell 的 `${1:-x}` 这类参数扩展不处理）。
   Future<void> _showSnippets() async {
     final controller = _controller;
     if (controller == null) return;
@@ -3824,7 +3835,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _insertSnippet(picked.body);
   }
 
-  /// 插入一段模板：按当前行缩进整体右移，`$0` 决定光标落点。
+  /// 插入一段模板：按当前行缩进整体右移，`$0` 决定光标落点，`${1:x}` 会被选中。
   void _insertSnippet(String raw) {
     final controller = _controller;
     if (controller == null) return;
@@ -3849,20 +3860,62 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     var body = buf.toString();
 
-    // 光标落点：$0 处；没有 $0 就放到末尾
-    var caret = -1;
+    // ① 先摘掉 `$0`（VS 里表示「最终光标位置」）：它可能落在占位符前面，
+    //    先删掉再算偏移才不会错位。
+    var caretAt = -1;
     final zero = body.indexOf(r'$0');
     if (zero >= 0) {
       body = body.replaceFirst(r'$0', '');
-      caret = start + zero;
-    } else {
-      caret = start + body.length;
+      caretAt = zero;
     }
+
+    // ② VS 风格的占位符：`${1:名字}` 变成「名字」，并把**序号最小的那一处**选中。
+    //
+    // 只认带冒号 + 内容的写法，**不认裸 `$1`**：Shell 片段里 `$1` 是位置参数、
+    // `${1:-默认}` 是参数扩展，无脑替换会把片段改坏，所以这类前缀直接跳过。
+    var selStart = -1;
+    var selEnd = -1;
+    final ph = RegExp(r'\$\{(\d+):([^}]*)\}');
+    final rebuilt = StringBuffer();
+    var lastAt = 0;
+    var bestIndex = 1 << 30;
+    for (final m in ph.allMatches(body)) {
+      final value = m.group(2) ?? '';
+      if (value.startsWith('-') ||
+          value.startsWith('=') ||
+          value.startsWith('?') ||
+          value.startsWith('+')) {
+        continue;
+      }
+      rebuilt.write(body.substring(lastAt, m.start));
+      final at = rebuilt.length;
+      rebuilt.write(value);
+      lastAt = m.end;
+      final idx = int.tryParse(m.group(1) ?? '') ?? 999;
+      if (idx < bestIndex) {
+        bestIndex = idx;
+        selStart = at;
+        selEnd = at + value.length;
+      }
+    }
+    if (lastAt > 0) {
+      rebuilt.write(body.substring(lastAt));
+      body = rebuilt.toString();
+    }
+
     controller.replaceRange(start, end, body);
-    controller.selection = TextSelection.collapsed(
-        offset: caret.clamp(0, controller.text.length));
-    controller.scrollToLine(
-        _lineOfOffset(controller.text, caret.clamp(0, controller.text.length)));
+    final total = controller.text.length;
+    if (selStart >= 0) {
+      final a = (start + selStart).clamp(0, total);
+      final b = (start + selEnd).clamp(a, total);
+      controller.selection = TextSelection(baseOffset: a, extentOffset: b);
+      controller.scrollToLine(_lineOfOffset(controller.text, a));
+    } else {
+      final caret = (caretAt >= 0 ? start + caretAt : start + body.length)
+          .clamp(0, total);
+      controller.selection = TextSelection.collapsed(offset: caret);
+      controller.scrollToLine(_lineOfOffset(controller.text, caret));
+    }
     _scheduleLint();
   }
 
@@ -7178,6 +7231,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (!mounted) return;
       await FilePreviewPage.show(context, File(path));
       return;
+    }
+
+    // 同一路径已经开着就切过去。再开一份的话，两个标签各自编辑同一个文件，
+    // 谁后保存谁生效，很容易把另一边的改动覆盖掉。
+    for (final d in _docs.docs) {
+      if (d.path == path) {
+        _activate(d);
+        return;
+      }
     }
 
     try {
