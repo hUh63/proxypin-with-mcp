@@ -3501,5 +3501,11 @@
   "diffLineCounts": "{left} → {right} baris",
   "diffSyntaxHighlight": "Sorot sintaks",
   "diffNextUnreviewed": "Berikutnya yang belum ditinjau",
-  "diffAllReviewed": "Semua perbedaan sudah ditinjau"
+  "diffAllReviewed": "Semua perbedaan sudah ditinjau",
+  "editorRecentFiles": "File terbaru",
+  "editorNoRecentFiles": "Belum ada file terbaru",
+  "editorRecentMissing": "File sudah tidak ada",
+  "editorDirUnreadable": "Folder ini tidak bisa dibaca",
+  "diffGotoBlock": "Ke perbedaan",
+  "diffGotoBlockInvalid": "Masukkan angka antara 1 dan {max}"
 }

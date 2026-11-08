@@ -3501,5 +3501,11 @@
   "diffLineCounts": "{left} → {right} บรรทัด",
   "diffSyntaxHighlight": "ไฮไลต์ไวยากรณ์",
   "diffNextUnreviewed": "รายการถัดไปที่ยังไม่ดู",
-  "diffAllReviewed": "ตรวจดูความต่างครบแล้ว"
+  "diffAllReviewed": "ตรวจดูความต่างครบแล้ว",
+  "editorRecentFiles": "ไฟล์ล่าสุด",
+  "editorNoRecentFiles": "ยังไม่มีไฟล์ล่าสุด",
+  "editorRecentMissing": "ไฟล์นี้ไม่มีแล้ว",
+  "editorDirUnreadable": "อ่านโฟลเดอร์นี้ไม่ได้",
+  "diffGotoBlock": "ไปที่ความต่าง",
+  "diffGotoBlockInvalid": "กรอกตัวเลขระหว่าง 1 ถึง {max}"
 }

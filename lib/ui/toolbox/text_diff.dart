@@ -1617,6 +1617,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'gotoLine':
             unawaited(_gotoLineDialog());
+          case 'gotoBlock':
+            unawaited(_gotoBlockDialog());
           case 'compareSelection':
             unawaited(_compareSelection());
           case 'unifiedView':
@@ -1679,6 +1681,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         CheckedPopupMenuItem(
             value: 'tab8', checked: _tabWidth == 8, child: const Text('Tab = 8')),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.diffGotoLine)),
+        PopupMenuItem(
+            value: 'gotoBlock', child: Text(localizations.diffGotoBlock)),
         PopupMenuItem(
             value: 'compareSelection',
             child: Text(localizations.diffCompareSelection)),
@@ -1803,6 +1807,45 @@ class _TextDiffPageState extends State<TextDiffPage> {
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => TextDiffPage(initialLeft: l, initialRight: r, persist: false),
     ));
+  }
+
+  /// 跳到第 N 处差异：几十处差异时，一直点「下一处」翻到手酸。
+  Future<void> _gotoBlockDialog() async {
+    if (_blocks.isEmpty) {
+      _toastText(localizations.diffNoDifference);
+      return;
+    }
+    final ctrl = TextEditingController(
+        text: '${(_navIndex >= 0 ? _navIndex : 0) + 1}');
+    final n = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.diffGotoBlock),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(hintText: '1 - ${_blocks.length}'),
+          onSubmitted: (v) => Navigator.pop(ctx, int.tryParse(v.trim())),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(localizations.cancel)),
+          FilledButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
+              child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (!mounted || n == null) return;
+    if (n < 1 || n > _blocks.length) {
+      _toastText(localizations.diffGotoBlockInvalid('${_blocks.length}'));
+      return;
+    }
+    _jumpToBlock(n - 1);
   }
 
   /// 跳转到指定行（两侧同步，按各自行数 clamp）。

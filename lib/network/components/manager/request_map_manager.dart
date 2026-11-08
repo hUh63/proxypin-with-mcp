@@ -238,6 +238,29 @@ class RequestMapRule {
   }
 
   /// 从json中创建
+  /// 映射文件路径必须是「应用目录内的相对路径」。
+  ///
+  /// `itemPath` 是从配置文件读进来的（规则可以导出、也能导入别人的），而读取时
+  /// 直接拼在 home 后面用 —— 一旦里面带 `..` 就能逃出应用目录读到别处的文件，
+  /// 而映射内容会**原样作为响应返回给请求方**。也就是说「导入一份规则」可能变成
+  /// 「把本机某个文件读出来发给某个域名」。这里直接掐掉带 `..`、绝对路径、盘符的写法。
+  static String? _safeItemPath(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.contains('..')) {
+      logger.w('请求映射规则里的 itemPath 含 ..，已忽略: $path');
+      return null;
+    }
+    if (path.startsWith('/') || path.startsWith('\\')) {
+      logger.w('请求映射规则里的 itemPath 是绝对路径，已忽略: $path');
+      return null;
+    }
+    if (RegExp(r'^[A-Za-z]:').hasMatch(path)) {
+      logger.w('请求映射规则里的 itemPath 带盘符，已忽略: $path');
+      return null;
+    }
+    return path;
+  }
+
   factory RequestMapRule.fromJson(Map<dynamic, dynamic> map) {
     final url = map['url'];
     if (url is! String || url.isEmpty) {
@@ -249,7 +272,7 @@ class RequestMapRule {
         name: map['name']?.toString(),
         url: url,
         type: RequestMapType.fromName('${map['type']}'),
-        itemPath: map['itemPath']?.toString());
+        itemPath: _safeItemPath(map['itemPath']?.toString()));
   }
 
   void updatePathReg() {

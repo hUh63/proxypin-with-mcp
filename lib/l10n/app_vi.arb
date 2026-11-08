@@ -3501,5 +3501,11 @@
   "diffLineCounts": "{left} → {right} dòng",
   "diffSyntaxHighlight": "Tô sáng cú pháp",
   "diffNextUnreviewed": "Mục chưa xem tiếp theo",
-  "diffAllReviewed": "Đã xem hết các khác biệt"
+  "diffAllReviewed": "Đã xem hết các khác biệt",
+  "editorRecentFiles": "Tệp gần đây",
+  "editorNoRecentFiles": "Chưa có tệp gần đây",
+  "editorRecentMissing": "Tệp không còn tồn tại",
+  "editorDirUnreadable": "Không đọc được thư mục này",
+  "diffGotoBlock": "Đến khác biệt",
+  "diffGotoBlockInvalid": "Nhập số từ 1 đến {max}"
 }

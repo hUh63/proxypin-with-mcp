@@ -38,6 +38,26 @@ class TextFileContent {
   const TextFileContent({required this.text, required this.encoding, this.truncated = false});
 }
 
+/// 目录能不能真的读（不是「选到了但用不了」）。
+///
+/// Android 的目录选择器走 SAF，可能返回 `content://` 或权限受限的路径 ——
+/// 用 `Directory(path).list()` 才会暴露问题。选完目录就探一次，比等用户点了
+/// 「查找引用 / 开始比较」才发现扫不到东西要早得多。
+Future<bool> isDirectoryReadable(String path) async {
+  if (path.isEmpty) return false;
+  try {
+    final dir = Directory(path);
+    if (!await dir.exists()) return false;
+    // 空目录也算可读：只要能 list 成功（不抛）就行。
+    await for (final _ in dir.list(followLinks: false)) {
+      return true;
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// 读一个文本文件，失败时按 GBK / Latin-1 退让。**不会抛异常**（读不到返回空串）。
 Future<TextFileContent> readTextFileLenient(File file, {int maxBytes = kTextFileMaxBytes}) async {
   List<int> bytes;

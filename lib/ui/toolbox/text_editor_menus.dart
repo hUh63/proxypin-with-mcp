@@ -694,6 +694,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'inspect', aliases: 'rw 任务列表 todo fixme tasks'),
   EditorMenuItem('stats', _statsLabel,
       group: 'edit', aliases: 'tj 文档统计 统计 字数 stats wordcount'),
+  EditorMenuItem('recentFiles', _recentFilesLabel,
+      group: 'file', aliases: 'zjdj 最近打开 recentfiles recent'),
   EditorMenuItem('renameFile', _renameFileLabel,
       group: 'file', aliases: 'cwm 重命名文件 renamefile'),
   EditorMenuItem('copyPath', _copyPathLabel,
@@ -787,6 +789,7 @@ String _historyLabel(AppLocalizations l) => l.editorLocalHistory;
 String _diffTabLabel(AppLocalizations l) => l.editorDiffWithTab;
 String _tasksLabel(AppLocalizations l) => l.editorTasks;
 String _statsLabel(AppLocalizations l) => l.editorDocStats;
+String _recentFilesLabel(AppLocalizations l) => l.editorRecentFiles;
 String _renameFileLabel(AppLocalizations l) => l.editorRenameFile;
 String _copyPathLabel(AppLocalizations l) => l.editorCopyPath;
 String _revealFileLabel(AppLocalizations l) => l.editorRevealFile;
@@ -972,6 +975,8 @@ IconData menuIconOf(String id) {
       return Icons.checklist;
     case 'stats':
       return Icons.analytics_outlined;
+    case 'recentFiles':
+      return Icons.history_toggle_off;
     case 'renameFile':
       return Icons.drive_file_rename_outline;
     case 'copyPath':

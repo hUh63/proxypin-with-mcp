@@ -556,6 +556,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final keepIme = await SharedPreferencesAsync().getBool(_kPrefSmoothKeepIme);
     final autoSave = await SharedPreferencesAsync().getBool(_kPrefAutoSave);
     final ws = await SharedPreferencesAsync().getString(_workspaceKey);
+    final recent = await SharedPreferencesAsync().getStringList(_recentFilesKey);
     if (!mounted) return;
     setState(() {
       if (raw != null && raw >= 0 && raw < _RetainMode.values.length) {
@@ -567,6 +568,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (keepIme != null) _smoothKeepIme = keepIme;
       if (autoSave != null) _autoSave = autoSave;
       if (ws != null && ws.isNotEmpty) _workspace = ws;
+      if (recent != null && recent.isNotEmpty) {
+        _recentFiles = recent.take(20).toList();
+      }
     });
     // 「语法」菜单的显示勾选存的是语言标签。语言表改过名 / 导入了别的版本的配置时，
     // 这些标签可能一个都对不上 —— 那样 `_visibleLangs` 会静默回退成全量，每次 build
@@ -1676,6 +1680,113 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 快速打开：列当前文件所在目录的文本文件，打字即时过滤（VS 的 Ctrl+P）。
+  /// 记一次「最近打开」。同一个文件重复打开只把它提到最前，不重复占位。
+  void _rememberRecentFile(String path) {
+    if (path.isEmpty) return;
+    if (_recentFiles.isNotEmpty && _recentFiles.first == path) return;
+    _recentFiles.remove(path);
+    _recentFiles.insert(0, path);
+    if (_recentFiles.length > 20) {
+      _recentFiles.removeRange(20, _recentFiles.length);
+    }
+    unawaited(
+        SharedPreferencesAsync().setStringList(_recentFilesKey, _recentFiles));
+  }
+
+  /// 最近打开的文件列表。失效的条目会标灰，点一下可以确认移除。
+  Future<void> _showRecentFiles() async {
+    if (_recentFiles.isEmpty) {
+      _toast(localizations.editorNoRecentFiles);
+      return;
+    }
+    // 先一次性探一下存在性（最多 20 次 stat，很快），避免用户点到已被删的文件。
+    final exists = <String, bool>{};
+    for (final p in _recentFiles) {
+      try {
+        exists[p] = await File(p).exists();
+      } catch (_) {
+        exists[p] = false;
+      }
+    }
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(localizations.editorRecentFiles,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() => _recentFiles = <String>[]);
+                  unawaited(SharedPreferencesAsync()
+                      .remove(_recentFilesKey)
+                      .catchError((Object _) {}));
+                  Navigator.pop(ctx);
+                },
+                child: Text(localizations.clear),
+              ),
+            ]),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 380),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _recentFiles.length,
+              itemBuilder: (_, i) {
+                final path = _recentFiles[i];
+                final alive = exists[path] ?? false;
+                final name = path.split(RegExp(r'[/\\]')).last;
+                final dir = path.length > name.length
+                    ? path.substring(0, path.length - name.length - 1)
+                    : '';
+                return ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  enabled: alive,
+                  leading: Icon(
+                    alive ? Icons.description_outlined : Icons.error_outline,
+                    size: 18,
+                  ),
+                  title: Text(name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13)),
+                  subtitle: Text(alive ? dir : localizations.editorRecentMissing,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11)),
+                  trailing: IconButton(
+                    tooltip: localizations.delete,
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () {
+                      setState(() => _recentFiles.remove(path));
+                      unawaited(SharedPreferencesAsync()
+                          .setStringList(_recentFilesKey, _recentFiles));
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                  onTap: () => Navigator.pop(ctx, path),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await _openPath(picked);
+  }
+
   Future<void> _showQuickOpen() async {
     final path = _doc?.path;
     if (path == null || path.isEmpty) {
@@ -4063,6 +4174,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
     try {
       final path = await FilePicker.getDirectoryPath();
       if (path == null || path.isEmpty) return;
+      // SAF 可能给出 File API 读不到的路径：先说清楚，别等「查找引用」扫出 0 个才懵。
+      if (!await isDirectoryReadable(path)) {
+        if (!mounted) return;
+        _toast(localizations.editorDirUnreadable);
+        return;
+      }
       if (!mounted) return;
       setState(() => _workspace = path);
       unawaited(SharedPreferencesAsync().setString(_workspaceKey, path));
@@ -4636,6 +4753,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 工作区根目录（可选）。设了之后「查找引用 / 多文件查找 / 跨文件重命名 /
   /// 调用层次 / 在文件中替换」都扫整个目录，而不是只有已打开的文件 + 当前目录。
   static const String _workspaceKey = kTextEditorWorkspaceKey;
+
+  /// 最近打开过的文件（跨会话），最多 20 个。
+  ///
+  /// 编辑器每次都要从「打开文件」一路点目录，来回改同几个文件时特别费事；
+  /// 这里单独记一份，比把整个目录列出来（快速打开）更贴近「我刚才在弄哪个」。
+  static const String _recentFilesKey = 'text_editor_recent_files_v1';
+  List<String> _recentFiles = <String>[];
   String? _workspace;
 
   /// 工作区递归扫描的上限：仓库动辄几万个文件，不设限就是卡死。
@@ -7313,6 +7437,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         if (nl != null) doc.newline = nl;
       }
       _activate(doc);
+      _rememberRecentFile(path);
       final pageLimit =
           _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
       if (content.length > pageLimit && !_smooth) {
@@ -9035,6 +9160,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         return [
           _menuItem('newFile', Icons.note_add_outlined, loc.editorNewFile),
           _menuItem('open', Icons.folder_open, loc.selectFile),
+          _menuItem('recentFiles', Icons.history_toggle_off,
+              loc.editorRecentFiles),
           _menuItem('save', Icons.save_outlined, loc.save),
           _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
           _menuItem('renameFile', Icons.drive_file_rename_outline,
@@ -9350,6 +9477,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _showTasks();
         case 'stats':
           unawaited(_showDocStats());
+        case 'recentFiles':
+          unawaited(_showRecentFiles());
         case 'renameFile':
           unawaited(_renameFile());
         case 'copyPath':

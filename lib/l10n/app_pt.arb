@@ -3502,5 +3502,11 @@
   "diffLineCounts": "{left} → {right} linhas",
   "diffSyntaxHighlight": "Realce de sintaxe",
   "diffNextUnreviewed": "Próximo não revisto",
-  "diffAllReviewed": "Todas as diferenças revistas"
+  "diffAllReviewed": "Todas as diferenças revistas",
+  "editorRecentFiles": "Ficheiros recentes",
+  "editorNoRecentFiles": "Sem ficheiros recentes",
+  "editorRecentMissing": "O ficheiro já não existe",
+  "editorDirUnreadable": "Não é possível ler esta pasta",
+  "diffGotoBlock": "Ir para a diferença",
+  "diffGotoBlockInvalid": "Introduza um número entre 1 e {max}"
 }

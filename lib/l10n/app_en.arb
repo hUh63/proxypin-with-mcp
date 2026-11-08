@@ -5811,5 +5811,18 @@
   },
   "diffSyntaxHighlight": "Syntax highlight",
   "diffNextUnreviewed": "Next unreviewed",
-  "diffAllReviewed": "All differences reviewed"
+  "diffAllReviewed": "All differences reviewed",
+  "editorRecentFiles": "Recent files",
+  "editorNoRecentFiles": "No recent files",
+  "editorRecentMissing": "File no longer exists",
+  "editorDirUnreadable": "This folder can not be read",
+  "diffGotoBlock": "Go to difference",
+  "diffGotoBlockInvalid": "Enter a number between 1 and {max}",
+  "@diffGotoBlockInvalid": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  }
 }

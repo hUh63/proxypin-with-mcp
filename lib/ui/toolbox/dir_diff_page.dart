@@ -118,6 +118,11 @@ class _DirDiffPageState extends State<DirDiffPage> {
       final path = await FilePicker.getDirectoryPath();
       if (path == null || path.isEmpty) return;
       if (!mounted) return;
+      if (!await isDirectoryReadable(path)) {
+        if (!mounted) return;
+        _toast(localizations.editorDirUnreadable);
+        return;
+      }
       setState(() {
         if (left) {
           _leftCtrl.text = path;

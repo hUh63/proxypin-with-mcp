@@ -5191,5 +5191,11 @@
   "diffLineCounts": "{left} → {right} 行",
   "diffSyntaxHighlight": "语法高亮",
   "diffNextUnreviewed": "跳到下一处未看",
-  "diffAllReviewed": "所有差异都看过了"
+  "diffAllReviewed": "所有差异都看过了",
+  "editorRecentFiles": "最近打开",
+  "editorNoRecentFiles": "还没有最近打开的文件",
+  "editorRecentMissing": "文件已不存在",
+  "editorDirUnreadable": "这个目录读不出来",
+  "diffGotoBlock": "跳到第几处差异",
+  "diffGotoBlockInvalid": "请输入 1 到 {max} 之间的编号"
 }
