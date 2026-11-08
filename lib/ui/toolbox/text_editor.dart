@@ -50,6 +50,7 @@ import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
 import 'package:proxypin/utils/text_stats.dart';
+import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
 import 'package:proxypin/utils/code_lint_prefs.dart';
 import 'package:proxypin/ui/component/lint_rules_dialog.dart';
