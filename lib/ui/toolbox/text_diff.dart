@@ -23,6 +23,11 @@ import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:proxypin/ui/component/search/highlight_text_document.dart'
+    show
+        HighlightStyledSegment,
+        buildHighlightBaseSegments,
+        buildHighlightDocumentLines;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -228,6 +233,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 把空格显示成 `·`、Tab 显示成 `→`（仅对齐视图/只读预览）。
   /// 「看起来一模一样却标了修改」基本都是尾随空格或 Tab/空格混用，肉眼看不出来。
   bool _showSpace = false;
+
+  /// 对齐视图的语法高亮：代码 diff 全是黑字时，几乎看不出结构（Beyond Compare /
+  /// VS Code 的 diff 都带高亮）。按行缓存 token 样式，只在文本/语言/主题变化时重算。
+  bool _syntax = true;
+  List<List<HighlightStyledSegment>>? _leftTokens;
+  List<List<HighlightStyledSegment>>? _rightTokens;
+  String _tokenKey = '';
 
   /// 词级（字符级）高亮：关掉只看整行，几万行的超大文件更顺。
   bool _wordDiff = true;
@@ -723,16 +735,34 @@ class _TextDiffPageState extends State<TextDiffPage> {
       index = (index + delta) % _blocks.length;
       if (index < 0) index += _blocks.length;
     }
-    setState(() {
-      _navIndex = index;
-      // 聚焦模式下「上一处/下一处」直接切到那一块。
-      if (_focusBlock != null) _focusBlock = index;
-    });
+    // 聚焦模式下「上一处/下一处」直接切到那一块（_jumpToBlock 里统一处理）。
+    _jumpToBlock(index);
+  }
 
-    final b = _blocks[index];
+  /// 跳到第 [i] 块：两侧编辑器定位 + 对齐视图滚动。
+  ///
+  /// 「上一处/下一处」「差异列表点击」「跳到下一处未看」三处共用一份实现，
+  /// 免得改了一处忘另一处（之前就有过只改了导航、忘了列表点击）。
+  void _jumpToBlock(int i) {
+    if (i < 0 || i >= _blocks.length) return;
+    final b = _blocks[i];
+    setState(() {
+      _navIndex = i;
+      if (_focusBlock != null) _focusBlock = i;
+    });
     _gotoLine(_left, b.leftStart);
     _gotoLine(_right, b.rightStart);
     _scrollToCurrentRow();
+  }
+
+  /// 从当前位置往后找第一块「还没勾已看」的，找不到返回 -1。
+  int _firstUnreviewed() {
+    if (_blocks.isEmpty) return -1;
+    for (var k = 1; k <= _blocks.length; k++) {
+      final i = (_navIndex + k) % _blocks.length;
+      if (!_reviewed.contains(i)) return i;
+    }
+    return -1;
   }
 
   /// 对齐视图里滚到当前差异（留一行上下文）。两侧联动，动左边就会带动右边。
@@ -1074,6 +1104,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 命中的行要跟着「忽略开关 / 只显示差异 / 聚焦块」一起变，统一在 build
     // 开头刷一次（带 key，没变就不重算）。
     _refreshFindHits();
+    _ensureTokens();
 
     return PopScope(
       canPop: false,
@@ -1149,6 +1180,105 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ),
       ),
     );
+  }
+
+  /// 让两侧的 token 样式与当前内容对齐（文本/语言/主题/开关变了才重算）。
+  void _ensureTokens() {
+    final lang = _diffLang;
+    final key = '${lang ?? ''}|${_left.text.length}|${_left.text.hashCode}'
+        '|${_right.text.length}|${_right.text.hashCode}'
+        '|${Theme.brightnessOf(context).name}|$_syntax';
+    if (key == _tokenKey) return;
+    _tokenKey = key;
+    if (!_syntax || lang == null) {
+      _leftTokens = null;
+      _rightTokens = null;
+      return;
+    }
+    _leftTokens = _tokenizeFor(_left.text, lang);
+    _rightTokens = _tokenizeFor(_right.text, lang);
+  }
+
+  List<List<HighlightStyledSegment>>? _tokenizeFor(String text, String lang) {
+    if (text.isEmpty) return const <List<HighlightStyledSegment>>[];
+    // 解析是同步的，几百 KB 上会明显卡一帧；几万行的 diff 本来就该关高亮看。
+    if (text.length > 300000) return null;
+    try {
+      final segments =
+          buildHighlightBaseSegments(context, text, language: lang);
+      return buildHighlightDocumentLines(segments)
+          .map((line) => line.segments)
+          .toList(growable: false);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 语法高亮实际是否生效。
+  ///
+  /// Tab 展开与空白可视化会改写"显示用的文本"，token 就对不上了，所以那时让位；
+  /// 查找高亮同理（同一段文本只能有一种底色）。
+  bool get _syntaxActive {
+    if (!_syntax || _tabWidth > 0 || _showSpace || _findQuery.isNotEmpty) {
+      return false;
+    }
+    final left = _leftTokens;
+    final right = _rightTokens;
+    return (left != null && left.isNotEmpty) ||
+        (right != null && right.isNotEmpty);
+  }
+
+  /// 对比的语言：按文件名后缀推（两侧都没有文件名时不高亮）。
+  String? get _diffLang {
+    final name = _leftName.isNotEmpty ? _leftName : _rightName;
+    if (name.isEmpty) return null;
+    final dot = name.lastIndexOf('.');
+    if (dot < 0 || dot == name.length - 1) return null;
+    return _langOfExt(name.substring(dot + 1).toLowerCase());
+  }
+
+  static String? _langOfExt(String ext) => switch (ext) {
+        'dart' => 'dart',
+        'js' || 'mjs' || 'cjs' || 'jsx' => 'javascript',
+        'ts' || 'tsx' => 'typescript',
+        'json' => 'json',
+        'xml' || 'svg' || 'html' || 'htm' || 'vue' => 'xml',
+        'css' => 'css',
+        'scss' => 'scss',
+        'less' => 'less',
+        'yaml' || 'yml' => 'yaml',
+        'md' || 'markdown' => 'markdown',
+        'sql' => 'sql',
+        'py' => 'python',
+        'java' => 'java',
+        'kt' || 'kts' => 'kotlin',
+        'go' => 'go',
+        'rs' => 'rust',
+        'c' || 'h' => 'c',
+        'cpp' || 'cc' || 'cxx' || 'hpp' => 'cpp',
+        'cs' => 'csharp',
+        'php' => 'php',
+        'rb' => 'ruby',
+        'swift' => 'swift',
+        'sh' || 'bash' || 'zsh' => 'bash',
+        'ini' || 'conf' || 'toml' || 'properties' => 'ini',
+        'lua' => 'lua',
+        'gradle' || 'groovy' => 'groovy',
+        _ => null,
+      };
+
+  /// 把一行的 token 段拼成 span（底色已经剥掉了，不会盖住 diff 的绿/红）。
+  TextSpan _tokenSpan(List<HighlightStyledSegment> segments, TextStyle base) {
+    if (segments.isEmpty) return TextSpan(text: '', style: base);
+    return TextSpan(style: base, children: [
+      for (final seg in segments)
+        TextSpan(
+          text: seg.text,
+          style: seg.style == null
+              ? null
+              : base.merge(seg.style).copyWith(backgroundColor: null),
+        ),
+    ]);
   }
 
   /// 命中缓存：文本 / 开关 / 显示范围任何一项变了才重算。
@@ -1403,6 +1533,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'ignoreComment':
             setState(() => _ignoreComments = !_ignoreComments);
             _compare();
+          case 'syntax':
+            setState(() => _syntax = !_syntax);
           case 'wrap':
             final next = !_wrap;
             setState(() => _wrap = next);
@@ -1520,6 +1652,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'showSpace',
             checked: _showSpace,
             child: Text(localizations.diffShowWhitespace)),
+        CheckedPopupMenuItem(
+            value: 'syntax',
+            checked: _syntax,
+            child: Text(localizations.diffSyntaxHighlight)),
         CheckedPopupMenuItem(
             value: 'wordDiff',
             checked: _wordDiff,
@@ -2760,6 +2896,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
                       style: TextStyle(
                           fontSize: 11, color: theme.colorScheme.primary)),
                 const Spacer(),
+                IconButton(
+                  tooltip: localizations.diffNextUnreviewed,
+                  icon: const Icon(Icons.skip_next, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    final next = _firstUnreviewed();
+                    if (next < 0) {
+                      _toastText(localizations.diffAllReviewed);
+                      return;
+                    }
+                    Navigator.of(ctx).pop();
+                    _jumpToBlock(next);
+                  },
+                ),
                 if (_reviewed.isNotEmpty)
                   IconButton(
                     tooltip: localizations.diffReviewedReset,
@@ -2829,13 +2980,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                     subtitle: _blockPreview(b),
                     onTap: () {
                       Navigator.of(ctx).pop();
-                      setState(() {
-                        _navIndex = i;
-                        if (_focusBlock != null) _focusBlock = i;
-                      });
-                      _gotoLine(_left, b.leftStart);
-                      _gotoLine(_right, b.rightStart);
-                      _scrollToCurrentRow();
+                      _jumpToBlock(i);
                     },
                   );
                 },
@@ -3406,6 +3551,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final line = left ? r.leftLine : r.rightLine;
     final raw = (left ? r.leftText : r.rightText) ?? '';
     final text = _renderText(raw);
+    // 语法高亮：按行号取 token（tokens 是 0-based 行数组）。
+    final tokens = _syntaxActive ? (left ? _leftTokens : _rightTokens) : null;
+    final tokenLine =
+        (tokens != null && line != null && line >= 1 && line <= tokens.length)
+            ? tokens[line - 1]
+            : null;
     final numStyle = TextStyle(fontSize: _fontSize - 2, color: Colors.grey[600], height: 1.0);
     final textStyle = TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0);
     return Container(
@@ -3428,17 +3579,23 @@ class _TextDiffPageState extends State<TextDiffPage> {
           const SizedBox(width: 5),
           // 不裁剪：横向滚动由外层负责，长行能一直往右看。
           Expanded(
-            child: _findQuery.isEmpty
-                ? Text(text,
+            child: tokenLine != null
+                ? Text.rich(
+                    _tokenSpan(tokenLine, textStyle),
                     maxLines: _wrap ? null : 1,
                     softWrap: _wrap,
-                    overflow: TextOverflow.visible,
-                    style: textStyle)
-                : Text.rich(
-                    _highlightSpan(text, textStyle, rowIndex),
-                    maxLines: _wrap ? null : 1,
-                    softWrap: _wrap,
-                    overflow: TextOverflow.visible),
+                    overflow: TextOverflow.visible)
+                : (_findQuery.isEmpty
+                    ? Text(text,
+                        maxLines: _wrap ? null : 1,
+                        softWrap: _wrap,
+                        overflow: TextOverflow.visible,
+                        style: textStyle)
+                    : Text.rich(
+                        _highlightSpan(text, textStyle, rowIndex),
+                        maxLines: _wrap ? null : 1,
+                        softWrap: _wrap,
+                        overflow: TextOverflow.visible)),
           ),
         ],
       ),
@@ -3491,15 +3648,20 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 估算两栏的内容宽度（等宽字体按 0.62 字宽，CJK 记 2 个字宽）。
   void _ensureWidths(List<DiffRow> rows) {
-    final key =
-        '$_alignedRowsKey|${_fontSize.toStringAsFixed(2)}|$_tabWidth|$_showSpace';
+    final key = '$_alignedRowsKey|${_fontSize.toStringAsFixed(2)}|$_tabWidth'
+        '|$_showSpace|$_syntax|${_diffLang ?? ''}';
     if (key == _widthKey) return;
     _widthKey = key;
+    // 语法高亮生效时显示的是原文（Tab 不展开），宽度也要按同一份文本来算，
+    // 否则两栏会一栏对齐、一栏差几列。
+    final syntax = _syntaxActive;
     var maxLeft = 0;
     var maxRight = 0;
     for (final r in rows) {
-      final l = _displayUnits(_renderText(r.leftText ?? ''));
-      final rt = _displayUnits(_renderText(r.rightText ?? ''));
+      final l = _displayUnits(
+          syntax ? (r.leftText ?? '') : _renderText(r.leftText ?? ''));
+      final rt = _displayUnits(
+          syntax ? (r.rightText ?? '') : _renderText(r.rightText ?? ''));
       if (l > maxLeft) maxLeft = l;
       if (rt > maxRight) maxRight = rt;
     }

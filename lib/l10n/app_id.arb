@@ -3498,5 +3498,8 @@
   "editorRenameInvalid": "Nama file tidak boleh berisi pemisah path",
   "editorRevealUnsupported": "Tidak didukung di platform ini",
   "diffShare": "Bagikan",
-  "diffLineCounts": "{left} → {right} baris"
+  "diffLineCounts": "{left} → {right} baris",
+  "diffSyntaxHighlight": "Sorot sintaks",
+  "diffNextUnreviewed": "Berikutnya yang belum ditinjau",
+  "diffAllReviewed": "Semua perbedaan sudah ditinjau"
 }

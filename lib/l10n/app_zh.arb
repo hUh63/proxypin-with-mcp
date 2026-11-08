@@ -5188,5 +5188,8 @@
   "editorRenameInvalid": "文件名里不能带路径分隔符",
   "editorRevealUnsupported": "这个平台不支持",
   "diffShare": "分享",
-  "diffLineCounts": "{left} → {right} 行"
+  "diffLineCounts": "{left} → {right} 行",
+  "diffSyntaxHighlight": "语法高亮",
+  "diffNextUnreviewed": "跳到下一处未看",
+  "diffAllReviewed": "所有差异都看过了"
 }

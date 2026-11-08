@@ -3498,5 +3498,8 @@
   "editorRenameInvalid": "Tên tệp không được chứa dấu phân cách đường dẫn",
   "editorRevealUnsupported": "Nền tảng này không hỗ trợ",
   "diffShare": "Chia sẻ",
-  "diffLineCounts": "{left} → {right} dòng"
+  "diffLineCounts": "{left} → {right} dòng",
+  "diffSyntaxHighlight": "Tô sáng cú pháp",
+  "diffNextUnreviewed": "Mục chưa xem tiếp theo",
+  "diffAllReviewed": "Đã xem hết các khác biệt"
 }

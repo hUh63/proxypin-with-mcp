@@ -3498,5 +3498,8 @@
   "editorRenameInvalid": "El nombre no puede contener separadores de ruta",
   "editorRevealUnsupported": "No compatible con esta plataforma",
   "diffShare": "Compartir",
-  "diffLineCounts": "{left} → {right} líneas"
+  "diffLineCounts": "{left} → {right} líneas",
+  "diffSyntaxHighlight": "Resaltado de sintaxis",
+  "diffNextUnreviewed": "Siguiente sin revisar",
+  "diffAllReviewed": "Todas las diferencias revisadas"
 }

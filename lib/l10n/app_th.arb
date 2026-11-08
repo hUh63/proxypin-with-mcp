@@ -3498,5 +3498,8 @@
   "editorRenameInvalid": "ชื่อไฟล์ห้ามมีตัวคั่นพาธ",
   "editorRevealUnsupported": "ไม่รองรับบนแพลตฟอร์มนี้",
   "diffShare": "แชร์",
-  "diffLineCounts": "{left} → {right} บรรทัด"
+  "diffLineCounts": "{left} → {right} บรรทัด",
+  "diffSyntaxHighlight": "ไฮไลต์ไวยากรณ์",
+  "diffNextUnreviewed": "รายการถัดไปที่ยังไม่ดู",
+  "diffAllReviewed": "ตรวจดูความต่างครบแล้ว"
 }

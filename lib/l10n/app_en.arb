@@ -5808,5 +5808,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "diffSyntaxHighlight": "Syntax highlight",
+  "diffNextUnreviewed": "Next unreviewed",
+  "diffAllReviewed": "All differences reviewed"
 }

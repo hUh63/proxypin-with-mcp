@@ -3499,5 +3499,8 @@
   "editorRenameInvalid": "O nome não pode conter separadores de caminho",
   "editorRevealUnsupported": "Não suportado nesta plataforma",
   "diffShare": "Compartilhar",
-  "diffLineCounts": "{left} → {right} linhas"
+  "diffLineCounts": "{left} → {right} linhas",
+  "diffSyntaxHighlight": "Realce de sintaxe",
+  "diffNextUnreviewed": "Próximo não revisado",
+  "diffAllReviewed": "Todas as diferenças revisadas"
 }

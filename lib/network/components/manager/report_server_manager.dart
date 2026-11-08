@@ -86,7 +86,13 @@ class ReportServerManager {
     var list = <ReportServer>[];
     final file = await Paths.getPath("report_servers.json");
     if (await file.exists()) {
-      final content = await file.readAsString();
+      // 容错解码：手工改过（GBK）或被截断的文件不该让整份配置消失。
+      var content = '';
+      try {
+        content = utf8.decode(await file.readAsBytes(), allowMalformed: true);
+      } catch (e) {
+        logger.e('上报服务器配置读取失败', error: e);
+      }
       if (content.trim().isNotEmpty) {
         try {
           final decoded = jsonDecode(content) as List<dynamic>;

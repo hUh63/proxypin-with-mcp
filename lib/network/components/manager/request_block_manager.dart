@@ -55,7 +55,15 @@ class RequestBlockManager {
 
   ///加载
   Future<void> _load() async {
-    var json = await _storageFile.readAsString();
+    // 读文件这一步本身也可能抛（不是合法 UTF-8 / 权限 / 文件被外部删掉），
+    // 必须一起兜住：`load` 跑在单例初始化路径上，抛出去等于「请求屏蔽」永久不可用。
+    String json;
+    try {
+      json = utf8.decode(await _storageFile.readAsBytes(), allowMalformed: true);
+    } catch (e) {
+      logger.e('请求屏蔽配置读取失败', error: e);
+      return;
+    }
     if (json.isEmpty) return;
     // 配置文件被写坏/手工改过时不能让整个屏蔽功能起不来（以前 jsonDecode 一抛，
     // instance 每次访问都抛异常，请求屏蔽直接不可用）。逐条容错 + 保留默认值。

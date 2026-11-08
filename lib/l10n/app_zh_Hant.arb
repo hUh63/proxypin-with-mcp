@@ -5188,5 +5188,8 @@
   "editorRenameInvalid": "檔名裡不能帶路徑分隔符",
   "editorRevealUnsupported": "這個平台不支援",
   "diffShare": "分享",
-  "diffLineCounts": "{left} → {right} 行"
+  "diffLineCounts": "{left} → {right} 行",
+  "diffSyntaxHighlight": "語法醒目提示",
+  "diffNextUnreviewed": "跳到下一處未看",
+  "diffAllReviewed": "所有差異都看過了"
 }
