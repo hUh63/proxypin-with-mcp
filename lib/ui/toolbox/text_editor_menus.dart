@@ -680,6 +680,12 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('references', _referencesLabel, group: 'code', aliases: 'yy 引用 references usages'),
   EditorMenuItem('callHierarchy', _callHierarchyLabel,
       group: 'code', aliases: 'dycc 调用层次 callhierarchy callers'),
+  EditorMenuItem('prevChange', _prevChangeLabel,
+      group: 'code', aliases: 'sgyc 上一处改动 上一个改动 prevchange previous'),
+  EditorMenuItem('nextChange', _nextChangeLabel,
+      group: 'code', aliases: 'xiayc 下一处改动 下一个改动 nextchange next'),
+  EditorMenuItem('conflicts', _conflictsLabel,
+      group: 'code', aliases: 'cj 合并冲突 冲突 conflicts merge git'),
   EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
   EditorMenuItem('workspace', _workspaceLabel,
       group: 'file', aliases: 'gzz 工作区 workspace root'),
@@ -824,6 +830,9 @@ String _lintRulesLabel(AppLocalizations l) => l.editorLintAllRules;
 String _peekDefLabel(AppLocalizations l) => l.editorPeekDefinition;
 String _expandSelLabel(AppLocalizations l) => l.editorExpandSelection;
 String _jumpBracketLabel(AppLocalizations l) => l.editorJumpBracket;
+String _prevChangeLabel(AppLocalizations l) => l.editorPrevChange;
+String _nextChangeLabel(AppLocalizations l) => l.editorNextChange;
+String _conflictsLabel(AppLocalizations l) => l.editorConflicts;
 String _toggleBookmarkLabel(AppLocalizations l) => l.editorToggleBookmark;
 String _nextBookmarkLabel(AppLocalizations l) => l.editorNextBookmark;
 String _recentEditsLabel(AppLocalizations l) => l.editorRecentEdits;
@@ -959,6 +968,12 @@ IconData menuIconOf(String id) {
       return Icons.autorenew;
     case 'jumpBracket':
       return Icons.data_object;
+    case 'prevChange':
+      return Icons.keyboard_double_arrow_up;
+    case 'nextChange':
+      return Icons.keyboard_double_arrow_down;
+    case 'conflicts':
+      return Icons.call_split;
     case 'references':
       return Icons.format_list_bulleted;
     case 'callHierarchy':

@@ -81,16 +81,25 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
   void initState() {
     super.initState();
 
-    var customerRepeat = widget.prefs.getString('customerRepeat');
-    keepSetting = customerRepeat != null;
+    // 存的是旧格式、或手工改坏的 JSON 时 jsonDecode 会抛 —— 那会让「重放」页
+    // 直接打不开。解析不出来就当作「从没保存过设置」，页面上仍是默认值。
+    final customerRepeat = widget.prefs.getString('customerRepeat');
     if (customerRepeat != null) {
-      Map<String, dynamic> data = jsonDecode(customerRepeat);
-      count.text = data['count'];
-      interval.text = data['interval'];
-      minInterval.text = data['minInterval'];
-      maxInterval.text = data['maxInterval'];
-      delay.text = data['delay'];
-      fixed = data['fixed'] == true;
+      try {
+        final data = jsonDecode(customerRepeat);
+        if (data is Map) {
+          String s(Object? v) => v == null ? '' : '$v';
+          count.text = s(data['count']);
+          interval.text = s(data['interval']);
+          minInterval.text = s(data['minInterval']);
+          maxInterval.text = s(data['maxInterval']);
+          delay.text = s(data['delay']);
+          fixed = data['fixed'] == true;
+          keepSetting = true;
+        }
+      } catch (e) {
+        logger.w('重放设置解析失败，按默认值处理: $e');
+      }
     }
   }
 

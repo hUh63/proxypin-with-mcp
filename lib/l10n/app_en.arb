@@ -5824,5 +5824,65 @@
         "type": "String"
       }
     }
+  },
+  "diffStatsTitle": "Comparison result",
+  "diffStatLines": "Lines",
+  "diffStatChars": "Characters",
+  "diffStatSize": "Size",
+  "diffStatNewline": "Line endings",
+  "diffStatModified": "Modified",
+  "diffStatPath": "Path",
+  "diffNewlineMixed": "Mixed",
+  "diffCopyStats": "Copy stats",
+  "editorNoChanges": "No changes yet",
+  "editorConflicts": "Resolve conflicts",
+  "editorNoConflicts": "No merge conflict markers found",
+  "editorConflictCount": "{n} conflict(s)",
+  "@editorConflictCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorConflictOurs": "Current branch",
+  "editorConflictTheirs": "Incoming branch",
+  "editorTakeOurs": "Use current",
+  "editorTakeTheirs": "Use incoming",
+  "editorTakeBoth": "Keep both",
+  "editorTakeBase": "Use base",
+  "editorConflictAllOurs": "All current",
+  "editorConflictAllTheirs": "All incoming",
+  "editorConflictsResolved": "Resolved {n}",
+  "@editorConflictsResolved": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorConflictLeft": "{n} conflict(s) left",
+  "@editorConflictLeft": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorConflictApply": "Apply",
+  "editorChangeAdded": "Added line",
+  "editorChangeModified": "Modified line",
+  "editorChangeDeleted": "Deleted here",
+  "editorPrevChange": "Previous change",
+  "editorNextChange": "Next change",
+  "logViewFollowOn": "Auto-follow: on",
+  "logViewFollowOff": "Auto-follow: off",
+  "capturePlanInvalidDomain": "Invalid domain: {list}",
+  "@capturePlanInvalidDomain": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
   }
 }

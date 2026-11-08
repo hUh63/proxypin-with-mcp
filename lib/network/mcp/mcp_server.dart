@@ -4441,7 +4441,6 @@ class McpServer {
 
   /// 解析 Cookie 字符串为 HAR 格式
   /// 计算以 2 为底的对数
-  double _log2(double x) => x <= 0 ? 0 : math.log(x) / math.ln2;
 
   List<Map<String, String>> _parseCookies(String? cookieHeader) {
     if (cookieHeader == null || cookieHeader.isEmpty) return [];

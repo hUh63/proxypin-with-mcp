@@ -162,7 +162,6 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
   // ── JS 调试（行级断点）──
   /// 当前停在第几行（1-based，0 表示没停住）。
   int _debugLine = 0;
-  bool _debugFinished = true;
   /// 「继续」时要给这一行加一次「跳过」——引擎没法从异常点恢复，只能重跑。
   int _debugSkipLine = 0;
 

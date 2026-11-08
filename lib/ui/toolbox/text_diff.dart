@@ -828,9 +828,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     } catch (_) {}
   }
 
-  void _undo() => (_leftActive ? _leftUndo : _rightUndo).undo();
 
-  void _redo() => (_leftActive ? _leftUndo : _rightUndo).redo();
 
   // ---------- 长按：把此处差异应用到另一侧 ----------
 
@@ -1563,7 +1561,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'zoomOut':
             _changeFontSize(-1);
           case 'stats':
-            _showDiffStats();
+            unawaited(_showDiffStats());
           case 'filterAdd':
             setState(() => _typeFilter = _typeFilter == 'added' ? null : 'added');
           case 'filterDel':
@@ -1884,11 +1882,167 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _gotoLine(_right, n - 1);
   }
 
-  void _showDiffStats() {
+  /// 差异统计 + 两侧文件信息（对标 WinMerge 的「比较结果」页）。
+  ///
+  /// 以前只弹一句 toast，看不到「左边多少个字符、右边多大、改的是哪个时间点的文件」——
+  /// 而这些恰恰是「我改的到底是不是这一版」的判断依据。
+  Future<void> _showDiffStats() async {
     final stats = diffStats(_blocks);
     final summary = localizations.diffStatsSummary(
         '${stats.added}', '${stats.deleted}', '${stats.modified}');
-    _toastText('$summary${_newlineHint()}');
+    final li = _sideInfo(_leftPath, _left.text);
+    final ri = _sideInfo(_rightPath, _right.text);
+    await showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final color = Theme.of(ctx).colorScheme;
+        Widget row(String k, String v) => Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                SizedBox(
+                  width: 62,
+                  child: Text(k,
+                      style: TextStyle(fontSize: 11.5, color: color.onSurfaceVariant)),
+                ),
+                Expanded(
+                  child: Text(v,
+                      style: const TextStyle(fontSize: 11.5, height: 1.3)),
+                ),
+              ]),
+            );
+        Widget card(String title, ({_SideInfo info, String name, String path}) side) {
+          final i = side.info;
+          return Expanded(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              decoration: BoxDecoration(
+                color: color.surfaceContainerHighest.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  side.name.isEmpty ? title : side.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                row(localizations.diffStatLines, '${i.lines}'),
+                row(localizations.diffStatChars, '${i.chars}'),
+                row(localizations.diffStatSize, i.sizeText),
+                row(localizations.diffStatNewline, i.newline),
+                if (i.modified != null)
+                  row(localizations.diffStatModified, i.modified!),
+                if (side.path.isNotEmpty)
+                  row(localizations.diffStatPath, side.path),
+              ]),
+            ),
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(localizations.diffStatsTitle,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(summary,
+                    style: TextStyle(
+                        fontSize: 12.5, fontFamily: 'monospace', color: color.primary)),
+                if (_newlineHint().isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(_newlineHint().trim(),
+                      style: TextStyle(fontSize: 11, color: Colors.orange.shade800)),
+                ],
+                const SizedBox(height: 10),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  card(localizations.diffOriginal,
+                      (info: li, name: _leftName, path: _leftPath)),
+                  const SizedBox(width: 8),
+                  card(localizations.diffChanged,
+                      (info: ri, name: _rightName, path: _rightPath)),
+                ]),
+                const SizedBox(height: 10),
+                Row(children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final text = [
+                          summary,
+                          if (_newlineHint().isNotEmpty) _newlineHint().trim(),
+                          '${localizations.diffOriginal}: '
+                              '${_leftName.isEmpty ? '-' : _leftName} · '
+                              '${li.lines}L / ${li.sizeText} / ${li.newline}',
+                          '${localizations.diffChanged}: '
+                              '${_rightName.isEmpty ? '-' : _rightName} · '
+                              '${ri.lines}L / ${ri.sizeText} / ${ri.newline}',
+                        ].join('\n');
+                        await Clipboard.setData(ClipboardData(text: text));
+                        if (!ctx.mounted) return;
+                        Navigator.of(ctx).pop();
+                        _toastText(localizations.copied);
+                      },
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: Text(localizations.diffCopyStats,
+                          style: const TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: Text(localizations.guideGotIt),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 一侧的字符/行/体积/换行符信息。文件存在时用磁盘上的真实大小与修改时间。
+  _SideInfo _sideInfo(String path, String text) {
+    final lines = text.isEmpty ? 0 : text.split('\n').length;
+    final crlf = RegExp('\\r\\n').allMatches(text).length;
+    final lfOnly = '\n'.allMatches(text).length - crlf;
+    final newline = crlf > 0 && lfOnly > 0
+        ? localizations.diffNewlineMixed
+        : (crlf > 0 ? 'CRLF' : 'LF');
+    int bytes = utf8.encode(text).length;
+    String? modified;
+    if (path.isNotEmpty) {
+      try {
+        final f = File(path);
+        if (f.existsSync()) {
+          bytes = f.lengthSync();
+          final t = f.statSync().modified;
+          String p2(int n) => n.toString().padLeft(2, '0');
+          modified = '${t.year}-${p2(t.month)}-${p2(t.day)} ${p2(t.hour)}:${p2(t.minute)}';
+        }
+      } catch (_) {
+        // 盘上读不到（SAF 路径 / 权限）就用内存里的估算值，不拦着看统计
+      }
+    }
+    return _SideInfo(
+      lines: lines,
+      chars: text.length,
+      bytes: bytes,
+      newline: newline,
+      modified: modified,
+    );
+  }
+
+  static String _fmtSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
   }
 
   /// 两侧换行符风格不同时补一句提示：这是「看着一样却全标红」的第二大原因
@@ -3875,6 +4029,25 @@ class _DensityPainter extends CustomPainter {
 }
 
 /// 统一视图里的一行：符号（'  ' / '- ' / '+ '）+ 行号 + 文本。
+/// 一侧的字符 / 行 / 体积 / 换行符信息，供「统计」面板展示。
+class _SideInfo {
+  final int lines;
+  final int chars;
+  final int bytes;
+  final String newline;
+  final String? modified;
+
+  const _SideInfo({
+    required this.lines,
+    required this.chars,
+    required this.bytes,
+    required this.newline,
+    this.modified,
+  });
+
+  String get sizeText => _TextDiffPageState._fmtSize(bytes);
+}
+
 class _UnifiedLine {
   final String sign;
   final int? num;

@@ -637,18 +637,6 @@ echo INSTALLED
       duration: 5,
     );
   }
-
-  Future<String?> _getAndroidVersion() async {
-    try {
-      final result = await Process.run('getprop', ['ro.build.version.release']);
-      if (result.exitCode == 0) {
-        return result.stdout.toString().trim().split(".")[0];
-      }
-    } catch (e) {
-      logger.d('获取Android版本失败：$e');
-    }
-    return null;
-  }
 }
 
 Future<bool> evaluateChainTrusted(String caPem) async {

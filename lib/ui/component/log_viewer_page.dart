@@ -234,7 +234,10 @@ class _LogViewerPageState extends State<LogViewerPage> {
       final topId = _filteredLogs.first.timestamp.microsecondsSinceEpoch;
       if (_lastTopId != topId) {
         _lastTopId = topId;
-        if (_listController.hasClients && _listController.offset < 400) {
+        // 用户往上翻看历史时不要被新日志拽回顶部；关掉「跟随」也保持当前位置。
+        if (_autoScroll &&
+            _listController.hasClients &&
+            _listController.offset < 400) {
           _listController.jumpTo(0);
         }
       }
@@ -330,6 +333,19 @@ class _LogViewerPageState extends State<LogViewerPage> {
         title: Text(localizations.logViewTitle,
             maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
+          // 自动跟随：新日志到达时回顶。翻看历史日志时把它关掉就不被打断
+          // （此前这个状态只声明没接线，等于永远在跟随）。
+          IconButton(
+            icon: Icon(
+              _autoScroll ? Icons.vertical_align_bottom : Icons.pan_tool_outlined,
+              size: 20,
+              color: _autoScroll ? Theme.of(context).colorScheme.primary : Colors.grey,
+            ),
+            tooltip: _autoScroll
+                ? localizations.logViewFollowOn
+                : localizations.logViewFollowOff,
+            onPressed: () => setState(() => _autoScroll = !_autoScroll),
+          ),
           // 录制开关（开启后开始记录新日志）
           IconButton(
             icon: Icon(

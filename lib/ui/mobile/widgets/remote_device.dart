@@ -292,9 +292,25 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
     }
   }
 
+  /// 读「一键连电脑」记住的设备列表。
+  ///
+  /// 这里以前是 `map(jsonDecode)` 一把梭：列表里只要有一条是旧格式或被改坏，
+  /// 整个调用就抛 —— 表现是设备列表空空、点「连接电脑」直接报错，而且删不掉
+  /// 那条坏记录（要先能读到列表才能删）。改成逐条容错。
   List<RemoteModel> getRemoteDeviceList(SharedPreferences prefs) {
-    var remoteDeviceList = prefs.getStringList('remoteDeviceList') ?? [];
-    return remoteDeviceList.map((it) => RemoteModel.fromJson(jsonDecode(it))).toList();
+    final raw = prefs.getStringList('remoteDeviceList') ?? const <String>[];
+    final out = <RemoteModel>[];
+    for (final it in raw) {
+      try {
+        final decoded = jsonDecode(it);
+        if (decoded is Map) {
+          out.add(RemoteModel.fromJson(Map<String, dynamic>.from(decoded)));
+        }
+      } catch (e) {
+        logger.w('跳过无效的远程设备记录: $e');
+      }
+    }
+    return out;
   }
 
   Future<bool> setRemoteDeviceList(SharedPreferences prefs, Iterable<RemoteModel> remoteDeviceList) {
@@ -574,12 +590,25 @@ class _RemoteDevicePageState extends State<RemoteDevicePage> {
     var desktopModel = widget.remoteDevice.value;
     HttpClients.get('http://${desktopModel.host}:${desktopModel.port}/config').then((response) {
       if (response.status.isSuccessful() && mounted) {
-        var config = jsonDecode(response.bodyAsString);
+        // 对端可能回的是登录页 / 404 页面而不是 JSON：jsonDecode 抛在 then 回调里，
+        // 上面的 onError 接不住（它只管上游 future 的错误），表现为「点了没反应」。
+        Map<String, dynamic>? config;
+        try {
+          final decoded = jsonDecode(response.bodyAsString);
+          if (decoded is Map) config = Map<String, dynamic>.from(decoded);
+        } catch (e) {
+          logger.w('桌面配置不是合法 JSON: $e');
+        }
+        if (config == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(localizations.pullConfigFail)));
+          return;
+        }
         syncConfig = true;
         showDialog(
             context: context,
             builder: (context) {
-              return ConfigSyncWidget(configuration: widget.proxyServer.configuration, config: config);
+              return ConfigSyncWidget(configuration: widget.proxyServer.configuration, config: config!);
             });
       }
     }).onError((error, stackTrace) {

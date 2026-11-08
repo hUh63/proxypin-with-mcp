@@ -1744,7 +1744,6 @@ class _McpAutomationPageState extends State<McpAutomationPage>
 
   /// 下拉输入框统一样式：紧凑（isDense）且留出更小的内容内边距，
   /// 让可用文本宽度最大化，减少长文本被省略的概率。
-  static const InputBorder _dropdownBorder = OutlineInputBorder();
 
   /// 条件值编辑器:枚举型 status 字段(代理/网络状态)在 equals/notEquals 时用下拉,
   /// 其余情况(数值/正则/列表/时间戳等)用文本框。

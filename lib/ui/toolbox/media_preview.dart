@@ -77,7 +77,6 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
   int? _width;
   int? _height;
   int _bytes = 0;
-  String? _error;
 
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 

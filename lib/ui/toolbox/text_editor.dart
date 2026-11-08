@@ -49,6 +49,7 @@ import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
+import 'package:proxypin/utils/merge_conflicts.dart';
 import 'package:proxypin/utils/text_stats.dart';
 import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
@@ -810,26 +811,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return best < 0 ? null : best;
   }
 
-  /// 在 [text] 里找 [head] 的所有出现，返回离 [near] 最近的那个（找不到返回 -1）。
-  ///
-  /// 只取第一个的话，同一句上下文出现两次就会定位到前面那份，书签直接跳走。
-  static int _nearestIndexOf(String text, String head, int near) {
-    var best = -1;
-    var bestDist = 0;
-    var at = text.indexOf(head);
-    // 出现次数不可能太多；给个上限防止极端文本（全同一字符）里死循环。
-    var guard = 0;
-    while (at >= 0 && guard++ < 200) {
-      final dist = (at - near).abs();
-      if (best < 0 || dist < bestDist) {
-        best = at;
-        bestDist = dist;
-      }
-      at = text.indexOf(head, at + 1);
-    }
-    return best;
-  }
-
   /// 记下每个书签前面的 20 个字符（整份替换后靠它找回位置）。
   void _syncBookmarkHeads(EditorDocument doc) {
     final text = doc.text;
@@ -1306,8 +1287,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 只在「开关开着 + 有基线 + 文本不太大」时算：这是整篇比较，
   /// 十万行的文件每敲一个字都重算会明显卡。8 万字符（约两千行）是舒适区。
-  Map<int, int> _inlineDiffMarks(String text) {
-    if (!_prefs.inlineDiff) {
+  Map<int, int> _inlineDiffMarks(String text, {bool force = false}) {
+    if (!_prefs.inlineDiff && !force) {
       if (_diffMarks.isNotEmpty) {
         _diffMarks = const <int, int>{};
         _diffCacheBase = null;
@@ -2062,33 +2043,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 只排定时器会看起来「点了没反应」）。
       _runLint();
     }
-  }
-
-  Widget _lintButton(Color color) {
-    final report = _lint;
-    final count = report?.diagnostics.length ?? 0;
-    final worst = report?.worst;
-    final tint = worst == LintSeverity.error
-        ? Colors.red
-        : worst == LintSeverity.warning
-            ? Colors.orange
-            : worst == LintSeverity.info
-                ? Colors.blueGrey
-                : null;
-    return InkWell(
-      onTap: () => _openConsole(EditorConsoleTab.problems),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(count > 0 ? Icons.report_problem_outlined : Icons.check_circle_outline,
-              size: 16, color: tint ?? color),
-          if (count > 0) ...[
-            const SizedBox(width: 2),
-            Text('$count', style: TextStyle(fontSize: 10.5, color: tint ?? color)),
-          ],
-        ]),
-      ),
-    );
   }
 
   // ---------- 光标导航历史 ----------
@@ -5904,6 +5858,238 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _jumpToOffset(offset);
   }
 
+  /// 跳到上一处 / 下一处「相对磁盘的改动」（VS 的 F8 / Shift+F8）。
+  ///
+  /// 手机上没有 F8，而「我刚才改到哪了、下一处改的是哪」在长文件里靠肉眼翻很痛苦。
+  /// 这里复用行号栏那套 diff 标记（[InlineDiff]），即使设置里关着标记也能用。
+  void _gotoChange(int delta) {
+    final controller = _controller;
+    if (controller == null) return;
+    final base = _doc?.diskBaseline;
+    if (base == null || base.isEmpty) {
+      _toast(localizations.editorNoChanges);
+      return;
+    }
+    final marks = _inlineDiffMarks(controller.text, force: true);
+    if (marks.isEmpty) {
+      _toast(localizations.editorNoChanges);
+      return;
+    }
+    final lines = marks.keys.toList()..sort();
+    final cur = _caretLine;
+    int target;
+    if (delta > 0) {
+      target = lines.firstWhere((l) => l > cur, orElse: () => lines.first);
+    } else {
+      int? prev;
+      for (final l in lines.reversed) {
+        if (l < cur) {
+          prev = l;
+          break;
+        }
+      }
+      target = prev ?? lines.last;
+    }
+    _gotoLineNumber(target + 1);
+    final kind = marks[target] ?? 0;
+    _toast(kind == 0
+        ? localizations.editorChangeAdded
+        : (kind == 1
+            ? localizations.editorChangeModified
+            : localizations.editorChangeDeleted));
+  }
+
+  /// 解决 Git 合并冲突（VS 的 Merge Conflict 面板的等价物）。
+  ///
+  /// 手机上不敢让人手删 `<<<<<<<` 这种标记行——删错一行就吃掉相邻代码。
+  /// 这里把每个冲突块找出来，三选一（当前 / 传入 / 两者）后整篇一次替换，
+  /// 走 controller 替换所以还能撤销。
+  Future<void> _showConflicts() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final blocks = findConflicts(controller.text);
+    if (blocks.isEmpty) {
+      _toast(localizations.editorNoConflicts);
+      return;
+    }
+    final choices = <int, ConflictChoice>{};
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final color = Theme.of(ctx).colorScheme;
+          Widget side(String title, List<String> lines, Color c) {
+            final preview = lines.take(4).join('\n');
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$title · ${lines.length}',
+                    style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: c.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    preview.isEmpty ? '—' : preview,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace', height: 1.25),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          Widget chip(int idx, ConflictChoice c, String label) {
+            final on = choices[idx] == c;
+            return Padding(
+              padding: const EdgeInsets.only(right: 6, top: 6),
+              child: ChoiceChip(
+                label: Text(label, style: const TextStyle(fontSize: 11.5)),
+                selected: on,
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => setSheet(() {
+                  if (on) {
+                    choices.remove(idx);
+                  } else {
+                    choices[idx] = c;
+                  }
+                }),
+              ),
+            );
+          }
+
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: Text(
+                      localizations.editorConflictCount(blocks.length),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      itemCount: blocks.length,
+                      itemBuilder: (_, i) {
+                        final b = blocks[i];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Text('#${i + 1}',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: color.primary)),
+                                  const SizedBox(width: 6),
+                                  if (b.label.isNotEmpty)
+                                    Expanded(
+                                      child: Text(b.label,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 11)),
+                                    )
+                                  else
+                                    const Spacer(),
+                                  Text('L${b.startLine + 1}-${b.endLine + 1}',
+                                      style: TextStyle(
+                                          fontSize: 10.5, fontFamily: 'monospace',
+                                          color: color.onSurfaceVariant)),
+                                ]),
+                                const SizedBox(height: 4),
+                                side(localizations.editorConflictOurs, b.ours, Colors.blue),
+                                const SizedBox(height: 4),
+                                side(localizations.editorConflictTheirs, b.theirs, Colors.green),
+                                Wrap(children: [
+                                  chip(i, ConflictChoice.ours, localizations.editorTakeOurs),
+                                  chip(i, ConflictChoice.theirs, localizations.editorTakeTheirs),
+                                  chip(i, ConflictChoice.both, localizations.editorTakeBoth),
+                                  if (b.base.isNotEmpty)
+                                    chip(i, ConflictChoice.base, localizations.editorTakeBase),
+                                ]),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                    child: Row(children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => setSheet(() {
+                            for (var i = 0; i < blocks.length; i++) {
+                              choices[i] = ConflictChoice.ours;
+                            }
+                          }),
+                          child: Text(localizations.editorConflictAllOurs,
+                              style: const TextStyle(fontSize: 12)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => setSheet(() {
+                            for (var i = 0; i < blocks.length; i++) {
+                              choices[i] = ConflictChoice.theirs;
+                            }
+                          }),
+                          child: Text(localizations.editorConflictAllTheirs,
+                              style: const TextStyle(fontSize: 12)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: choices.isEmpty
+                            ? null
+                            : () {
+                                final text = applyConflicts(
+                                    controller.text, blocks, Map.of(choices));
+                                final left = conflictCount(text);
+                                controller.replaceRange(
+                                    0, controller.text.length, text);
+                                Navigator.of(ctx).pop();
+                                _toast(left == 0
+                                    ? localizations.editorConflictsResolved(
+                                        choices.length)
+                                    : localizations.editorConflictLeft(left));
+                              },
+                        child: Text(
+                            '${localizations.editorConflictApply} ${choices.length}/${blocks.length}',
+                            style: const TextStyle(fontSize: 12)),
+                      ),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _expandSelection() {
     final controller = _controller;
     if (controller == null) return;
@@ -9255,6 +9441,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
           _menuItem('callHierarchy', Icons.account_tree_outlined, loc.editorCallHierarchy),
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
+          _menuItem('prevChange', Icons.keyboard_double_arrow_up, loc.editorPrevChange),
+          _menuItem('nextChange', Icons.keyboard_double_arrow_down, loc.editorNextChange),
+          _menuItem('conflicts', Icons.call_split, loc.editorConflicts),
           _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
           _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
           _menuItem('stats', Icons.analytics_outlined, loc.editorDocStats),
@@ -9492,6 +9681,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         if (_autoSave) _scheduleAutoSave();
       case 'jumpBracket':
         _jumpToMatchingBracket();
+      case 'prevChange':
+        _gotoChange(-1);
+      case 'nextChange':
+        _gotoChange(1);
+      case 'conflicts':
+        unawaited(_showConflicts());
       case 'selectToBracket':
         _selectToBracket();
       case 'columnCursors':

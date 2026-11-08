@@ -86,6 +86,27 @@ String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
   return k;
 }
 
+/// 去掉每行末尾的 `\r`（CRLF 文件的残留）。
+///
+/// 行数不变，只让「显示文本」与「字符级高亮」干净：不剥的话，同内容的 CRLF 行与
+/// LF 行虽然比较键相同（[_normKey] 已处理），但对齐视图行尾会多出一个不可见字符，
+/// 字符级 diff 还会把它标成「改动了最后一个字符」。
+List<String> _stripTrailingCr(List<String> raw) {
+  var any = false;
+  for (final l in raw) {
+    if (l.endsWith('\r')) {
+      any = true;
+      break;
+    }
+  }
+  if (!any) return raw;
+  final out = <String>[];
+  for (final l in raw) {
+    out.add(l.endsWith('\r') ? l.substring(0, l.length - 1) : l);
+  }
+  return out;
+}
+
 /// 对比用的注释剥离（粗略）：整行注释清空，行尾 ` //` 之后丢掉。
 String _stripCommentForCompare(String s) {
   final t = s.trimLeft();
@@ -102,8 +123,8 @@ List<LineDiff> diffLines(String left, String right,
     bool ignoreBlankLines = false,
     bool ignoreComments = false}) {
   // 用 split('\n') 而不是 LineSplitter：保留尾部空行的差异（"a\n" vs "a"）
-  final a = left.split('\n');
-  final b = right.split('\n');
+  final a = _stripTrailingCr(left.split('\n'));
+  final b = _stripTrailingCr(right.split('\n'));
   final aK = a
       .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
           ignoreBlankLines, ignoreComments))

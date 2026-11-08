@@ -554,6 +554,19 @@ class _CapturePlanEditorDialogState extends State<_CapturePlanEditorDialog> {
     }
     final include = _parseDomains(_includeController.text);
     final exclude = _parseDomains(_excludeController.text);
+    // 写了但格式不合法的域名以前是「静默丢掉」——用户以为加进去了，实际没生效。
+    final bad = [
+      ..._invalidDomains(_includeController.text),
+      ..._invalidDomains(_excludeController.text),
+    ];
+    if (bad.isNotEmpty) {
+      FlutterToastr.show(
+        localizations.capturePlanInvalidDomain(bad.take(3).join('、')),
+        context,
+        backgroundColor: Colors.red,
+      );
+      return;
+    }
     final plan = CapturePlan(
       schemaVersion: widget.plan?.schemaVersion ?? CapturePlan.currentSchemaVersion,
       id: widget.plan?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),

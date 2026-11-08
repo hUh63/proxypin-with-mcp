@@ -140,7 +140,6 @@ class SystemCa {
 
   // ---------- 内部 ----------
 
-  static const String _workDir = '/data/local/tmp/proxypin_ca';
 
   /// 执行 root 命令：返回 (exitCode, 合并输出)。
   ///
