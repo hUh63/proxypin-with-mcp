@@ -66,12 +66,25 @@ class Header {
 
 /// A stateful HPACK decoder.
 class HPackDecoder {
+  /// 我们愿意替对端「动态表」保留的内存上限。
+  ///
+  /// 按 RFC 7541 §6.3，解码器收到的 *dynamic table size update* 不得超过本节点的
+  /// `SETTINGS_HEADER_TABLE_SIZE`；[decode] 以前直接把它生效——对端（本 App 专门
+  /// 用来连接不受信任的服务器）发一个巨大的 size update，再灌一堆
+  /// incremental indexing 的头，动态表就能无界增长把内存吃光。
+  ///
+  /// 16 KB 对正常流量足够（Chrome 默认 4 KB，nginx/Envoy 4~16 KB），超出的按
+  /// 协议错误处理：抛 [HPackDecodingException] 让上层断开这条连接。
+  static const int hardMaxTableSize = 16384;
+
   int _maxHeaderTableSize = 4096;
 
   final IndexTable _table = IndexTable();
 
   void updateMaxReceivingHeaderTableSize(int newMaximumSize) {
-    _maxHeaderTableSize = newMaximumSize;
+    // 只是记录（对端 SETTINGS 里说的值），真正的硬上限是 [hardMaxTableSize]：
+    // 自己解码表的大小必须由「我们自己声明的 SETTINGS」决定，不能跟着对端放大。
+    _maxHeaderTableSize = newMaximumSize.clamp(0, hardMaxTableSize);
   }
 
   List<Header> decode(List<int> data) {
@@ -153,7 +166,12 @@ class HPackDecoder {
             readHeaderFieldInternal(readInteger(4), neverIndexed: true),
           );
         } else if (isDynamicTableSizeUpdate) {
-          var newMaxSize = readInteger(5);
+          final newMaxSize = readInteger(5);
+          if (newMaxSize < 0 || newMaxSize > hardMaxTableSize) {
+            throw HPackDecodingException(
+                'Dynamic table size update ($newMaxSize) out of range '
+                '(max $hardMaxTableSize)');
+          }
           _table.updateMaxSize(newMaxSize);
         } else {
           throw HPackDecodingException('Invalid encoding of headers.');

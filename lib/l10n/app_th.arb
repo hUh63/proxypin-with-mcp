@@ -3539,5 +3539,8 @@
   "editorNextChange": "การเปลี่ยนแปลงถัดไป",
   "logViewFollowOn": "ติดตาม: เปิด",
   "logViewFollowOff": "ติดตาม: ปิด",
-  "capturePlanInvalidDomain": "โดเมนไม่ถูกต้อง: {list}"
+  "capturePlanInvalidDomain": "โดเมนไม่ถูกต้อง: {list}",
+  "editorPasteReindent": "จัดย่อหน้าตอนวาง",
+  "editorPasteReindentHint": "วางหลายบรรทัดตามการย่อหน้าปัจจุบัน",
+  "editorInsertDateTime": "แทรกวันที่และเวลา"
 }

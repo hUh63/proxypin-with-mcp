@@ -139,6 +139,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.autoIndent,
                 onChanged: (v) => _apply(prefs.copyWith(autoIndent: v)),
               ),
+              _switchTile(
+                icon: Icons.content_paste_go,
+                title: localizations.editorPasteReindent,
+                subtitle: localizations.editorPasteReindentHint,
+                value: prefs.pasteReindent,
+                onChanged: (v) => _apply(prefs.copyWith(pasteReindent: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsComplete),
               _switchTile(

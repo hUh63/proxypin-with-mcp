@@ -96,6 +96,9 @@ class TextEditorPrefs {
   /// 回车时是否延续当前行的缩进（内核开关）。
   final bool autoIndent;
 
+  /// 粘贴多行内容时，把后续行对齐到光标所在行的缩进（VS 的 Reindent on paste）。
+  final bool pasteReindent;
+
   /// 双指捏合缩放编辑器字号。
   final bool pinchZoom;
 
@@ -182,6 +185,7 @@ class TextEditorPrefs {
     this.useTabs = false,
     this.tabSize = 4,
     this.autoIndent = true,
+    this.pasteReindent = true,
     this.pinchZoom = true,
     this.magnifier = false,
     this.autoPair = true,
@@ -222,6 +226,7 @@ class TextEditorPrefs {
     bool? useTabs,
     int? tabSize,
     bool? autoIndent,
+    bool? pasteReindent,
     bool? pinchZoom,
     bool? magnifier,
     bool? autoPair,
@@ -261,6 +266,7 @@ class TextEditorPrefs {
       useTabs: useTabs ?? this.useTabs,
       tabSize: tabSize ?? this.tabSize,
       autoIndent: autoIndent ?? this.autoIndent,
+      pasteReindent: pasteReindent ?? this.pasteReindent,
       pinchZoom: pinchZoom ?? this.pinchZoom,
       magnifier: magnifier ?? this.magnifier,
       autoPair: autoPair ?? this.autoPair,
@@ -302,6 +308,7 @@ class TextEditorPrefs {
         'useTabs': useTabs,
         'tabSize': tabSize,
         'autoIndent': autoIndent,
+        'pasteReindent': pasteReindent,
         'pinchZoom': pinchZoom,
         'magnifier': magnifier,
         'autoPair': autoPair,
@@ -348,6 +355,7 @@ class TextEditorPrefs {
       useTabs: json['useTabs'] as bool? ?? false,
       tabSize: (json['tabSize'] as num?)?.toInt() ?? 4,
       autoIndent: json['autoIndent'] as bool? ?? true,
+      pasteReindent: json['pasteReindent'] as bool? ?? true,
       pinchZoom: json['pinchZoom'] as bool? ?? true,
       magnifier: json['magnifier'] as bool? ?? false,
       autoPair: json['autoPair'] as bool? ?? true,

@@ -3540,5 +3540,8 @@
   "editorNextChange": "Próxima alteração",
   "logViewFollowOn": "Acompanhar: ativado",
   "logViewFollowOff": "Acompanhar: desativado",
-  "capturePlanInvalidDomain": "Domínio inválido: {list}"
+  "capturePlanInvalidDomain": "Domínio inválido: {list}",
+  "editorPasteReindent": "Reindentar ao colar",
+  "editorPasteReindentHint": "Colar várias linhas segue o recuo da linha atual",
+  "editorInsertDateTime": "Inserir data e hora"
 }

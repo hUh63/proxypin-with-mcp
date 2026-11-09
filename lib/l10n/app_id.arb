@@ -3539,5 +3539,8 @@
   "editorNextChange": "Perubahan berikutnya",
   "logViewFollowOn": "Ikuti: aktif",
   "logViewFollowOff": "Ikuti: nonaktif",
-  "capturePlanInvalidDomain": "Domain tidak valid: {list}"
+  "capturePlanInvalidDomain": "Domain tidak valid: {list}",
+  "editorPasteReindent": "Rapikan indentasi saat tempel",
+  "editorPasteReindentHint": "Tempel banyak baris mengikuti indentasi baris ini",
+  "editorInsertDateTime": "Sisipkan tanggal & waktu"
 }

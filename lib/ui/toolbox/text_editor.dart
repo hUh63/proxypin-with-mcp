@@ -50,6 +50,7 @@ import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
 import 'package:proxypin/utils/merge_conflicts.dart';
+import 'package:proxypin/utils/paste_indent.dart';
 import 'package:proxypin/utils/text_stats.dart';
 import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
@@ -237,7 +238,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
   // 语法检查 + 控制台。
   /// 检查结果挂在文档上（切回来不用重跑）。
   LintReport? get _lint => _doc?.lint;
-  int _issueCursor = -1;
   bool _lintChecking = false;
   Timer? _lintTimer;
 
@@ -658,7 +658,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _caretOffset = -1;
       // 换文档后「上次触发补全的位置」不再有意义，否则同偏移量会被误判成重复。
       _lastSuggestOffset = -1;
-      _issueCursor = -1;
       // 换文档后波浪线要按新文档重算。
       _diagReport = null;
       _diagLines = const <DiagnosticLine>[];
@@ -1198,7 +1197,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (!mounted) return;
     doc.lint = report;
     doc.lintText = text;
-    _issueCursor = -1;
     _lastIssueOffset = -1;
     _refreshSymbolCache();
     setState(() => _lintChecking = false);
@@ -1987,7 +1985,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 只有一处问题时以前点了毫无反馈（跳来跳回原地）；现在给序号。
     final index = list.indexOf(pick);
     _toast('${index < 0 ? 1 : index + 1} / ${list.length}');
-    _issueCursor = list.indexOf(pick);
     _jumpToDiagnostic(pick);
   }
 
@@ -2099,6 +2096,23 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.selection = TextSelection.collapsed(offset: sel.start);
   }
 
+  /// 取 [offset] 所在行的前导空白（用于粘贴对齐缩进）。
+  ///
+  /// 只取「行首 → 第一个非空白字符」这一段；光标在缩进之前时按光标位置截断，
+  /// 这样「行首按粘贴」不会凭空多出缩进。
+  String _lineIndentAt(String text, int offset) {
+    final at = offset.clamp(0, text.length);
+    final lineStart = at == 0 ? 0 : text.lastIndexOf('\n', at - 1) + 1;
+    var end = lineStart;
+    while (end < text.length) {
+      final c = text.codeUnitAt(end);
+      if (c != 0x20 && c != 0x09) break;
+      end++;
+    }
+    final indentEnd = end < at ? end : at;
+    return text.substring(lineStart, indentEnd);
+  }
+
   Future<void> _paste() async {
     final controller = _controller;
     if (controller == null) return;
@@ -2114,8 +2128,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final sel = controller.selection;
     final start = sel.isValid && !sel.isCollapsed ? sel.start : (sel.isValid ? sel.start : text.length);
     final end = sel.isValid && !sel.isCollapsed ? sel.end : start;
-    controller.replaceRange(start, end, clip);
-    controller.selection = TextSelection.collapsed(offset: start + clip.length);
+    // 对齐缩进：整段代码粘到 if/for 里面时，后续行自动补齐当前行的缩进
+    // （VS / VS Code 的 Reindent on paste）。粘贴单行时不做任何改动。
+    var payload = clip;
+    if (_prefs.pasteReindent) {
+      payload = reindentPasted(clip, _lineIndentAt(text, start));
+    }
+    controller.replaceRange(start, end, payload);
+    controller.selection = TextSelection.collapsed(offset: start + payload.length);
   }
 
   void _selectAll() {
@@ -7278,6 +7298,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.scrollToLine(_lineOfOffset(text, start));
   }
 
+  /// 在光标处插入当前日期时间（VS Code 的 Insert Date Time）。
+  ///
+  /// 写日志、写 TODO、写变更说明时最常用；手机上每次手打这串数字很烦。
+  void _insertDateTime() {
+    final now = DateTime.now();
+    String p(int n) => n.toString().padLeft(2, '0');
+    _insertAtCursor('${now.year}-${p(now.month)}-${p(now.day)} '
+        '${p(now.hour)}:${p(now.minute)}:${p(now.second)}');
+  }
+
   /// 列选择：在选区覆盖的每一行的「选区起始列」各加一个光标。
   ///
   /// 手机上没法按住 Alt 拖框，但「先选一段、再按列加光标」效果一样 ——
@@ -9408,6 +9438,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right, id: 'lineOps')),
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right, id: 'caseOps')),
           _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
+          _menuItem('insertDateTime', Icons.schedule, loc.editorInsertDateTime),
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
         _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
@@ -9681,6 +9712,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         if (_autoSave) _scheduleAutoSave();
       case 'jumpBracket':
         _jumpToMatchingBracket();
+      case 'insertDateTime':
+        _insertDateTime();
       case 'prevChange':
         _gotoChange(-1);
       case 'nextChange':

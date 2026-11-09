@@ -3539,5 +3539,8 @@
   "editorNextChange": "Cambio siguiente",
   "logViewFollowOn": "Seguir: activado",
   "logViewFollowOff": "Seguir: desactivado",
-  "capturePlanInvalidDomain": "Dominio no válido: {list}"
+  "capturePlanInvalidDomain": "Dominio no válido: {list}",
+  "editorPasteReindent": "Reindentar al pegar",
+  "editorPasteReindentHint": "Al pegar varias líneas sigue la indentación actual",
+  "editorInsertDateTime": "Insertar fecha y hora"
 }

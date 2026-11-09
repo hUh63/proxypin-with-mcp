@@ -5229,5 +5229,8 @@
   "editorNextChange": "下一處改動",
   "logViewFollowOn": "自動跟隨：開",
   "logViewFollowOff": "自動跟隨：關",
-  "capturePlanInvalidDomain": "域名格式不正確：{list}"
+  "capturePlanInvalidDomain": "域名格式不正確：{list}",
+  "editorPasteReindent": "粘貼時對齊縮進",
+  "editorPasteReindentHint": "粘貼多行時自動補齊當前行的縮進",
+  "editorInsertDateTime": "插入日期時間"
 }

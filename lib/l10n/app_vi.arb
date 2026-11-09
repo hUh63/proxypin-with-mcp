@@ -3539,5 +3539,8 @@
   "editorNextChange": "Thay đổi tiếp",
   "logViewFollowOn": "Tự cuộn: bật",
   "logViewFollowOff": "Tự cuộn: tắt",
-  "capturePlanInvalidDomain": "Tên miền không hợp lệ: {list}"
+  "capturePlanInvalidDomain": "Tên miền không hợp lệ: {list}",
+  "editorPasteReindent": "Thụt lề khi dán",
+  "editorPasteReindentHint": "Dán nhiều dòng theo thụt lề hiện tại",
+  "editorInsertDateTime": "Chèn ngày giờ"
 }

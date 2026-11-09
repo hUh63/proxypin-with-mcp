@@ -158,7 +158,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 当前命中在 [_findHitsCache] 里的下标。
   int _findCursor = 0;
   List<({bool left, int row})> _findHitsCache = const <({bool left, int row})>[];
-  Set<int> _findHitRows = <int>{};
   int? _findCurrentRow;
   String _findHitsKey = '';
 
@@ -593,6 +592,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   void _compare() {
     // 比较内容变了，上一轮的「已看」标记就不再有意义
     _reviewed.clear();
+    _charDiffCache.clear();
     if (_left.text.isEmpty && _right.text.isEmpty) {
       if (_summary != null || _blocks.isNotEmpty) {
         setState(() {
@@ -1279,6 +1279,92 @@ class _TextDiffPageState extends State<TextDiffPage> {
     ]);
   }
 
+  /// 配对行的字符级差异（相对**原始行文本**的偏移）。
+  ///
+  /// 并排视图以前只有整行底色：一眼看得出「这行改了」，但看不出「改的是哪几个词」。
+  /// WinMerge / Beyond Compare / VS Code 都会在配对行里标出具体改动，这里补上。
+  /// 单行 LCS 是 O(m·n)，超过 3000 字符直接放弃（整行底色仍在）。
+  final Map<String, CharDiff> _charDiffCache = {};
+
+  CharDiff? _charDiffOf(String l, String r) {
+    if (l == r) return null;
+    if (l.length > 3000 || r.length > 3000) return null;
+    final key = '${l.hashCode}:${r.hashCode}:${l.length}:${r.length}';
+    final hit = _charDiffCache[key];
+    if (hit != null) return hit;
+    final cd = diffChars(l, r);
+    if (_charDiffCache.length > 800) _charDiffCache.clear();
+    _charDiffCache[key] = cd;
+    return cd;
+  }
+
+  /// 纯文本行：把差异区间涂上底色。
+  TextSpan _spansWithBg(String text, TextStyle style,
+      List<({int start, int end})> ranges, Color? bg) {
+    if (ranges.isEmpty || bg == null) return TextSpan(text: text, style: style);
+    final children = <TextSpan>[];
+    var cursor = 0;
+    for (final r in ranges) {
+      final s = r.start.clamp(0, text.length);
+      final e = r.end.clamp(0, text.length);
+      if (e <= s) continue;
+      if (s > cursor) {
+        children.add(TextSpan(text: text.substring(cursor, s), style: style));
+      }
+      children.add(TextSpan(
+          text: text.substring(s, e),
+          style: style.copyWith(backgroundColor: bg)));
+      cursor = e;
+    }
+    if (cursor < text.length) {
+      children.add(TextSpan(text: text.substring(cursor), style: style));
+    }
+    return TextSpan(style: style, children: children);
+  }
+
+  /// 语法高亮行：在 token 前景色之上再叠字符差异底色。
+  ///
+  /// 实现是把每个 token 按差异区间切开——差异通常是「几个词」，切开后段数很少；
+  /// 没有差异时直接走原来的 [_tokenSpan]，不产生额外开销。
+  TextSpan _tokenSpanWithDiff(List<HighlightStyledSegment> segments, TextStyle base,
+      List<({int start, int end})> ranges, Color? bg) {
+    if (ranges.isEmpty || bg == null) return _tokenSpan(segments, base);
+    if (segments.isEmpty) return TextSpan(text: '', style: base);
+    final children = <TextSpan>[];
+    var pos = 0;
+    for (final seg in segments) {
+      final len = seg.text.length;
+      if (len == 0) continue;
+      final segStart = pos;
+      final segEnd = pos + len;
+      pos = segEnd;
+      final style = seg.style == null
+          ? null
+          : base.merge(seg.style).copyWith(backgroundColor: null);
+      var cursor = segStart;
+      for (final r in ranges) {
+        if (r.end <= segStart) continue;
+        if (r.start >= segEnd) break;
+        final a = r.start.clamp(segStart, segEnd);
+        final b = r.end.clamp(segStart, segEnd);
+        if (a > cursor) {
+          children.add(TextSpan(
+              text: seg.text.substring(cursor - segStart, a - segStart), style: style));
+        }
+        if (b > a) {
+          children.add(TextSpan(
+              text: seg.text.substring(a - segStart, b - segStart),
+              style: (style ?? base).copyWith(backgroundColor: bg)));
+        }
+        cursor = b;
+      }
+      if (cursor < segEnd) {
+        children.add(TextSpan(text: seg.text.substring(cursor - segStart), style: style));
+      }
+    }
+    return TextSpan(style: base, children: children);
+  }
+
   /// 命中缓存：文本 / 开关 / 显示范围任何一项变了才重算。
   void _refreshFindHits() {
     // 没在查找时直接返回：`_visibleRows` 每次都会新建一张列表，放在 build 里
@@ -1287,7 +1373,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (_findHitsKey.isNotEmpty) {
         _findHitsKey = '';
         _findHitsCache = const <({bool left, int row})>[];
-        _findHitRows = <int>{};
         _findCurrentRow = null;
         _findCursor = 0;
       }
@@ -1299,7 +1384,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (key == _findHitsKey) return;
     _findHitsKey = key;
     final hits = <({bool left, int row})>[];
-    final hitRows = <int>{};
     final needle = _findCase ? _findQuery : _findQuery.toLowerCase();
     for (var i = 0; i < rows.length; i++) {
       final l = rows[i].leftText;
@@ -1307,7 +1391,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
         final hay = _findCase ? l : l.toLowerCase();
         if (hay.contains(needle)) {
           hits.add((left: true, row: i));
-          hitRows.add(i);
         }
       }
       final r = rows[i].rightText;
@@ -1315,12 +1398,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
         final hay = _findCase ? r : r.toLowerCase();
         if (hay.contains(needle)) {
           hits.add((left: false, row: i));
-          hitRows.add(i);
         }
       }
     }
     _findHitsCache = hits;
-    _findHitRows = hitRows;
     if (_findCursor >= hits.length) _findCursor = hits.isEmpty ? 0 : hits.length - 1;
     _findCurrentRow = hits.isEmpty ? null : hits[_findCursor].row;
   }
@@ -1347,7 +1428,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _findOpen = false;
       _findQuery = '';
       _findInput.clear();
-      _findHitRows = <int>{};
       _findCurrentRow = null;
       _findHitsCache = const <({bool left, int row})>[];
       _findHitsKey = '';
@@ -2551,10 +2631,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _ensureWidths(rows);
     final current = _currentRowIndex(rows);
     final divider = Theme.of(context).dividerColor.withValues(alpha: 0.35);
+    // 左右两栏宽度可拖（对标 WinMerge / Beyond Compare 的中缝拖动）：
+    // 手机竖屏各占一半最省地方，但横屏、平板上常常是「一边只看行号、另一边看长行」，
+    // 固定 50/50 会浪费；中缝双击复位。
+    // 对齐视图也支持拖中缝：和源码视图共用同一个比例（都是「左栏占多少」），
+    // 用户拖过一次，两个视图都记住。
+    final leftFlex = (_splitRatio * 1000).round().clamp(150, 850);
     final body = Row(children: [
-      Expanded(child: _alignedPane(rows, current, left: true)),
-      Container(width: 1, color: divider),
-      Expanded(child: _alignedPane(rows, current, left: false)),
+      Expanded(flex: leftFlex, child: _alignedPane(rows, current, left: true)),
+      _splitHandle(divider),
+      Expanded(
+          flex: 1000 - leftFlex, child: _alignedPane(rows, current, left: false)),
       _densityBar(rows),
     ]);
     // 悬浮的「上一处 / 下一处」：滚下去之后顶部工具栏看不见了，
@@ -2572,6 +2659,34 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ]),
       ),
     ]);
+  }
+
+  /// 对齐视图两栏之间的可拖动中缝（视觉 1px、触摸区 9px，和源码视图手感一致）。
+  Widget _splitHandle(Color divider) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragUpdate: (d) {
+        final w = MediaQuery.sizeOf(context).width;
+        if (w <= 0) return;
+        setState(() =>
+            _splitRatio = (_splitRatio + d.delta.dx / w).clamp(0.15, 0.85));
+      },
+      onHorizontalDragEnd: (_) => unawaited(
+          SharedPreferencesAsync().setDouble(_splitKey, _splitRatio).catchError((Object _) {})),
+      // 双击复位：拖歪了不用一点点拖回来。
+      onDoubleTap: () {
+        setState(() => _splitRatio = 0.5);
+        unawaited(SharedPreferencesAsync()
+            .setDouble(_splitKey, 0.5)
+            .catchError((Object _) {}));
+      },
+      child: Container(
+        width: 9,
+        color: Colors.transparent,
+        alignment: Alignment.center,
+        child: Container(width: 1, color: divider),
+      ),
+    );
   }
 
   Widget _navFab(IconData icon, VoidCallback onTap, String tooltip) {
@@ -2639,10 +2754,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
           lines.add(
               _UnifiedLine('+ ', r.rightLine, r.rightText ?? '', r.type, i));
         case DiffRowType.modified:
+          final cd = _wordDiff ? _charDiffOf(r.leftText ?? '', r.rightText ?? '') : null;
           lines.add(_UnifiedLine(
-              '- ', r.leftLine, r.leftText ?? '', DiffRowType.deleted, i));
+              '- ', r.leftLine, r.leftText ?? '', DiffRowType.deleted, i,
+              ranges: cd?.leftRanges));
           lines.add(_UnifiedLine(
-              '+ ', r.rightLine, r.rightText ?? '', DiffRowType.added, i));
+              '+ ', r.rightLine, r.rightText ?? '', DiffRowType.added, i,
+              ranges: cd?.rightRanges));
       }
     }
     // 单栏不横向滚动：超长行用省略号截断（统一视图是「快速扫改动」，
@@ -2698,15 +2816,31 @@ class _TextDiffPageState extends State<TextDiffPage> {
           ),
           Expanded(
             child: _findQuery.isEmpty
-                ? Text(text,
-                    maxLines: _wrap ? null : 1,
-                    softWrap: _wrap,
-                    overflow:
-                        _wrap ? TextOverflow.clip : TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: _fontSize,
-                        fontFamily: 'monospace',
-                        height: 1.0))
+                ? (l.ranges != null && l.ranges!.isNotEmpty && _tabWidth == 0
+                    ? Text.rich(
+                        _spansWithBg(
+                            text,
+                            TextStyle(
+                                fontSize: _fontSize,
+                                fontFamily: 'monospace',
+                                height: 1.0),
+                            l.ranges!,
+                            l.type == DiffRowType.added
+                                ? Colors.green.withValues(alpha: isDark ? 0.30 : 0.22)
+                                : Colors.red.withValues(alpha: isDark ? 0.34 : 0.26)),
+                        maxLines: _wrap ? null : 1,
+                        softWrap: _wrap,
+                        overflow:
+                            _wrap ? TextOverflow.clip : TextOverflow.ellipsis)
+                    : Text(text,
+                        maxLines: _wrap ? null : 1,
+                        softWrap: _wrap,
+                        overflow:
+                            _wrap ? TextOverflow.clip : TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: _fontSize,
+                            fontFamily: 'monospace',
+                            height: 1.0)))
                 : Text.rich(
                     _highlightSpan(text,
                         TextStyle(
@@ -3756,6 +3890,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
             : null;
     final numStyle = TextStyle(fontSize: _fontSize - 2, color: Colors.grey[600], height: 1.0);
     final textStyle = TextStyle(fontSize: _fontSize, fontFamily: 'monospace', height: 1.0);
+
+    // 配对行里「具体改了哪几个词」：只有 modified 行有意义；且显示文本必须仍与原始行
+    // 逐字符对齐（Tab 展开会改变长度，那时放弃逐字高亮，整行底色仍在）。
+    List<({int start, int end})>? diffRanges;
+    if (_wordDiff && r.type == DiffRowType.modified) {
+      final canMap = tokenLine != null || _tabWidth == 0;
+      if (canMap) {
+        final cd = _charDiffOf(r.leftText ?? '', r.rightText ?? '');
+        diffRanges = left ? cd?.leftRanges : cd?.rightRanges;
+      }
+    }
+    final diffBg = left
+        ? Colors.red.withValues(alpha: isDark ? 0.34 : 0.26)
+        : Colors.green.withValues(alpha: isDark ? 0.30 : 0.22);
+    final hasDiff = diffRanges != null && diffRanges.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         color: bg,
@@ -3778,16 +3927,24 @@ class _TextDiffPageState extends State<TextDiffPage> {
           Expanded(
             child: tokenLine != null
                 ? Text.rich(
-                    _tokenSpan(tokenLine, textStyle),
+                    hasDiff
+                        ? _tokenSpanWithDiff(tokenLine, textStyle, diffRanges, diffBg)
+                        : _tokenSpan(tokenLine, textStyle),
                     maxLines: _wrap ? null : 1,
                     softWrap: _wrap,
                     overflow: TextOverflow.visible)
                 : (_findQuery.isEmpty
-                    ? Text(text,
-                        maxLines: _wrap ? null : 1,
-                        softWrap: _wrap,
-                        overflow: TextOverflow.visible,
-                        style: textStyle)
+                    ? (hasDiff
+                        ? Text.rich(
+                            _spansWithBg(text, textStyle, diffRanges, diffBg),
+                            maxLines: _wrap ? null : 1,
+                            softWrap: _wrap,
+                            overflow: TextOverflow.visible)
+                        : Text(text,
+                            maxLines: _wrap ? null : 1,
+                            softWrap: _wrap,
+                            overflow: TextOverflow.visible,
+                            style: textStyle))
                     : Text.rich(
                         _highlightSpan(text, textStyle, rowIndex),
                         maxLines: _wrap ? null : 1,
@@ -4058,6 +4215,11 @@ class _UnifiedLine {
   /// 但查找高亮要知道它属于哪一行，所以把来源记下来。
   final int srcRow;
 
-  const _UnifiedLine(this.sign, this.num, this.text, this.type, this.srcRow);
+  /// 字符级差异区间（相对 [text]）。统一视图里 modified 被拆成 `-`/`+` 两行，
+  /// 两边的差异区间分别来自左/右原文。
+  final List<({int start, int end})>? ranges;
+
+  const _UnifiedLine(this.sign, this.num, this.text, this.type, this.srcRow,
+      {this.ranges});
 }
 

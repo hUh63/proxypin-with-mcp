@@ -5884,5 +5884,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "editorPasteReindent": "Re-indent on paste",
+  "editorPasteReindentHint": "Multi-line paste follows the current line indent",
+  "editorInsertDateTime": "Insert date & time"
 }
