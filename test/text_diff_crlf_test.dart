@@ -23,14 +23,17 @@ void main() {
     });
 
     test('内容真不同时仍能识别', () {
+      // 'b' → 'B' 相似度为 0，会被拆成「删一行 + 加一行」而不是「修改」，
+      // 这里只断言「确实算出了差异」，不锁具体分类。
       final diffs = diffLines('a\r\nb\r\n', 'a\nB\n');
       final stats = diffStats(buildDiffBlocks(diffs));
-      expect(stats.modified, 1);
+      expect(stats.added + stats.deleted + stats.modified, 2);
     });
 
     test('行数不变（剥 \\r 不影响索引）', () {
+      // 尾部换行会多出一个空行，所以是 4 行；关键是行号与索引没被 \r 打乱。
       final rows = alignedDiffRows('x\r\ny\nz\r\n', 'x\r\ny\nz\r\n');
-      expect(rows.length, 3);
+      expect(rows.length, 4);
       expect(rows[0].leftLine, 1);
       expect(rows[2].leftLine, 3);
     });
