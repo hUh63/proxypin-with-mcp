@@ -140,6 +140,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 onChanged: (v) => _apply(prefs.copyWith(autoIndent: v)),
               ),
               _switchTile(
+                icon: Icons.bookmark_added_outlined,
+                title: localizations.editorHighlightTodos,
+                subtitle: localizations.editorHighlightTodosHint,
+                value: prefs.highlightTodos,
+                onChanged: (v) => _apply(prefs.copyWith(highlightTodos: v)),
+              ),
+              _switchTile(
                 icon: Icons.content_paste_go,
                 title: localizations.editorPasteReindent,
                 subtitle: localizations.editorPasteReindentHint,

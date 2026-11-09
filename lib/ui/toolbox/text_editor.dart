@@ -51,6 +51,7 @@ import 'package:proxypin/utils/editor_config.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
 import 'package:proxypin/utils/merge_conflicts.dart';
 import 'package:proxypin/utils/paste_indent.dart';
+import 'package:proxypin/utils/string_escape.dart';
 import 'package:proxypin/utils/text_stats.dart';
 import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
@@ -1321,6 +1322,55 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return marks;
   }
 
+  int _todoTextHash = 0;
+  List<TodoHit> _todoHits = const <TodoHit>[];
+
+  /// 当前文档里的 TODO / FIXME 等标记（按文本指纹缓存）。
+  ///
+  /// 二十万字符以上的文件直接跳过：整篇正则扫一遍在主线程上会明显掉帧，
+  /// 而那种体量的文件本来也不适合在手机上读。
+  List<TodoHit> _todoHitsOf(String text) {
+    if (!_prefs.highlightTodos || text.isEmpty) return const <TodoHit>[];
+    if (text.length > 200000) return const <TodoHit>[];
+    final h = text.hashCode;
+    if (h == _todoTextHash) return _todoHits;
+    _todoTextHash = h;
+    _todoHits = TodoScanner.scan(text, limit: 200)..sort((a, b) => a.line.compareTo(b.line));
+    return _todoHits;
+  }
+
+  /// 跳到下一处 / 上一处 TODO（VS 任务列表的等价快捷键）。
+  void _gotoTodo(int delta) {
+    final controller = _controller;
+    if (controller == null) return;
+    final hits = _todoHitsOf(controller.text);
+    if (hits.isEmpty) {
+      _toast(localizations.editorNoTodo);
+      return;
+    }
+    final cur = _caretLine + 1; // hits 里的行号是 1-based
+    TodoHit? target;
+    if (delta > 0) {
+      for (final h in hits) {
+        if (h.line > cur) {
+          target = h;
+          break;
+        }
+      }
+      target ??= hits.first;
+    } else {
+      for (final h in hits.reversed) {
+        if (h.line < cur) {
+          target = h;
+          break;
+        }
+      }
+      target ??= hits.last;
+    }
+    _gotoLineNumber(target.line);
+    _toast(target.text.isEmpty ? target.tag : '${target.tag}: ${target.text}');
+  }
+
   /// 在光标行加/删断点。
   ///
   /// 只对 JavaScript 有意义：内置引擎没有调试协议，这里做的是「行级插桩 +
@@ -1507,6 +1557,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
           width: 2.6,
         ));
       });
+    }
+
+    // 注释里的 TODO / FIXME：行号栏一条细橙条（VS 的 TODO Highlight 插件）。
+    // 整篇扫描要按文本指纹缓存，否则每次光标移动都会重扫一遍。
+    final todos = _todoHitsOf(_doc?.text ?? '');
+    for (final t in todos) {
+      final line = t.line - 1;
+      if (line < 0) continue;
+      gutters.add(GutterDecoration(
+        id: 'todo-$line',
+        startLine: line,
+        endLine: line,
+        type: GutterDecorationType.colorBar,
+        color: const Color(0xFFFFB300),
+        width: 1.6,
+      ));
     }
 
     final report = _doc?.lint;
@@ -7298,6 +7364,115 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.scrollToLine(_lineOfOffset(text, start));
   }
 
+  /// 把选区（或全文）转义成字符串字面量 / 反解回来的对话框。
+  ///
+  /// 手机上手工改 `\n` `\"` 这类转义几乎做不到，而这个动作在日常里很频繁
+  /// （SQL 塞进一行日志、日志里的转义还原、粘进 JSON 配置）。
+  Future<void> _showEscapeDialog() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    final hasSel = sel.isValid && !sel.isCollapsed;
+    final start = hasSel ? sel.start.clamp(0, text.length) : 0;
+    final end = hasSel ? sel.end.clamp(0, text.length) : text.length;
+    final source = text.substring(start, end);
+    if (source.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    var dialect = EscapeDialect.cLike;
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final color = Theme.of(ctx).colorScheme;
+          String preview(bool escape) {
+            final r = escape ? escapeText(source, dialect: dialect) : unescapeText(source);
+            return r.length > 2000 ? '${r.substring(0, 2000)}…' : r;
+          }
+
+          const names = ['C / JSON', 'SQL', '正则'];
+          const kinds = [EscapeDialect.cLike, EscapeDialect.sql, EscapeDialect.regex];
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(localizations.editorEscape,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(
+                    localizations.editorEscapeHint(hasSel ? source.length : 0),
+                    style: TextStyle(fontSize: 11.5, color: color.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 6, children: [
+                    for (var i = 0; i < kinds.length; i++)
+                      ChoiceChip(
+                        label: Text(names[i], style: const TextStyle(fontSize: 11.5)),
+                        selected: dialect == kinds[i],
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (_) => setSheet(() => dialect = kinds[i]),
+                      ),
+                  ]),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxHeight: 160),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.surfaceContainerHighest.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        preview(true),
+                        style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace', height: 1.3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(ctx).pop(unescapeText(source)),
+                        child: Text(localizations.editorUnescapeDo,
+                            style: const TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () =>
+                            Navigator.of(ctx).pop(escapeText(source, dialect: dialect)),
+                        child: Text(localizations.editorEscapeDo,
+                            style: const TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (!mounted || result == null) return;
+    if (hasSel) {
+      controller.replaceRange(start, end, result);
+      controller.selection = TextSelection.collapsed(offset: start + result.length);
+    } else {
+      controller.replaceRange(0, controller.text.length, result);
+      controller.selection = TextSelection.collapsed(offset: result.length);
+    }
+    _toast(localizations.editorEscapeDone);
+  }
+
   /// 在光标处插入当前日期时间（VS Code 的 Insert Date Time）。
   ///
   /// 写日志、写 TODO、写变更说明时最常用；手机上每次手打这串数字很烦。
@@ -9439,6 +9614,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right, id: 'caseOps')),
           _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
           _menuItem('insertDateTime', Icons.schedule, loc.editorInsertDateTime),
+          _menuItem('escapeString', Icons.text_fields, loc.editorEscape),
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
         _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
@@ -9528,6 +9704,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('toggleBreakpoint', Icons.radio_button_unchecked, loc.editorToggleBreakpoint),
           _menuItem('debug', Icons.bug_report_outlined, loc.editorDebugTab),
           const PopupMenuDivider(),
+          _menuItem('prevTodo', Icons.arrow_upward, loc.editorPrevTodo),
+          _menuItem('nextTodo', Icons.arrow_downward, loc.editorNextTodo),
           _menuItem('tasks', Icons.checklist, loc.editorTasks),
         ];
     }
@@ -9714,6 +9892,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _jumpToMatchingBracket();
       case 'insertDateTime':
         _insertDateTime();
+      case 'escapeString':
+        unawaited(_showEscapeDialog());
+      case 'prevTodo':
+        _gotoTodo(-1);
+      case 'nextTodo':
+        _gotoTodo(1);
       case 'prevChange':
         _gotoChange(-1);
       case 'nextChange':

@@ -3542,5 +3542,16 @@
   "capturePlanInvalidDomain": "Tên miền không hợp lệ: {list}",
   "editorPasteReindent": "Thụt lề khi dán",
   "editorPasteReindentHint": "Dán nhiều dòng theo thụt lề hiện tại",
-  "editorInsertDateTime": "Chèn ngày giờ"
+  "editorInsertDateTime": "Chèn ngày giờ",
+  "editorNextTodo": "TODO tiếp theo",
+  "editorPrevTodo": "TODO trước",
+  "editorNoTodo": "Không tìm thấy TODO",
+  "editorHighlightTodos": "Đánh dấu TODO",
+  "editorHighlightTodosHint": "Đánh dấu dòng TODO / FIXME ở lề",
+  "editorEscape": "Escape / unescape",
+  "editorEscapeHint": "Đã chọn {n} ký tự (toàn bộ nếu không chọn)",
+  "editorEscapeDo": "Escape & thay thế",
+  "editorUnescapeDo": "Unescape & thay thế",
+  "editorEscapeDone": "Đã thay thế",
+  "diffIgnoredList": "Bỏ qua khi so sánh: {list}"
 }

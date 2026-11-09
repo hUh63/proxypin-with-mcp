@@ -3542,5 +3542,16 @@
   "capturePlanInvalidDomain": "Domain tidak valid: {list}",
   "editorPasteReindent": "Rapikan indentasi saat tempel",
   "editorPasteReindentHint": "Tempel banyak baris mengikuti indentasi baris ini",
-  "editorInsertDateTime": "Sisipkan tanggal & waktu"
+  "editorInsertDateTime": "Sisipkan tanggal & waktu",
+  "editorNextTodo": "TODO berikutnya",
+  "editorPrevTodo": "TODO sebelumnya",
+  "editorNoTodo": "Tidak ada TODO",
+  "editorHighlightTodos": "Sorot TODO",
+  "editorHighlightTodosHint": "Tandai baris TODO / FIXME di gutter",
+  "editorEscape": "Escape / unescape",
+  "editorEscapeHint": "{n} karakter dipilih (seluruh dokumen jika kosong)",
+  "editorEscapeDo": "Escape & ganti",
+  "editorUnescapeDo": "Unescape & ganti",
+  "editorEscapeDone": "Diganti",
+  "diffIgnoredList": "Diabaikan saat membandingkan: {list}"
 }

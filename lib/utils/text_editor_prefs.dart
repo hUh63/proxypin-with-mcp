@@ -47,6 +47,9 @@ class TextEditorPrefs {
   /// 是否高亮光标所在行（VS Code 的 current line highlight）。
   final bool highlightCurrentLine;
 
+  /// 注释里的 TODO / FIXME 等标记是否在行号栏标出来（VS 的 TODO Highlight）。
+  final bool highlightTodos;
+
   /// 是否检查排版风格（行尾空白 / 连续空行 / 文件末尾换行）。默认关。
   final bool styleLint;
 
@@ -170,6 +173,7 @@ class TextEditorPrefs {
     this.gutterDivider = false,
     this.guideLines = false,
     this.highlightCurrentLine = true,
+    this.highlightTodos = true,
     this.styleLint = false,
     this.highlightOccurrences = true,
     this.rainbowBrackets = true,
@@ -211,6 +215,7 @@ class TextEditorPrefs {
     bool? gutterDivider,
     bool? guideLines,
     bool? highlightCurrentLine,
+    bool? highlightTodos,
     bool? styleLint,
     bool? highlightOccurrences,
     bool? rainbowBrackets,
@@ -251,6 +256,7 @@ class TextEditorPrefs {
       gutterDivider: gutterDivider ?? this.gutterDivider,
       guideLines: guideLines ?? this.guideLines,
       highlightCurrentLine: highlightCurrentLine ?? this.highlightCurrentLine,
+      highlightTodos: highlightTodos ?? this.highlightTodos,
       styleLint: styleLint ?? this.styleLint,
       highlightOccurrences: highlightOccurrences ?? this.highlightOccurrences,
       rainbowBrackets: rainbowBrackets ?? this.rainbowBrackets,
@@ -293,6 +299,7 @@ class TextEditorPrefs {
         'gutterDivider': gutterDivider,
         'guideLines': guideLines,
         'highlightCurrentLine': highlightCurrentLine,
+        'highlightTodos': highlightTodos,
         'styleLint': styleLint,
         'highlightOccurrences': highlightOccurrences,
         'rainbowBrackets': rainbowBrackets,
@@ -340,6 +347,7 @@ class TextEditorPrefs {
       gutterDivider: json['gutterDivider'] as bool? ?? false,
       guideLines: json['guideLines'] as bool? ?? false,
       highlightCurrentLine: json['highlightCurrentLine'] as bool? ?? true,
+      highlightTodos: json['highlightTodos'] as bool? ?? true,
       styleLint: json['styleLint'] as bool? ?? false,
       highlightOccurrences: json['highlightOccurrences'] as bool? ?? true,
       rainbowBrackets: json['rainbowBrackets'] as bool? ?? true,

@@ -3542,5 +3542,16 @@
   "capturePlanInvalidDomain": "Dominio no válido: {list}",
   "editorPasteReindent": "Reindentar al pegar",
   "editorPasteReindentHint": "Al pegar varias líneas sigue la indentación actual",
-  "editorInsertDateTime": "Insertar fecha y hora"
+  "editorInsertDateTime": "Insertar fecha y hora",
+  "editorNextTodo": "Siguiente TODO",
+  "editorPrevTodo": "TODO anterior",
+  "editorNoTodo": "No se encontró ningún TODO",
+  "editorHighlightTodos": "Resaltar TODO",
+  "editorHighlightTodosHint": "Marca líneas TODO / FIXME en el margen",
+  "editorEscape": "Escapar / desescapar",
+  "editorEscapeHint": "{n} caracteres seleccionados (todo el documento si no hay selección)",
+  "editorEscapeDo": "Escapar y reemplazar",
+  "editorUnescapeDo": "Desescapar y reemplazar",
+  "editorEscapeDone": "Reemplazado",
+  "diffIgnoredList": "Ignorado al comparar: {list}"
 }

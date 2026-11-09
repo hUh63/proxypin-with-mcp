@@ -640,6 +640,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('comment', _commentLabel, group: 'edit', aliases: 'zs zhushi comment'),
   EditorMenuItem('expandSel', _expandSelLabel, group: 'edit', aliases: 'kx 扩大选区 expand selection'),
   EditorMenuItem('jumpBracket', _jumpBracketLabel, group: 'edit', aliases: 'tkw 括号 bracket match'),
+  EditorMenuItem('escapeString', _escapeStringLabel, group: 'edit',
+      aliases: 'zy 转义 反转义 escape unescape literal json sql'),
   EditorMenuItem('insertDateTime', _insertDateTimeLabel, group: 'edit',
       aliases: 'rq 插入日期时间 datetime date time now'),
   EditorMenuItem('selectToBracket', _selectToBracketLabel, group: 'edit',
@@ -698,6 +700,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'ls 历史 本地历史 文件历史 history localhistory timeline'),
   EditorMenuItem('diffTab', _diffTabLabel,
       group: 'file', aliases: 'bd 比较标签页 与标签页比较 difftab comparetab'),
+  EditorMenuItem('prevTodo', _prevTodoLabel,
+      group: 'inspect', aliases: 'sytd 上一处任务 上一个todo prevtodo'),
+  EditorMenuItem('nextTodo', _nextTodoLabel,
+      group: 'inspect', aliases: 'xytd 下一处任务 下一个todo nexttodo'),
   EditorMenuItem('tasks', _tasksLabel,
       group: 'inspect', aliases: 'rw 任务列表 todo fixme tasks'),
   EditorMenuItem('stats', _statsLabel,
@@ -833,9 +839,12 @@ String _peekDefLabel(AppLocalizations l) => l.editorPeekDefinition;
 String _expandSelLabel(AppLocalizations l) => l.editorExpandSelection;
 String _jumpBracketLabel(AppLocalizations l) => l.editorJumpBracket;
 String _insertDateTimeLabel(AppLocalizations l) => l.editorInsertDateTime;
+String _escapeStringLabel(AppLocalizations l) => l.editorEscape;
 String _prevChangeLabel(AppLocalizations l) => l.editorPrevChange;
 String _nextChangeLabel(AppLocalizations l) => l.editorNextChange;
 String _conflictsLabel(AppLocalizations l) => l.editorConflicts;
+String _prevTodoLabel(AppLocalizations l) => l.editorPrevTodo;
+String _nextTodoLabel(AppLocalizations l) => l.editorNextTodo;
 String _toggleBookmarkLabel(AppLocalizations l) => l.editorToggleBookmark;
 String _nextBookmarkLabel(AppLocalizations l) => l.editorNextBookmark;
 String _recentEditsLabel(AppLocalizations l) => l.editorRecentEdits;
@@ -971,8 +980,14 @@ IconData menuIconOf(String id) {
       return Icons.autorenew;
     case 'jumpBracket':
       return Icons.data_object;
+    case 'escapeString':
+      return Icons.text_fields;
     case 'insertDateTime':
       return Icons.schedule;
+    case 'prevTodo':
+      return Icons.arrow_upward;
+    case 'nextTodo':
+      return Icons.arrow_downward;
     case 'prevChange':
       return Icons.keyboard_double_arrow_up;
     case 'nextChange':

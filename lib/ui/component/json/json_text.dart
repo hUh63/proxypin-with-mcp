@@ -50,6 +50,8 @@ class JsonText extends StatefulWidget {
 
 class _JsonTextState extends State<JsonText> {
   ScrollController? trackingScrollController;
+  ScrollController? _externalScrollTarget;
+  VoidCallback? _externalScrollListener;
   SearchTextController? searchController;
   final ItemScrollController itemScrollController = ItemScrollController();
   String _selectedText = '';
@@ -62,6 +64,14 @@ class _JsonTextState extends State<JsonText> {
 
   @override
   void dispose() {
+    // 先摘外部监听，再 dispose 自己那个（顺序反了会让回调碰到已释放的控制器）
+    final target = _externalScrollTarget;
+    final listener = _externalScrollListener;
+    if (target != null && listener != null) {
+      target.removeListener(listener);
+    }
+    _externalScrollTarget = null;
+    _externalScrollListener = null;
     trackingScrollController?.dispose();
     trackingScrollController = null;
     super.dispose();
@@ -250,13 +260,20 @@ class _JsonTextState extends State<JsonText> {
     });
 
     if (Platform.isIOS && scrollController != null) {
-      scrollController.addListener(() {
+      // 这个监听挂在**外部**传入的 ScrollController 上，生命周期比本 State 长：
+      // 不摘掉的话，页面销毁后它还会被外部滚动触发，那时 trackingScroll 已经
+      // dispose，一滚就抛「A TrackingScrollController was used after being disposed」。
+      void syncExternal() {
+        if (!trackingScroll.hasClients || !scrollController.hasClients) return;
         if (scrollController.offset >= scrollController.position.maxScrollExtent) {
-          scrollController.jumpTo(scrollController.position.maxScrollExtent);
-          trackingScroll
-              .jumpTo(trackingScroll.offset + (scrollController.offset - scrollController.position.maxScrollExtent));
+          trackingScroll.jumpTo(trackingScroll.offset +
+              (scrollController.offset - scrollController.position.maxScrollExtent));
         }
-      });
+      }
+
+      scrollController.addListener(syncExternal);
+      _externalScrollTarget = scrollController;
+      _externalScrollListener = syncExternal;
     }
 
     trackingScrollController = trackingScroll;

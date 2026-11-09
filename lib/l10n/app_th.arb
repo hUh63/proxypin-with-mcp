@@ -3542,5 +3542,16 @@
   "capturePlanInvalidDomain": "โดเมนไม่ถูกต้อง: {list}",
   "editorPasteReindent": "จัดย่อหน้าตอนวาง",
   "editorPasteReindentHint": "วางหลายบรรทัดตามการย่อหน้าปัจจุบัน",
-  "editorInsertDateTime": "แทรกวันที่และเวลา"
+  "editorInsertDateTime": "แทรกวันที่และเวลา",
+  "editorNextTodo": "TODO ถัดไป",
+  "editorPrevTodo": "TODO ก่อนหน้า",
+  "editorNoTodo": "ไม่พบ TODO",
+  "editorHighlightTodos": "ไฮไลต์ TODO",
+  "editorHighlightTodosHint": "ทำเครื่องหมาย TODO / FIXME ที่ขอบ",
+  "editorEscape": "escape / unescape",
+  "editorEscapeHint": "เลือก {n} อักขระ (ทั้งไฟล์ถ้าไม่เลือก)",
+  "editorEscapeDo": "escape และแทนที่",
+  "editorUnescapeDo": "unescape และแทนที่",
+  "editorEscapeDone": "แทนที่แล้ว",
+  "diffIgnoredList": "ละเว้นขณะเปรียบเทียบ: {list}"
 }

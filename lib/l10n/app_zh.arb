@@ -5232,5 +5232,16 @@
   "capturePlanInvalidDomain": "域名格式不正确：{list}",
   "editorPasteReindent": "粘贴时对齐缩进",
   "editorPasteReindentHint": "粘贴多行时自动补齐当前行的缩进",
-  "editorInsertDateTime": "插入日期时间"
+  "editorInsertDateTime": "插入日期时间",
+  "editorNextTodo": "下一处任务标记",
+  "editorPrevTodo": "上一处任务标记",
+  "editorNoTodo": "没有找到任务标记",
+  "editorHighlightTodos": "标出任务标记",
+  "editorHighlightTodosHint": "在行号栏标出 TODO / FIXME",
+  "editorEscape": "转义 / 反转义",
+  "editorEscapeHint": "已选中 {n} 个字符（未选中则处理全文）",
+  "editorEscapeDo": "转义并替换",
+  "editorUnescapeDo": "反转义并替换",
+  "editorEscapeDone": "已替换",
+  "diffIgnoredList": "比较时忽略：{list}"
 }

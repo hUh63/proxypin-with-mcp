@@ -431,6 +431,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       // 信息之一，只存正文的话下次进来标签就退回「原文件/新文件」。
       _leftName = (m['leftName'] as String?) ?? '';
       _rightName = (m['rightName'] as String?) ?? '';
+      // 路径也一起恢复：不恢复的话，下次进来「保存右侧 / 写回右侧文件 / 从磁盘重读」
+      // 全部失效（路径是空的），只能重新选一遍文件。
+      _leftPath = (m['leftPath'] as String?) ?? '';
+      _rightPath = (m['rightPath'] as String?) ?? '';
       _compare();
     } catch (_) {
       // 忽略损坏的存档
@@ -453,6 +457,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             'right': _right.text,
             'leftName': _leftName,
             'rightName': _rightName,
+            'leftPath': _leftPath,
+            'rightPath': _rightPath,
           }));
     } catch (_) {}
     unawaited(_pushHistory());
@@ -2040,6 +2046,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   Text(_newlineHint().trim(),
                       style: TextStyle(fontSize: 11, color: Colors.orange.shade800)),
                 ],
+                if (_ignoreSummary().isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(localizations.diffIgnoredList(_ignoreSummary()),
+                      style: TextStyle(fontSize: 11, color: color.onSurfaceVariant)),
+                ],
                 const SizedBox(height: 10),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   card(localizations.diffOriginal,
@@ -2123,6 +2134,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  /// 当前生效的「忽略」项（统计面板里显示）。
+  ///
+  /// 用户开了「忽略大小写」之后再看结果，很可能忘了自己开过 —— 结果是
+  /// 「明明有差别却说完全一致」，很容易怀疑工具坏了。
+  String _ignoreSummary() {
+    final parts = <String>[
+      if (_ignoreCase) localizations.diffIgnoreCase,
+      if (_ignoreWhitespace) localizations.diffIgnoreWhitespace,
+      if (_ignoreTrailing) localizations.diffIgnoreTrailing,
+      if (_ignoreBlank) localizations.diffIgnoreBlankLines,
+      if (_ignoreComments) localizations.diffIgnoreComments,
+    ];
+    return parts.join('、');
   }
 
   /// 两侧换行符风格不同时补一句提示：这是「看着一样却全标红」的第二大原因
