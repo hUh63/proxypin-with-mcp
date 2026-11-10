@@ -8364,7 +8364,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<void> _copyNumbered() async {
     final chunk = _activeChunk();
     if (chunk.text.isEmpty) {
-      _toastText(localizations.cannotBeEmpty);
+      _toast(localizations.cannotBeEmpty);
       return;
     }
     final all = _controller?.text ?? '';
@@ -8386,7 +8386,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   Future<void> _copyMarkdown() async {
     final chunk = _activeChunk();
     if (chunk.text.isEmpty) {
-      _toastText(localizations.cannotBeEmpty);
+      _toast(localizations.cannotBeEmpty);
       return;
     }
     final key = _lang.key;

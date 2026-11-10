@@ -456,6 +456,12 @@ class ProxyServer {
     }
   }
 
+  /// 重启代理服务
+  Future<void> restart() async {
+    await stop().whenComplete(() => start());
+  }
+
+  ///检查是否监听端口 没有监听则启动
   Future<void> retryBind() async {
     try {
       await Socket.connect('127.0.0.1', port, timeout: const Duration(milliseconds: 350));
