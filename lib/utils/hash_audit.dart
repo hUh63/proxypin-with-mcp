@@ -311,9 +311,17 @@ class HashAudit {
 
   // ---------- 候选生成 ----------
 
-  /// 掩码 → 字符集：`?l` 小写、`?u` 大写、`?d` 数字、`?s` 符号、`?a` 全部。
-  static List<String>? maskToCharset(String mask) {
-    final chars = <String>[];
+  /// 掩码 → **每个位置**的可选字符集（不是扁平字符表）。
+  ///
+  /// `?d?d` → `['0123456789', '0123456789']`，两位各 10 种。
+  /// （早先这里返回的是扁平字符数组，导致枚举时每个位置只有 1 种字符，
+  /// 掩码攻击只会试一个候选 —— 看着在跑其实什么都没试。）
+  static List<String>? maskCharsets(String mask) {
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+    const symbols = r'''!@#$%^&*()-_=+[]{};:'",.<>/?\|~`''';
+    final out = <String>[];
     for (var i = 0; i < mask.length; i++) {
       final c = mask[i];
       if (c == '?') {
@@ -322,30 +330,30 @@ class HashAudit {
         i++;
         switch (t) {
           case 'l':
-            chars.addAll('abcdefghijklmnopqrstuvwxyz'.split(''));
+            out.add(lower);
           case 'u':
-            chars.addAll('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''));
+            out.add(upper);
           case 'd':
-            chars.addAll('0123456789'.split(''));
+            out.add(digits);
           case 's':
-            chars.addAll(r'''!@#$%^&*()-_=+[]{};:'",.<>/?\|~`'''.split(''));
+            out.add(symbols);
           case 'a':
-            chars.addAll('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split(''));
+            out.add(lower + upper + digits);
           case '?':
-            chars.add('?');
+            out.add('?');
           default:
             return null;
         }
       } else {
-        chars.add(c);
+        out.add(c);
       }
     }
-    return chars.isEmpty ? null : chars;
+    return out.isEmpty ? null : out;
   }
 
   /// 掩码的候选总数（开始前估算用）。
   static int maskSpace(String mask) {
-    final cs = maskToCharset(mask);
+    final cs = maskCharsets(mask);
     if (cs == null) return 0;
     var total = 1;
     for (final c in cs) {
@@ -612,7 +620,7 @@ Future<void> _crackEntry(List<dynamic> args) async {
   // ---- 掩码 ----
   if (!cancelled && tried < job.maxCandidates) {
     for (final mask in job.masks) {
-      final cs = HashAudit.maskToCharset(mask);
+      final cs = HashAudit.maskCharsets(mask);
       if (cs == null) continue;
       final idx = List<int>.filled(cs.length, 0);
       final buf = List<int>.filled(cs.length, 0);

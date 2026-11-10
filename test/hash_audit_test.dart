@@ -85,7 +85,13 @@ void main() {
     test('NTLM', () {
       // MD4(UTF-16LE("password"))
       expect(HashAudit.ntlm('password'), '8846f7eaee8fb117ad06bdd830b7586c');
-      expect(HashAudit.verify(t('8846f7eaee8fb117ad06bdd830b7586c'), 'password'), isTrue);
+      // 注意：单看 32 位 hex 分不出 MD5 和 NTLM，识别器按 MD5 处理；
+      // 要按 NTLM 校验，得用 pwdump 形式（user:uid:LM:NT:::）明确标出来。
+      final pwdump = HashAudit.parseLine(
+          'bob:1000:0893955f62e600b7aad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c:::')!;
+      expect(pwdump.kind, HashKind.ntlm);
+      expect(HashAudit.verify(pwdump, 'password'), isTrue);
+      expect(HashAudit.verify(pwdump, 'passwore'), isFalse);
     });
 
     test('{SHA} 与 {SSHA}', () {
@@ -106,11 +112,17 @@ void main() {
   });
 
   group('掩码与规则', () {
-    test('掩码字符集', () {
-      expect(HashAudit.maskToCharset('?d?d')!.length, 20); // 两段各 10
-      expect(HashAudit.maskToCharset('?l')!.length, 26);
-      expect(HashAudit.maskToCharset('a?d')!.length, 11);
-      expect(HashAudit.maskToCharset('?x'), isNull);
+    test('掩码字符集按位置给出', () {
+      final two = HashAudit.maskCharsets('?d?d')!;
+      expect(two.length, 2); // 两位
+      expect(two[0].length, 10); // 每位 10 个数字
+      expect(two[1].length, 10);
+      expect(HashAudit.maskCharsets('?l')!.single.length, 26);
+      final mixed = HashAudit.maskCharsets('a?d')!;
+      expect(mixed.length, 2);
+      expect(mixed[0], 'a'); // 字面量位置只有一种
+      expect(mixed[1].length, 10);
+      expect(HashAudit.maskCharsets('?x'), isNull);
     });
 
     test('掩码空间估算', () {
