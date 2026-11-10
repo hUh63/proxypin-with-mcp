@@ -3572,5 +3572,16 @@
   "editorAlignBy": "Căn theo dấu phân cách",
   "editorRemoveBlankLines": "Xoá dòng trống",
   "editorCollapseBlankLines": "Gộp dòng trống",
-  "editorTransformNoChange": "Không có thay đổi"
+  "editorTransformNoChange": "Không có thay đổi",
+  "diffSyncVScroll": "Đồng bộ cuộn dọc",
+  "diffStaleDisk": "Tệp đã thay đổi trên đĩa",
+  "diffStaleReload": "Tải lại",
+  "diffStaleIgnore": "Bỏ qua",
+  "editorZenMode": "Chế độ tập trung",
+  "editorExitZen": "Thoát",
+  "editorInsertFile": "Chèn tệp…",
+  "editorCopyNumbered": "Sao chép kèm số dòng",
+  "editorCopyMarkdown": "Sao chép dạng khối mã",
+  "diffOpenInEditorLeft": "Mở bên trái trong trình soạn thảo",
+  "diffOpenInEditorRight": "Mở bên phải trong trình soạn thảo"
 }

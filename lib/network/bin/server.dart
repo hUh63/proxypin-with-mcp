@@ -33,6 +33,8 @@ import 'package:proxypin/network/handle/http_proxy_handle.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
+import 'package:proxypin/network/mcp/mcp_scheduler.dart';
+import 'package:proxypin/network/mcp/mcp_task_executor.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
 import 'package:proxypin/network/mcp/script_workflow_engine.dart';
 import 'package:proxypin/network/reverse/reverse_proxy.dart';
@@ -219,6 +221,22 @@ class ProxyServer {
           logger.e('代理启动规则评估失败', error: e, stackTrace: s);
         }));
       } catch (_) {}
+      // 注册定时任务的动作执行器。
+      // 以前这行只写在「MCP 自动化」页面的 initState 里，重启后没进过那个
+      // 页面的用户，到期的任务会因为「执行器未注册」被静默跳过。
+      try {
+        McpScheduler().setActionExecutor(McpTaskExecutor.run);
+        McpTaskExecutor.install();
+      } catch (e, s) {
+        logger.e('注册定时任务执行器失败', error: e, stackTrace: s);
+      }
+      // 「抓包开始」事件：MCP 自动化里配置的 capture_start 监听器靠这里才活得起来
+      // （之前只有 http_request 一条链路被触发，其余几类事件配了永远不会响）。
+      try {
+        McpEventAutomation().triggerCaptureStart();
+      } catch (e, s) {
+        logger.e('触发抓包开始事件失败', error: e, stackTrace: s);
+      }
       return server;
     });
   }
@@ -291,6 +309,11 @@ class ProxyServer {
       McpEventAutomation().triggerProxyStatusChange(ProxyStatus.stopped);
     } catch (e, s) {
       logger.e('触发代理停止事件失败', error: e, stackTrace: s);
+    }
+    try {
+      McpEventAutomation().triggerCaptureStop();
+    } catch (e, s) {
+      logger.e('触发抓包停止事件失败', error: e, stackTrace: s);
     }
     // 触发 MCP 自动化任务（onProxyStop 触发器）
     try {
@@ -433,26 +456,6 @@ class ProxyServer {
     }
   }
 
-  /// 反向代理规则或端口变化后调用（供设置页使用）。
-  Future<void> restartReverseProxy() async {
-    if (!isRunning) return;
-    try {
-      if (!ReverseProxy.enabled || ReverseProxy.rules.isEmpty || ReverseProxy.port == port) {
-        await ReverseProxyServer.current?.stop();
-        return;
-      }
-      await ReverseProxyServer(configuration).restart();
-    } catch (e, s) {
-      logger.e('[ReverseProxy] 重启失败', error: e, stackTrace: s);
-    }
-  }
-
-  /// 重启代理服务
-  Future<void> restart() async {
-    await stop().whenComplete(() => start());
-  }
-
-  ///检查是否监听端口 没有监听则启动
   Future<void> retryBind() async {
     try {
       await Socket.connect('127.0.0.1', port, timeout: const Duration(milliseconds: 350));

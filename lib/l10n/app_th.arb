@@ -3572,5 +3572,16 @@
   "editorAlignBy": "จัดแนวตามตัวคั่น",
   "editorRemoveBlankLines": "ลบบรรทัดว่าง",
   "editorCollapseBlankLines": "รวมบรรทัดว่าง",
-  "editorTransformNoChange": "ไม่มีการเปลี่ยนแปลง"
+  "editorTransformNoChange": "ไม่มีการเปลี่ยนแปลง",
+  "diffSyncVScroll": "ซิงค์การเลื่อนแนวตั้ง",
+  "diffStaleDisk": "ไฟล์เปลี่ยนบนดิสก์",
+  "diffStaleReload": "โหลดใหม่",
+  "diffStaleIgnore": "เพิกเฉย",
+  "editorZenMode": "โหมดโฟกัส",
+  "editorExitZen": "ออก",
+  "editorInsertFile": "แทรกไฟล์…",
+  "editorCopyNumbered": "คัดลอกพร้อมเลขบรรทัด",
+  "editorCopyMarkdown": "คัดลอกเป็นบล็อกโค้ด",
+  "diffOpenInEditorLeft": "เปิดด้านซ้ายในตัวแก้ไข",
+  "diffOpenInEditorRight": "เปิดด้านขวาในตัวแก้ไข"
 }

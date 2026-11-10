@@ -5262,5 +5262,16 @@
   "editorAlignBy": "按分隔符对齐",
   "editorRemoveBlankLines": "删除空行",
   "editorCollapseBlankLines": "合并连续空行",
-  "editorTransformNoChange": "内容没有变化"
+  "editorTransformNoChange": "内容没有变化",
+  "diffSyncVScroll": "同步纵向滚动",
+  "diffStaleDisk": "磁盘上的文件已被修改",
+  "diffStaleReload": "重载",
+  "diffStaleIgnore": "忽略",
+  "editorZenMode": "专注模式",
+  "editorExitZen": "退出",
+  "editorInsertFile": "插入文件内容…",
+  "editorCopyNumbered": "复制带行号",
+  "editorCopyMarkdown": "复制为代码块",
+  "diffOpenInEditorLeft": "左侧内容送进编辑器",
+  "diffOpenInEditorRight": "右侧内容送进编辑器"
 }

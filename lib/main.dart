@@ -32,6 +32,8 @@ import 'package:proxypin/ui/component/log_viewer_page.dart' show LogManager, Log
 import 'package:proxypin/ui/mobile/setting/mcp_connection.dart';
 import 'package:proxypin/network/util/mtls.dart';
 import 'package:proxypin/network/rules/websocket_rule_manager.dart';
+import 'package:proxypin/network/mcp/mcp_scheduler.dart';
+import 'package:proxypin/network/mcp/mcp_task_executor.dart';
 import 'package:proxypin/network/util/root_proxy.dart';
 import 'package:proxypin/ui/component/chinese_font.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
@@ -77,6 +79,15 @@ void main(List<String> args) async {
   // 以前只有打开过“WebSocket 拦截”页面才会 init，
   // 导致应用刚启动时规则列表是空的、帧操纵不生效。
   unawaited(WebSocketRuleManager().init());
+
+  // 定时任务的动作执行器：必须在启动阶段注册，不能等用户打开「MCP 自动化」页。
+  // 否则重启后未进过该页的用户，到期的任务会以「执行器未注册」被静默跳过。
+  try {
+    McpScheduler().setActionExecutor(McpTaskExecutor.run);
+    McpTaskExecutor.install();
+  } catch (e) {
+    logger.w('注册定时任务执行器失败: $e');
+  }
 
   // 自动备份：旧实现 autoBackupConfig() 有实现、有开关，却全仓没有调用点，
   // 所以「自动备份」从来没触发过。这里按配置的间隔在启动后补一次。

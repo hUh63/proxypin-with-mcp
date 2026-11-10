@@ -2215,6 +2215,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   bool _zoomEnabled = false;
 
+  /// 专注模式：只剩代码，工具栏/标签条/面包屑/状态栏全部收起。
+  /// 手机上横屏或小屏时，这些条加起来能吃掉三分之一屏幕。
+  bool _zen = false;
+
   void _onPointerDown(PointerDownEvent e) {
     _zoomEnabled = _prefs.pinchZoom;
     _pointers[e.pointer] = e.position;
@@ -8338,6 +8342,85 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 复制。有选区就复制选区（VS 的 Edit › Copy 就是这个语义）——
   /// 以前不分区选、永远复制整个文件，选中一段去点「复制」拿到全文，很难理解。
   /// 没有选区时退回「复制全部」，手机上这个更常用。
+  /// 取「当前生效的文本」+ 它在全文里的起始偏移（有选区取选区，否则整篇）。
+  ({String text, int start}) _activeChunk() {
+    final controller = _controller;
+    if (controller == null) return (text: '', start: 0);
+    final all = controller.text;
+    final sel = controller.selection;
+    if (sel.isValid && !sel.isCollapsed) {
+      final len = all.length;
+      final a = sel.start.clamp(0, len);
+      final b = sel.end.clamp(0, len);
+      return a <= b ? (text: all.substring(a, b), start: a) : (text: all.substring(b, a), start: b);
+    }
+    return (text: all, start: 0);
+  }
+
+  /// 复制时给每行加行号。
+  ///
+  /// 贴到工单、聊天、代码评审里说「第 137 行那个判断」时，对方不需要
+  /// 自己数——这是移动端编辑器普遍缺、但沟通时最省事的一个小功能。
+  Future<void> _copyNumbered() async {
+    final chunk = _activeChunk();
+    if (chunk.text.isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    final all = _controller?.text ?? '';
+    final lineCount = '\n'.allMatches(all.substring(0, chunk.start.clamp(0, all.length))).length;
+    final lines = chunk.text.replaceAll('\r\n', '\n').split('\n');
+    final width = '${lineCount + lines.length}'.length;
+    final buf = StringBuffer();
+    for (var i = 0; i < lines.length; i++) {
+      final no = '${lineCount + i + 1}'.padLeft(width);
+      buf.writeln('$no  ${lines[i]}');
+    }
+    final out = buf.toString();
+    await Clipboard.setData(ClipboardData(text: out.trimRight()));
+    _rememberClip(out);
+    _toast(localizations.copied);
+  }
+
+  /// 复制为 Markdown 代码块（带语言标记）：粘到文档/IM 里能直接高亮。
+  Future<void> _copyMarkdown() async {
+    final chunk = _activeChunk();
+    if (chunk.text.isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    final key = _lang.key;
+    // 语言标记用 re_highlight 的 key（js/python/...），纯文本留空。
+    final fence = (key.isEmpty || key == 'plaintext') ? '' : key;
+    final body = chunk.text.replaceAll('\r\n', '\n').trimRight();
+    final out = '```$fence\n$body\n```';
+    await Clipboard.setData(ClipboardData(text: out));
+    _rememberClip(out);
+    _toast(localizations.copied);
+  }
+
+  /// 把另一个文件的内容插到光标处（VS 的 Insert File As Text）。
+  /// 拼接配置片段、把模板搅进当前文件时，比复制粘贴少两次切窗口。
+  Future<void> _insertFileText() async {
+    String? path;
+    try {
+      final picked = await FilePicker.pickFile(type: FileType.any);
+      path = picked?.path;
+    } catch (_) {
+      final picked = await FilePicker.pickFile();
+      path = picked?.path;
+    }
+    if (path == null) return;
+    try {
+      final content = await readTextFileLenient(File(path));
+      if (!mounted) return;
+      _insertAtCursor(content.text);
+      if (content.truncated) _toast(localizations.diffFileTruncated);
+    } catch (e) {
+      if (mounted) _toast('${localizations.fail}: $e');
+    }
+  }
+
   void _copy() {
     final controller = _controller;
     if (controller == null) return;
@@ -8677,10 +8760,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
                     centerTitle: true),
               ),
         body: Column(children: [
-          _toolbar(),
-          if (!compact) _docTabs(),
-          const Divider(height: 1, thickness: 0.3),
-          if (!compact) _breadcrumb(),
+          if (_zen)
+            _zenBar()
+          else ...[
+            _toolbar(),
+            if (!compact) _docTabs(),
+            const Divider(height: 1, thickness: 0.3),
+            if (!compact) _breadcrumb(),
+          ],
           _multiSelBar(),
           Expanded(
             child: Stack(children: [
@@ -8701,12 +8788,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
               if (doc != null) ..._issueRuler(doc),
             ]),
           ),
-          if (doc != null && _prefs.magnifier) _magnifierBar(doc),
+          if (!_zen && doc != null && _prefs.magnifier) _magnifierBar(doc),
           // 参数签名提示（VS 打 `(` 后那行签名）：只在对当前语言、且文档里找得到声明时显示。
-          if (doc != null && _programming)
+          if (!_zen && doc != null && _programming)
             _SignatureBar(controller: doc.controller, resolve: _resolveSignature),
           // 问题栏：贴着代码，按文本顺序一行一条（红=报错，黄=警告）
-          if (doc != null && _lintEnabled && _programming)
+          if (!_zen && doc != null && _lintEnabled && _programming)
             LintIssueBar(
               report: _lint,
               // 打字时只留表头（点一下能进完整面板），别把代码区挤没了。
@@ -8728,8 +8815,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 unawaited(_saveHiddenSeverities());
               },
             ),
-          if (_prefs.shortcutBar && !shortScreen) _snippetBar(),
-          if (_consoleOpen && doc != null)
+          if (!_zen && _prefs.shortcutBar && !shortScreen) _snippetBar(),
+          if (!_zen && _consoleOpen && doc != null)
             EditorConsolePanel(
               report: _lint,
               checking: _lintChecking,
@@ -8769,7 +8856,41 @@ class _TextEditorPageState extends State<TextEditorPage> {
               builder: (_, __) => FindPanelView(controller: doc.findController),
             ),
           // 状态栏（学 VS Code）：光标行列、选中字符数、缩进、语言
-          if (doc != null) _statusBar(doc),
+          if (!_zen && doc != null) _statusBar(doc),
+        ]),
+      ),
+    );
+  }
+
+  /// 专注模式的顶部薄条：只留退出。其余一切让位给代码。
+  Widget _zenBar() {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      height: 30,
+      padding: const EdgeInsets.only(left: 10, right: 4),
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.15,
+        child: Row(children: [
+          Icon(Icons.fullscreen, size: 15, color: cs.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              localizations.editorZenMode,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 28),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => setState(() => _zen = false),
+            child: Text(localizations.editorExitZen, style: const TextStyle(fontSize: 12)),
+          ),
         ]),
       ),
     );
@@ -9593,6 +9714,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('renameFile', Icons.drive_file_rename_outline,
               loc.editorRenameFile),
           _menuItem('copyPath', Icons.link, loc.editorCopyPath),
+          _menuItem('insertFile', Icons.file_download_outlined, loc.editorInsertFile),
           if (Platforms.isDesktop())
             _menuItem('revealFile', Icons.folder_special, loc.editorRevealFile),
           _menuItem('quickOpen', Icons.bolt, loc.editorQuickOpen),
@@ -9688,6 +9810,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
           _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
           _menuItem('stats', Icons.analytics_outlined, loc.editorDocStats),
+          _menuItem('copyNumbered', Icons.format_list_numbered, loc.editorCopyNumbered),
+          _menuItem('copyMarkdown', Icons.code, loc.editorCopyMarkdown),
           _menuItem('findInFiles', Icons.manage_search, loc.editorFindInFiles),
           _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
           _menuItem('undoRename', Icons.undo, loc.editorRenameUndo),
@@ -9713,6 +9837,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               value: 'ascii', checked: _showAscii, child: Text(loc.editorShowAsciiControl)),
           CheckedPopupMenuItem(
               value: 'unicode', checked: _showUnicode, child: Text(loc.editorShowUnicodeSpecial)),
+          CheckedPopupMenuItem(value: 'zen', checked: _zen, child: Text(loc.editorZenMode)),
           _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
           _menuItem('detectIndent', Icons.format_indent_increase, loc.editorDetectIndent),
           _menuItem('diskChange', Icons.difference_outlined, loc.editorDiskChange),
@@ -9918,6 +10043,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
           unawaited(_copyFilePath());
         case 'revealFile':
           unawaited(_revealInFolder());
+        case 'insertFile':
+          unawaited(_insertFileText());
+        case 'copyNumbered':
+          unawaited(_copyNumbered());
+        case 'copyMarkdown':
+          unawaited(_copyMarkdown());
+        case 'zen':
+          setState(() => _zen = !_zen);
       case 'autosave':
         setState(() => _autoSave = !_autoSave);
         unawaited(_saveAutoSave());

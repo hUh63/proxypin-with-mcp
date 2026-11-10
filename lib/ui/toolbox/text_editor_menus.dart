@@ -716,6 +716,14 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'file', aliases: 'fzlj 复制路径 copypath'),
   EditorMenuItem('revealFile', _revealFileLabel,
       group: 'file', aliases: 'djwjj 在文件夹中显示 revealfolder'),
+  EditorMenuItem('insertFile', _insertFileLabel,
+      group: 'file', aliases: 'crwj 插入文件内容 导入文件 insertfile'),
+  EditorMenuItem('copyNumbered', _copyNumberedLabel,
+      group: 'edit', aliases: 'fzdfh 复制带行号 带行号复制 copynumbered withnumbers'),
+  EditorMenuItem('copyMarkdown', _copyMarkdownLabel,
+      group: 'edit', aliases: 'fzdmkd 复制为代码块 复制markdown copymarkdown codeblock'),
+  EditorMenuItem('zen', _zenLabel,
+      group: 'view', aliases: 'zx 专注模式 全屏专注 zen focusmode'),
   EditorMenuItem('findInFiles', _findInFilesLabel,
       group: 'edit', aliases: 'djwj 多文件查找 findinfiles'),
   EditorMenuItem('renameEverywhere', _renameEverywhereLabel,
@@ -804,6 +812,10 @@ String _diffTabLabel(AppLocalizations l) => l.editorDiffWithTab;
 String _tasksLabel(AppLocalizations l) => l.editorTasks;
 String _statsLabel(AppLocalizations l) => l.editorDocStats;
 String _recentFilesLabel(AppLocalizations l) => l.editorRecentFiles;
+String _insertFileLabel(AppLocalizations l) => l.editorInsertFile;
+String _copyNumberedLabel(AppLocalizations l) => l.editorCopyNumbered;
+String _copyMarkdownLabel(AppLocalizations l) => l.editorCopyMarkdown;
+String _zenLabel(AppLocalizations l) => l.editorZenMode;
 String _renameFileLabel(AppLocalizations l) => l.editorRenameFile;
 String _copyPathLabel(AppLocalizations l) => l.editorCopyPath;
 String _revealFileLabel(AppLocalizations l) => l.editorRevealFile;
@@ -902,6 +914,20 @@ IconData menuIconOf(String id) {
   switch (id) {
     case 'newFile':
       return Icons.note_add_outlined;
+    case 'insertFile':
+      return Icons.file_download_outlined;
+    case 'copyNumbered':
+      return Icons.format_list_numbered;
+    case 'copyMarkdown':
+      return Icons.code;
+    case 'zen':
+      return Icons.fullscreen;
+    case 'ascii':
+      return Icons.visibility_outlined;
+    case 'minify':
+      return Icons.compress;
+    case 'nextBookmark':
+      return Icons.bookmark_add_outlined;
     case 'open':
       return Icons.folder_open;
     case 'save':

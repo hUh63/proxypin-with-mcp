@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
-import 'package:http/http.dart' as http;
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/util/url_pattern.dart';
 import 'package:proxypin/network/bin/configuration.dart';
@@ -13,6 +12,7 @@ import 'package:proxypin/network/mcp/mcp_event_automation.dart';
 import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
 import 'package:proxypin/network/mcp/mcp_scheduler.dart';
+import 'package:proxypin/network/mcp/mcp_task_executor.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/network/mcp/script_workflow_engine.dart';
 import 'package:proxypin/network/util/cron_expression.dart';
@@ -1146,42 +1146,12 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     return null;
   }
 
-  /// 任务执行器（由 McpScheduler 在任务到期时调用，UI 无关，可后台触发）
-  Future<void> _executeTaskDescriptor(Map<String, dynamic> desc) async {
-    final type = desc['type'] as int? ?? 1;
-    final taskName = desc['name'] as String? ?? '';
-    try {
-      switch (type) {
-        case 0: // 执行脚本
-          final script = desc['script'] as String?;
-          if (script != null && script.isNotEmpty) await _runScriptByName(script);
-          break;
-        case 1: // 调用 MCP 工具
-          final tool = desc['tool'] as String?;
-          if (tool != null && tool.isNotEmpty) {
-            final res = await _mcpSendRequest('tools/call', {'name': tool, 'arguments': {}});
-            logger.i('[$taskName] 工具 $tool 返回: $res');
-          }
-          break;
-        case 2: // 执行工作流
-          final wf = desc['workflow'] as Map<String, dynamic>?;
-          if (wf != null) await _executeWorkflowNodes(wf);
-          break;
-        case 3: // 发送 Webhook
-          final url = desc['webhookUrl'] as String?;
-          if (url != null && url.startsWith('http')) {
-            final r = await http.post(Uri.parse(url),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({'task': taskName, 'timestamp': DateTime.now().toIso8601String()}));
-            logger.i('[$taskName] Webhook 响应: ${r.statusCode}');
-          }
-          break;
-      }
-      logger.i('[$taskName] 定时任务执行完成 (type=$type)');
-    } catch (e, s) {
-      logger.e('[$taskName] 定时任务执行失败', error: e, stackTrace: s);
-    }
-  }
+  /// 任务执行器（由 McpScheduler 在任务到期时调用，UI 无关，可后台触发）。
+  ///
+  /// 真正的执行逻辑在 [McpTaskExecutor]（网络层）：这里原来是一份复制，
+  /// 而它只在页面 initState 里注册给调度器——重启后没进过本页的用户，
+  /// 定时任务会因「执行器未注册」被静默跳过。现在两处共用一份实现。
+  Future<void> _executeTaskDescriptor(Map<String, dynamic> desc) => McpTaskExecutor.run(desc);
 
   void _cancelTask(ScheduledTask task) {
     // cancelTask 现在内部会自行 saveTasks（否则重启后任务会复活），

@@ -3573,5 +3573,16 @@
   "editorAlignBy": "Alinhar por delimitador",
   "editorRemoveBlankLines": "Remover linhas vazias",
   "editorCollapseBlankLines": "Unir linhas vazias",
-  "editorTransformNoChange": "Nada mudou"
+  "editorTransformNoChange": "Nada mudou",
+  "diffSyncVScroll": "Sincronizar deslocamento vertical",
+  "diffStaleDisk": "Ficheiros alterados no disco",
+  "diffStaleReload": "Recarregar",
+  "diffStaleIgnore": "Ignorar",
+  "editorZenMode": "Modo concentração",
+  "editorExitZen": "Sair",
+  "editorInsertFile": "Inserir ficheiro…",
+  "editorCopyNumbered": "Copiar com números de linha",
+  "editorCopyMarkdown": "Copiar como bloco de código",
+  "diffOpenInEditorLeft": "Abrir esquerda no editor",
+  "diffOpenInEditorRight": "Abrir direita no editor"
 }

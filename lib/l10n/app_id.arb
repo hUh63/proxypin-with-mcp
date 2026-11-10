@@ -3572,5 +3572,16 @@
   "editorAlignBy": "Ratakan per pemisah",
   "editorRemoveBlankLines": "Hapus baris kosong",
   "editorCollapseBlankLines": "Gabungkan baris kosong",
-  "editorTransformNoChange": "Tidak ada perubahan"
+  "editorTransformNoChange": "Tidak ada perubahan",
+  "diffSyncVScroll": "Sinkronkan gulir vertikal",
+  "diffStaleDisk": "File berubah di disk",
+  "diffStaleReload": "Muat ulang",
+  "diffStaleIgnore": "Abaikan",
+  "editorZenMode": "Mode fokus",
+  "editorExitZen": "Keluar",
+  "editorInsertFile": "Sisipkan berkas…",
+  "editorCopyNumbered": "Salin dengan nomor baris",
+  "editorCopyMarkdown": "Salin sebagai blok kode",
+  "diffOpenInEditorLeft": "Buka kiri di editor",
+  "diffOpenInEditorRight": "Buka kanan di editor"
 }

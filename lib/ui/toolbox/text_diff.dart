@@ -38,6 +38,7 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
+import 'package:proxypin/ui/toolbox/text_editor.dart' show TextEditorPage;
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/ui/toolbox/dir_diff_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
@@ -219,6 +220,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
   bool _syncH = false;
   bool _syncingH = false;
 
+  /// 同步纵向滚动：并排看代码时一栏滚动另一栏跟着走（默认开）。
+  /// 关掉后两栏各自独立——只想翻左边、右边停住对照时用。
+  bool _syncV = true;
+
+  /// 磁盘上的文件在别处被改过（mtime 变了）→ 顶部提示条。
+  /// 不做的话，用户在编辑器里改完切回来，看到的还是打开那一刻的旧内容，
+  /// 却以为是「现在磁盘上的样子」，据此下结论。
+  bool _staleDisk = false;
+  int _leftMtime = 0;
+  int _rightMtime = 0;
+  Timer? _staleTimer;
+
   /// 聚焦模式：只显示某一处差异（±[_focusContext] 行上下文），
   /// 配合底部「← 用右侧 / 用左侧 →」逐个块过一遍——多轮改动后逐块确认最省心。
   int? _focusBlock;
@@ -303,6 +316,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 否则会逃逸成未捕获异步错误（这个坑踩过）。
     _leftV.addListener(_syncFromLeft);
     _rightV.addListener(_syncFromRight);
+    // 每 3 秒看一眼两侧文件的修改时间（纯 stat，代价可忽略）。
+    _staleTimer = Timer.periodic(const Duration(seconds: 3), (_) => _checkDiskChanged());
     // 横向同步：常驻监听，开关关闭时 `_syncHorizontal` 第一行就返回。
     _leftH.addListener(() => _syncHorizontal(_leftH, _rightH));
     _rightH.addListener(() => _syncHorizontal(_rightH, _leftH));
@@ -353,6 +368,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   @override
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
+    _staleTimer?.cancel();
     _leftV.dispose();
     _rightV.dispose();
     _leftH.dispose();
@@ -991,6 +1007,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _rightName = '';
     _leftPath = '';
     _rightPath = '';
+    _leftMtime = 0;
+    _rightMtime = 0;
+    _staleDisk = false;
     _leftUndo.clear();
     _rightUndo.clear();
     _clearHighlights();
@@ -1024,6 +1043,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
           _rightPath = path!;
         }
       });
+      _markDiskBaseline();
       // 超过 8MB 只读了前 8MB：不提示的话，用户会拿着「后半段都一样」的结论做决定。
       if (content.truncated) _toast(localizations.diffFileTruncated);
     } catch (e) {
@@ -1053,6 +1073,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
     if (!mounted) return;
     setState(() => _navIndex = -1);
+    _markDiskBaseline();
     _compare();
     _toastText(localizations.diffReloaded(n));
   }
@@ -1145,6 +1166,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
             autofocus: true,
             child: Column(children: [
           _fileBar(),
+          if (_staleDisk) _staleBar(),
           Row(
             children: [
               Expanded(child: _legend()),
@@ -1576,6 +1598,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final lp = _leftPath;
     _leftPath = _rightPath;
     _rightPath = lp;
+    final lm = _leftMtime;
+    _leftMtime = _rightMtime;
+    _rightMtime = lm;
     _navIndex = -1;
     _compare();
     // 交换后两栏内容宽度可能完全变了，横向偏移要归零，否则可能停在空白处。
@@ -1632,6 +1657,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(SharedPreferencesAsync().setBool(_wrapKey, next));
           case 'onlyDiff':
             setState(() => _onlyDiff = !_onlyDiff);
+          case 'syncV':
+            setState(() => _syncV = !_syncV);
+            if (_syncV) _syncVertical(_leftV, _rightV);
           case 'syncH':
             setState(() => _syncH = !_syncH);
             if (_syncH) _syncHorizontal(_leftH, _rightH);
@@ -1667,6 +1695,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportPatch());
           case 'copyPatch':
             unawaited(_copyUnifiedDiff());
+          case 'editInEditorLeft':
+            _openInEditor(true);
+          case 'editInEditorRight':
+            _openInEditor(false);
           case 'shareDiff':
             unawaited(_shareDiff());
           case 'reloadFiles':
@@ -1743,6 +1775,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         CheckedPopupMenuItem(
             value: 'syncH', checked: _syncH, child: Text(localizations.diffSyncHScroll)),
         CheckedPopupMenuItem(
+            value: 'syncV', checked: _syncV, child: Text(localizations.diffSyncVScroll)),
+        CheckedPopupMenuItem(
             value: 'foldUnchanged',
             checked: _foldUnchanged,
             child: Text(localizations.diffFoldUnchanged)),
@@ -1807,6 +1841,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
         PopupMenuItem(value: 'copyPatch', child: Text(localizations.diffCopyPatch)),
+        PopupMenuItem(value: 'editInEditorLeft', child: Text(localizations.diffOpenInEditorLeft)),
+        PopupMenuItem(value: 'editInEditorRight', child: Text(localizations.diffOpenInEditorRight)),
         PopupMenuItem(value: 'shareDiff', child: Text(localizations.diffShare)),
         PopupMenuItem(value: 'reloadFiles', child: Text(localizations.diffReloadFiles)),
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
@@ -3550,6 +3586,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
     return _statsLabel;
   }
 
+  /// 把某一侧的内容送进文本编辑器改。
+  ///
+  /// 对比完发现要改，以前只能记住文件名再自己开编辑器找一遍；
+  /// 差一块就能直接接着改（内容进新文档，不覆盖磁盘文件）。
+  void _openInEditor(bool isLeft) {
+    final text = isLeft ? _left.text : _right.text;
+    if (text.isEmpty) {
+      _toastText(localizations.cannotBeEmpty);
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => TextEditorPage(initialText: text),
+    ));
+  }
+
   /// 分享 unified diff（走系统分享面板：微信/邮件/文件传输）。
   ///
   /// 复制到剪贴板再手动粘到聊天窗口那两步，手机上经常被别的 App 挤掉。
@@ -4166,6 +4217,71 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   // ---------- 纵向联动 ----------
 
+  static int _mtimeOf(String path) {
+    if (path.isEmpty) return 0;
+    try {
+      return File(path).statSync().modified.millisecondsSinceEpoch;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  void _markDiskBaseline() {
+    _leftMtime = _mtimeOf(_leftPath);
+    _rightMtime = _mtimeOf(_rightPath);
+    if (_staleDisk) setState(() => _staleDisk = false);
+  }
+
+  void _checkDiskChanged() {
+    if (!mounted) return;
+    if (_leftPath.isEmpty && _rightPath.isEmpty) return;
+    var changed = false;
+    if (_leftMtime != 0 && _mtimeOf(_leftPath) != _leftMtime) changed = true;
+    if (_rightMtime != 0 && _mtimeOf(_rightPath) != _rightMtime) changed = true;
+    if (changed && !_staleDisk) setState(() => _staleDisk = true);
+  }
+
+  /// 顶部「文件已在磁盘上变化」提示条：不打断操作，只给一个按钮重读。
+  Widget _staleBar() {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 2, 6, 2),
+      color: cs.tertiaryContainer.withValues(alpha: 0.55),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.15,
+        child: Row(children: [
+          Icon(Icons.sync_problem, size: 15, color: cs.onTertiaryContainer),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              localizations.diffStaleDisk,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: cs.onTertiaryContainer),
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 30),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => unawaited(_reloadFromDisk()),
+            child: Text(localizations.diffStaleReload, style: const TextStyle(fontSize: 12)),
+          ),
+          IconButton(
+            tooltip: localizations.diffStaleIgnore,
+            icon: const Icon(Icons.close, size: 15),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            onPressed: () => _markDiskBaseline(),
+          ),
+        ]),
+      ),
+    );
+  }
+
   void _syncFromLeft() {
     _bumpDensity();
     _syncVertical(_leftV, _rightV);
@@ -4178,6 +4294,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 两侧行数、行高完全一致，所以「同一像素位置」就是「同一对齐行」。
   void _syncVertical(ScrollController from, ScrollController to) {
+    if (!_syncV) return;
     if (_syncingScroll || !from.hasClients || !to.hasClients) return;
     final max = to.position.maxScrollExtent;
     if (max <= 0) return;

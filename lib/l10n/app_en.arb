@@ -5945,5 +5945,16 @@
   "editorAlignBy": "Align by delimiter",
   "editorRemoveBlankLines": "Remove blank lines",
   "editorCollapseBlankLines": "Collapse blank lines",
-  "editorTransformNoChange": "Nothing changed"
+  "editorTransformNoChange": "Nothing changed",
+  "diffSyncVScroll": "Sync vertical scroll",
+  "diffStaleDisk": "Files changed on disk",
+  "diffStaleReload": "Reload",
+  "diffStaleIgnore": "Ignore",
+  "editorZenMode": "Zen mode",
+  "editorExitZen": "Exit",
+  "editorInsertFile": "Insert file…",
+  "editorCopyNumbered": "Copy with line numbers",
+  "editorCopyMarkdown": "Copy as code block",
+  "diffOpenInEditorLeft": "Open left in editor",
+  "diffOpenInEditorRight": "Open right in editor"
 }

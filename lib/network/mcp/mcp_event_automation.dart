@@ -57,6 +57,10 @@ class McpEventAutomation {
 
   /// 添加事件监听器
   void addListener(String eventName, EventCallback callback) {
+    if (eventName.startsWith('capture_threshold:')) {
+      final n = int.tryParse(eventName.substring('capture_threshold:'.length));
+      if (n != null && n > 0) _captureThresholds.add(n);
+    }
     _listeners.putIfAbsent(eventName, () => []);
     _listeners[eventName]!.add(callback);
     logger.d('添加事件监听器：$eventName');
@@ -100,6 +104,16 @@ class McpEventAutomation {
   }
 
   /// 触发事件
+  /// 每个请求数一下，命中阈值就触发一次（同一阈值只触发一次/会话）。
+  void _countCapture() {
+    if (_captureThresholds.isEmpty) return;
+    _captureCount++;
+    final hit = _captureThresholds.where((t) => t == _captureCount).toList();
+    for (final t in hit) {
+      triggerCaptureCountThreshold(_captureCount, t);
+    }
+  }
+
   void _triggerEvent(String eventName, dynamic data) {
     final callbacks = _listeners[eventName] ?? [];
     if (callbacks.isEmpty) return;
@@ -146,8 +160,19 @@ class McpEventAutomation {
   /// 重新编译，监听器一多就是每条请求 N 次正则编译。
   final Map<String, RegExp?> _requestPatternCache = {};
 
+  /// 用户在「事件监听」里登记的抓包数量阈值（`capture_threshold:N` 的 N）。
+  /// 之前只有 addListener 记了名字、没有任何地方去数请求数，
+  /// 于是「抓到第 N 个包时执行动作」永远不触发。现在随事件名自动登记。
+  final Set<int> _captureThresholds = {};
+
+  /// 本次抓包会话累计收到的请求数（`triggerCaptureStart` 时清零）。
+  int _captureCount = 0;
+
+  int get captureCount => _captureCount;
+
   void triggerHttpRequest(HttpRequest request) {
     if (_listeners.isEmpty) return;
+    _countCapture();
     // 先快照：回调里可能调用 offHttpRequest/removeListener 改动 _listeners，
     // 直接 forEach 会抛 ConcurrentModificationError 并中断后面的监听器。
     final entries = _listeners.entries.toList();
@@ -245,6 +270,7 @@ class McpEventAutomation {
 
   /// 触发抓包开始事件
   void triggerCaptureStart() {
+    _captureCount = 0;
     _triggerEvent('capture_start', {'timestamp': DateTime.now()});
   }
 
