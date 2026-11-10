@@ -3556,7 +3556,7 @@
   "diffIgnoredList": "Ignorado al comparar: {list}",
   "diffIgnoreLines": "Ignorar líneas que coincidan…",
   "diffIgnoreLineTitle": "Ignorar líneas (regex)",
-  "diffIgnoreLineHintText": "p. ej. ^[0-9]{4}-[0-9]{2}",
+  "diffIgnoreLineHintText": "p. ej. ^2026-",
   "diffIgnoreLineHint": "Las líneas que coincidan se tratan como idénticas (útil para marcas de tiempo)",
   "diffIgnoreLinePattern": "Ignorando líneas: {p}",
   "mcpAutoTaskExport": "Exportar tareas programadas",

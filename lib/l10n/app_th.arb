@@ -3556,7 +3556,7 @@
   "diffIgnoredList": "ละเว้นขณะเปรียบเทียบ: {list}",
   "diffIgnoreLines": "ละเว้นบรรทัดที่ตรงกับ…",
   "diffIgnoreLineTitle": "ละเว้นบรรทัด (regex)",
-  "diffIgnoreLineHintText": "เช่น ^[0-9]{4}-[0-9]{2}",
+  "diffIgnoreLineHintText": "เช่น ^2026-",
   "diffIgnoreLineHint": "บรรทัดที่ตรงจะถือว่าเหมือนกัน (เหมาะกับเวลา/รหัส)",
   "diffIgnoreLinePattern": "ละเว้นบรรทัด: {p}",
   "mcpAutoTaskExport": "ส่งออกงานตามกำหนด",

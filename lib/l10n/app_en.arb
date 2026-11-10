@@ -5915,7 +5915,7 @@
   },
   "diffIgnoreLines": "Ignore lines matching…",
   "diffIgnoreLineTitle": "Ignore lines matching regex",
-  "diffIgnoreLineHintText": "e.g. ^[0-9]{4}-[0-9]{2}",
+  "diffIgnoreLineHintText": "e.g. ^2026-",
   "diffIgnoreLineHint": "Whole lines matching this regex are treated as identical (good for timestamps / request ids)",
   "diffIgnoreLinePattern": "Ignoring lines: {p}",
   "@diffIgnoreLinePattern": {

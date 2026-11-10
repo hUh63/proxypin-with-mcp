@@ -3556,7 +3556,7 @@
   "diffIgnoredList": "Bỏ qua khi so sánh: {list}",
   "diffIgnoreLines": "Bỏ qua dòng khớp…",
   "diffIgnoreLineTitle": "Bỏ qua dòng (regex)",
-  "diffIgnoreLineHintText": "ví dụ ^[0-9]{4}-[0-9]{2}",
+  "diffIgnoreLineHintText": "ví dụ ^2026-",
   "diffIgnoreLineHint": "Dòng khớp được coi là giống nhau (dùng cho thời gian/id)",
   "diffIgnoreLinePattern": "Bỏ qua dòng: {p}",
   "mcpAutoTaskExport": "Xuất tác vụ hẹn giờ",
