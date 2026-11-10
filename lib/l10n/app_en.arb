@@ -5912,5 +5912,38 @@
         "type": "String"
       }
     }
-  }
+  },
+  "diffIgnoreLines": "Ignore lines matching…",
+  "diffIgnoreLineTitle": "Ignore lines matching regex",
+  "diffIgnoreLineHintText": "e.g. ^[0-9]{4}-[0-9]{2}",
+  "diffIgnoreLineHint": "Whole lines matching this regex are treated as identical (good for timestamps / request ids)",
+  "diffIgnoreLinePattern": "Ignoring lines: {p}",
+  "@diffIgnoreLinePattern": {
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpAutoTaskExport": "Export scheduled tasks",
+  "mcpAutoTaskImport": "Import scheduled tasks",
+  "mcpAutoTaskClear": "Clear all scheduled tasks",
+  "mcpAutoTaskEmpty": "No scheduled task to export",
+  "mcpAutoTaskExportDone": "Exported {n} tasks to clipboard",
+  "@mcpAutoTaskExportDone": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAutoTaskImportConfirm": "Replace current scheduled tasks with the clipboard content?",
+  "mcpAutoTaskImportDone": "Imported",
+  "mcpAutoTaskImportFailed": "Import failed: invalid JSON",
+  "mcpAutoTaskClearConfirm": "Delete all scheduled tasks? This cannot be undone.",
+  "mcpAutoTaskCleared": "All scheduled tasks cleared",
+  "editorAlignBy": "Align by delimiter",
+  "editorRemoveBlankLines": "Remove blank lines",
+  "editorCollapseBlankLines": "Collapse blank lines",
+  "editorTransformNoChange": "Nothing changed"
 }

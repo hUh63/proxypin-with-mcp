@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart' hide Action;
+import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:http/http.dart' as http;
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -9,6 +10,7 @@ import 'package:proxypin/network/util/url_pattern.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/mcp/mcp_event_automation.dart';
+import 'package:proxypin/network/mcp/mcp_automation_manager.dart';
 import 'package:proxypin/network/mcp/mcp_rule_engine.dart';
 import 'package:proxypin/network/mcp/mcp_scheduler.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
@@ -119,6 +121,70 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     await _scheduler.loadTasks();
     _refreshMcpData();
     if (mounted) setState(() {});
+  }
+
+  /// 导出定时任务到剪贴板（手机上没有比「复制一段 JSON」更快的迁移方式）。
+  Future<void> _exportScheduledTasks() async {
+    final loc = AppLocalizations.of(context)!;
+    final tasks = MCPAutomationManager().tasks;
+    if (tasks.isEmpty) {
+      FlutterToastr.show(loc.mcpAutoTaskEmpty, context);
+      return;
+    }
+    final json = await MCPAutomationManager().exportTasks();
+    await Clipboard.setData(ClipboardData(text: json));
+    if (!mounted) return;
+    FlutterToastr.show(loc.mcpAutoTaskExportDone(tasks.length), context,
+        backgroundColor: Colors.green);
+  }
+
+  Future<void> _importScheduledTasks() async {
+    final loc = AppLocalizations.of(context)!;
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text ?? '';
+    if (text.trim().isEmpty) {
+      FlutterToastr.show(loc.editorClipboardEmpty, context);
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(loc.mcpAutoTaskImportConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.confirm)),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final done = await MCPAutomationManager().importTasks(text);
+    if (!mounted) return;
+    FlutterToastr.show(
+        done ? loc.mcpAutoTaskImportDone : loc.mcpAutoTaskImportFailed, context,
+        backgroundColor: done ? Colors.green : Colors.red);
+    if (done) setState(() {});
+  }
+
+  Future<void> _clearScheduledTasks() async {
+    final loc = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(loc.mcpAutoTaskClearConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(loc.confirm)),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await MCPAutomationManager().clearAllTasks();
+    if (!mounted) return;
+    setState(() {});
+    FlutterToastr.show(loc.mcpAutoTaskCleared, context);
   }
 
   void _refreshMcpData() {
@@ -368,6 +434,33 @@ class _McpAutomationPageState extends State<McpAutomationPage>
             icon: const Icon(Icons.help_outline),
             tooltip: AppLocalizations.of(context)!.mcpAutoTutorial,
             onPressed: () => showGuideArticle(context, 'mcp_automation'),
+          ),
+          // 定时任务的备份/迁移：三个方法早就在 MCPAutomationManager 里写好了，
+          // 但一直没有入口（用户要换机、要备份规则时毫无办法）。
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, size: 20),
+            tooltip: AppLocalizations.of(context)!.more,
+            onSelected: (v) {
+              switch (v) {
+                case 'exportTasks':
+                  unawaited(_exportScheduledTasks());
+                case 'importTasks':
+                  unawaited(_importScheduledTasks());
+                case 'clearTasks':
+                  unawaited(_clearScheduledTasks());
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                  value: 'exportTasks',
+                  child: Text(AppLocalizations.of(context)!.mcpAutoTaskExport)),
+              PopupMenuItem(
+                  value: 'importTasks',
+                  child: Text(AppLocalizations.of(context)!.mcpAutoTaskImport)),
+              PopupMenuItem(
+                  value: 'clearTasks',
+                  child: Text(AppLocalizations.of(context)!.mcpAutoTaskClear)),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.refresh),

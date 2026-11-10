@@ -1069,20 +1069,37 @@ class MCPAutomationManager {
     return jsonEncode(_tasks.map((t) => t.toJson()).toList());
   }
 
-  /// 从 JSON 导入任务
+  /// 从 JSON 导入任务。
+  ///
+  /// 两处修正（原来都可能把用户的任务表弄丢）：
+  /// 1. **先全部解析成功再替换**。以前是 `_tasks.clear()` 之后才逐条 `fromJson`，
+  ///    一条坏数据抛异常 → 现有任务已经被清空、新任务又没进来，等于全丢；
+  /// 2. 逐条容错：坏的那条跳过并记日志，其余照常导入。
   Future<bool> importTasks(String jsonStr) async {
+    final parsed = <MCPAutomationTask>[];
     try {
-      final List<dynamic> decoded = jsonDecode(jsonStr);
-      _tasks.clear();
-      _tasks.addAll(
-        decoded.map((e) => MCPAutomationTask.fromJson(e as Map<String, dynamic>)),
-      );
-      final prefs = await SharedPreferences.getInstance();
-      await _saveTasks(prefs);
-      return true;
+      final decoded = jsonDecode(jsonStr);
+      if (decoded is! List) return false;
+      for (final e in decoded) {
+        if (e is! Map) continue;
+        try {
+          parsed.add(MCPAutomationTask.fromJson(Map<String, dynamic>.from(e)));
+        } catch (err) {
+          logger.w('[MCP Automation] 跳过无效任务: $err');
+        }
+      }
     } catch (e) {
+      logger.w('[MCP Automation] 任务 JSON 解析失败: $e');
       return false;
     }
+    if (parsed.isEmpty) return false;
+    _tasks
+      ..clear()
+      ..addAll(parsed);
+    _taskLastExecuted.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await _saveTasks(prefs);
+    return true;
   }
 
   void dispose() {

@@ -52,6 +52,7 @@ import 'package:proxypin/utils/todo_scanner.dart';
 import 'package:proxypin/utils/merge_conflicts.dart';
 import 'package:proxypin/utils/paste_indent.dart';
 import 'package:proxypin/utils/string_escape.dart';
+import 'package:proxypin/utils/text_align.dart';
 import 'package:proxypin/utils/text_stats.dart';
 import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/network/util/stream_decode.dart';
@@ -6826,6 +6827,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         const PopupMenuDivider(),
         PopupMenuItem(value: 'indentToSpaces', child: Text(localizations.editorIndentToSpaces)),
         PopupMenuItem(value: 'indentToTabs', child: Text(localizations.editorIndentToTabs)),
+        const PopupMenuDivider(),
+        PopupMenuItem(value: 'align', child: Text(localizations.editorAlignBy)),
+        PopupMenuItem(value: 'removeBlank', child: Text(localizations.editorRemoveBlankLines)),
+        PopupMenuItem(value: 'collapseBlank', child: Text(localizations.editorCollapseBlankLines)),
       ],
     );
     if (chosen == null) return;
@@ -6848,12 +6853,41 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _convertIndent(toSpaces: true);
       case 'indentToTabs':
         _convertIndent(toSpaces: false);
+      case 'align':
+        _applyLineTransform(alignByDelimiter);
+      case 'removeBlank':
+        _applyLineTransform(removeBlankLines);
+      case 'collapseBlank':
+        _applyLineTransform(collapseBlankLines);
       default:
         _lineOp(chosen);
     }
   }
 
   /// 行操作：VS Code 里是 Ctrl+Shift+K（删除行）、Alt+Shift+↑/↓（移动行）这一组。
+  /// 把整篇（或选区覆盖的行）交给一个纯文本变换函数，并保留撤销。
+  ///
+  /// 「对齐 / 删空行 / 合并空行」都是整段处理：手机上没法先精确选中再操作，
+  /// 所以有选区就用选区，没有就全文。
+  void _applyLineTransform(String Function(String) transform) {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final sel = controller.selection;
+    final hasSel = sel.isValid && !sel.isCollapsed;
+    final result = hasSel
+        ? text.replaceRange(sel.start, sel.end, transform(text.substring(sel.start, sel.end)))
+        : transform(text);
+    if (result == text) {
+      _toast(localizations.editorTransformNoChange);
+      return;
+    }
+    // 整篇替换走 replaceRange：撤销粒度是一次操作，不会把用户之前的编辑挤掉
+    controller.replaceRange(0, text.length, result);
+    controller.selection = TextSelection.collapsed(offset: result.length);
+  }
+
   /// 手机上不给快捷键，全部收进菜单——但语义保持一致。
   /// 行操作（删除 / 复制 / 上移 / 下移 / 合并行）。
   ///

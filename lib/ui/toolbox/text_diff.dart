@@ -137,6 +137,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 忽略注释：`//` `*` `#` 开头的行当作空行，行尾 ` //` 之后丢掉。
   bool _ignoreComments = false;
 
+  /// 「忽略匹配某正则的行」——日志/抓包对比时最常见（时间戳、请求 id 每行都不同）。
+  String _ignoreLineText = '';
+  RegExp? _ignoreLineRe;
+
   /// 两栏的文件名（打开文件后显示在顶部标签里：「原文件 · xxx.txt」）。
   String _leftName = '';
   String _rightName = '';
@@ -620,7 +624,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreWhitespace: _ignoreWhitespace,
         ignoreTrailingWhitespace: _ignoreTrailing,
         ignoreBlankLines: _ignoreBlank,
-        ignoreComments: _ignoreComments);
+        ignoreComments: _ignoreComments,
+        ignoreLinePattern: _ignoreLineRe);
     final blocks = buildDiffBlocks(diffs,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
@@ -1617,6 +1622,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'ignoreComment':
             setState(() => _ignoreComments = !_ignoreComments);
             _compare();
+          case 'ignoreLines':
+            unawaited(_showIgnoreLineDialog());
           case 'syntax':
             setState(() => _syntax = !_syntax);
           case 'wrap':
@@ -1725,6 +1732,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'ignoreComment',
             checked: _ignoreComments,
             child: Text(localizations.diffIgnoreComments)),
+        PopupMenuItem(
+            value: 'ignoreLines',
+            child: Text(_ignoreLineText.isEmpty
+                ? localizations.diffIgnoreLines
+                : localizations.diffIgnoreLinePattern(_ignoreLineText))),
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
         CheckedPopupMenuItem(
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
@@ -2136,6 +2148,77 @@ class _TextDiffPageState extends State<TextDiffPage> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
   }
 
+  /// 「忽略匹配某正则的行」的输入框。
+  ///
+  /// 日志、抓包、时间戳这类对比里，真正要看的内容一样，但每行都夹着不同的
+  /// 时间/请求 id —— 不忽略就满屏红。正则在这里比「忽略空白」实用得多。
+  Future<void> _showIgnoreLineDialog() async {
+    final ctl = TextEditingController(text: _ignoreLineText);
+    String? error;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: Text(localizations.diffIgnoreLineTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: ctl,
+                autofocus: true,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: localizations.diffIgnoreLineHintText,
+                  errorText: error,
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(localizations.diffIgnoreLineHint,
+                  style: TextStyle(
+                      fontSize: 11, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+          actions: [
+            if (_ignoreLineText.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  ctl.text = '';
+                  setDlg(() => error = null);
+                },
+                child: Text(localizations.clear),
+              ),
+            TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(localizations.cancel)),
+            FilledButton(
+              onPressed: () {
+                final t = ctl.text.trim();
+                if (t.isNotEmpty) {
+                  try {
+                    RegExp(t);
+                  } catch (e) {
+                    setDlg(() => error = '$e');
+                    return;
+                  }
+                }
+                Navigator.of(ctx).pop(true);
+              },
+              child: Text(localizations.confirm),
+            ),
+          ],
+        ),
+      ),
+    );
+    final value = ctl.text.trim();
+    ctl.dispose();
+    if (ok != true || !mounted) return;
+    _ignoreLineText = value;
+    _ignoreLineRe = value.isEmpty ? null : RegExp(value);
+    _compare();
+  }
+
   /// 当前生效的「忽略」项（统计面板里显示）。
   ///
   /// 用户开了「忽略大小写」之后再看结果，很可能忘了自己开过 —— 结果是
@@ -2147,6 +2230,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (_ignoreTrailing) localizations.diffIgnoreTrailing,
       if (_ignoreBlank) localizations.diffIgnoreBlankLines,
       if (_ignoreComments) localizations.diffIgnoreComments,
+      if (_ignoreLineText.isNotEmpty) localizations.diffIgnoreLinePattern(_ignoreLineText),
     ];
     return parts.join('、');
   }
@@ -2618,7 +2702,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐视图的行（带缓存）：文本或忽略选项变了才重算。
   List<DiffRow> _alignedRows() {
     final key =
-        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|$_ignoreTrailing|$_ignoreBlank|$_ignoreComments';
+        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|'
+        '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText';
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
@@ -2626,7 +2711,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreWhitespace: _ignoreWhitespace,
         ignoreTrailingWhitespace: _ignoreTrailing,
         ignoreBlankLines: _ignoreBlank,
-        ignoreComments: _ignoreComments);
+        ignoreComments: _ignoreComments,
+        ignoreLinePattern: _ignoreLineRe);
     return _alignedRowsCache;
   }
 

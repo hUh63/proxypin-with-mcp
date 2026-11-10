@@ -63,8 +63,12 @@ class LineDiff {
 String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
     [bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
-    bool ignoreComments = false]) {
+    bool ignoreComments = false,
+    RegExp? ignoreLinePattern]) {
   var k = s;
+  // 忽略匹配某模式的行（Beyond Compare 的「忽略不重要的差异」）：
+  // 典型用法是日志/抓包对比时忽略带时间戳、请求 id 的那些行。
+  if (ignoreLinePattern != null && ignoreLinePattern.hasMatch(k)) return '';
   // 忽略注释：整行注释当作空行，行尾 ` //` 之后丢掉。
   // 只做这两种最常见的形式，不做跨行块注释（对纯文本对比来说误伤比收益大）。
   if (ignoreComments) {
@@ -121,34 +125,36 @@ List<LineDiff> diffLines(String left, String right,
     bool ignoreWhitespace = false,
     bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
-    bool ignoreComments = false}) {
+    bool ignoreComments = false,
+    RegExp? ignoreLinePattern}) {
   // 用 split('\n') 而不是 LineSplitter：保留尾部空行的差异（"a\n" vs "a"）
   final a = _stripTrailingCr(left.split('\n'));
   final b = _stripTrailingCr(right.split('\n'));
   final aK = a
       .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          ignoreBlankLines, ignoreComments))
+          ignoreBlankLines, ignoreComments, ignoreLinePattern))
       .toList();
   final bK = b
       .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          ignoreBlankLines, ignoreComments))
+          ignoreBlankLines, ignoreComments, ignoreLinePattern))
       .toList();
   final out = <LineDiff>[];
   _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
-  if (!ignoreBlankLines) return out;
+  if (!ignoreBlankLines && ignoreLinePattern == null) return out;
   // 「忽略空白行」必须在 diff 之后再做一遍：把整段「只涉及空行」的增删丢掉。
   // 只在 _normKey 里归一成空串是不够的——那样「右边多两行空行」仍然会算出两处增行，
   // 只是两行内容都成了空串（第一版就栽在这，用例才把它抓出来）。
-  return _dropBlankOnlyDiffs(
-      out, a, b, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreComments);
+  return _dropBlankOnlyDiffs(out, a, b, ignoreCase, ignoreWhitespace,
+      ignoreTrailingWhitespace, ignoreComments, ignoreLinePattern);
 }
 
 /// 丢掉「一整段差异里全是空行」的那些段。
 List<LineDiff> _dropBlankOnlyDiffs(List<LineDiff> diffs, List<String> a, List<String> b,
-    bool ignoreCase, bool ignoreWhitespace, bool ignoreTrailingWhitespace, bool ignoreComments) {
+    bool ignoreCase, bool ignoreWhitespace, bool ignoreTrailingWhitespace, bool ignoreComments,
+    RegExp? ignoreLinePattern) {
   bool isBlank(LineDiff d) =>
       _normKey(d.text, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          true, ignoreComments)
+          true, ignoreComments, ignoreLinePattern)
           .isEmpty;
   final out = <LineDiff>[];
   var i = 0;
@@ -720,13 +726,15 @@ List<DiffRow> alignedDiffRows(String left, String right,
     bool ignoreWhitespace = false,
     bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
-    bool ignoreComments = false}) {
+    bool ignoreComments = false,
+    RegExp? ignoreLinePattern}) {
   final diffs = diffLines(left, right,
       ignoreCase: ignoreCase,
       ignoreWhitespace: ignoreWhitespace,
       ignoreTrailingWhitespace: ignoreTrailingWhitespace,
       ignoreBlankLines: ignoreBlankLines,
-      ignoreComments: ignoreComments);
+      ignoreComments: ignoreComments,
+      ignoreLinePattern: ignoreLinePattern);
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {
