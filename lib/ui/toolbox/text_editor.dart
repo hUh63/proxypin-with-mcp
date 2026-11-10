@@ -8392,6 +8392,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.cannotBeEmpty);
       return;
     }
+    // 用 controller 而不是 initialValue：下面有「预设 chip」要回填，
+    // initialValue 只在第一次 build 生效，点了 chip 输入框不会变。
+    final prefixCtl = TextEditingController(text: "'");
+    final suffixCtl = TextEditingController(text: "'");
+    final sepCtl = TextEditingController(text: ',');
     var prefix = "'";
     var suffix = "'";
     var separator = ',';
@@ -8405,8 +8410,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             children: [
               Row(children: [
                 Expanded(
-                  child: TextFormField(
-                    initialValue: prefix,
+                  child: TextField(
+                    controller: prefixCtl,
                     decoration: InputDecoration(
                         labelText: localizations.editorQuotePrefix, isDense: true),
                     onChanged: (v) => prefix = v,
@@ -8414,8 +8419,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: TextFormField(
-                    initialValue: suffix,
+                  child: TextField(
+                    controller: suffixCtl,
                     decoration: InputDecoration(
                         labelText: localizations.editorQuoteSuffix, isDense: true),
                     onChanged: (v) => suffix = v,
@@ -8423,8 +8428,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: TextFormField(
-                    initialValue: separator,
+                  child: TextField(
+                    controller: sepCtl,
                     decoration: InputDecoration(
                         labelText: localizations.editorQuoteSeparator, isDense: true),
                     onChanged: (v) => separator = v,
@@ -8441,6 +8446,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
                       prefix = "'";
                       suffix = "'";
                       separator = ',';
+                      prefixCtl.text = prefix;
+                      suffixCtl.text = suffix;
+                      sepCtl.text = separator;
                     }),
                   ),
                   ActionChip(
@@ -8449,6 +8457,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
                       prefix = '"';
                       suffix = '"';
                       separator = ',';
+                      prefixCtl.text = prefix;
+                      suffixCtl.text = suffix;
+                      sepCtl.text = separator;
                     }),
                   ),
                   ActionChip(
@@ -8457,6 +8468,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
                       prefix = '';
                       suffix = '';
                       separator = ',';
+                      prefixCtl.text = prefix;
+                      suffixCtl.text = suffix;
+                      sepCtl.text = separator;
                     }),
                   ),
                 ]),
@@ -8478,6 +8492,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ],
       ),
     );
+    prefixCtl.dispose();
+    suffixCtl.dispose();
+    sepCtl.dispose();
     if (ok != true) return;
     final out = lines.map((e) => '$prefix$e$suffix').join(separator);
     _replaceActiveChunk(out);

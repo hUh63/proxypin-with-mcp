@@ -26,7 +26,7 @@ import 'dart:convert';
 
 import 'package:bcrypt/bcrypt.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, rootBundle;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -92,7 +92,7 @@ class _HashAuditPageState extends State<HashAuditPage> {
     super.dispose();
   }
 
-  void _toast(String msg, {Color? color}) {
+  void _toast(String msg, {Color color = Colors.blue}) {
     if (!mounted) return;
     FlutterToastr.show(msg, context, duration: 3, backgroundColor: color);
   }

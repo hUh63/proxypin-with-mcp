@@ -168,7 +168,7 @@ class HashAudit {
       final idx = s.indexOf(':');
       final head = s.substring(0, idx);
       final tail = s.substring(idx + 1).trim();
-      if (head.isNotEmpty && !head.contains(' ') && tail.isNotEmpty && !head.contains('$')) {
+      if (head.isNotEmpty && !head.contains(' ') && tail.isNotEmpty && !head.contains(r'$')) {
         user = head;
         s = tail;
       }
@@ -590,7 +590,8 @@ Future<void> _crackEntry(List<dynamic> args) async {
     main.send({'tried': tried, 'found': solved.length, 'done': done});
   }
 
-  bool get allSolved => byKind.values.expand((e) => e).every((t) => solved.contains(t.raw));
+  /// （函数体内不能声明 getter，写成普通函数）
+  bool allSolved() => byKind.values.expand((e) => e).every((t) => solved.contains(t.raw));
 
   // ---- 字典 + 规则 ----
   for (final w in job.words) {
@@ -601,7 +602,7 @@ Future<void> _crackEntry(List<dynamic> args) async {
       if (tried % batch == 0) {
         if (cancelled) break;
         flush();
-        if (allSolved) break;
+        if (allSolved()) break;
       }
       if (tried >= job.maxCandidates) break;
     }
@@ -625,7 +626,7 @@ Future<void> _crackEntry(List<dynamic> args) async {
         tried++;
         if (tried % batch == 0) {
           flush();
-          if (cancelled || allSolved) break;
+          if (cancelled || allSolved()) break;
         }
         // 进位
         var p = cs.length - 1;
