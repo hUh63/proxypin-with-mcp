@@ -153,6 +153,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.pasteReindent,
                 onChanged: (v) => _apply(prefs.copyWith(pasteReindent: v)),
               ),
+              _switchTile(
+                icon: Icons.format_list_numbered,
+                title: localizations.editorPasteStripNumbers,
+                subtitle: localizations.editorPasteStripNumbersHint,
+                value: prefs.pasteStripLineNumbers,
+                onChanged: (v) => _apply(prefs.copyWith(pasteStripLineNumbers: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsComplete),
               _switchTile(

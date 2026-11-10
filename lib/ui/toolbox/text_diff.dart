@@ -3458,7 +3458,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
                       ],
                     ),
                     title: Text(
-                      'L${b.leftStart + 1} ↔ R${b.rightStart + 1}   ${parts.join(' · ')}',
+                      'L${b.leftStart + 1} ↔ R${b.rightStart + 1}   ${parts.join(' · ')}'
+                      '${_blockCharDelta(b)}',
                       style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
                     ),
                     subtitle: _blockPreview(b),
@@ -3475,6 +3476,33 @@ class _TextDiffPageState extends State<TextDiffPage> {
         });
       },
     );
+  }
+
+  /// 这块大概改了多少字符（`+12/-8`）。
+  ///
+  /// 行数一样的块（比如改了一个词）在列表里只显示「修改 1」，看不出改动规模；
+  /// 加个字符数量级，扫列表时能一眼分出「改了个变量名」和「重写了一个函数」。
+  String _blockCharDelta(DiffBlock b) {
+    if (b.leftLines.isEmpty && b.rightLines.isEmpty) return '';
+    if (b.leftLines.length + b.rightLines.length > 200) return '';
+    final l = b.leftLines
+        .map((i) => (i >= 0 && i < _left.lineCount) ? _lineText(_left, i) : '')
+        .join('\n');
+    final r = b.rightLines
+        .map((i) => (i >= 0 && i < _right.lineCount) ? _lineText(_right, i) : '')
+        .join('\n');
+    if (l.length + r.length > 40000) return '';
+    final cd = diffChars(l, r);
+    var add = 0;
+    var del = 0;
+    for (final p in cd.rightRanges) {
+      add += p.end - p.start;
+    }
+    for (final p in cd.leftRanges) {
+      del += p.end - p.start;
+    }
+    if (add == 0 && del == 0) return '';
+    return '   +$add/−$del';
   }
 
   /// 差异列表里每条的一行摘要：优先显示「右侧新内容」，没有就显示左侧被删内容。

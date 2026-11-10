@@ -58,4 +58,35 @@ void main() {
       expect(reindentPasted(clip, '-'), 'a\n-  b\n-c\n-    d');
     });
   });
+
+  group('stripLineNumbers', () {
+    test('冒号前缀', () {
+      expect(stripLineNumbers('1: a\n2: b\n3: c'), 'a\nb\nc');
+    });
+    test('竖线与制表符前缀', () {
+      expect(stripLineNumbers(' 1| a\n 2| b'), 'a\nb');
+      expect(stripLineNumbers('1\ta\n2\tb'), 'a\nb');
+    });
+    test('点号前缀', () {
+      expect(stripLineNumbers('1. a\n2. b'), 'a\nb');
+    });
+    test('保留相对缩进', () {
+      expect(stripLineNumbers('12:   a\n13:     b'), '  a\n    b');
+    });
+    test('单行不动', () {
+      expect(stripLineNumbers('1: a'), '1: a');
+    });
+    test('正文里的有序列表不动（不连续/占比低）', () {
+      const text = '1. 第一步\n这里有一些说明\n还有更多说明\n2. 第二步';
+      expect(stripLineNumbers(text), text);
+    });
+    test('编号不连续不动整段', () {
+      const text = '1: a\n5: b\n9: c\n这里是正文\n更多正文';
+      expect(stripLineNumbers(text), text);
+    });
+    test('无行号原样返回', () {
+      expect(stripLineNumbers('a\nb'), 'a\nb');
+      expect(stripLineNumbers(''), '');
+    });
+  });
 }

@@ -6002,5 +6002,75 @@
   "mcpAutoListenerTargetHint": "Script / tool name",
   "mcpAutoListenerTargetRequired": "Enter a target first",
   "sslModuleActive": "Module installed (survives reboot)",
-  "sslModuleInactive": "Module not installed"
+  "sslModuleInactive": "Module not installed",
+  "hashAudit": "Hash audit",
+  "hashAuditDesc": "For auditing your own data (your own database dumps, your own forensic images, your own lab). It identifies the algorithm and checks how weak the passwords are — not for other people’s hashes.",
+  "hashAuditInput": "Hashes (one per line)",
+  "hashAuditInputHint": "user:hash, pwdump lines, SHA-base64, $2b$…",
+  "hashAuditRecognize": "Identify",
+  "hashAuditRecognized": "Identified {n}",
+  "hashAuditUnsupported": "{n} identify-only",
+  "hashAuditNoHash": "No hash recognized",
+  "hashAuditStart": "Start",
+  "hashAuditStop": "Stop",
+  "hashAuditAttack": "Attack",
+  "hashAuditDictCommon": "Built-in common passwords",
+  "hashAuditDictCommonHint": "~3.5k entries, fastest hit rate",
+  "hashAuditDictWords": "Built-in word list",
+  "hashAuditDictWordsHint": "~41k words, pairs with rules",
+  "hashAuditImportDict": "Import",
+  "hashAuditDictNone": "No custom dictionary",
+  "hashAuditDictLoaded": "{n} entries loaded",
+  "hashAuditMask": "Mask",
+  "hashAuditMaskHint": "?l lower, ?u upper, ?d digit, ?s symbol, ?a all",
+  "hashAuditRules": "Rules",
+  "hashAuditRulesOff": "None (fastest)",
+  "hashAuditRulesBasic": "Basic (case + digits)",
+  "hashAuditRulesLeet": "Extended (leet + reverse)",
+  "hashAuditTried": "{n} tried",
+  "hashAuditFoundCount": "{n} recovered",
+  "hashAuditNothingRecoverable": "All identified hashes are identify-only",
+  "hashAuditAlreadyRunning": "A job is already running",
+  "hashAuditNeedSource": "Pick a dictionary or enter a mask first",
+  "@hashAuditRecognized": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@hashAuditUnsupported": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@hashAuditDictLoaded": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@hashAuditTried": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@hashAuditFoundCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorQuoteLines": "Quote lines",
+  "editorQuotePrefix": "Prefix",
+  "editorQuoteSuffix": "Suffix",
+  "editorQuoteSeparator": "Separator",
+  "editorPasteStripNumbers": "Strip line numbers on paste",
+  "editorPasteStripNumbersHint": "Codes copied from chat or docs usually start with 12: / 12| / 12. — strip it automatically"
 }

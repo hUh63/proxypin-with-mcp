@@ -722,6 +722,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'edit', aliases: 'fzdfh 复制带行号 带行号复制 copynumbered withnumbers'),
   EditorMenuItem('copyMarkdown', _copyMarkdownLabel,
       group: 'edit', aliases: 'fzdmkd 复制为代码块 复制markdown copymarkdown codeblock'),
+  EditorMenuItem('quoteLines', _quoteLinesLabel,
+      group: 'edit', aliases: 'jyh 加引号 转列表 quotelines'),
   EditorMenuItem('transpose', _transposeLabel,
       group: 'edit', aliases: 'zzzf 转置字符 交换字符 transpose'),
   EditorMenuItem('numbering', _numberingLabel,
@@ -827,6 +829,7 @@ String _copyNumberedLabel(AppLocalizations l) => l.editorCopyNumbered;
 String _copyMarkdownLabel(AppLocalizations l) => l.editorCopyMarkdown;
 String _zenLabel(AppLocalizations l) => l.editorZenMode;
 String _transposeLabel(AppLocalizations l) => l.editorTranspose;
+String _quoteLinesLabel(AppLocalizations l) => l.editorQuoteLines;
 String _numberingLabel(AppLocalizations l) => l.editorNumbering;
 String _joinLinesLabel(AppLocalizations l) => l.editorJoinLines;
 String _splitLinesLabel(AppLocalizations l) => l.editorSplitLines;
@@ -941,6 +944,8 @@ IconData menuIconOf(String id) {
       return Icons.swap_horiz;
     case 'numbering':
       return Icons.format_list_numbered;
+    case 'quoteLines':
+      return Icons.format_quote;
     case 'joinLines':
       return Icons.merge_type;
     case 'splitLines':

@@ -2198,8 +2198,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 对齐缩进：整段代码粘到 if/for 里面时，后续行自动补齐当前行的缩进
     // （VS / VS Code 的 Reindent on paste）。粘贴单行时不做任何改动。
     var payload = clip;
+    if (_prefs.pasteStripLineNumbers) {
+      payload = stripLineNumbers(payload);
+    }
     if (_prefs.pasteReindent) {
-      payload = reindentPasted(clip, _lineIndentAt(text, start));
+      payload = reindentPasted(payload, _lineIndentAt(text, start));
     }
     controller.replaceRange(start, end, payload);
     controller.selection = TextSelection.collapsed(offset: start + payload.length);
@@ -8368,6 +8371,118 @@ class _TextEditorPageState extends State<TextEditorPage> {
     c.replaceRange(start, end, newText);
   }
 
+  /// 给每一行加引号/前缀后缀，并用分隔符连接。
+  ///
+  /// 说是「加引号」，实际是「把一列值变成代码里的字面量列表」：
+  /// SQL 的 `IN ('a','b')`、JSON 数组、Java/Python 的列表，都靠这一步。
+  /// 以前只能手打，或者扔到 Excel 里拼公式。
+  Future<void> _quoteLines() async {
+    final chunk = _activeChunk();
+    if (chunk.text.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    final lines = chunk.text
+        .replaceAll('\r\n', '\n')
+        .split('\n')
+        .where((e) => e.trim().isNotEmpty)
+        .map((e) => e.trim())
+        .toList();
+    if (lines.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    var prefix = "'";
+    var suffix = "'";
+    var separator = ',';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorQuoteLines),
+        content: StatefulBuilder(
+          builder: (ctx, setDialogState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(children: [
+                Expanded(
+                  child: TextFormField(
+                    initialValue: prefix,
+                    decoration: InputDecoration(
+                        labelText: localizations.editorQuotePrefix, isDense: true),
+                    onChanged: (v) => prefix = v,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    initialValue: suffix,
+                    decoration: InputDecoration(
+                        labelText: localizations.editorQuoteSuffix, isDense: true),
+                    onChanged: (v) => suffix = v,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    initialValue: separator,
+                    decoration: InputDecoration(
+                        labelText: localizations.editorQuoteSeparator, isDense: true),
+                    onChanged: (v) => separator = v,
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(spacing: 6, children: [
+                  ActionChip(
+                    label: const Text(r"""'a', 'b'""", style: TextStyle(fontSize: 11)),
+                    onPressed: () => setDialogState(() {
+                      prefix = "'";
+                      suffix = "'";
+                      separator = ',';
+                    }),
+                  ),
+                  ActionChip(
+                    label: const Text('"a", "b"', style: TextStyle(fontSize: 11)),
+                    onPressed: () => setDialogState(() {
+                      prefix = '"';
+                      suffix = '"';
+                      separator = ',';
+                    }),
+                  ),
+                  ActionChip(
+                    label: const Text('a, b', style: TextStyle(fontSize: 11)),
+                    onPressed: () => setDialogState(() {
+                      prefix = '';
+                      suffix = '';
+                      separator = ',';
+                    }),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  localizations.editorNumberingLines(lines.length),
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final out = lines.map((e) => '$prefix$e$suffix').join(separator);
+    _replaceActiveChunk(out);
+  }
+
   /// 转置光标处相邻的两个字符（VS 的 Ctrl+T）。
   void _transposeChars() {
     final c = _controller;
@@ -10118,6 +10233,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('copyNumbered', Icons.format_list_numbered, loc.editorCopyNumbered),
           _menuItem('transpose', Icons.swap_horiz, loc.editorTranspose),
           _menuItem('numbering', Icons.format_list_numbered, loc.editorNumbering),
+          _menuItem('quoteLines', Icons.format_quote, loc.editorQuoteLines),
           _menuItem('joinLines', Icons.merge_type, loc.editorJoinLines),
           _menuItem('splitLines', Icons.call_split, loc.editorSplitLines),
           _menuItem('textCodec', Icons.swap_vert, loc.editorTextCodec),
@@ -10365,6 +10481,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _transposeChars();
         case 'numbering':
           unawaited(_insertNumbering());
+        case 'quoteLines':
+          unawaited(_quoteLines());
         case 'joinLines':
           _joinLines();
         case 'splitLines':

@@ -2,7 +2,7 @@ name: proxypin
 description: ProxyPin
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.4.0+392
+version: 1.4.0+393
 
 environment:
   # 与 pubspec.lock 的 sdks 段保持一致（code_forge 10.14.0 起要求 Dart ^3.13.2）
@@ -81,6 +81,8 @@ flutter:
     - assets/icon_foreground.png
     - assets/js/
     - assets/icons/
+    # 哈希审计用的内置字典（来自 Hash Suite 的 common/more_used_words，已去重）
+    - assets/wordlists/
     # ARTEX 2.2.7 的整站前端（Next.js 静态导出）——本地静态服务器直接托管，
     # WebView 里就是 ARTEX 自己的界面（离线也能看）。
     - assets/artex_web/

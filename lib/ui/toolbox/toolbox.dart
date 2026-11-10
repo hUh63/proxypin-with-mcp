@@ -52,6 +52,7 @@ import 'sign_page.dart';
 import 'device_profile_page.dart';
 import 'encoder.dart';
 import 'hash_page.dart';
+import 'hash_audit_page.dart';
 import 'package:proxypin/ui/desktop/left_menus/replay_tasks.dart' as replay_desktop;
 import 'package:proxypin/ui/mobile/request/replay_tasks.dart';
 
@@ -378,6 +379,12 @@ class _ToolboxState extends State<Toolbox> {
                     icon: Icons.password,
                     text: 'Bcrypt',
                     tooltip: localizations.toolboxBcryptTip,
+                  ),
+                  IconText(
+                    onTap: () => HashAuditPage.show(context),
+                    icon: Icons.manage_search,
+                    text: localizations.hashAudit,
+                    tooltip: localizations.hashAudit,
                   ),
                 ],
               ),
