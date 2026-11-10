@@ -5956,5 +5956,51 @@
   "editorCopyNumbered": "Copy with line numbers",
   "editorCopyMarkdown": "Copy as code block",
   "diffOpenInEditorLeft": "Open left in editor",
-  "diffOpenInEditorRight": "Open right in editor"
+  "diffOpenInEditorRight": "Open right in editor",
+  "editorTranspose": "Transpose characters",
+  "editorNumbering": "Insert line numbers",
+  "editorNumberingStart": "Start",
+  "editorNumberingStep": "Step",
+  "editorNumberingDigits": "Zero padding",
+  "editorNumberingDigitsHint": "0 = auto",
+  "editorJoinLines": "Join lines",
+  "editorSplitLines": "Split into lines",
+  "editorSplitBy": "Delimiter",
+  "editorTextCodec": "Encode / decode selection",
+  "editorNumberingLines": "{n} lines",
+  "@editorNumberingLines": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "diffNormalize": "Normalize format before diff",
+  "diffNormalizeFailed": "Neither side is JSON/XML, nothing to normalize",
+  "diffNormalizeMismatch": "Sides differ in format ({a} / {b})",
+  "diffNormalized": "Normalized as {kind}",
+  "@diffNormalizeMismatch": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "@diffNormalized": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpAutoListenerAction": "Action on trigger",
+  "mcpAutoListenerLogOnly": "Log only",
+  "mcpAutoListenerTarget": "Target",
+  "mcpAutoListenerTargetHint": "Script / tool name",
+  "mcpAutoListenerTargetRequired": "Enter a target first",
+  "sslModuleActive": "Module installed (survives reboot)",
+  "sslModuleInactive": "Module not installed"
 }

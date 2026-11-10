@@ -16,6 +16,8 @@
 
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:xml/xml.dart' as xml;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -1695,6 +1697,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportPatch());
           case 'copyPatch':
             unawaited(_copyUnifiedDiff());
+          case 'normalize':
+            unawaited(_normalizeBoth());
           case 'editInEditorLeft':
             _openInEditor(true);
           case 'editInEditorRight':
@@ -1841,6 +1845,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
         PopupMenuItem(value: 'copyPatch', child: Text(localizations.diffCopyPatch)),
+        PopupMenuItem(value: 'normalize', child: Text(localizations.diffNormalize)),
         PopupMenuItem(value: 'editInEditorLeft', child: Text(localizations.diffOpenInEditorLeft)),
         PopupMenuItem(value: 'editInEditorRight', child: Text(localizations.diffOpenInEditorRight)),
         PopupMenuItem(value: 'shareDiff', child: Text(localizations.diffShare)),
@@ -3584,6 +3589,66 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _statsLabel = label;
     }
     return _statsLabel;
+  }
+
+  /// 把两侧都按格式规整一遍（JSON 缩进 2 / XML pretty）。
+  ///
+  /// 抓到的两个响应经常一个压成一行、一个带缩进，直接对比就是「全行都变了」，
+  /// 真正改了哪几处根本看不出来。规整之后差异只剩语义层面的。
+  /// 只对**两侧都是同一格式**的文本动手，格式不同就提示不做。
+  Future<void> _normalizeBoth() async {
+    final kinds = <String>[];
+    final results = <String>[];
+    for (final side in [_left, _right]) {
+      final t = side.text;
+      if (t.trim().isEmpty) {
+        results.add(t);
+        kinds.add('');
+        continue;
+      }
+      final pretty = _prettyOf(t);
+      if (pretty == null) {
+        results.add(t);
+        kinds.add('');
+      } else {
+        results.add(pretty.text);
+        kinds.add(pretty.kind);
+      }
+    }
+    final usable = kinds.where((k) => k.isNotEmpty).toList();
+    if (usable.isEmpty) {
+      _toastText(localizations.diffNormalizeFailed);
+      return;
+    }
+    if (usable.length == 2 && usable[0] != usable[1]) {
+      _toastText(localizations.diffNormalizeMismatch(usable[0], usable[1]));
+      return;
+    }
+    setState(() {
+      if (results[0] != _left.text) _left.text = results[0];
+      if (results[1] != _right.text) _right.text = results[1];
+    });
+    _compare();
+    _toastText(localizations.diffNormalized(usable.first));
+  }
+
+  /// 能规整就返回格式化后的文本与格式名（json/xml），否则 null。
+  static ({String text, String kind})? _prettyOf(String src) {
+    final t = src.trim();
+    if (t.length > 4000000) return null;
+    if (t.startsWith('{') || t.startsWith('[')) {
+      try {
+        final obj = jsonDecode(t);
+        return (text: const JsonEncoder.withIndent('  ').convert(obj), kind: 'JSON');
+      } catch (_) {}
+    }
+    if (t.startsWith('<')) {
+      try {
+        final doc = xml.XmlDocument.parse(t);
+        return (text: doc.toXmlString(pretty: true, indent: '  '), kind: 'XML');
+      } catch (_) {}
+    }
+    return null;
   }
 
   /// 把某一侧的内容送进文本编辑器改。

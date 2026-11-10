@@ -18,6 +18,7 @@ import 'package:proxypin/network/mcp/script_workflow_engine.dart';
 import 'package:proxypin/network/util/cron_expression.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/storage/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:proxypin/ui/component/utils.dart';
@@ -116,6 +117,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     await _ruleEngine.loadRules();
     await _loadWorkflows();
     await _loadRoots();
+    await _loadEventListeners();
     // 注册任务执行器并加载持久化定时任务
     _scheduler.setActionExecutor(_executeTaskDescriptor);
     await _scheduler.loadTasks();
@@ -1180,7 +1182,20 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     child: Icon(_eventTypeIcon(l.eventName), color: Colors.white, size: 20),
                   ),
                   title: Text(l.description),
-                  subtitle: Text(l.eventName, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.eventName, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text(
+                        '⚡ ${_actionSummary(l.action)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: l.action == null ? Colors.grey : Colors.green.shade700),
+                      ),
+                    ],
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1212,6 +1227,9 @@ class _McpAutomationPageState extends State<McpAutomationPage>
     NetworkStatus networkStatus = NetworkStatus.disconnected;
     ProxyStatus proxyStatus = ProxyStatus.started;
     final thresholdController = TextEditingController(text: '100');
+    // 命中后做什么：0 只记日志 / 1 执行脚本 / 2 调用工具 / 3 发送 Webhook
+    int actionType = 0;
+    final actionTargetController = TextEditingController();
 
     unawaited(showDialog(
       context: context,
@@ -1298,6 +1316,57 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                           labelText: AppLocalizations.of(context)!.mcpAutoCaptureThreshold,
                           border: const OutlineInputBorder()),
                     ),
+                  const Divider(height: 22),
+                  DropdownButtonFormField<int>(
+                    isExpanded: true,
+                    isDense: true,
+                    value: actionType,
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.mcpAutoListenerAction,
+                        border: const OutlineInputBorder(),
+                        isDense: true),
+                    items: [
+                      DropdownMenuItem(
+                          value: 0,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoListenerLogOnly,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 1,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoActionScript,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 2,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoActionTool,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 3,
+                          child: Text(AppLocalizations.of(context)!.mcpAutoActionWebhook,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    ],
+                    selectedItemBuilder: _selectedItems<int>(
+                        const [0, 1, 2, 3],
+                        (v) => [
+                              AppLocalizations.of(context)!.mcpAutoListenerLogOnly,
+                              AppLocalizations.of(context)!.mcpAutoActionScript,
+                              AppLocalizations.of(context)!.mcpAutoActionTool,
+                              AppLocalizations.of(context)!.mcpAutoActionWebhook,
+                            ][v]),
+                    onChanged: (v) => setDialogState(() => actionType = v ?? 0),
+                  ),
+                  if (actionType != 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: TextField(
+                        controller: actionTargetController,
+                        decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.mcpAutoListenerTarget,
+                            helperText: actionType == 3
+                                ? 'https://...'
+                                : AppLocalizations.of(context)!.mcpAutoListenerTargetHint,
+                            border: const OutlineInputBorder(),
+                            isDense: true),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1308,9 +1377,6 @@ class _McpAutomationPageState extends State<McpAutomationPage>
               onPressed: () {
                 String eventName = '';
                 String desc = '';
-                final EventCallback callback = (data) {
-                  logger.i('事件触发 $eventName: $data');
-                };
                 switch (eventType) {
                   case 0:
                     eventName = 'http_request:${patternController.text}';
@@ -1329,9 +1395,33 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                     eventName = 'capture_threshold:$n';
                     desc = AppLocalizations.of(context)!.mcpAutoDescCapture(n);
                 }
+                // 动作描述与定时任务同构，交同一个执行器跑（[McpTaskExecutor]）。
+                Map<String, dynamic>? action;
+                final target = actionTargetController.text.trim();
+                if (actionType != 0) {
+                  if (target.isEmpty) {
+                    FlutterToastr.show(
+                        AppLocalizations.of(context)!.mcpAutoListenerTargetRequired,
+                        context,
+                        duration: 2,
+                        backgroundColor: Colors.red);
+                    return;
+                  }
+                  action = switch (actionType) {
+                    1 => {'type': 0, 'name': desc, 'script': target},
+                    2 => {'type': 1, 'name': desc, 'tool': target},
+                    _ => {'type': 3, 'name': desc, 'webhookUrl': target},
+                  };
+                }
+                final callback = _makeEventCallback(eventName, action);
                 _eventAutomation.addListener(eventName, callback);
                 _registeredListeners.add(_RegisteredEventListener(
-                    eventName: eventName, description: desc, callback: callback, enabled: true));
+                    eventName: eventName,
+                    description: desc,
+                    callback: callback,
+                    enabled: true,
+                    action: action));
+                unawaited(_persistEventListeners());
                 Navigator.pop(context);
                 FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoListenerAdded, context,
                     duration: 2, backgroundColor: Colors.green);
@@ -1348,6 +1438,51 @@ class _McpAutomationPageState extends State<McpAutomationPage>
         ])));
   }
 
+  static const String _listenersKey = 'mcp_event_listeners_v1';
+
+  /// 造一个事件回调：记日志 + 有动作就交给公共执行器。
+  EventCallback _makeEventCallback(String eventName, Map<String, dynamic>? action) {
+    return (data) {
+      logger.i('事件触发 $eventName: $data');
+      if (action != null && action.isNotEmpty) {
+        unawaited(McpTaskExecutor.run(action));
+      }
+    };
+  }
+
+  /// 读出上次配置的监听（以前只存在内存里，重启全丢）。
+  Future<void> _loadEventListeners() async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(_listenersKey);
+      if (raw == null || raw.trim().isEmpty) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      for (final e in decoded) {
+        if (e is! Map) continue;
+        final json = Map<String, dynamic>.from(e);
+        final name = '${json['eventName'] ?? ''}';
+        if (name.isEmpty) continue;
+        final rawAction = json['action'];
+        final action = rawAction is Map ? Map<String, dynamic>.from(rawAction) : null;
+        final item = _RegisteredEventListener.fromJson(json, _makeEventCallback(name, action));
+        if (item.enabled) _eventAutomation.addListener(item.eventName, item.callback);
+        _registeredListeners.add(item);
+      }
+      if (mounted) setState(() {});
+    } catch (e, st) {
+      logger.w('加载事件监听失败', error: e, stackTrace: st);
+    }
+  }
+
+  Future<void> _persistEventListeners() async {
+    try {
+      final data = jsonEncode(_registeredListeners.map((l) => l.toJson()).toList());
+      await SharedPreferencesAsync().setString(_listenersKey, data);
+    } catch (e, st) {
+      logger.w('保存事件监听失败', error: e, stackTrace: st);
+    }
+  }
+
   void _toggleEventListener(_RegisteredEventListener l, bool enable) {
     if (enable) {
       _eventAutomation.addListener(l.eventName, l.callback);
@@ -1355,13 +1490,30 @@ class _McpAutomationPageState extends State<McpAutomationPage>
       _eventAutomation.removeListener(l.eventName, l.callback);
     }
     setState(() => l.enabled = enable);
+    unawaited(_persistEventListeners());
   }
 
   void _removeEventListener(_RegisteredEventListener l) {
     _eventAutomation.removeListener(l.eventName, l.callback);
     setState(() => _registeredListeners.remove(l));
+    unawaited(_persistEventListeners());
     FlutterToastr.show(AppLocalizations.of(context)!.mcpAutoListenerRemoved, context,
         duration: 2, backgroundColor: Colors.green);
+  }
+
+  /// 动作的一行摘要（列表里让人一眼看出「命中后到底做什么」）。
+  String _actionSummary(Map<String, dynamic>? action) {
+    if (action == null || action.isEmpty) {
+      return AppLocalizations.of(context)!.mcpAutoListenerLogOnly;
+    }
+    final t = action['type'] is int ? action['type'] as int : int.tryParse('${action['type']}') ?? 0;
+    final target = switch (t) {
+      0 => '${action['script'] ?? ''}',
+      1 => '${action['tool'] ?? ''}',
+      2 => '${(action['workflow'] is Map) ? (action['workflow'] as Map)['name'] ?? '' : ''}',
+      _ => '${action['webhookUrl'] ?? ''}',
+    };
+    return target.isEmpty ? AppLocalizations.of(context)!.mcpAutoListenerLogOnly : target;
   }
 
   Color _eventTypeColor(String eventName) {
@@ -2642,14 +2794,42 @@ class _McpAutomationPageState extends State<McpAutomationPage>
 class _RegisteredEventListener {
   final String eventName;
   final String description;
-  final EventCallback callback;
+  EventCallback callback;
   bool enabled;
+
+  /// 命中后要执行的动作（和定时任务同一套描述：
+  /// `type` 0 脚本 / 1 工具 / 2 工作流 / 3 Webhook）。
+  ///
+  /// 之前这里是写死的「只 logger.i 一行」——用户配了半天，除了日志什么都没发生。
+  /// 现在可选一个动作，走 [McpTaskExecutor]（和定时任务是同一个执行器）。
+  Map<String, dynamic>? action;
+
   _RegisteredEventListener({
     required this.eventName,
     required this.description,
     required this.callback,
     this.enabled = true,
+    this.action,
   });
+
+  Map<String, dynamic> toJson() => {
+        'eventName': eventName,
+        'description': description,
+        'enabled': enabled,
+        if (action != null) 'action': action,
+      };
+
+  /// 从持久化数据还原。callback 由调用方现造（闭包不能序列化）。
+  factory _RegisteredEventListener.fromJson(Map<String, dynamic> json, EventCallback cb) {
+    final raw = json['action'];
+    return _RegisteredEventListener(
+      eventName: '${json['eventName'] ?? ''}',
+      description: '${json['description'] ?? ''}',
+      callback: cb,
+      enabled: json['enabled'] != false,
+      action: raw is Map ? Map<String, dynamic>.from(raw) : null,
+    );
+  }
 }
 
 /// 可编辑条件行

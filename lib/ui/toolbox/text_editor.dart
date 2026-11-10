@@ -8357,6 +8357,311 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return (text: all, start: 0);
   }
 
+  /// 把「当前生效文本」（有选区取选区，否则整篇）替换成 [newText]。
+  void _replaceActiveChunk(String newText) {
+    final c = _controller;
+    if (c == null) return;
+    final chunk = _activeChunk();
+    final all = c.text;
+    final start = chunk.start.clamp(0, all.length);
+    final end = (chunk.start + chunk.text.length).clamp(0, all.length);
+    c.replaceRange(start, end, newText);
+  }
+
+  /// 转置光标处相邻的两个字符（VS 的 Ctrl+T）。
+  void _transposeChars() {
+    final c = _controller;
+    if (c == null) return;
+    final text = c.text;
+    final sel = c.selection;
+    if (!sel.isValid) return;
+    var i = sel.start;
+    if (i >= text.length) i = text.length - 1;
+    if (i <= 0) return;
+    final a = text.substring(i - 1, i);
+    final b = text.substring(i, i + 1);
+    c.replaceRange(i - 1, i + 1, '$b$a');
+    c.selection = TextSelection.collapsed(offset: (i + 1).clamp(0, text.length));
+  }
+
+  /// 给选中的每一行加递增序号（Sublime / Notepad++ 里那种行号生成）。
+  ///
+  /// 补零位数按「最后一行的号」自动算，所以 1..12 会输出 01..12；
+  /// 需要固定宽度（如生成 SQL 的 IN 列表）时手动填位数。
+  Future<void> _insertNumbering() async {
+    final chunk = _activeChunk();
+    if (chunk.text.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    final lines = chunk.text.replaceAll('\r\n', '\n').split('\n');
+    var start = 1;
+    var step = 1;
+    var digits = 0;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorNumbering),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              keyboardType: TextInputType.number,
+              initialValue: '$start',
+              decoration: InputDecoration(
+                labelText: localizations.editorNumberingStart,
+                isDense: true,
+              ),
+              onChanged: (v) => start = int.tryParse(v.trim()) ?? 1,
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              keyboardType: TextInputType.number,
+              initialValue: '$step',
+              decoration: InputDecoration(
+                labelText: localizations.editorNumberingStep,
+                isDense: true,
+              ),
+              onChanged: (v) => step = int.tryParse(v.trim()) ?? 1,
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              keyboardType: TextInputType.number,
+              initialValue: '$digits',
+              decoration: InputDecoration(
+                labelText: localizations.editorNumberingDigits,
+                helperText: localizations.editorNumberingDigitsHint,
+                isDense: true,
+              ),
+              onChanged: (v) => digits = int.tryParse(v.trim()) ?? 0,
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                localizations.editorNumberingLines(lines.length),
+                style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final last = start + (lines.length - 1) * step;
+    final width = digits > 0 ? digits : '$last'.length;
+    final buf = StringBuffer();
+    for (var i = 0; i < lines.length; i++) {
+      final no = '${start + i * step}'.padLeft(width, '0');
+      buf.writeln('$no${lines[i].isEmpty ? '' : ' ${lines[i]}'}');
+    }
+    _replaceActiveChunk(buf.toString().trimRight());
+  }
+
+  /// 合并行：把选中的多行压成一行（空行丢弃，行间用一个空格连接）。
+  void _joinLines() {
+    final chunk = _activeChunk();
+    if (chunk.text.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    final joined = chunk.text
+        .replaceAll('\r\n', '\n')
+        .split('\n')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .join(' ');
+    _replaceActiveChunk(joined);
+  }
+
+  /// 拆行：把每一行按分隔符拆成多行（默认逗号，生成纵向列表时用）。
+  Future<void> _splitLines() async {
+    final chunk = _activeChunk();
+    if (chunk.text.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    final ctl = TextEditingController(text: ',');
+    String sep = ',';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorSplitLines),
+        content: TextField(
+          controller: ctl,
+          decoration: InputDecoration(
+            labelText: localizations.editorSplitBy,
+            isDense: true,
+          ),
+          onChanged: (v) => sep = v,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    ctl.dispose();
+    if (ok != true || sep.isEmpty) return;
+    final out = chunk.text
+        .replaceAll('\r\n', '\n')
+        .split('\n')
+        .expand((line) => line.split(sep).map((e) => e.trim()))
+        .where((e) => e.isNotEmpty)
+        .join('\n');
+    _replaceActiveChunk(out);
+  }
+
+  /// 选中文本的编解码（Base64 / URL / Hex / HTML 实体）。
+  ///
+  /// 抓包时最常遇到的四种：Authorization 里的 Base64、查询串里的 %XX、
+  /// Hex dump、以及 HTML 响应里被转义的字符。都要切到工具箱去处理太绕。
+  Future<void> _showTextCodec() async {
+    final chunk = _activeChunk();
+    if (chunk.text.isEmpty) {
+      _toast(localizations.cannotBeEmpty);
+      return;
+    }
+    final src = chunk.text;
+    final ops = <(String, String Function(String))>[
+      ('Base64', (v) => base64Encode(utf8.encode(v))),
+      ('Base64 →', (v) => _tryDecode(() => utf8.decode(base64.decode(v.trim())))),
+      ('URL', (v) => Uri.encodeComponent(v)),
+      ('URL →', (v) => _tryDecode(() => Uri.decodeComponent(v))),
+      ('Hex', (v) => utf8.encode(v).map((b) => b.toRadixString(16).padLeft(2, '0')).join()),
+      ('Hex →', (v) => _tryDecode(() => utf8.decode(_parseHex(v)))),
+      ('HTML', (v) => const HtmlEscape().convert(v)),
+      ('HTML →', (v) => _htmlUnescape(v)),
+    ];
+    String result = ops.first.$2(src);
+    var current = ops.first.$1;
+    final applied = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.62,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 8, 6),
+                  child: Row(children: [
+                    Expanded(
+                      child: Text(localizations.editorTextCodec,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                    Text(localizations.editorEscapeHint(src.length),
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                  ]),
+                ),
+                SizedBox(
+                  height: 38,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    children: [
+                      for (final op in ops)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(op.$1, style: const TextStyle(fontSize: 12)),
+                            selected: current == op.$1,
+                            onSelected: (_) => setSheetState(() {
+                              current = op.$1;
+                              result = op.$2(src);
+                            }),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 12, thickness: 0.3),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        result,
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5, height: 1.35),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                  child: Row(children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          await Clipboard.setData(ClipboardData(text: result));
+                          if (ctx.mounted) Navigator.pop(ctx, false);
+                          _toast(localizations.copied);
+                        },
+                        child: Text(localizations.copy),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(localizations.editorEscapeDo),
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (applied == true) {
+      _replaceActiveChunk(result);
+      _toast(localizations.editorEscapeDone);
+    }
+  }
+
+  /// `dart:convert` 只有 HtmlEscape，没有反向。这里只处理最常见的五个实体
+  /// （抓包响应里 99% 就这几个），不做完整 HTML 实体表。
+  static String _htmlUnescape(String v) => v
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&amp;', '&');
+
+  static String _tryDecode(String Function() fn) {
+    try {
+      return fn();
+    } catch (_) {
+      return '[decode failed]';
+    }
+  }
+
+  static List<int> _parseHex(String v) {
+    final clean = v.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+    final out = <int>[];
+    for (var i = 0; i + 1 < clean.length; i += 2) {
+      out.add(int.parse(clean.substring(i, i + 2), radix: 16));
+    }
+    return out;
+  }
+
   /// 复制时给每行加行号。
   ///
   /// 贴到工单、聊天、代码评审里说「第 137 行那个判断」时，对方不需要
@@ -9811,6 +10116,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
           _menuItem('stats', Icons.analytics_outlined, loc.editorDocStats),
           _menuItem('copyNumbered', Icons.format_list_numbered, loc.editorCopyNumbered),
+          _menuItem('transpose', Icons.swap_horiz, loc.editorTranspose),
+          _menuItem('numbering', Icons.format_list_numbered, loc.editorNumbering),
+          _menuItem('joinLines', Icons.merge_type, loc.editorJoinLines),
+          _menuItem('splitLines', Icons.call_split, loc.editorSplitLines),
+          _menuItem('textCodec', Icons.swap_vert, loc.editorTextCodec),
           _menuItem('copyMarkdown', Icons.code, loc.editorCopyMarkdown),
           _menuItem('findInFiles', Icons.manage_search, loc.editorFindInFiles),
           _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
@@ -10051,6 +10361,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
           unawaited(_copyMarkdown());
         case 'zen':
           setState(() => _zen = !_zen);
+        case 'transpose':
+          _transposeChars();
+        case 'numbering':
+          unawaited(_insertNumbering());
+        case 'joinLines':
+          _joinLines();
+        case 'splitLines':
+          unawaited(_splitLines());
+        case 'textCodec':
+          unawaited(_showTextCodec());
       case 'autosave':
         setState(() => _autoSave = !_autoSave);
         unawaited(_saveAutoSave());

@@ -722,6 +722,16 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'edit', aliases: 'fzdfh 复制带行号 带行号复制 copynumbered withnumbers'),
   EditorMenuItem('copyMarkdown', _copyMarkdownLabel,
       group: 'edit', aliases: 'fzdmkd 复制为代码块 复制markdown copymarkdown codeblock'),
+  EditorMenuItem('transpose', _transposeLabel,
+      group: 'edit', aliases: 'zzzf 转置字符 交换字符 transpose'),
+  EditorMenuItem('numbering', _numberingLabel,
+      group: 'edit', aliases: 'xh 插入序号 递增编号 numbering'),
+  EditorMenuItem('joinLines', _joinLinesLabel,
+      group: 'edit', aliases: 'hb 合并行 joinlines'),
+  EditorMenuItem('splitLines', _splitLinesLabel,
+      group: 'edit', aliases: 'ch 拆分行 splitlines'),
+  EditorMenuItem('textCodec', _textCodecLabel,
+      group: 'edit', aliases: 'bm 编解码 base64 url hex html codec'),
   EditorMenuItem('zen', _zenLabel,
       group: 'view', aliases: 'zx 专注模式 全屏专注 zen focusmode'),
   EditorMenuItem('findInFiles', _findInFilesLabel,
@@ -816,6 +826,11 @@ String _insertFileLabel(AppLocalizations l) => l.editorInsertFile;
 String _copyNumberedLabel(AppLocalizations l) => l.editorCopyNumbered;
 String _copyMarkdownLabel(AppLocalizations l) => l.editorCopyMarkdown;
 String _zenLabel(AppLocalizations l) => l.editorZenMode;
+String _transposeLabel(AppLocalizations l) => l.editorTranspose;
+String _numberingLabel(AppLocalizations l) => l.editorNumbering;
+String _joinLinesLabel(AppLocalizations l) => l.editorJoinLines;
+String _splitLinesLabel(AppLocalizations l) => l.editorSplitLines;
+String _textCodecLabel(AppLocalizations l) => l.editorTextCodec;
 String _renameFileLabel(AppLocalizations l) => l.editorRenameFile;
 String _copyPathLabel(AppLocalizations l) => l.editorCopyPath;
 String _revealFileLabel(AppLocalizations l) => l.editorRevealFile;
@@ -922,6 +937,16 @@ IconData menuIconOf(String id) {
       return Icons.code;
     case 'zen':
       return Icons.fullscreen;
+    case 'transpose':
+      return Icons.swap_horiz;
+    case 'numbering':
+      return Icons.format_list_numbered;
+    case 'joinLines':
+      return Icons.merge_type;
+    case 'splitLines':
+      return Icons.call_split;
+    case 'textCodec':
+      return Icons.swap_vert;
     case 'ascii':
       return Icons.visibility_outlined;
     case 'minify':

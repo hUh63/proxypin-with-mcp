@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -314,12 +315,24 @@ class AndroidCaInstall extends StatefulWidget {
 class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  /// 模块是否已装（null=还没查出来）。以前这个状态对用户完全不可见：
+  /// 装过一次之后，没人知道它还在不在、有没有被系统清掉。
+  bool? _moduleInstalled;
+
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    unawaited(_refreshModuleState());
+  }
+
+  Future<void> _refreshModuleState() async {
+    if (!SystemCa.supported) return;
+    final v = await SystemCa.isModuleInstalled();
+    if (!mounted || v == _moduleInstalled) return;
+    setState(() => _moduleInstalled = v);
   }
 
   @override
@@ -379,6 +392,29 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
             onConfirm: _removeSystemCert),
         child: Text(localizations.sslRemoveInstalledSystemCA),
       ),
+      const SizedBox(height: 6),
+      if (_moduleInstalled != null)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_moduleInstalled! ? Icons.check_circle : Icons.remove_circle_outline,
+                size: 15,
+                color: _moduleInstalled! ? Colors.green : Theme.of(context).colorScheme.outline),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                _moduleInstalled!
+                    ? localizations.sslModuleActive
+                    : localizations.sslModuleInactive,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: _moduleInstalled!
+                        ? Colors.green
+                        : Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
       const SizedBox(height: 16),
       const Divider(),
       Text(
@@ -480,74 +516,41 @@ class _AndroidCaInstallState extends State<AndroidCaInstall> with SingleTickerPr
   /// 可靠做法是落成 Magisk 模块，由 Magisk 在开机时挂载；KernelSU / APatch 同样兼容
   /// `/data/adb/modules` 这个目录。Android 14+ 的 CA 目录在 APEX 里（不是普通文件夹），
   /// 所以模块再带一个 post-fs-data.sh，把证书并进 /apex/com.android.conscrypt/cacerts。
+  /// 把 CA 装成模块管理器（Magisk / KernelSU / APatch）的模块。
+  ///
+  /// 之前这里内嵌了一段 shell，用 `post-fs-data.sh` 在启动早期直接
+  /// `mount -t tmpfs` 覆盖 Conscrypt APEX。实测有两个坑：
+  ///   1) post-fs-data 阶段 APEX 在部分机型上还没就绪，覆盖上去等于把
+  ///      系统信任库换成一个空目录 → 全设备 HTTPS 全部报证书错误；
+  ///   2) 只挂一个目标、不做数量校验，出错时没有任何兜底。
+  /// 现在统一走 [SystemCa.installModule]：开机完成后注入、合并层做健康检查、
+  /// 只对「看不到证书」的进程命名空间补挂（denylist 里的 App 也能生效）。
   Future<void> _autoInstallCert() async {
-
     try {
-      final caFile = await CertificateManager.certificateFile();
-      final hash = await CertificateManager.systemCertificateName();
-      final caPath = caFile.path;
-
-      // shell 变量在 Dart 字符串里需要转义成 \$ 以避开插值
-      final script = """
-MOD=/data/adb/modules/proxypin_ca
-[ -d /data/adb/modules ] || { echo NO_MODULE_DIR; exit 3; }
-rm -rf "\$MOD"
-mkdir -p "\$MOD/system/etc/security/cacerts"
-cp "$caPath" "\$MOD/system/etc/security/cacerts/$hash"
-chmod 644 "\$MOD/system/etc/security/cacerts/$hash"
-printf 'id=proxypin_ca\nname=ProxyPin CA\nversion=1.0\nversionCode=1\nauthor=ProxyPin\ndescription=ProxyPin CA into system trust store\n' > "\$MOD/module.prop"
-cat > "\$MOD/post-fs-data.sh" <<'EOS'
-#!/system/bin/sh
-MODDIR=\${0%/*}
-APEX=/apex/com.android.conscrypt/cacerts
-[ -d "\$APEX" ] || exit 0
-TMP=/data/local/tmp/proxypin_cacerts
-rm -rf "\$TMP"; mkdir -p "\$TMP"
-cp -f \$APEX/* "\$TMP"/ 2>/dev/null
-cp -f \$MODDIR/system/etc/security/cacerts/* "\$TMP"/ 2>/dev/null
-chown root:root "\$TMP"/* 2>/dev/null
-chmod 644 "\$TMP"/* 2>/dev/null
-mount -t tmpfs tmpfs "\$APEX" 2>/dev/null || exit 0
-cp -f "\$TMP"/* "\$APEX"/ 2>/dev/null
-chown root:root "\$APEX"/* 2>/dev/null
-chmod 644 "\$APEX"/* 2>/dev/null
-EOS
-chmod 755 "\$MOD/post-fs-data.sh"
-echo INSTALLED
-""";
-
-      final result = await Process.run('su', ['-c', script]);
-      final output = '${result.stdout}${result.stderr}';
-      logger.d('Auto install cert (magisk module) result: $output');
-
+      final r = await SystemCa.installModule();
       if (!mounted) return;
-
-      if (output.contains('NO_MODULE_DIR')) {
+      if (r.$1) {
         FlutterToastr.show(
-            localizations.sslNoModuleDirMsg,
-            context,
-            rootNavigator: true,
-            duration: 6);
+          localizations.sslModuleInstalled,
+          context,
+          rootNavigator: true,
+          duration: 6,
+        );
+        unawaited(_refreshModuleState());
         return;
       }
-
-      if (result.exitCode != 0 || !output.contains('INSTALLED')) {
-        FlutterToastr.show(
-            localizations.sslInstallFailedRoot(output),
-            context,
-            rootNavigator: true,
-            duration: 6);
-        return;
-      }
-
+      final msg = r.$2;
       FlutterToastr.show(
-        localizations.sslModuleInstalled,
+        msg.contains('ERR_NO_MODDIR')
+            ? localizations.sslNoModuleDirMsg
+            : localizations.sslInstallFailedRoot(msg),
         context,
         rootNavigator: true,
         duration: 6,
       );
     } catch (e) {
       logger.d('auto install cert error：$e');
+      if (!mounted) return;
       FlutterToastr.show(
           localizations.sslAutoInstallFailedRoot('$e'),
           context,
@@ -559,18 +562,15 @@ echo INSTALLED
   /// 移除本工具安装的系统证书（删掉模块目录，重启后生效）。
   Future<void> _removeSystemCert() async {
     try {
-      final result = await Process.run(
-          'su', ['-c', 'rm -rf /data/adb/modules/proxypin_ca && echo REMOVED']);
+      final r = await SystemCa.uninstallModule();
       if (!mounted) return;
-      final ok = '${result.stdout}'.contains('REMOVED');
       FlutterToastr.show(
-        ok
-            ? localizations.sslRemovedReboot
-            : localizations.sslRemoveFailedRoot,
+        r.$1 ? localizations.sslRemovedReboot : localizations.sslRemoveFailedRoot,
         context,
         rootNavigator: true,
         duration: 5,
       );
+      if (r.$1) unawaited(_refreshModuleState());
     } catch (e) {
       logger.d('remove system cert error：$e');
       if (!mounted) return;

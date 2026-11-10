@@ -90,25 +90,57 @@ class McpTaskExecutor {
     if (raw is! Map) return;
     final wf = Map<String, dynamic>.from(raw);
     final name = '${wf['name'] ?? ''}';
+    final wfId = '${wf['id'] ?? (name.isEmpty ? 'wf_${DateTime.now().millisecondsSinceEpoch}' : name)}';
     final engine = ScriptWorkflowEngine.instance;
-    // 优先按 id/name 命中已注册的工作流（引擎里的对象才是可执行的）
-    ScriptWorkflow? target;
-    final id = '${wf['id'] ?? ''}';
-    if (id.isNotEmpty) target = engine.getWorkflow(id);
-    if (target == null && name.isNotEmpty) {
-      for (final w in engine.getWorkflows()) {
-        if (w.name == name) {
-          target = w;
-          break;
+    var registered = false;
+    try {
+      var target = engine.getWorkflow(wfId);
+      if (target == null && name.isNotEmpty) {
+        for (final w in engine.getWorkflows()) {
+          if (w.name == name) {
+            target = w;
+            break;
+          }
         }
       }
+      if (target == null) {
+        // 引擎的内存表只在「在页面上点过一次执行」时才有内容；
+        // 定时任务重启后跑在后台，必须自己按持久化的定义注册一份。
+        final nodes = (wf['nodes'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+        if (nodes.isEmpty) {
+          logger.w('[$taskName] 工作流没有节点，跳过：$name');
+          return;
+        }
+        final built = ScriptWorkflow(
+          id: wfId,
+          name: name.isEmpty ? wfId : name,
+          description: '${wf['description'] ?? ''}',
+          nodes: nodes
+              .map((n) => WorkflowNode(
+                    id: '${n['id'] ?? ''}',
+                    scriptId: '${n['scriptId'] ?? n['name'] ?? ''}',
+                    scriptContent: '',
+                    scriptType: '${n['scriptType'] ?? 'javascript'}',
+                    dependencies: (n['dependencies'] as List?)?.map((e) => '$e').toList() ?? const [],
+                    maxRetries: (n['maxRetries'] as num?)?.toInt() ?? 0,
+                    continueOnError: n['continueOnError'] == true,
+                  ))
+              .where((n) => n.id.isNotEmpty)
+              .toList(),
+        );
+        engine.registerWorkflow(built);
+        registered = true;
+        target = built;
+      }
+      if (!target.enabled) {
+        logger.w('[$taskName] 工作流已禁用：${target.name}');
+        return;
+      }
+      final ctx = await engine.executeWorkflow(target.id);
+      logger.i('[$taskName] 工作流 ${target.name} 成功 ${ctx.successCount} 个节点');
+    } finally {
+      if (registered) engine.unregisterWorkflow(wfId);
     }
-    if (target == null) {
-      logger.w('[$taskName] 工作流未注册，跳过：${name.isEmpty ? id : name}');
-      return;
-    }
-    final ctx = await engine.executeWorkflow(target.id);
-    logger.i('[$taskName] 工作流 ${target.name} 成功 ${ctx.successCount} 个节点');
   }
 
   static Future<void> _postWebhook(String taskName, String url) async {
