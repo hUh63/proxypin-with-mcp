@@ -5371,5 +5371,17 @@
   "toolboxSearchEmpty": "没有匹配的工具",
   "toolboxGroupEncode": "编码与转换",
   "toolboxGroupCipher": "加密与签名",
-  "toolboxGroupText": "文本与查看"
+  "toolboxGroupText": "文本与查看",
+  "editorNextSnippetStop": "下一处片段占位符",
+  "editorSnippetDone": "片段已填完",
+  "imageDiffTitle": "图片对比",
+  "imageDiffSwap": "交换两侧",
+  "imageDiffOverlay": "叠加对比",
+  "imageDiffDifference": "差异高亮",
+  "imageDiffHint": "选两张图：改版前后、设计稿与截图",
+  "imageDiffPickLeft": "选择左图",
+  "imageDiffPickRight": "选择右图",
+  "imageDiffNeedBoth": "先把两张图都选上",
+  "imageDiffSizeMismatch": "两图尺寸不同，差异视图会拉伸对齐",
+  "imageDiffTooLarge": "图片太大（超过 64MB）"
 }

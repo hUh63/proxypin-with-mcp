@@ -640,6 +640,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('comment', _commentLabel, group: 'edit', aliases: 'zs zhushi comment'),
   EditorMenuItem('expandSel', _expandSelLabel, group: 'edit', aliases: 'kx 扩大选区 expand selection'),
   EditorMenuItem('jumpBracket', _jumpBracketLabel, group: 'edit', aliases: 'tkw 括号 bracket match'),
+  EditorMenuItem('nextSnippetStop', _nextSnippetStopLabel, group: 'edit',
+      aliases: 'xrgj 占位符 snippet placeholder tab'),
   EditorMenuItem('escapeString', _escapeStringLabel, group: 'edit',
       aliases: 'zy 转义 反转义 escape unescape literal json sql'),
   EditorMenuItem('insertDateTime', _insertDateTimeLabel, group: 'edit',
@@ -876,6 +878,7 @@ String _expandSelLabel(AppLocalizations l) => l.editorExpandSelection;
 String _jumpBracketLabel(AppLocalizations l) => l.editorJumpBracket;
 String _insertDateTimeLabel(AppLocalizations l) => l.editorInsertDateTime;
 String _escapeStringLabel(AppLocalizations l) => l.editorEscape;
+String _nextSnippetStopLabel(AppLocalizations l) => l.editorNextSnippetStop;
 String _prevChangeLabel(AppLocalizations l) => l.editorPrevChange;
 String _nextChangeLabel(AppLocalizations l) => l.editorNextChange;
 String _conflictsLabel(AppLocalizations l) => l.editorConflicts;
@@ -1070,6 +1073,8 @@ IconData menuIconOf(String id) {
       return Icons.restore_page_outlined;
     case 'workspaceTree':
       return Icons.account_tree_outlined;
+    case 'nextSnippetStop':
+      return Icons.keyboard_tab;
     case 'diffTab':
       return Icons.compare;
     case 'tasks':

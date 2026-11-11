@@ -3681,5 +3681,17 @@
   "toolboxSearchEmpty": "Không có công cụ phù hợp",
   "toolboxGroupEncode": "Mã hóa & chuyển đổi",
   "toolboxGroupCipher": "Mã hóa & chữ ký",
-  "toolboxGroupText": "Văn bản & xem"
+  "toolboxGroupText": "Văn bản & xem",
+  "editorNextSnippetStop": "Điểm dừng đoạn tiếp theo",
+  "editorSnippetDone": "Đã điền xong đoạn",
+  "imageDiffTitle": "So sánh hình ảnh",
+  "imageDiffSwap": "Đổi bên",
+  "imageDiffOverlay": "Chồng lớp",
+  "imageDiffDifference": "Tô sáng khác biệt",
+  "imageDiffHint": "Chọn hai ảnh: trước/sau, thiết kế và ảnh chụp",
+  "imageDiffPickLeft": "Ảnh trái",
+  "imageDiffPickRight": "Ảnh phải",
+  "imageDiffNeedBoth": "Chọn cả hai ảnh trước",
+  "imageDiffSizeMismatch": "Kích thước khác nhau — chế độ khác biệt sẽ kéo giãn",
+  "imageDiffTooLarge": "Ảnh quá lớn (trên 64 MB)"
 }

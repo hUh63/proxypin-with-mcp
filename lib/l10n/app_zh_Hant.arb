@@ -5371,5 +5371,17 @@
   "toolboxSearchEmpty": "沒有符合的工具",
   "toolboxGroupEncode": "編碼與轉換",
   "toolboxGroupCipher": "加密與簽章",
-  "toolboxGroupText": "文字與檢視"
+  "toolboxGroupText": "文字與檢視",
+  "editorNextSnippetStop": "下一處片段佔位符",
+  "editorSnippetDone": "片段已填完",
+  "imageDiffTitle": "圖片對比",
+  "imageDiffSwap": "交換兩側",
+  "imageDiffOverlay": "疊加對比",
+  "imageDiffDifference": "差異高亮",
+  "imageDiffHint": "選兩張圖：改版前後、設計稿與截圖",
+  "imageDiffPickLeft": "選擇左圖",
+  "imageDiffPickRight": "選擇右圖",
+  "imageDiffNeedBoth": "先把兩張圖都選上",
+  "imageDiffSizeMismatch": "兩圖尺寸不同，差異檢視會拉伸對齊",
+  "imageDiffTooLarge": "圖片太大（超過 64MB）"
 }

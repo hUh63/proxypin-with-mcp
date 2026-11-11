@@ -3681,5 +3681,17 @@
   "toolboxSearchEmpty": "Tidak ada alat yang cocok",
   "toolboxGroupEncode": "Encode & konversi",
   "toolboxGroupCipher": "Cipher & tanda tangan",
-  "toolboxGroupText": "Teks & tampilan"
+  "toolboxGroupText": "Teks & tampilan",
+  "editorNextSnippetStop": "Titik potong snippet berikutnya",
+  "editorSnippetDone": "Snippet selesai diisi",
+  "imageDiffTitle": "Bandingkan gambar",
+  "imageDiffSwap": "Tukar sisi",
+  "imageDiffOverlay": "Overlay",
+  "imageDiffDifference": "Sorot perbedaan",
+  "imageDiffHint": "Pilih dua gambar: sebelum/sesudah, desain vs tangkapan layar",
+  "imageDiffPickLeft": "Gambar kiri",
+  "imageDiffPickRight": "Gambar kanan",
+  "imageDiffNeedBoth": "Pilih kedua gambar dulu",
+  "imageDiffSizeMismatch": "Ukuran berbeda — tampilan perbedaan akan direntangkan",
+  "imageDiffTooLarge": "Gambar terlalu besar (di atas 64 MB)"
 }

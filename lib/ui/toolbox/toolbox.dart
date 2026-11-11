@@ -39,6 +39,7 @@ import 'package:proxypin/ui/toolbox/artex_page.dart';
 import 'package:proxypin/ui/toolbox/artex_webview.dart';
 import 'package:proxypin/ui/toolbox/device_info_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
+import 'package:proxypin/ui/toolbox/image_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/ui/toolbox/file_split_page.dart';
 import 'package:proxypin/ui/component/performance_dashboard.dart';
@@ -235,6 +236,12 @@ class _ToolboxState extends State<Toolbox> {
                       icon: Icons.merge_type,
                       text: localizations.diffThreeWay,
                       tooltip: localizations.diffThreeWay),
+                  IconText(
+                    onTap: () => ImageDiffPage.show(context),
+                    icon: Icons.image_outlined,
+                    text: localizations.imageDiffTitle,
+                    tooltip: localizations.imageDiffHint,
+                  ),
               ]),
               _group(localizations.toolboxGroupEncode, [
                   IconText(

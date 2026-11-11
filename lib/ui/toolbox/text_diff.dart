@@ -44,6 +44,7 @@ import 'package:proxypin/ui/toolbox/text_editor.dart' show TextEditorPage;
 import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/ui/toolbox/dir_diff_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
+import 'package:proxypin/ui/toolbox/image_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/text_diff.dart';
@@ -1814,6 +1815,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'hexDiff':
             unawaited(Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const HexDiffPage())));
+          case 'imageDiff':
+            unawaited(ImageDiffPage.show(context));
           case 'alignByLine':
             setState(() {
               _alignByLine = !_alignByLine;
@@ -1987,6 +1990,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
+        PopupMenuItem(value: 'imageDiff', child: Text(localizations.imageDiffTitle)),
         PopupMenuItem(value: 'saveLeft', child: Text(localizations.diffSaveLeft)),
         PopupMenuItem(value: 'merge', child: Text(localizations.diffMerge)),
         PopupMenuItem(value: 'dirDiff', child: Text(localizations.dirDiff)),

@@ -48,6 +48,7 @@ import 'package:proxypin/utils/code_symbols.dart';
 import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
+import 'package:proxypin/utils/snippet_placeholders.dart';
 import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
 import 'package:proxypin/utils/merge_conflicts.dart';
@@ -469,8 +470,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
       final key = event.logicalKey;
       // Tab / Shift+Tab：编辑器里 Tab 只能用来缩进，不能切焦点。
       if (key == LogicalKeyboardKey.tab && !ctrl && !alt) {
+        // 片段占位符还没走完时，Tab 是「下一处占位符」（VS Code 行为），不是缩进。
+        if (!shift && _snippetStops.isNotEmpty) {
+          _nextSnippetStop();
+          return true;
+        }
         _indentLines(outdent: shift);
         return true;
+      }
+      // Esc：放弃剩下的占位符跳转（和 VS Code 一致）。
+      if (key == LogicalKeyboardKey.escape) {
+        if (_snippetStops.isNotEmpty) {
+          _snippetStops.clear();
+          return true;
+        }
+        return false;
       }
       if (ctrl && key == LogicalKeyboardKey.keyS) {
         // Ctrl+Alt+S = 保存全部（VS Code 的 Ctrl+K S 在移动/外接键盘上不好按）
@@ -664,6 +678,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 换文档后波浪线要按新文档重算。
       _diagReport = null;
       _diagLines = const <DiagnosticLine>[];
+      // 片段占位符是绑定在「刚才插入的那段文本」上的，换文档就没意义了。
+      _snippetStops.clear();
       // 多选是「针对某几个位置」的状态，换文档就失效了。
       _multiSel.clear();
       _multiWord = '';
@@ -2806,7 +2822,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   // ---------- 编辑操作 ----------
 
-  void _insertAtCursor(String insert) {
+  /// [placeholders] 为 true 时按片段语法解析 `$1` / `${1:默认}` / `$0`
+  /// （只有「从片段栏插入」走这条路，普通插入/粘贴不解析 —— 否则 shell 的 `$1`
+  /// 和正则反向引用会被改坏）。
+  void _insertAtCursor(String insert, {bool placeholders = false}) {
     final controller = _controller;
     if (controller == null) return;
     final text = controller.text;
@@ -2814,8 +2833,42 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 用 replaceRange 而不是「整份 text 赋值」：撤销粒度是一段，不是整篇。
     final start = sel.isValid && !sel.isCollapsed ? sel.start : (sel.isValid ? sel.start : text.length);
     final end = sel.isValid && !sel.isCollapsed ? sel.end : start;
-    controller.replaceRange(start, end, insert);
-    controller.selection = TextSelection.collapsed(offset: start + insert.length);
+    if (!placeholders) {
+      _snippetStops.clear();
+      controller.replaceRange(start, end, insert);
+      controller.selection = TextSelection.collapsed(offset: start + insert.length);
+      return;
+    }
+    final parsed = parseSnippetPlaceholders(insert);
+    _snippetStops
+      ..clear()
+      ..addAll(parsed.stops.map((s) => SnippetStop(start + s.start, start + s.end)));
+    controller.replaceRange(start, end, parsed.text);
+    if (_snippetStops.isEmpty) {
+      controller.selection = TextSelection.collapsed(offset: start + parsed.text.length);
+      return;
+    }
+    // 第一处直接选中（`${1:默认}` 时打字即替换，和 VS Code 一样）。
+    final first = _snippetStops.removeAt(0);
+    controller.selection = TextSelection(baseOffset: first.start, extentOffset: first.end);
+  }
+
+  /// 跳到片段的下一处占位符。
+  void _nextSnippetStop() {
+    final c = _controller;
+    if (c == null || _snippetStops.isEmpty) return;
+    final len = c.text.length;
+    // 中途编辑过的话偏移会漂，越界的停靠点直接丢掉，不要跳到一个乱位置上。
+    while (_snippetStops.isNotEmpty && _snippetStops.first.start > len) {
+      _snippetStops.removeAt(0);
+    }
+    if (_snippetStops.isEmpty) return;
+    final s = _snippetStops.removeAt(0);
+    final start = s.start.clamp(0, len);
+    final end = s.end.clamp(start, len);
+    c.selection = TextSelection(baseOffset: start, extentOffset: end);
+    c.scrollToLine(_lineOfOffset(c.text, start));
+    if (_snippetStops.isEmpty) _toast(localizations.editorSnippetDone);
   }
 
   /// 打开搜索时默认收起（不展开替换行）。
@@ -2832,7 +2885,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return SnippetBar(
       scope: editorSnippetScope(label),
       defaults: ToolSnippetDefaults.forLanguage(label, _lang.key),
-      onInsert: (text) => _insertAtCursor(text),
+      // 片段栏是「刻意插入模板」，这里才解析 $1/${1:默认}/$0。
+      onInsert: (text) => _insertAtCursor(text, placeholders: true),
     );
   }
 
@@ -6345,6 +6399,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   static final RegExp _identRe = RegExp(r'[A-Za-z_$][A-Za-z0-9_$]*');
+
+  /// 片段插入后还没走过的占位符（绝对偏移，按跳转顺序）。
+  final List<SnippetStop> _snippetStops = [];
 
   List<_SymbolItem> _collectSymbols(String text) {
     final cached = _symbolCacheText;
@@ -10381,6 +10438,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right, id: 'caseOps')),
           _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
           _menuItem('insertDateTime', Icons.schedule, loc.editorInsertDateTime),
+          _menuItem('nextSnippetStop', Icons.keyboard_tab, loc.editorNextSnippetStop),
           _menuItem('escapeString', Icons.text_fields, loc.editorEscape),
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
@@ -10634,6 +10692,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_peekDefinition());
       case 'expandSel':
         _expandSelection();
+      case 'nextSnippetStop':
+        _nextSnippetStop();
       case 'cursorAbove':
         _addCursorAtLine(-1);
       case 'cursorBelow':

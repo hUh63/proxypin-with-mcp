@@ -3681,5 +3681,17 @@
   "toolboxSearchEmpty": "ไม่พบเครื่องมือที่ตรงกัน",
   "toolboxGroupEncode": "เข้ารหัสและแปลง",
   "toolboxGroupCipher": "การเข้ารหัสและลายเซ็น",
-  "toolboxGroupText": "ข้อความและมุมมอง"
+  "toolboxGroupText": "ข้อความและมุมมอง",
+  "editorNextSnippetStop": "จุดวางแท็กถัดไป",
+  "editorSnippetDone": "เติมข้อมูลในแท็กครบแล้ว",
+  "imageDiffTitle": "เปรียบเทียบรูปภาพ",
+  "imageDiffSwap": "สลับด้าน",
+  "imageDiffOverlay": "ซ้อนทับ",
+  "imageDiffDifference": "ไฮไลต์ความต่าง",
+  "imageDiffHint": "เลือกรูปสองรูป: ก่อน/หลัง หรือดีไซน์กับภาพหน้าจอ",
+  "imageDiffPickLeft": "รูปซ้าย",
+  "imageDiffPickRight": "รูปขวา",
+  "imageDiffNeedBoth": "เลือกทั้งสองรูปก่อน",
+  "imageDiffSizeMismatch": "ขนาดต่างกัน — มุมมองความต่างจะยืดให้ตรงกัน",
+  "imageDiffTooLarge": "รูปใหญ่เกินไป (เกิน 64 MB)"
 }

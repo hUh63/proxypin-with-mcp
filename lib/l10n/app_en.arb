@@ -6127,5 +6127,17 @@
   "toolboxSearchEmpty": "No matching tool",
   "toolboxGroupEncode": "Encode & convert",
   "toolboxGroupCipher": "Cipher & signature",
-  "toolboxGroupText": "Text & view"
+  "toolboxGroupText": "Text & view",
+  "editorNextSnippetStop": "Next snippet stop",
+  "editorSnippetDone": "Snippet filled in",
+  "imageDiffTitle": "Image compare",
+  "imageDiffSwap": "Swap sides",
+  "imageDiffOverlay": "Overlay slider",
+  "imageDiffDifference": "Difference highlight",
+  "imageDiffHint": "Pick two images — before/after, design vs screenshot",
+  "imageDiffPickLeft": "Left image",
+  "imageDiffPickRight": "Right image",
+  "imageDiffNeedBoth": "Pick both images first",
+  "imageDiffSizeMismatch": "Sizes differ — the difference view stretches them to match",
+  "imageDiffTooLarge": "Image too large (over 64 MB)"
 }

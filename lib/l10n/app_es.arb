@@ -3681,5 +3681,17 @@
   "toolboxSearchEmpty": "Ninguna herramienta coincide",
   "toolboxGroupEncode": "Codificar y convertir",
   "toolboxGroupCipher": "Cifrado y firma",
-  "toolboxGroupText": "Texto y vista"
+  "toolboxGroupText": "Texto y vista",
+  "editorNextSnippetStop": "Siguiente parada del fragmento",
+  "editorSnippetDone": "Fragmento completado",
+  "imageDiffTitle": "Comparar imágenes",
+  "imageDiffSwap": "Intercambiar lados",
+  "imageDiffOverlay": "Superposición",
+  "imageDiffDifference": "Resaltar diferencias",
+  "imageDiffHint": "Elige dos imágenes: antes/después, diseño vs captura",
+  "imageDiffPickLeft": "Imagen izquierda",
+  "imageDiffPickRight": "Imagen derecha",
+  "imageDiffNeedBoth": "Elige primero las dos imágenes",
+  "imageDiffSizeMismatch": "Los tamaños difieren: la vista de diferencias las estira",
+  "imageDiffTooLarge": "Imagen demasiado grande (más de 64 MB)"
 }
