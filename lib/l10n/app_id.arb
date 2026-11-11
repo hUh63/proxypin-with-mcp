@@ -3640,5 +3640,13 @@
   "editorQuoteSuffix": "Akhiran",
   "editorQuoteSeparator": "Pemisah",
   "editorPasteStripNumbers": "Hapus nomor baris saat menempel",
-  "editorPasteStripNumbersHint": "Kode hasil salin sering diawali 12: / 12| — dihapus otomatis"
+  "editorPasteStripNumbersHint": "Kode hasil salin sering diawali 12: / 12| — dihapus otomatis",
+  "diffExpandAllFolds": "Bentangkan semua",
+  "diffNoFolds": "Tidak ada yang dilipat",
+  "editorSortByLengthAsc": "Urut panjang ↑",
+  "editorSortByLengthDesc": "Urut panjang ↓",
+  "editorAppendComma": "Tambah koma di akhir",
+  "editorStripComma": "Hapus koma akhir",
+  "weakNetworkPresetSubway": "Kereta bawah tanah (loss tinggi)",
+  "weakNetworkPresetFlightWifi": "Wi-Fi dalam pesawat"
 }

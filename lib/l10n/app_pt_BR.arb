@@ -3641,5 +3641,13 @@
   "editorQuoteSuffix": "Sufixo",
   "editorQuoteSeparator": "Separador",
   "editorPasteStripNumbers": "Remover números de linha ao colar",
-  "editorPasteStripNumbersHint": "Código copiado costuma começar por 12: / 12| — removido ao colar"
+  "editorPasteStripNumbersHint": "Código copiado costuma começar por 12: / 12| — removido ao colar",
+  "diffExpandAllFolds": "Expandir tudo",
+  "diffNoFolds": "Nada recolhido",
+  "editorSortByLengthAsc": "Ordenar por comprimento ↑",
+  "editorSortByLengthDesc": "Ordenar por comprimento ↓",
+  "editorAppendComma": "Adicionar vírgula ao final",
+  "editorStripComma": "Remover vírgula final",
+  "weakNetworkPresetSubway": "Metrô (perda alta)",
+  "weakNetworkPresetFlightWifi": "Wi-Fi em voo"
 }

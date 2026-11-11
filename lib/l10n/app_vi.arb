@@ -3640,5 +3640,13 @@
   "editorQuoteSuffix": "Hậu tố",
   "editorQuoteSeparator": "Dấu phân cách",
   "editorPasteStripNumbers": "Bỏ số dòng khi dán",
-  "editorPasteStripNumbersHint": "Mã sao chép thường bắt đầu bằng 12: / 12| — tự động bỏ"
+  "editorPasteStripNumbersHint": "Mã sao chép thường bắt đầu bằng 12: / 12| — tự động bỏ",
+  "diffExpandAllFolds": "Mở rộng tất cả",
+  "diffNoFolds": "Không có gì được thu gọn",
+  "editorSortByLengthAsc": "Sắp xếp theo độ dài ↑",
+  "editorSortByLengthDesc": "Sắp xếp theo độ dài ↓",
+  "editorAppendComma": "Thêm dấu phẩy cuối dòng",
+  "editorStripComma": "Bỏ dấu phẩy cuối dòng",
+  "weakNetworkPresetSubway": "Tàu điện ngầm (mất gói cao)",
+  "weakNetworkPresetFlightWifi": "Wi-Fi trên máy bay"
 }

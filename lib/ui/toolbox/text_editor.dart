@@ -6836,6 +6836,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'indentToTabs', child: Text(localizations.editorIndentToTabs)),
         const PopupMenuDivider(),
         PopupMenuItem(value: 'align', child: Text(localizations.editorAlignBy)),
+        PopupMenuItem(value: 'sortLenAsc', child: Text(localizations.editorSortByLengthAsc)),
+        PopupMenuItem(value: 'sortLenDesc', child: Text(localizations.editorSortByLengthDesc)),
+        PopupMenuItem(value: 'appendComma', child: Text(localizations.editorAppendComma)),
+        PopupMenuItem(value: 'stripComma', child: Text(localizations.editorStripComma)),
         PopupMenuItem(value: 'removeBlank', child: Text(localizations.editorRemoveBlankLines)),
         PopupMenuItem(value: 'collapseBlank', child: Text(localizations.editorCollapseBlankLines)),
       ],
@@ -6862,6 +6866,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _convertIndent(toSpaces: false);
       case 'align':
         _applyLineTransform(alignByDelimiter);
+      case 'sortLenAsc':
+        _sortLinesByLength(ascending: true);
+      case 'sortLenDesc':
+        _sortLinesByLength(ascending: false);
+      case 'appendComma':
+        _toggleTrailingComma(add: true);
+      case 'stripComma':
+        _toggleTrailingComma(add: false);
       case 'removeBlank':
         _applyLineTransform(removeBlankLines);
       case 'collapseBlank':
@@ -6869,6 +6881,47 @@ class _TextEditorPageState extends State<TextEditorPage> {
       default:
         _lineOp(chosen);
     }
+  }
+
+  /// 按行长度排序（字典序排序的补充）。
+  ///
+  /// 对齐日志/哈希/URL 列表时，先按长度排一遍，同类长度的会聚在一起，
+  /// 一眼就能看出哪几行是异常项。
+  void _sortLinesByLength({required bool ascending}) {
+    _applyLineTransform((text) {
+      final lines = text.split('\n');
+      final order = List<int>.generate(lines.length, (i) => i);
+      order.sort((a, b) {
+        final d = lines[a].trim().length.compareTo(lines[b].trim().length);
+        if (d != 0) return ascending ? d : -d;
+        // 长度相同保持原顺序（稳定排序），否则排序结果每次都不一样
+        return a.compareTo(b);
+      });
+      return order.map((i) => lines[i]).join('\n');
+    });
+  }
+
+  /// 每行末尾加/去逗号。
+  ///
+  /// 把一列值塞进 JSON 数组或 SQL 的 IN 列表时，最后一步就是给每行补逗号；
+  /// 空行不动，已经有逗号的不重复加。
+  void _toggleTrailingComma({required bool add}) {
+    _applyLineTransform((text) {
+      final out = <String>[];
+      for (final line in text.split('\n')) {
+        final t = line.trimRight();
+        if (t.isEmpty) {
+          out.add(line);
+          continue;
+        }
+        if (add) {
+          out.add(t.endsWith(',') ? line : '$t,');
+        } else {
+          out.add(t.endsWith(',') ? t.substring(0, t.length - 1) : line);
+        }
+      }
+      return out.join('\n');
+    });
   }
 
   /// 行操作：VS Code 里是 Ctrl+Shift+K（删除行）、Alt+Shift+↑/↓（移动行）这一组。

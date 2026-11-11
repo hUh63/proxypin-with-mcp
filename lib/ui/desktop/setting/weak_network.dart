@@ -39,6 +39,10 @@ String profileDisplayName(AppLocalizations l10n, NetworkConditionProfile p) {
       return 'Wi-Fi';
     case 'weakNetworkPresetSlow':
       return l10n.weakNetworkPresetSlow;
+    case 'weakNetworkPresetSubway':
+      return l10n.weakNetworkPresetSubway;
+    case 'weakNetworkPresetFlightWifi':
+      return l10n.weakNetworkPresetFlightWifi;
     case 'weakNetworkPresetWeak':
       return l10n.weakNetworkPresetWeak;
   }

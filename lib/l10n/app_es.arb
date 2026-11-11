@@ -3640,5 +3640,13 @@
   "editorQuoteSuffix": "Sufijo",
   "editorQuoteSeparator": "Separador",
   "editorPasteStripNumbers": "Quitar números de línea al pegar",
-  "editorPasteStripNumbersHint": "Los códigos copiados suelen empezar por 12: / 12| — se quitan al pegar"
+  "editorPasteStripNumbersHint": "Los códigos copiados suelen empezar por 12: / 12| — se quitan al pegar",
+  "diffExpandAllFolds": "Expandir todo",
+  "diffNoFolds": "No hay nada plegado",
+  "editorSortByLengthAsc": "Ordenar por longitud ↑",
+  "editorSortByLengthDesc": "Ordenar por longitud ↓",
+  "editorAppendComma": "Añadir coma al final",
+  "editorStripComma": "Quitar coma final",
+  "weakNetworkPresetSubway": "Metro (alta pérdida)",
+  "weakNetworkPresetFlightWifi": "Wi-Fi en vuelo"
 }

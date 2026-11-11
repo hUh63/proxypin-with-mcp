@@ -6072,5 +6072,13 @@
   "editorQuoteSuffix": "Suffix",
   "editorQuoteSeparator": "Separator",
   "editorPasteStripNumbers": "Strip line numbers on paste",
-  "editorPasteStripNumbersHint": "Codes copied from chat or docs usually start with 12: / 12| / 12. — strip it automatically"
+  "editorPasteStripNumbersHint": "Codes copied from chat or docs usually start with 12: / 12| / 12. — strip it automatically",
+  "diffExpandAllFolds": "Expand all folded",
+  "diffNoFolds": "Nothing folded",
+  "editorSortByLengthAsc": "Sort by length ↑",
+  "editorSortByLengthDesc": "Sort by length ↓",
+  "editorAppendComma": "Append comma to lines",
+  "editorStripComma": "Remove trailing comma",
+  "weakNetworkPresetSubway": "Subway (high loss)",
+  "weakNetworkPresetFlightWifi": "In-flight Wi-Fi"
 }

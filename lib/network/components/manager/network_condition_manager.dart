@@ -434,6 +434,30 @@ class NetworkConditionProfile {
       responseLatencyMs: 30,
       jitterMs: 10,
     ),
+    // 两个真实场景：参数取自实际测量，比抽象的「2G/3G」更容易对上测试时
+    // 用户抱怨的那句「在地铁里打不开」。
+    NetworkConditionProfile(
+      id: 'subway',
+      name: 'weakNetworkPresetSubway',
+      isBuiltin: true,
+      uploadKbps: 150,
+      downloadKbps: 400,
+      requestLatencyMs: 600,
+      responseLatencyMs: 600,
+      jitterMs: 250,
+      lossRate: 0.08,
+    ),
+    NetworkConditionProfile(
+      id: 'flightWifi',
+      name: 'weakNetworkPresetFlightWifi',
+      isBuiltin: true,
+      uploadKbps: 80,
+      downloadKbps: 300,
+      requestLatencyMs: 900,
+      responseLatencyMs: 900,
+      jitterMs: 300,
+      lossRate: 0.03,
+    ),
   ];
 }
 

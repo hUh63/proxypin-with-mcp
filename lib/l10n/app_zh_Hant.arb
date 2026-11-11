@@ -5330,5 +5330,13 @@
   "editorQuoteSuffix": "後綴",
   "editorQuoteSeparator": "分隔符",
   "editorPasteStripNumbers": "貼上時去掉行號前綴",
-  "editorPasteStripNumbersHint": "從聊天/文件複製的程式碼常帶「12: 」「12| 」「12. 」前綴，貼上時自動去掉"
+  "editorPasteStripNumbersHint": "從聊天/文件複製的程式碼常帶「12: 」「12| 」「12. 」前綴，貼上時自動去掉",
+  "diffExpandAllFolds": "展開全部折疊",
+  "diffNoFolds": "目前沒有折疊",
+  "editorSortByLengthAsc": "按長度升序",
+  "editorSortByLengthDesc": "按長度降序",
+  "editorAppendComma": "每行末尾加逗號",
+  "editorStripComma": "去掉行尾逗號",
+  "weakNetworkPresetSubway": "地鐵（高丟包）",
+  "weakNetworkPresetFlightWifi": "機上 Wi-Fi（高延遲）"
 }

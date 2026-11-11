@@ -3640,5 +3640,13 @@
   "editorQuoteSuffix": "คำต่อท้าย",
   "editorQuoteSeparator": "ตัวคั่น",
   "editorPasteStripNumbers": "ตัดเลขบรรทัดเมื่อวาง",
-  "editorPasteStripNumbersHint": "โค้ดที่คัดลอกมักขึ้นต้นด้วย 12: / 12| — ตัดออกอัตโนมัติ"
+  "editorPasteStripNumbersHint": "โค้ดที่คัดลอกมักขึ้นต้นด้วย 12: / 12| — ตัดออกอัตโนมัติ",
+  "diffExpandAllFolds": "ขยายทั้งหมด",
+  "diffNoFolds": "ไม่มีการพับ",
+  "editorSortByLengthAsc": "เรียงตามความยาว ↑",
+  "editorSortByLengthDesc": "เรียงตามความยาว ↓",
+  "editorAppendComma": "เติมจุลภาคท้ายบรรทัด",
+  "editorStripComma": "ลบจุลภาคท้ายบรรทัด",
+  "weakNetworkPresetSubway": "รถไฟใต้ดิน (แพ็กเก็ตหายสูง)",
+  "weakNetworkPresetFlightWifi": "Wi-Fi บนเครื่องบิน"
 }

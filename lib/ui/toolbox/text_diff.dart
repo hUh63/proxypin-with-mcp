@@ -1721,6 +1721,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
               _foldUnchanged = !_foldUnchanged;
               _expandedFolds.clear();
             });
+          case 'expandAll':
+            _expandAllFolds();
           case 'saveLeft':
             unawaited(_saveSide(left: true));
           case 'merge':
@@ -1784,6 +1786,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'foldUnchanged',
             checked: _foldUnchanged,
             child: Text(localizations.diffFoldUnchanged)),
+        if (_foldUnchanged)
+          PopupMenuItem(value: 'expandAll', child: Text(localizations.diffExpandAllFolds)),
         CheckedPopupMenuItem(
             value: 'showSpace',
             checked: _showSpace,
@@ -3976,6 +3980,24 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 展开 / 收起一个折叠段。
+  /// 一次性展开所有折叠段。
+  ///
+  /// 逐段点开太麻烦：几十处未变区就是几十次点击，而且点完还得重新找位置。
+  void _expandAllFolds() {
+    if (!_foldUnchanged) return;
+    final rows = _visibleRows(_alignedRows());
+    final starts = <int>{};
+    for (final row in rows) {
+      final from = row.foldFrom;
+      if (from != null) starts.add(from);
+    }
+    if (starts.isEmpty) {
+      _toastText(localizations.diffNoFolds);
+      return;
+    }
+    setState(() => _expandedFolds.addAll(starts));
+  }
+
   void _toggleFold(int from) {
     if (!mounted) return;
     setState(() {
