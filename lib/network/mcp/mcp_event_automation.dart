@@ -176,7 +176,7 @@ class McpEventAutomation {
     // 先快照：回调里可能调用 offHttpRequest/removeListener 改动 _listeners，
     // 直接 forEach 会抛 ConcurrentModificationError 并中断后面的监听器。
     final entries = _listeners.entries.toList();
-    final url = request.requestUrl ?? '';
+    final url = request.requestUrl;
     for (final entry in entries) {
       final eventName = entry.key;
       if (!eventName.startsWith('http_request:')) continue;

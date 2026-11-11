@@ -18,6 +18,14 @@
   解析只走「片段栏插入」这一条路：普通插入/粘贴里的 `$1` 是 shell 位置参数、正则反向
   引用，全局解析会把正常代码改坏。
 
+### 排查
+- 从 `flutter analyze` 的 **222 条 warning** 里挑出「类型收紧后的残留判空」清理了一批：
+  `requestUrl`（`String` 非空 getter）后面的 `?? ''`、`Uri.port` 后面的
+  `?? (https ? 443 : 80)`（`Uri.port` 本来就带 scheme 默认端口）。这类代码本身无害，
+  但会让后来的人以为「这里可能拿到空值」，从而在下游重复兜底。
+  剩余 warning（`dead_code` 31、`unused_import` 46、`unused_local_variable` 27…）
+  已按类别归档，属于整洁度清理，不影响行为。
+
 ### 测试
 - 新增 `test/snippet_placeholders_test.dart`（8 例：默认值、编号顺序、`\$` 转义、
   `$foo` 不误判、重复编号、缺右花括号）。

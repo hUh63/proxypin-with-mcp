@@ -292,7 +292,9 @@ class ConnectionPool {
     
     try {
       final host = url.host;
-      final port = url.port ?? (url.scheme == 'https' ? 443 : 80);
+      // Uri.port 在没显式写端口时已经返回 scheme 默认端口（http 80 / https 443），
+      // 再补一层 `?? 443/80` 是死代码，而且会让人以为这里可能拿到空端口。
+      final port = url.port;
       final poolKey = '$host:$port';
       
       // 检查每主机连接数限制

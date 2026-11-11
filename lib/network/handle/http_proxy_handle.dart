@@ -194,7 +194,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         // requestId 是「修改请求/响应」动作回查活对象的唯一凭据，之前漏传，
         // 导致 _modifyRequest/_modifyResponse 一进函数就 return，动作静默无效。
         'requestId': request!.requestId,
-        'url': request.requestUrl ?? '',
+        'url': request.requestUrl,
         'method': request.methodLabel,
         'headers': request.headers.toMap(),
       };
@@ -505,7 +505,7 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
         final respMap = <String, dynamic>{
           // 同 reqMap：modifyResponse 靠它回查活对象
           'requestId': request.requestId,
-          'url': request.requestUrl ?? '',
+          'url': request.requestUrl,
           'statusCode': msg.status?.code ?? 0,
         };
         unawaited(MCPAutomationManager().onResponse(respMap).catchError((e, s) {

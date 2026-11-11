@@ -172,8 +172,8 @@ class RequestComparator {
     final headerDiffs = <FieldCompare>[];
     final queryDiffs = <FieldCompare>[];
 
-    final urlA = requestA.requestUrl ?? '';
-    final urlB = requestB.requestUrl ?? '';
+    final urlA = requestA.requestUrl;
+    final urlB = requestB.requestUrl;
 
     // URL 对比
     final urlChanged = urlA != urlB;
