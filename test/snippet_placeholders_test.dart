@@ -12,7 +12,7 @@ void main() {
       expect(r.hasStops, isFalse);
     });
 
-    test('${1:默认值} 插入默认文本并选中整段', () {
+    test('\${1:默认值} 插入默认文本并选中整段', () {
       final r = parseSnippetPlaceholders('for (var \${1:i} = 0; \${2:cond}; \${3:i++}) {}\n\$0');
       expect(r.text, 'for (var i = 0; cond; i++) {}\n');
       expect(r.stops.length, 4);
