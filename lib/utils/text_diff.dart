@@ -718,23 +718,78 @@ class DiffRow {
   bool get isFold => foldFrom != null;
 }
 
-/// 把两段文本转成**逐行对齐**的行列表：equal 同行；一段删除 + 一段新增按**相似度**
-/// 配对成 modified，没配上的行分别作为 deleted / added。用来渲染左右行号对齐的
-/// 并排视图，解决「各显示自己行号、多段差异看不出对应关系」的问题。
-List<DiffRow> alignedDiffRows(String left, String right,
+/// **按行号对齐**（Beyond Compare 的 Alignment → 按位置 / WinMerge 的「不自动对齐」）：
+/// 不做 LCS 匹配，直接「左第 i 行 ↔ 右第 i 行」对照。
+///
+/// 与 [diffLines] 的差别正是它的用处：内容对齐会为了「让相同的行配对」把整段挪位，
+/// 于是「在第 3 行插了一行」会让下面几百行全部错开、看上去像全改了；按行号对齐时
+/// 行号严格一一对应，只有真正内容不同的那几行是红的 —— 改配置、改注释、改一列数值
+/// 这种「结构没动」的对比，这个视角更好读。
+///
+/// 内容不同的同一行输出成相邻的 delete + insert，交给 [buildDiffBlocks] /
+/// [alignedDiffRows] 时仍会被配对成「修改」。
+List<LineDiff> diffLinesByPosition(String left, String right,
     {bool ignoreCase = false,
     bool ignoreWhitespace = false,
     bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
     bool ignoreComments = false,
     RegExp? ignoreLinePattern}) {
-  final diffs = diffLines(left, right,
-      ignoreCase: ignoreCase,
-      ignoreWhitespace: ignoreWhitespace,
-      ignoreTrailingWhitespace: ignoreTrailingWhitespace,
-      ignoreBlankLines: ignoreBlankLines,
-      ignoreComments: ignoreComments,
-      ignoreLinePattern: ignoreLinePattern);
+  final a = _stripTrailingCr(left.split('\n'));
+  final b = _stripTrailingCr(right.split('\n'));
+  final out = <LineDiff>[];
+  final n = a.length > b.length ? a.length : b.length;
+  for (var i = 0; i < n; i++) {
+    final hasA = i < a.length;
+    final hasB = i < b.length;
+    if (hasA && hasB) {
+      final ka = _normKey(a[i], ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
+          ignoreBlankLines, ignoreComments, ignoreLinePattern);
+      final kb = _normKey(b[i], ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
+          ignoreBlankLines, ignoreComments, ignoreLinePattern);
+      if (ka == kb) {
+        out.add(LineDiff(LineDiffType.equal, a[i], leftLine: i + 1, rightLine: i + 1));
+      } else {
+        out.add(LineDiff(LineDiffType.delete, a[i], leftLine: i + 1));
+        out.add(LineDiff(LineDiffType.insert, b[i], rightLine: i + 1));
+      }
+    } else if (hasA) {
+      out.add(LineDiff(LineDiffType.delete, a[i], leftLine: i + 1));
+    } else {
+      out.add(LineDiff(LineDiffType.insert, b[i], rightLine: i + 1));
+    }
+  }
+  return out;
+}
+
+/// 把两段文本转成**逐行对齐**的行列表：equal 同行；一段删除 + 一段新增按**相似度**
+/// 配对成 modified，没配上的行分别作为 deleted / added。用来渲染左右行号对齐的
+/// 并排视图，解决「各显示自己行号、多段差异看不出对应关系」的问题。
+///
+/// [alignByLine] 为 true 时改用 [diffLinesByPosition]（按行号硬对齐）。
+List<DiffRow> alignedDiffRows(String left, String right,
+    {bool ignoreCase = false,
+    bool ignoreWhitespace = false,
+    bool ignoreTrailingWhitespace = false,
+    bool ignoreBlankLines = false,
+    bool ignoreComments = false,
+    RegExp? ignoreLinePattern,
+    bool alignByLine = false}) {
+  final diffs = alignByLine
+      ? diffLinesByPosition(left, right,
+          ignoreCase: ignoreCase,
+          ignoreWhitespace: ignoreWhitespace,
+          ignoreTrailingWhitespace: ignoreTrailingWhitespace,
+          ignoreBlankLines: ignoreBlankLines,
+          ignoreComments: ignoreComments,
+          ignoreLinePattern: ignoreLinePattern)
+      : diffLines(left, right,
+          ignoreCase: ignoreCase,
+          ignoreWhitespace: ignoreWhitespace,
+          ignoreTrailingWhitespace: ignoreTrailingWhitespace,
+          ignoreBlankLines: ignoreBlankLines,
+          ignoreComments: ignoreComments,
+          ignoreLinePattern: ignoreLinePattern);
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {

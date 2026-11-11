@@ -708,6 +708,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
       group: 'inspect', aliases: 'rw 任务列表 todo fixme tasks'),
   EditorMenuItem('stats', _statsLabel,
       group: 'edit', aliases: 'tj 文档统计 统计 字数 stats wordcount'),
+  EditorMenuItem('workspaceTree', _workspaceTreeLabel, group: 'file',
+      aliases: 'gzzs 工作区 文件树 目录树 tree files explorer'),
+  EditorMenuItem('reopenClosed', _reopenClosedLabel, group: 'file',
+      aliases: 'cddk 重新打开 恢复关闭 reopen closed restore'),
   EditorMenuItem('recentFiles', _recentFilesLabel,
       group: 'file', aliases: 'zjdj 最近打开 recentfiles recent'),
   EditorMenuItem('renameFile', _renameFileLabel,
@@ -824,6 +828,8 @@ String _diffTabLabel(AppLocalizations l) => l.editorDiffWithTab;
 String _tasksLabel(AppLocalizations l) => l.editorTasks;
 String _statsLabel(AppLocalizations l) => l.editorDocStats;
 String _recentFilesLabel(AppLocalizations l) => l.editorRecentFiles;
+String _reopenClosedLabel(AppLocalizations l) => l.editorReopenClosed;
+String _workspaceTreeLabel(AppLocalizations l) => l.editorWorkspaceTree;
 String _insertFileLabel(AppLocalizations l) => l.editorInsertFile;
 String _copyNumberedLabel(AppLocalizations l) => l.editorCopyNumbered;
 String _copyMarkdownLabel(AppLocalizations l) => l.editorCopyMarkdown;
@@ -1060,6 +1066,10 @@ IconData menuIconOf(String id) {
       return Icons.workspaces_outlined;
     case 'history':
       return Icons.history;
+    case 'reopenClosed':
+      return Icons.restore_page_outlined;
+    case 'workspaceTree':
+      return Icons.account_tree_outlined;
     case 'diffTab':
       return Icons.compare;
     case 'tasks':

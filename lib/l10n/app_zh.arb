@@ -5338,5 +5338,19 @@
   "editorAppendComma": "每行末尾加逗号",
   "editorStripComma": "去掉行尾逗号",
   "weakNetworkPresetSubway": "地铁（高丢包）",
-  "weakNetworkPresetFlightWifi": "机上 Wi-Fi（高延迟）"
+  "weakNetworkPresetFlightWifi": "机上 Wi-Fi（高延迟）",
+  "diffAlignByLine": "按行号对齐",
+  "diffMarkBlock": "标记当前差异",
+  "diffMarkBlockCount": "已标记（{n}）",
+  "diffPrevMark": "上一处标记",
+  "diffNextMark": "下一处标记",
+  "diffClearMarks": "清除所有标记",
+  "diffMarkNeedBlock": "先跳到一处差异，再点标记",
+  "diffMarkEmpty": "还没有标记",
+  "diffExportMarkdown": "导出 Markdown 表格",
+  "editorWorkspaceTree": "工作区文件树",
+  "editorWorkspaceNotSet": "还没有设置工作区，先在「文件」菜单里选一个目录",
+  "editorReopenClosed": "重新打开已关闭的文件",
+  "editorReopenEmpty": "没有可重新打开的文件",
+  "editorRefTimes": "{n} 处引用"
 }

@@ -48,6 +48,7 @@ import 'package:proxypin/utils/code_symbols.dart';
 import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
+import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
 import 'package:proxypin/utils/merge_conflicts.dart';
 import 'package:proxypin/utils/paste_indent.dart';
@@ -2500,6 +2501,43 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 打开「工作区文件树」：在目录里点着走，不用每次都从系统选择器根目录翻起。
+  void _showWorkspaceTree() {
+    final ws = _workspace;
+    if (ws == null || ws.isEmpty) {
+      _toast(localizations.editorWorkspaceNotSet);
+      return;
+    }
+    unawaited(WorkspaceTreeSheet.show(context, root: ws,
+        onOpenFile: (p) => unawaited(_openPath(p))));
+  }
+
+  /// 记下刚关掉的文档（供「重新打开已关闭」用）。
+  void _rememberClosed(EditorDocument doc) {
+    final path = doc.path;
+    if (path == null || path.isEmpty) return;
+    final caret = identical(doc, _doc) ? (_controller?.selection.extentOffset ?? -1) : doc.lastCaret;
+    _recentClosed.removeWhere((e) => e.path == path);
+    _recentClosed.insert(0, (path: path, name: doc.name, caret: caret));
+    if (_recentClosed.length > 10) _recentClosed.removeLast();
+  }
+
+  /// 重新打开最近关掉的那份文件，并回到关闭时的光标位置。
+  Future<void> _reopenClosed() async {
+    if (_recentClosed.isEmpty) {
+      _toast(localizations.editorReopenEmpty);
+      return;
+    }
+    final item = _recentClosed.removeAt(0);
+    await _openPath(item.path);
+    if (!mounted || _doc?.path != item.path) return;
+    final c = _controller;
+    if (c == null || item.caret < 0) return;
+    final off = item.caret.clamp(0, c.text.length);
+    c.selection = TextSelection.collapsed(offset: off);
+    c.scrollToLine(_lineOfOffset(c.text, off));
+  }
+
   Future<void> _closeDoc(EditorDocument doc) async {
     // 关掉一份「改了但没存」的文档，跟按返回键退出是一回事，都得先问。
     if (doc.dirty && (doc.path?.isNotEmpty ?? false)) {
@@ -2527,6 +2565,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (keep == null) return;
       if (doc.dirty) return; // 保存失败则别关，避免「以为存了」
     }
+    _rememberClosed(doc);
     final wasActive = identical(doc, _doc);
     if (wasActive) {
       // 先解绑，避免随后对已 dispose 的 controller 做 removeListener
@@ -3036,6 +3075,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     controller.selection = TextSelection.collapsed(offset: at);
     controller.scrollToLine(_lineOfOffset(text, at));
   }
+
 
   /// 在文档里找 [name] 的声明位置（返回名字所在的偏移）。
   ///
@@ -4809,6 +4849,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 这里单独记一份，比把整个目录列出来（快速打开）更贴近「我刚才在弄哪个」。
   static const String _recentFilesKey = 'text_editor_recent_files_v1';
   List<String> _recentFiles = <String>[];
+
+  /// 最近关闭的文档（VS 的「重新打开关闭的窗口」，Ctrl+Shift+T）。
+  ///
+  /// 手滑关掉一个还没看完的文件、或者对比完顺手关了又想起来要改一个字，
+  /// 手机上重新从目录里翻过去成本很高。只记路径和光标位置，最多 10 条。
+  final List<({String path, String name, int caret})> _recentClosed = [];
   String? _workspace;
 
   /// 工作区递归扫描的上限：仓库动辄几万个文件，不设限就是卡死。
@@ -5176,24 +5222,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final caret = controller.selection.baseOffset;
     final range = _wordRangeAt(text, caret < 0 ? 0 : caret);
     final name = text.substring(range.start, range.end);
-    if (name.isEmpty) {
+    // 空白 / 标点上 `_wordRangeAt` 会返回那一个字符，拿去搜会「定义一个空格」。
+    if (!_isSymbolName(name)) {
       _toast(localizations.editorNoDefinition);
       return;
     }
     final at = _findDeclaration(text, name, range.start);
-    if (at == null) {
-      _toast(localizations.editorNoDefinition);
+    if (at != null) {
+      await _showPeekAt(at: at, title: name);
       return;
     }
-    await _showPeekAt(at: at, title: name);
+    // 同文件没有 → 在其它已打开文档里找（跨文件速览）。
+    // 「转到定义」本来就支持跨文件；速览要是不支持，就会变成「能跳不能看」。
+    for (final d in _docs.docs) {
+      if (d.id == _doc?.id) continue;
+      final o = _findDeclaration(d.controller.text, name, -1);
+      if (o != null) {
+        await _showPeekAt(at: o, title: name, sourceDoc: d);
+        return;
+      }
+    }
+    _toast(localizations.editorNoDefinition);
   }
 
   /// 在下面弹一张卡片「速览」某个位置（声明和引用都走这里）。
   ///
   /// [at] 是名字所在的偏移。卡片里给两个出口：真的跳过去，或者看它的所有引用——
   /// 这样「这里是什么 → 还有谁用我」不用来回关面板再点菜单。
-  Future<void> _showPeekAt({required int at, required String title}) async {
-    final controller = _controller;
+  /// [sourceDoc] 为其它已打开的文档时，卡片里的内容取自它，
+  /// 两个出口（看引用 / 跳过去）也都切到那边去。
+  Future<void> _showPeekAt(
+      {required int at, required String title, EditorDocument? sourceDoc}) async {
+    final controller = sourceDoc?.controller ?? _controller;
     if (controller == null) return;
     final text = controller.text;
     final targetLine = _lineOfOffset(text, at);
@@ -5210,6 +5270,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (offset > text.length) break;
     }
     if (!mounted) return;
+    // 速览的是别的文档时，「看引用 / 跳过去」都得先把那个文档切回来。
+    Future<bool> switchToSource() async {
+      final d = sourceDoc;
+      if (d == null) return true;
+      if (!identical(d, _doc)) _activate(d);
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      return mounted;
+    }
     final theme = Theme.of(context);
     final mono = TextStyle(
         fontSize: 12, fontFamily: 'monospace', color: theme.textTheme.bodyMedium?.color);
@@ -5261,21 +5329,25 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: Row(children: [
                   TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(ctx);
-                      controller.selection =
-                          TextSelection.collapsed(offset: at.clamp(0, text.length));
+                      if (!await switchToSource()) return;
+                      final c = _controller;
+                      if (c == null) return;
+                      c.selection = TextSelection.collapsed(offset: at.clamp(0, c.text.length));
                       unawaited(_showReferences());
                     },
                     child: Text(localizations.editorReferences),
                   ),
                   const Spacer(),
                   FilledButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(ctx);
-                      controller.selection =
-                          TextSelection.collapsed(offset: at.clamp(0, text.length));
-                      controller.scrollToLine(targetLine);
+                      if (!await switchToSource()) return;
+                      final c = _controller;
+                      if (c == null) return;
+                      c.selection = TextSelection.collapsed(offset: at.clamp(0, c.text.length));
+                      c.scrollToLine(targetLine);
                     },
                     child: Text(localizations.editorGotoDefinition),
                   ),
@@ -6258,6 +6330,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 「转到符号」和顶部面包屑都用它；结果按文本对象缓存，
   /// 否则光标每动一下就要重扫一遍全文。
+  /// 一次扫描统计全文每个标识符的出现次数。
+  ///
+  /// 符号大纲里的「N 处引用」（VS Code 的 CodeLens 在手机上的等价物）用它：
+  /// 逐个符号去全文 indexOf 是 O(符号数 × 文本长)，几百个符号的大文件会卡住；
+  /// 正扫一遍再查表是 O(文本长)。
+  static Map<String, int> _identifierCounts(String text) {
+    final out = <String, int>{};
+    for (final m in _identRe.allMatches(text)) {
+      final w = m.group(0)!;
+      out[w] = (out[w] ?? 0) + 1;
+    }
+    return out;
+  }
+
+  static final RegExp _identRe = RegExp(r'[A-Za-z_$][A-Za-z0-9_$]*');
+
   List<_SymbolItem> _collectSymbols(String text) {
     final cached = _symbolCacheText;
     if (cached != null && identical(cached, text)) return _symbolCacheItems;
@@ -6338,6 +6426,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _toast(localizations.editorSymbolsEmpty);
       return;
     }
+    // 引用数只在能承受的文件上算（超大文本扫一遍要几百毫秒）。
+    final counts = controller.text.length <= 200000
+        ? _identifierCounts(controller.text)
+        : const <String, int>{};
     // 加一个过滤框：几千行的文件里符号列表能有上百条，翻着找不如打两个字。
     var query = '';
     await showModalBottomSheet<void>(
@@ -6387,7 +6479,34 @@ class _TextEditorPageState extends State<TextEditorPage> {
                               dense: true,
                               visualDensity: VisualDensity.compact,
                               leading: Icon(_symbolIcon(it.kind), size: 18),
-                              title: Text(it.name, style: const TextStyle(fontSize: 13)),
+                              title: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Flexible(
+                                    child: Text(it.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 13))),
+                                if ((counts[it.name] ?? 0) > 1) ...[
+                                  const SizedBox(width: 6),
+                                  // 点引用数直接看「都谁用了它」，不用先跳过去再点菜单。
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.pop(ctx);
+                                      final len = controller.text.length;
+                                      controller.selection = TextSelection.collapsed(
+                                          offset: it.offset.clamp(0, len));
+                                      unawaited(_showReferences());
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                                      child: Text(
+                                          localizations.editorRefTimes(counts[it.name]! - 1),
+                                          style: TextStyle(
+                                              fontSize: 10.5,
+                                              color: Theme.of(ctx).colorScheme.primary)),
+                                    ),
+                                  ),
+                                ],
+                              ]),
                               trailing: Text('L${it.line + 1}',
                                   style: const TextStyle(fontSize: 11)),
                               onTap: () {
@@ -10201,6 +10320,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
               loc.editorRecentFiles),
           _menuItem('save', Icons.save_outlined, loc.save),
           _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
+          _menuItem('reopenClosed', Icons.restore_page_outlined, loc.editorReopenClosed),
+          _menuItem('workspaceTree', Icons.account_tree_outlined, loc.editorWorkspaceTree),
           _menuItem('renameFile', Icons.drive_file_rename_outline,
               loc.editorRenameFile),
           _menuItem('copyPath', Icons.link, loc.editorCopyPath),
@@ -10523,6 +10644,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_compareWithDisk());
       case 'compareClipboard':
         unawaited(_compareWithClipboard());
+        case 'reopenClosed':
+          unawaited(_reopenClosed());
+        case 'workspaceTree':
+          _showWorkspaceTree();
         case 'diffTab':
           _compareWithTab();
         case 'history':

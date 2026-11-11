@@ -3648,5 +3648,19 @@
   "editorAppendComma": "Añadir coma al final",
   "editorStripComma": "Quitar coma final",
   "weakNetworkPresetSubway": "Metro (alta pérdida)",
-  "weakNetworkPresetFlightWifi": "Wi-Fi en vuelo"
+  "weakNetworkPresetFlightWifi": "Wi-Fi en vuelo",
+  "diffAlignByLine": "Alinear por número de línea",
+  "diffMarkBlock": "Marcar este cambio",
+  "diffMarkBlockCount": "Marcados ({n})",
+  "diffPrevMark": "Marca anterior",
+  "diffNextMark": "Marca siguiente",
+  "diffClearMarks": "Borrar todas las marcas",
+  "diffMarkNeedBlock": "Salta primero a un cambio y luego márcalo",
+  "diffMarkEmpty": "Aún no hay marcas",
+  "diffExportMarkdown": "Exportar tabla Markdown",
+  "editorWorkspaceTree": "Archivos del área de trabajo",
+  "editorWorkspaceNotSet": "Aún no hay carpeta de trabajo: elígela en el menú Archivo",
+  "editorReopenClosed": "Reabrir archivo cerrado",
+  "editorReopenEmpty": "No hay nada que reabrir",
+  "editorRefTimes": "{n} refs"
 }

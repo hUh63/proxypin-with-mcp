@@ -3648,5 +3648,19 @@
   "editorAppendComma": "Thêm dấu phẩy cuối dòng",
   "editorStripComma": "Bỏ dấu phẩy cuối dòng",
   "weakNetworkPresetSubway": "Tàu điện ngầm (mất gói cao)",
-  "weakNetworkPresetFlightWifi": "Wi-Fi trên máy bay"
+  "weakNetworkPresetFlightWifi": "Wi-Fi trên máy bay",
+  "diffAlignByLine": "Căn theo số dòng",
+  "diffMarkBlock": "Đánh dấu thay đổi này",
+  "diffMarkBlockCount": "Đã đánh dấu ({n})",
+  "diffPrevMark": "Dấu trước",
+  "diffNextMark": "Dấu tiếp theo",
+  "diffClearMarks": "Xóa tất cả dấu",
+  "diffMarkNeedBlock": "Hãy chuyển đến một thay đổi rồi đánh dấu",
+  "diffMarkEmpty": "Chưa có dấu nào",
+  "diffExportMarkdown": "Xuất bảng Markdown",
+  "editorWorkspaceTree": "Cây tệp không gian làm việc",
+  "editorWorkspaceNotSet": "Chưa có thư mục làm việc — đặt trong menu Tệp",
+  "editorReopenClosed": "Mở lại tệp đã đóng",
+  "editorReopenEmpty": "Không có gì để mở lại",
+  "editorRefTimes": "{n} tham chiếu"
 }

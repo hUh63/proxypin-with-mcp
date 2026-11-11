@@ -3648,5 +3648,19 @@
   "editorAppendComma": "Tambah koma di akhir",
   "editorStripComma": "Hapus koma akhir",
   "weakNetworkPresetSubway": "Kereta bawah tanah (loss tinggi)",
-  "weakNetworkPresetFlightWifi": "Wi-Fi dalam pesawat"
+  "weakNetworkPresetFlightWifi": "Wi-Fi dalam pesawat",
+  "diffAlignByLine": "Sejajarkan per nomor baris",
+  "diffMarkBlock": "Tandai perubahan ini",
+  "diffMarkBlockCount": "Ditandai ({n})",
+  "diffPrevMark": "Tanda sebelumnya",
+  "diffNextMark": "Tanda berikutnya",
+  "diffClearMarks": "Hapus semua tanda",
+  "diffMarkNeedBlock": "Lompat ke perubahan dulu, lalu tandai",
+  "diffMarkEmpty": "Belum ada tanda",
+  "diffExportMarkdown": "Ekspor tabel Markdown",
+  "editorWorkspaceTree": "File ruang kerja",
+  "editorWorkspaceNotSet": "Belum ada folder ruang kerja — atur dari menu File",
+  "editorReopenClosed": "Buka kembali file tertutup",
+  "editorReopenEmpty": "Tidak ada yang bisa dibuka ulang",
+  "editorRefTimes": "{n} referensi"
 }

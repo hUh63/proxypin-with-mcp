@@ -6080,5 +6080,33 @@
   "editorAppendComma": "Append comma to lines",
   "editorStripComma": "Remove trailing comma",
   "weakNetworkPresetSubway": "Subway (high loss)",
-  "weakNetworkPresetFlightWifi": "In-flight Wi-Fi"
+  "weakNetworkPresetFlightWifi": "In-flight Wi-Fi",
+  "diffAlignByLine": "Align by line number",
+  "diffMarkBlock": "Mark this change",
+  "diffMarkBlockCount": "Marked ({n})",
+  "diffPrevMark": "Previous mark",
+  "diffNextMark": "Next mark",
+  "diffClearMarks": "Clear all marks",
+  "diffMarkNeedBlock": "Jump to a change first, then mark it",
+  "diffMarkEmpty": "No marks yet",
+  "diffExportMarkdown": "Export Markdown table",
+  "editorWorkspaceTree": "Workspace files",
+  "editorWorkspaceNotSet": "No workspace folder yet — set one from the File menu",
+  "editorReopenClosed": "Reopen closed file",
+  "editorReopenEmpty": "Nothing to reopen",
+  "editorRefTimes": "{n} refs",
+  "@diffMarkBlockCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@editorRefTimes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

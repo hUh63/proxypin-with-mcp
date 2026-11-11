@@ -3649,5 +3649,19 @@
   "editorAppendComma": "Adicionar vírgula ao final",
   "editorStripComma": "Remover vírgula final",
   "weakNetworkPresetSubway": "Metrô (perda alta)",
-  "weakNetworkPresetFlightWifi": "Wi-Fi em voo"
+  "weakNetworkPresetFlightWifi": "Wi-Fi em voo",
+  "diffAlignByLine": "Alinhar por número de linha",
+  "diffMarkBlock": "Marcar esta alteração",
+  "diffMarkBlockCount": "Marcados ({n})",
+  "diffPrevMark": "Marca anterior",
+  "diffNextMark": "Próxima marca",
+  "diffClearMarks": "Limpar todas as marcas",
+  "diffMarkNeedBlock": "Vá primeiro a uma alteração e marque",
+  "diffMarkEmpty": "Ainda sem marcas",
+  "diffExportMarkdown": "Exportar tabela Markdown",
+  "editorWorkspaceTree": "Arquivos da área de trabalho",
+  "editorWorkspaceNotSet": "Ainda sem pasta de trabalho — defina no menu Arquivo",
+  "editorReopenClosed": "Reabrir arquivo fechado",
+  "editorReopenEmpty": "Nada para reabrir",
+  "editorRefTimes": "{n} refs"
 }

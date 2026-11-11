@@ -3648,5 +3648,19 @@
   "editorAppendComma": "เติมจุลภาคท้ายบรรทัด",
   "editorStripComma": "ลบจุลภาคท้ายบรรทัด",
   "weakNetworkPresetSubway": "รถไฟใต้ดิน (แพ็กเก็ตหายสูง)",
-  "weakNetworkPresetFlightWifi": "Wi-Fi บนเครื่องบิน"
+  "weakNetworkPresetFlightWifi": "Wi-Fi บนเครื่องบิน",
+  "diffAlignByLine": "จัดแนวตามหมายเลขบรรทัด",
+  "diffMarkBlock": "ทำเครื่องหมายการเปลี่ยนแปลงนี้",
+  "diffMarkBlockCount": "ทำเครื่องหมายแล้ว ({n})",
+  "diffPrevMark": "เครื่องหมายก่อนหน้า",
+  "diffNextMark": "เครื่องหมายถัดไป",
+  "diffClearMarks": "ล้างเครื่องหมายทั้งหมด",
+  "diffMarkNeedBlock": "ไปที่การเปลี่ยนแปลงก่อนแล้วจึงทำเครื่องหมาย",
+  "diffMarkEmpty": "ยังไม่มีเครื่องหมาย",
+  "diffExportMarkdown": "ส่งออกตาราง Markdown",
+  "editorWorkspaceTree": "ไฟล์ในเวิร์กสเปซ",
+  "editorWorkspaceNotSet": "ยังไม่มีโฟลเดอร์เวิร์กสเปซ — ตั้งค่าได้จากเมนูไฟล์",
+  "editorReopenClosed": "เปิดไฟล์ที่ปิดไปแล้วอีกครั้ง",
+  "editorReopenEmpty": "ไม่มีไฟล์ให้เปิดใหม่",
+  "editorRefTimes": "{n} การอ้างอิง"
 }

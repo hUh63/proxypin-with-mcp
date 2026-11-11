@@ -45,7 +45,9 @@ import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/ui/toolbox/dir_diff_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
+import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/text_diff.dart';
+import 'package:proxypin/utils/text_editor_prefs.dart' show kTextEditorWorkspaceKey;
 import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
 import 'package:proxypin/utils/smart_completion.dart';
@@ -139,6 +141,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 忽略注释：`//` `*` `#` 开头的行当作空行，行尾 ` //` 之后丢掉。
   bool _ignoreComments = false;
+
+  /// 按行号对齐（Beyond Compare 的 Alignment → 按位置）：
+  /// 不做内容匹配，左边第 i 行直接对右边第 i 行。改配置、改一列数值这类
+  /// 「结构没动」的对比用它更好读 —— 内容对齐会因为插了一行而把下面整段挪位。
+  bool _alignByLine = false;
+
+  /// 手动标记的差异块下标（WinMerge / Beyond Compare 的「书签」）：
+  /// 一次对比几十处差异时，先把要处理的几处标上，之后只在它们之间跳，
+  /// 不用一路「下一处」翻过去。
+  final Set<int> _marks = <int>{};
 
   /// 「忽略匹配某正则的行」——日志/抓包对比时最常见（时间戳、请求 id 每行都不同）。
   String _ignoreLineText = '';
@@ -620,6 +632,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   void _compare() {
     // 比较内容变了，上一轮的「已看」标记就不再有意义
     _reviewed.clear();
+    // 块下标是按上一版内容算的，内容一变就会指到别的块上，一起清掉。
+    _marks.clear();
     _charDiffCache.clear();
     if (_left.text.isEmpty && _right.text.isEmpty) {
       if (_summary != null || _blocks.isNotEmpty) {
@@ -637,13 +651,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _leftSnapshot = _left.text;
     _rightSnapshot = _right.text;
 
-    final diffs = diffLines(_left.text, _right.text,
-        ignoreCase: _ignoreCase,
-        ignoreWhitespace: _ignoreWhitespace,
-        ignoreTrailingWhitespace: _ignoreTrailing,
-        ignoreBlankLines: _ignoreBlank,
-        ignoreComments: _ignoreComments,
-        ignoreLinePattern: _ignoreLineRe);
+    final diffs = _alignByLine
+        ? diffLinesByPosition(_left.text, _right.text,
+            ignoreCase: _ignoreCase,
+            ignoreWhitespace: _ignoreWhitespace,
+            ignoreTrailingWhitespace: _ignoreTrailing,
+            ignoreBlankLines: _ignoreBlank,
+            ignoreComments: _ignoreComments,
+            ignoreLinePattern: _ignoreLineRe)
+        : diffLines(_left.text, _right.text,
+            ignoreCase: _ignoreCase,
+            ignoreWhitespace: _ignoreWhitespace,
+            ignoreTrailingWhitespace: _ignoreTrailing,
+            ignoreBlankLines: _ignoreBlank,
+            ignoreComments: _ignoreComments,
+            ignoreLinePattern: _ignoreLineRe);
     final blocks = buildDiffBlocks(diffs,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
@@ -772,6 +794,36 @@ class _TextDiffPageState extends State<TextDiffPage> {
   ///
   /// 「上一处/下一处」「差异列表点击」「跳到下一处未看」三处共用一份实现，
   /// 免得改了一处忘另一处（之前就有过只改了导航、忘了列表点击）。
+  /// 标记 / 取消标记当前差异块。
+  void _toggleMark() {
+    final i = _navIndex;
+    if (i < 0 || i >= _blocks.length) {
+      _toastText(localizations.diffMarkNeedBlock);
+      return;
+    }
+    setState(() {
+      if (!_marks.add(i)) _marks.remove(i);
+    });
+  }
+
+  /// 在已标记的块之间跳转（[delta] > 0 向后，< 0 向前，两端环绕）。
+  void _gotoMark(int delta) {
+    if (_marks.isEmpty) {
+      _toastText(localizations.diffMarkEmpty);
+      return;
+    }
+    final sorted = _marks.toList()..sort();
+    int target;
+    if (_navIndex < 0) {
+      target = delta > 0 ? sorted.first : sorted.last;
+    } else if (delta > 0) {
+      target = sorted.firstWhere((e) => e > _navIndex, orElse: () => sorted.first);
+    } else {
+      target = sorted.lastWhere((e) => e < _navIndex, orElse: () => sorted.last);
+    }
+    _jumpToBlock(target);
+  }
+
   void _jumpToBlock(int i) {
     if (i < 0 || i >= _blocks.length) return;
     final b = _blocks[i];
@@ -1018,17 +1070,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _schedulePersist();
   }
 
-  Future<void> _openFileInto(CodeForgeController target) async {
-    String? path;
-    try {
-      final picked = await FilePicker.pickFile(type: FileType.any);
-      path = picked?.path;
-    } catch (_) {
-      final picked = await FilePicker.pickFile();
-      path = picked?.path;
-    }
-
-    if (path == null) return;
+  /// 读 [path] 到 [target] 那一侧（系统选择器和工作区文件树都走这里）。
+  Future<void> _loadPathInto(String path, CodeForgeController target) async {
     try {
       // 不能直接 readAsString（严格 UTF-8）：GBK 的 .txt/.properties 会直接抛，
       // 用户看到的就是「文件打不开」。走带容错解码的公共入口。
@@ -1039,10 +1082,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       setState(() {
         if (identical(target, _left)) {
           _leftName = name;
-          _leftPath = path!;
+          _leftPath = path;
         } else {
           _rightName = name;
-          _rightPath = path!;
+          _rightPath = path;
         }
       });
       _markDiskBaseline();
@@ -1051,6 +1094,61 @@ class _TextDiffPageState extends State<TextDiffPage> {
     } catch (e) {
       _toast('${localizations.fail}: $e');
     }
+  }
+
+  /// 设过工作区时先问「从工作区点还是用系统选择器」。
+  ///
+  /// 对比的两份文件常常都在同一个项目里（改前/改后、两个模块的同名文件），
+  /// 这时从目录树点两下就到位；而系统选择器每次都要从根目录重新翻。
+  Future<String?> _workspaceRoot() async {
+    try {
+      final v = await SharedPreferencesAsync().getString(kTextEditorWorkspaceKey);
+      return (v == null || v.isEmpty) ? null : v;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _openFileInto(CodeForgeController target) async {
+    final ws = await _workspaceRoot();
+    if (ws != null && mounted) {
+      final how = await showModalBottomSheet<String>(
+        context: context,
+        showDragHandle: true,
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              leading: const Icon(Icons.account_tree_outlined),
+              title: Text(localizations.editorWorkspaceTree),
+              subtitle: Text(ws, maxLines: 1, overflow: TextOverflow.ellipsis),
+              onTap: () => Navigator.pop(ctx, 'ws'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: Text(localizations.selectFile),
+              onTap: () => Navigator.pop(ctx, 'picker'),
+            ),
+          ]),
+        ),
+      );
+      if (!mounted || how == null) return;
+      if (how == 'ws') {
+        await WorkspaceTreeSheet.show(context,
+            root: ws, onOpenFile: (p) => unawaited(_loadPathInto(p, target)));
+        return;
+      }
+    }
+
+    String? path;
+    try {
+      final picked = await FilePicker.pickFile(type: FileType.any);
+      path = picked?.path;
+    } catch (_) {
+      final picked = await FilePicker.pickFile();
+      path = picked?.path;
+    }
+    if (path == null) return;
+    await _loadPathInto(path, target);
   }
 
   /// 从磁盘重新读两侧（文件在编辑器/别的工具里改过之后，回到这里刷新）。
@@ -1716,6 +1814,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'hexDiff':
             unawaited(Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const HexDiffPage())));
+          case 'alignByLine':
+            setState(() {
+              _alignByLine = !_alignByLine;
+              _expandedFolds.clear();
+            });
+            _compare();
           case 'foldUnchanged':
             setState(() {
               _foldUnchanged = !_foldUnchanged;
@@ -1748,6 +1852,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_gotoLineDialog());
           case 'gotoBlock':
             unawaited(_gotoBlockDialog());
+          case 'markBlock':
+            _toggleMark();
+          case 'prevMark':
+            _gotoMark(-1);
+          case 'nextMark':
+            _gotoMark(1);
+          case 'clearMarks':
+            setState(_marks.clear);
+          case 'exportMarkdown':
+            unawaited(_exportMarkdown());
           case 'compareSelection':
             unawaited(_compareSelection());
           case 'unifiedView':
@@ -1770,6 +1884,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'ignoreComment',
             checked: _ignoreComments,
             child: Text(localizations.diffIgnoreComments)),
+        CheckedPopupMenuItem(
+            value: 'alignByLine',
+            checked: _alignByLine,
+            child: Text(localizations.diffAlignByLine)),
         PopupMenuItem(
             value: 'ignoreLines',
             child: Text(_ignoreLineText.isEmpty
@@ -1825,6 +1943,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'compareSelection',
             child: Text(localizations.diffCompareSelection)),
         CheckedPopupMenuItem(
+            value: 'markBlock',
+            checked: _navIndex >= 0 && _marks.contains(_navIndex),
+            child: Text(_marks.isEmpty
+                ? localizations.diffMarkBlock
+                : localizations.diffMarkBlockCount(_marks.length))),
+        PopupMenuItem(value: 'prevMark', child: Text(localizations.diffPrevMark)),
+        if (_marks.isNotEmpty) ...[
+          PopupMenuItem(value: 'nextMark', child: Text(localizations.diffNextMark)),
+          PopupMenuItem(value: 'clearMarks', child: Text(localizations.diffClearMarks)),
+        ],
+        CheckedPopupMenuItem(
             value: 'unifiedView',
             checked: _unified,
             child: Text(localizations.diffUnifiedView)),
@@ -1845,6 +1974,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
             checked: _typeFilter == 'modified',
             child: Text(localizations.diffOnlyModified)),
         const PopupMenuDivider(),
+        PopupMenuItem(value: 'exportMarkdown', child: Text(localizations.diffExportMarkdown)),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
@@ -2748,7 +2878,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   List<DiffRow> _alignedRows() {
     final key =
         '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|'
-        '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText';
+        '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText|$_alignByLine';
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
@@ -2757,7 +2887,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreTrailingWhitespace: _ignoreTrailing,
         ignoreBlankLines: _ignoreBlank,
         ignoreComments: _ignoreComments,
-        ignoreLinePattern: _ignoreLineRe);
+        ignoreLinePattern: _ignoreLineRe,
+        alignByLine: _alignByLine);
     return _alignedRowsCache;
   }
 
@@ -3550,6 +3681,44 @@ class _TextDiffPageState extends State<TextDiffPage> {
   ///
   /// 只导差异行（含上下文？不带 —— 清单只列改动本身最有用）。
   /// 带 UTF-8 BOM + 防公式注入，Excel 直接双击打开不乱码。
+  /// 导出差异为 Markdown 表格。
+  ///
+  /// CSV 适合再加工，但「发给同事看一眼」「贴进 issue / 周报」时还得再排版一次；
+  /// Markdown 表格是这些地方都能直接渲染的最小公约数。
+  Future<void> _exportMarkdown() async {
+    final rows = _alignedRows();
+    final changed = rows.where((r) => r.type != DiffRowType.equal).toList();
+    if (changed.isEmpty) {
+      _toastText(localizations.diffNoChange);
+      return;
+    }
+    final loc = localizations;
+    // 表格里 `|` 必须转义，换行在单元格里不合法，压成空格。
+    String cell(String? v) =>
+        (v ?? '').replaceAll('|', '\\|').replaceAll('\r', '').replaceAll('\n', ' ');
+    final buf = StringBuffer()
+      ..writeln('| ${loc.diffCsvType} | L | R | ${loc.diffCsvLeftText} | ${loc.diffCsvRightText} |')
+      ..writeln('| --- | --- | --- | --- | --- |');
+    for (final r in changed) {
+      final kind = switch (r.type) {
+        DiffRowType.added => loc.diffOnlyAdded,
+        DiffRowType.deleted => loc.diffOnlyDeleted,
+        DiffRowType.modified => loc.diffOnlyModified,
+        DiffRowType.equal => '',
+      };
+      buf.writeln('| $kind | ${r.leftLine ?? ''} | ${r.rightLine ?? ''} | '
+          '${cell(r.leftText)} | ${cell(r.rightText)} |');
+    }
+    try {
+      final bytes = Uint8List.fromList(utf8.encode(buf.toString()));
+      final saved = await FilePicker.saveFile(fileName: 'diff-changes.md', bytes: bytes);
+      if (!mounted) return;
+      if (saved != null) _toastText(localizations.diffReportSaved);
+    } catch (e) {
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
   Future<void> _exportCsv() async {
     final rows = _alignedRows();
     final changed = rows.where((r) => r.type != DiffRowType.equal).toList();
@@ -4008,6 +4177,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 右侧「差异密度条」：把每一行的类型按比例画成色块，点哪里滚到哪里（VS 的 overview ruler）。
   Widget _densityBar(List<DiffRow> rows) {
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
+    // 已标记的块在密度条上的位置：块 → 它在当前（可能已折叠/已过滤）行列表里的下标。
+    final marks = <double>[];
+    if (_marks.isNotEmpty && rows.isNotEmpty) {
+      for (final i in _marks) {
+        if (i < 0 || i >= _blocks.length) continue;
+        final wantLeft = _blocks[i].leftStart + 1;
+        final wantRight = _blocks[i].rightStart + 1;
+        for (var k = 0; k < rows.length; k++) {
+          if (rows[k].leftLine == wantLeft || rows[k].rightLine == wantRight) {
+            marks.add(k / rows.length);
+            break;
+          }
+        }
+      }
+    }
     // 平时隐藏（用户反馈它常驻在右边像条滚动条），滚动时淡入、停 1.1 秒淡出。
     // 占位宽度保留 9dp，避免显隐时整页横向跳动。
     final bar = LayoutBuilder(builder: (context, c) {
@@ -4038,7 +4222,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
               width: 9,
               height: double.infinity,
               child: CustomPaint(
-                painter: _DensityPainter(rows, isDark, vpStart, vpEnd),
+                painter: _DensityPainter(rows, isDark, vpStart, vpEnd, marks),
               ),
             ),
           );
