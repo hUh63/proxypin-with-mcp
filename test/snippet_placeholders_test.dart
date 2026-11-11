@@ -17,8 +17,9 @@ void main() {
       expect(r.text, 'for (var i = 0; cond; i++) {}\n');
       expect(r.stops.length, 4);
       // 第一个停靠点正好圈住 i
-      expect(r.stops[0].start, 10);
-      expect(r.stops[0].end, 11);
+      // "for (var " 正好 9 个字符
+      expect(r.stops[0].start, 9);
+      expect(r.stops[0].end, 10);
       expect(r.text.substring(r.stops[0].start, r.stops[0].end), 'i');
       // $0 永远排最后，且是零宽
       expect(r.stops.last.isCaret, isTrue);
