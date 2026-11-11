@@ -4654,12 +4654,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
 /// 差异密度条的绘制：行太多时按固定桶数聚合，避免每帧画几万个小矩形。
 class _DensityPainter extends CustomPainter {
-  _DensityPainter(this.rows, this.isDark, this.vpStart, this.vpEnd);
+  _DensityPainter(this.rows, this.isDark, this.vpStart, this.vpEnd,
+      [this.marks = const <double>[]]);
 
   final List<DiffRow> rows;
   final bool isDark;
   final double vpStart;
   final double vpEnd;
+
+  /// 已标记（书签）的差异块在整篇里的相对位置（0~1），画成黄色小刻度。
+  final List<double> marks;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -4703,6 +4707,15 @@ class _DensityPainter extends CustomPainter {
             ..strokeWidth = 1
             ..color = Colors.white.withValues(alpha: 0.38));
     }
+
+    // 书签刻度：不在视口里也要看得见，所以最后画、用不透明色。
+    if (marks.isNotEmpty) {
+      final mp = Paint()..color = Colors.amber;
+      for (final m in marks) {
+        final y = (m * size.height).clamp(0.0, size.height - 3);
+        canvas.drawRect(Rect.fromLTWH(0, y, size.width, 3), mp);
+      }
+    }
   }
 
   @override
@@ -4710,7 +4723,8 @@ class _DensityPainter extends CustomPainter {
       oldDelegate.rows != rows ||
       oldDelegate.isDark != isDark ||
       oldDelegate.vpStart != vpStart ||
-      oldDelegate.vpEnd != vpEnd;
+      oldDelegate.vpEnd != vpEnd ||
+      !listEquals(oldDelegate.marks, marks);
 }
 
 /// 统一视图里的一行：符号（'  ' / '- ' / '+ '）+ 行号 + 文本。
