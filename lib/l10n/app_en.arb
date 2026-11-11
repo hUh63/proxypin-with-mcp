@@ -6108,5 +6108,24 @@
         "type": "int"
       }
     }
-  }
+  },
+  "toolboxGroupDiff": "Compare",
+  "toolboxGroupNetwork": "Network & capture",
+  "toolboxGroupSecurity": "Security & testing",
+  "toolboxGroupDevice": "Device & certificates",
+  "toolboxEncodeEntry": "Encode / decode",
+  "toolboxEncodeEntryTip": "URL, Base64, Base32, Unicode, Hex, HTML, GZip, Deflate and URL params — one page, switch tabs",
+  "toolboxHashEntry": "Hash & digest",
+  "toolboxHashEntryTip": "MD5, SHA family, HMAC and Bcrypt",
+  "toolboxCipherEntry": "Symmetric ciphers",
+  "toolboxCipherEntryTip": "AES, DES, 3DES, SM4, ChaCha20, XOR",
+  "toolboxDeviceEntry": "Device tools",
+  "toolboxDeviceEntryTip": "Device info, model spoofing, device profiles",
+  "toolboxCertEntry": "Certificate tools",
+  "toolboxCertEntryTip": "Fingerprint, certificate chain check",
+  "toolboxSearchHint": "Search tools",
+  "toolboxSearchEmpty": "No matching tool",
+  "toolboxGroupEncode": "Encode & convert",
+  "toolboxGroupCipher": "Cipher & signature",
+  "toolboxGroupText": "Text & view"
 }
