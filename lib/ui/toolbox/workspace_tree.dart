@@ -185,7 +185,6 @@ class _WorkspaceTreeSheetState extends State<WorkspaceTreeSheet> {
                       style: theme.textTheme.titleSmall),
                 ),
                 IconButton(
-                  tooltip: MaterialLocalizations.of(context).refreshIndicatorSemanticLabel,
                   icon: const Icon(Icons.refresh, size: 18),
                   onPressed: () {
                     // `_load` 内部会自己 setState（转圈 / 完成），不能在 setState

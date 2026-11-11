@@ -4718,13 +4718,22 @@ class _DensityPainter extends CustomPainter {
     }
   }
 
+  /// 手写比较：这个文件没有（也不值得为它）引入 foundation 的 listEquals。
+  static bool _sameMarks(List<double> a, List<double> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   @override
   bool shouldRepaint(covariant _DensityPainter oldDelegate) =>
       oldDelegate.rows != rows ||
       oldDelegate.isDark != isDark ||
       oldDelegate.vpStart != vpStart ||
       oldDelegate.vpEnd != vpEnd ||
-      !listEquals(oldDelegate.marks, marks);
+      !_sameMarks(oldDelegate.marks, marks);
 }
 
 /// 统一视图里的一行：符号（'  ' / '- ' / '+ '）+ 行号 + 文本。
