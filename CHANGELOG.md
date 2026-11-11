@@ -30,8 +30,18 @@
   而「转到定义」本来就能跨文件。现在速览也会去其它已打开的文档里找，卡片里的
   「看引用 / 跳过去」会自动切到那个文档。
 
+### 排查（全功能，10 个维度）
+- 修 **两处真实的控制器泄漏**：桌面设置页的「齿轮」菜单和全局右键菜单各持有一个
+  `MenuController`，都是 `ChangeNotifier`、还会挂 `OverlayEntry`，但页面销毁时只放了
+  `FocusNode`/什么都没放 —— 每进一次设置页、每右键一次就留一份监听和 Overlay 记录。
+  这类泄漏不会立刻崩，只表现为「用久了变卡、偶发的 context 失效」；
+- 复核无问题（勿重复劳动）：`.first/.last` 43 处（全是 `split(...)` 非空结果或可空链）、
+  `Timer.periodic` 无 cancel 0 个、`StreamSubscription` 未取消 0 个、`FocusNode` 未释放 0 个、
+  `await` 后 `setState` 缺 `mounted` 0 处、`substring` 负参 1 处（有 `n > 192` 守卫）、
+  l10n 零引用键仅 3 个历史遗留、`assets/` 引用 15 个全存在、9 语言键集一致。
+
 ### 测试
-- 新增 `test/text_diff_position_test.dart`（按行号对齐引擎，8 例）。
+- 新增 `test/text_diff_position_test.dart`（按行号对齐引擎，9 例）。
 
 ## v1.67.273 (2026-11-10) — 忽略匹配行、行整理、定时任务备份 + 数据丢失修复
 

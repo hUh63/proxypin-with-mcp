@@ -202,6 +202,8 @@ class _ContextMenuAnchorState extends State<_ContextMenuAnchor> {
 
   @override
   void dispose() {
+    // MenuController 也是 ChangeNotifier；只放 FocusNode 会让每次右键都留一份监听。
+    _controller.dispose();
     _anchorFocusNode.dispose();
     super.dispose();
   }

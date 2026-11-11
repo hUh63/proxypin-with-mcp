@@ -68,6 +68,14 @@ class _SettingState extends State<Setting> {
   }
 
   @override
+  void dispose() {
+    // MenuController 是 ChangeNotifier，还会挂 OverlayEntry：
+    // 每次进设置页都 new 一个而不 dispose，关掉页面后监听与 Overlay 都留着。
+    _menuController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MenuAnchor(
       controller: _menuController,
