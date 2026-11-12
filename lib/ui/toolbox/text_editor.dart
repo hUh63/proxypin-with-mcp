@@ -198,9 +198,6 @@ enum _Newline { lf, crlf, cr }
 /// 超过该字符数自动开启流畅模式（与 MT 的 20 万一致）。
 const int _kSmoothThreshold = 200000;
 
-/// 不可见字符高亮上限（超出只着色前 N 个，避免超长文本卡顿）。
-const int _kMaxHighlights = 3000;
-
 const String _kPrefRetainMode = 'text_editor_retain_mode_v1';
 const String _kPrefNewline = 'text_editor_newline_v1';
 const String _kPrefSmoothKeepIme = 'text_editor_smooth_keep_ime_v1';
@@ -2506,6 +2503,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_applyFormat(selectionOnly: true));
       case 'rename':
         unawaited(_renameSymbol());
+      case 'workspaceSymbols':
+        unawaited(_showWorkspaceSymbols());
       case 'renamePair':
         unawaited(_renamePairedTag());
       case 'boxSelect':
@@ -4033,6 +4032,113 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 文本编辑器里改 `<div>` 却忘了下面的 `</div>`，是结构化文本最常见的低级错误；
   /// 而且要改的地方常隔着几十行，靠肉眼找配对很容易漏。
+  /// 工作区符号（VS 的「转到工作区符号」/ Ctrl+T）。
+  ///
+  /// 和「转到符号」的区别只在范围：那个看当前文件，这个看整个工作区。
+  /// 「那个 CacheManager 到底写在哪个文件里」这类问题，靠目录树翻太慢、
+  /// 靠全文搜索名字又会被无数调用点淹没 —— 声明清单是筛过的。
+  Future<void> _showWorkspaceSymbols() async {
+    final doc = _doc;
+    if (doc == null) return;
+    final scope = await _collectScopeFiles(doc);
+    if (!mounted) return;
+    final hits = <_FileSearchHit>[];
+    for (final f in scope) {
+      final content = f.content;
+      if (content.isEmpty || content.length > 2000000) continue;
+      var offset = 0;
+      final lines = content.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        // 只收顶层与一级缩进：方法体里的局部变量、嵌套闭包不是「符号」。
+        if (line.trim().isNotEmpty && CodeSymbols.indentOf(line) <= 2) {
+          final name = CodeSymbols.declaredName(line);
+          if (name != null) {
+            final at = line.indexOf(name);
+            hits.add(_FileSearchHit(
+              label: name,
+              path: f.path,
+              line: i + 1,
+              offset: offset + (at < 0 ? 0 : at),
+              matchLength: name.length,
+              text: line.trim(),
+            ));
+          }
+        }
+        offset += line.length + 1;
+      }
+    }
+    if (hits.isEmpty) {
+      _toast(localizations.editorSymbolsEmpty);
+      return;
+    }
+    final query = TextEditingController();
+    var filtered = List<_FileSearchHit>.of(hits);
+    final chosen = await showModalBottomSheet<_FileSearchHit>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        return SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.7,
+          child: Column(children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+              child: TextField(
+                controller: query,
+                autofocus: true,
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search, size: 18),
+                  hintText: localizations.editorSymbolsFilter,
+                  border: const OutlineInputBorder(),
+                  suffixText: '${filtered.length}/${hits.length}',
+                ),
+                onChanged: (v) {
+                  final q = v.trim().toLowerCase();
+                  setSheet(() {
+                    filtered = q.isEmpty
+                        ? List<_FileSearchHit>.of(hits)
+                        : hits
+                            .where((h) =>
+                                h.label.toLowerCase().contains(q) ||
+                                h.text.toLowerCase().contains(q))
+                            .toList();
+                  });
+                },
+              ),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Text(localizations.editorSymbolsEmpty,
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12)))
+                  : ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (ctx, i) {
+                        final h = filtered[i];
+                        final file = (h.path ?? '').split(Platform.pathSeparator).last;
+                        return ListTile(
+                          dense: true,
+                          title: Text(h.label, style: const TextStyle(fontSize: 13)),
+                          subtitle: Text('${file.isEmpty ? h.label : file} : ${h.line}',
+                              style: const TextStyle(fontSize: 11)),
+                          trailing: Text(h.text,
+                              style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                              overflow: TextOverflow.ellipsis),
+                          onTap: () => Navigator.pop(ctx, h),
+                        );
+                      },
+                    ),
+            ),
+          ]),
+        );
+      }),
+    );
+    query.dispose();
+    if (chosen == null || !mounted) return;
+    await _openRefHit(chosen, selectLength: chosen.matchLength);
+  }
+
   Future<void> _renamePairedTag() async {
     final controller = _controller;
     if (controller == null) return;
@@ -10738,6 +10844,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
           _menuItem('callHierarchy', Icons.account_tree_outlined, loc.editorCallHierarchy),
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
+          _menuItem('workspaceSymbols', Icons.manage_search, loc.editorWorkspaceSymbols),
           _menuItem('renamePair', Icons.tag, loc.editorRenamePair),
           _menuItem('prevChange', Icons.keyboard_double_arrow_up, loc.editorPrevChange),
           _menuItem('nextChange', Icons.keyboard_double_arrow_down, loc.editorNextChange),
@@ -10889,6 +10996,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _openSettings();
         case 'rename':
           unawaited(_renameSymbol());
+        case 'workspaceSymbols':
+          unawaited(_showWorkspaceSymbols());
         case 'renamePair':
           unawaited(_renamePairedTag());
         case 'boxSelect':

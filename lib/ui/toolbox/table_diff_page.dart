@@ -733,6 +733,16 @@ class _TableDiffPageState extends State<TableDiffPage> {
             Text('−${result.removedRows}', style: style.copyWith(color: const Color(0xFFC62828))),
             const SizedBox(width: 8),
           ],
+          if (_leftName.isNotEmpty || _rightName.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Text(
+                '${_leftName.isEmpty ? loc.diffOriginal : _leftName} ↔ '
+                '${_rightName.isEmpty ? loc.diffChanged : _rightName}',
+                style: style,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           if (result.rowKey.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),

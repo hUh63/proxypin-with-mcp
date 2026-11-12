@@ -19,6 +19,9 @@
  *
  * 不打 integration 标签，CI 会真实执行。
  */
+@Timeout(Duration(seconds: 120))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
@@ -37,7 +40,6 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/util/file_read.dart';
 
-@Timeout(Duration(seconds: 120))
 
 const _wsGuid = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 

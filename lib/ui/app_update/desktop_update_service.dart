@@ -150,7 +150,7 @@ class DesktopUpdateService {
             clearError: true,
           );
           return;
-        } on DesktopUpdateException catch (e) {
+        } on DesktopUpdateException {
           if (_cancelRequested) rethrow;
           if (i < urls.length - 1) continue;
           rethrow;

@@ -3320,10 +3320,27 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 打开三方合并：预填当前左右内容（左=基线、右=我的），返回的合并结果
   /// 可以选择直接替换右栏，省掉「保存到文件再打开」。
+  /// 读存档里的基线文本（没有就返回 null）。三路合并与「与基线对比」共用。
+  Future<String?> _baselineText() async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(_baselineKey);
+      if (raw == null || raw.isEmpty) return null;
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      final t = (m['text'] as String?) ?? '';
+      return t.isEmpty ? null : t;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _openThreeWayMerge() async {
+    // 存过基线时用基线当「共同祖先」：这才是三路合并的语义
+    // （基线 = 原始版本，左/右 = 两份各自改动）。没有基线才退回「左 = 基线」。
+    final baseline = await _baselineText();
+    if (!mounted) return;
     final merged = await Navigator.of(context).push<String>(MaterialPageRoute(
       builder: (_) => ThreeWayMergePage(
-        initialBase: _left.text,
+        initialBase: baseline ?? _left.text,
         initialMine: _right.text,
       ),
     ));

@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.67.300 (2026-11-13) — 工作区符号、三路合并用基线、清理我自己上轮留下的坑
+
+### 编辑器（对标 VS2026）
+- **工作区符号**（VS 的 Ctrl+T / 「转到工作区符号」）：把范围内所有文件的顶层声明
+  列成一张可搜索的表，点一下跳过去。「那个 CacheManager 到底写在哪个文件里」这类
+  问题，靠目录树翻太慢、靠全文搜索名字又会被无数调用点淹没 —— 声明清单是筛过的。
+  只收顶层与一级缩进的声明（方法体里的局部变量、嵌套闭包不算符号）。
+
+### 文本对比
+- **三路合并现在用基线当「共同祖先」**：存过基线时，`基线 = 原始版本，左/右 = 两份
+  各自改动`，这才是三路合并的语义；没有基线才退回「左 = 基线」。
+- **表格对比显示两侧文件名**：`_leftName/_rightName` 之前只赋值不显示，导出的差异
+  清单和自己看到的对不上号。
+
+### 排查与清理
+- **修掉我自己上一版留下的坑**：`text_editor_menus` 里删重复 case 时，把
+  `case 'nextBookmark': case 'prevBookmark': case 'bookmarks':` 的 `return` 一起删了，
+  留下三个「裸 case」直接落到 switch 结束 —— 语法合法、但 analyzer 报三条
+  `unreachable_switch_case`。已清掉（这三个 id 前面早就有 case）。
+- `preference.dart` 的私有方法上挂着 `@override`（没有父类方法可重写）。
+- `archive_preview` 里 `data is Uint8List ? data : (data is List<int> ? ... : null)`
+  三段判断：archive 4.x 的 `file.content` 已经是 `Uint8List`，简化成 `final bytes = data;`。
+- 未使用的 `catch (e)` 参数、未使用的常量 `_kMaxHighlights`、测试里悬空的
+  `@Timeout`（要挂在 `library;` 上，否则报 `invalid_annotation_target`）、
+  未使用的 `dart:io` import。
+- **`use_build_context_synchronously`（89 条 info）暂不处理**：抽样看下来绝大多数是
+  analyzer 对「`context` 作为参数传给另一个函数」的保守告警（调用点已经在
+  `if (mounted)` 里），要消掉只能把 `if (mounted) { ... }` 改成 `if (!mounted) return;`
+  并调整控制流 —— 收益是 0 行行为变化、成本是几十处控制流改写，风险大于收益。
+  真需要跨 async gap 用 context 的新代码，继续按 `if (!mounted) return;` 写。
+
 ## v1.67.298 (2026-11-12) — 差异块快捷应用、清理 100+ 条 warning、四处真问题
 
 ### 文本对比

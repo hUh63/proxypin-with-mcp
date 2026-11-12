@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/channel/channel_context.dart';

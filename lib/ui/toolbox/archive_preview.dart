@@ -282,7 +282,7 @@ class _ArchivePreviewPageState extends State<ArchivePreviewPage> {
     }
     if (file == null) return;
     final data = file.content;
-    final bytes = data is Uint8List ? data : (data is List<int> ? Uint8List.fromList(data) : null);
+    final bytes = data;
     if (bytes == null) return;
     final lower = name.toLowerCase();
     if (_imageExt.hasMatch(lower)) {

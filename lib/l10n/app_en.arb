@@ -6182,5 +6182,6 @@
   "editorNoTagHere": "No tag at cursor",
   "editorTagSelfClosing": "Self-closing tag has no pair",
   "editorTagNoPair": "No matching tag found",
-  "editorRectSingleLine": "Select more than one line"
+  "editorRectSingleLine": "Select more than one line",
+  "editorWorkspaceSymbols": "Workspace symbols"
 }

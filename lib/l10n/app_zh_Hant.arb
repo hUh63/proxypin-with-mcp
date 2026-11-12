@@ -5406,5 +5406,6 @@
   "editorNoTagHere": "光標處沒有標籤",
   "editorTagSelfClosing": "自閉合標籤沒有配對",
   "editorTagNoPair": "找不到配對的標籤",
-  "editorRectSingleLine": "請跨多行選取"
+  "editorRectSingleLine": "請跨多行選取",
+  "editorWorkspaceSymbols": "工作區符號"
 }

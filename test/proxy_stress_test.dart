@@ -9,6 +9,9 @@
  * 全部走**真实 socket**（proxy -> origin），不打 integration 标签，
  * 因此 CI 上会真实执行——这是这几项改动的主要验证手段。
  */
+@Timeout(Duration(minutes: 3))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
@@ -27,7 +30,6 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/file_read.dart';
 
 // 若读路径出现自循环/死锁，宁可让用例超时失败，也不要让 CI 无限挂起。
-@Timeout(Duration(minutes: 3))
 
 /// 简单事件监听器：只记录计数，避免把 body 全留在内存里影响压测本身。
 class _CountingListener extends EventListener {

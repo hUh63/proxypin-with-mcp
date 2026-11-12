@@ -693,6 +693,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('conflicts', _conflictsLabel,
       group: 'code', aliases: 'cj 合并冲突 冲突 conflicts merge git'),
   EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
+  EditorMenuItem('workspaceSymbols', _workspaceSymbolsLabel, group: 'code',
+      aliases: 'gzzfh 工作区符号 符号搜索 workspacesymbols ctrl+t global symbol'),
   EditorMenuItem('renamePair', _renamePairLabel, group: 'code',
       aliases: 'bdq 标签 配对标签 rename tag pair'),
   EditorMenuItem('boxSelect', _boxSelectLabel, group: 'edit',
@@ -827,6 +829,7 @@ String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
 String _referencesLabel(AppLocalizations l) => l.editorReferences;
 String _callHierarchyLabel(AppLocalizations l) => l.editorCallHierarchy;
 String _renameLabel(AppLocalizations l) => l.editorRename;
+String _workspaceSymbolsLabel(AppLocalizations l) => l.editorWorkspaceSymbols;
 String _renamePairLabel(AppLocalizations l) => l.editorRenamePair;
 String _boxSelectLabel(AppLocalizations l) => l.editorRectSelect;
 String _workspaceLabel(AppLocalizations l) => l.editorWorkspace;
@@ -1069,6 +1072,8 @@ IconData menuIconOf(String id) {
       return Icons.account_tree_outlined;
     case 'rename':
       return Icons.drive_file_rename_outline;
+    case 'workspaceSymbols':
+      return Icons.manage_search;
     case 'renamePair':
       return Icons.tag;
     case 'boxSelect':
@@ -1168,9 +1173,6 @@ IconData menuIconOf(String id) {
       return Icons.translate;
     case 'saveAll':
       return Icons.save;
-    case 'nextBookmark':
-    case 'prevBookmark':
-    case 'bookmarks':
   }
   return Icons.chevron_right;
 }

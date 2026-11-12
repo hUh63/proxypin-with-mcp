@@ -365,7 +365,6 @@ class _PreferenceState extends State<Preference> {
     return false;
   }
 
-  @override
   /// 系统级 QUIC 回落（#489 root 能力）：iptables 丢弃全部 UDP:443 强制回落 TCP
   Future<void> _systemQuicFallback(bool enable) async {
     final localizations = AppLocalizations.of(context)!;
