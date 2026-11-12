@@ -69,7 +69,7 @@ void main() {
   });
 
   group('不该被误伤', () {
-    test('占位符 $1 不受影响', () {
+    test(r'占位符 $1 不受影响', () {
       expect(expand(r'fn();$1'), r'fn();$1');
     });
     test('占位符 \${1:默认值} 不受影响', () {
@@ -82,7 +82,7 @@ void main() {
       expect(expand(r'echo $foo'), r'echo $foo');
       expect(expand('\${HOME}/bin'), '\${HOME}/bin');
     });
-    test('没有 $ 时原样返回', () {
+    test(r'没有 $ 时原样返回', () {
       expect(expand('plain text'), 'plain text');
     });
   });
