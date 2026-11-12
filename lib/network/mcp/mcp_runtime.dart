@@ -376,7 +376,7 @@ class McpToolRuntime {
           tool, DateTime.now().difference(startedAt).inMilliseconds, ok);
       _audit(tool, caller, startedAt, ok,
           // !ok 就等于「result 是 Map 且带 error」，所以这里不用再判 is Map。
-          ok ? null : (result as Map)['error']?.toString(), args);
+          ok ? null : result['error']?.toString(), args);
       return result;
     } on McpBusyException catch (e) {
       McpMetrics.instance.recordRejected();

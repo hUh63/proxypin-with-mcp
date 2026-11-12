@@ -616,7 +616,6 @@ class _HttpState extends State<_HttpWidget> with SingleTickerProviderStateMixin,
       ]);
     }
 
-    final isCN = localizations.localeName == 'zh';
     final isNone = _bodyLanguage == _BodyLanguage.none;
     final ct = _bodyLanguageToContentType[_bodyLanguage];
     final language = ct == null ? null : HighlightLanguages.getLanguage(ct);

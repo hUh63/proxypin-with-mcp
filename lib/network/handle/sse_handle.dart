@@ -44,7 +44,7 @@ class SseChannelHandler extends ChannelHandler<Uint8List> {
 
   @override
   Future<void> channelRead(ChannelContext channelContext, Channel channel, Uint8List msg) async {
-    final Uint8List payload = _chunkDecoder != null ? _chunkDecoder!.feed(msg) : msg;
+    final Uint8List payload = _chunkDecoder != null ? _chunkDecoder.feed(msg) : msg;
 
     if (wrapHttp2Data) {
       await _writeDataFrames(payload, endStream: _chunkDecoder?.isDone == true);
@@ -113,19 +113,19 @@ class SseChannelHandler extends ChannelHandler<Uint8List> {
 
   void _captureEncoded(Uint8List payload) {
     if (payload.isEmpty || _encoded!.length >= _maxEncodedBody) return;
-    final int room = _maxEncodedBody - _encoded!.length;
+    final int room = _maxEncodedBody - _encoded.length;
     if (payload.length <= room) {
-      _encoded!.addAll(payload);
+      _encoded.addAll(payload);
       return;
     }
-    _encoded!.addAll(payload.take(room));
+    _encoded.addAll(payload.take(room));
     log.w("sse encoded body truncated at $_maxEncodedBody bytes");
   }
 
   void _decodeEncoded(ChannelContext channelContext, Channel channel) {
     if (_encodedClosed || _encoded == null) return;
     _encodedClosed = true;
-    final Uint8List body = Uint8List.fromList(_encoded!);
+    final Uint8List body = Uint8List.fromList(_encoded);
     decodeEncodedEventStream(body, message.headers.contentEncoding).then((frames) {
       try {
         _publish(channelContext, channel, frames);

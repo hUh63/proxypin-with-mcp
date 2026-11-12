@@ -247,7 +247,7 @@ class _MCPTaskManagerPageState extends State<MCPTaskManagerPage> {
               onPressed: () async {
                 if (nameController.text.isEmpty) return;
                 if (isEdit) {
-                  final updated = task!.copyWith(
+                  final updated = task.copyWith(
                     name: nameController.text,
                     description: descController.text,
                     triggerType: selectedTrigger,

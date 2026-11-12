@@ -405,7 +405,7 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   void addResponse(ChannelContext channelContext, HttpResponse response) {
     // 暂停期间该请求尚未进入视图，先缓存响应，恢复时与请求一起补进去。
     final requestId = response.request?.requestId ?? response.requestId;
-    if (_followPaused && requestId != null && _pausedChannels.containsKey(requestId)) {
+    if (_followPaused && _pausedChannels.containsKey(requestId)) {
       _pausedResponses[requestId] = (channelContext, response);
       return;
     }
@@ -584,12 +584,12 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
         await HttpClients.proxyRequest(httpRequest, proxyInfo: proxyInfo, timeout: const Duration(seconds: 10));
         RepeatTaskManager.instance.record(task, ok: true);
         if (mounted) {
-          FlutterToastr.show(localizations!.reSendRequest, rootNavigator: true, context);
+          FlutterToastr.show(localizations.reSendRequest, rootNavigator: true, context);
         }
       } catch (e) {
         RepeatTaskManager.instance.record(task, ok: false, error: e.toString());
         if (mounted) {
-          FlutterToastr.show('${localizations!.fail} $e', rootNavigator: true, context);
+          FlutterToastr.show('${localizations.fail} $e', rootNavigator: true, context);
         }
       }
     }

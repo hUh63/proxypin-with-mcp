@@ -73,7 +73,7 @@ class _JsRestorePageState extends State<JsRestorePage> {
   Future<void> _pickFile() async {
     try {
       final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['js', 'txt', 'mjs']);
-      if (result == null || result.isEmpty) return;
+      if (result.isEmpty) return;
       final file = result.single;
       final content = await file.xFile.readAsString();
       if (!mounted) return;

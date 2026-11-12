@@ -311,7 +311,6 @@ class _ProxyMenuState extends State<_ProxyMenu> {
 
   @override
   Widget build(BuildContext context) {
-    bool isEn = localizations.localeName.startsWith("en");
     return SubmenuButton(
       menuChildren: [
         PortWidget(proxyServer: widget.proxyServer, textStyle: const TextStyle(fontSize: 13)),

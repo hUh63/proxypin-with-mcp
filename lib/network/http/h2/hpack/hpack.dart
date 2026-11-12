@@ -77,14 +77,17 @@ class HPackDecoder {
   /// 协议错误处理：抛 [HPackDecodingException] 让上层断开这条连接。
   static const int hardMaxTableSize = 16384;
 
-  int _maxHeaderTableSize = 4096;
-
   final IndexTable _table = IndexTable();
 
   void updateMaxReceivingHeaderTableSize(int newMaximumSize) {
-    // 只是记录（对端 SETTINGS 里说的值），真正的硬上限是 [hardMaxTableSize]：
-    // 自己解码表的大小必须由「我们自己声明的 SETTINGS」决定，不能跟着对端放大。
-    _maxHeaderTableSize = newMaximumSize.clamp(0, hardMaxTableSize);
+    // 对端 SETTINGS 里说的值**不用来调整本端解码表**：解码表大小必须由
+    // 我们自己声明的 SETTINGS 决定，不能跟着对端放大（放大就等于把内存交给对方）。
+    // 以前这里把它存进一个字段，但那个字段从没被读过 —— 等于「记了个数字装样子」。
+    // 真正生效的是 decode() 里对 dynamic table size update 的硬上限检查。
+    // 这里只留一个负数校验：协议上不允许负值，出现了就当解码错误。
+    if (newMaximumSize < 0) {
+      throw HPackDecodingException('invalid HEADER_TABLE_SIZE ($newMaximumSize)');
+    }
   }
 
   List<Header> decode(List<int> data) {

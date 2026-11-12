@@ -6209,7 +6209,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
       context: context,
       showDragHandle: true,
       builder: (ctx) {
-        final theme = Theme.of(ctx);
         var useSelection = hasSelection;
         return StatefulBuilder(builder: (ctx2, setSheet) {
           final st = useSelection && part != null ? part : whole;
@@ -8240,7 +8239,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               // 直接 indexOf 会把字符串里的那段当成注释删掉。
               final indentLen = l.length - l.trimLeft().length;
               var idx = l.indexOf(token!, indentLen);
-              if (idx < 0) idx = l.indexOf(token!);
+              if (idx < 0) idx = l.indexOf(token);
               var rest = l.substring(idx + token.length);
               if (rest.startsWith(' ')) rest = rest.substring(1);
               return l.substring(0, idx) + rest;

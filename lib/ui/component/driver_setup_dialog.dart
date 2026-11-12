@@ -94,7 +94,7 @@ class _DriverSetupDialogState extends State<_DriverSetupDialog> {
     final l = AppLocalizations.of(context)!;
     try {
       final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
-      if (files == null || files.isEmpty) return;
+      if (files.isEmpty) return;
       final path = files.single.xFile.path;
       if (!mounted) return;
       setState(() {

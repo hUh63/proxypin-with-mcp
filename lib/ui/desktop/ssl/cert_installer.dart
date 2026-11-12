@@ -34,7 +34,7 @@ class CertInstaller {
       if (Platform.isLinux) {
         // 上游 #661：Linux 上普通用户写不进系统信任库，
         // 旧实现直接 copy，权限不足就静默失败（用户只看到“安装失败”）。
-        return _installOnLinux(certFile);
+        return await _installOnLinux(certFile);
       }
 
       // 其他平台已预留，可通过平台通道扩展

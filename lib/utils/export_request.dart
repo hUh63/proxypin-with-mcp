@@ -410,7 +410,7 @@ void showExportDialog(
                     final imported = decodeRequestPasscode(data?.text ?? '');
                     if (imported.isEmpty) throw FormatException(localizations.exportImportEmpty);
                     Navigator.pop(context);
-                    onImport!(imported);
+                    onImport(imported);
                     if (ctx.mounted) {
                       FlutterToastr.show(localizations.exportImportedCount(imported.length), ctx);
                     }

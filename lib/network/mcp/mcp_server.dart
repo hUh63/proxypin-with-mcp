@@ -1295,7 +1295,7 @@ class McpServer {
                   return null;
                 }
               })
-              .where((h) => h != null && h!.isNotEmpty)
+              .where((h) => h != null && h.isNotEmpty)
               .toSet()
               .take(10);
           for (var domain in recentDomains) {
@@ -1889,7 +1889,7 @@ class McpServer {
         'step': i,
         'tool': tool,
         'ok': ok,
-        if (!ok) 'error': (result as Map)['error']?.toString(),
+        if (!ok) 'error': result['error']?.toString(),
         'result': result,
       });
       if (!ok && stopOnError) break;

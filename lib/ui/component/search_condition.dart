@@ -134,11 +134,9 @@ class SearchConditionsState extends State<SearchConditions> {
                       DropdownMenuEntry(value: 'statusCode', label: localizations.statusCode),
                     ],
                     onSelected: (val) {
-                      if (val != null) {
-                        setState(() {
-                          searchModel.sortBy = SortBy.values.firstWhere((e) => e.name == val);
-                        });
-                      }
+                      setState(() {
+                        searchModel.sortBy = SortBy.values.firstWhere((e) => e.name == val);
+                      });
                     },
                   ),
                   const SizedBox(width: 8),
@@ -150,11 +148,9 @@ class SearchConditionsState extends State<SearchConditions> {
                       DropdownMenuEntry(value: 'asc', label: localizations.sortAsc),
                     ],
                     onSelected: (val) {
-                      if (val != null) {
-                        setState(() {
-                          searchModel.sortOrder = SortOrder.values.firstWhere((e) => e.name == val);
-                        });
-                      }
+                      setState(() {
+                        searchModel.sortOrder = SortOrder.values.firstWhere((e) => e.name == val);
+                      });
                     },
                   ),
                 ],

@@ -270,7 +270,7 @@ class _ConfigManagementState extends State<ConfigManagement> {
         allowedExtensions: ['json'],
       );
 
-      if (result == null || result.isEmpty) {
+      if (result.isEmpty) {
         // 用户取消
         return;
       }

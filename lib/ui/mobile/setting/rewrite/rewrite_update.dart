@@ -182,7 +182,6 @@ class _RewriteUpdateAddState extends State<RewriteUpdateEdit> {
     }
 
     var typeList = widget.ruleType == RuleType.requestUpdate ? RewriteType.updateRequest : RewriteType.updateResponse;
-    bool isCN = Localizations.localeOf(context).languageCode == "zh";
     return Scaffold(
         appBar: AppBar(
             centerTitle: true,

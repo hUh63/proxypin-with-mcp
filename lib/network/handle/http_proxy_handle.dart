@@ -234,7 +234,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       for (var interceptor in interceptors) {
         HttpResponse? response;
         try {
-          response = await interceptor.execute(request!);
+          response = await interceptor.execute(request);
         } catch (e, s) {
           log.e('本地 mock 拦截器执行失败: ${interceptor.runtimeType}', error: e, stackTrace: s);
           continue;
@@ -251,7 +251,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       }
 
       //重定向
-      var uri = request!.domainPath;
+      var uri = request.domainPath;
       String? redirectUrl = await (RequestRewriteInterceptor.instance).getRedirectRule(uri);
       if (redirectUrl?.isNotEmpty == true) {
         await redirect(channelContext, channel, request, redirectUrl!);
@@ -267,7 +267,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       }
       if (remoteChannel != null) await channelContext.writeForwardedRequest(remoteChannel, request);
       // 转发完成后按「抓包内容上限」裁剪请求体（上游 #773）
-      if (request != null) CaptureBodyLimiter.limit(request);
+      CaptureBodyLimiter.limit(request);
     }
   }
 
@@ -572,7 +572,7 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
     //发送给客户端
     await clientChannel.write(channelContext, response!);
     // 转发完成后按「抓包内容上限」裁剪 body（上游 #773）
-    CaptureBodyLimiter.limit(response!);
+    CaptureBodyLimiter.limit(response);
   }
 
   @override

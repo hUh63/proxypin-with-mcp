@@ -969,8 +969,6 @@ IconData menuIconOf(String id) {
       return Icons.swap_vert;
     case 'ascii':
       return Icons.visibility_outlined;
-    case 'minify':
-      return Icons.compress;
     case 'nextBookmark':
       return Icons.bookmark_add_outlined;
     case 'open':
@@ -1152,16 +1150,12 @@ IconData menuIconOf(String id) {
       return Icons.auto_awesome;
     case 'smoothKeepIme':
       return Icons.keyboard;
-    case 'ascii':
     case 'unicode':
       return Icons.visibility_outlined;
     case 'navBack':
       return Icons.arrow_back;
     case 'navForward':
       return Icons.arrow_forward;
-    case 'stats':
-    case 'report':
-      return Icons.analytics_outlined;
     case 'aiAssist':
       return Icons.auto_awesome;
     case 'quickOpen':
@@ -1177,9 +1171,6 @@ IconData menuIconOf(String id) {
     case 'nextBookmark':
     case 'prevBookmark':
     case 'bookmarks':
-    case 'toggleBookmark':
-    case 'clearBookmarks':
-      return Icons.label_outline;
   }
   return Icons.chevron_right;
 }

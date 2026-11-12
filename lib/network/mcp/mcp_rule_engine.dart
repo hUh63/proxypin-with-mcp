@@ -537,7 +537,6 @@ class Action {
       return;
     }
     try {
-      final mgr = await ScriptManager.instance;
       await ScriptManager.flutterJsPool.run((flutterJs) async {
         final jsResult = await flutterJs.evaluateAsync(
           'var context = {}; $content\n  onRequest(context, {})');

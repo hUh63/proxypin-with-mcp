@@ -464,7 +464,6 @@ class _UpdateListState extends State<UpdateList> {
 
   List<Widget> rows(List<RewriteItem> list) {
     var primaryColor = Theme.of(context).colorScheme.primary;
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     return List.generate(list.length, (index) {
       return InkWell(

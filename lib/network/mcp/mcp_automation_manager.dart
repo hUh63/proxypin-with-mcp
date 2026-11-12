@@ -959,7 +959,6 @@ class MCPAutomationManager {
         } catch (_) {}
       } else {
         // JavaScript 脚本：通过 flutterJs 引擎执行
-        final mgr = await ScriptManager.instance;
         await ScriptManager.flutterJsPool.run((flutterJs) async {
           await flutterJs.evaluateAsync(
             'var context = ${jsonEncode(context)}; $code\n  onRequest(context, {})');

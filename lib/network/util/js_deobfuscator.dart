@@ -269,10 +269,10 @@ class JsDeobfuscator {
       '{indent_size: $indent, preserve_newlines: true, max_preserve_newlines: 2, '
       'end_with_newline: false, brace_style: "collapse"})',
     );
-    if (result.isError || result.stringResult == null) {
+    if (result.isError) {
       throw StateError(result.stringResult);
     }
-    return result.stringResult!;
+    return result.stringResult;
   }
 
   /// 执行一次 jsrestore 命令。
@@ -305,7 +305,7 @@ class JsDeobfuscator {
       '${jsonEncode(code)}, ${jsonEncode(outName)})',
     );
 
-    if (summaryResult.isError || summaryResult.stringResult == null) {
+    if (summaryResult.isError) {
       return JsRestoreResult(
         ok: false,
         output: '',
@@ -316,7 +316,7 @@ class JsDeobfuscator {
 
     Map<String, dynamic> summary;
     try {
-      summary = jsonDecode(summaryResult.stringResult!) as Map<String, dynamic>;
+      summary = jsonDecode(summaryResult.stringResult) as Map<String, dynamic>;
     } catch (e) {
       return JsRestoreResult(
         ok: false,

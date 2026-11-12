@@ -30,7 +30,8 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
   final ApiExtractor _extractor = ApiExtractor();
   List<ApiEndpoint> _endpoints = [];
   List<ApiEndpointGroup> _groups = [];
-  Map<String, dynamic>? _restPatterns;
+  /// REST 特征（每个资源组的 CRUD 档位 + 完整度）。以前只存不显示，白算了。
+  List<Map<String, dynamic>> _restPatterns = [];
   bool _isLoading = true;
   String _viewMode = 'group'; // 'group', 'domain', 'method'
   String _searchQuery = '';
@@ -55,7 +56,7 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
       setState(() {
         _endpoints = endpoints;
         _groups = groups;
-        _restPatterns = {'patterns': patterns};
+        _restPatterns = patterns;
         _isLoading = false;
       });
     });
@@ -192,6 +193,14 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
     );
   }
 
+  /// 取某个资源组的 REST 特征（按资源名匹配，取总调用量最大的那条）。
+  Map<String, dynamic>? _patternOf(String name) {
+    for (final p in _restPatterns) {
+      if (p['resource'] == name) return p;
+    }
+    return null;
+  }
+
   /// 分组视图
   Widget _buildGroupView() {
     return ListView.builder(
@@ -206,8 +215,14 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
               child: Text('${group.endpoints.length}'),
             ),
             title: Text(group.name),
-            subtitle: Text(AppLocalizations.of(context)!
-                .apiEpPathCalls(group.basePath, group.totalCalls)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(AppLocalizations.of(context)!
+                    .apiEpPathCalls(group.basePath, group.totalCalls)),
+                ..._patternLine(group.name),
+              ],
+            ),
             trailing: Chip(
               label: Text('${group.avgResponseTime.toStringAsFixed(0)}ms'),
               padding: EdgeInsets.zero,
@@ -228,6 +243,26 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
         );
       },
     );
+  }
+
+  /// 这个组的 CRUD 档位 + 完整度（GET/POST/PUT/DELETE 覆盖了几个）。
+  List<Widget> _patternLine(String groupName) {
+    final p = _patternOf(groupName);
+    if (p == null) return const <Widget>[];
+    final completeness = p['completeness'];
+    final pct = completeness is num ? completeness : 0;
+    return <Widget>[
+      Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Text(
+          '${p['patternType']} · ${pct.toStringAsPercent(0)}',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    ];
   }
 
   /// 列表视图

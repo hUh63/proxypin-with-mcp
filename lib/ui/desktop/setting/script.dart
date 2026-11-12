@@ -443,7 +443,6 @@ class _ScriptEditState extends State<ScriptEdit> {
   @override
   Widget build(BuildContext context) {
     GlobalKey formKey = GlobalKey<FormState>();
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     return AlertDialog(
       scrollable: true,

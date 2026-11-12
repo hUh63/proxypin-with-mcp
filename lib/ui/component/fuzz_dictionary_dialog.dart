@@ -64,7 +64,7 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
       type: FileType.custom,
       allowedExtensions: ['txt', 'csv', 'json', 'js'],
     );
-    if (files == null || files.isEmpty) return;
+    if (files.isEmpty) return;
     final file = files.first;
     final bytes = await file.readAsBytes();
     final text = utf8.decode(bytes, allowMalformed: true);

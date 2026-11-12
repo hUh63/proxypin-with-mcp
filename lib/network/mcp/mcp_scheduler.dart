@@ -141,12 +141,12 @@ class McpScheduler {
               task.executeAt.second,
             );
             logger.d('定时任务 ${task.name} 下次执行时间：${task.executeAt}');
-          } else if (task.repeatMode == 'weekly' && task.weekdays != null && task.weekdays!.isNotEmpty) {
+          } else if (task.repeatMode == 'weekly' && task.weekdays.isNotEmpty) {
             // 从明天开始找第一个选中的星期
             var next = DateTime(now.year, now.month, now.day + 1, task.executeAt.hour, task.executeAt.minute,
                 task.executeAt.second);
             for (int i = 0; i < 8; i++) {
-              if (task.weekdays!.contains(next.weekday)) break;
+              if (task.weekdays.contains(next.weekday)) break;
               next = next.add(const Duration(days: 1));
             }
             task.executeAt = next;
@@ -289,7 +289,7 @@ class McpScheduler {
           switch (t.repeatMode) {
             case 'daily':
               next = DateTime(now.year, now.month, now.day, t.executeAt.hour, t.executeAt.minute, t.executeAt.second);
-              if (!next.isAfter(now)) next = next!.add(const Duration(days: 1));
+              if (!next.isAfter(now)) next = next.add(const Duration(days: 1));
               break;
             case 'weekly':
               if (t.weekdays.isNotEmpty) {

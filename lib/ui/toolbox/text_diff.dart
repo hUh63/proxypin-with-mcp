@@ -1852,7 +1852,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(DirDiffPage.show(context, windowId: widget.windowId));
           case 'threeWay':
             unawaited(_openThreeWayMerge());
-          case 'syntax':
+          // 注意：上面已经有一个 'syntax'（语法高亮开关），同一个 value 只能命中第一个 case，
+          // 所以「检查两侧语法」以前永远走不到，点它只是把高亮开关切了一下。
+          case 'checkSyntax':
             unawaited(_checkSyntax());
           case 'swapLayout':
             final next = !_sideBySide;
@@ -2030,7 +2032,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ),
         PopupMenuItem(value: 'swapLayout', child: Text(
             _sideBySide ? localizations.diffStacked : localizations.diffSideBySide)),
-        PopupMenuItem(value: 'syntax', child: Text(localizations.diffSyntaxCheck)),
+        PopupMenuItem(value: 'checkSyntax', child: Text(localizations.diffSyntaxCheck)),
         PopupMenuItem(value: 'clear', child: Text(localizations.clear)),
       ],
     );
@@ -2043,7 +2045,53 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 动作已分别挪到工具栏（查找）与「更多」菜单（放大 / 缩小 / 统计）。
   Widget _bottomBar() {
     if (_focusBlock != null && _focusBlock! < _blocks.length) return _focusBar();
+    // 导航到某处差异时也给一条「就地应用」的快捷条：
+    // 以前「用左侧 / 用右侧」只藏在差异列表和聚焦模式里，逐块合并要反复开关面板。
+    final i = _navIndex;
+    if (i >= 0 && i < _blocks.length) return _navApplyBar(i);
     return const SizedBox.shrink();
+  }
+
+  /// 当前差异块的「上一个 / 下一个 / 用左侧 / 用右侧」快捷条。
+  Widget _navApplyBar(int idx) {
+    final theme = Theme.of(context);
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.4))),
+        color: theme.colorScheme.primary.withValues(alpha: 0.04),
+      ),
+      child: Row(children: <Widget>[
+        IconButton(
+          tooltip: localizations.diffPrev,
+          icon: const Icon(Icons.keyboard_arrow_up, size: 19),
+          onPressed: () => _navigate(-1),
+        ),
+        Text('${idx + 1}/${_blocks.length}',
+            style: TextStyle(fontSize: 12, color: theme.colorScheme.primary)),
+        IconButton(
+          tooltip: localizations.diffNext,
+          icon: const Icon(Icons.keyboard_arrow_down, size: 19),
+          onPressed: () => _navigate(1),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: () => _applyBlock(_blocks[idx], fromLeft: false),
+          child: Text('← ${localizations.diffUseRight}',
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+        ),
+        TextButton(
+          onPressed: () => _applyBlock(_blocks[idx], fromLeft: true),
+          child: Text('${localizations.diffUseLeft} →',
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+        ),
+        IconButton(
+          tooltip: localizations.cancel,
+          icon: const Icon(Icons.close, size: 16),
+          onPressed: () => setState(() => _navIndex = -1),
+        ),
+      ]),
+    );
   }
 
   /// 聚焦模式的底部条：当前第几处 + 「用右侧 / 用左侧」+ 退出。

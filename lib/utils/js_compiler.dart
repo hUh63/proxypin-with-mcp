@@ -1001,7 +1001,7 @@ class _Parser {
         props.add(Prop(key, _assign(), false));
       } else {
         if (cur.type == 'name' || cur.type == 'kw') throw JsUnsupported('shorthand method');
-        props.add(Prop(key, Ident(key!), true));
+        props.add(Prop(key, Ident(key), true));
       }
       if (!eatPunct(',')) break;
     }

@@ -35,7 +35,7 @@ List<int> brDecode(List<int> byteBuffer) {
 Future<List<int>?> zstdDecode(List<int> byteBuffer) async {
   final zstandard = Zstandard();
   try {
-    return zstandard.decompress(Uint8List.fromList(byteBuffer));
+    return await zstandard.decompress(Uint8List.fromList(byteBuffer));
   } catch (e) {
     logger.e("zstdDecode error: $e");
     return byteBuffer;

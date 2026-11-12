@@ -225,7 +225,7 @@ class QuicSessionsPage extends StatelessWidget {
   Future<void> _importKeylog(BuildContext context) async {
     try {
       final files = await FilePicker.pickFiles(type: FileType.any);
-      if (files == null || files.isEmpty) return;
+      if (files.isEmpty) return;
 
       final bytes = await files.first.readAsBytes();
       final text = utf8.decode(bytes, allowMalformed: true);

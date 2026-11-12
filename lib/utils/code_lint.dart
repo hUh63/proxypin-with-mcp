@@ -667,11 +667,11 @@ class CodeLint {
       }
 
       if (blockEnd != null) {
-        if (src.startsWith(blockEnd!, i)) {
-          for (var k = 0; k < blockEnd!.length && i + k < n; k++) {
+        if (src.startsWith(blockEnd, i)) {
+          for (var k = 0; k < blockEnd.length && i + k < n; k++) {
             units[i + k] = 32;
           }
-          i += blockEnd!.length;
+          i += blockEnd.length;
           blockEnd = null;
           continue;
         }

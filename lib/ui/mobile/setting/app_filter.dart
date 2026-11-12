@@ -61,7 +61,6 @@ class _AppWhitelistState extends State<AppWhitelist> {
   }
 
   void _loadApps() async {
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
     try {
       var futures = <Future<AppInfo>>[];
       for (var element in configuration.appWhitelist) {
@@ -96,7 +95,6 @@ class _AppWhitelistState extends State<AppWhitelist> {
 
   @override
   Widget build(BuildContext context) {
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     return Scaffold(
         appBar: AppBar(
@@ -112,7 +110,6 @@ class _AppWhitelistState extends State<AppWhitelist> {
                 if (packageName != null && !configuration.appWhitelist.contains(packageName)) {
                   configuration.appWhitelist.add(packageName);
                   changed = true;
-                  bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
                   var newApp = await InstalledApps.getAppInfo(packageName).catchError((e) {
                     return AppInfo(name: localizations.appFilterUnknownApp, packageName: packageName, inValid: true);
                   });
@@ -230,7 +227,6 @@ class _AppBlacklistState extends State<AppBlacklist> {
   }
 
   void _loadApps() async {
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
     try {
       var futures = <Future<AppInfo>>[];
       for (var element in configuration.appBlacklist ?? []) {
@@ -265,7 +261,6 @@ class _AppBlacklistState extends State<AppBlacklist> {
 
   @override
   Widget build(BuildContext context) {
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     return Scaffold(
       appBar: AppBar(
@@ -282,7 +277,6 @@ class _AppBlacklistState extends State<AppBlacklist> {
                 configuration.appBlacklist ??= [];
                 configuration.appBlacklist?.add(packageName);
                 changed = true;
-                bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
                 var newApp = await InstalledApps.getAppInfo(packageName).catchError((e) {
                   return AppInfo(name: localizations.appFilterUnknownApp, packageName: packageName, inValid: true);
                 });
@@ -405,7 +399,6 @@ class _InstalledAppsWidgetState extends State<InstalledAppsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    bool isCN = Localizations.localeOf(context) == const Locale.fromSubtags(languageCode: 'zh');
 
     return Scaffold(
       appBar: AppBar(

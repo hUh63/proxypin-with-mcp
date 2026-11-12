@@ -373,7 +373,7 @@ class MobileHomeState extends State<MobileHomePage> implements EventListener, Li
         disallowApps = proxyServer.configuration.appBlacklist ?? [];
       }
 
-      return PictureInPicture.enterPictureInPictureMode(host, port, appList: appList, disallowApps: disallowApps);
+      return await PictureInPicture.enterPictureInPictureMode(host, port, appList: appList, disallowApps: disallowApps);
     } catch (e, t) {
       logger.e('enter picture in picture failed', error: e, stackTrace: t);
       return false;

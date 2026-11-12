@@ -664,7 +664,6 @@ class _ToolboxState extends State<Toolbox> {
 
   /// 顶部搜索框（固定，不随宫格滚动）。
   Widget _searchBar() {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
       child: TextField(

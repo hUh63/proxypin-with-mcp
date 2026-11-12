@@ -737,7 +737,7 @@ class _SecurityRulesDialogState extends State<_SecurityRulesDialog> {
   Future<void> _import() async {
     try {
       final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
-      if (result == null || result.isEmpty) return;
+      if (result.isEmpty) return;
       final file = result.single;
       final text = await file.xFile.readAsString();
       final decoded = jsonDecode(text);

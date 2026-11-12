@@ -654,7 +654,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     try {
       final r = rt.evaluate('globalThis.__ppRemaining ? globalThis.__ppRemaining() : "[]"');
       final raw = r.stringResult;
-      if (raw == null || raw.isEmpty) return;
+      if (raw.isEmpty) return;
       final decoded = jsonDecode(raw);
       if (decoded is List) {
         _state.stdin
@@ -732,7 +732,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
         _append(result.stringResult, ConsoleLineKind.error);
       } else {
         final value = result.stringResult;
-        if (value != null && value.isNotEmpty && value != 'undefined' && value != 'null') {
+        if (value.isNotEmpty && value != 'undefined' && value != 'null') {
           _state.lastResult = value;
           _append('=> $value', ConsoleLineKind.result);
         }

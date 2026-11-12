@@ -554,7 +554,7 @@ class _McpAutomationPageState extends State<McpAutomationPage>
                 : () async {
                     final prev = _mcpRunning;
                     // 乐观更新，操作失败再回滚
-                    setState(() => _mcpRunning = !running!);
+                    setState(() => _mcpRunning = !running);
                     final ok = await _setMcpRunning(!running);
                     if (!mounted) return;
                     setState(() => _mcpRunning = ok);

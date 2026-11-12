@@ -121,7 +121,7 @@ class _RequestComparePageState extends State<RequestComparePage> with SingleTick
           _buildComparisonCard(
             'URL',
             widget.requestA.requestUrl,
-            widget.requestB.requestUrl ?? '',
+            widget.requestB.requestUrl,
             changed: _result.urlChanged,
           ),
           const SizedBox(height: 12),

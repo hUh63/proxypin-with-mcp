@@ -275,7 +275,7 @@ class _VirtualizedHighlightTextState extends State<VirtualizedHighlightText> {
       // 一次：目标块不在视口内就再修正一次（有次数上限，不会反复抖动）。
       if (attempt < 3 && !_isChunkVisible(chunkIndex)) {
         await WidgetsBinding.instance.endOfFrame;
-        return _scrollToCurrentMatch(document, requestId, attempt + 1);
+        return await _scrollToCurrentMatch(document, requestId, attempt + 1);
       }
 
       // 只在滚动成功后更新 lastScrolled，避免失败后丢失同一索引的重试机会。

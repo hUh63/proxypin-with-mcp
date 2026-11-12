@@ -139,7 +139,7 @@ class CaptureDiagnose {
           title: loc.diagItemSystemProxy,
           status: matched ? DiagnoseStatus.ok : DiagnoseStatus.warn,
           detail: matched
-              ? loc.diagSystemProxyMatched(proxy!.host, proxy.port!)
+              ? loc.diagSystemProxyMatched(proxy.host, proxy.port!)
               : (proxy == null
                   ? loc.diagSystemProxyOff
                   : loc.diagSystemProxyMismatch(
@@ -305,7 +305,7 @@ class CaptureDiagnose {
         tunnelHosts.add(host);
       } else {
         final url = request.requestUrl;
-        if (url != null && url.toLowerCase().startsWith('https://')) {
+        if (url.toLowerCase().startsWith('https://')) {
           decryptedHosts.add(host);
         }
       }

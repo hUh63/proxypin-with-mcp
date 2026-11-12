@@ -1,5 +1,40 @@
 # Changelog
 
+## v1.67.298 (2026-11-12) — 差异块快捷应用、清理 100+ 条 warning、四处真问题
+
+### 文本对比
+- **差异块快捷应用条**：导航到某处差异时，底部直接给「↑ ↓ 上一处/下一处 · ← 用右侧
+  用左侧 →」。以前这两个按钮只藏在「差异列表」和「聚焦模式」里，逐块合并要反复开关
+  面板，等于把这个工具最常用的动作做成了三步。
+
+### 排查（从 warning 往回查，四处真问题）
+- **「检查两侧语法」点了没反应**：`text_diff.dart` 的 `switch` 里有两个 `case 'syntax'`
+  —— 一个是语法高亮开关，一个是检查语法。同一个 value 只命中第一个 case，
+  所以点「检查两侧语法」实际只是把高亮开关切了一下。改 id 为 `checkSyntax`。
+- **六处 `try { return future; }` 的异常被吞掉**：`transparent/driver_manager`、
+  `util/compress`（zstd 解压）、`cert_installer`（Linux 装证书）、`PictureInPicture`、
+  `virtualized_highlight_text`（滚动重试）。不 `await` 就 `return`，异步抛出的异常
+  落到不了 `catch` 里 —— 用户看到的是「什么都没发生」，日志里也没有。改成 `return await`。
+- **HPACK 解码器有个只写不读的字段**：`updateMaxReceivingHeaderTableSize` 把对端的
+  `SETTINGS_HEADER_TABLE_SIZE` 存进 `_maxHeaderTableSize`，但没有任何地方读它 ——
+  等于「记了个数字装样子」。删掉字段，保留真正的硬上限校验（`decode()` 里那段），
+  并在注释里写清「解码表大小由本端声明决定，不跟着对端放大」。
+- **接口页算了 REST 特征却不显示**：`_restPatterns` 只赋值不渲染，`identifyRestPatterns`
+  算出来的「Full CRUD / Read-Write / Read-Only + 完整度」白算了。现在每个资源组的
+  副标题会显示这两项。
+
+### 清理
+- **26 处无效的非空断言 `!`**（receiver 已非空，`!` 只会误导后来人以为这里可能为 null）
+- **18 处恒真的判空**（`files == null || files.isEmpty`、`val != null`、
+  `xxx.stringResult == null`、`requestId != null` 等；FilePicker 与内核 API 的返回值
+  早就改成非空了）
+- **6 组重复的 `case`**：`text_editor_menus` 的图标映射里 `minify`/`ascii`/`stats`/
+  `report`/`toggleBookmark`/`clearBookmarks` 各写了两遍，后面那组永远不生效
+- **18 处没用到的局部变量**（`isCN` / `theme` / `mgr` / `jsResult` 等）
+
+### 测试
+- 无新增（这批改动是清理与接线，行为由现有 600+ 用例覆盖）。
+
 ## v1.67.296 (2026-11-12) — 修正 xhr 的方法分派
 
 - 上一版把 `orElse` 改成 `HttpMethod.unknown`，编译不过：`xhr.dart` 里那个

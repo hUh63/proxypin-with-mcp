@@ -183,7 +183,7 @@ class WindivertDriver {
   static Future<String?> installFromZipFile(String zipPath, {void Function(String)? log}) async {
     try {
       final bytes = await File(zipPath).readAsBytes();
-      return _extractAndPlace(bytes, log);
+      return await _extractAndPlace(bytes, log);
     } catch (e) {
       return '读取压缩包失败: $e';
     }
@@ -212,7 +212,7 @@ class WindivertDriver {
         chunks.addAll(c);
         if (total > 0) onProgress?.call((chunks.length / total).clamp(0.0, 1.0));
       }
-      return _extractAndPlace(chunks, log);
+      return await _extractAndPlace(chunks, log);
     } catch (e) {
       return '下载失败: $e';
     } finally {

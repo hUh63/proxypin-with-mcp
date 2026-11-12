@@ -257,7 +257,7 @@ class _DesktopConfigManagementState extends State<DesktopConfigManagement> {
         allowedExtensions: ['json'],
       );
 
-      if (files == null || files.isEmpty) {
+      if (files.isEmpty) {
         return;
       }
 
