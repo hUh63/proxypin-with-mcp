@@ -2499,6 +2499,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_applyFormat(selectionOnly: true));
       case 'rename':
         unawaited(_renameSymbol());
+      case 'renamePair':
+        unawaited(_renamePairedTag());
+      case 'boxSelect':
+        _boxSelect();
     }
   }
 
@@ -3937,6 +3941,235 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 不弹「重命名」面板是因为手机上多一步操作收益很低；
   /// 关键是把「找不到声明就别乱改」这条守住——否则一次误触能把整篇的通用词改掉。
+  /// 扫描全文的标签（HTML/XML/Vue…），返回每个标签名在文本里的区间。
+  ///
+  /// 只处理标签名，不解析属性——重命名只需要知道「哪些地方是同名的开/闭标签」。
+  /// 注释、`<!DOCTYPE>`、`<?xml?>` 直接跳过，否则里面的 `<` 会被当成标签。
+  static List<_TagRef> _scanTags(String text) {
+    final out = <_TagRef>[];
+    if (text.isEmpty || text.length > 2000000) return out;
+    var i = 0;
+    final n = text.length;
+    while (i < n) {
+      final lt = text.indexOf('<', i);
+      if (lt < 0 || lt + 1 >= n) break;
+      if (text.startsWith('<!--', lt)) {
+        final end = text.indexOf('-->', lt + 4);
+        i = end < 0 ? n : end + 3;
+        continue;
+      }
+      if (text.startsWith('<!', lt) || text.startsWith('<?', lt)) {
+        final end = text.indexOf('>', lt);
+        i = end < 0 ? n : end + 1;
+        continue;
+      }
+      var p = lt + 1;
+      final closing = text[p] == '/';
+      if (closing) p++;
+      final nameStart = p;
+      if (p >= n || !_isTagNameStart(text.codeUnitAt(p))) {
+        i = lt + 1;
+        continue;
+      }
+      while (p < n && _isTagNameChar(text.codeUnitAt(p))) {
+        p++;
+      }
+      final gt = text.indexOf('>', p);
+      final tagEnd = gt < 0 ? n : gt;
+      // 自闭合：'>' 前（跳过空白）是 '/'。
+      var q = tagEnd - 1;
+      while (q > p && (text.codeUnitAt(q) == 32 || text.codeUnitAt(q) == 9 || text.codeUnitAt(q) == 10 || text.codeUnitAt(q) == 13)) {
+        q--;
+      }
+      final selfClosing = !closing && q >= p && text.codeUnitAt(q) == 47;
+      out.add(_TagRef(
+        name: text.substring(nameStart, p),
+        nameStart: nameStart,
+        nameEnd: p,
+        closing: closing,
+        selfClosing: selfClosing,
+      ));
+      i = gt < 0 ? n : gt + 1;
+    }
+    return out;
+  }
+
+  static bool _isTagNameStart(int c) =>
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c == 95 || c == 58;
+
+  static bool _isTagNameChar(int c) =>
+      _isTagNameStart(c) || (c >= 48 && c <= 57) || c == 45 || c == 46;
+
+  /// 重命名光标所在的标签，开标签与闭标签一起改。
+  ///
+  /// 文本编辑器里改 `<div>` 却忘了下面的 `</div>`，是结构化文本最常见的低级错误；
+  /// 而且要改的地方常隔着几十行，靠肉眼找配对很容易漏。
+  Future<void> _renamePairedTag() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final caret = controller.selection.baseOffset;
+    if (caret < 0) return;
+    final tags = _scanTags(text);
+    if (tags.isEmpty) {
+      _toast(localizations.editorNoTagHere);
+      return;
+    }
+    // 光标落在哪个标签上：优先取「包含光标」的名字区间，
+    // 其次取光标前最近的那个标签（光标常停在标签右边一格）。
+    int index = -1;
+    for (var k = 0; k < tags.length; k++) {
+      if (caret >= tags[k].nameStart && caret <= tags[k].nameEnd) {
+        index = k;
+        break;
+      }
+    }
+    if (index < 0) {
+      for (var k = tags.length - 1; k >= 0; k--) {
+        if (tags[k].nameEnd <= caret) {
+          index = k;
+          break;
+        }
+      }
+    }
+    if (index < 0) {
+      _toast(localizations.editorNoTagHere);
+      return;
+    }
+    final hit = tags[index];
+    if (hit.selfClosing) {
+      _toast(localizations.editorTagSelfClosing);
+      return;
+    }
+    // 找配对：开标签往后数深度，闭标签往前数。
+    _TagRef? pair;
+    if (!hit.closing) {
+      var depth = 0;
+      for (var k = index + 1; k < tags.length; k++) {
+        final t = tags[k];
+        if (t.name != hit.name) continue;
+        if (t.closing) {
+          depth--;
+          if (depth == 0) {
+            pair = t;
+            break;
+          }
+        } else if (!t.selfClosing) {
+          depth++;
+        }
+      }
+    } else {
+      var depth = 0;
+      for (var k = index - 1; k >= 0; k--) {
+        final t = tags[k];
+        if (t.name != hit.name) continue;
+        if (!t.closing) {
+          if (!t.selfClosing) {
+            depth--;
+            if (depth == 0) {
+              pair = t;
+              break;
+            }
+          }
+        } else {
+          depth++;
+        }
+      }
+    }
+    if (pair == null) {
+      _toast(localizations.editorTagNoPair);
+      return;
+    }
+
+    final input = TextEditingController(text: hit.name);
+    input.selection = TextSelection(baseOffset: 0, extentOffset: hit.name.length);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorRenamePair),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          decoration: InputDecoration(labelText: localizations.editorRenamePairHint),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, input.text), child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    input.dispose();
+    if (!mounted || next == null) return;
+    final newName = next.trim();
+    if (newName.isEmpty || newName == hit.name) return;
+    if (!RegExp(r'^[A-Za-z_:][A-Za-z0-9_:.\-]*$').hasMatch(newName)) {
+      _toast(localizations.editorRenameInvalid);
+      return;
+    }
+    // 从后往前替换，前面那处的偏移才不会被后面那次替换改写。
+    final ranges = <_TagRef>[hit, pair]..sort((a, b) => b.nameStart.compareTo(a.nameStart));
+    for (final r in ranges) {
+      controller.replaceRange(r.nameStart, r.nameEnd, newName);
+    }
+    _toast('${localizations.editorRenamePair}: $newName');
+  }
+
+  /// 块选择：把当前选区理解成一个矩形，按列复制并给每行同一列加光标。
+  ///
+  /// 内核只支持「插入点」不支持「多选区」，所以这里做的是它在那套模型下
+  /// 能达到的等价效果：矩形内容进剪贴板（按列），每行右边界立一个光标，
+  /// 接着打字就是各行的同列同时插入。
+  void _boxSelect() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+    var a = sel.start.clamp(0, text.length);
+    var b = sel.end.clamp(0, text.length);
+    if (a > b) {
+      final t = a;
+      a = b;
+      b = t;
+    }
+    if (a == b) {
+      _toast(localizations.diffSelectFirst);
+      return;
+    }
+    final lineA = _lineOfOffset(text, a);
+    final lineB = _lineOfOffset(text, b);
+    if (lineA == lineB) {
+      _toast(localizations.editorRectSingleLine);
+      return;
+    }
+    final offA = _offsetOfLine(text, lineA);
+    final offB = _offsetOfLine(text, lineB);
+    final colA = a - offA;
+    final colB = b - offB;
+    final c1 = colA < colB ? colA : colB;
+    final c2 = colA < colB ? colB : colA;
+
+    final picked = <String>[];
+    controller.clearMultiCursors();
+    for (var line = lineA; line <= lineB; line++) {
+      final start = _offsetOfLine(text, line);
+      final nextStart = _offsetOfLine(text, line + 1);
+      // 行末不含换行符：下一行的起点前一位（\n）要去掉。
+      var end = nextStart;
+      if (end > start && end <= text.length && text.codeUnitAt(end - 1) == 10) end--;
+      final len = end - start;
+      final from = c1 < len ? c1 : len;
+      final to = c2 < len ? c2 : len;
+      picked.add(from < to ? text.substring(start + from, start + to) : '');
+      // 光标立在矩形右边界（超出实际行长时退到行末）。
+      controller.addMultiCursor(line, to);
+    }
+    controller.selection = TextSelection.collapsed(offset: a);
+    unawaited(Clipboard.setData(ClipboardData(text: picked.join('\n'))));
+    _toast(localizations.editorRectCopied(picked.length));
+  }
+
   Future<void> _renameSymbol() async {
     final controller = _controller;
     if (controller == null) return;
@@ -10443,6 +10676,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
         _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
+        _menuItem('boxSelect', Icons.grid_on, loc.editorRectSelect),
         _menuItem('openLink', Icons.link, loc.editorOpenLink),
         _menuItem('trimTrailing', Icons.cleaning_services_outlined, loc.editorTrimTrailing),
         PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
@@ -10473,6 +10707,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
           _menuItem('callHierarchy', Icons.account_tree_outlined, loc.editorCallHierarchy),
           _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
+          _menuItem('renamePair', Icons.tag, loc.editorRenamePair),
           _menuItem('prevChange', Icons.keyboard_double_arrow_up, loc.editorPrevChange),
           _menuItem('nextChange', Icons.keyboard_double_arrow_down, loc.editorNextChange),
           _menuItem('conflicts', Icons.call_split, loc.editorConflicts),
@@ -10623,6 +10858,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _openSettings();
         case 'rename':
           unawaited(_renameSymbol());
+        case 'renamePair':
+          unawaited(_renamePairedTag());
+        case 'boxSelect':
+          _boxSelect();
         case 'workspace':
           unawaited(_pickWorkspace());
         case 'snippets':
@@ -12530,4 +12769,23 @@ class _MiniMapPainter extends CustomPainter {
       old.viewportH != viewportH ||
       old.fg != fg ||
       old.accent != accent;
+}
+
+/// 一个标签名在文本里的位置。只用于「重命名配对标签」，不需要属性解析。
+class _TagRef {
+  final String name;
+  final int nameStart;
+  final int nameEnd;
+  final bool closing;
+
+  /// `<br/>` 这类没有配对标签。
+  final bool selfClosing;
+
+  const _TagRef({
+    required this.name,
+    required this.nameStart,
+    required this.nameEnd,
+    required this.closing,
+    required this.selfClosing,
+  });
 }

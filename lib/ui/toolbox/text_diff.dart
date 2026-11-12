@@ -45,6 +45,7 @@ import 'package:proxypin/ui/component/snippet_bar.dart';
 import 'package:proxypin/ui/toolbox/dir_diff_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';
 import 'package:proxypin/ui/toolbox/image_diff_page.dart';
+import 'package:proxypin/ui/toolbox/table_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/text_diff.dart';
@@ -1817,6 +1818,20 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 MaterialPageRoute(builder: (_) => const HexDiffPage())));
           case 'imageDiff':
             unawaited(ImageDiffPage.show(context));
+          case 'baselineSave':
+            unawaited(_saveBaseline());
+          case 'baselineCompare':
+            unawaited(_compareWithBaseline());
+          case 'baselineClear':
+            unawaited(_clearBaseline());
+          case 'tableCompare':
+            unawaited(TableDiffPage.show(
+              context,
+              left: _left.text,
+              right: _right.text,
+              leftName: _leftName,
+              rightName: _rightName,
+            ));
           case 'alignByLine':
             setState(() {
               _alignByLine = !_alignByLine;
@@ -1991,6 +2006,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'imageDiff', child: Text(localizations.imageDiffTitle)),
+        PopupMenuItem(value: 'tableCompare', child: Text(localizations.tableDiffOpen)),
+        const PopupMenuDivider(),
+        PopupMenuItem(value: 'baselineSave', child: Text(localizations.diffBaselineSave)),
+        PopupMenuItem(value: 'baselineCompare', child: Text(localizations.diffBaselineCompare)),
+        PopupMenuItem(value: 'baselineClear', child: Text(localizations.diffBaselineClear)),
         PopupMenuItem(value: 'saveLeft', child: Text(localizations.diffSaveLeft)),
         PopupMenuItem(value: 'merge', child: Text(localizations.diffMerge)),
         PopupMenuItem(value: 'dirDiff', child: Text(localizations.dirDiff)),
@@ -2063,6 +2083,91 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 只比较两侧各自选中的段落：单独开一个临时对比页（不覆盖「上次对比」）。
+  static const _baselineKey = 'text_diff_baseline_v1';
+
+  /// 把左栏存成基线。
+  ///
+  /// 用途：改配置、改模板这类工作，「上次提交时的样子」比「上一次保存的样子」
+  /// 更有意义（后者每一版都在变，看不出累计漂移）。存一次基线，之后每次都是
+  /// 基线 vs 现在，看的就是相对起点的总变化。
+  Future<void> _saveBaseline() async {
+    final text = _left.text;
+    if (text.trim().isEmpty) {
+      _toastText(localizations.diffSelectFirst);
+      return;
+    }
+    try {
+      final sp = await SharedPreferencesAsync();
+      final name = _leftName.isNotEmpty ? _leftName : localizations.diffBaseline;
+      await sp.setString(
+        _baselineKey,
+        jsonEncode(<String, dynamic>{
+          'name': name,
+          'time': DateTime.now().toIso8601String(),
+          'text': text,
+        }),
+      );
+      if (!mounted) return;
+      _toastText(localizations.diffBaselineSaved);
+    } catch (e) {
+      if (!mounted) return;
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
+  /// 基线塞进左栏，「现在」留在右栏。
+  Future<void> _compareWithBaseline() async {
+    String? raw;
+    try {
+      raw = await SharedPreferencesAsync().getString(_baselineKey);
+    } catch (_) {
+      raw = null;
+    }
+    if (raw == null || raw.isEmpty) {
+      if (!mounted) return;
+      _toastText(localizations.diffBaselineNone);
+      return;
+    }
+    var text = '';
+    var name = '';
+    try {
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      text = (m['text'] as String?) ?? '';
+      name = (m['name'] as String?) ?? '';
+    } catch (_) {
+      if (!mounted) return;
+      _toastText(localizations.diffBaselineNone);
+      return;
+    }
+    if (text.isEmpty) {
+      if (!mounted) return;
+      _toastText(localizations.diffBaselineNone);
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _left.text = text;
+      _leftName = name.isEmpty ? localizations.diffBaseline : name;
+      // 基线不是磁盘上的文件，别让它参与「文件被外部修改」的提示。
+      _leftPath = '';
+    });
+    _markDiskBaseline();
+    _compare();
+    if (!mounted) return;
+    _toastText('${localizations.diffBaseline}: $_leftName');
+  }
+
+  Future<void> _clearBaseline() async {
+    try {
+      await SharedPreferencesAsync().remove(_baselineKey);
+      if (!mounted) return;
+      _toastText(localizations.clear);
+    } catch (e) {
+      if (!mounted) return;
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
   Future<void> _compareSelection() async {
     String selOf(CodeForgeController c) {
       final sel = c.selection;

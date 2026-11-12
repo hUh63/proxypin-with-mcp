@@ -693,6 +693,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('conflicts', _conflictsLabel,
       group: 'code', aliases: 'cj 合并冲突 冲突 conflicts merge git'),
   EditorMenuItem('rename', _renameLabel, group: 'code', aliases: 'mm 重命名 rename'),
+  EditorMenuItem('renamePair', _renamePairLabel, group: 'code',
+      aliases: 'bdq 标签 配对标签 rename tag pair'),
+  EditorMenuItem('boxSelect', _boxSelectLabel, group: 'edit',
+      aliases: 'kxz 块选择 矩形 列选择 box rect block'),
   EditorMenuItem('workspace', _workspaceLabel,
       group: 'file', aliases: 'gzz 工作区 workspace root'),
   EditorMenuItem('snippets', _snippetsLabel,
@@ -823,6 +827,8 @@ String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
 String _referencesLabel(AppLocalizations l) => l.editorReferences;
 String _callHierarchyLabel(AppLocalizations l) => l.editorCallHierarchy;
 String _renameLabel(AppLocalizations l) => l.editorRename;
+String _renamePairLabel(AppLocalizations l) => l.editorRenamePair;
+String _boxSelectLabel(AppLocalizations l) => l.editorRectSelect;
 String _workspaceLabel(AppLocalizations l) => l.editorWorkspace;
 String _snippetsLabel(AppLocalizations l) => l.editorSnippets;
 String _historyLabel(AppLocalizations l) => l.editorLocalHistory;
@@ -1065,6 +1071,10 @@ IconData menuIconOf(String id) {
       return Icons.account_tree_outlined;
     case 'rename':
       return Icons.drive_file_rename_outline;
+    case 'renamePair':
+      return Icons.tag;
+    case 'boxSelect':
+      return Icons.grid_on;
     case 'workspace':
       return Icons.workspaces_outlined;
     case 'history':
