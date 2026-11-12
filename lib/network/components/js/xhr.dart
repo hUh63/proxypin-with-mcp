@@ -341,7 +341,10 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
             (e) => e.toString().toLowerCase() == ("HttpMethod.${pendingCall.method}".toLowerCase()),
             // 脚本里写了非标准方法时不能抛 StateError：这是 forEach 的异步回调，
             // 异常会逃逸成未捕获错误并中断整批 pending 调用。
-            orElse: () => HttpMethod.get);
+            // 回退是 unknown 而不是 get：回退成 GET 等于把脚本写的方法悄悄改掉，
+            // 请求到服务端只会 405；unknown 会落到下面的 default，
+            // 用 http.Request 原样保留 method（WebDAV 的 MKCOL/COPY/MOVE 就靠它）。
+            orElse: () => HttpMethod.unknown);
         late http.Response response;
         try {
           switch (eMethod) {

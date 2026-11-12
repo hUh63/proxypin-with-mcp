@@ -1,3 +1,5 @@
+import 'dart:math';
+
 /// 代码片段里的「占位符」（VS Code / VS 的 snippet 语法）：
 ///
 /// - `$1` `$2` … 光标停靠点，按编号顺序跳；
@@ -7,6 +9,10 @@
 ///
 /// 为什么只在「片段插入」这条路上解析：普通粘贴/插入的内容里 `$1` 太常见了
 /// （shell 位置参数、正则反向引用），全局解析会把正常代码改坏。
+///
+/// 另一层是**变量**（`[expandSnippetVariables]`）：`$TM_FILENAME`、`$CURRENT_YEAR`、
+/// `$SELECTION`、`$UUID` 这些在解析占位符之前先展开成实际文本。变量名不能以数字
+/// 开头，所以 `$1` / `${1:默认}` 不会被误当成变量。
 class SnippetStop {
   /// 相对插入文本起点的偏移。
   final int start;
@@ -95,4 +101,106 @@ ParsedSnippet parseSnippetPlaceholders(String raw) {
       return a.compareTo(b);
     });
   return ParsedSnippet(out.toString(), [for (final k in keys) found[k]!]);
+}
+
+
+/// 片段变量展开时需要的上下文。
+class SnippetVariables {
+  /// 当前文件名（含扩展名）。
+  final String fileName;
+
+  /// 当前文件全路径。
+  final String filePath;
+
+  /// 当前选中的文本（`$SELECTION`）。
+  final String selection;
+
+  const SnippetVariables({
+    this.fileName = '',
+    this.filePath = '',
+    this.selection = '',
+  });
+
+  /// 去掉扩展名的文件名。
+  String get fileNameBase {
+    final i = fileName.lastIndexOf('.');
+    return i > 0 ? fileName.substring(0, i) : fileName;
+  }
+
+  /// 所在目录（无路径时返回空）。
+  String get directory {
+    final p = filePath.isEmpty ? '' : filePath;
+    if (p.isEmpty) return '';
+    final i = p.lastIndexOf(RegExp(r'[/\\]'));
+    return i > 0 ? p.substring(0, i) : '';
+  }
+}
+
+final _varRe = RegExp(r'\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))');
+
+String _two(int v) => v < 10 ? '0$v' : '$v';
+
+/// 展开片段里的变量（VS Code 的 snippet 变量子集）。
+///
+/// 不认识的变量**原样保留**——`$foo` 可能是用户真的要写的东西（shell 变量、
+/// 模板引擎语法），吃掉它比留着更糟。
+String expandSnippetVariables(
+  String raw,
+  SnippetVariables vars, {
+  DateTime? now,
+}) {
+  if (!raw.contains(r'$')) return raw;
+  final t = now ?? DateTime.now();
+  return raw.replaceAllMapped(_varRe, (m) {
+    final name = m.group(1) ?? m.group(2) ?? '';
+    switch (name) {
+      case 'TM_FILENAME':
+        return vars.fileName;
+      case 'TM_FILENAME_BASE':
+        return vars.fileNameBase;
+      case 'TM_DIRECTORY':
+        return vars.directory;
+      case 'TM_FILEPATH':
+        return vars.filePath;
+      case 'SELECTION':
+        return vars.selection;
+      case 'CURRENT_YEAR':
+        return '${t.year}';
+      case 'CURRENT_YEAR_SHORT':
+        return '${t.year % 100}'.padLeft(2, '0');
+      case 'CURRENT_MONTH':
+        return _two(t.month);
+      case 'CURRENT_DATE':
+        return _two(t.day);
+      case 'CURRENT_HOUR':
+        return _two(t.hour);
+      case 'CURRENT_MINUTE':
+        return _two(t.minute);
+      case 'CURRENT_SECOND':
+        return _two(t.second);
+      case 'CURRENT_DATETIME':
+        return '${t.year}-${_two(t.month)}-${_two(t.day)} ${_two(t.hour)}:${_two(t.minute)}:${_two(t.second)}';
+      case 'UUID':
+        return _uuid();
+      case 'RANDOM':
+        return '${_rand.nextInt(1000000)}'.padLeft(6, '0');
+      case 'RANDOM_HEX':
+        return '${_rand.nextInt(0x1000000).toRadixString(16)}'.padLeft(6, '0');
+      default:
+        // 未知变量原样返回，别把用户的内容吃掉。
+        return m.group(0)!;
+    }
+  });
+}
+
+final _rand = Random();
+
+/// 随机 UUID v4。不用引入 uuid 包，这里只要求「看起来像 UUID 且不重复」。
+String _uuid() {
+  final b = List<int>.generate(16, (_) => _rand.nextInt(256));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  final h = b.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
+  return '${h.substring(0, 8)}-${h.substring(8, 12)}-${h.substring(12, 16)}-'
+      '${h.substring(16, 20)}-${h.substring(20)}';
 }

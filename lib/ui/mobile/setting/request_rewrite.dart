@@ -106,7 +106,7 @@ class _MobileRequestRewriteState extends State<MobileRequestRewrite> {
     }
 
     try {
-      List json = jsonDecode(utf8.decode(await file.xFile.readAsBytes()));
+      final dynamic json = jsonDecode(utf8.decode(await file.xFile.readAsBytes()));
 
       if (json is! List) {
         throw FormatException(localizations.invalidRewriteRuleList);

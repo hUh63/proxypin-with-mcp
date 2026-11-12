@@ -650,8 +650,8 @@ Future<void> exportRequestsCsv(
     buffer.writeln(<String>[
       '${i + 1}',
       r.methodLabel,
-      _csvCell(_maskSensitiveInUrl(r.requestUrl ?? '')),
-      resp?.status.code?.toString() ?? '',
+      _csvCell(_maskSensitiveInUrl(r.requestUrl)),
+      resp?.status.code.toString() ?? '',
       duration,
       _csvCell(r.requestTime.toIso8601String()),
       _csvCell(r.headers.contentType),
@@ -688,7 +688,7 @@ Future<void> exportRequestsJson(
     list.add({
       'index': i + 1,
       'method': r.methodLabel,
-      'url': _maskSensitiveInUrl(r.requestUrl ?? ''),
+      'url': _maskSensitiveInUrl(r.requestUrl),
       'status': resp?.status.code,
       'duration_ms': resp == null ? null : resp.responseTime.difference(r.requestTime).inMilliseconds,
       'started_at': r.requestTime.toIso8601String(),

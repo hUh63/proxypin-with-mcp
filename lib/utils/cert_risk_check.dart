@@ -153,7 +153,7 @@ class CertRiskCheck {
     }
 
     // 4) 弱签名算法
-    final signature = (certificate.signatureAlgorithm ?? '').toLowerCase();
+    final signature = certificate.signatureAlgorithm.toLowerCase();
     if (signature.contains('md5') || signature.contains('sha1') || signature.contains('sha-1')) {
       findings.add(CertRiskFinding(
         'weak-signature',

@@ -270,7 +270,7 @@ class JsDeobfuscator {
       'end_with_newline: false, brace_style: "collapse"})',
     );
     if (result.isError || result.stringResult == null) {
-      throw StateError(result.stringResult ?? 'format failed');
+      throw StateError(result.stringResult);
     }
     return result.stringResult!;
   }
@@ -309,7 +309,7 @@ class JsDeobfuscator {
       return JsRestoreResult(
         ok: false,
         output: '',
-        logs: ['JS 执行错误：${summaryResult.stringResult ?? 'unknown'}'],
+        logs: ['JS 执行错误：${summaryResult.stringResult}'],
         exitCode: 1,
       );
     }
@@ -335,7 +335,7 @@ class JsDeobfuscator {
     var output = '';
     if (command == 'restore') {
       final outResult = runtime.evaluate('globalThis.__jsr_output');
-      output = outResult.stringResult ?? '';
+      output = outResult.stringResult;
     }
 
     final exitCode = summary['exitCode'] is int ? summary['exitCode'] as int : 1;

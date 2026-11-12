@@ -307,7 +307,7 @@ class McpEventAutomationExample {
     // 监听所有 /api/ 开头的请求
     automation.onApiRequest('/api/', (request) {
       // 修复：使用 request.requestUrl 替代 request.url
-      final url = (request as HttpRequest).requestUrl?.toString() ?? '';
+      final url = (request as HttpRequest).requestUrl;
       logger.i('检测到 API 请求：$url');
       // 这里可以添加自动保存、转发等逻辑
     });

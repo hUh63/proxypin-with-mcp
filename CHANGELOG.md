@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.67.295 (2026-11-12) — 片段变量、块选可见、表格差异导出 + 排查三处真问题
+
+### 编辑器（对标 VS2026）
+- **片段变量**：片段里现在支持 `$TM_FILENAME`、`$TM_FILENAME_BASE`、`$TM_DIRECTORY`、
+  `$TM_FILEPATH`、`$SELECTION`、`$CURRENT_YEAR`（`_SHORT`）、`$CURRENT_MONTH/DATE/
+  HOUR/MINUTE/SECOND`、`$CURRENT_DATETIME`、`$UUID`、`$RANDOM`、`$RANDOM_HEX`。
+  展开在解析占位符**之前**做，而且变量名不能以数字开头 —— 所以 `$1` / `${1:默认}`
+  不会被误当成变量。不认识的变量**原样保留**（`$foo` 可能是 shell 变量、模板语法，
+  吃掉它比留着更糟）。
+- **块选择现在看得见了**：列模式选中后，矩形区域会整片上淡蓝色底。内核只支持
+  「插入点」不支持多选区，所以「我到底选中了哪一块」内核不会自己画，这段底是我们
+  用 `extraHighlights` 补的；文本一改（偏移全失效）自动清掉，不留错位高亮。
+
+### 文本对比
+- **表格对比可导出差异清单**（CSV / Markdown）：一行一条，变化行拆到单元格级别
+  （行号 · 列名 · 原值 · 新值），方便贴到工单或表单里逐条核对。CSV 带 BOM，
+  Windows Excel 打开不乱码。
+
+### 排查：三处真问题
+- **导入改写规则时 `is! List` 校验形同虚设**：`List json = jsonDecode(...)` 把结果
+  直接声明成 `List`，非数组的 JSON 会在赋值那一刻抛 TypeError（未捕获、界面无提示），
+  `if (json is! List) throw FormatException(友好提示)` 永远走不到。改成 `final dynamic`。
+- **脚本里写非标准 HTTP 方法的 XHR 会被悄悄改成 GET**：`HttpMethod.values.firstWhere`
+  的 `orElse` 回落到了 `HttpMethod.get`，于是 `xhr.open('MKCOL'|'COPY'|'PROPFIND'…)`
+  全部以 GET 发出去（服务端只会回 405）；而专门为这种情况写的 `default` 分支
+  （用 `http.Request` 原样保留 method）因此**永远不可达** —— 这正是 analyze 报的
+  `unreachable_switch_default`。回落改成 `HttpMethod.unknown`。
+  「不可达分支」这类警告值得优先看，它往往意味着「写了但永远不生效」。
+- **清理 20 处不可达的空值兜底**：`status?.code`（`status` 是非空 getter）、
+  `requestUrl ?? ''`、`xFile.path == null` 的死判断块、`readAsBytes()` 后的
+  `bytes == null` 等等。这些本身无害，但会让后来的人以为「这里可能拿到空值」，
+  从而在下游重复兜底。
+
+### 测试
+- 新增 `test/snippet_variables_test.dart`（17 例：文件/时间/随机变量、占位符不被
+  误伤、未知变量保留、与占位符解析串联）。
+
 ## v1.67.293 (2026-11-12) — 排查：连接池是假的、Mcp-Name 校验缺一半
 
 ### 排查（从 warning 清单往回查，找到两个真问题）

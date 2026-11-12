@@ -264,10 +264,6 @@ class _DesktopConfigManagementState extends State<DesktopConfigManagement> {
       final file = files.first;
       // file_picker 12.x: 使用 readAsBytes() 而非直接访问 bytes 属性
       final bytes = await file.readAsBytes();
-      if (bytes == null) {
-        FlutterToastr.show(localizations.cfgDeskCannotReadFile, context, duration: 2, backgroundColor: Colors.red);
-        return;
-      }
 
       final jsonStr = utf8.decode(bytes);
       final newConfig = await ConfigImportExport.importConfig(jsonStr);

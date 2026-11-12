@@ -459,7 +459,7 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
     try {
       final start = request?.requestTime;
       final elapsed = start == null ? 0 : response.responseTime.difference(start).inMilliseconds;
-      ConnectionPool.instance.recordTraffic(elapsedMs: elapsed, statusCode: response.status?.code);
+      ConnectionPool.instance.recordTraffic(elapsedMs: elapsed, statusCode: response.status.code);
     } catch (e) {
       log.w('record traffic failed', error: e);
     }
@@ -506,7 +506,7 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
           // 同 reqMap：modifyResponse 靠它回查活对象
           'requestId': request.requestId,
           'url': request.requestUrl,
-          'statusCode': msg.status?.code ?? 0,
+          'statusCode': msg.status.code,
         };
         unawaited(MCPAutomationManager().onResponse(respMap).catchError((e, s) {
           log.e('MCP 自动化 onResponse 触发失败', error: e, stackTrace: s);
@@ -552,7 +552,7 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
         listener?.onResponse(channelContext, msg);
         channelContext.serverChannel = null;
         channel.close();
-        final isHttp2 = (request?.protocolVersion ?? msg.protocolVersion) == 'HTTP/2';
+        final isHttp2 = request.protocolVersion == 'HTTP/2';
         if (isHttp2) {
           // h2 不能整条关掉（其它流还在用），给这条流回一个响应收尾
           final dropped = HttpResponse(HttpStatus.newStatus(502, 'Response dropped by ProxyPin'),

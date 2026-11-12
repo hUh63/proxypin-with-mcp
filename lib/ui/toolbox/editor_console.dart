@@ -379,7 +379,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
     try {
       final r = rt.evaluate(
           '(function(){try{new Function(${jsonEncode(code)});return "ok"}catch(e){return "err"}})()');
-      return (r.stringResult ?? '') == 'ok';
+      return r.stringResult == 'ok';
     } catch (_) {
       return false;
     }
@@ -397,7 +397,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
           'if(s===undefined)continue;if(s&&s.length>160)s=s.slice(0,160)+"...";'
           'out.push(k+" = "+s)}'
           'return out.join("\\n")})()');
-      final text = r.stringResult ?? '';
+      final text = r.stringResult;
       if (text.trim().isEmpty) {
         _append(localizations.editorDebugNoVars, ConsoleLineKind.note);
         return;
@@ -478,7 +478,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
             _debugLine = 0;
             _debugSkipLine = 0;
           });
-          _append(result.stringResult ?? localizations.editorConsoleError, ConsoleLineKind.error);
+          _append(result.stringResult, ConsoleLineKind.error);
         }
       } else {
         setState(() {
@@ -535,7 +535,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
         _append('${localizations.editorDebugTestsLoadFailed}: $e', ConsoleLineKind.error);
         return;
       }
-      final raw = rt.evaluate('globalThis.__ppRunCases()').stringResult ?? '[]';
+      final raw = rt.evaluate('globalThis.__ppRunCases()').stringResult;
       final list = jsonDecode(raw) as List<dynamic>;
       var pass = 0;
       var fail = 0;
@@ -729,7 +729,7 @@ class _EditorConsolePanelState extends State<EditorConsolePanel> {
       }
       if (!mounted) return;
       if (result.isError) {
-        _append(result.stringResult ?? localizations.editorConsoleError, ConsoleLineKind.error);
+        _append(result.stringResult, ConsoleLineKind.error);
       } else {
         final value = result.stringResult;
         if (value != null && value.isNotEmpty && value != 'undefined' && value != 'null') {

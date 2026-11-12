@@ -121,9 +121,9 @@ class DouyinSign {
     await _ensure();
     final r = _runtime!.evaluate(expr);
     if (r.isError) {
-      throw StateError(r.stringResult ?? 'JS 执行失败');
+      throw StateError(r.stringResult);
     }
-    return r.stringResult ?? '';
+    return r.stringResult;
   }
 
   /// 执行表达式并把结果以 JSON 取回。

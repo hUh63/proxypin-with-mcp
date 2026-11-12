@@ -148,7 +148,7 @@ class _Socks5Session extends ChannelHandler<Uint8List> {
 
   /// CONNECT 请求
   void _sendConnect(Channel channel) {
-    final port = target.port ?? 0;
+    final port = target.port;
     channel.writeBytes([0x05, 0x01, 0x00, ..._encodeAddress(target.host), (port >> 8) & 0xff, port & 0xff]);
   }
 

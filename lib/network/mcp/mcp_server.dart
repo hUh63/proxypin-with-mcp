@@ -1889,7 +1889,7 @@ class McpServer {
         'step': i,
         'tool': tool,
         'ok': ok,
-        if (!ok) 'error': result is Map ? result['error']?.toString() : '$result',
+        if (!ok) 'error': (result as Map)['error']?.toString(),
         'result': result,
       });
       if (!ok && stopOnError) break;

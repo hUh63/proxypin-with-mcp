@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -226,6 +229,12 @@ class _TableDiffPageState extends State<TableDiffPage> {
                 case 'zoomOut':
                   setState(() => _fontSize = (_fontSize - 1).clamp(9, 22));
                   break;
+                case 'exportCsv':
+                  unawaited(_exportDiff(asCsv: true));
+                  break;
+                case 'exportMd':
+                  unawaited(_exportDiff(asCsv: false));
+                  break;
                 case 'clear':
                   setState(() {
                     _leftText = '';
@@ -246,6 +255,8 @@ class _TableDiffPageState extends State<TableDiffPage> {
               PopupMenuItem(value: 'zoomIn', child: Text('${loc.editorZoomIn}  +')),
               PopupMenuItem(value: 'zoomOut', child: Text('${loc.editorZoomOut}  −')),
               const PopupMenuDivider(),
+              PopupMenuItem(value: 'exportCsv', child: Text(loc.diffExportCsv)),
+              PopupMenuItem(value: 'exportMd', child: Text(loc.diffExportMarkdown)),
               PopupMenuItem(value: 'clear', child: Text(loc.clear)),
             ],
           ),
@@ -625,6 +636,75 @@ class _TableDiffPageState extends State<TableDiffPage> {
       waitDuration: const Duration(milliseconds: 500),
       child: cell,
     );
+  }
+
+  /// 单元格里可能有逗号/换行/引号，CSV 必须按 RFC4180 包起来。
+  static String _csvCell(String v) {
+    if (v.contains(',') || v.contains('"') || v.contains('\n') || v.contains('\r')) {
+      return '"${v.replaceAll('"', '""')}"';
+    }
+    return v;
+  }
+
+  /// 导出差异清单：一行一个「变化/新增/删除的行」，
+  /// 变化行拆到单元格级别，方便贴到工单或表单里逐条核对。
+  Future<void> _exportDiff({required bool asCsv}) async {
+    final result = _result;
+    if (result == null) {
+      _toast(localizations.tableDiffEmpty);
+      return;
+    }
+    final buf = StringBuffer();
+    if (asCsv) {
+      // 带 BOM，Windows Excel 才不会把 UTF-8 当 GBK 解成乱码。
+      buf.writeCharCode(0xFEFF);
+      buf.writeln('row,column,left,right');
+    } else {
+      buf.writeln('| ${localizations.tableDiffStat(0, 0, 0).split(' ').first} | column | left | right |');
+      buf.writeln('| --- | --- | --- | --- |');
+    }
+    var exported = 0;
+    for (var pos = 0; pos < result.rows.length; pos++) {
+      final row = result.rows[pos];
+      if (row.state == TableRowState.unchanged) continue;
+      final l = result.leftCellsAt(pos);
+      final r = result.rightCellsAt(pos);
+      if (row.state == TableRowState.added || row.state == TableRowState.removed) {
+        final added = row.state == TableRowState.added;
+        final cells = added ? r : l;
+        for (var c = 0; c < result.columns.length; c++) {
+          final left = added ? '' : cells[c];
+          final right = added ? cells[c] : '';
+          final rowNo = added ? row.rightIndex + 1 : row.leftIndex + 1;
+          buf.writeln(asCsv
+              ? '$rowNo,${_csvCell(result.columns[c].name)},${_csvCell(left)},${_csvCell(right)}'
+              : '| $rowNo | ${result.columns[c].name} | $left | $right |');
+          exported++;
+        }
+      } else {
+        for (final c in row.changedColumns) {
+          buf.writeln(asCsv
+              ? '${row.leftIndex + 1},${_csvCell(result.columns[c].name)},${_csvCell(l[c])},${_csvCell(r[c])}'
+              : '| ${row.leftIndex + 1} | ${result.columns[c].name} | ${l[c]} | ${r[c]} |');
+          exported++;
+        }
+      }
+    }
+    if (exported == 0) {
+      _toast(localizations.diffIdentical);
+      return;
+    }
+    try {
+      final bytes = utf8.encode(buf.toString());
+      await FilePicker.saveFile(
+        fileName: asCsv ? 'table-diff.csv' : 'table-diff.md',
+        bytes: Uint8List.fromList(bytes),
+      );
+      if (!mounted) return;
+      _toast('${localizations.exportSuccess} · $exported');
+    } catch (e) {
+      _toast('${localizations.fail}: $e');
+    }
   }
 
   Widget _statBar(TableDiffResult result, AppLocalizations loc) {

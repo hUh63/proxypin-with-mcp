@@ -958,10 +958,19 @@ class _TextEditorPageState extends State<TextEditorPage> {
     });
   }
 
+  /// 块选择（列模式）画出来的矩形区间。
+  ///
+  /// 内核只支持「插入点」、不支持多选区，所以「选中了哪一块」这件事内核不会自己画，
+  /// 由这里用 extraHighlights 补一段整片淡色底，让用户看得见边界。
+  final List<(int, int)> _boxRanges = <(int, int)>[];
+  static const Color _boxSelectColor = Color(0x331565C0);
+
   void _onControllerChanged() {
     final text = _doc?.text ?? '';
     final changed = text != _lastText;
     if (changed) {
+      // 文本一变，矩形的偏移就全错了：直接丢掉，别画出错位的高亮。
+      _boxRanges.clear();
       final before = _lastText;
       // 书签跟着代码走：按「这次改了哪一段」平移，别让它漂到隔壁行。
       final bookmarks = _doc?.bookmarks;
@@ -2841,7 +2850,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
       controller.selection = TextSelection.collapsed(offset: start + insert.length);
       return;
     }
-    final parsed = parseSnippetPlaceholders(insert);
+    // 先落地变量（$TM_FILENAME / $CURRENT_YEAR / $SELECTION …），再解析占位符。
+    // 变量名不能以数字开头，所以 `$1` / `${1:默认}` 不会被这里吃掉。
+    final selText = (sel.isValid && !sel.isCollapsed)
+        ? text.substring(sel.start.clamp(0, text.length), sel.end.clamp(0, text.length))
+        : '';
+    final expanded = expandSnippetVariables(
+      insert,
+      SnippetVariables(
+        fileName: _doc?.name ?? '',
+        filePath: _doc?.path ?? '',
+        selection: selText,
+      ),
+    );
+    final parsed = parseSnippetPlaceholders(expanded);
     _snippetStops
       ..clear()
       ..addAll(parsed.stops.map((s) => SnippetStop(start + s.start, start + s.end)));
@@ -3208,6 +3230,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
           start: pair.$1, end: pair.$1 + 1, isCurrentMatch: i == 0, color: color));
       list.add(SearchHighlight(
           start: pair.$2, end: pair.$2 + 1, isCurrentMatch: i == 0, color: color));
+    }
+
+    // 1c) 块选择：整片矩形上淡色底，让「编辑器理解成了哪一块」看得见。
+    if (_boxRanges.isNotEmpty) {
+      for (final r in _boxRanges) {
+        if (r.$2 > r.$1) {
+          list.add(SearchHighlight(start: r.$1, end: r.$2, color: _boxSelectColor));
+        }
+      }
     }
 
     // 2) 多选编辑进行中：只标「已圈中的那几处」。
@@ -4160,9 +4191,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
       final from = c1 < len ? c1 : len;
       final to = c2 < len ? c2 : len;
       picked.add(from < to ? text.substring(start + from, start + to) : '');
+      // 记下这一行里矩形覆盖的区间，画成淡色底（内核不会自己画块选）。
+      if (start + from < start + to) _boxRanges.add((start + from, start + to));
       // 光标立在矩形右边界（超出实际行长时退到行末）。
       controller.addMultiCursor(line, to);
     }
+    _refreshExtraHighlights();
     controller.selection = TextSelection.collapsed(offset: a);
     unawaited(Clipboard.setData(ClipboardData(text: picked.join('\n'))));
     _toast(localizations.editorRectCopied(picked.length));

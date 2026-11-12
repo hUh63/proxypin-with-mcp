@@ -306,7 +306,7 @@ class ApiExtractor {
   }
 
   void _processRequest(HttpRequest request, HttpResponse? response) {
-    final url = request.requestUrl ?? '';
+    final url = request.requestUrl;
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     final domain = uri.host;

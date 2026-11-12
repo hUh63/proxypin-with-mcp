@@ -299,7 +299,7 @@ class CaptureDiagnose {
     final tunnelHosts = <String>{};
     final decryptedHosts = <String>{};
     for (final request in requests) {
-      final host = request.hostAndPort?.host?.toLowerCase();
+      final host = request.hostAndPort?.host.toLowerCase();
       if (host == null || host.isEmpty) continue;
       if (request.method == HttpMethod.connect) {
         tunnelHosts.add(host);

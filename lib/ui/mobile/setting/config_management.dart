@@ -276,9 +276,6 @@ class _ConfigManagementState extends State<ConfigManagement> {
       }
 
       final filePath = result.first.xFile.path;
-      if (filePath == null) {
-        return;
-      }
 
       // 确认导入
       final confirmed = await showDialog<bool>(

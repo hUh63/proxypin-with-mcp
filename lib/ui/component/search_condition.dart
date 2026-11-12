@@ -531,7 +531,7 @@ class DropdownMenuState<T> extends State<DropdownMenu<T>> {
             .map((entry) => PopupMenuItem<T>(
                 height: 35,
                 value: entry.value,
-                child: Text(entry.label ?? entry.value.toString(),
+                child: Text(entry.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     softWrap: false,
