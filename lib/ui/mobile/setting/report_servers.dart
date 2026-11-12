@@ -9,7 +9,6 @@ import 'package:proxypin/network/components/manager/report_server_manager.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import '../../../l10n/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ReportServersPageMobile extends StatefulWidget {
   const ReportServersPageMobile({super.key});

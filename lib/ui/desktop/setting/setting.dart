@@ -35,9 +35,7 @@ import 'package:proxypin/ui/desktop/setting/external_proxy.dart';
 import 'package:proxypin/ui/desktop/setting/hosts.dart';
 import 'package:proxypin/ui/desktop/setting/mcp_connection.dart';
 import 'package:proxypin/ui/desktop/setting/request_block.dart';
-import 'package:proxypin/ui/desktop/setting/theme.dart';
 import 'package:proxypin/ui/desktop/setting/weak_network.dart';
-import 'package:proxypin/ui/desktop/toolbar/mcp_panel.dart';
 
 import 'filter.dart';
 

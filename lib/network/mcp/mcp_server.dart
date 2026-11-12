@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:proxypin/network/http/websocket.dart';
 import 'dart:io' as io;
 import 'dart:math' as math;
 
@@ -12,16 +11,12 @@ import 'package:proxypin/network/components/manager/hosts_manager.dart';
 import 'package:proxypin/network/reverse/reverse_proxy.dart';
 import 'package:proxypin/network/reverse/reverse_proxy_server.dart';
 import 'package:proxypin/network/bin/server.dart';
-import 'package:proxypin/network/components/manager/request_block_manager.dart';
-import 'package:proxypin/network/components/manager/request_rewrite_manager.dart';
-import 'package:proxypin/network/components/manager/rewrite_rule.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/components/manager/request_breakpoint_manager.dart';
 import 'package:proxypin/network/components/manager/network_condition_manager.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/components/request_breakpoint.dart';
 import 'package:proxypin/network/http/http_client.dart';
-import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/mcp/capture/cert_status.dart';
 import 'package:proxypin/mcp/capture/flow_store.dart';
 import 'package:proxypin/mcp/capture/flow_view.dart';
@@ -774,6 +769,22 @@ class McpServer {
           'code': -32020,
           'message':
               'Mcp-Method header ($headerMethod) does not match body method ($bodyMethod)',
+        },
+      };
+    }
+
+    // 头部 name 与 body 的 params.name 不一致时拒绝。
+    // 上面 doc 里写了「校验 MCP-Protocol-Version / Mcp-Method / Mcp-Name 头」，
+    // 但这里一直只校验了前两个 —— headerName 读出来就没人用过。
+    // 工具名对不上意味着客户端状态已经错乱，放过去会以「另一个工具」的身份执行。
+    final bodyName = (jsonRpc['params'] is Map) ? (jsonRpc['params'] as Map)['name'] : null;
+    if (headerName != null && bodyName != null && headerName != bodyName) {
+      return {
+        'jsonrpc': '2.0',
+        'id': jsonRpc['id'],
+        'error': {
+          'code': -32020,
+          'message': 'Mcp-Name header ($headerName) does not match params.name ($bodyName)',
         },
       };
     }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import 'dart:math' as math;
 
 import 'code_keywords.dart';
 import 'code_lint.dart';

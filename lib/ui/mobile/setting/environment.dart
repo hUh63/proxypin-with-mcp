@@ -9,14 +9,12 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/ui/component/builtin_variables_dialog.dart';
 import 'package:proxypin/ui/component/guide_center.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/components/manager/environment_manager.dart';
 import 'package:proxypin/network/util/random.dart';
 import 'package:proxypin/ui/component/utils.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// 环境变量管理页(移动端)
 ///

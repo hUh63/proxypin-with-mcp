@@ -33,13 +33,11 @@ import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/util/logger.dart';
-import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/utils/data_uri.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 bool _refresh = false;
 

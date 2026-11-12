@@ -85,7 +85,6 @@ class _SplashBannerState extends State<SplashBanner>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final mode = widget.backgroundMode;
     final hasImage = mode == 'custom' && widget.backgroundImage != null;
 

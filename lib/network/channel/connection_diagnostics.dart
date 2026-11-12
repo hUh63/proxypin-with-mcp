@@ -16,7 +16,6 @@
 import 'dart:convert';
 
 import 'package:proxypin/network/channel/connection_registry.dart';
-import 'package:proxypin/network/http/http.dart';
 
 enum ConnDiagLevel { info, warn, error }
 

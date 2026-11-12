@@ -2556,9 +2556,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   Widget _toolbar() {
-    final color = Theme.of(context).colorScheme.primary;
     final hasDiff = _blocks.isNotEmpty;
-    final activeUndo = _leftActive ? _leftUndo : _rightUndo;
     return Container(
       padding: const EdgeInsets.only(right: 4),
       child: Row(mainAxisSize: MainAxisSize.min, children: [

@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.67.293 (2026-11-12) — 排查：连接池是假的、Mcp-Name 校验缺一半
+
+### 排查（从 warning 清单往回查，找到两个真问题）
+- **连接池只统计、不池化**。`ConnectionPool.acquire()` 里新建的 `_PooledConnection`
+  构造完就被丢掉了（analyzer 的 `unused_local_variable` 报的就是它）。顺着往上查，
+  问题比一个无用变量大：
+  - `acquire` / `_releaseConnection` / `_pools` 这套池化路径**全库没有调用点**，
+    真正在跑的只有 `recordTraffic` / `getStats`（给性能面板报数字）；
+  - 就算接了调用，`release` 也只在池里「查找」已有连接、**从不把 client 放回池**，
+    `acquire` 又是 `removeFirst` 取出即移除 —— 池永远是空的，命不中。
+  也就是说每条转发仍然各自新建 `HttpClient`（各自握手），连接复用从未发生。
+  这一版把误导人的无用构造删掉、把实情写进注释；真正的池化需要先有调用方，
+  属于另一件事（不能靠「把变量用上」来假装修好）。
+- **MCP 的 `Mcp-Name` 头校验声明了但没实现**。`_validateStatelessHeaders` 的注释写着
+  「校验 MCP-Protocol-Version / Mcp-Method / Mcp-Name 头」，代码里 `headerName` 读出来
+  只用于 CORS 声明，从未参与校验。已补上：头部 name 与 body 的 `params.name`
+  不一致时返回 `-32020`。工具名对不上意味着客户端状态已经错乱，放过去会以
+  「另一个工具」的身份执行。
+
+### 清理
+- 删掉 **44 个 `unused_import`**（lib 下其余 2 处在 test），以及 punycode 里没用到的
+  `skew` / `damp` / `base` 常量、工具栏里没用到的局部变量、JS 执行结果的无用赋值
+  （保留调用本身，它有副作用）。
+- 这批是 `flutter analyze` 里 233 条 warning 的第一批；剩余 `dead_code` 26、
+  `unnecessary_non_null_assertion` 26、`dead_null_aware_expression` 20、
+  `unreachable_switch_case` 9 等继续按类别过 —— 其中「不可达分支」最容易藏着
+  「逻辑写反了但没人发现」，优先。
+
 ## v1.67.292 (2026-11-12) — 钉住 CI 的 Flutter 版本
 
 ### 构建

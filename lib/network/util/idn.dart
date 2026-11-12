@@ -76,7 +76,7 @@ String idnToAscii(String host) {
 
 /// RFC 3492 Punycode 编码（单标签）。
 String punycodeEncode(String input) {
-  const base = 36, tmin = 1, tmax = 26, skew = 38, damp = 700;
+  const base = 36, tmin = 1, tmax = 26;
   const initialBias = 72, initialN = 128;
   final chars = input.runes.toList();
 
@@ -144,7 +144,7 @@ int _adapt(int delta, int numPoints, bool firstTime) {
 }
 
 int _encodeDigit(int d) {
-  const base = 36, tmax = 26;
+  const tmax = 26;
   if (d < tmax) return 0x61 + d; // a-z
   return 0x30 + (d - tmax); // 0-9，最多到 base-1=35
 }

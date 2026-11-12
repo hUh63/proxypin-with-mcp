@@ -330,15 +330,12 @@ class ConnectionPool {
         ..maxConnectionsPerHost = _config.maxConnectionsPerHost
         ..findProxy = ((_) => 'DIRECT');
       
-      final conn = _PooledConnection(
-        client: client,
-        host: host,
-        port: port,
-        lastUsed: DateTime.now(),
-        inUse: true,
-        useCount: 1,
-      );
-      
+      // 这里原本会 new 一个 _PooledConnection 然后丢掉 —— 对象建了但谁也没用。
+      // 它暴露的是更根本的一件事：池化路径（acquire / _releaseConnection / _pools）
+      // 目前全库没有调用点，真正在用的是 recordTraffic / getStats（给性能面板报数字）。
+      // 也就是说「连接池」现在只统计、不池化，每条转发仍然各自建 HttpClient。
+      // 要真正启用池化，得先有调用方，再把 release 侧改成「把 client 放回 _pools」
+      // （现在的 release 只在池里找，从不入池，就算接了也永远命不中）。
       _totalActive++;
       _activePerHost[poolKey] = (_activePerHost[poolKey] ?? 0) + 1;
       _updateStats();

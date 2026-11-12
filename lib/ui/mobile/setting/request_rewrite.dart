@@ -35,7 +35,6 @@ import 'package:proxypin/ui/mobile/setting/rewrite/rewrite_update.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../component/http_method_popup.dart';
 import 'rewrite/rewrite_replace.dart';

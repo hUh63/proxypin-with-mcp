@@ -33,7 +33,6 @@ import 'package:proxypin/ui/component/mcp_docs.dart';
 import 'package:proxypin/ui/component/port_edit_dialog.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/configuration.dart';
-import 'package:proxypin/ui/desktop/desktop.dart';
 
 /// MCP 服务设置面板（桌面）。样式对齐 Proxyman 的 Settings → MCP：
 /// MCP Server（启用开关 + 锁、描述、运行状态、MCP 配置、Claude Code/Codex/Manual

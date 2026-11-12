@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
 
@@ -12,7 +11,6 @@ import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/utils.dart';
-import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/desktop/setting/backup_management.dart';
 
 /// 桌面端配置管理页面 - 导入/导出配置

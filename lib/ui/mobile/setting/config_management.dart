@@ -11,7 +11,6 @@ import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/utils.dart';
-import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/mobile/setting/backup_management.dart';
 
 /// 配置管理页面 - 导入/导出配置

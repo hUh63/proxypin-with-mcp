@@ -23,12 +23,10 @@
 /// 说明：QUIC 业务数据（HTTP/3 请求响应）经 TLS 1.3 加密无法解密（业界一致）；
 /// 本模块展示的是"哪些 App/域名在走 QUIC、建立多少连接"的连接级元数据。
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
-import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/quic/qpack_decoder.dart';
 import 'package:proxypin/network/util/quic/qpack_dynamic_table.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';

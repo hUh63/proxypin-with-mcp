@@ -24,7 +24,6 @@ import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'package:proxypin/ui/desktop/toolbar/mcp_panel.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
-import 'package:proxypin/ui/desktop/setting/mcp_automation.dart';
 
 /// 桌面端 MCP 连接设置页面
 class DesktopMcpConnection extends StatefulWidget {

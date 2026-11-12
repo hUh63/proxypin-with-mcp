@@ -4,7 +4,6 @@
  */
 
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:proxypin/network/util/logger.dart';
 

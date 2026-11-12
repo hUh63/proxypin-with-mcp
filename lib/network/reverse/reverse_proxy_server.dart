@@ -31,7 +31,6 @@ import 'package:proxypin/network/util/logger.dart';
 import '../channel/network.dart';
 import '../components/request_map.dart';
 import '../http/codec.dart';
-import '../channel/channel.dart';
 import 'reverse_proxy.dart';
 
 /// 反向代理服务器：独立监听一个端口，按路径规则把请求转发到配置的上游。

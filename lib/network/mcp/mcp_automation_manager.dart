@@ -20,13 +20,10 @@ import 'dart:io' as io;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../../event/event_bus.dart';
-import '../mcp/mcp_server.dart';
 import '../mcp/mcp_bridge.dart';
 import '../http/http.dart';
-import '../http/http_client.dart';
 import '../util/logger.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import '../components/manager/script_manager.dart';
 import 'package:proxypin/network/util/serial_file_writer.dart';
@@ -964,7 +961,7 @@ class MCPAutomationManager {
         // JavaScript 脚本：通过 flutterJs 引擎执行
         final mgr = await ScriptManager.instance;
         await ScriptManager.flutterJsPool.run((flutterJs) async {
-          final jsResult = await flutterJs.evaluateAsync(
+          await flutterJs.evaluateAsync(
             'var context = ${jsonEncode(context)}; $code\n  onRequest(context, {})');
           logger.i('[MCP Automation] JavaScript 脚本执行完成');
         });

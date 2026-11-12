@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import 'dart:convert';
 
 /// WebSocket 拦截规则匹配模式
 enum RuleMatchMode {

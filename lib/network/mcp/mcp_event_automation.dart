@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import 'dart:async';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/logger.dart';
 

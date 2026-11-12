@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/http.dart';
-import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/network/util/workspace_server.dart';
 import 'package:proxypin/storage/histories.dart';
 import 'package:proxypin/storage/workspaces.dart';

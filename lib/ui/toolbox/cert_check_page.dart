@@ -19,7 +19,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
-import 'package:proxypin/network/util/cert/cert_data.dart';
 import 'package:proxypin/network/util/cert/x509.dart';
 import 'package:proxypin/utils/cert_risk_check.dart';
 

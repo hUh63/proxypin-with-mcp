@@ -36,7 +36,6 @@ import 'package:proxypin/utils/data_uri.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// @author wanghongen
 /// 2023/10/19

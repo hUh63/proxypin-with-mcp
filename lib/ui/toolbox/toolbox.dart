@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/http/http.dart';
@@ -35,7 +34,6 @@ import 'package:proxypin/ui/toolbox/net_tools.dart';
 import 'package:proxypin/ui/toolbox/convert_page.dart';
 import 'package:proxypin/ui/toolbox/crc_page.dart';
 import 'package:proxypin/ui/toolbox/device_spoof_page.dart';
-import 'package:proxypin/ui/toolbox/artex_page.dart';
 import 'package:proxypin/ui/toolbox/artex_webview.dart';
 import 'package:proxypin/ui/toolbox/device_info_page.dart';
 import 'package:proxypin/ui/toolbox/hex_diff_page.dart';

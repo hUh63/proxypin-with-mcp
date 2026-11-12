@@ -22,11 +22,6 @@ import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/mcp/mcp_bridge.dart';
 import 'package:proxypin/network/http/websocket.dart';
 import 'package:proxypin/network/rules/websocket_rule_manager.dart';
-import 'package:proxypin/ui/component/app_dialog.dart';
-import 'package:proxypin/ui/component/json/json_text.dart';
-import 'package:proxypin/ui/component/json/json_viewer.dart';
-import 'package:proxypin/ui/component/json/theme.dart';
-import 'package:proxypin/utils/lang.dart';
 
 import 'websocket_rule_manager_page.dart';
 
