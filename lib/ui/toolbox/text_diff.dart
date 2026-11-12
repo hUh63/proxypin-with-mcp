@@ -1720,7 +1720,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 顶部「更多」菜单：把不常用的开关收进来，主栏只留最常用的几个。
   Widget _moreMenu() {
-    final color = Theme.of(context).colorScheme.primary;
     return PopupMenuButton<String>(
       tooltip: localizations.more,
       icon: const Icon(Icons.more_vert, size: 20),
@@ -2556,6 +2555,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   Widget _toolbar() {
+    final color = Theme.of(context).colorScheme.primary;
     final hasDiff = _blocks.isNotEmpty;
     return Container(
       padding: const EdgeInsets.only(right: 4),
