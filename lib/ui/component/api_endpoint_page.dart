@@ -250,7 +250,8 @@ class _ApiEndpointPageState extends State<ApiEndpointPage> {
     final p = _patternOf(groupName);
     if (p == null) return const <Widget>[];
     final completeness = p['completeness'];
-    final pct = completeness is num ? completeness : 0;
+    // toStringAsPercent 是挂在 double 上的扩展，num 调不到。
+    final pct = completeness is num ? completeness.toDouble() : 0.0;
     return <Widget>[
       Padding(
         padding: const EdgeInsets.only(top: 2),
