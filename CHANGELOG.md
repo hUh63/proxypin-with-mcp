@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.67.292 (2026-11-12) — 钉住 CI 的 Flutter 版本
+
+### 构建
+- **Build APK 变红的原因不是代码**：CI 一直用 `channel: stable` 装 Flutter，stable 昨天
+  从 3.47.x 跳到了 **3.50.0**，而 3.50 起要求 **Gradle ≥ 9.3.1**（本项目 wrapper 是
+  8.14），于是 `Build Universal APK` 直接失败：
+  `Your project\'s Gradle version (8.14.0) is lower than Flutter\'s minimum supported
+  version of 9.3.1`。
+  顺带一提，3.50 已经在推 `package:material_ui` 迁移（`package:flutter/material.dart`
+  被标 deprecated），那是另一件需要整体评估的事。
+- 六个 workflow 全部钉到 **Flutter 3.47.6**（本项目长期验证过的版本）。要升级 Flutter
+  时，请连带处理 `android/gradle/wrapper` 与 material_ui 迁移，不要只改版本号。
+
 ## v1.67.291 (2026-11-12) — 表格对比、基线对比、标签配对重命名、块选择
 
 ### 文本对比

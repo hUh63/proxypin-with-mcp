@@ -37,6 +37,11 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # Flutter 3.50 起要求 Gradle >= 9.3.1（本项目 wrapper 是 8.14），并且在推
+          # package:material_ui 迁移（flutter/material.dart 已标 deprecated）。
+          # 先把版本钉死在这里，避免 stable 一升级整条 Android 构建直接红掉；
+          # 要升级请连带把 android/gradle/wrapper 与 material 迁移一起做。
+          flutter-version: '3.47.6'
           channel: 'stable'
           cache: true
 
