@@ -72,15 +72,15 @@ void main() {
     test('占位符 $1 不受影响', () {
       expect(expand(r'fn();$1'), r'fn();$1');
     });
-    test(r'占位符 ${1:默认值} 不受影响', () {
-      expect(expand(r'x = ${1:默认值};'), r'x = ${1:默认值};');
+    test('占位符 \${1:默认值} 不受影响', () {
+      expect(expand('x = \${1:默认值};'), 'x = \${1:默认值};');
     });
     test(r'$0 不受影响', () {
       expect(expand(r'end$0'), r'end$0');
     });
     test('未知变量原样保留', () {
       expect(expand(r'echo $foo'), r'echo $foo');
-      expect(expand(r'${HOME}/bin'), r'${HOME}/bin');
+      expect(expand('\${HOME}/bin'), '\${HOME}/bin');
     });
     test('没有 $ 时原样返回', () {
       expect(expand('plain text'), 'plain text');
@@ -97,7 +97,7 @@ void main() {
           r'2026-03-a main');
     });
     test('展开后仍能被占位符解析器处理', () {
-      final expanded = expand(r'// ${1:todo} $TM_FILENAME');
+      final expanded = expand('// \${1:todo} \$TM_FILENAME');
       final parsed = parseSnippetPlaceholders(expanded);
       expect(parsed.text, '// todo main.dart');
       expect(parsed.stops.length, 1);

@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.67.296 (2026-11-12) — 修正 xhr 的方法分派
+
+- 上一版把 `orElse` 改成 `HttpMethod.unknown`，编译不过：`xhr.dart` 里那个
+  `HttpMethod` 是**另一套**只有 6 个值（put/get/post/delete/patch/head）的本地枚举，
+  网络层全局那套（`lib/network/http/http.dart`，带 unknown/propfind/report）在这里根本
+  不可见。这也解释了 `unreachable_switch_default` 的成因：6 个值被 6 个 case 全覆盖。
+- 现在**直接按方法名字符串分派**，本地枚举删掉。非标准方法（OPTIONS / PROPFIND /
+  MKCOL / COPY…）落到 `default`，用 `http.Request` 原样保留 method —— 这才是那段
+  default 一直被写在那里想做的事。
+- 测试里两处含 `${` 的 raw string 在 analyze 下报 `Expected an identifier`
+  （raw string 里的 `${` 没被当成普通字符），改成普通字符串 + `\$` 转义。
+
 ## v1.67.295 (2026-11-12) — 片段变量、块选可见、表格差异导出 + 排查三处真问题
 
 ### 编辑器（对标 VS2026）

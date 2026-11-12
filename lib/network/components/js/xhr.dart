@@ -39,8 +39,6 @@ const HTTP_DELETE = "delete";
 const HTTP_PUT = "put";
 const HTTP_HEAD = "head";
 
-enum HttpMethod { put, get, post, delete, patch, head }
-
 String _debugSendNativeCallback() {
   if (_XHR_DEBUG) {
     return """console.log("XMLHttpRequest._send_native_callback");
@@ -337,51 +335,48 @@ extension JavascriptRuntimeXhrExtension on JavascriptRuntime {
       // for each pending call, calls the remote http service
       pendingCalls.forEach((element) async {
         XhrPendingCall pendingCall = element as XhrPendingCall;
-        HttpMethod eMethod = HttpMethod.values.firstWhere(
-            (e) => e.toString().toLowerCase() == ("HttpMethod.${pendingCall.method}".toLowerCase()),
-            // 脚本里写了非标准方法时不能抛 StateError：这是 forEach 的异步回调，
-            // 异常会逃逸成未捕获错误并中断整批 pending 调用。
-            // 回退是 unknown 而不是 get：回退成 GET 等于把脚本写的方法悄悄改掉，
-            // 请求到服务端只会 405；unknown 会落到下面的 default，
-            // 用 http.Request 原样保留 method（WebDAV 的 MKCOL/COPY/MOVE 就靠它）。
-            orElse: () => HttpMethod.unknown);
+        // 按方法名字符串分派，不再过一层本地枚举：
+        // 那个枚举只有 6 个值，脚本里写 OPTIONS / PROPFIND / MKCOL 时 firstWhere
+        // 只能落到 orElse，方法被悄悄换成别的（服务端只会回 405），
+        // 而专门处理非标准方法的 default 分支因此永远不可达。
+        final String method = (pendingCall.method ?? 'GET').toUpperCase();
         late http.Response response;
         try {
-          switch (eMethod) {
-            case HttpMethod.head:
+          switch (method) {
+            case 'HEAD':
               response = await httpClient!.head(
                 Uri.parse(pendingCall.url!),
                 headers: pendingCall.headers,
               );
               break;
-            case HttpMethod.get:
+            case 'GET':
               response = await httpClient!.get(
                 Uri.parse(pendingCall.url!),
                 headers: pendingCall.headers,
               );
               break;
-            case HttpMethod.post:
+            case 'POST':
               response = await httpClient!.post(
                 Uri.parse(pendingCall.url!),
                 body: (pendingCall.body is String) ? pendingCall.body : jsonEncode(pendingCall.body),
                 headers: pendingCall.headers,
               );
               break;
-            case HttpMethod.put:
+            case 'PUT':
               response = await httpClient!.put(
                 Uri.parse(pendingCall.url!),
                 body: (pendingCall.body is String) ? pendingCall.body : jsonEncode(pendingCall.body),
                 headers: pendingCall.headers,
               );
               break;
-            case HttpMethod.patch:
+            case 'PATCH':
               response = await httpClient!.patch(
                 Uri.parse(pendingCall.url!),
                 body: (pendingCall.body is String) ? pendingCall.body : jsonEncode(pendingCall.body),
                 headers: pendingCall.headers,
               );
               break;
-            case HttpMethod.delete:
+            case 'DELETE':
               response = await httpClient!.delete(
                 Uri.parse(pendingCall.url!),
                 headers: pendingCall.headers,
