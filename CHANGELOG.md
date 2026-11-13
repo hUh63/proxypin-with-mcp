@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.67.302 (2026-11-13) — 改内核：真正的多选区（矩形块编辑）
+
+这一版动的是编辑器内核（`hUh63/code_forge`），不是应用层绕。之前「块选择」只能
+给每行立一个光标 —— 打字能插进去，但**已经选中的内容删不掉**，因为它根本不是一个
+选区，只是几个插入点。要真做块编辑，内核必须认识「多选区」。
+
+### 内核（code_forge fork，ref → 80f06f5d）
+- **多选区**：`_multiSelections`（绝对偏移区间）+ `addMultiSelection(start,end)` /
+  `clearMultiSelections()` / `multiSelections` / `hasMultiSelections` / `hasMultiEditing`。
+- **编辑分发**：`_editTargets()` 把「主选区 / 多光标 / 多选区」归一成 `(start,end)` 区间
+  （按起点排序、去掉重叠）。多选区存在时**独占**目标 —— 此时主光标/多光标的位置
+  是块选留下的产物，通常正好落在某行选区的边界上，算进来会让同一处被替换两次。
+- **输入**：`_insertReplacingMultiSelections` 先删掉各选区内容再插入（回车也走这条）。
+- **删除**：`deleteMultiSelections(forward:)` —— 空区间退化成删一个字符，所以同一个
+  方法同时服务软键盘的 `_handleDeletion` 和物理键盘的 Backspace/Delete
+  （后两者在 `code_area` 里直接分发，不走 `_handleDeletion`，这一处不接就只对手机生效）。
+- **绘制**：多选区按行切段画底色，画在光标之后（底色先铺、光标压在上面才看得见）。
+- 原有 `insertAtAllCursors` / `backspaceAtAllCursors` 一行没动 —— 多光标是跑熟的路径，
+  混在一起改风险大，所以多选区走独立方法，只在 `_handleInsertion`/`_handleDeletion`
+  入口加前置分支。
+
+### 编辑器（应用层）
+- **块选择改成真选区**：`_boxSelect` 现在给每行加一个 `TextSelection`（而不是光标），
+  于是「选中这块 + 直接打字」= 每行同一列范围被替换；退格 = 每行同时删掉那段。
+- 应用层原来用 `extraHighlights` 自己画的矩形底色删掉了 —— 内核会画，两层半透明叠在
+  一起会变深。
+- 「清除光标」现在也会清多选区（只有选区、没有光标时以前清不掉）。
+- 块选后的提示文案改成「已按列选中 N 行（可直接输入替换）」，之前写的是「复制」。
+
 ## v1.67.300 (2026-11-13) — 工作区符号、三路合并用基线、清理我自己上轮留下的坑
 
 ### 编辑器（对标 VS2026）

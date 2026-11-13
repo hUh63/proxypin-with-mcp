@@ -5401,7 +5401,7 @@
   "editorRenamePair": "重新命名配對標籤",
   "editorRenamePairHint": "新標籤名",
   "editorRectSelect": "區塊選取（欄）",
-  "editorRectCopied": "已按欄複製 {n} 列",
+  "editorRectCopied": "已按欄選取 {n} 列（可直接輸入替換）",
   "diffBaselineNone": "還沒有基線",
   "editorNoTagHere": "光標處沒有標籤",
   "editorTagSelfClosing": "自閉合標籤沒有配對",

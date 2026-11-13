@@ -6170,7 +6170,7 @@
   "editorRenamePair": "Rename paired tag",
   "editorRenamePairHint": "New tag name",
   "editorRectSelect": "Box select (columns)",
-  "editorRectCopied": "Copied {n} rows by column",
+  "editorRectCopied": "{n} rows selected by column",
   "@editorRectCopied": {
     "placeholders": {
       "n": {

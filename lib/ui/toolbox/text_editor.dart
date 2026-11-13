@@ -955,19 +955,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     });
   }
 
-  /// 块选择（列模式）画出来的矩形区间。
-  ///
-  /// 内核只支持「插入点」、不支持多选区，所以「选中了哪一块」这件事内核不会自己画，
-  /// 由这里用 extraHighlights 补一段整片淡色底，让用户看得见边界。
-  final List<(int, int)> _boxRanges = <(int, int)>[];
-  static const Color _boxSelectColor = Color(0x331565C0);
 
   void _onControllerChanged() {
     final text = _doc?.text ?? '';
     final changed = text != _lastText;
     if (changed) {
-      // 文本一变，矩形的偏移就全错了：直接丢掉，别画出错位的高亮。
-      _boxRanges.clear();
       final before = _lastText;
       // 书签跟着代码走：按「这次改了哪一段」平移，别让它漂到隔壁行。
       final bookmarks = _doc?.bookmarks;
@@ -3231,15 +3223,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
           start: pair.$2, end: pair.$2 + 1, isCurrentMatch: i == 0, color: color));
     }
 
-    // 1c) 块选择：整片矩形上淡色底，让「编辑器理解成了哪一块」看得见。
-    if (_boxRanges.isNotEmpty) {
-      for (final r in _boxRanges) {
-        if (r.$2 > r.$1) {
-          list.add(SearchHighlight(start: r.$1, end: r.$2, color: _boxSelectColor));
-        }
-      }
-    }
-
     // 2) 多选编辑进行中：只标「已圈中的那几处」。
     //    这时再按整篇同词高亮会看混——用户关心的是「我选了哪几个」。
     if (_multiSel.isNotEmpty) {
@@ -4288,6 +4271,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     final picked = <String>[];
     controller.clearMultiCursors();
+    controller.clearMultiSelections();
     for (var line = lineA; line <= lineB; line++) {
       final start = _offsetOfLine(text, line);
       final nextStart = _offsetOfLine(text, line + 1);
@@ -4298,11 +4282,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
       final from = c1 < len ? c1 : len;
       final to = c2 < len ? c2 : len;
       picked.add(from < to ? text.substring(start + from, start + to) : '');
-      // 记下这一行里矩形覆盖的区间，画成淡色底（内核不会自己画块选）。
-      if (start + from < start + to) _boxRanges.add((start + from, start + to));
-      // 光标立在矩形右边界（超出实际行长时退到行末）。
-      controller.addMultiCursor(line, to);
+      // 每行一个**真正的选区**：内核支持多选区后，打字会替换掉每一行的这段、
+      // 退格会同时删掉它们 —— 以前只能立光标，要替换的内容得手动删。
+      if (start + from < start + to) {
+        controller.addMultiSelection(start + from, start + to);
+      }
     }
+    // 底色由内核自己画（多选区绘制），应用层不再叠一层，否则两块半透明色会变深。
     _refreshExtraHighlights();
     controller.selection = TextSelection.collapsed(offset: a);
     unawaited(Clipboard.setData(ClipboardData(text: picked.join('\n'))));
@@ -5886,8 +5872,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   void _clearMultiCursors() {
     final controller = _controller;
-    if (controller == null || !controller.hasMultiCursors) return;
+    if (controller == null) return;
+    if (!controller.hasMultiCursors && !controller.hasMultiSelections) return;
     controller.clearMultiCursors();
+    controller.clearMultiSelections();
     setState(() {});
   }
 

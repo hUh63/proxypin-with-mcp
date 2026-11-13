@@ -3712,7 +3712,7 @@
   "editorRenamePair": "Rename paired tag",
   "editorRenamePairHint": "New tag name",
   "editorRectSelect": "Box select (columns)",
-  "editorRectCopied": "Copied {n} rows by column",
+  "editorRectCopied": "{n} rows selected by column",
   "diffBaselineNone": "No baseline yet",
   "editorNoTagHere": "No tag at cursor",
   "editorTagSelfClosing": "Self-closing tag has no pair",

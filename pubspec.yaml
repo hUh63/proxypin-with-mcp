@@ -2,7 +2,7 @@ name: proxypin
 description: ProxyPin
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.4.0+417
+version: 1.4.0+418
 
 environment:
   # 与 pubspec.lock 的 sdks 段保持一致（code_forge 10.14.0 起要求 Dart ^3.13.2）
@@ -119,10 +119,11 @@ flutter:
     - AGENTS.md
 
 dependency_overrides:
-  # 本 fork 版内核：新增行号长按回调（onGutterLineLongPress）、
+  # 本 fork 版内核：多选区（addMultiSelection / multiSelections，矩形块编辑）、
+  # 行号长按回调（onGutterLineLongPress）、
   # 不可见字符真实叠加绘制（InvisibleCharsStyle），
   # 以及本地补全的额外候选注入点（extraSuggestions）。
   code_forge:
     git:
       url: https://github.com/hUh63/code_forge.git
-      ref: b02083fb53545e0f40aca0c8da24cd47ef793d23
+      ref: 80f06f5d8379be1362fa998da5154c0815c35916
