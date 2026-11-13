@@ -917,6 +917,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       ..addAll(ranges);
     _multiWord = word;
     controller.selection = TextSelection(baseOffset: ranges.first.start, extentOffset: ranges.first.end);
+    _syncMultiSelToController();
     _refreshExtraHighlights();
     setState(() {});
     _toast(localizations.editorMultiSelCount('${ranges.length}'));
@@ -3223,14 +3224,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
           start: pair.$2, end: pair.$2 + 1, isCurrentMatch: i == 0, color: color));
     }
 
-    // 2) 多选编辑进行中：只标「已圈中的那几处」。
-    //    这时再按整篇同词高亮会看混——用户关心的是「我选了哪几个」。
+    // 2) 多选编辑进行中：底色由内核的多选区绘制负责（见 controller.multiSelections），
+    //    这里不再重复画，否则两层半透明叠在一起会变深。
     if (_multiSel.isNotEmpty) {
       if (sel.isValid && sel.start != sel.end) {
         list.add(SearchHighlight(start: sel.start, end: sel.end, isCurrentMatch: true));
-      }
-      for (final r in _multiSel) {
-        list.add(SearchHighlight(start: r.start, end: r.end));
       }
       if (_sameHighlights(controller.extraHighlights, list)) return;
       controller.extraHighlights = list;
@@ -3848,6 +3846,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (!_multiSel.any((r) => r.start == start && r.end == end)) {
       _multiSel.add((start: start, end: end));
     }
+    _syncMultiSelToController();
     // 已经收进来的位置不能重复收，否则会「加了两次同一处」。
     final taken = <int>{for (final r in _multiSel) r.start};
 
@@ -3881,12 +3880,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 清空多选，回到普通单选状态。
+  /// 把「已收集的多处匹配」登记成内核的多选区。
+  ///
+  /// 之前多选只活在应用层（`_multiSel` + 高亮），打字时内核只认主选区，
+  /// 于是「Ctrl+D 选了三处、打字只改了一处」。内核支持多选区之后，
+  /// 这些区间直接交给它，输入/退格就会同时作用在每一处。
+  void _syncMultiSelToController() {
+    final c = _controller;
+    if (c == null) return;
+    c.clearMultiSelections();
+    for (final r in _multiSel) {
+      c.addMultiSelection(r.start, r.end);
+    }
+  }
+
   void _clearMultiSel() {
     if (_multiSel.isEmpty && _multiWord.isEmpty) return;
     setState(() {
       _multiSel.clear();
       _multiWord = '';
     });
+    _controller?.clearMultiSelections();
     _refreshExtraHighlights();
   }
 
