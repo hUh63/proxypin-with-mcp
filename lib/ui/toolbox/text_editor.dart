@@ -2494,6 +2494,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _editSelections((v) => v.toLowerCase());
       case 'formatSel':
         unawaited(_applyFormat(selectionOnly: true));
+      case 'surroundWith':
+        unawaited(_surroundWith());
       case 'rename':
         unawaited(_renameSymbol());
       case 'workspaceSymbols':
@@ -4135,6 +4137,79 @@ class _TextEditorPageState extends State<TextEditorPage> {
     query.dispose();
     if (chosen == null || !mounted) return;
     await _openRefHit(chosen, selectLength: chosen.label.length);
+  }
+
+  /// 用代码块环绕选中内容（VS 的 Surround With / Ctrl+K,Ctrl+S）。
+  ///
+  /// 无选区时环绕「当前行」。模板里的占位词会被选中，直接打字就能替换 ——
+  /// 省掉「先打 if、再挪光标进括号、再补花括号」这一串。
+  Future<void> _surroundWith() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    final int start;
+    final int end;
+    if (sel.isValid && !sel.isCollapsed) {
+      start = sel.start;
+      end = sel.end;
+    } else {
+      // 没选东西就包当前行（VS 也是这个行为）。
+      final caret = sel.isValid ? sel.start : 0;
+      final line = _lineOfOffset(text, caret);
+      final from = _offsetOfLine(text, line);
+      final nl = text.indexOf('\n', from);
+      start = from;
+      end = nl < 0 ? text.length : nl;
+    }
+
+    const templates = <({String label, String before, String after, bool indent})>[
+      (label: 'if', before: 'if (condition) {\n', after: '\n}', indent: true),
+      (label: 'if / else', before: 'if (condition) {\n', after: '\n} else {\n\n}', indent: true),
+      (label: 'try / catch', before: 'try {\n', after: '\n} catch (e) {\n\n}', indent: true),
+      (label: 'for', before: 'for (var i = 0; i < count; i++) {\n', after: '\n}', indent: true),
+      (label: 'while', before: 'while (condition) {\n', after: '\n}', indent: true),
+      (label: 'switch', before: 'switch (value) {\n  case 0:\n', after: '\n    break;\n}', indent: true),
+      (label: '{ }', before: '{\n', after: '\n}', indent: true),
+      (label: '/* */', before: '/* ', after: ' */', indent: false),
+      (label: '" "', before: '"', after: '"', indent: false),
+      (label: '<div>', before: '<div>', after: '</div>', indent: false),
+    ];
+
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(localizations.editorSurroundWith),
+        children: <Widget>[
+          for (var i = 0; i < templates.length; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(i),
+              child: Text(templates[i].label, style: const TextStyle(fontFamily: 'monospace')),
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final tpl = templates[picked];
+    var inner = text.substring(start, end);
+    if (tpl.indent && inner.isNotEmpty) {
+      inner = inner.split('\n').map((l) => l.trim().isEmpty ? l : '  $l').join('\n');
+    }
+    final block = '${tpl.before}$inner${tpl.after}';
+    controller.replaceRange(start, end, block);
+    // 占位词选中，直接打字替换；没有占位符就把光标放到块尾。
+    final placeholder = tpl.before.contains('condition')
+        ? 'condition'
+        : (tpl.before.contains('count')
+            ? 'count'
+            : (tpl.before.contains('value') ? 'value' : ''));
+    if (placeholder.isNotEmpty) {
+      final at = start + tpl.before.indexOf(placeholder);
+      controller.selection = TextSelection(baseOffset: at, extentOffset: at + placeholder.length);
+    } else {
+      controller.selection = TextSelection.collapsed(offset: start + block.length);
+    }
+    _toast(localizations.editorSurroundWithDone);
   }
 
   Future<void> _renamePairedTag() async {
@@ -10838,6 +10913,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           const PopupMenuDivider(),
           if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
           _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
+          _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
           if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
           const PopupMenuDivider(),
           _menuItem('symbols', Icons.account_tree_outlined, loc.editorSymbols),

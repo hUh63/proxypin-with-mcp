@@ -3718,5 +3718,21 @@
   "editorTagSelfClosing": "Self-closing tag has no pair",
   "editorTagNoPair": "No matching tag found",
   "editorRectSingleLine": "Select more than one line",
-  "editorWorkspaceSymbols": "Workspace symbols"
+  "editorWorkspaceSymbols": "Workspace symbols",
+  "diffPreset": "Predefinição de comparação",
+  "diffPresetStrict": "Estrito — nada ignorado",
+  "diffPresetStrictHint": "Cada caractere conta",
+  "diffPresetCode": "Código-fonte",
+  "diffPresetCodeHint": "Ignorar apenas espaços finais",
+  "diffPresetConfig": "Config / JSON",
+  "diffPresetConfigHint": "Ignorar espaços, linhas vazias e comentários",
+  "diffPresetDoc": "Texto / documentos",
+  "diffPresetDocHint": "Ignorar maiúsculas, espaços, espaços finais e linhas vazias",
+  "diffPresetApplied": "Predefinição aplicada",
+  "diffFocusContext": "Contexto de foco: {n} linhas",
+  "diffFocusContextNone": "Sem contexto",
+  "editorSurroundWith": "Envolver com…",
+  "editorSurroundWithDone": "Envolvido com modelo",
+  "convertByteArrays": "Decodificar matrizes de bytes",
+  "diffCopyBlock": "Copiar este bloco"
 }

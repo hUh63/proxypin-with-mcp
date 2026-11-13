@@ -5407,5 +5407,21 @@
   "editorTagSelfClosing": "自閉合標籤沒有配對",
   "editorTagNoPair": "找不到配對的標籤",
   "editorRectSingleLine": "請跨多行選取",
-  "editorWorkspaceSymbols": "工作區符號"
+  "editorWorkspaceSymbols": "工作區符號",
+  "diffPreset": "對比預設",
+  "diffPresetStrict": "嚴格 —— 什麼都不忽略",
+  "diffPresetStrictHint": "每個字元都算差異",
+  "diffPresetCode": "原始碼",
+  "diffPresetCodeHint": "只忽略行尾空白",
+  "diffPresetConfig": "設定 / JSON",
+  "diffPresetConfigHint": "忽略空白、空行與註解",
+  "diffPresetDoc": "文件 / 散文",
+  "diffPresetDocHint": "忽略大小寫、空白、行尾空格與空行",
+  "diffPresetApplied": "已套用預設",
+  "diffFocusContext": "聚焦上下文：{n} 行",
+  "diffFocusContextNone": "不留上下文",
+  "editorSurroundWith": "用程式碼區塊環繞…",
+  "editorSurroundWithDone": "已用範本包覆",
+  "convertByteArrays": "解碼位元組陣列",
+  "diffCopyBlock": "複製這一處差異"
 }

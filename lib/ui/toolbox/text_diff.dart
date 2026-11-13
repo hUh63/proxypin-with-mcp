@@ -38,6 +38,7 @@ import 'package:re_highlight/styles/atom-one-light.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/code_lint.dart';
+import 'package:proxypin/utils/excel_export.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/ui/toolbox/text_editor.dart' show TextEditorPage;
@@ -283,8 +284,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// （「忽略空白」是全量抹空白，适合格式化后的对比；这个是更精准的那一档。）
   bool _ignoreTrailing = false;
 
-  /// 聚焦模式保留的上下文行数。
-  static const int _focusContext = 3;
+  /// 聚焦模式保留的上下文行数（可调：改一处字段只想看紧邻几行，看整段逻辑要更宽）。
+  int _focusContext = 3;
+  static const String _focusContextKey = 'text_diff_focus_context_v1';
 
   /// 对齐视图的行缓存：每次 build 重算 diff 太贵（几千行会明显顿）。
   List<DiffRow> _alignedRowsCache = const <DiffRow>[];
@@ -364,6 +366,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (!mounted || v == null || v == _splitRatio) return;
       setState(() => _splitRatio = v.clamp(0.15, 0.85));
     }).catchError((_) => null));
+    unawaited(SharedPreferencesAsync().getInt(_focusContextKey).then((v) {
+      if (!mounted || v == null || v == _focusContext) return;
+      setState(() => _focusContext = v.clamp(0, 20));
+    }).catchError((_) => null));
 
     _left.addListener(_onLeftChanged);
     _right.addListener(_onRightChanged);
@@ -412,6 +418,20 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   bool _onKeyEvent(KeyEvent event) {
     if (widget.windowId == null) return false;
+    // F7 / Shift+F7 跳差异（VS、Beyond Compare 都是这个键），Ctrl+Enter 重比。
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.f7) {
+        _navigate(HardwareKeyboard.instance.isShiftPressed ? -1 : 1);
+        return true;
+      }
+      final ctrl = HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed;
+      if (ctrl &&
+          (event.logicalKey == LogicalKeyboardKey.enter ||
+              event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
+        _compare();
+        return true;
+      }
+    }
     if ((HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed) &&
         event.logicalKey == LogicalKeyboardKey.keyW) {
       HardwareKeyboard.instance.removeHandler(_onKeyEvent);
@@ -1750,6 +1770,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'ignoreLines':
             unawaited(_showIgnoreLineDialog());
+          case 'preset':
+            unawaited(_showPresetPicker());
+          case 'focusContext':
+            unawaited(_showFocusContextPicker());
           case 'syntax':
             setState(() => _syntax = !_syntax);
           case 'wrap':
@@ -1808,6 +1832,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_reloadFromDisk());
           case 'exportCsv':
             unawaited(_exportCsv());
+          case 'exportXlsx':
+            unawaited(_exportXlsx());
           case 'history':
             unawaited(_showDiffHistory());
           case 'diffList':
@@ -1912,6 +1938,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             child: Text(_ignoreLineText.isEmpty
                 ? localizations.diffIgnoreLines
                 : localizations.diffIgnoreLinePattern(_ignoreLineText))),
+        PopupMenuItem(value: 'preset', child: Text(localizations.diffPreset)),
+        PopupMenuItem(
+            value: 'focusContext',
+            child: Text(localizations.diffFocusContext(_focusContext))),
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
         CheckedPopupMenuItem(
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
@@ -2004,6 +2034,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'shareDiff', child: Text(localizations.diffShare)),
         PopupMenuItem(value: 'reloadFiles', child: Text(localizations.diffReloadFiles)),
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
+        PopupMenuItem(value: 'exportXlsx', child: Text(localizations.exportExcel)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'imageDiff', child: Text(localizations.imageDiffTitle)),
@@ -2052,6 +2083,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
     return const SizedBox.shrink();
   }
 
+  /// 复制「当前差异块」的原文/新文（`-` / `+` 前缀），贴到聊天或工单里能直接看。
+  void _copyBlock(DiffBlock b) {
+    final leftLines = _left.text.split('\n');
+    final rightLines = _right.text.split('\n');
+    final buf = StringBuffer();
+    for (final i in b.leftLines) {
+      if (i >= 0 && i < leftLines.length) buf.writeln('- ${leftLines[i]}');
+    }
+    for (final i in b.rightLines) {
+      if (i >= 0 && i < rightLines.length) buf.writeln('+ ${rightLines[i]}');
+    }
+    Clipboard.setData(ClipboardData(text: buf.toString()));
+    _toastText(localizations.copied);
+  }
+
   /// 当前差异块的「上一个 / 下一个 / 用左侧 / 用右侧」快捷条。
   Widget _navApplyBar(int idx) {
     final theme = Theme.of(context);
@@ -2086,6 +2132,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
               style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
         ),
         IconButton(
+          tooltip: localizations.diffCopyBlock,
+          icon: const Icon(Icons.copy_all, size: 16),
+          onPressed: () => _copyBlock(_blocks[idx]),
+        ),
+        IconButton(
           tooltip: localizations.cancel,
           icon: const Icon(Icons.close, size: 16),
           onPressed: () => setState(() => _navIndex = -1),
@@ -2118,6 +2169,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
           onPressed: () => _applyBlock(_blocks[idx], fromLeft: true),
           child: Text('${localizations.diffUseLeft} →',
               style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+        ),
+        IconButton(
+          tooltip: localizations.diffCopyBlock,
+          icon: const Icon(Icons.copy_all, size: 17),
+          onPressed: () => _copyBlock(_blocks[idx]),
         ),
         IconButton(
           tooltip: localizations.cancel,
@@ -3928,6 +3984,49 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
   }
 
+  /// 导出差异清单为 xlsx：和 CSV 同一份数据（类型/左行号/右行号/原文/新文），
+  /// Excel 打开即分列，省掉 CSV 的「分列/编码」两步。
+  Future<void> _exportXlsx() async {
+    final rows = _alignedRows();
+    final changed = rows.where((r) => r.type != DiffRowType.equal).toList();
+    if (changed.isEmpty) {
+      _toastText(localizations.diffNoChange);
+      return;
+    }
+    final loc = localizations;
+    final data = <List<Object?>>[
+      <Object?>[
+        loc.diffCsvType,
+        loc.diffCsvLeft,
+        loc.diffCsvRight,
+        loc.diffCsvLeftText,
+        loc.diffCsvRightText,
+      ],
+    ];
+    for (final r in changed) {
+      data.add(<Object?>[
+        switch (r.type) {
+          DiffRowType.added => loc.diffOnlyAdded,
+          DiffRowType.deleted => loc.diffOnlyDeleted,
+          DiffRowType.modified => loc.diffOnlyModified,
+          DiffRowType.equal => '',
+        },
+        r.leftLine,
+        r.rightLine,
+        r.leftText ?? '',
+        r.rightText ?? '',
+      ]);
+    }
+    try {
+      final bytes = ExcelExport.buildWorkbook(data, sheetName: 'Diff');
+      final saved = await FilePicker.saveFile(fileName: 'diff-changes.xlsx', bytes: bytes);
+      if (!mounted) return;
+      if (saved != null) _toastText(localizations.diffReportSaved);
+    } catch (e) {
+      _toastText('${localizations.fail}: $e');
+    }
+  }
+
   /// CSV 单元格：转义引号 + 以 = + - @ 开头的加单引号（防 Excel 公式注入）。
   static String _csv(String s) {
     var v = s.replaceAll('\r', '').replaceAll('\n', ' ');
@@ -4190,6 +4289,106 @@ class _TextDiffPageState extends State<TextDiffPage> {
     } catch (e) {
       _toastText('${localizations.fail}: $e');
     }
+  }
+
+  /// 聚焦模式的上下文行数：Beyond Compare 里这是可配的（「上下文行」），
+  /// 改一个常量字段只看 ±1~2 行，审一整段逻辑要 ±10 行——固定 3 行总要来回切。
+  Future<void> _showFocusContextPicker() async {
+    const options = <int>[0, 1, 3, 5, 10, 20];
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(localizations.diffFocusContext(_focusContext)),
+        children: <Widget>[
+          for (final n in options)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(n),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    n == _focusContext ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(n == 0 ? localizations.diffFocusContextNone : '$n'),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted || picked == _focusContext) return;
+    setState(() => _focusContext = picked);
+    unawaited(SharedPreferencesAsync().setInt(_focusContextKey, picked).catchError((_) {}));
+  }
+
+  /// 对比预设：把一堆忽略开关按「你在比什么」成套切好。
+  /// 逐个勾选容易漏（比如比 JSON 时忘了忽略空白，就会满地差异），预设一步到位。
+  Future<void> _showPresetPicker() async {
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        Widget row(String id, String label, String hint) => SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(id),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(label),
+                  Text(
+                    hint,
+                    style: TextStyle(fontSize: 11, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            );
+        return SimpleDialog(
+          title: Text(localizations.diffPreset),
+          children: <Widget>[
+            row('strict', localizations.diffPresetStrict, localizations.diffPresetStrictHint),
+            row('code', localizations.diffPresetCode, localizations.diffPresetCodeHint),
+            row('config', localizations.diffPresetConfig, localizations.diffPresetConfigHint),
+            row('doc', localizations.diffPresetDoc, localizations.diffPresetDocHint),
+          ],
+        );
+      },
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      switch (picked) {
+        case 'strict':
+          _ignoreCase = false;
+          _ignoreWhitespace = false;
+          _ignoreTrailing = false;
+          _ignoreBlank = false;
+          _ignoreComments = false;
+          break;
+        case 'code':
+          _ignoreCase = false;
+          _ignoreWhitespace = false;
+          _ignoreTrailing = true;
+          _ignoreBlank = false;
+          _ignoreComments = false;
+          break;
+        case 'config':
+          _ignoreCase = false;
+          _ignoreWhitespace = true;
+          _ignoreTrailing = true;
+          _ignoreBlank = true;
+          _ignoreComments = true;
+          break;
+        case 'doc':
+          _ignoreCase = true;
+          _ignoreWhitespace = true;
+          _ignoreTrailing = true;
+          _ignoreBlank = true;
+          _ignoreComments = false;
+          break;
+      }
+      _alignedRowsCache = const <DiffRow>[];
+      _alignedRowsKey = '';
+    });
+    _compare();
+    _toastText(localizations.diffPresetApplied);
   }
 
   /// 聚焦模式下的一屏：这一处差异 + 前后各 [_focusContext] 行上下文。

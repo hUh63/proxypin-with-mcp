@@ -6183,5 +6183,28 @@
   "editorTagSelfClosing": "Self-closing tag has no pair",
   "editorTagNoPair": "No matching tag found",
   "editorRectSingleLine": "Select more than one line",
-  "editorWorkspaceSymbols": "Workspace symbols"
+  "editorWorkspaceSymbols": "Workspace symbols",
+  "diffPreset": "Compare preset",
+  "diffPresetStrict": "Strict — nothing ignored",
+  "diffPresetStrictHint": "Every character counts",
+  "diffPresetCode": "Source code",
+  "diffPresetCodeHint": "Ignore trailing spaces only",
+  "diffPresetConfig": "Config / JSON",
+  "diffPresetConfigHint": "Ignore whitespace, blank lines and comments",
+  "diffPresetDoc": "Prose / docs",
+  "diffPresetDocHint": "Ignore case, whitespace, trailing spaces and blank lines",
+  "diffPresetApplied": "Preset applied",
+  "diffFocusContext": "Focus context: {n} lines",
+  "@diffFocusContext": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "diffFocusContextNone": "No context",
+  "editorSurroundWith": "Surround with…",
+  "editorSurroundWithDone": "Wrapped with template",
+  "convertByteArrays": "Decode byte arrays",
+  "diffCopyBlock": "Copy this block"
 }

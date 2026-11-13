@@ -80,6 +80,10 @@ class Ipv4Tcp {
   }
 
   /// 重算 IPv4 头校验和与 TCP 校验和（就地）。
+  ///
+  /// TCP 段长度取 **IP 头声明的 total length**，不是 `packet.length`：
+  /// WinDivert 交上来的缓冲区里可能带着链路层 padding（小包补齐到 60 字节），
+  /// 按缓冲区长度算会把 padding 也滚进反码和，校验和直接错 → 对端丢包。
   static void recomputeChecksums(Uint8List packet) {
     final ihl = (packet[0] & 0x0F) * 4;
     // IP 头校验和
@@ -90,8 +94,10 @@ class Ipv4Tcp {
     packet[11] = ipSum & 0xFF;
 
     // TCP 校验和（含伪首部）
+    final declared = (packet[2] << 8) | packet[3];
+    final total = declared > 0 && declared <= packet.length ? declared : packet.length;
     final tcpOffset = ihl;
-    final tcpLength = packet.length - tcpOffset;
+    final tcpLength = total - tcpOffset;
     if (tcpLength <= 0) return;
     packet[tcpOffset + 16] = 0;
     packet[tcpOffset + 17] = 0;

@@ -3717,5 +3717,21 @@
   "editorTagSelfClosing": "Self-closing tag has no pair",
   "editorTagNoPair": "No matching tag found",
   "editorRectSingleLine": "Select more than one line",
-  "editorWorkspaceSymbols": "Workspace symbols"
+  "editorWorkspaceSymbols": "Workspace symbols",
+  "diffPreset": "Preset perbandingan",
+  "diffPresetStrict": "Ketat — tidak ada yang diabaikan",
+  "diffPresetStrictHint": "Setiap karakter dihitung",
+  "diffPresetCode": "Kode sumber",
+  "diffPresetCodeHint": "Hanya abaikan spasi di akhir baris",
+  "diffPresetConfig": "Konfigurasi / JSON",
+  "diffPresetConfigHint": "Abaikan spasi, baris kosong, dan komentar",
+  "diffPresetDoc": "Teks / dokumen",
+  "diffPresetDocHint": "Abaikan huruf besar-kecil, spasi, spasi akhir, dan baris kosong",
+  "diffPresetApplied": "Preset diterapkan",
+  "diffFocusContext": "Konteks fokus: {n} baris",
+  "diffFocusContextNone": "Tanpa konteks",
+  "editorSurroundWith": "Bungkus dengan…",
+  "editorSurroundWithDone": "Dibungkus dengan templat",
+  "convertByteArrays": "Dekode array byte",
+  "diffCopyBlock": "Salin blok ini"
 }

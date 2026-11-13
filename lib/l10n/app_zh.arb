@@ -5407,5 +5407,21 @@
   "editorTagSelfClosing": "自闭合标签没有配对",
   "editorTagNoPair": "找不到配对的标签",
   "editorRectSingleLine": "请跨多行选择",
-  "editorWorkspaceSymbols": "工作区符号"
+  "editorWorkspaceSymbols": "工作区符号",
+  "diffPreset": "对比预设",
+  "diffPresetStrict": "严格 —— 什么都不忽略",
+  "diffPresetStrictHint": "每个字符都算差异",
+  "diffPresetCode": "源代码",
+  "diffPresetCodeHint": "只忽略行尾空白",
+  "diffPresetConfig": "配置 / JSON",
+  "diffPresetConfigHint": "忽略空白、空行与注释",
+  "diffPresetDoc": "文档 / 散文",
+  "diffPresetDocHint": "忽略大小写、空白、行尾空格与空行",
+  "diffPresetApplied": "已套用预设",
+  "diffFocusContext": "聚焦上下文：{n} 行",
+  "diffFocusContextNone": "不留上下文",
+  "editorSurroundWith": "用代码块环绕…",
+  "editorSurroundWithDone": "已用模板包裹",
+  "convertByteArrays": "解码字节数组",
+  "diffCopyBlock": "复制这一处差异"
 }

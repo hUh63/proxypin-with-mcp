@@ -419,6 +419,15 @@ class _TextTabState extends State<_TextTab> {
     });
   }
 
+  /// 从一段日志里把 `[12, 34, 56]` / `0x0c 0x22` 这类字节数组全部抠出来解码。
+  /// 逆向调试时日志里刷一大片 byte 数组，一个个粘太慢。
+  void _decodeArrays() {
+    final hits = NumConvert.decodeByteArrays(_input.text);
+    setState(() {
+      _out = hits.isEmpty ? '' : hits.map((h) => '${h.raw}  →  ${h.text}').join('\n\n');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -428,6 +437,7 @@ class _TextTabState extends State<_TextTab> {
       output: _out,
       mono: false,
       controls: [
+        _chip(loc.convertByteArrays, false, _decodeArrays),
         _chip(loc.convertReverse, false, () => _apply('reverse')),
         _chip(loc.convertUpper, false, () => _apply('upper')),
         _chip(loc.convertLower, false, () => _apply('lower')),

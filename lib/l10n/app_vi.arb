@@ -3717,5 +3717,21 @@
   "editorTagSelfClosing": "Self-closing tag has no pair",
   "editorTagNoPair": "No matching tag found",
   "editorRectSingleLine": "Select more than one line",
-  "editorWorkspaceSymbols": "Workspace symbols"
+  "editorWorkspaceSymbols": "Workspace symbols",
+  "diffPreset": "Bộ đặt trước so sánh",
+  "diffPresetStrict": "Nghiêm ngặt — không bỏ qua gì",
+  "diffPresetStrictHint": "Mọi ký tự đều tính",
+  "diffPresetCode": "Mã nguồn",
+  "diffPresetCodeHint": "Chỉ bỏ qua khoảng trắng cuối dòng",
+  "diffPresetConfig": "Cấu hình / JSON",
+  "diffPresetConfigHint": "Bỏ qua khoảng trắng, dòng trống và chú thích",
+  "diffPresetDoc": "Văn bản / tài liệu",
+  "diffPresetDocHint": "Bỏ qua hoa thường, khoảng trắng, khoảng trắng cuối dòng và dòng trống",
+  "diffPresetApplied": "Đã áp dụng bộ đặt trước",
+  "diffFocusContext": "Ngữ cảnh tiêu điểm: {n} dòng",
+  "diffFocusContextNone": "Không có ngữ cảnh",
+  "editorSurroundWith": "Bọc bằng…",
+  "editorSurroundWithDone": "Đã bọc bằng mẫu",
+  "convertByteArrays": "Giải mã mảng byte",
+  "diffCopyBlock": "Sao chép khối này"
 }

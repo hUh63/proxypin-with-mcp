@@ -3717,5 +3717,21 @@
   "editorTagSelfClosing": "Self-closing tag has no pair",
   "editorTagNoPair": "No matching tag found",
   "editorRectSingleLine": "Select more than one line",
-  "editorWorkspaceSymbols": "Workspace symbols"
+  "editorWorkspaceSymbols": "Workspace symbols",
+  "diffPreset": "พรีเซ็ตการเปรียบเทียบ",
+  "diffPresetStrict": "เข้มงวด — ไม่ข้ามสิ่งใด",
+  "diffPresetStrictHint": "ทุกตัวอักษรถือเป็นความต่าง",
+  "diffPresetCode": "ซอร์สโค้ด",
+  "diffPresetCodeHint": "ข้ามเฉพาะช่องว่างท้ายบรรทัด",
+  "diffPresetConfig": "คอนฟิก / JSON",
+  "diffPresetConfigHint": "ข้ามช่องว่าง บรรทัดว่าง และคอมเมนต์",
+  "diffPresetDoc": "ข้อความ / เอกสาร",
+  "diffPresetDocHint": "ข้ามตัวพิมพ์ ช่องว่าง ช่องว่างท้ายบรรทัด และบรรทัดว่าง",
+  "diffPresetApplied": "ใช้พรีเซ็ตแล้ว",
+  "diffFocusContext": "บริบทโฟกัส: {n} บรรทัด",
+  "diffFocusContextNone": "ไม่มีบริบท",
+  "editorSurroundWith": "ห่อด้วย…",
+  "editorSurroundWithDone": "ห่อด้วยเทมเพลตแล้ว",
+  "convertByteArrays": "ถอดรหัสไบต์อาร์เรย์",
+  "diffCopyBlock": "คัดลอกบล็อกนี้"
 }

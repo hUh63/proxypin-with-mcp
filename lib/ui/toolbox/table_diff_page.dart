@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/ui/toolbox/text_editor.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:proxypin/utils/excel_export.dart';
 import 'package:proxypin/utils/table_diff.dart';
 import 'package:proxypin/utils/text_file_reader.dart';
 
@@ -235,6 +236,9 @@ class _TableDiffPageState extends State<TableDiffPage> {
                 case 'exportMd':
                   unawaited(_exportDiff(asCsv: false));
                   break;
+                case 'exportXlsx':
+                  unawaited(_exportXlsx());
+                  break;
                 case 'clear':
                   setState(() {
                     _leftText = '';
@@ -257,6 +261,7 @@ class _TableDiffPageState extends State<TableDiffPage> {
               const PopupMenuDivider(),
               PopupMenuItem(value: 'exportCsv', child: Text(loc.diffExportCsv)),
               PopupMenuItem(value: 'exportMd', child: Text(loc.diffExportMarkdown)),
+              PopupMenuItem(value: 'exportXlsx', child: Text(loc.exportExcel)),
               PopupMenuItem(value: 'clear', child: Text(loc.clear)),
             ],
           ),
@@ -700,6 +705,57 @@ class _TableDiffPageState extends State<TableDiffPage> {
         fileName: asCsv ? 'table-diff.csv' : 'table-diff.md',
         bytes: Uint8List.fromList(bytes),
       );
+      if (!mounted) return;
+      _toast('${localizations.exportSuccess} · $exported');
+    } catch (e) {
+      _toast('${localizations.fail}: $e');
+    }
+  }
+
+  /// 导出 xlsx：和 CSV 同一份差异清单，只是 Excel 打开即分好列。
+  /// CSV 在中文 Windows 上常被当 GBK 解开（已加 BOM 兜底），单元格里带逗号还得手动分列；
+  /// 工单/验收表直接收 xlsx 少一步。
+  Future<void> _exportXlsx() async {
+    final result = _result;
+    if (result == null) {
+      _toast(localizations.tableDiffEmpty);
+      return;
+    }
+    final rows = <List<Object?>>[
+      <Object?>['row', 'column', 'left', 'right'],
+    ];
+    var exported = 0;
+    for (var pos = 0; pos < result.rows.length; pos++) {
+      final row = result.rows[pos];
+      if (row.state == TableRowState.unchanged) continue;
+      final l = result.leftCellsAt(pos);
+      final r = result.rightCellsAt(pos);
+      if (row.state == TableRowState.added || row.state == TableRowState.removed) {
+        final added = row.state == TableRowState.added;
+        final cells = added ? r : l;
+        for (var c = 0; c < result.columns.length; c++) {
+          rows.add(<Object?>[
+            added ? row.rightIndex + 1 : row.leftIndex + 1,
+            result.columns[c].name,
+            added ? '' : cells[c],
+            added ? cells[c] : '',
+          ]);
+          exported++;
+        }
+      } else {
+        for (final c in row.changedColumns) {
+          rows.add(<Object?>[row.leftIndex + 1, result.columns[c].name, l[c], r[c]]);
+          exported++;
+        }
+      }
+    }
+    if (exported == 0) {
+      _toast(localizations.diffIdentical);
+      return;
+    }
+    try {
+      final bytes = ExcelExport.buildWorkbook(rows, sheetName: 'TableDiff');
+      await FilePicker.saveFile(fileName: 'table-diff.xlsx', bytes: bytes);
       if (!mounted) return;
       _toast('${localizations.exportSuccess} · $exported');
     } catch (e) {
