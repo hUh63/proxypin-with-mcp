@@ -3733,5 +3733,6 @@
   "editorSurroundWith": "Bọc bằng…",
   "editorSurroundWithDone": "Đã bọc bằng mẫu",
   "convertByteArrays": "Giải mã mảng byte",
-  "diffCopyBlock": "Sao chép khối này"
+  "diffCopyBlock": "Sao chép khối này",
+  "editorLineStartCursors": "Con trỏ ở đầu mỗi dòng"
 }

@@ -3734,5 +3734,6 @@
   "editorSurroundWith": "Envolver com…",
   "editorSurroundWithDone": "Envolvido com modelo",
   "convertByteArrays": "Decodificar matrizes de bytes",
-  "diffCopyBlock": "Copiar este bloco"
+  "diffCopyBlock": "Copiar este bloco",
+  "editorLineStartCursors": "Cursor no início de cada linha"
 }

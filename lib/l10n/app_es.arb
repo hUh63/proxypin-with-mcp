@@ -3733,5 +3733,6 @@
   "editorSurroundWith": "Rodear con…",
   "editorSurroundWithDone": "Rodeado con plantilla",
   "convertByteArrays": "Decodificar matrices de bytes",
-  "diffCopyBlock": "Copiar este bloque"
+  "diffCopyBlock": "Copiar este bloque",
+  "editorLineStartCursors": "Cursor al inicio de cada línea"
 }

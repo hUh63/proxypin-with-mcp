@@ -6206,5 +6206,6 @@
   "editorSurroundWith": "Surround with…",
   "editorSurroundWithDone": "Wrapped with template",
   "convertByteArrays": "Decode byte arrays",
-  "diffCopyBlock": "Copy this block"
+  "diffCopyBlock": "Copy this block",
+  "editorLineStartCursors": "Cursor at every line start"
 }

@@ -3733,5 +3733,6 @@
   "editorSurroundWith": "ห่อด้วย…",
   "editorSurroundWithDone": "ห่อด้วยเทมเพลตแล้ว",
   "convertByteArrays": "ถอดรหัสไบต์อาร์เรย์",
-  "diffCopyBlock": "คัดลอกบล็อกนี้"
+  "diffCopyBlock": "คัดลอกบล็อกนี้",
+  "editorLineStartCursors": "เคอร์เซอร์ต้นทุกบรรทัด"
 }

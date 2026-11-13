@@ -8206,7 +8206,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 手机上没法按住 Alt 拖框，但「先选一段、再按列加光标」效果一样 ——
   /// 对齐的配置表、日志、CSV 批量改同一列时很省事（VS Code 的 Add Cursors to Line Ends
   /// / 列选择）。
-  void _addColumnCursors() {
+  ///
+  /// [columnOverride] 传 0 就是「每行行首加光标」（批量加前缀/注释），
+  /// 行尾做不到固定列（每行长度不同），所以只提供行首这一档。
+  void _addColumnCursors({int? columnOverride}) {
     final c = _controller;
     if (c == null) return;
     final text = c.text;
@@ -8218,16 +8221,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final start = sel.start.clamp(0, text.length);
     final end = sel.end.clamp(start, text.length);
     final firstLineStart = text.lastIndexOf('\n', start) + 1;
-    final column = start - firstLineStart;
+    final column = columnOverride ?? (start - firstLineStart);
     var line = _lineOfOffset(text, start);
     var offset = start;
     var added = 0;
     try {
       c.clearMultiCursors();
+      var first = true;
       while (true) {
-        // 第一行就是光标本身，只给后面的行补光标。
-        if (added > 0) c.addMultiCursor(line, column);
+        // 列模式：第一行就是光标本身，只给后面的行补；行首模式每行都要补。
+        if (!first || columnOverride != null) c.addMultiCursor(line, column);
         added++;
+        first = false;
         if (added > 5000) break; // 兜底：别让一次误操作造出上万个光标
         final nl = text.indexOf('\n', offset);
         if (nl < 0 || nl >= end) break;
@@ -10891,6 +10896,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
         _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
+        _menuItem('lineStartCursors', Icons.format_indent_increase, loc.editorLineStartCursors),
         _menuItem('boxSelect', Icons.grid_on, loc.editorRectSelect),
         _menuItem('openLink', Icons.link, loc.editorOpenLink),
         _menuItem('trimTrailing', Icons.cleaning_services_outlined, loc.editorTrimTrailing),
@@ -11226,6 +11232,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _selectToBracket();
       case 'columnCursors':
         _addColumnCursors();
+      case 'lineStartCursors':
+        _addColumnCursors(columnOverride: 0);
       case 'openLink':
         unawaited(_openLinkAtCursor());
       case 'trimTrailing':

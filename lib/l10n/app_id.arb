@@ -3733,5 +3733,6 @@
   "editorSurroundWith": "Bungkus dengan…",
   "editorSurroundWithDone": "Dibungkus dengan templat",
   "convertByteArrays": "Dekode array byte",
-  "diffCopyBlock": "Salin blok ini"
+  "diffCopyBlock": "Salin blok ini",
+  "editorLineStartCursors": "Kursor di awal setiap baris"
 }

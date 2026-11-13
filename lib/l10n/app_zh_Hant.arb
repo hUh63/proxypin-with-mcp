@@ -5423,5 +5423,6 @@
   "editorSurroundWith": "用程式碼區塊環繞…",
   "editorSurroundWithDone": "已用範本包覆",
   "convertByteArrays": "解碼位元組陣列",
-  "diffCopyBlock": "複製這一處差異"
+  "diffCopyBlock": "複製這一處差異",
+  "editorLineStartCursors": "每行行首加游標"
 }
