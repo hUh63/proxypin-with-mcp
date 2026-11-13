@@ -19,7 +19,6 @@ import 'dart:convert';
 
 import 'package:xml/xml.dart' as xml;
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
@@ -30,7 +29,6 @@ import 'package:proxypin/ui/component/search/highlight_text_document.dart'
         HighlightStyledSegment,
         buildHighlightBaseSegments,
         buildHighlightDocumentLines;
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
@@ -530,7 +528,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (_historyWriting) return;
     _historyWriting = true;
     try {
-      final sp = await SharedPreferencesAsync();
+      final sp = SharedPreferencesAsync();
       final raw = await sp.getString(_historyKey);
       final list = <Map<String, dynamic>>[];
       if (raw != null && raw.isNotEmpty) {
@@ -563,7 +561,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   Future<void> _showDiffHistory() async {
     List<Map<String, dynamic>> list = const [];
     try {
-      final sp = await SharedPreferencesAsync();
+      final sp = SharedPreferencesAsync();
       final raw = await sp.getString(_historyKey);
       if (raw != null && raw.isNotEmpty) {
         list = [
@@ -2200,7 +2198,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       return;
     }
     try {
-      final sp = await SharedPreferencesAsync();
+      final sp = SharedPreferencesAsync();
       final name = _leftName.isNotEmpty ? _leftName : localizations.diffBaseline;
       await sp.setString(
         _baselineKey,

@@ -2,7 +2,7 @@ name: proxypin
 description: ProxyPin
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.4.0+421
+version: 1.4.0+422
 
 environment:
   # 与 pubspec.lock 的 sdks 段保持一致（code_forge 10.14.0 起要求 Dart ^3.13.2）
@@ -59,6 +59,9 @@ dependencies:
   flutter_widget_from_html_core: ^0.17.4
   # ARTEX 官方前端是 Next.js 整站，只有 WebView 能原样跑起来（Android/iOS/macOS）。
   webview_flutter: ^4.10.0
+  # 直接用到的（原先是 code_forge / 其它包的传递依赖，显式声明避免哪天上游去掉就编译不过）
+  re_highlight: ^0.0.3
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +71,8 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # test/ 下用 vm_service 直接驱动 VM（select_tab / hot_reload 脚本）。
+  vm_service: ^15.3.0
 
 # The following section is specific to Flutter packages.
 flutter:

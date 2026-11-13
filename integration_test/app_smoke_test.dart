@@ -16,7 +16,6 @@
  * 注意：本文件属于 integration_test（由 desktop-smoke.yml 单独驱动），
  * 不参与 quality.yml 的 `flutter test --exclude-tags integration`。
  */
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 

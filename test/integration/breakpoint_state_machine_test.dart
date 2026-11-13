@@ -14,6 +14,9 @@
  *
  * 不打 integration 标签，CI 会真实执行。
  */
+@Timeout(Duration(seconds: 60))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
@@ -26,8 +29,6 @@ import 'package:proxypin/network/components/request_breakpoint.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_headers.dart';
 import 'package:proxypin/network/util/file_read.dart';
-
-@Timeout(Duration(seconds: 60))
 
 /// 开始一次「可能被暂停」的拦截：把未处理的窗口插件异常收进 [errors]。
 Future<T> _beginPaused<T>(Future<T> Function() body, List<Object> errors) {

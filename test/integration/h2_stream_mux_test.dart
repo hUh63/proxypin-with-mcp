@@ -12,6 +12,9 @@
  * 全链路真实 socket：raw h2c client → proxypin 代理(真实 Server) → raw h2c 上游。
  * 不打 integration 标签，CI 会真实执行。
  */
+@Timeout(Duration(seconds: 90))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
@@ -27,8 +30,6 @@ import 'package:proxypin/network/http/codec.dart';
 import 'package:proxypin/network/http/h2/hpack/hpack.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/util/file_read.dart';
-
-@Timeout(Duration(seconds: 90))
 
 const _preface = 'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n';
 const _endStream = 1;

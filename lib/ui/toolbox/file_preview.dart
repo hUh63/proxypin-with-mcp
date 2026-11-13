@@ -25,7 +25,6 @@
 // 工具箱的「文件预览」和文本编辑器的「打开文件」都走这里，省得两处各判一遍。
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

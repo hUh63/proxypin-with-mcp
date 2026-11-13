@@ -29,7 +29,6 @@
 //   3. [ToolResultBox]——固定在一块的结果区，等宽字体 + 复制 + 保存，别再用对话框。
 
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';

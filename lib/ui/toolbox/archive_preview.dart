@@ -20,7 +20,6 @@
 // 7z / rar 没有纯 Dart 解码器，明确告诉用户，而不是转半天没反应。
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
@@ -282,8 +281,6 @@ class _ArchivePreviewPageState extends State<ArchivePreviewPage> {
     }
     if (file == null) return;
     final data = file.content;
-    final bytes = data;
-    if (bytes == null) return;
     final lower = name.toLowerCase();
     if (_imageExt.hasMatch(lower)) {
       if (!mounted) return;
@@ -291,13 +288,13 @@ class _ArchivePreviewPageState extends State<ArchivePreviewPage> {
         context: context,
         builder: (ctx) => Dialog(
           insetPadding: const EdgeInsets.all(12),
-          child: InteractiveViewer(maxScale: 6, child: Image.memory(bytes, fit: BoxFit.contain)),
+          child: InteractiveViewer(maxScale: 6, child: Image.memory(data, fit: BoxFit.contain)),
         ),
       );
       return;
     }
     if (_textExt.hasMatch(lower)) {
-      final text = _decodeText(bytes);
+      final text = _decodeText(data);
       if (!mounted) return;
       await showDialog<void>(
         context: context,

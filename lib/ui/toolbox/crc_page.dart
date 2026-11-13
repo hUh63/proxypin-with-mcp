@@ -20,7 +20,6 @@
 // 改完不重打包、只动 4 个字节，所以很快。
 
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';

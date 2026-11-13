@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.67.306 (2026-11-14) — 按 analyze 日志清 warnings（换了个取数方式）
+
+以前清 warning 靠「本地脚本猜」，这次直接从 CI 的 Static analysis 日志里把 669 条
+全量捞出来，按规则名分组，只修**确定安全**的那几类（669 条里绝大多数是纯风格提示，
+如 `curly_braces_in_flow_control_structures`、`use_build_context_synchronously`，
+判定不修）。
+
+### 修掉的
+- **18 处 `unnecessary_import`**：`dart:typed_data` / `dart:async` / `flutter/gestures`
+  都已被 `flutter/services.dart` / `flutter/material.dart` 覆盖，删掉不影响任何符号。
+- **3 处 `invalid_annotation_target`**：integration test 里的 `@Timeout(...)` 悬空挂在
+  注释和函数之间 —— 它只能挂在 library 上，已移到 `library;` 之前。
+- **1 处 `dead_code` + 1 处 `unnecessary_null_comparison`**（archive_preview）：
+  `final bytes = data; if (bytes == null) return;` —— `data` 是非空 `Uint8List`，
+  这个判空恒 false，后面的代码全在死区里。
+- **3 处 `await_only_futures`**：`final sp = await SharedPreferencesAsync();`
+  —— 构造函数不是 Future，`await` 是空转。
+- **57 条 `depend_on_referenced_packages`**：`re_highlight` / `crypto` / `vm_service`
+  一直靠传递依赖撞运气在用，现在显式声明（版本对齐 pubspec.lock）。
+  这类隐患是真问题：上游哪天不再依赖它们，编译直接断。
+
 ## v1.67.305 (2026-11-14) — 每行行首加光标
 
 编辑器补一档多光标：选一段（哪怕只是几行），一次在**每行行首**各加一个光标，

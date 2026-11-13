@@ -17,10 +17,12 @@
  * 实现已注册则该 mock 不会被使用），并把 assets/certs 下的 CA 预置进临时 home，
  * 这样 CertificateManager 无需读 rootBundle。
  */
+@Timeout(Duration(seconds: 90))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,8 +43,6 @@ import 'package:proxypin/network/util/tls.dart';
 import 'package:proxypin/storage/path.dart';
 
 // 兜底超时：任何一环（TLS 握手 / 转发）死锁时宁可让用例失败，也不要挂死 CI。
-@Timeout(Duration(seconds: 90))
-
 /// 捕获代理侧明文事件的监听器。
 class _Capture extends EventListener {
   final List<HttpRequest> requests = [];

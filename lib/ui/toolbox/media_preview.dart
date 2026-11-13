@@ -24,7 +24,6 @@
 //
 // 另外给一个「透明背景棋盘格」，看 PNG 的透明通道时不会被白底骗过去。
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';

@@ -24,7 +24,6 @@
 /// 本模块展示的是"哪些 App/域名在走 QUIC、建立多少连接"的连接级元数据。
 
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:proxypin/network/util/quic/qpack_decoder.dart';
