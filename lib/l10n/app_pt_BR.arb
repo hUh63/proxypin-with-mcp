@@ -3735,5 +3735,10 @@
   "editorSurroundWithDone": "Envolvido com modelo",
   "convertByteArrays": "Decodificar matrizes de bytes",
   "diffCopyBlock": "Copiar este bloco",
-  "editorLineStartCursors": "Cursor no início de cada linha"
+  "editorLineStartCursors": "Cursor no início de cada linha",
+  "diffOrderAgnostic": "Ignorar ordem das linhas (comparar como conjunto)",
+  "diffOrderOnlyLeft": "Só à esquerda",
+  "diffOrderOnlyRight": "Só à direita",
+  "diffOrderIdentical": "Os dois lados têm as mesmas linhas, só a ordem difere",
+  "editorLineEndCursors": "Cursor no fim de cada linha"
 }

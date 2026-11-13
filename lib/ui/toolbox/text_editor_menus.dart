@@ -658,6 +658,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'lgx 列选择 多光标 column cursors'),
   EditorMenuItem('lineStartCursors', _lineStartCursorsLabel, group: 'edit',
       aliases: 'xskg 行首光标 line start cursors prefix'),
+  EditorMenuItem('lineEndCursors', _lineEndCursorsLabel, group: 'edit',
+      aliases: 'xwgu 行尾光标 line end cursors suffix suffix'),
   EditorMenuItem('openLink', _openLinkLabel, group: 'edit',
       aliases: 'lj 打开链接 open link url'),
   EditorMenuItem('toggleBookmark', _toggleBookmarkLabel, group: 'edit', aliases: 'sj 书签 bookmark'),
@@ -883,6 +885,7 @@ String _toggleBreakpointLabel(AppLocalizations l) => l.editorToggleBreakpoint;
 String _debugLabel(AppLocalizations l) => l.editorDebugTab;
 String _columnCursorsLabel(AppLocalizations l) => l.editorColumnSelect;
 String _lineStartCursorsLabel(AppLocalizations l) => l.editorLineStartCursors;
+String _lineEndCursorsLabel(AppLocalizations l) => l.editorLineEndCursors;
 String _openLinkLabel(AppLocalizations l) => l.editorOpenLink;
 String _lintLabel(AppLocalizations l) => l.editorLint;
 String _lintIssuesLabel(AppLocalizations l) => l.editorLintIssues;
@@ -1012,6 +1015,8 @@ IconData menuIconOf(String id) {
       return Icons.view_column_outlined;
     case 'lineStartCursors':
       return Icons.format_indent_increase;
+    case 'lineEndCursors':
+      return Icons.format_indent_decrease;
     case 'openLink':
       return Icons.link;
     case 'trimTrailing':

@@ -8207,9 +8207,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 对齐的配置表、日志、CSV 批量改同一列时很省事（VS Code 的 Add Cursors to Line Ends
   /// / 列选择）。
   ///
-  /// [columnOverride] 传 0 就是「每行行首加光标」（批量加前缀/注释），
-  /// 行尾做不到固定列（每行长度不同），所以只提供行首这一档。
-  void _addColumnCursors({int? columnOverride}) {
+  /// [columnOverride] 传 0 就是「每行行首加光标」（批量加前缀/注释）；
+  /// [atLineEnd] 是「每行行尾加光标」（批量加尾注释/分号/逗号）——
+  /// 行尾每行长度不同，只能逐行算列号，不能走固定列。
+  void _addColumnCursors({int? columnOverride, bool atLineEnd = false}) {
     final c = _controller;
     if (c == null) return;
     final text = c.text;
@@ -8223,20 +8224,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final firstLineStart = text.lastIndexOf('\n', start) + 1;
     final column = columnOverride ?? (start - firstLineStart);
     var line = _lineOfOffset(text, start);
-    var offset = start;
+    // 游标一律按「行首偏移」走，行尾模式要靠它算该行的列数。
+    var lineStart = firstLineStart;
     var added = 0;
     try {
       c.clearMultiCursors();
-      var first = true;
       while (true) {
-        // 列模式：第一行就是光标本身，只给后面的行补；行首模式每行都要补。
-        if (!first || columnOverride != null) c.addMultiCursor(line, column);
+        final nl = text.indexOf('\n', lineStart);
+        final lineEnd = nl < 0 ? text.length : nl;
+        if (atLineEnd) {
+          // 行尾模式每行都要补（第一行也一样，光标本来不在这）。
+          final col = lineEnd - lineStart;
+          c.addMultiCursor(line, col < 0 ? 0 : col);
+        } else if (added > 0 || columnOverride != null) {
+          // 列模式：第一行就是光标本身，只给后面的行补；行首模式每行都要补。
+          c.addMultiCursor(line, column);
+        }
         added++;
-        first = false;
         if (added > 5000) break; // 兜底：别让一次误操作造出上万个光标
-        final nl = text.indexOf('\n', offset);
         if (nl < 0 || nl >= end) break;
-        offset = nl + 1;
+        lineStart = nl + 1;
         line++;
       }
     } catch (e) {
@@ -10897,6 +10904,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
         _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
         _menuItem('lineStartCursors', Icons.format_indent_increase, loc.editorLineStartCursors),
+        _menuItem('lineEndCursors', Icons.format_indent_decrease, loc.editorLineEndCursors),
         _menuItem('boxSelect', Icons.grid_on, loc.editorRectSelect),
         _menuItem('openLink', Icons.link, loc.editorOpenLink),
         _menuItem('trimTrailing', Icons.cleaning_services_outlined, loc.editorTrimTrailing),
@@ -11234,6 +11242,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _addColumnCursors();
       case 'lineStartCursors':
         _addColumnCursors(columnOverride: 0);
+      case 'lineEndCursors':
+        _addColumnCursors(atLineEnd: true);
       case 'openLink':
         unawaited(_openLinkAtCursor());
       case 'trimTrailing':

@@ -1836,6 +1836,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_showDiffHistory());
           case 'diffList':
             _showDiffList();
+          case 'orderAgnostic':
+            _showOrderAgnostic();
           case 'hexDiff':
             unawaited(Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const HexDiffPage())));
@@ -2034,6 +2036,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'exportXlsx', child: Text(localizations.exportExcel)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
+        PopupMenuItem(value: 'orderAgnostic', child: Text(localizations.diffOrderAgnostic)),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'imageDiff', child: Text(localizations.imageDiffTitle)),
         PopupMenuItem(value: 'tableCompare', child: Text(localizations.tableDiffOpen)),
@@ -3701,6 +3704,127 @@ class _TextDiffPageState extends State<TextDiffPage> {
               color: active
                   ? theme.colorScheme.primary
                   : theme.colorScheme.onSurfaceVariant)),
+    );
+  }
+
+  /// 「忽略行顺序」：只看两侧各自多出哪几行，不关心它们排在第几位。
+  ///
+  /// 比词表、白名单、忽略域名、依赖列表时最有用 —— 有人重排了一下顺序，
+  /// 常规 diff 会从第一个移动处开始整段标红，看不出真正多了什么。
+  void _showOrderAgnostic() {
+    final leftLines = _left.text.isEmpty ? const <String>[] : _left.text.split('\n');
+    final rightLines = _right.text.isEmpty ? const <String>[] : _right.text.split('\n');
+    if (leftLines.isEmpty && rightLines.isEmpty) {
+      _toastText(localizations.diffSelectFirst);
+      return;
+    }
+    final r = diffAsMultiset(leftLines, rightLines,
+        ignoreCase: _ignoreCase, ignoreWhitespace: _ignoreWhitespace);
+    final loc = localizations;
+    final theme = Theme.of(context);
+
+    String buildText() {
+      final buf = StringBuffer();
+      for (final h in r.onlyLeft) {
+        buf.writeln('- ${h.text}');
+      }
+      for (final h in r.onlyRight) {
+        buf.writeln('+ ${h.text}');
+      }
+      return buf.toString();
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        builder: (ctx, scroll) {
+          final items = <Widget>[];
+          void section(
+              String title, List<({int line, String text})> rows, Color color, String sign) {
+            if (rows.isEmpty) return;
+            items.add(Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+              child: Text('$title (${rows.length})',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color)),
+            ));
+            for (final h in rows.take(500)) {
+              items.add(Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SizedBox(
+                      width: 50,
+                      child: Text('${h.line + 1}',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'monospace',
+                              color: theme.colorScheme.onSurfaceVariant)),
+                    ),
+                    Text(sign,
+                        style: TextStyle(
+                            fontSize: 12, fontFamily: 'monospace', color: color, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        h.text.trim().isEmpty ? '(blank)' : h.text,
+                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ));
+            }
+            if (rows.length > 500) {
+              items.add(Padding(
+                padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+                child: Text('… ${rows.length - 500}',
+                    style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+              ));
+            }
+          }
+
+          return Column(children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 0),
+              child: Row(children: <Widget>[
+                Expanded(
+                  child: Text(loc.diffOrderAgnostic,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+                IconButton(
+                  tooltip: loc.copied,
+                  icon: const Icon(Icons.copy_all, size: 19),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: buildText()));
+                    _toastText(loc.copied);
+                  },
+                ),
+                IconButton(
+                  tooltip: loc.cancel,
+                  icon: const Icon(Icons.close, size: 19),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ]),
+            ),
+            if (r.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(loc.diffOrderIdentical, style: const TextStyle(fontSize: 13)),
+              )
+            else
+              Expanded(
+                child: ListView(controller: scroll, children: items),
+              ),
+          ]);
+        },
+      ),
     );
   }
 

@@ -276,9 +276,8 @@ class _LogViewerPageState extends State<LogViewerPage> {
   Future<void> _exportLogs() async {
     try {
       final filePath = await _logManager.exportLogs();
-      final result = await Share.shareXFiles(
-        [XFile(filePath)],
-        subject: 'ProxyPin Logs',
+      final result = await SharePlus.instance.share(
+        ShareParams(files: [XFile(filePath)], subject: 'ProxyPin Logs'),
       );
       
       if (mounted) {

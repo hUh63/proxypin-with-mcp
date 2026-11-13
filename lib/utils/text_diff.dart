@@ -1134,3 +1134,70 @@ String mergeTwoWay({
   }
   return out.join('\n');
 }
+
+/// 「忽略行顺序」的比较结果：只在某一侧出现的行（含原行号）。
+class MultisetDiff {
+  /// 只在左侧出现（左侧出现次数 > 右侧）的行，按原顺序。
+  final List<({int line, String text})> onlyLeft;
+
+  /// 只在右侧出现的行。
+  final List<({int line, String text})> onlyRight;
+
+  const MultisetDiff({required this.onlyLeft, required this.onlyRight});
+
+  bool get isEmpty => onlyLeft.isEmpty && onlyRight.isEmpty;
+
+  int get count => onlyLeft.length + onlyRight.length;
+}
+
+/// 按「行内容的多重集合」比较：只看两侧各自多出哪几行，不关心排列顺序。
+///
+/// 用途：比两份词表 / 白名单 / 依赖列表 / 忽略域名 —— 内容其实一样、只是有人
+/// 重新排了序，常规 diff 会从第一个移动处开始整段标红，看不出「到底多了哪几行」。
+/// 反过来，真加了 3 行时这里只会列出那 3 行，一眼就能看完。
+///
+/// 口径：同一行在两侧各出现 2 次算平；左 3 右 1 则左侧多出 2 行（取靠后的那两处）。
+MultisetDiff diffAsMultiset(
+  List<String> leftLines,
+  List<String> rightLines, {
+  bool ignoreCase = false,
+  bool ignoreWhitespace = false,
+}) {
+  String key(String s) {
+    var v = s;
+    if (ignoreWhitespace) v = v.replaceAll(RegExp(r'\s+'), '');
+    if (ignoreCase) v = v.toLowerCase();
+    return v;
+  }
+
+  Map<String, int> countOf(List<String> lines) {
+    final m = <String, int>{};
+    for (final l in lines) {
+      m.update(key(l), (v) => v + 1, ifAbsent: () => 1);
+    }
+    return m;
+  }
+
+  final leftCount = countOf(leftLines);
+  final rightCount = countOf(rightLines);
+
+  List<({int line, String text})> diffOf(List<String> lines, Map<String, int> other) {
+    final out = <({int line, String text})>[];
+    final used = <String, int>{};
+    for (var i = 0; i < lines.length; i++) {
+      final k = key(lines[i]);
+      final avail = (other[k] ?? 0) - (used[k] ?? 0);
+      if (avail > 0) {
+        used[k] = (used[k] ?? 0) + 1;
+      } else {
+        out.add((line: i, text: lines[i]));
+      }
+    }
+    return out;
+  }
+
+  return MultisetDiff(
+    onlyLeft: diffOf(leftLines, rightCount),
+    onlyRight: diffOf(rightLines, leftCount),
+  );
+}

@@ -3734,5 +3734,10 @@
   "editorSurroundWithDone": "Rodeado con plantilla",
   "convertByteArrays": "Decodificar matrices de bytes",
   "diffCopyBlock": "Copiar este bloque",
-  "editorLineStartCursors": "Cursor al inicio de cada línea"
+  "editorLineStartCursors": "Cursor al inicio de cada línea",
+  "diffOrderAgnostic": "Ignorar el orden de líneas (comparar como conjunto)",
+  "diffOrderOnlyLeft": "Solo en la izquierda",
+  "diffOrderOnlyRight": "Solo en la derecha",
+  "diffOrderIdentical": "Ambos lados tienen las mismas líneas, solo cambia el orden",
+  "editorLineEndCursors": "Cursor al final de cada línea"
 }

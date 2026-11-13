@@ -3734,5 +3734,10 @@
   "editorSurroundWithDone": "Dibungkus dengan templat",
   "convertByteArrays": "Dekode array byte",
   "diffCopyBlock": "Salin blok ini",
-  "editorLineStartCursors": "Kursor di awal setiap baris"
+  "editorLineStartCursors": "Kursor di awal setiap baris",
+  "diffOrderAgnostic": "Abaikan urutan baris (bandingkan sebagai himpunan)",
+  "diffOrderOnlyLeft": "Hanya di kiri",
+  "diffOrderOnlyRight": "Hanya di kanan",
+  "diffOrderIdentical": "Kedua sisi berisi baris yang sama, hanya urutannya berbeda",
+  "editorLineEndCursors": "Kursor di akhir setiap baris"
 }

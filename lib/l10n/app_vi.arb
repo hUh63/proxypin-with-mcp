@@ -3734,5 +3734,10 @@
   "editorSurroundWithDone": "Đã bọc bằng mẫu",
   "convertByteArrays": "Giải mã mảng byte",
   "diffCopyBlock": "Sao chép khối này",
-  "editorLineStartCursors": "Con trỏ ở đầu mỗi dòng"
+  "editorLineStartCursors": "Con trỏ ở đầu mỗi dòng",
+  "diffOrderAgnostic": "Bỏ qua thứ tự dòng (so như tập hợp)",
+  "diffOrderOnlyLeft": "Chỉ có bên trái",
+  "diffOrderOnlyRight": "Chỉ có bên phải",
+  "diffOrderIdentical": "Hai bên có cùng các dòng, chỉ khác thứ tự",
+  "editorLineEndCursors": "Con trỏ ở cuối mỗi dòng"
 }

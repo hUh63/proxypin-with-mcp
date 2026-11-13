@@ -80,7 +80,7 @@ class _RequestBlockState extends State<RequestBlock> {
               const SizedBox(height: 8),
               Container(
                   height: 430,
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.withOpacity(0.2))),
+                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.withValues(alpha: 0.2))),
                   child: Column(children: [
                     const SizedBox(height: 5),
                     Row(children: [
@@ -106,11 +106,11 @@ class _RequestBlockState extends State<RequestBlock> {
     return InkWell(
         highlightColor: Colors.transparent,
         splashColor: Colors.transparent,
-        hoverColor: primaryColor.withOpacity(0.3),
+        hoverColor: primaryColor.withValues(alpha: 0.3),
         onSecondaryTapDown: (details) => showMenus(details, index),
         onDoubleTap: () => showEdit(index),
         child: Container(
-            color: index.isEven ? Colors.grey.withOpacity(0.10) : null,
+            color: index.isEven ? Colors.grey.withValues(alpha: 0.10) : null,
             height: 36,
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: Row(

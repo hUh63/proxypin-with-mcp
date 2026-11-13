@@ -5424,5 +5424,10 @@
   "editorSurroundWithDone": "已用模板包裹",
   "convertByteArrays": "解码字节数组",
   "diffCopyBlock": "复制这一处差异",
-  "editorLineStartCursors": "每行行首加光标"
+  "editorLineStartCursors": "每行行首加光标",
+  "diffOrderAgnostic": "忽略行顺序（只比内容集合）",
+  "diffOrderOnlyLeft": "只在左边",
+  "diffOrderOnlyRight": "只在右边",
+  "diffOrderIdentical": "两侧内容完全一致，只是顺序不同",
+  "editorLineEndCursors": "每行行尾加光标"
 }

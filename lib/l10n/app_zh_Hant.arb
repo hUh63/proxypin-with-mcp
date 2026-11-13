@@ -5424,5 +5424,10 @@
   "editorSurroundWithDone": "已用範本包覆",
   "convertByteArrays": "解碼位元組陣列",
   "diffCopyBlock": "複製這一處差異",
-  "editorLineStartCursors": "每行行首加游標"
+  "editorLineStartCursors": "每行行首加游標",
+  "diffOrderAgnostic": "忽略行順序（只比內容集合）",
+  "diffOrderOnlyLeft": "只在左邊",
+  "diffOrderOnlyRight": "只在右邊",
+  "diffOrderIdentical": "兩側內容完全一致，只是順序不同",
+  "editorLineEndCursors": "每行行尾加游標"
 }

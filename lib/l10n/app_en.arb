@@ -6207,5 +6207,10 @@
   "editorSurroundWithDone": "Wrapped with template",
   "convertByteArrays": "Decode byte arrays",
   "diffCopyBlock": "Copy this block",
-  "editorLineStartCursors": "Cursor at every line start"
+  "editorLineStartCursors": "Cursor at every line start",
+  "diffOrderAgnostic": "Ignore line order (compare as a set)",
+  "diffOrderOnlyLeft": "Only in the left",
+  "diffOrderOnlyRight": "Only in the right",
+  "diffOrderIdentical": "Both sides contain the same lines — only the order differs",
+  "editorLineEndCursors": "Cursor at every line end"
 }

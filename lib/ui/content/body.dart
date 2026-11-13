@@ -586,7 +586,8 @@ class HttpBodyState extends State<HttpBodyWidget> {
               final tempDir = await getTemporaryDirectory();
               final file = File('${tempDir.path}${Platform.pathSeparator}$fileName');
               await file.writeAsBytes(bytes);
-              await Share.shareXFiles([XFile(file.path)], text: fileName);
+              await SharePlus.instance
+                  .share(ShareParams(files: [XFile(file.path)], text: fileName));
             } catch (e) {
               logger.e('保存图片失败', error: e);
               if (mounted) {

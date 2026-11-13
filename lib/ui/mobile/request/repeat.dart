@@ -505,8 +505,8 @@ class _CustomRepeatState extends State<MobileCustomRepeat> {
       decoration: InputDecoration(
           errorStyle: const TextStyle(height: 2, fontSize: 0),
           contentPadding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
-          border: OutlineInputBorder(borderSide: BorderSide(width: 1, color: color.withOpacity(0.3))),
-          enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 1.5, color: color.withOpacity(0.5))),
+          border: OutlineInputBorder(borderSide: BorderSide(width: 1, color: color.withValues(alpha: 0.3))),
+          enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 1.5, color: color.withValues(alpha: 0.5))),
           focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: color))),
       validator: (val) => val == null || val.isEmpty ? localizations.cannotBeEmpty : null,
     );
