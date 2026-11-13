@@ -4042,7 +4042,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (doc == null) return;
     final scope = await _collectScopeFiles(doc);
     if (!mounted) return;
-    final hits = <_FileSearchHit>[];
+    final hits = <_RefHit>[];
     for (final f in scope) {
       final content = f.content;
       if (content.isEmpty || content.length > 2000000) continue;
@@ -4055,13 +4055,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
           final name = CodeSymbols.declaredName(line);
           if (name != null) {
             final at = line.indexOf(name);
-            hits.add(_FileSearchHit(
+            hits.add(_RefHit(
               label: name,
               path: f.path,
               line: i + 1,
               offset: offset + (at < 0 ? 0 : at),
-              matchLength: name.length,
               text: line.trim(),
+              isDefinition: true,
+              isCurrent: identical(f.doc, doc),
             ));
           }
         }
@@ -4073,8 +4074,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return;
     }
     final query = TextEditingController();
-    var filtered = List<_FileSearchHit>.of(hits);
-    final chosen = await showModalBottomSheet<_FileSearchHit>(
+    var filtered = List<_RefHit>.of(hits);
+    final chosen = await showModalBottomSheet<_RefHit>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
@@ -4097,7 +4098,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                   final q = v.trim().toLowerCase();
                   setSheet(() {
                     filtered = q.isEmpty
-                        ? List<_FileSearchHit>.of(hits)
+                        ? List<_RefHit>.of(hits)
                         : hits
                             .where((h) =>
                                 h.label.toLowerCase().contains(q) ||
@@ -4136,7 +4137,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
     query.dispose();
     if (chosen == null || !mounted) return;
-    await _openRefHit(chosen, selectLength: chosen.matchLength);
+    await _openRefHit(chosen, selectLength: chosen.label.length);
   }
 
   Future<void> _renamePairedTag() async {
