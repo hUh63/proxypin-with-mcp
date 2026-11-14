@@ -686,6 +686,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'bh 环绕 包裹 surround wrap if try for while block'),
   EditorMenuItem('emmet', _emmetLabel, group: 'code',
       aliases: 'emmet 展开 缩写 html css abbreviation'),
+  EditorMenuItem('symbolBar', _symbolBarLabel, group: 'view',
+      aliases: 'fht 符号条 符号输入 keyboard symbols bar'),
+  EditorMenuItem('cursorBar', _cursorBarLabel, group: 'view',
+      aliases: 'gbfx 方向键 光标键 cursor arrows'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -833,6 +837,8 @@ String _formatLabel(AppLocalizations l) => l.format;
 String _formatSelLabel(AppLocalizations l) => l.editorFormatSelection;
 String _surroundWithLabel(AppLocalizations l) => l.editorSurroundWith;
 String _emmetLabel(AppLocalizations l) => l.editorEmmet;
+String _symbolBarLabel(AppLocalizations l) => l.editorSymbolBar;
+String _cursorBarLabel(AppLocalizations l) => l.editorCursorBar;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1044,6 +1050,10 @@ IconData menuIconOf(String id) {
       return Icons.data_object;
     case 'emmet':
       return Icons.html;
+    case 'symbolBar':
+      return Icons.keyboard_alt_outlined;
+    case 'cursorBar':
+      return Icons.keyboard_arrow_up;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':

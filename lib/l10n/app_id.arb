@@ -3742,5 +3742,7 @@
   "editorLineEndCursors": "Kursor di akhir setiap baris",
   "editorEmmet": "Perluas singkatan (Emmet)",
   "editorEmmetNeedAbbr": "Letakkan kursor tepat setelah singkatan, mis. ul>li*3",
-  "editorEmmetInvalid": "Singkatan tidak valid"
+  "editorEmmetInvalid": "Singkatan tidak valid",
+  "editorSymbolBar": "Bilah simbol",
+  "editorCursorBar": "Tombol panah kursor"
 }

@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.67.309 (2026-11-15) — 从 Sora Editor Demo 吸收的三件事
+
+拆了 `Sora-editor Demo`（`io.github.rosemoe.sora`，1428 个类：widget/component 76、
+widget/snippet 16、widget/minimap 11、lang/lsp 全栈、assets 里 4 套 textmate 主题 +
+tree-sitter 的 Java 查询），挑了我们真缺、且手机上确实提升手感的三个：
+
+### 1) 符号输入条（对标 SymbolInputView）
+底部常驻一条横向条，三组（`{}` 符号 / `123` 数字与运算符 / `Abc` 常用短语）横滑切换，
+点一下插入。手机打 `{}` `[]` `<>` `\` `|` `$` 要来回切键盘页，写代码就是灾难。
+默认关（占 38dp），菜单「视图 › 符号输入条」或设置页一键开。
+关闭按钮直接关掉并写回偏好，不弹确认。
+
+### 2) 光标方向键（对标 Cursor Actions）
+一行 8 键：← → ↑ ↓ + Home/End + PgUp/PgDn。上下移动保持**列号**（超过目标行长度就贴行尾），
+一行的 JSON/日志几百字符时，配合放大镜比长按拖动精确得多。默认关。
+
+### 3) 片段变量补「按语言取注释符」
+`snippet_placeholders` 新增 `$LINE_COMMENT` / `$BLOCK_COMMENT_START` / `$BLOCK_COMMENT_END`，
+值由 `lang_meta` 按当前语言推（`//`、`#`、`--`、`<!-- -->`、`/* */`……）。
+插「注释模板」类片段时不用为每种语言各写一份。
+
+### 顺带记一下 Sora 里暂不移植的
+- LSP 客户端全栈（`lang/lsp` + `lsp/client`）：要在手机上跑 language server，代价太大，
+  我们已有静态检查 + 符号/引用/调用层次这套本地替代。
+- tree-sitter / Monarch / TextMate 三套语法引擎并存：我们的 re_highlight 已覆盖 190+ 语言。
+- `SnippetController` 的 8 种变量解析器：其中 `$CLIPBOARD`（异步取剪贴板）价值不高，
+  其余（时间/随机/文件/选中）我们已有。
+- 多套配色方案（Darcula/Ayu/QuietLight/Solarized）：跟随系统明暗已够用。
+
 ## v1.67.308 (2026-11-15) — Emmet 缩写展开（对标 VS Code / Acode）
 
 `ul.list>li.item$*3` + 一个「展开缩写」命令，直接生成整段 HTML 结构。

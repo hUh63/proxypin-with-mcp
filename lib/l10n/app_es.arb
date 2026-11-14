@@ -3742,5 +3742,7 @@
   "editorLineEndCursors": "Cursor al final de cada línea",
   "editorEmmet": "Expandir abreviatura (Emmet)",
   "editorEmmetNeedAbbr": "Coloca el cursor tras una abreviatura, p. ej. ul>li*3",
-  "editorEmmetInvalid": "Abreviatura no válida"
+  "editorEmmetInvalid": "Abreviatura no válida",
+  "editorSymbolBar": "Barra de símbolos",
+  "editorCursorBar": "Teclas de dirección del cursor"
 }

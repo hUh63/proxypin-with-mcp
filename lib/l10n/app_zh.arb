@@ -5432,5 +5432,7 @@
   "editorLineEndCursors": "每行行尾加光标",
   "editorEmmet": "展开缩写（Emmet）",
   "editorEmmetNeedAbbr": "把光标放在缩写后面，例如 ul>li*3",
-  "editorEmmetInvalid": "缩写不合法"
+  "editorEmmetInvalid": "缩写不合法",
+  "editorSymbolBar": "符号输入条",
+  "editorCursorBar": "光标方向键"
 }

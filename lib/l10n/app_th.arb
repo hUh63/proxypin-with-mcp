@@ -3742,5 +3742,7 @@
   "editorLineEndCursors": "เคอร์เซอร์ท้ายทุกบรรทัด",
   "editorEmmet": "ขยายคำย่อ (Emmet)",
   "editorEmmetNeedAbbr": "วางเคอร์เซอร์ต่อท้ายคำย่อ เช่น ul>li*3",
-  "editorEmmetInvalid": "คำย่อไม่ถูกต้อง"
+  "editorEmmetInvalid": "คำย่อไม่ถูกต้อง",
+  "editorSymbolBar": "แถบสัญลักษณ์",
+  "editorCursorBar": "ปุ่มลูกศรเลื่อนเคอร์เซอร์"
 }

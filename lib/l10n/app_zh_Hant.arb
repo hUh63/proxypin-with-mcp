@@ -5432,5 +5432,7 @@
   "editorLineEndCursors": "每行行尾加游標",
   "editorEmmet": "展開縮寫（Emmet）",
   "editorEmmetNeedAbbr": "把游標放在縮寫後面，例如 ul>li*3",
-  "editorEmmetInvalid": "縮寫不合法"
+  "editorEmmetInvalid": "縮寫不合法",
+  "editorSymbolBar": "符號輸入條",
+  "editorCursorBar": "游標方向鍵"
 }

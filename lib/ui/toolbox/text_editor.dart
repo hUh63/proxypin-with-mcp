@@ -47,6 +47,8 @@ import 'package:proxypin/utils/code_snippets.dart';
 import 'package:proxypin/utils/code_symbols.dart';
 import 'package:proxypin/utils/dir_diff.dart';
 import 'package:proxypin/utils/emmet.dart';
+import 'package:proxypin/ui/component/symbol_bar.dart';
+import 'package:proxypin/ui/component/cursor_bar.dart';
 import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
 import 'package:proxypin/utils/snippet_placeholders.dart';
@@ -2499,6 +2501,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_surroundWith());
       case 'emmet':
         _expandEmmetAtCursor();
+      case 'symbolBar':
+        final nextSymbolBar = !_prefs.symbolBar;
+        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(symbolBar: nextSymbolBar)));
+        setState(() {});
+      case 'cursorBar':
+        final nextCursorBar = !_prefs.cursorBar;
+        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(cursorBar: nextCursorBar)));
+        setState(() {});
       case 'rename':
         unawaited(_renameSymbol());
       case 'workspaceSymbols':
@@ -2858,6 +2868,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         fileName: _doc?.name ?? '',
         filePath: _doc?.path ?? '',
         selection: selText,
+        // 注释符按当前语言取（HTML 是 <!-- -->，Python 是 #，SQL 是 --）。
+        lineComment: lineCommentOf(key: _lang.key, label: _lang.label) ?? '',
+        blockCommentStart: blockCommentOf(key: _lang.key, label: _lang.label)?.$1 ?? '',
+        blockCommentEnd: blockCommentOf(key: _lang.key, label: _lang.label)?.$2 ?? '',
       ),
     );
     final parsed = parseSnippetPlaceholders(expanded);
@@ -4140,6 +4154,74 @@ class _TextEditorPageState extends State<TextEditorPage> {
     query.dispose();
     if (chosen == null || !mounted) return;
     await _openRefHit(chosen, selectLength: chosen.label.length);
+  }
+
+  /// 光标方向键的动作：手机上没有物理方向键，长按拖动在长行里很难点准。
+  void _moveCaret(CaretMove move) {
+    final c = _controller;
+    if (c == null) return;
+    final text = c.text;
+    final sel = c.selection;
+    if (!sel.isValid) return;
+    final off0 = sel.extentOffset < 0 ? 0 : (sel.extentOffset > text.length ? text.length : sel.extentOffset);
+    final line = _lineOfOffset(text, off0);
+    final lineStart = _offsetOfLine(text, line);
+    final col = off0 - lineStart;
+    int lineEndOf(int l) {
+      final st = _offsetOfLine(text, l);
+      final nl = text.indexOf('\n', st);
+      return nl < 0 ? text.length : nl;
+    }
+
+    var off = off0;
+    switch (move) {
+      case CaretMove.left:
+        if (off0 > 0) off = off0 - 1;
+      case CaretMove.right:
+        if (off0 < text.length) off = off0 + 1;
+      case CaretMove.home:
+        off = lineStart;
+      case CaretMove.end:
+        off = lineEndOf(line);
+      case CaretMove.up:
+        {
+          // 同列上下移：列号按「相对行首」算，超过目标行长度就贴到行尾。
+          if (line > 0) {
+            final prevStart = _offsetOfLine(text, line - 1);
+            final prevEnd = lineEndOf(line - 1);
+            final want = prevStart + col;
+            off = want < prevStart ? prevStart : (want > prevEnd ? prevEnd : want);
+          }
+        }
+      case CaretMove.down:
+        {
+          if (lineEndOf(line) < text.length) {
+            final nextStart = lineEndOf(line) + 1;
+            final nextEnd = lineEndOf(line + 1);
+            final want = nextStart + col;
+            off = want < nextStart ? nextStart : (want > nextEnd ? nextEnd : want);
+          }
+        }
+      case CaretMove.pageUp:
+        {
+          final target = line - 10 < 0 ? 0 : line - 10;
+          final startOff = _offsetOfLine(text, target);
+          final endOff = lineEndOf(target);
+          final want = startOff + col;
+          off = want < startOff ? startOff : (want > endOff ? endOff : want);
+        }
+      case CaretMove.pageDown:
+        {
+          final totalLines = '\n'.allMatches(text).length + 1;
+          var target = line + 10;
+          if (target > totalLines - 1) target = totalLines - 1;
+          final startOff = _offsetOfLine(text, target);
+          final endOff = lineEndOf(target);
+          final want = startOff + col;
+          off = want < startOff ? startOff : (want > endOff ? endOff : want);
+        }
+    }
+    c.selection = TextSelection.collapsed(offset: off);
   }
 
   /// Emmet：把光标前的缩写（如 `ul.list>li.item$*3`）展开成 HTML。
@@ -9977,6 +10059,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
               },
             ),
           if (!_zen && _prefs.shortcutBar && !shortScreen) _snippetBar(),
+          if (!_zen && _prefs.symbolBar && doc != null)
+            SymbolBar(
+              onInsert: (t) => _insertAtCursor(t),
+              onClose: () {
+                unawaited(TextEditorPrefsStore.update(_prefs.copyWith(symbolBar: false)));
+                setState(() {});
+              },
+            ),
+          if (!_zen && _prefs.cursorBar && doc != null)
+            CursorBar(
+              onMove: _moveCaret,
+              onClose: () {
+                unawaited(TextEditorPrefsStore.update(_prefs.copyWith(cursorBar: false)));
+                setState(() {});
+              },
+            ),
           if (!_zen && _consoleOpen && doc != null)
             EditorConsolePanel(
               report: _lint,
@@ -11015,6 +11113,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           CheckedPopupMenuItem(
               value: 'unicode', checked: _showUnicode, child: Text(loc.editorShowUnicodeSpecial)),
           CheckedPopupMenuItem(value: 'zen', checked: _zen, child: Text(loc.editorZenMode)),
+          CheckedPopupMenuItem(
+              value: 'symbolBar', checked: _prefs.symbolBar, child: Text(loc.editorSymbolBar)),
+          CheckedPopupMenuItem(
+              value: 'cursorBar', checked: _prefs.cursorBar, child: Text(loc.editorCursorBar)),
           _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
           _menuItem('detectIndent', Icons.format_indent_increase, loc.editorDetectIndent),
           _menuItem('diskChange', Icons.difference_outlined, loc.editorDiskChange),

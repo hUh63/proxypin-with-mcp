@@ -115,10 +115,23 @@ class SnippetVariables {
   /// 当前选中的文本（`$SELECTION`）。
   final String selection;
 
+  /// 当前语言的单行注释符（`$LINE_COMMENT`，如 `//` / `#` / `--`）。
+  ///
+  /// 这些按语言取值而不是写死，是因为「插入注释模板」是片段里最常见的动作，
+  /// 而 HTML/XML 的 `<!-- -->` 和 C 系的 `/* */` 完全是两套写法。
+  final String lineComment;
+
+  /// 当前语言的块注释起止（`$BLOCK_COMMENT_START` / `$BLOCK_COMMENT_END`）。
+  final String blockCommentStart;
+  final String blockCommentEnd;
+
   const SnippetVariables({
     this.fileName = '',
     this.filePath = '',
     this.selection = '',
+    this.lineComment = '',
+    this.blockCommentStart = '',
+    this.blockCommentEnd = '',
   });
 
   /// 去掉扩展名的文件名。
@@ -164,6 +177,12 @@ String expandSnippetVariables(
         return vars.filePath;
       case 'SELECTION':
         return vars.selection;
+      case 'LINE_COMMENT':
+        return vars.lineComment;
+      case 'BLOCK_COMMENT_START':
+        return vars.blockCommentStart;
+      case 'BLOCK_COMMENT_END':
+        return vars.blockCommentEnd;
       case 'CURRENT_YEAR':
         return '${t.year}';
       case 'CURRENT_YEAR_SHORT':

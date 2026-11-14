@@ -3742,5 +3742,7 @@
   "editorLineEndCursors": "Con trỏ ở cuối mỗi dòng",
   "editorEmmet": "Mở rộng viết tắt (Emmet)",
   "editorEmmetNeedAbbr": "Đặt con trỏ ngay sau viết tắt, ví dụ ul>li*3",
-  "editorEmmetInvalid": "Viết tắt không hợp lệ"
+  "editorEmmetInvalid": "Viết tắt không hợp lệ",
+  "editorSymbolBar": "Thanh ký hiệu",
+  "editorCursorBar": "Phím mũi tên di chuyển con trỏ"
 }

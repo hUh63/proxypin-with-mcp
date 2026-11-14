@@ -157,6 +157,12 @@ class TextEditorPrefs {
   /// 是否显示底部的快捷功能栏（快捷输入行）。
   final bool shortcutBar;
 
+  /// 底部「程序员符号输入条」（{} [] <> $ \ | …）：手机打代码时省掉反复切键盘页。
+  final bool symbolBar;
+
+  /// 底部「光标方向键」：手机上精确移动光标（配合放大镜）。
+  final bool cursorBar;
+
   /// 打开文件后检测它是否被其它程序修改 / 删除。
   final bool checkFileModified;
 
@@ -208,6 +214,8 @@ class TextEditorPrefs {
     this.enterSuggestion = false,
     this.suggestionMaxHeight = 400,
     this.shortcutBar = true,
+    this.symbolBar = false,
+    this.cursorBar = false,
     this.checkFileModified = false,
     this.confirmExitTwice = false,
     this.newFileKeepPrefs = true,
@@ -251,6 +259,8 @@ class TextEditorPrefs {
     bool? enterSuggestion,
     double? suggestionMaxHeight,
     bool? shortcutBar,
+    bool? symbolBar,
+    bool? cursorBar,
     bool? checkFileModified,
     bool? confirmExitTwice,
     bool? newFileKeepPrefs,
@@ -293,6 +303,8 @@ class TextEditorPrefs {
       enterSuggestion: enterSuggestion ?? this.enterSuggestion,
       suggestionMaxHeight: suggestionMaxHeight ?? this.suggestionMaxHeight,
       shortcutBar: shortcutBar ?? this.shortcutBar,
+      symbolBar: symbolBar ?? this.symbolBar,
+      cursorBar: cursorBar ?? this.cursorBar,
       checkFileModified: checkFileModified ?? this.checkFileModified,
       confirmExitTwice: confirmExitTwice ?? this.confirmExitTwice,
       newFileKeepPrefs: newFileKeepPrefs ?? this.newFileKeepPrefs,
@@ -337,6 +349,8 @@ class TextEditorPrefs {
         'enterSuggestion': enterSuggestion,
         'suggestionMaxHeight': suggestionMaxHeight,
         'shortcutBar': shortcutBar,
+        'symbolBar': symbolBar,
+        'cursorBar': cursorBar,
         'checkFileModified': checkFileModified,
         'confirmExitTwice': confirmExitTwice,
         'newFileKeepPrefs': newFileKeepPrefs,
@@ -387,6 +401,8 @@ class TextEditorPrefs {
       suggestionMaxHeight:
           (json['suggestionMaxHeight'] as num?)?.toDouble() ?? 400,
       shortcutBar: json['shortcutBar'] as bool? ?? true,
+      symbolBar: json['symbolBar'] as bool? ?? false,
+      cursorBar: json['cursorBar'] as bool? ?? false,
       checkFileModified: json['checkFileModified'] as bool? ?? false,
       confirmExitTwice: json['confirmExitTwice'] as bool? ?? false,
       newFileKeepPrefs: json['newFileKeepPrefs'] as bool? ?? true,

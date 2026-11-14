@@ -6215,5 +6215,7 @@
   "editorLineEndCursors": "Cursor at every line end",
   "editorEmmet": "Expand abbreviation (Emmet)",
   "editorEmmetNeedAbbr": "Put the cursor right after an abbreviation, e.g. ul>li*3",
-  "editorEmmetInvalid": "Not a valid abbreviation"
+  "editorEmmetInvalid": "Not a valid abbreviation",
+  "editorSymbolBar": "Symbol input bar",
+  "editorCursorBar": "Cursor arrow keys"
 }
