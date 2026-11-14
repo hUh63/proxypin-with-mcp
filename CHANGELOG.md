@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.67.310 (2026-11-15) — 修 Emmet 的 `$` 序号
+
+`li.item$*3` 之前展开成三个 `class="item"`（序号丢了）。两个原因叠在一起：
+
+1. **解析**：class / id / tag 的名字正则只认 `[\w-]`，`$` 不在里面，`item$` 被截成 `item`。
+   现在放宽成 `[\w$-]`。
+2. **替换**：`replaceAll(r'$', idx)` —— 字符串 pattern 会被当**正则**编译，而 `$` 在正则里是
+   行尾锚点，实际匹配的是「行尾空串」，替换等于什么都没做。改成 `RegExp(r'\$')`。
+
+单测没拦住是因为「三个 item 都叫 item」看起来太像正确输出 —— 现在这条用例断言完整字符串。
+
 ## v1.67.309 (2026-11-15) — 从 Sora Editor Demo 吸收的三件事
 
 拆了 `Sora-editor Demo`（`io.github.rosemoe.sora`，1428 个类：widget/component 76、

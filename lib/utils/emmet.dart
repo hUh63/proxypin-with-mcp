@@ -107,14 +107,14 @@ _EmmetNode _parseElem(String raw) {
   });
 
   // tag
-  final tagMatch = RegExp(r'^[A-Za-z][\w-]*').firstMatch(s);
+  final tagMatch = RegExp(r'^[A-Za-z][\w$-]*').firstMatch(s);
   if (tagMatch != null) {
     node.tag = tagMatch.group(0)!;
     s = s.substring(tagMatch.end);
   }
 
   // #id / .class（可多个，顺序无关）
-  for (final m in RegExp(r'[.#]([\w-]+)').allMatches(s)) {
+  for (final m in RegExp(r'[.#]([\w$-]+)').allMatches(s)) {
     final v = m.group(1)!;
     if (m.group(0)!.startsWith('#')) {
       node.id = v;
@@ -172,17 +172,17 @@ void _emit(_EmmetNode n, int depth, StringBuffer out, String unit) {
   final pad = unit * depth;
   for (var r = 1; r <= n.repeat; r++) {
     final idx = '$r';
-    final id = n.id?.replaceAll(r'$', idx);
-    final cls = n.classes.map((c) => c.replaceAll(r'$', idx)).join(' ');
+    final id = n.id?.replaceAll(RegExp(r'\$'), idx);
+    final cls = n.classes.map((c) => c.replaceAll(RegExp(r'\$'), idx)).join(' ');
     final attrs = StringBuffer();
     if (id != null && id.isNotEmpty) attrs.write(' id="$id"');
     if (cls.isNotEmpty) attrs.write(' class="$cls"');
     for (final a in n.attrs) {
-      final key = a.key.replaceAll(r'$', idx);
-      final value = a.value.replaceAll(r'$', idx);
+      final key = a.key.replaceAll(RegExp(r'\$'), idx);
+      final value = a.value.replaceAll(RegExp(r'\$'), idx);
       attrs.write(value.isEmpty ? ' $key' : ' $key="$value"');
     }
-    final text = n.text.replaceAll(r'$', idx);
+    final text = n.text.replaceAll(RegExp(r'\$'), idx);
 
     if (_voidTags.contains(tag.toLowerCase())) {
       out.writeln('$pad<$tag$attrs />');
