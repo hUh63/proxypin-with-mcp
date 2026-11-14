@@ -684,6 +684,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('formatSel', _formatSelLabel, group: 'code', aliases: 'gs 选中格式化 format selection'),
   EditorMenuItem('surroundWith', _surroundWithLabel, group: 'code',
       aliases: 'bh 环绕 包裹 surround wrap if try for while block'),
+  EditorMenuItem('emmet', _emmetLabel, group: 'code',
+      aliases: 'emmet 展开 缩写 html css abbreviation'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -830,6 +832,7 @@ String _commentLabel(AppLocalizations l) => l.editorToggleComment;
 String _formatLabel(AppLocalizations l) => l.format;
 String _formatSelLabel(AppLocalizations l) => l.editorFormatSelection;
 String _surroundWithLabel(AppLocalizations l) => l.editorSurroundWith;
+String _emmetLabel(AppLocalizations l) => l.editorEmmet;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1039,6 +1042,8 @@ IconData menuIconOf(String id) {
       return Icons.auto_fix_normal;
     case 'surroundWith':
       return Icons.data_object;
+    case 'emmet':
+      return Icons.html;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':

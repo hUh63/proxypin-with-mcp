@@ -3739,5 +3739,8 @@
   "diffOrderOnlyLeft": "Hanya di kiri",
   "diffOrderOnlyRight": "Hanya di kanan",
   "diffOrderIdentical": "Kedua sisi berisi baris yang sama, hanya urutannya berbeda",
-  "editorLineEndCursors": "Kursor di akhir setiap baris"
+  "editorLineEndCursors": "Kursor di akhir setiap baris",
+  "editorEmmet": "Perluas singkatan (Emmet)",
+  "editorEmmetNeedAbbr": "Letakkan kursor tepat setelah singkatan, mis. ul>li*3",
+  "editorEmmetInvalid": "Singkatan tidak valid"
 }

@@ -6212,5 +6212,8 @@
   "diffOrderOnlyLeft": "Only in the left",
   "diffOrderOnlyRight": "Only in the right",
   "diffOrderIdentical": "Both sides contain the same lines — only the order differs",
-  "editorLineEndCursors": "Cursor at every line end"
+  "editorLineEndCursors": "Cursor at every line end",
+  "editorEmmet": "Expand abbreviation (Emmet)",
+  "editorEmmetNeedAbbr": "Put the cursor right after an abbreviation, e.g. ul>li*3",
+  "editorEmmetInvalid": "Not a valid abbreviation"
 }

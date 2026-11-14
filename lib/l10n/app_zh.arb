@@ -5429,5 +5429,8 @@
   "diffOrderOnlyLeft": "只在左边",
   "diffOrderOnlyRight": "只在右边",
   "diffOrderIdentical": "两侧内容完全一致，只是顺序不同",
-  "editorLineEndCursors": "每行行尾加光标"
+  "editorLineEndCursors": "每行行尾加光标",
+  "editorEmmet": "展开缩写（Emmet）",
+  "editorEmmetNeedAbbr": "把光标放在缩写后面，例如 ul>li*3",
+  "editorEmmetInvalid": "缩写不合法"
 }

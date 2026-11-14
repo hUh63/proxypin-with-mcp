@@ -3739,5 +3739,8 @@
   "diffOrderOnlyLeft": "Chỉ có bên trái",
   "diffOrderOnlyRight": "Chỉ có bên phải",
   "diffOrderIdentical": "Hai bên có cùng các dòng, chỉ khác thứ tự",
-  "editorLineEndCursors": "Con trỏ ở cuối mỗi dòng"
+  "editorLineEndCursors": "Con trỏ ở cuối mỗi dòng",
+  "editorEmmet": "Mở rộng viết tắt (Emmet)",
+  "editorEmmetNeedAbbr": "Đặt con trỏ ngay sau viết tắt, ví dụ ul>li*3",
+  "editorEmmetInvalid": "Viết tắt không hợp lệ"
 }

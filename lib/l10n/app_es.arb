@@ -3739,5 +3739,8 @@
   "diffOrderOnlyLeft": "Solo en la izquierda",
   "diffOrderOnlyRight": "Solo en la derecha",
   "diffOrderIdentical": "Ambos lados tienen las mismas líneas, solo cambia el orden",
-  "editorLineEndCursors": "Cursor al final de cada línea"
+  "editorLineEndCursors": "Cursor al final de cada línea",
+  "editorEmmet": "Expandir abreviatura (Emmet)",
+  "editorEmmetNeedAbbr": "Coloca el cursor tras una abreviatura, p. ej. ul>li*3",
+  "editorEmmetInvalid": "Abreviatura no válida"
 }

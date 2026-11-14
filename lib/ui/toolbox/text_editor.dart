@@ -46,6 +46,7 @@ import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/utils/code_snippets.dart';
 import 'package:proxypin/utils/code_symbols.dart';
 import 'package:proxypin/utils/dir_diff.dart';
+import 'package:proxypin/utils/emmet.dart';
 import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
 import 'package:proxypin/utils/snippet_placeholders.dart';
@@ -2496,6 +2497,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_applyFormat(selectionOnly: true));
       case 'surroundWith':
         unawaited(_surroundWith());
+      case 'emmet':
+        _expandEmmetAtCursor();
       case 'rename':
         unawaited(_renameSymbol());
       case 'workspaceSymbols':
@@ -4137,6 +4140,38 @@ class _TextEditorPageState extends State<TextEditorPage> {
     query.dispose();
     if (chosen == null || !mounted) return;
     await _openRefHit(chosen, selectLength: chosen.label.length);
+  }
+
+  /// Emmet：把光标前的缩写（如 `ul.list>li.item$*3`）展开成 HTML。
+  ///
+  /// 取「光标前的连续非空白字符」当缩写 —— 与 VS Code 的 Tab 展开一致，
+  /// 手机上不用去记「从哪开始选」。
+  void _expandEmmetAtCursor() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+    final caret = sel.start.clamp(0, text.length);
+    var start = caret;
+    while (start > 0) {
+      final ch = text[start - 1];
+      if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') break;
+      start--;
+    }
+    if (start >= caret) {
+      _toast(localizations.editorEmmetNeedAbbr);
+      return;
+    }
+    final abbr = text.substring(start, caret);
+    final unit = _prefs.useTabs ? '\t' : ' ' * _prefs.tabSize;
+    final r = expandEmmet(abbr, indentUnit: unit);
+    if (r == null) {
+      _toast(localizations.editorEmmetInvalid);
+      return;
+    }
+    controller.replaceRange(start, caret, r.text);
+    controller.selection = TextSelection.collapsed(offset: start + r.caretOffset);
   }
 
   /// 用代码块环绕选中内容（VS 的 Surround With / Ctrl+K,Ctrl+S）。
@@ -10928,6 +10963,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
           _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
           _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
+          _menuItem('emmet', Icons.html, loc.editorEmmet),
           if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
           const PopupMenuDivider(),
           _menuItem('symbols', Icons.account_tree_outlined, loc.editorSymbols),
