@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.67.311 (2026-11-15) — MCP `keep_alive` 的平台守卫
+
+`keep_alive` 靠 shell（`dumpsys deviceidle` / `cmd appops`）判断后台保活状态，只有 Android
+有这条通道。桌面/网页端调这个工具时会挂在 MethodChannel 超时上，表现为「工具点了没反应」。
+现在提前返回 `keep_alive requires Android (shell channel unavailable)`。
+
+顺带核对：无障碍那一组工具（`get_device_info` / `dump_ui` / `tap_screen` / `long_press` /
+`swipe_screen` / `key_event` / `input_text` / `screenshot` / `shell`）都已有
+`McpScreen.isSupported` 守卫，只有 `keep_alive` 漏了。
+
 ## v1.67.310 (2026-11-15) — 修 Emmet 的 `$` 序号
 
 `li.item$*3` 之前展开成三个 `class="item"`（序号丢了）。两个原因叠在一起：

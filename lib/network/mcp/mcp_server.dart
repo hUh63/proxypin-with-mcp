@@ -1953,6 +1953,11 @@ class McpServer {
   /// 命令集就是 adb shell 语义（deviceidle / appops / am），通过 Shizuku、root 或
   /// Dhizuku 任一通道执行；不安装任何额外组件，也不需要重启设备。
   Future<Map<String, dynamic>> _handleKeepAlive(Map<String, dynamic> args) async {
+    // 保活靠 shell（dumpsys / appops），只有 Android 有这条通道。
+    // 桌面端走到这里如果不提前拒绝，会挂在 MethodChannel 超时上，表现成「工具没反应」。
+    if (!McpScreen.isSupported) {
+      return {'error': 'keep_alive requires Android (shell channel unavailable)'};
+    }
     final action = (mcpAsString(args['action']) ?? 'status').toLowerCase();
     final mode = (mcpAsString(args['mode']))?.toLowerCase();
     final pkgArg = (mcpAsString(args['package']))?.trim();
