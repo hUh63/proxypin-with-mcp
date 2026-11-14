@@ -3744,5 +3744,14 @@
   "editorEmmetNeedAbbr": "Đặt con trỏ ngay sau viết tắt, ví dụ ul>li*3",
   "editorEmmetInvalid": "Viết tắt không hợp lệ",
   "editorSymbolBar": "Thanh ký hiệu",
-  "editorCursorBar": "Phím mũi tên di chuyển con trỏ"
+  "editorCursorBar": "Phím mũi tên di chuyển con trỏ",
+  "editorExtractVariable": "Tách thành biến",
+  "editorExtractNeedSelection": "Chọn một biểu thức trước",
+  "editorExtractName": "Tên biến",
+  "editorExtractBadName": "Không phải định danh hợp lệ",
+  "editorExtractTooLong": "Vùng chọn quá dài để tách",
+  "editorExtractUnsupported": "Ngôn ngữ này không được hỗ trợ",
+  "snippetImportVSCode": "Nhập từ VS Code",
+  "snippetImportEmpty": "Không tìm thấy đoạn mã nào trong tệp này",
+  "snippetImported": "Đã nhập {n} đoạn mã"
 }

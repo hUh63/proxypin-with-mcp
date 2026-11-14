@@ -17,6 +17,9 @@
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
+import 'package:proxypin/utils/vscode_snippets.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
 
 /// 快捷插入条目管理对话框（增删改 + 恢复默认）。
 ///
@@ -97,6 +100,45 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
     final lib = await ToolSnippetStore.removeCustom(s.insert);
     if (!mounted) return;
     setState(() => _library = lib);
+  }
+
+  /// 导入 VS Code 的 `.code-snippets`：解析后并入「共用符号库」。
+  ///
+  /// 用户自己的片段库大多是这个格式（VS Code / Cursor / Trae 通用），
+  /// 搬过来就能在本页和其他页面直接用，比让人一条条重打现实得多。
+  Future<void> _importVSCode() async {
+    try {
+      final picked = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['json', 'code-snippets', 'txt'],
+      );
+      if (picked == null || picked.isEmpty) return;
+      final file = picked.first;
+      final bytes = await file.xFile.readAsBytes();
+      final text = utf8.decode(bytes, allowMalformed: true);
+      final parsed = parseVSCodeSnippets(text);
+      if (parsed.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(localizations.snippetImportEmpty)));
+        }
+        return;
+      }
+      final merged = await ToolSnippetStore.appendCustom(parsed);
+      if (!mounted) return;
+      setState(() {
+        _library
+          ..clear()
+          ..addAll(merged);
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(localizations.snippetImported(parsed.length))));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${localizations.fail}: $e')));
+      }
+    }
   }
 
   Future<void> _clearLibrary() async {
@@ -220,6 +262,12 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
               onPressed: _resetToDefaults,
               icon: const Icon(Icons.restart_alt, size: 18),
               label: Text(localizations.snippetManagerReset),
+            ),
+            // 导入 VS Code 的 .code-snippets：用户自己的片段库直接搬过来。
+            TextButton.icon(
+              onPressed: _importVSCode,
+              icon: const Icon(Icons.file_download_outlined, size: 18),
+              label: Text(localizations.snippetImportVSCode),
             ),
           ]),
           if (_library.isNotEmpty) ...[

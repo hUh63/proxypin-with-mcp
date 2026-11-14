@@ -2084,6 +2084,124 @@ class _TextDiffPageState extends State<TextDiffPage> {
     return const SizedBox.shrink();
   }
 
+  /// 从对齐视图某一行反查它属于哪一处差异块（-1 = 不在任何差异块里）。
+  int _blockIndexAtRow(DiffRow row) {
+    final l = row.leftLine == null ? -1 : row.leftLine! - 1;
+    final r = row.rightLine == null ? -1 : row.rightLine! - 1;
+    for (var i = 0; i < _blocks.length; i++) {
+      final b = _blocks[i];
+      final leftSpan = b.leftLines.isEmpty ? 1 : b.leftLines.length;
+      final rightSpan = b.rightLines.isEmpty ? 1 : b.rightLines.length;
+      if (l >= b.leftStart && l < b.leftStart + leftSpan) return i;
+      if (r >= b.rightStart && r < b.rightStart + rightSpan) return i;
+    }
+    return -1;
+  }
+
+  /// 长按对齐视图的某一行 → 这一处差异的快捷操作。
+  ///
+  /// 对齐视图本身是只读的（双击才切回编辑视图），但「看到了差异想立刻采用某一侧」
+  /// 是最常见的动作 —— 每次都要先跳到那一块、再回底部条上点按钮，路太绕。
+  void _showRowBlockMenu(DiffRow row) {
+    final idx = _blockIndexAtRow(row);
+    if (idx < 0) {
+      _toastText(localizations.diffMarkNeedBlock);
+      return;
+    }
+    final b = _blocks[idx];
+    final marked = _marks.contains(idx);
+    final theme = Theme.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(children: <Widget>[
+                Text('${idx + 1}/${_blocks.length}',
+                    style: TextStyle(fontSize: 12, color: theme.colorScheme.primary)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(_blockSummary(b),
+                      style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+                ),
+              ]),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.arrow_back, size: 19),
+              title: Text('← ${localizations.diffUseRight}', style: const TextStyle(fontSize: 13)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _applyBlock(b, fromLeft: false);
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.arrow_forward, size: 19),
+              title: Text('${localizations.diffUseLeft} →', style: const TextStyle(fontSize: 13)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _applyBlock(b, fromLeft: true);
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.copy_all, size: 19),
+              title: Text(localizations.diffCopyBlock, style: const TextStyle(fontSize: 13)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _copyBlock(b);
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: Icon(marked ? Icons.bookmark : Icons.bookmark_border, size: 19),
+              title: Text(localizations.diffMarkBlock, style: const TextStyle(fontSize: 13)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                setState(() {
+                  if (marked) {
+                    _marks.remove(idx);
+                  } else {
+                    _marks.add(idx);
+                  }
+                });
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.center_focus_strong, size: 19),
+              title: Text(localizations.diffFocus, style: const TextStyle(fontSize: 13)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                setState(() {
+                  _navIndex = idx;
+                  _focusBlock = idx;
+                });
+                _scrollToCurrentRow();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 块的一行摘要：`修改 2 · 新增 1 · 删除 1`（和差异列表里的口径一致）。
+  String _blockSummary(DiffBlock b) {
+    final parts = <String>[];
+    if (b.pairs.isNotEmpty) parts.add('${localizations.diffModified} ${b.pairs.length}');
+    final added = b.rightLines.length - b.pairs.length;
+    final deleted = b.leftLines.length - b.pairs.length;
+    if (added > 0) parts.add('${localizations.diffAdded} $added');
+    if (deleted > 0) parts.add('${localizations.diffDeleted} $deleted');
+    return parts.isEmpty ? '${b.leftLines.length}/${b.rightLines.length}' : parts.join(' · ');
+  }
+
   /// 复制「当前差异块」的原文/新文（`-` / `+` 前缀），贴到聊天或工单里能直接看。
   void _copyBlock(DiffBlock b) {
     final leftLines = _left.text.split('\n');
@@ -4799,6 +4917,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
                     return GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onDoubleTap: () => _editAtRow(row, left: left),
+                      // 长按这一行 → 这一处差异的快捷菜单（用左/用右/复制/标记/聚焦）。
+                      onLongPress: () => _showRowBlockMenu(row),
                       child: cell,
                     );
                   }

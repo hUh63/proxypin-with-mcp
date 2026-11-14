@@ -2501,6 +2501,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_surroundWith());
       case 'emmet':
         _expandEmmetAtCursor();
+      case 'extractVar':
+        unawaited(_extractVariable());
       case 'symbolBar':
         final nextSymbolBar = !_prefs.symbolBar;
         unawaited(TextEditorPrefsStore.update(_prefs.copyWith(symbolBar: nextSymbolBar)));
@@ -4222,6 +4224,104 @@ class _TextEditorPageState extends State<TextEditorPage> {
         }
     }
     c.selection = TextSelection.collapsed(offset: off);
+  }
+
+  /// 变量声明行的写法（提取变量用）。Python/Ruby/Lua/Shell 不要 `var` 也不要分号，
+  /// Go 用 `:=`，其余按 C 系写 `var x = ...;`。
+  String? _declLineFor(String name, String expr) {
+    final key = _lang.key.toLowerCase();
+    final label = _lang.label.toLowerCase();
+    bool isOne(List<String> names) => names.contains(key) || names.contains(label);
+    if (isOne(<String>['python', 'python3', 'ruby', 'lua', 'bash', 'sh', 'shell', 'perl', 'r'])) {
+      return '$name = $expr';
+    }
+    if (isOne(<String>['go', 'golang'])) return '$name := $expr';
+    if (isOne(<String>['sql', 'mysql', 'pgsql', 'plsql'])) return null;
+    return 'var $name = $expr;';
+  }
+
+  /// 从表达式里猜一个变量名：取最后一个「像变量/方法名」的标识符，首字母小写。
+  static String _suggestVarName(String expr) {
+    final idents = RegExp(r'[A-Za-z_$][\w$]*')
+        .allMatches(expr)
+        .map((m) => m.group(0)!)
+        .toList(growable: false);
+    const skip = <String>{
+      'new', 'true', 'false', 'null', 'nil', 'this', 'self', 'return',
+      'await', 'var', 'final', 'const', 'get', 'set', 'if', 'else',
+      'int', 'double', 'bool', 'string', 'String', 'void', 'dynamic',
+    };
+    for (final id in idents.reversed) {
+      if (skip.contains(id) || id.length < 2) continue;
+      return id[0].toLowerCase() + id.substring(1);
+    }
+    return 'value';
+  }
+
+  /// 提取变量（VS / Rider 的 Extract Variable）：把选中表达式提成上一行的一条声明，
+  /// 选区替换成变量名。
+  ///
+  /// 刻意不猜类型 —— 没有类型信息，猜错比不猜更烦人；`var` / `:=` 让编译器去推。
+  Future<void> _extractVariable() async {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid || sel.isCollapsed) {
+      _toast(localizations.editorExtractNeedSelection);
+      return;
+    }
+    final start = sel.start.clamp(0, text.length);
+    final end = sel.end.clamp(start, text.length);
+    final expr = text.substring(start, end).trim();
+    if (expr.isEmpty) return;
+    if (expr.length > 2000) {
+      _toast(localizations.editorExtractTooLong);
+      return;
+    }
+    final nameCtrl = TextEditingController(text: _suggestVarName(expr));
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorExtractVariable, style: const TextStyle(fontSize: 15)),
+        content: TextField(
+          controller: nameCtrl,
+          autofocus: true,
+          decoration: InputDecoration(hintText: localizations.editorExtractName),
+          onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+        ),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(localizations.cancel)),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(nameCtrl.text.trim()),
+              child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    nameCtrl.dispose();
+    if (!mounted || name == null || name.isEmpty) return;
+    if (!RegExp(r'^[A-Za-z_$][\w$]*$').hasMatch(name)) {
+      _toast(localizations.editorExtractBadName);
+      return;
+    }
+    final decl = _declLineFor(name, expr);
+    if (decl == null) {
+      _toast(localizations.editorExtractUnsupported);
+      return;
+    }
+    final line = _lineOfOffset(text, start);
+    final lineStart = _offsetOfLine(text, line);
+    var indent = '';
+    if (start > lineStart) {
+      final head = text.substring(lineStart, start);
+      final m = RegExp(r'^[ \t]*').firstMatch(head);
+      indent = m?.group(0) ?? '';
+    }
+    // 先替换选区，再在行首插声明 —— 插入点在选区前面，不受第一次替换的偏移影响。
+    controller.replaceRange(start, end, name);
+    final block = '$indent$decl\n';
+    controller.replaceRange(lineStart, lineStart, block);
+    controller.selection = TextSelection.collapsed(offset: lineStart + block.length + name.length);
   }
 
   /// Emmet：把光标前的缩写（如 `ul.list>li.item$*3`）展开成 HTML。
@@ -11062,6 +11162,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
           _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
           _menuItem('emmet', Icons.html, loc.editorEmmet),
+          _menuItem('extractVar', Icons.input, loc.editorExtractVariable),
           if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
           const PopupMenuDivider(),
           _menuItem('symbols', Icons.account_tree_outlined, loc.editorSymbols),

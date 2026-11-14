@@ -6217,5 +6217,21 @@
   "editorEmmetNeedAbbr": "Put the cursor right after an abbreviation, e.g. ul>li*3",
   "editorEmmetInvalid": "Not a valid abbreviation",
   "editorSymbolBar": "Symbol input bar",
-  "editorCursorBar": "Cursor arrow keys"
+  "editorCursorBar": "Cursor arrow keys",
+  "editorExtractVariable": "Extract variable",
+  "editorExtractNeedSelection": "Select an expression first",
+  "editorExtractName": "Variable name",
+  "editorExtractBadName": "Not a valid identifier",
+  "editorExtractTooLong": "Selection is too long to extract",
+  "editorExtractUnsupported": "Not supported for this language",
+  "snippetImportVSCode": "Import VS Code",
+  "snippetImportEmpty": "No snippets found in this file",
+  "snippetImported": "Imported {n} snippets",
+  "@snippetImported": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

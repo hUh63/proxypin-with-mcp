@@ -5434,5 +5434,14 @@
   "editorEmmetNeedAbbr": "把光标放在缩写后面，例如 ul>li*3",
   "editorEmmetInvalid": "缩写不合法",
   "editorSymbolBar": "符号输入条",
-  "editorCursorBar": "光标方向键"
+  "editorCursorBar": "光标方向键",
+  "editorExtractVariable": "提取变量",
+  "editorExtractNeedSelection": "先选中一段表达式",
+  "editorExtractName": "变量名",
+  "editorExtractBadName": "不是合法的标识符",
+  "editorExtractTooLong": "选中的内容太长，不适合提取",
+  "editorExtractUnsupported": "当前语言不支持",
+  "snippetImportVSCode": "导入 VS Code",
+  "snippetImportEmpty": "这个文件里没有可导入的片段",
+  "snippetImported": "已导入 {n} 条片段"
 }

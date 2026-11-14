@@ -3744,5 +3744,14 @@
   "editorEmmetNeedAbbr": "Coloca el cursor tras una abreviatura, p. ej. ul>li*3",
   "editorEmmetInvalid": "Abreviatura no válida",
   "editorSymbolBar": "Barra de símbolos",
-  "editorCursorBar": "Teclas de dirección del cursor"
+  "editorCursorBar": "Teclas de dirección del cursor",
+  "editorExtractVariable": "Extraer variable",
+  "editorExtractNeedSelection": "Selecciona una expresión primero",
+  "editorExtractName": "Nombre de la variable",
+  "editorExtractBadName": "Identificador no válido",
+  "editorExtractTooLong": "La selección es demasiado larga",
+  "editorExtractUnsupported": "No compatible con este lenguaje",
+  "snippetImportVSCode": "Importar VS Code",
+  "snippetImportEmpty": "No se encontraron fragmentos en este archivo",
+  "snippetImported": "Se importaron {n} fragmentos"
 }

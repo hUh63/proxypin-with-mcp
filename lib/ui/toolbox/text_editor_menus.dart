@@ -686,6 +686,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'bh 环绕 包裹 surround wrap if try for while block'),
   EditorMenuItem('emmet', _emmetLabel, group: 'code',
       aliases: 'emmet 展开 缩写 html css abbreviation'),
+  EditorMenuItem('extractVar', _extractVarLabel, group: 'code',
+      aliases: 'tcbl 提取变量 extract variable assign'),
   EditorMenuItem('symbolBar', _symbolBarLabel, group: 'view',
       aliases: 'fht 符号条 符号输入 keyboard symbols bar'),
   EditorMenuItem('cursorBar', _cursorBarLabel, group: 'view',
@@ -837,6 +839,7 @@ String _formatLabel(AppLocalizations l) => l.format;
 String _formatSelLabel(AppLocalizations l) => l.editorFormatSelection;
 String _surroundWithLabel(AppLocalizations l) => l.editorSurroundWith;
 String _emmetLabel(AppLocalizations l) => l.editorEmmet;
+String _extractVarLabel(AppLocalizations l) => l.editorExtractVariable;
 String _symbolBarLabel(AppLocalizations l) => l.editorSymbolBar;
 String _cursorBarLabel(AppLocalizations l) => l.editorCursorBar;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
@@ -1050,6 +1053,8 @@ IconData menuIconOf(String id) {
       return Icons.data_object;
     case 'emmet':
       return Icons.html;
+    case 'extractVar':
+      return Icons.input;
     case 'symbolBar':
       return Icons.keyboard_alt_outlined;
     case 'cursorBar':

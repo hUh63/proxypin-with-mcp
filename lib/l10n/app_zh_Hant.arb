@@ -5434,5 +5434,14 @@
   "editorEmmetNeedAbbr": "把游標放在縮寫後面，例如 ul>li*3",
   "editorEmmetInvalid": "縮寫不合法",
   "editorSymbolBar": "符號輸入條",
-  "editorCursorBar": "游標方向鍵"
+  "editorCursorBar": "游標方向鍵",
+  "editorExtractVariable": "提取變數",
+  "editorExtractNeedSelection": "先選取一段運算式",
+  "editorExtractName": "變數名稱",
+  "editorExtractBadName": "不是合法的識別字",
+  "editorExtractTooLong": "選取的內容太長，不適合提取",
+  "editorExtractUnsupported": "目前語言不支援",
+  "snippetImportVSCode": "匯入 VS Code",
+  "snippetImportEmpty": "這個檔案裡沒有可匯入的片段",
+  "snippetImported": "已匯入 {n} 條片段"
 }
