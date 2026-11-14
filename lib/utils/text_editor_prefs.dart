@@ -163,6 +163,10 @@ class TextEditorPrefs {
   /// 底部「光标方向键」：手机上精确移动光标（配合放大镜）。
   final bool cursorBar;
 
+  /// 状态栏放顶部还是底部（Sora 的 Line Info Panel Position）。
+  /// 大屏/横屏编辑时眼睛在屏幕上半部，底部的行列信息要抬头看才能瞄到。
+  final bool statusBarTop;
+
   /// 打开文件后检测它是否被其它程序修改 / 删除。
   final bool checkFileModified;
 
@@ -216,6 +220,7 @@ class TextEditorPrefs {
     this.shortcutBar = true,
     this.symbolBar = false,
     this.cursorBar = false,
+    this.statusBarTop = false,
     this.checkFileModified = false,
     this.confirmExitTwice = false,
     this.newFileKeepPrefs = true,
@@ -261,6 +266,7 @@ class TextEditorPrefs {
     bool? shortcutBar,
     bool? symbolBar,
     bool? cursorBar,
+    bool? statusBarTop,
     bool? checkFileModified,
     bool? confirmExitTwice,
     bool? newFileKeepPrefs,
@@ -305,6 +311,7 @@ class TextEditorPrefs {
       shortcutBar: shortcutBar ?? this.shortcutBar,
       symbolBar: symbolBar ?? this.symbolBar,
       cursorBar: cursorBar ?? this.cursorBar,
+      statusBarTop: statusBarTop ?? this.statusBarTop,
       checkFileModified: checkFileModified ?? this.checkFileModified,
       confirmExitTwice: confirmExitTwice ?? this.confirmExitTwice,
       newFileKeepPrefs: newFileKeepPrefs ?? this.newFileKeepPrefs,
@@ -351,6 +358,7 @@ class TextEditorPrefs {
         'shortcutBar': shortcutBar,
         'symbolBar': symbolBar,
         'cursorBar': cursorBar,
+        'statusBarTop': statusBarTop,
         'checkFileModified': checkFileModified,
         'confirmExitTwice': confirmExitTwice,
         'newFileKeepPrefs': newFileKeepPrefs,
@@ -403,6 +411,7 @@ class TextEditorPrefs {
       shortcutBar: json['shortcutBar'] as bool? ?? true,
       symbolBar: json['symbolBar'] as bool? ?? false,
       cursorBar: json['cursorBar'] as bool? ?? false,
+      statusBarTop: json['statusBarTop'] as bool? ?? false,
       checkFileModified: json['checkFileModified'] as bool? ?? false,
       confirmExitTwice: json['confirmExitTwice'] as bool? ?? false,
       newFileKeepPrefs: json['newFileKeepPrefs'] as bool? ?? true,

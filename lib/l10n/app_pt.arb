@@ -3758,5 +3758,6 @@
   "editorLintClearOverride": "Seguir padrões",
   "editorFoldCurrent": "Recolher este bloco",
   "editorUnfoldCurrent": "Expandir este bloco",
-  "editorFoldNoRegion": "Esta linha não tem bloco recolhível"
+  "editorFoldNoRegion": "Esta linha não tem bloco recolhível",
+  "editorStatusBarTop": "Barra de status no topo"
 }

@@ -3757,5 +3757,6 @@
   "editorLintClearOverride": "Ikuti bawaan",
   "editorFoldCurrent": "Lipat blok ini",
   "editorUnfoldCurrent": "Bentangkan blok ini",
-  "editorFoldNoRegion": "Baris ini tidak punya blok yang bisa dilipat"
+  "editorFoldNoRegion": "Baris ini tidak punya blok yang bisa dilipat",
+  "editorStatusBarTop": "Bilah status di atas"
 }

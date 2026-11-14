@@ -696,6 +696,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'fht 符号条 符号输入 keyboard symbols bar'),
   EditorMenuItem('cursorBar', _cursorBarLabel, group: 'view',
       aliases: 'gbfx 方向键 光标键 cursor arrows'),
+  EditorMenuItem('statusBarTop', _statusBarTopLabel, group: 'view',
+      aliases: 'ztl 状态栏 顶部 statusbar top'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -848,6 +850,7 @@ String _foldCurrentLabel(AppLocalizations l) => l.editorFoldCurrent;
 String _unfoldCurrentLabel(AppLocalizations l) => l.editorUnfoldCurrent;
 String _symbolBarLabel(AppLocalizations l) => l.editorSymbolBar;
 String _cursorBarLabel(AppLocalizations l) => l.editorCursorBar;
+String _statusBarTopLabel(AppLocalizations l) => l.editorStatusBarTop;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1069,6 +1072,8 @@ IconData menuIconOf(String id) {
       return Icons.keyboard_alt_outlined;
     case 'cursorBar':
       return Icons.keyboard_arrow_up;
+    case 'statusBarTop':
+      return Icons.vertical_align_top;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':

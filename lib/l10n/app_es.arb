@@ -3757,5 +3757,6 @@
   "editorLintClearOverride": "Seguir los valores por defecto",
   "editorFoldCurrent": "Plegar este bloque",
   "editorUnfoldCurrent": "Desplegar este bloque",
-  "editorFoldNoRegion": "Esta línea no tiene un bloque plegable"
+  "editorFoldNoRegion": "Esta línea no tiene un bloque plegable",
+  "editorStatusBarTop": "Barra de estado arriba"
 }

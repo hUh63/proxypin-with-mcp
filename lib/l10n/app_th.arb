@@ -3757,5 +3757,6 @@
   "editorLintClearOverride": "ใช้ค่าเริ่มต้น",
   "editorFoldCurrent": "พับบล็อกนี้",
   "editorUnfoldCurrent": "กางบล็อกนี้",
-  "editorFoldNoRegion": "บรรทัดนี้ไม่มีบล็อกที่พับได้"
+  "editorFoldNoRegion": "บรรทัดนี้ไม่มีบล็อกที่พับได้",
+  "editorStatusBarTop": "แถบสถานะด้านบน"
 }

@@ -3757,5 +3757,6 @@
   "editorLintClearOverride": "Theo mặc định",
   "editorFoldCurrent": "Thu gọn khối này",
   "editorUnfoldCurrent": "Mở rộng khối này",
-  "editorFoldNoRegion": "Dòng này không có khối nào để thu gọn"
+  "editorFoldNoRegion": "Dòng này không có khối nào để thu gọn",
+  "editorStatusBarTop": "Thanh trạng thái ở trên"
 }

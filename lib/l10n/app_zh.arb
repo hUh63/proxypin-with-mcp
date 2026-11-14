@@ -5447,5 +5447,6 @@
   "editorLintClearOverride": "恢复跟随默认",
   "editorFoldCurrent": "折叠这个块",
   "editorUnfoldCurrent": "展开这个块",
-  "editorFoldNoRegion": "这一行没有可折叠的块"
+  "editorFoldNoRegion": "这一行没有可折叠的块",
+  "editorStatusBarTop": "状态栏放顶部"
 }

@@ -2518,6 +2518,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         final nextCursorBar = !_prefs.cursorBar;
         unawaited(TextEditorPrefsStore.update(_prefs.copyWith(cursorBar: nextCursorBar)));
         setState(() {});
+      case 'statusBarTop':
+        final nextStatusTop = !_prefs.statusBarTop;
+        unawaited(TextEditorPrefsStore.update(_prefs.copyWith(statusBarTop: nextStatusTop)));
+        setState(() {});
       case 'rename':
         unawaited(_renameSymbol());
       case 'workspaceSymbols':
@@ -10136,6 +10140,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             _zenBar()
           else ...[
             _toolbar(),
+            // 状态栏放顶部时贴住工具栏（Sora 的 Line Info Panel Position）。
+            if (_prefs.statusBarTop && doc != null) _statusBar(doc),
             if (!compact) _docTabs(),
             const Divider(height: 1, thickness: 0.3),
             if (!compact) _breadcrumb(),
@@ -10243,8 +10249,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
               animation: doc.findController,
               builder: (_, __) => FindPanelView(controller: doc.findController),
             ),
-          // 状态栏（学 VS Code）：光标行列、选中字符数、缩进、语言
-          if (!_zen && doc != null) _statusBar(doc),
+          // 状态栏（学 VS Code）：光标行列、选中字符数、缩进、语言。
+          // 选「放顶部」时挪到工具栏下面（见上面的 `_prefs.statusBarTop` 分支）。
+          if (!_zen && doc != null && !_prefs.statusBarTop) _statusBar(doc),
         ]),
       ),
     );
@@ -11249,6 +11256,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
               value: 'symbolBar', checked: _prefs.symbolBar, child: Text(loc.editorSymbolBar)),
           CheckedPopupMenuItem(
               value: 'cursorBar', checked: _prefs.cursorBar, child: Text(loc.editorCursorBar)),
+          CheckedPopupMenuItem(
+              value: 'statusBarTop',
+              checked: _prefs.statusBarTop,
+              child: Text(loc.editorStatusBarTop)),
           _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
           _menuItem('detectIndent', Icons.format_indent_increase, loc.editorDetectIndent),
           _menuItem('diskChange', Icons.difference_outlined, loc.editorDiskChange),

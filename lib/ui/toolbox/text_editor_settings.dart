@@ -305,6 +305,12 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 onChanged: (v) => _apply(prefs.copyWith(cursorBar: v)),
               ),
               _switchTile(
+                icon: Icons.vertical_align_top,
+                title: localizations.editorStatusBarTop,
+                value: prefs.statusBarTop,
+                onChanged: (v) => _apply(prefs.copyWith(statusBarTop: v)),
+              ),
+              _switchTile(
                 icon: Icons.visibility_outlined,
                 title: localizations.editorCheckFileModified,
                 value: prefs.checkFileModified,

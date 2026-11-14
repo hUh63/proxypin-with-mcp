@@ -5447,5 +5447,6 @@
   "editorLintClearOverride": "恢復跟隨預設",
   "editorFoldCurrent": "摺疊這個區塊",
   "editorUnfoldCurrent": "展開這個區塊",
-  "editorFoldNoRegion": "這一行沒有可摺疊的區塊"
+  "editorFoldNoRegion": "這一行沒有可摺疊的區塊",
+  "editorStatusBarTop": "狀態列放頂部"
 }
