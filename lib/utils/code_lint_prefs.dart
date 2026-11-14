@@ -129,6 +129,18 @@ class LintPrefs {
     await _save();
   }
 
+  /// 去掉某语言的独立设置 → 回到「跟随默认集合」。
+  ///
+  /// 和 [setFor] 传空集合的区别：后者是「什么都不关，但明确记住这个语言」，
+  /// 以后改默认集合它**不跟着变**；这里是把这条记录整条删掉。
+  static Future<void> removeOverride(String language) async {
+    await ensureLoaded();
+    final key = normalize(language);
+    if (key.isEmpty || key == globalKey) return;
+    if (_map.remove(key) == null) return;
+    await _save();
+  }
+
   /// 清掉所有独立设置，只保留默认集合。
   static Future<void> clearOverrides() async {
     await ensureLoaded();

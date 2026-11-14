@@ -3753,5 +3753,9 @@
   "editorExtractUnsupported": "No compatible con este lenguaje",
   "snippetImportVSCode": "Importar VS Code",
   "snippetImportEmpty": "No se encontraron fragmentos en este archivo",
-  "snippetImported": "Se importaron {n} fragmentos"
+  "snippetImported": "Se importaron {n} fragmentos",
+  "editorLintClearOverride": "Seguir los valores por defecto",
+  "editorFoldCurrent": "Plegar este bloque",
+  "editorUnfoldCurrent": "Desplegar este bloque",
+  "editorFoldNoRegion": "Esta línea no tiene un bloque plegable"
 }

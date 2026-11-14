@@ -6233,5 +6233,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "editorLintClearOverride": "Follow defaults",
+  "editorFoldCurrent": "Fold this block",
+  "editorUnfoldCurrent": "Unfold this block",
+  "editorFoldNoRegion": "This line has no foldable block"
 }

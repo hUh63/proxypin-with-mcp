@@ -9,7 +9,7 @@ void main() {
       const raw = '''
 {
   "打印日志": { "prefix": "log", "body": ["console.log('\$1');", "\$2"] },
-  "函数": { "prefix": "fn", "body": ["function \$1() {", "\t\$0", "}"] }
+  "函数": { "prefix": "fn", "body": ["function \$1() {", "  \$0", "}"] }
 }''';
       final list = parseVSCodeSnippets(raw);
       expect(list.length, 2);

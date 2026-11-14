@@ -3753,5 +3753,9 @@
   "editorExtractUnsupported": "Tidak didukung untuk bahasa ini",
   "snippetImportVSCode": "Impor VS Code",
   "snippetImportEmpty": "Tidak ada cuplikan di berkas ini",
-  "snippetImported": "{n} cuplikan diimpor"
+  "snippetImported": "{n} cuplikan diimpor",
+  "editorLintClearOverride": "Ikuti bawaan",
+  "editorFoldCurrent": "Lipat blok ini",
+  "editorUnfoldCurrent": "Bentangkan blok ini",
+  "editorFoldNoRegion": "Baris ini tidak punya blok yang bisa dilipat"
 }

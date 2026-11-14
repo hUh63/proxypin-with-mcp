@@ -33,7 +33,10 @@ class LintRulesResult {
   /// 是否应用到全部语言（否则只对打开面板时的那个语言生效）。
   final bool applyToAll;
 
-  const LintRulesResult(this.disabled, {this.applyToAll = false});
+  /// 清掉「当前语言」的独立设置，回到跟随默认集合。
+  final bool clearOverride;
+
+  const LintRulesResult(this.disabled, {this.applyToAll = false, this.clearOverride = false});
 }
 
 /// 打开规则开关面板，返回新的「已关闭规则」集合；返回 null 表示取消。
@@ -108,6 +111,12 @@ Future<LintRulesResult?> showLintRulesDialog(
           ]),
         ),
         actions: [
+          if (hasOverride)
+            TextButton(
+              onPressed: () => Navigator.pop(
+                  ctx, LintRulesResult(Set<String>.from(working), clearOverride: true)),
+              child: Text(localizations.editorLintClearOverride),
+            ),
           TextButton(
             onPressed: () => setDialogState(working.clear),
             child: Text(localizations.editorLintRulesAll),

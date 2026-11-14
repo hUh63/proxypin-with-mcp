@@ -5443,5 +5443,9 @@
   "editorExtractUnsupported": "当前语言不支持",
   "snippetImportVSCode": "导入 VS Code",
   "snippetImportEmpty": "这个文件里没有可导入的片段",
-  "snippetImported": "已导入 {n} 条片段"
+  "snippetImported": "已导入 {n} 条片段",
+  "editorLintClearOverride": "恢复跟随默认",
+  "editorFoldCurrent": "折叠这个块",
+  "editorUnfoldCurrent": "展开这个块",
+  "editorFoldNoRegion": "这一行没有可折叠的块"
 }

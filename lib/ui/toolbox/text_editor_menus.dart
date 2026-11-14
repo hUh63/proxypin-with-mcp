@@ -688,6 +688,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'emmet 展开 缩写 html css abbreviation'),
   EditorMenuItem('extractVar', _extractVarLabel, group: 'code',
       aliases: 'tcbl 提取变量 extract variable assign'),
+  EditorMenuItem('foldCurrent', _foldCurrentLabel, group: 'code',
+      aliases: 'zd 折叠 fold collapse region'),
+  EditorMenuItem('unfoldCurrent', _unfoldCurrentLabel, group: 'code',
+      aliases: 'zk 展开 unfold expand region'),
   EditorMenuItem('symbolBar', _symbolBarLabel, group: 'view',
       aliases: 'fht 符号条 符号输入 keyboard symbols bar'),
   EditorMenuItem('cursorBar', _cursorBarLabel, group: 'view',
@@ -840,6 +844,8 @@ String _formatSelLabel(AppLocalizations l) => l.editorFormatSelection;
 String _surroundWithLabel(AppLocalizations l) => l.editorSurroundWith;
 String _emmetLabel(AppLocalizations l) => l.editorEmmet;
 String _extractVarLabel(AppLocalizations l) => l.editorExtractVariable;
+String _foldCurrentLabel(AppLocalizations l) => l.editorFoldCurrent;
+String _unfoldCurrentLabel(AppLocalizations l) => l.editorUnfoldCurrent;
 String _symbolBarLabel(AppLocalizations l) => l.editorSymbolBar;
 String _cursorBarLabel(AppLocalizations l) => l.editorCursorBar;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
@@ -1055,6 +1061,10 @@ IconData menuIconOf(String id) {
       return Icons.html;
     case 'extractVar':
       return Icons.input;
+    case 'foldCurrent':
+      return Icons.unfold_less;
+    case 'unfoldCurrent':
+      return Icons.unfold_more;
     case 'symbolBar':
       return Icons.keyboard_alt_outlined;
     case 'cursorBar':

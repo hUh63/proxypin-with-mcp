@@ -1145,7 +1145,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
       hasOverride: LintPrefs.hasOverride(_langRuleKey),
     );
     if (result == null || !mounted) return;
-    if (result.applyToAll) {
+    if (result.clearOverride) {
+      // 「恢复跟随默认」：把这条语言的记录整条删掉，而不是写一份「什么都不关」。
+      await LintPrefs.removeOverride(_langRuleKey);
+    } else if (result.applyToAll) {
       await LintPrefs.applyToAll(result.disabled);
     } else {
       await LintPrefs.setFor(_langRuleKey, result.disabled);
@@ -2503,6 +2506,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _expandEmmetAtCursor();
       case 'extractVar':
         unawaited(_extractVariable());
+      case 'foldCurrent':
+        _foldAtCaret(collapse: true);
+      case 'unfoldCurrent':
+        _foldAtCaret(collapse: false);
       case 'symbolBar':
         final nextSymbolBar = !_prefs.symbolBar;
         unawaited(TextEditorPrefsStore.update(_prefs.copyWith(symbolBar: nextSymbolBar)));
@@ -4256,6 +4263,28 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return id[0].toLowerCase() + id.substring(1);
     }
     return 'value';
+  }
+
+  /// 折叠 / 展开光标所在的块（VS 的 Ctrl+Shift+[ / ]）。
+  ///
+  /// 「折叠全部 / 展开全部」是粗粒度操作，实际编辑时更常想「把当前这个函数收起来」。
+  void _foldAtCaret({required bool collapse}) {
+    final c = _controller;
+    if (c == null) return;
+    final text = c.text;
+    final caret = c.selection.isValid ? c.selection.start : 0;
+    final line = _lineOfOffset(text, caret.clamp(0, text.length));
+    final range = c.foldings[line];
+    if (range == null) {
+      _toast(localizations.editorFoldNoRegion);
+      return;
+    }
+    if (range.isFolded == collapse) return;
+    try {
+      c.toggleFold(line);
+    } catch (e) {
+      logger.w('fold at caret failed', error: e);
+    }
   }
 
   /// 提取变量（VS / Rider 的 Extract Variable）：把选中表达式提成上一行的一条声明，
@@ -11163,6 +11192,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
           _menuItem('emmet', Icons.html, loc.editorEmmet),
           _menuItem('extractVar', Icons.input, loc.editorExtractVariable),
+          _menuItem('foldCurrent', Icons.unfold_less, loc.editorFoldCurrent),
+          _menuItem('unfoldCurrent', Icons.unfold_more, loc.editorUnfoldCurrent),
           if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
           const PopupMenuDivider(),
           _menuItem('symbols', Icons.account_tree_outlined, loc.editorSymbols),

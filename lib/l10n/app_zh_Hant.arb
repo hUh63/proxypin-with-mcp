@@ -5443,5 +5443,9 @@
   "editorExtractUnsupported": "目前語言不支援",
   "snippetImportVSCode": "匯入 VS Code",
   "snippetImportEmpty": "這個檔案裡沒有可匯入的片段",
-  "snippetImported": "已匯入 {n} 條片段"
+  "snippetImported": "已匯入 {n} 條片段",
+  "editorLintClearOverride": "恢復跟隨預設",
+  "editorFoldCurrent": "摺疊這個區塊",
+  "editorUnfoldCurrent": "展開這個區塊",
+  "editorFoldNoRegion": "這一行沒有可摺疊的區塊"
 }

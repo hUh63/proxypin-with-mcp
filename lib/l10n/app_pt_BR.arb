@@ -3754,5 +3754,9 @@
   "editorExtractUnsupported": "Não suportado para esta linguagem",
   "snippetImportVSCode": "Importar VS Code",
   "snippetImportEmpty": "Nenhum trecho encontrado neste arquivo",
-  "snippetImported": "{n} trechos importados"
+  "snippetImported": "{n} trechos importados",
+  "editorLintClearOverride": "Seguir padrões",
+  "editorFoldCurrent": "Recolher este bloco",
+  "editorUnfoldCurrent": "Expandir este bloco",
+  "editorFoldNoRegion": "Esta linha não tem bloco recolhível"
 }

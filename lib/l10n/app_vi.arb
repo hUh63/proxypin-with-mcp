@@ -3753,5 +3753,9 @@
   "editorExtractUnsupported": "Ngôn ngữ này không được hỗ trợ",
   "snippetImportVSCode": "Nhập từ VS Code",
   "snippetImportEmpty": "Không tìm thấy đoạn mã nào trong tệp này",
-  "snippetImported": "Đã nhập {n} đoạn mã"
+  "snippetImported": "Đã nhập {n} đoạn mã",
+  "editorLintClearOverride": "Theo mặc định",
+  "editorFoldCurrent": "Thu gọn khối này",
+  "editorUnfoldCurrent": "Mở rộng khối này",
+  "editorFoldNoRegion": "Dòng này không có khối nào để thu gọn"
 }

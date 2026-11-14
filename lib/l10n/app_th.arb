@@ -3753,5 +3753,9 @@
   "editorExtractUnsupported": "ภาษาไม่รองรับ",
   "snippetImportVSCode": "นำเข้าจาก VS Code",
   "snippetImportEmpty": "ไม่พบสนิปเพตในไฟล์นี้",
-  "snippetImported": "นำเข้า {n} สนิปเพต"
+  "snippetImported": "นำเข้า {n} สนิปเพต",
+  "editorLintClearOverride": "ใช้ค่าเริ่มต้น",
+  "editorFoldCurrent": "พับบล็อกนี้",
+  "editorUnfoldCurrent": "กางบล็อกนี้",
+  "editorFoldNoRegion": "บรรทัดนี้ไม่มีบล็อกที่พับได้"
 }
