@@ -21,9 +21,8 @@ import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:proxypin/ui/component/editor_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:re_highlight/styles/atom-one-dark.dart';
-import 'package:re_highlight/styles/atom-one-light.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/http/content_type.dart';
@@ -435,15 +434,8 @@ class _JsonViewerPageState extends State<JsonViewerPage> with SingleTickerProvid
   }
 
   Widget _textView() {
-    final isDark = Theme.brightnessOf(context) == Brightness.dark;
-    final baseTheme = isDark ? atomOneDarkTheme : atomOneLightTheme;
-    final pageBg = Theme.of(context).colorScheme.surface;
-    final editorTheme = isDark
-        ? {
-            ...baseTheme,
-            'root': const TextStyle(color: Color(0xffabb2bf)).copyWith(backgroundColor: pageBg),
-          }
-        : baseTheme;
+    // 背景/默认文字色跟着配色方案（editorThemeOf 统一处理），语法 token 色仍是 atom-one。
+    final editorTheme = editorThemeOf(context);
 
     return Padding(
       padding: const EdgeInsets.all(8),

@@ -16,6 +16,7 @@
 
 import 'package:code_forge/code_forge.dart';
 import 'package:flutter/material.dart';
+import 'package:proxypin/ui/component/editor_theme.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:get/get.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -25,8 +26,6 @@ import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:re_highlight/languages/json.dart';
-import 'package:re_highlight/styles/atom-one-dark.dart';
-import 'package:re_highlight/styles/atom-one-light.dart';
 
 /// @author wanghongen
 /// 2023/10/8
@@ -297,7 +296,7 @@ class _RewriteUpdateAddState extends State<RewriteUpdateAddDialog> {
                         language: isJsonText() ? langJson : null,
                         selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
                         editorTheme:
-                            Theme.brightnessOf(context) == Brightness.dark ? atomOneDarkTheme : atomOneLightTheme,
+                            editorThemeOf(context),
                         enableGuideLines: false,
                         textStyle: const TextStyle(fontSize: 14),
                       )),

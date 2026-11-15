@@ -20,9 +20,8 @@ import 'dart:io';
 import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:flutter/material.dart';
+import 'package:proxypin/ui/component/editor_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:re_highlight/styles/atom-one-dark.dart';
-import 'package:re_highlight/styles/atom-one-light.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/channel/host_port.dart';
@@ -620,15 +619,8 @@ class _HttpState extends State<_HttpWidget> {
     final isNone = _bodyLanguage == _BodyLanguage.none;
     final ct = _bodyLanguageToContentType[_bodyLanguage];
     final language = ct == null ? null : HighlightLanguages.getLanguage(ct);
-    final isDark = Theme.brightnessOf(context) == Brightness.dark;
-    final baseTheme = isDark ? atomOneDarkTheme : atomOneLightTheme;
-    final pageBg = Theme.of(context).colorScheme.surface;
-    final editorTheme = isDark
-        ? {
-            ...baseTheme,
-            'root': const TextStyle(color: Color(0xffabb2bf)).copyWith(backgroundColor: pageBg),
-          }
-        : baseTheme;
+    // 背景/默认文字色跟着配色方案（editorThemeOf 统一处理），语法 token 色仍是 atom-one。
+    final editorTheme = editorThemeOf(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8, right: 10, bottom: 10),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.67.320 (2026-11-15) — 背景色跟着主题走（不再是固定值）
+
+之前页面底色是**写死**的：浅色手机端 `Colors.white`、桌面端 `#F5F6F8`、深色
+`DarkPalette.bg`。所以换主题色或开「莫奈取色」时，只有按钮和选中态变了，
+页面底、卡片间隙还是一片旧色 —— 看上去就是「背景固定、不跟随主题」。
+
+改动：
+- `scaffoldBackgroundColor` 改成从配色方案派生（`surfaceContainerLowest`），
+  浅色时仍接近白、深色时是最深的灰，但会跟着主题色/壁纸色一起变；
+- 莫奈取色分支在换完 `colorScheme` 之后，把页面底色与分隔线**一起重算**
+  （它们原本是按旧 scheme 算出来的常量）；
+- 新增 `editorThemeOf(context)`：代码编辑器只保留 atom-one 的**语法 token 色**，
+  背景与默认文字色取自 `colorScheme.surface` / `onSurface`。此前 10 处编辑器
+  （文本编辑器 / 对比页 / JSON 与 XML 查看器 / 桌面与手机的请求体编辑器 /
+  改写规则编辑器）都直接用 atom-one 自带的固定背景（浅 `#FAFAFA` / 深 `#282C34`），
+  和周围的卡片对不上。
+
 ## v1.67.319 (2026-11-15) — 整理 import
 
 `整理 import`（VS Code 的 Organize Imports）：把文件开头那段导入按 Dart 惯例分三组

@@ -288,15 +288,23 @@ class FluentApp extends StatelessWidget {
             final useMonet = appConfiguration.monetEnabled;
             final ThemeData lightTheme;
             final ThemeData darkTheme;
+            // 莫奈取色：colorScheme 整体换成壁纸色板后，页面底色/分隔线必须跟着重算
+            // —— 它们是 theme() 里按当时的 colorScheme 算出来的常量，只换 scheme 不改它们，
+            // 页面底还是旧色（这也是「背景固定」的来源之一）。
+            ThemeData withScheme(ThemeData base, ColorScheme scheme) => base.copyWith(
+                  colorScheme: scheme,
+                  scaffoldBackgroundColor: scheme.surfaceContainerLowest,
+                  dividerColor: scheme.outlineVariant,
+                );
             if (useMonet && lightDynamic != null) {
-              lightTheme = theme(Brightness.light)
-                  .copyWith(colorScheme: dynamicToMaterialColorScheme(lightDynamic.harmonized()));
+              lightTheme = withScheme(
+                  theme(Brightness.light), dynamicToMaterialColorScheme(lightDynamic.harmonized()));
             } else {
               lightTheme = theme(Brightness.light);
             }
             if (useMonet && darkDynamic != null) {
-              darkTheme = theme(Brightness.dark)
-                  .copyWith(colorScheme: dynamicToMaterialColorScheme(darkDynamic.harmonized()));
+              darkTheme =
+                  withScheme(theme(Brightness.dark), dynamicToMaterialColorScheme(darkDynamic.harmonized()));
             } else {
               darkTheme = theme(Brightness.dark);
             }
@@ -377,15 +385,16 @@ class FluentApp extends StatelessWidget {
       pageTransitionsTheme: pageTransitions,
     );
 
-    if (!isDark) {
-      themeData = themeData.copyWith(
-        // 手机端全纯白；桌面端保留设计稿 #F5F6F8 窗口灰底
-        scaffoldBackgroundColor: Platforms.isMobile() ? Colors.white : const Color(0xFFF5F6F8),
-        dividerColor: const Color(0xFFE4E6EB),
-      );
-    } else {
-      themeData = themeData.copyWith(scaffoldBackgroundColor: DarkPalette.bg, dividerColor: DarkPalette.border);
-    }
+    // 页面底色**从配色方案派生**，不再写死 白 / #F5F6F8 / DarkPalette.bg。
+    //
+    // 写死的时候，换主题色或开「莫奈取色」只换到按钮和选中态 —— 页面底、
+    // 卡片间隙还是一片旧色，看上去就像「主题没生效、背景是固定的」。
+    // surfaceContainerLowest 是 M3 里最"底层"的容器色：浅色时接近白、
+    // 深色时是最深的灰，两种模式下都天然合适，而且会跟着 seed 一起变。
+    themeData = themeData.copyWith(
+      scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
+      dividerColor: colorScheme.outlineVariant,
+    );
 
     if (!appConfiguration.useMaterial3) {
       themeData = themeData.copyWith(

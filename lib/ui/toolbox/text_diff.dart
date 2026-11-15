@@ -30,9 +30,8 @@ import 'package:proxypin/ui/component/search/highlight_text_document.dart'
         buildHighlightBaseSegments,
         buildHighlightDocumentLines;
 import 'package:flutter/material.dart';
+import 'package:proxypin/ui/component/editor_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:re_highlight/styles/atom-one-dark.dart';
-import 'package:re_highlight/styles/atom-one-light.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/utils/code_lint.dart';
@@ -283,6 +282,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 「搬家」端点块下标（fromBlock 与 toBlock 的并集），只用于显示标记。
   Set<int> _movedEnds = <int>{};
+
+  /// 差异列表的类型过滤：'' 全部 / added / deleted / modified / moved / unseen。
+  /// 几十处差异混在一个列表里，找「新增的那几行」要一行行读；分个类一眼就到。
+  String _listFilter = '';
 
   /// 统一视图（单栏）：像 git / GitHub 的 unified diff，窄屏上比两栏好读。
   bool _unified = false;
@@ -2273,6 +2276,31 @@ class _TextDiffPageState extends State<TextDiffPage> {
   static List<String> _splitLines(String t) =>
       t.isEmpty ? const <String>[] : t.split('\n');
 
+  /// 按当前筛选条件挑出的块下标（「全部」时就是 0..n-1）。
+  List<int> _filteredBlockIndexes() {
+    if (_listFilter.isEmpty) {
+      return List<int>.generate(_blocks.length, (i) => i);
+    }
+    final out = <int>[];
+    for (var i = 0; i < _blocks.length; i++) {
+      final b = _blocks[i];
+      var keep = false;
+      if (_listFilter == 'unseen') {
+        keep = !_reviewed.contains(i);
+      } else if (_listFilter == 'added') {
+        keep = b.leftLines.isEmpty && b.rightLines.isNotEmpty;
+      } else if (_listFilter == 'deleted') {
+        keep = b.rightLines.isEmpty && b.leftLines.isNotEmpty;
+      } else if (_listFilter == 'modified') {
+        keep = b.isModify;
+      } else if (_listFilter == 'moved') {
+        keep = _movedEnds.contains(i);
+      }
+      if (keep) out.add(i);
+    }
+    return out;
+  }
+
   String _blockSummary(DiffBlock b, {int? index}) {
     final parts = <String>[];
     if (b.pairs.isNotEmpty) parts.add('${localizations.diffModified} ${b.pairs.length}');
@@ -3218,14 +3246,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   Widget _editor(CodeForgeController controller, String title, {required bool isLeft}) {
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
-    final baseTheme = isDark ? atomOneDarkTheme : atomOneLightTheme;
-    final pageBg = Theme.of(context).colorScheme.surface;
-    final editorTheme = isDark
-        ? {
-            ...baseTheme,
-            'root': const TextStyle(color: Color(0xffabb2bf)).copyWith(backgroundColor: pageBg),
-          }
-        : baseTheme;
+    // 背景/默认文字色跟着配色方案（editorThemeOf 统一处理），语法 token 色仍是 atom-one。
+    final editorTheme = editorThemeOf(context);
 
     // 字符级差异：左边删除（红底白字加粗），右边新增（绿底白字加粗），更醒目。
     final charStyle = isLeft
@@ -4105,13 +4127,50 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 ),
               ]),
             ),
+            // 类型筛选：几十处差异混在一起时，「只看新增 / 只看搬家」比一行行读快得多。
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: <Widget>[
+                  for (final (id, label) in <(String, String)>[
+                    ('', localizations.diffFilterAll),
+                    ('added', localizations.diffAdded),
+                    ('deleted', localizations.diffDeleted),
+                    ('modified', localizations.diffModified),
+                    ('moved', localizations.diffMoved),
+                    ('unseen', localizations.diffFilterUnseen),
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: FilterChip(
+                        label: Text(label, style: const TextStyle(fontSize: 11)),
+                        selected: _listFilter == id,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onSelected: (_) => setSheet(() => _listFilter = id),
+                      ),
+                    ),
+                ]),
+              ),
+            ),
             const Divider(height: 1),
             Expanded(
-              child: ListView.separated(
+              child: Builder(builder: (ctx) {
+                final order = _filteredBlockIndexes();
+                if (order.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(localizations.diffFilterEmpty,
+                        style: const TextStyle(fontSize: 13)),
+                  );
+                }
+                return ListView.separated(
                 controller: scroll,
-                itemCount: _blocks.length,
+                itemCount: order.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (_, i) {
+                itemBuilder: (_, pos) {
+                  final i = order[pos];
                   final b = _blocks[i];
                   // 与长按菜单同一套口径（含「↕ 搬家」标记），别在这里再写一份。
                   final parts = _blockSummary(b, index: i);
@@ -4159,7 +4218,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
                     },
                   );
                 },
-              ),
+                );
+              }),
             ),
           ]),
         );
