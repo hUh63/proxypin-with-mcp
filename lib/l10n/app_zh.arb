@@ -5478,5 +5478,7 @@
   "quicProbeEnabledHint": "从 UDP 443 首包解析 SNI 与连接 ID。重开 VPN 后生效。",
   "diffIgnoreRowOrder": "忽略行顺序",
   "tableDiffOrderIgnoredByKey": "选了主键列时此项不生效",
-  "vpnRestartToApply": "已保存，重开 VPN 后生效"
+  "vpnRestartToApply": "已保存，重开 VPN 后生效",
+  "tableDiffIgnoreColumns": "忽略列",
+  "diffRestoreTooBig": "上次对比的内容太大没有保存，请重新选择文件"
 }

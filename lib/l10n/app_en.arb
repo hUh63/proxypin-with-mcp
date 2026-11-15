@@ -6289,5 +6289,7 @@
   "quicProbeEnabledHint": "Reads SNI and connection IDs from UDP 443. Takes effect after the VPN is restarted.",
   "diffIgnoreRowOrder": "Ignore row order",
   "tableDiffOrderIgnoredByKey": "Not used while a key column is selected",
-  "vpnRestartToApply": "Saved — restart the VPN to apply"
+  "vpnRestartToApply": "Saved — restart the VPN to apply",
+  "tableDiffIgnoreColumns": "Ignore columns",
+  "diffRestoreTooBig": "Last comparison was too large to keep — pick the files again"
 }

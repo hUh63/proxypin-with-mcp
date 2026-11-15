@@ -73,6 +73,10 @@ class _TableDiffPageState extends State<TableDiffPage> {
   /// （导出的表经常内容一样、顺序不同，按行号比会整片标红。）
   bool _ignoreRowOrder = false;
 
+  /// 不参与比较的列（按列名）。时间戳 / 自增 id / 备注这类列每次导出都不一样，
+  /// 不忽略的话几乎每行都会被算成「变了」。
+  Set<String> _ignoredColumns = <String>{};
+
   double _fontSize = 12;
 
   TableData? _leftTable;
@@ -100,6 +104,10 @@ class _TableDiffPageState extends State<TableDiffPage> {
       return;
     }
     if (_key.isNotEmpty && !_leftTable!.headers.contains(_key)) _key = '';
+    // 表换了，原来选的「忽略列」可能已经不存在（不在任何一侧的表头里）。
+    _ignoredColumns = _ignoredColumns
+        .where((n) => _leftTable!.headers.contains(n) || _rightTable!.headers.contains(n))
+        .toSet();
     _result = compareTables(
       _leftTable!,
       _rightTable!,
@@ -107,7 +115,56 @@ class _TableDiffPageState extends State<TableDiffPage> {
       ignoreCase: _ignoreCase,
       ignoreWhitespace: _ignoreWhitespace,
       ignoreRowOrder: _ignoreRowOrder,
+      ignoreColumns: _ignoredColumns,
     );
+  }
+
+  /// 选「不参与比较的列」。
+  Future<void> _pickIgnoredColumns(List<String> headers) async {
+    if (headers.isEmpty) return;
+    final loc = localizations;
+    final picked = await showDialog<Set<String>>(
+      context: context,
+      builder: (ctx) {
+        final sel = Set<String>.from(_ignoredColumns);
+        return StatefulBuilder(builder: (ctx, setD) {
+          return AlertDialog(
+            title: Text(loc.tableDiffIgnoreColumns, style: const TextStyle(fontSize: 15)),
+            content: SizedBox(
+              width: 320,
+              child: SingleChildScrollView(
+                child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                  for (final h in headers)
+                    CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      value: sel.contains(h),
+                      title: Text(h.trim().isEmpty ? '(blank)' : h,
+                          style: const TextStyle(fontSize: 13)),
+                      onChanged: (v) => setD(() {
+                        if (v == true) {
+                          sel.add(h);
+                        } else {
+                          sel.remove(h);
+                        }
+                      }),
+                    ),
+                ]),
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+              FilledButton(onPressed: () => Navigator.pop(ctx, sel), child: Text(loc.confirm)),
+            ],
+          );
+        });
+      },
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _ignoredColumns = picked;
+      _recompute();
+    });
   }
 
   void _toast(String msg) {
@@ -350,6 +407,19 @@ class _TableDiffPageState extends State<TableDiffPage> {
               _ignoreWhitespace = v;
               _recompute();
             }),
+          ),
+          ActionChip(
+            avatar: Icon(Icons.visibility_off_outlined,
+                size: 15,
+                color: _ignoredColumns.isEmpty ? null : Theme.of(context).colorScheme.primary),
+            label: Text(
+                _ignoredColumns.isEmpty
+                    ? loc.tableDiffIgnoreColumns
+                    : '${loc.tableDiffIgnoreColumns} (${_ignoredColumns.length})',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: _ignoredColumns.isEmpty ? null : Theme.of(context).colorScheme.primary)),
+            onPressed: () => _pickIgnoredColumns(headers),
           ),
           FilterChip(
             label: Text(loc.diffIgnoreRowOrder, style: const TextStyle(fontSize: 11)),

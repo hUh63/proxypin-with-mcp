@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proxypin/utils/table_diff.dart';
 
 TableDiffResult _cmp(String left, String right,
-    {bool ignoreRowOrder = false, bool ignoreCase = false, String? key}) {
+    {bool ignoreRowOrder = false,
+    bool ignoreCase = false,
+    String? key,
+    Set<String> ignoreColumns = const <String>{}}) {
   return compareTables(
     parseTable(left),
     parseTable(right),
@@ -14,6 +17,7 @@ TableDiffResult _cmp(String left, String right,
     ignoreCase: ignoreCase,
     ignoreWhitespace: false,
     ignoreRowOrder: ignoreRowOrder,
+    ignoreColumns: ignoreColumns,
   );
 }
 
@@ -82,5 +86,37 @@ void main() {
     const right = 'a,b,c\n1,2,9';
     final r = _cmp(left, right, ignoreRowOrder: true);
     expect(r.rows.length, greaterThan(0));
+  });
+
+  group('忽略指定列', () {
+    const left = 'id,ts,name\n1,2026-01-01,Tom\n2,2026-01-02,Amy';
+    const right = 'id,ts,name\n1,2026-11-15,Tom\n2,2026-11-15,Amy';
+
+    test('不忽略时，只有时间戳不同的行也算变了', () {
+      expect(_cmp(left, right).changedRowCount, 2);
+    });
+
+    test('忽略 ts 列后，两行都没有变化', () {
+      final r = _cmp(left, right, ignoreColumns: {'ts'});
+      expect(r.changedRowCount, 0);
+    });
+
+    test('忽略列后单元格里的变化仍然被发现', () {
+      const r2 = 'id,ts,name\n1,2026-11-15,Tommy\n2,2026-11-15,Amy';
+      final r = _cmp(left, r2, ignoreColumns: {'ts'});
+      expect(r.changedRowCount, 1, reason: 'Tom 改成了 Tommy');
+    });
+
+    test('忽略列 + 忽略行序可以一起用', () {
+      const r3 = 'id,ts,name\n2,2026-11-15,Amy\n1,2026-11-15,Tom';
+      final r = _cmp(left, r3, ignoreColumns: {'ts'}, ignoreRowOrder: true);
+      expect(r.changedRowCount, 0);
+    });
+
+    test('忽略主键列不影响按主键对齐（主键仍用于配对）', () {
+      const r4 = 'id,ts,name\n2,2026-11-15,Amy\n1,2026-11-15,Tom';
+      final r = _cmp(left, r4, key: 'id', ignoreColumns: {'id', 'ts'});
+      expect(r.changedRowCount, 0);
+    });
   });
 }

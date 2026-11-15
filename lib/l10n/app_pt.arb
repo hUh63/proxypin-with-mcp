@@ -3789,5 +3789,7 @@
   "quicProbeEnabledHint": "Lê SNI e IDs de conexão do UDP 443. Vale após reiniciar a VPN.",
   "diffIgnoreRowOrder": "Ignorar ordem das linhas",
   "tableDiffOrderIgnoredByKey": "Não usado quando há coluna-chave",
-  "vpnRestartToApply": "Salvo — reinicie a VPN para aplicar"
+  "vpnRestartToApply": "Salvo — reinicie a VPN para aplicar",
+  "tableDiffIgnoreColumns": "Ignorar colunas",
+  "diffRestoreTooBig": "A comparação anterior era grande demais — escolha os arquivos de novo"
 }

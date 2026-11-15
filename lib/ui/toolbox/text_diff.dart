@@ -489,7 +489,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
       final m = jsonDecode(raw) as Map<String, dynamic>;
       final l = (m['left'] as String?) ?? '';
       final r = (m['right'] as String?) ?? '';
-      if (l.isEmpty && r.isEmpty) return;
+      if (l.isEmpty && r.isEmpty) {
+        // 上次的内容太大没存，只有名字/路径：说一声，免得用户以为「恢复坏了」。
+        if (m['tooBig'] == true) {
+          _leftName = (m['leftName'] as String?) ?? '';
+          _rightName = (m['rightName'] as String?) ?? '';
+          _toastText(localizations.diffRestoreTooBig);
+        }
+        return;
+      }
       if (!mounted) return;
       _left.text = l;
       _right.text = r;
@@ -515,16 +523,22 @@ class _TextDiffPageState extends State<TextDiffPage> {
   Future<void> _persistNow() async {
     if (!widget.persist) return;
     try {
+      // 太大就不存正文：SharedPreferences 在 Android 上整份读进内存，
+      // 几 MB 的 JSON 会让「下次打开对比页」明显卡一下，写失败还会被静默吞掉。
+      // 名字/路径照存 —— 至少知道上次比的是哪两个文件（`_restoreIfNeeded` 会提示
+      // 「内容太大未保存」）。
+      final tooBig = _left.text.length + _right.text.length > 400000;
       final sp = await SharedPreferences.getInstance();
       await sp.setString(
           _storeKey,
           jsonEncode({
-            'left': _left.text,
-            'right': _right.text,
+            'left': tooBig ? '' : _left.text,
+            'right': tooBig ? '' : _right.text,
             'leftName': _leftName,
             'rightName': _rightName,
             'leftPath': _leftPath,
             'rightPath': _rightPath,
+            'tooBig': tooBig,
           }));
     } catch (_) {}
     unawaited(_pushHistory());

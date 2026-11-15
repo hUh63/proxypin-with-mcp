@@ -292,8 +292,23 @@ TableDiffResult compareTables(
   bool ignoreCase = false,
   bool ignoreWhitespace = false,
   bool ignoreRowOrder = false,
+  Set<String> ignoreColumns = const <String>{},
 }) {
   final columns = _alignColumns(left.headers, right.headers);
+
+  // 「忽略这几列」：典型场景是两张表都有时间戳 / 自增 id / 备注列，
+  // 每次导出都不一样，但它们其实不参与比较 —— 不忽略的话几乎每行都算「变了」。
+  // 按**列名**匹配（左右任一表能对上就算），因为两侧同名但下标可能不同。
+  final ignoredPositions = <int>{};
+  if (ignoreColumns.isNotEmpty) {
+    for (var c = 0; c < columns.length; c++) {
+      final ci = columns[c];
+      final lName = ci.leftIndex >= 0 && ci.leftIndex < left.headers.length ? left.headers[ci.leftIndex] : '';
+      final rName =
+          ci.rightIndex >= 0 && ci.rightIndex < right.headers.length ? right.headers[ci.rightIndex] : '';
+      if (ignoreColumns.contains(lName) || ignoreColumns.contains(rName)) ignoredPositions.add(c);
+    }
+  }
   final leftKeyIndex = _resolveKeyColumn(left.headers, keyColumn);
   final rightKeyIndex = _resolveKeyColumn(right.headers, keyColumn);
 
@@ -301,15 +316,15 @@ TableDiffResult compareTables(
   String rowKeyLabel;
   if (leftKeyIndex >= 0 && rightKeyIndex >= 0) {
     rows = _alignRowsByKey(left, right, columns, leftKeyIndex, rightKeyIndex,
-        ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
+        ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace, ignoredColumns: ignoredPositions);
     rowKeyLabel = left.headers[leftKeyIndex];
   } else if (ignoreRowOrder) {
     rows = _alignRowsIgnoreOrder(left, right, columns,
-        ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
+        ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace, ignoredColumns: ignoredPositions);
     rowKeyLabel = '';
   } else {
     rows = _alignRowsByPosition(left, right, columns,
-        ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
+        ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace, ignoredColumns: ignoredPositions);
     rowKeyLabel = '';
   }
 
@@ -426,6 +441,7 @@ List<TableRowDiff> _alignRowsByPosition(
   List<_ColumnPair> columns, {
   required bool ignoreCase,
   required bool ignoreWhitespace,
+  Set<int> ignoredColumns = const <int>{},
 }) {
   final out = <TableRowDiff>[];
   final n = left.rowCount > right.rowCount ? left.rowCount : right.rowCount;
@@ -446,6 +462,7 @@ List<TableRowDiff> _alignRowsByPosition(
     for (var c = 0; c < columns.length; c++) {
       final ci = columns[c];
       if (ci.leftIndex < 0 || ci.rightIndex < 0) continue;
+      if (ignoredColumns.contains(c)) continue; // 用户选择忽略这一列
       final lv = ci.leftIndex < lr.length ? lr[ci.leftIndex] : '';
       final rv = ci.rightIndex < rr.length ? rr[ci.rightIndex] : '';
       if (!_cellEq(lv, rv, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace)) changed.add(c);
@@ -478,6 +495,7 @@ List<TableRowDiff> _alignRowsIgnoreOrder(
   List<_ColumnPair> columns, {
   required bool ignoreCase,
   required bool ignoreWhitespace,
+  Set<int> ignoredColumns = const <int>{},
 }) {
   String norm(String s) {
     var v = s;
@@ -489,8 +507,13 @@ List<TableRowDiff> _alignRowsIgnoreOrder(
   String sigLeft(int i) {
     final row = left.rows[i];
     final parts = <String>[];
-    for (final c in columns) {
-      parts.add(c.leftIndex >= 0 && c.leftIndex < row.length ? norm(row[c.leftIndex]) : '\u0000');
+    for (var c = 0; c < columns.length; c++) {
+      final ci = columns[c];
+      if (ignoredColumns.contains(c)) {
+        parts.add('');
+        continue;
+      }
+      parts.add(ci.leftIndex >= 0 && ci.leftIndex < row.length ? norm(row[ci.leftIndex]) : '\u0000');
     }
     return parts.join('\u0001');
   }
@@ -498,8 +521,13 @@ List<TableRowDiff> _alignRowsIgnoreOrder(
   String sigRight(int j) {
     final row = right.rows[j];
     final parts = <String>[];
-    for (final c in columns) {
-      parts.add(c.rightIndex >= 0 && c.rightIndex < row.length ? norm(row[c.rightIndex]) : '\u0000');
+    for (var c = 0; c < columns.length; c++) {
+      final ci = columns[c];
+      if (ignoredColumns.contains(c)) {
+        parts.add('');
+        continue;
+      }
+      parts.add(ci.rightIndex >= 0 && ci.rightIndex < row.length ? norm(row[ci.rightIndex]) : '\u0000');
     }
     return parts.join('\u0001');
   }
@@ -526,7 +554,10 @@ List<TableRowDiff> _alignRowsIgnoreOrder(
   }
 
   // 第二轮：相似配对。行数乘积太大就跳过（这是 O(n·m·列) 的，几百行以内才值得）。
-  final comparable = columns.where((c) => c.leftIndex >= 0 && c.rightIndex >= 0).length;
+  final comparable = <int>[
+    for (var c = 0; c < columns.length; c++)
+      if (columns[c].leftIndex >= 0 && columns[c].rightIndex >= 0 && !ignoredColumns.contains(c)) c,
+  ].length;
   final leftRest = <int>[for (var i = 0; i < left.rowCount; i++) if (!byLeft.containsKey(i)) i];
   final rightRest = <int>[for (var j = 0; j < right.rowCount; j++) if (!matchedRight.contains(j)) j];
   if (comparable > 0 && leftRest.length * rightRest.length <= 200000) {
@@ -541,6 +572,7 @@ List<TableRowDiff> _alignRowsIgnoreOrder(
         for (var c = 0; c < columns.length; c++) {
           final ci = columns[c];
           if (ci.leftIndex < 0 || ci.rightIndex < 0) continue;
+          if (ignoredColumns.contains(c)) continue;
           final lr = left.rows[i];
           final rr = right.rows[j];
           final lv = ci.leftIndex < lr.length ? lr[ci.leftIndex] : '';
@@ -589,6 +621,7 @@ List<TableRowDiff> _alignRowsByKey(
   int rightKey, {
   required bool ignoreCase,
   required bool ignoreWhitespace,
+  Set<int> ignoredColumns = const <int>{},
 }) {
   String keyOf(List<List<String>> rows, int rowIdx, int keyIdx) {
     if (rowIdx >= rows.length) return '';
@@ -629,6 +662,7 @@ List<TableRowDiff> _alignRowsByKey(
     for (var c = 0; c < columns.length; c++) {
       final ci = columns[c];
       if (ci.leftIndex < 0 || ci.rightIndex < 0) continue;
+      if (ignoredColumns.contains(c)) continue; // 用户选择忽略这一列
       final lv = ci.leftIndex < lr.length ? lr[ci.leftIndex] : '';
       final rv = ci.rightIndex < rr.length ? rr[ci.rightIndex] : '';
       if (!_cellEq(lv, rv, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace)) changed.add(c);

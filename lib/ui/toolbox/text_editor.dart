@@ -4304,6 +4304,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (c == null) return;
     final text = c.text;
     if (text.isEmpty) return;
+    // 要全文切行 + 重排，几 MB 的文件在手机上会明显卡顿（这本来也不是大文件场景）。
+    if (_tooLargeForSync(text, limit: 2000000)) return;
     final lines = text.split('\n');
     final imp = RegExp(r'^\s*(?:import|export|using|require|from|#include|use)\s');
 
@@ -4402,6 +4404,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
     final wordRe = RegExp(r'\b' + RegExp.escape(name) + r'\b');
 
+    if (_tooLargeForSync(text, limit: 2000000)) return;
     final useLine = _lineOfOffset(text, useStart.clamp(0, text.length));
     final lines = text.split('\n');
     if (useLine <= 0 || useLine >= lines.length) {
