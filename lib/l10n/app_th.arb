@@ -3776,5 +3776,14 @@
   "editorOrganizeDone": "เรียง {n} บรรทัด import แล้ว",
   "diffFilterAll": "ทั้งหมด",
   "diffFilterUnseen": "ยังไม่ดู",
-  "diffFilterEmpty": "ไม่มีรายการที่ตรงกัน"
+  "diffFilterEmpty": "ไม่มีรายการที่ตรงกัน",
+  "backupAutoSettings": "ตั้งค่าสำรองอัตโนมัติ",
+  "backupAutoTitle": "สำรองอัตโนมัติ",
+  "backupAutoEnabled": "เปิดสำรองอัตโนมัติ",
+  "backupAutoEnabledHint": "บันทึกสแนปช็อตตอนเปิดแอปเมื่อถึงรอบ",
+  "backupAutoInterval": "ช่วงเวลา",
+  "backupIntervalHours": "ทุก {n} ชม.",
+  "quicProbeSettings": "การตรวจจับ QUIC",
+  "quicProbeEnabled": "เก็บข้อมูล QUIC",
+  "quicProbeEnabledHint": "อ่าน SNI และ connection ID จาก UDP 443 มีผลหลังรีสตาร์ท VPN"
 }

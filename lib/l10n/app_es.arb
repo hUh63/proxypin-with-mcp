@@ -3776,5 +3776,14 @@
   "editorOrganizeDone": "{n} líneas de importación ordenadas",
   "diffFilterAll": "Todo",
   "diffFilterUnseen": "Sin ver",
-  "diffFilterEmpty": "Nada coincide con el filtro"
+  "diffFilterEmpty": "Nada coincide con el filtro",
+  "backupAutoSettings": "Ajustes de copia automática",
+  "backupAutoTitle": "Copia automática",
+  "backupAutoEnabled": "Activar copia automática",
+  "backupAutoEnabledHint": "Guarda una copia al iniciar cuando toca",
+  "backupAutoInterval": "Intervalo",
+  "backupIntervalHours": "Cada {n} h",
+  "quicProbeSettings": "Sondeo QUIC",
+  "quicProbeEnabled": "Capturar metadatos QUIC",
+  "quicProbeEnabledHint": "Lee SNI e IDs de conexión del UDP 443. Se aplica al reiniciar la VPN."
 }

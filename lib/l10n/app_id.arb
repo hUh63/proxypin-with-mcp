@@ -3776,5 +3776,14 @@
   "editorOrganizeDone": "{n} baris import diurutkan",
   "diffFilterAll": "Semua",
   "diffFilterUnseen": "Belum",
-  "diffFilterEmpty": "Tidak ada yang cocok"
+  "diffFilterEmpty": "Tidak ada yang cocok",
+  "backupAutoSettings": "Pengaturan cadangan otomatis",
+  "backupAutoTitle": "Cadangan otomatis",
+  "backupAutoEnabled": "Aktifkan cadangan otomatis",
+  "backupAutoEnabledHint": "Simpan snapshot saat mulai bila sudah waktunya",
+  "backupAutoInterval": "Interval",
+  "backupIntervalHours": "Tiap {n} jam",
+  "quicProbeSettings": "Probe QUIC",
+  "quicProbeEnabled": "Ambil metadata QUIC",
+  "quicProbeEnabledHint": "Membaca SNI dan connection ID dari UDP 443. Berlaku setelah VPN dimulai ulang."
 }

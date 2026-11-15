@@ -3776,5 +3776,14 @@
   "editorOrganizeDone": "Đã sắp xếp {n} dòng import",
   "diffFilterAll": "Tất cả",
   "diffFilterUnseen": "Chưa xem",
-  "diffFilterEmpty": "Không có mục nào khớp"
+  "diffFilterEmpty": "Không có mục nào khớp",
+  "backupAutoSettings": "Cài đặt sao lưu tự động",
+  "backupAutoTitle": "Sao lưu tự động",
+  "backupAutoEnabled": "Bật sao lưu tự động",
+  "backupAutoEnabledHint": "Lưu bản chụp khi khởi động nếu đã đến kỳ",
+  "backupAutoInterval": "Khoảng cách",
+  "backupIntervalHours": "Mỗi {n} giờ",
+  "quicProbeSettings": "Dò QUIC",
+  "quicProbeEnabled": "Thu thập siêu dữ liệu QUIC",
+  "quicProbeEnabledHint": "Đọc SNI và connection ID từ UDP 443. Có hiệu lực sau khi khởi động lại VPN."
 }

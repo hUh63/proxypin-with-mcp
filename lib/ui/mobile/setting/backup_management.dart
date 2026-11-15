@@ -28,6 +28,71 @@ class _BackupManagementState extends State<BackupManagement> {
     _loadBackups();
   }
 
+  /// 自动备份设置。
+  ///
+  /// `autoBackupEnabled` / `autoBackupIntervalHours` 这两个字段一直存在、
+  /// `BackupService.autoBackupIfDue()` 也一直在读它们，但**没有任何界面能改** ——
+  /// 等于用户只能接受默认的「每天一次、开启」，想关掉或者改间隔都无从下手。
+  Future<void> _showAutoBackupSettings() async {
+    final loc = AppLocalizations.of(context)!;
+    final config = await Configuration.instance;
+    if (!mounted) return;
+    const options = <int>[12, 24, 72, 168];
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        // 配置里可能是手改过的任意值，不在候选里就退回 24 ——
+        // 否则 DropdownButton 会因为 value 不匹配直接 assert 崩掉。
+        final current = options.contains(config.autoBackupIntervalHours) ? config.autoBackupIntervalHours : 24;
+        return SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
+              child: Row(children: <Widget>[
+                Expanded(
+                  child: Text(loc.backupAutoTitle,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ]),
+            ),
+            SwitchListTile(
+              value: config.autoBackupEnabled,
+              title: Text(loc.backupAutoEnabled, style: const TextStyle(fontSize: 14)),
+              subtitle: Text(loc.backupAutoEnabledHint, style: const TextStyle(fontSize: 11.5)),
+              onChanged: (v) async {
+                config.autoBackupEnabled = v;
+                await config.flushConfig();
+                setSheet(() {});
+              },
+            ),
+            ListTile(
+              enabled: config.autoBackupEnabled,
+              title: Text(loc.backupAutoInterval, style: const TextStyle(fontSize: 14)),
+              trailing: DropdownButton<int>(
+                value: current,
+                items: options
+                    .map((h) => DropdownMenuItem<int>(
+                        value: h, child: Text(loc.backupIntervalHours(h))))
+                    .toList(),
+                onChanged: (v) async {
+                  if (v == null) return;
+                  config.autoBackupIntervalHours = v;
+                  await config.flushConfig();
+                  setSheet(() {});
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ]),
+        );
+      }),
+    );
+  }
+
   Future<void> _loadBackups() async {
     setState(() => _isLoading = true);
     try {
@@ -108,6 +173,11 @@ class _BackupManagementState extends State<BackupManagement> {
             icon: const Icon(Icons.save_alt),
             onPressed: _isLoading ? null : _createBackup,
             tooltip: localizations.backupNow,
+          ),
+          IconButton(
+            icon: const Icon(Icons.tune),
+            onPressed: _showAutoBackupSettings,
+            tooltip: localizations.backupAutoSettings,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),

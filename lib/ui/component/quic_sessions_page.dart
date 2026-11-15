@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/util/quic/quic_1rtt.dart';
 import 'package:proxypin/network/util/quic/quic_keylog.dart';
 import 'package:proxypin/network/util/quic/quic_probe.dart';
@@ -29,6 +30,11 @@ class QuicSessionsPage extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tune, size: 20),
+            tooltip: loc.quicProbeSettings,
+            onPressed: () => _showProbeSettings(context),
+          ),
           IconButton(
             icon: const Icon(Icons.key_outlined, size: 20),
             tooltip: loc.quicKeylogTooltip,
@@ -222,6 +228,50 @@ class QuicSessionsPage extends StatelessWidget {
   }
 
   /// 导入密钥日志（NSS key log / SSLKEYLOGFILE）——被动旁路解密 QUIC 的唯一可行路径
+  /// QUIC 探测开关。
+  ///
+  /// `quicProbeEnabled` 一直存在、也一直被 `native/vpn.dart` 传给原生，
+  /// 但界面上没有任何入口 —— 用户想关掉（觉得费电、或者只想看 HTTP）时无从下手。
+  /// 这个开关只在**建立 VPN 时**读取，所以改完要重开一次 VPN 才生效，提示里写清楚。
+  static Future<void> _showProbeSettings(BuildContext context) async {
+    final loc = AppLocalizations.of(context)!;
+    final config = await Configuration.instance;
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
+              child: Row(children: <Widget>[
+                Expanded(
+                  child: Text(loc.quicProbeSettings,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ]),
+            ),
+            SwitchListTile(
+              value: config.quicProbeEnabled,
+              title: Text(loc.quicProbeEnabled, style: const TextStyle(fontSize: 14)),
+              subtitle: Text(loc.quicProbeEnabledHint, style: const TextStyle(fontSize: 11.5)),
+              onChanged: (v) async {
+                config.quicProbeEnabled = v;
+                await config.flushConfig();
+                setSheet(() {});
+              },
+            ),
+            const SizedBox(height: 8),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Future<void> _importKeylog(BuildContext context) async {
     try {
       final files = await FilePicker.pickFiles(type: FileType.any);

@@ -5466,5 +5466,14 @@
   "editorOrganizeDone": "已整理 {n} 行匯入",
   "diffFilterAll": "全部",
   "diffFilterUnseen": "未看",
-  "diffFilterEmpty": "這個篩選下沒有差異"
+  "diffFilterEmpty": "這個篩選下沒有差異",
+  "backupAutoSettings": "自動備份設定",
+  "backupAutoTitle": "自動備份",
+  "backupAutoEnabled": "啟用自動備份",
+  "backupAutoEnabledHint": "間隔到了就在啟動時自動存一份快照",
+  "backupAutoInterval": "間隔",
+  "backupIntervalHours": "{n} 小時",
+  "quicProbeSettings": "QUIC 探測",
+  "quicProbeEnabled": "採集 QUIC 中繼資料",
+  "quicProbeEnabledHint": "從 UDP 443 首包解析 SNI 與連線 ID。重開 VPN 後生效。"
 }

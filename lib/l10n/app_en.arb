@@ -6270,5 +6270,21 @@
   },
   "diffFilterAll": "All",
   "diffFilterUnseen": "Unread",
-  "diffFilterEmpty": "Nothing matches this filter"
+  "diffFilterEmpty": "Nothing matches this filter",
+  "backupAutoSettings": "Auto backup settings",
+  "backupAutoTitle": "Auto backup",
+  "backupAutoEnabled": "Enable auto backup",
+  "backupAutoEnabledHint": "Save a snapshot on startup when the interval has passed",
+  "backupAutoInterval": "Interval",
+  "backupIntervalHours": "Every {n}h",
+  "@backupIntervalHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quicProbeSettings": "QUIC probe",
+  "quicProbeEnabled": "Capture QUIC metadata",
+  "quicProbeEnabledHint": "Reads SNI and connection IDs from UDP 443. Takes effect after the VPN is restarted."
 }
