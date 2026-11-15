@@ -3758,5 +3758,9 @@
   "editorFoldCurrent": "Thu gọn khối này",
   "editorUnfoldCurrent": "Mở rộng khối này",
   "editorFoldNoRegion": "Dòng này không có khối nào để thu gọn",
-  "editorStatusBarTop": "Thanh trạng thái ở trên"
+  "editorStatusBarTop": "Thanh trạng thái ở trên",
+  "editorShrinkSelection": "Thu hẹp vùng chọn",
+  "diffAutoAdvance": "Nhảy tới thay đổi tiếp theo",
+  "diffDetectMoved": "Phát hiện khối bị di chuyển",
+  "diffMoved": "di chuyển"
 }

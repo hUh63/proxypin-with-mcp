@@ -5448,5 +5448,9 @@
   "editorFoldCurrent": "摺疊這個區塊",
   "editorUnfoldCurrent": "展開這個區塊",
   "editorFoldNoRegion": "這一行沒有可摺疊的區塊",
-  "editorStatusBarTop": "狀態列放頂部"
+  "editorStatusBarTop": "狀態列放頂部",
+  "editorShrinkSelection": "收縮選區",
+  "diffAutoAdvance": "接受後自動跳下一處",
+  "diffDetectMoved": "識別移動的區塊",
+  "diffMoved": "移動"
 }

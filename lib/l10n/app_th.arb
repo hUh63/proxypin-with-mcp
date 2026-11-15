@@ -3758,5 +3758,9 @@
   "editorFoldCurrent": "พับบล็อกนี้",
   "editorUnfoldCurrent": "กางบล็อกนี้",
   "editorFoldNoRegion": "บรรทัดนี้ไม่มีบล็อกที่พับได้",
-  "editorStatusBarTop": "แถบสถานะด้านบน"
+  "editorStatusBarTop": "แถบสถานะด้านบน",
+  "editorShrinkSelection": "ย่อการเลือก",
+  "diffAutoAdvance": "ข้ามไปการเปลี่ยนแปลงถัดไป",
+  "diffDetectMoved": "ตรวหาบล็อกที่ย้าย",
+  "diffMoved": "ย้าย"
 }

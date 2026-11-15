@@ -5448,5 +5448,9 @@
   "editorFoldCurrent": "折叠这个块",
   "editorUnfoldCurrent": "展开这个块",
   "editorFoldNoRegion": "这一行没有可折叠的块",
-  "editorStatusBarTop": "状态栏放顶部"
+  "editorStatusBarTop": "状态栏放顶部",
+  "editorShrinkSelection": "收缩选区",
+  "diffAutoAdvance": "接受后自动跳下一处",
+  "diffDetectMoved": "识别移动的块",
+  "diffMoved": "移动"
 }

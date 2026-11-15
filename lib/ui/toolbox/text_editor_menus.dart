@@ -667,6 +667,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('bookmarks', _bookmarksLabel, group: 'edit', aliases: 'sjlb 书签列表 bookmark'),
   EditorMenuItem('clearBookmarks', _clearBookmarksLabel, group: 'edit', aliases: 'qcsj 清除书签 bookmark'),
   EditorMenuItem('nextOccurrence', _nextOccurrenceLabel, group: 'edit', aliases: 'xy 下一个 occurrence dul'),
+  EditorMenuItem('shrinkSel', _shrinkSelLabel, group: 'edit',
+      aliases: 'ssxq 收缩选区 shrink selection'),
   EditorMenuItem('selectAllOccurrences', _selectAllOccurrencesLabel, group: 'edit',
       aliases: 'qxsuoyou 选中所有 occurrence select all'),
   EditorMenuItem('cursorAbove', _cursorAboveLabel, group: 'edit',
@@ -896,6 +898,7 @@ String _compareDiskLabel(AppLocalizations l) => l.editorCompareDisk;
 String _compareClipboardLabel(AppLocalizations l) => l.editorCompareClipboard;
 String _autoSaveLabel(AppLocalizations l) => l.editorAutoSave;
 String _selectAllOccurrencesLabel(AppLocalizations l) => l.editorSelectAllOccurrences;
+String _shrinkSelLabel(AppLocalizations l) => l.editorShrinkSelection;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
@@ -1052,6 +1055,8 @@ IconData menuIconOf(String id) {
       return Icons.bug_report_outlined;
     case 'nextOccurrence':
       return Icons.select_all;
+    case 'shrinkSel':
+      return Icons.close_fullscreen;
     case 'selectAllOccurrences':
       return Icons.library_add_check_outlined;
     case 'format':

@@ -1201,3 +1201,98 @@ MultisetDiff diffAsMultiset(
     onlyRight: diffOf(rightLines, leftCount),
   );
 }
+
+/// 一处「被移动」的代码块：左侧某块整块删除、右侧另一处整块新增，且内容一致。
+class MovedBlock {
+  /// 删除侧（左侧）块下标。
+  final int fromBlock;
+
+  /// 新增侧（右侧）块下标。
+  final int toBlock;
+
+  /// 这块内容有多少行。
+  final int lines;
+
+  const MovedBlock({required this.fromBlock, required this.toBlock, required this.lines});
+}
+
+/// 在差异块里找出「搬了位置」的块（git diff --color-moved / Beyond Compare 的移动识别）。
+///
+/// 起因：把一段代码从一个文件搬到另一个文件、或者在同一个文件里挪了个位置，
+/// 常规 diff 会显示成「这里整段删除 + 那里整段新增」，两个块看起来都是红色的，
+/// 人会以为「改了很多」；其实一个字都没改，只是换了地方。
+///
+/// 判据刻意保守，避免误报：
+/// - 只配对「纯删除块」（右侧无行）与「纯新增块」（左侧无行），
+///   修改块（两侧都有行）不参与，否则一改名字就会被误判成移动；
+/// - 内容按 [ignoreCase]/[ignoreWhitespace] 归一化后必须**完全一致**；
+/// - 块至少 [minLines] 行（默认 2）：单行移动（比如挪一个 import）误报率太高，
+///   而且那种改动人眼一扫就看过来了，标出来反而添噪。
+///
+/// 返回值按「删除侧块下标」升序。
+/// [leftSource] / [rightSource] 是按行切开的原文 —— [DiffBlock] 里存的是**行号**，
+/// 本身不含文本，内容比对必须回原文取。
+List<MovedBlock> detectMovedBlocks(
+  List<DiffBlock> blocks, {
+  required List<String> leftSource,
+  required List<String> rightSource,
+  bool ignoreCase = false,
+  bool ignoreWhitespace = false,
+  int minLines = 2,
+}) {
+  String keyOf(List<String> lines) {
+    final parts = <String>[];
+    for (final l in lines) {
+      var v = l;
+      if (ignoreWhitespace) v = v.replaceAll(RegExp(r'\s+'), '');
+      if (ignoreCase) v = v.toLowerCase();
+      parts.add(v);
+    }
+    return parts.join('\n');
+  }
+
+  /// 按行号取文本；有任何一行取不到就返回 null（宁可漏报，不拿空内容乱配对）。
+  List<String>? textOf(List<String> source, List<int> lineNos) {
+    final out = <String>[];
+    for (final n in lineNos) {
+      if (n < 0 || n >= source.length) return null;
+      out.add(source[n]);
+    }
+    return out;
+  }
+
+  // 新增块按内容归组（同一段内容被复制到多处时，按顺序逐个配对）。
+  final added = <String, List<int>>{};
+  for (var i = 0; i < blocks.length; i++) {
+    final b = blocks[i];
+    if (b.leftLines.isNotEmpty || b.rightLines.isEmpty) continue;
+    if (b.rightLines.length < minLines) continue;
+    final text = textOf(rightSource, b.rightLines);
+    if (text == null) continue;
+    added.putIfAbsent(keyOf(text), () => <int>[]).add(i);
+  }
+  if (added.isEmpty) return const [];
+
+  final out = <MovedBlock>[];
+  final taken = <int>{};
+  for (var i = 0; i < blocks.length; i++) {
+    final b = blocks[i];
+    if (b.rightLines.isNotEmpty || b.leftLines.isEmpty) continue;
+    if (b.leftLines.length < minLines) continue;
+    final leftText = textOf(leftSource, b.leftLines);
+    if (leftText == null) continue;
+    final candidates = added[keyOf(leftText)];
+    if (candidates == null) continue;
+    int? match;
+    for (final c in candidates) {
+      if (!taken.contains(c)) {
+        match = c;
+        break;
+      }
+    }
+    if (match == null) continue;
+    taken.add(match);
+    out.add(MovedBlock(fromBlock: i, toBlock: match, lines: b.leftLines.length));
+  }
+  return out;
+}

@@ -275,6 +275,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 词级（字符级）高亮：关掉只看整行，几万行的超大文件更顺。
   bool _wordDiff = true;
 
+  /// 接受一处差异后自动跳到下一处（逐块处理时不该每块都手动点「下一处」）。
+  bool _autoAdvance = true;
+
+  /// 识别「搬家」的块（A 处删、B 处增且内容一致），给它们标 ↕。
+  bool _detectMoved = true;
+
+  /// 「搬家」端点块下标（fromBlock 与 toBlock 的并集），只用于显示标记。
+  Set<int> _movedEnds = <int>{};
+
   /// 统一视图（单栏）：像 git / GitHub 的 unified diff，窄屏上比两栏好读。
   bool _unified = false;
 
@@ -694,6 +703,30 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreComments: _ignoreComments);
     final stats = diffStats(blocks);
 
+    // 「搬家」识别：把「这里整段删、那里整段增」且内容一致的块配成对。
+    // 纯提示性信息，算不出来/算错了不影响对比结果本身，所以整段兜住。
+    var movedEnds = <int>{};
+    if (_detectMoved && blocks.isNotEmpty) {
+      final lns = _splitLines(_left.text);
+      final rns = _splitLines(_right.text);
+      // 全量取行文本 + 逐块内容比对是 O(行数)：超大文件直接跳过，
+      // 那种场景下用户也不会逐个块看「搬家」标记。
+      if (lns.length <= 20000 && rns.length <= 20000) {
+        try {
+          for (final m in detectMovedBlocks(blocks,
+              leftSource: lns,
+              rightSource: rns,
+              ignoreCase: _ignoreCase,
+              ignoreWhitespace: _ignoreWhitespace || _ignoreTrailing)) {
+            movedEnds.add(m.fromBlock);
+            movedEnds.add(m.toBlock);
+          }
+        } catch (_) {
+          movedEnds = <int>{};
+        }
+      }
+    }
+
     final addBg = Colors.green.withValues(alpha: 0.16);
     final delBg = Colors.red.withValues(alpha: 0.16);
     final modBg = Colors.orange.withValues(alpha: 0.16);
@@ -784,6 +817,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (mounted) {
       setState(() {
         _blocks = blocks;
+        _movedEnds = movedEnds;
         _navIndex = -1;
         _expandedFolds.clear();
         // 块数变了：聚焦下标越界就退出聚焦，否则保持在原块上。
@@ -1043,9 +1077,39 @@ class _TextDiffPageState extends State<TextDiffPage> {
       dst.replaceRange(dstStartOff, dstEndOff, srcText);
       _compare();
       _toast(localizations.diffApplied);
+      _advanceAfterApply(b, fromLeft: fromLeft);
     } catch (e) {
       _toast('${localizations.fail}: $e');
     }
+  }
+
+  /// 接受这一块之后，自动落到「原位置之后的下一处」差异。
+  ///
+  /// 逐块处理时最烦的就是每接受一次都要手动点一下「下一处」——
+  /// 尤其是「用右侧」连点十几块（Beyond Compare / WinMerge 默认都会自动前进）。
+  ///
+  /// 块下标在内容变化后是不可靠的（接受后这一块可能整块消失、后面的块下标全部前移），
+  /// 所以要按「没被改动的那一侧的行号」重新定位：用左侧覆盖右侧时左侧不动、
+  /// 用右侧覆盖左侧时右侧不动，拿稳定那侧的起点往后找第一块就是原位置。
+  void _advanceAfterApply(DiffBlock b, {required bool fromLeft}) {
+    if (!_autoAdvance || _blocks.isEmpty) return;
+    final base = fromLeft ? b.leftStart : b.rightStart;
+    var target = -1;
+    for (var i = 0; i < _blocks.length; i++) {
+      final start = fromLeft ? _blocks[i].leftStart : _blocks[i].rightStart;
+      if (start > base) {
+        target = i;
+        break;
+      }
+    }
+    // 后面没有了就停在最后一处，不绕回开头（绕回去看着像死循环，还容易误改）。
+    if (target < 0) {
+      if (_blocks.length <= 1) return;
+      target = _blocks.length - 1;
+    }
+    if (target == _navIndex) return;
+    setState(() => _navIndex = target);
+    _jumpToBlock(target);
   }
 
   // ---------- 其它操作 ----------
@@ -1893,6 +1957,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'wordDiff':
             setState(() => _wordDiff = !_wordDiff);
             _compare();
+          case 'autoAdvance':
+            setState(() => _autoAdvance = !_autoAdvance);
+          case 'detectMoved':
+            setState(() => _detectMoved = !_detectMoved);
+            _compare();
           case 'gotoLine':
             unawaited(_gotoLineDialog());
           case 'gotoBlock':
@@ -1967,6 +2036,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'wordDiff',
             checked: _wordDiff,
             child: Text(localizations.diffWordDiff)),
+        CheckedPopupMenuItem(
+            value: 'autoAdvance',
+            checked: _autoAdvance,
+            child: Text(localizations.diffAutoAdvance)),
+        CheckedPopupMenuItem(
+            value: 'detectMoved',
+            checked: _detectMoved,
+            child: Text(localizations.diffDetectMoved)),
         const PopupMenuDivider(),
         PopupMenuItem<String>(
             enabled: false,
@@ -2124,7 +2201,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                     style: TextStyle(fontSize: 12, color: theme.colorScheme.primary)),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(_blockSummary(b),
+                  child: Text(_blockSummary(b, index: idx),
                       style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
                 ),
               ]),
@@ -2192,13 +2269,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 块的一行摘要：`修改 2 · 新增 1 · 删除 1`（和差异列表里的口径一致）。
-  String _blockSummary(DiffBlock b) {
+  /// 按行切文本（空文本算 0 行，与 diffLines 的口径一致）。
+  static List<String> _splitLines(String t) =>
+      t.isEmpty ? const <String>[] : t.split('\n');
+
+  String _blockSummary(DiffBlock b, {int? index}) {
     final parts = <String>[];
     if (b.pairs.isNotEmpty) parts.add('${localizations.diffModified} ${b.pairs.length}');
     final added = b.rightLines.length - b.pairs.length;
     final deleted = b.leftLines.length - b.pairs.length;
     if (added > 0) parts.add('${localizations.diffAdded} $added');
     if (deleted > 0) parts.add('${localizations.diffDeleted} $deleted');
+    // 搬家标记：让人一眼看出「这块不是新增、是从别处挪过来的」。
+    if (index != null && _movedEnds.contains(index)) {
+      parts.add('↕ ${localizations.diffMoved}');
+    }
     return parts.isEmpty ? '${b.leftLines.length}/${b.rightLines.length}' : parts.join(' · ');
   }
 
@@ -4022,12 +4107,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (_, i) {
                   final b = _blocks[i];
-                  final added = b.rightLines.length - b.pairs.length;
-                  final deleted = b.leftLines.length - b.pairs.length;
-                  final parts = <String>[];
-                  if (b.pairs.isNotEmpty) parts.add('${localizations.diffModified} ${b.pairs.length}');
-                  if (added > 0) parts.add('${localizations.diffAdded} $added');
-                  if (deleted > 0) parts.add('${localizations.diffDeleted} $deleted');
+                  // 与长按菜单同一套口径（含「↕ 搬家」标记），别在这里再写一份。
+                  final parts = _blockSummary(b, index: i);
                   final seen = _reviewed.contains(i);
                   return ListTile(
                     dense: true,
@@ -4061,7 +4142,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                       ],
                     ),
                     title: Text(
-                      'L${b.leftStart + 1} ↔ R${b.rightStart + 1}   ${parts.join(' · ')}'
+                      'L${b.leftStart + 1} ↔ R${b.rightStart + 1}   $parts'
                       '${_blockCharDelta(b)}',
                       style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace'),
                     ),

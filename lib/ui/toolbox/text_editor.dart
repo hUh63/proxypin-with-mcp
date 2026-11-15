@@ -681,6 +681,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 多选是「针对某几个位置」的状态，换文档就失效了。
       _multiSel.clear();
       _multiWord = '';
+      // 「智能扩展」的层级栈存的是上一份文档的偏移，切文档必须清。
+      _selStack.clear();
       _sniffTimer?.cancel();
       if (_smoothAuto) {
         final limit = _prefs.autoPageSize > 0 ? _prefs.autoPageSize : _kSmoothThreshold;
@@ -924,6 +926,24 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _refreshExtraHighlights();
     setState(() {});
     _toast(localizations.editorMultiSelCount('${ranges.length}'));
+  }
+
+  /// 智能扩展选区用过的层级栈（收缩时按原路退回）。
+  final List<({int start, int end})> _selStack = <({int start, int end})>[];
+
+  /// 收缩上次「智能扩展」退回去（VS Code 的 Shrink Selection，Shift+Alt+←）。
+  void _shrinkSelection() {
+    final controller = _controller;
+    if (controller == null) return;
+    if (_selStack.isEmpty) {
+      _toast(localizations.editorNoAvailableCommand);
+      return;
+    }
+    final prev = _selStack.removeLast();
+    controller.selection = prev.start == prev.end
+        ? TextSelection.collapsed(offset: prev.start)
+        : TextSelection(baseOffset: prev.start, extentOffset: prev.end);
+    setState(() {});
   }
 
   /// 语言是嗅探来的：内容首行/结构变了（例如本来空的 .txt 里粘进一段 JSON），
@@ -7023,6 +7043,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (lineEnd < 0) lineEnd = text.length;
 
     void select(int a, int b) {
+      // 压栈：让「收缩选区」按原路退回（VS Code 的 Shrink Selection）。
+      // 上限 40 层，反复扩也不会把栈撑大。
+      if (_selStack.length >= 40) _selStack.removeAt(0);
+      _selStack.add((start: start, end: end));
       controller.selection = TextSelection(
           baseOffset: a.clamp(0, text.length), extentOffset: b.clamp(0, text.length));
     }
@@ -11181,6 +11205,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _menuItem('toggleBookmark', Icons.bookmark_add_outlined, loc.editorToggleBookmark),
         _menuItem('bookmarks', Icons.bookmarks_outlined, loc.editorBookmarks),
         _menuItem('clearBookmarks', Icons.bookmark_remove_outlined, loc.editorClearBookmarks),
+        _menuItem('shrinkSel', Icons.close_fullscreen, loc.editorShrinkSelection),
         _menuItem('nextOccurrence', Icons.select_all, loc.editorSelectNext),
         _menuItem('selectAllOccurrences', Icons.select_all,
             loc.editorSelectAllOccurrences),
@@ -11314,6 +11339,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _showSymbols();
         case 'nextOccurrence':
           _addNextOccurrence();
+        case 'shrinkSel':
+          _shrinkSelection();
         case 'selectAllOccurrences':
           _selectAllOccurrences();
         case 'gotoDef':
