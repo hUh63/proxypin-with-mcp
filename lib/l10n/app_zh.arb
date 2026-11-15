@@ -5463,5 +5463,8 @@
   "editorOrganizeImports": "整理 import",
   "editorOrganizeNoImports": "文件开头没找到导入块",
   "editorOrganizeHasComment": "导入块里有注释，不自动整理",
-  "editorOrganizeDone": "已整理 {n} 行导入"
+  "editorOrganizeDone": "已整理 {n} 行导入",
+  "diffFilterAll": "全部",
+  "diffFilterUnseen": "未看",
+  "diffFilterEmpty": "这个筛选下没有差异"
 }

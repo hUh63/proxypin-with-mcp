@@ -3773,5 +3773,8 @@
   "editorOrganizeImports": "Rapikan import",
   "editorOrganizeNoImports": "Tidak ada blok import di atas",
   "editorOrganizeHasComment": "Ada komentar di blok import — dilewati",
-  "editorOrganizeDone": "{n} baris import diurutkan"
+  "editorOrganizeDone": "{n} baris import diurutkan",
+  "diffFilterAll": "Semua",
+  "diffFilterUnseen": "Belum",
+  "diffFilterEmpty": "Tidak ada yang cocok"
 }

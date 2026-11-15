@@ -3773,5 +3773,8 @@
   "editorOrganizeImports": "จัดเรียง import",
   "editorOrganizeNoImports": "ไม่พบบล็อก import ด้านบน",
   "editorOrganizeHasComment": "มีคอมเมนต์ในบล็อก — ข้าม",
-  "editorOrganizeDone": "เรียง {n} บรรทัด import แล้ว"
+  "editorOrganizeDone": "เรียง {n} บรรทัด import แล้ว",
+  "diffFilterAll": "ทั้งหมด",
+  "diffFilterUnseen": "ยังไม่ดู",
+  "diffFilterEmpty": "ไม่มีรายการที่ตรงกัน"
 }

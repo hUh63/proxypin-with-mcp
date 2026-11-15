@@ -3773,5 +3773,8 @@
   "editorOrganizeImports": "Sắp xếp import",
   "editorOrganizeNoImports": "Không thấy khối import ở đầu tệp",
   "editorOrganizeHasComment": "Có chú thích trong khối import — bỏ qua",
-  "editorOrganizeDone": "Đã sắp xếp {n} dòng import"
+  "editorOrganizeDone": "Đã sắp xếp {n} dòng import",
+  "diffFilterAll": "Tất cả",
+  "diffFilterUnseen": "Chưa xem",
+  "diffFilterEmpty": "Không có mục nào khớp"
 }

@@ -5463,5 +5463,8 @@
   "editorOrganizeImports": "整理 import",
   "editorOrganizeNoImports": "檔案開頭找不到匯入區塊",
   "editorOrganizeHasComment": "匯入區塊裡有註解，不自動整理",
-  "editorOrganizeDone": "已整理 {n} 行匯入"
+  "editorOrganizeDone": "已整理 {n} 行匯入",
+  "diffFilterAll": "全部",
+  "diffFilterUnseen": "未看",
+  "diffFilterEmpty": "這個篩選下沒有差異"
 }

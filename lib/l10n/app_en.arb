@@ -6267,5 +6267,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "diffFilterAll": "All",
+  "diffFilterUnseen": "Unread",
+  "diffFilterEmpty": "Nothing matches this filter"
 }

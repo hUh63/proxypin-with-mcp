@@ -3773,5 +3773,8 @@
   "editorOrganizeImports": "Organizar importaciones",
   "editorOrganizeNoImports": "No se encontró bloque de importaciones arriba",
   "editorOrganizeHasComment": "Hay comentarios en el bloque: omitido",
-  "editorOrganizeDone": "{n} líneas de importación ordenadas"
+  "editorOrganizeDone": "{n} líneas de importación ordenadas",
+  "diffFilterAll": "Todo",
+  "diffFilterUnseen": "Sin ver",
+  "diffFilterEmpty": "Nada coincide con el filtro"
 }
