@@ -66,6 +66,14 @@ class _FuzzDictionaryDialogState extends State<FuzzDictionaryDialog> {
     );
     if (files.isEmpty) return;
     final file = files.first;
+    // 字典文件可能是几百 MB 的词表：readAsBytes + 切行会把内存顶爆，先看大小。
+    final len = await file.xFile.length();
+    if (len > 20 * 1024 * 1024) {
+      if (mounted) {
+        FlutterToastr.show(AppLocalizations.of(context)!.editorTooLargeToProcess, context, duration: 3);
+      }
+      return;
+    }
     final bytes = await file.readAsBytes();
     final text = utf8.decode(bytes, allowMalformed: true);
     final name = file.name.replaceAll(RegExp(r'\.[A-Za-z0-9]+$'), '');

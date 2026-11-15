@@ -129,6 +129,12 @@ class _HashAuditPageState extends State<HashAuditPage> {
     try {
       final picked = await FilePicker.pickFile(type: FileType.any);
       if (picked == null) return;
+      // 字典文件没有大小限制：随手选一个几百 MB 的文本，readAsBytes + 切行会直接把内存顶爆。
+      final len = await picked.xFile.length();
+      if (len > 20 * 1024 * 1024) {
+        if (mounted) _toast(loc.editorTooLargeToProcess, color: Colors.orange);
+        return;
+      }
       final bytes = await picked.xFile.readAsBytes();
       if (!mounted) return;
       final text = utf8.decode(bytes, allowMalformed: true);
