@@ -291,6 +291,7 @@ TableDiffResult compareTables(
   String? keyColumn,
   bool ignoreCase = false,
   bool ignoreWhitespace = false,
+  bool ignoreRowOrder = false,
 }) {
   final columns = _alignColumns(left.headers, right.headers);
   final leftKeyIndex = _resolveKeyColumn(left.headers, keyColumn);
