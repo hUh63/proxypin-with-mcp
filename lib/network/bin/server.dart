@@ -103,8 +103,25 @@ class ProxyServer {
     }
   }
 
-  /// 启动代理服务
-  Future<Server> start() async {
+  /// 在飞的那次启动（并发调用共享同一次）。
+  Future<Server>? _startFuture;
+
+  /// 启动代理服务（幂等）。
+  ///
+  /// 连点开关、或者 MCP 的 start_proxy 和界面同时调，会 bind 两次同一个端口：
+  /// 第二次必然 EADDRINUSE，用户看到的就是一句英文错误，状态还可能停在「已启动」。
+  /// 这里让并发调用共享同一次启动结果。
+  Future<Server> start() {
+    final inflight = _startFuture;
+    if (inflight != null) return inflight;
+    final fut = _startServer();
+    _startFuture = fut;
+    return fut.whenComplete(() {
+      if (identical(_startFuture, fut)) _startFuture = null;
+    });
+  }
+
+  Future<Server> _startServer() async {
     // 启动 QUIC 元数据探测监听（VPN 层会将 UDP:443 首包抄送到本机端口）
     unawaited(_startQuicProbeListener());
     // 启动 WebSocket 流量推送服务（上游 #756）

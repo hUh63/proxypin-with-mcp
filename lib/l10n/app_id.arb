@@ -3790,5 +3790,7 @@
   "tableDiffOrderIgnoredByKey": "Tidak dipakai bila kolom kunci dipilih",
   "vpnRestartToApply": "Tersimpan — mulai ulang VPN untuk menerapkan",
   "tableDiffIgnoreColumns": "Abaikan kolom",
-  "diffRestoreTooBig": "Perbandingan terakhir terlalu besar — pilih berkas lagi"
+  "diffRestoreTooBig": "Perbandingan terakhir terlalu besar — pilih berkas lagi",
+  "editorCompareWithDoc": "Bandingkan dengan berkas lain yang terbuka",
+  "editorNoOtherDoc": "Tidak ada berkas lain yang terbuka"
 }

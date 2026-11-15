@@ -5480,5 +5480,7 @@
   "tableDiffOrderIgnoredByKey": "選了主鍵欄時此項不生效",
   "vpnRestartToApply": "已儲存，重開 VPN 後生效",
   "tableDiffIgnoreColumns": "忽略欄",
-  "diffRestoreTooBig": "上次對比的內容太大沒有儲存，請重新選擇檔案"
+  "diffRestoreTooBig": "上次對比的內容太大沒有儲存，請重新選擇檔案",
+  "editorCompareWithDoc": "與另一個已開啟的檔案比較",
+  "editorNoOtherDoc": "沒有其他已開啟的檔案"
 }

@@ -3790,5 +3790,7 @@
   "tableDiffOrderIgnoredByKey": "No se usa si hay columna clave",
   "vpnRestartToApply": "Guardado: reinicia la VPN para aplicar",
   "tableDiffIgnoreColumns": "Ignorar columnas",
-  "diffRestoreTooBig": "La comparación anterior era muy grande: vuelve a elegir los archivos"
+  "diffRestoreTooBig": "La comparación anterior era muy grande: vuelve a elegir los archivos",
+  "editorCompareWithDoc": "Comparar con otro archivo abierto",
+  "editorNoOtherDoc": "No hay otro archivo abierto"
 }

@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.67.327 (2026-11-16) — 10 个菜单项「点了没反应」（真 bug）
+
+编辑器里有**两个同形状的 switch**：`_runFloatAction`（长按文本弹出的浮动菜单）和
+`_menuAction`（工具栏分类菜单 + 命令面板的统一入口）。前几轮我加新功能时锚点撞到了
+前一个，于是这些 case 只写进了浮动菜单：
+
+`surroundWith`（包裹）、`emmet`（缩写展开）、`extractVar`（提取变量）、
+`inlineVar`（内联变量）、`organizeImports`（整理 import）、`foldCurrent` /
+`unfoldCurrent`（折叠当前块）、`symbolBar` / `cursorBar` / `statusBarTop`（三个视图开关）。
+
+从工具栏点它们完全没反应、也没有任何提示。现在全部补进 `_menuAction`。
+
+顺带：
+- `_menucheck.py` 升级成按**函数范围**核对 `_menuAction` 的 case（以前只查「整个文件里
+  有没有这个 case」，浮动菜单里有也算通过，正好漏掉这类错位）；
+- 新增「与另一个已打开的文件比较」（VS Code 的 Compare with...）：多文档开着时，
+  不用再跑去对比页重新选文件；
+- `ProxyServer.start()` 改成幂等：连点开关或 MCP 与界面同时启动时，以前会 bind 两次
+  同一端口、第二次必然 EADDRINUSE；
+- 编辑器的保存串行化：自动保存/手动保存/保存全部同时进来时，两次 `writeAsBytes`
+  并发，先发起的可能后落地，把新内容覆盖成上一版（真的会丢改动）。
+
 ## v1.67.326 (2026-11-15) — 两个「选文件没看大小」的入口
 
 接着上一版的大文件排查：哈希审计的自定义字典、Fuzz 字典导入都是「用户随手选一个

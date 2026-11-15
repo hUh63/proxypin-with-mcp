@@ -6291,5 +6291,7 @@
   "tableDiffOrderIgnoredByKey": "Not used while a key column is selected",
   "vpnRestartToApply": "Saved — restart the VPN to apply",
   "tableDiffIgnoreColumns": "Ignore columns",
-  "diffRestoreTooBig": "Last comparison was too large to keep — pick the files again"
+  "diffRestoreTooBig": "Last comparison was too large to keep — pick the files again",
+  "editorCompareWithDoc": "Compare with another open file",
+  "editorNoOtherDoc": "No other file is open"
 }

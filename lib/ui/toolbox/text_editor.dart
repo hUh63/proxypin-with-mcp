@@ -2523,6 +2523,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_surroundWith());
       case 'emmet':
         _expandEmmetAtCursor();
+      case 'compareDoc':
+        unawaited(_compareWithOpenDoc());
       case 'inlineVar':
         _inlineVariable();
       case 'organizeImports':
@@ -4372,6 +4374,69 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final blockEnd = idx.last + 1 < lines.length ? _offsetOfLine(text, idx.last + 1) : text.length;
     c.replaceRange(blockStart, blockEnd, idx.last + 1 < lines.length ? '$next\n' : next);
     _toast(localizations.editorOrganizeDone(idx.length));
+  }
+
+  /// 与另一个「已打开的文档」比较（VS Code 的 Compare with...）。
+  ///
+  /// 之前只有「与磁盘比较」「与剪贴板比较」：想看「刚才那个文件跟这份差在哪」，
+  /// 得先记住路径、再跑去对比页重新选一遍文件。多文档开着时这一步完全可以省掉。
+  Future<void> _compareWithOpenDoc() async {
+    final docs = _docs.docs.where((d) => !identical(d, _doc)).toList(growable: false);
+    if (docs.isEmpty) {
+      _toast(localizations.editorNoOtherDoc);
+      return;
+    }
+    final theme = Theme.of(context);
+    final picked = await showModalBottomSheet<EditorDocument>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
+            child: Row(children: <Widget>[
+              Expanded(
+                child: Text(localizations.editorCompareWithDoc,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ]),
+          ),
+          Flexible(
+            child: ListView(shrinkWrap: true, children: <Widget>[
+              for (final d in docs)
+                ListTile(
+                  dense: true,
+                  leading: Icon(Icons.description_outlined,
+                      size: 18,
+                      color: d.dirty ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant),
+                  title: Text(d.name,
+                      style: const TextStyle(fontSize: 13.5), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: d.path == null
+                      ? null
+                      : Text(d.path!, style: const TextStyle(fontSize: 11), maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                  onTap: () => Navigator.of(ctx).pop(d),
+                ),
+            ]),
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final current = _controller?.text ?? '';
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => TextDiffPage(
+        persist: false,
+        initialLeft: picked.text,
+        initialLeftName: picked.name,
+        initialRight: current,
+        initialRightName: _doc?.name ?? '',
+      ),
+    ));
   }
 
   /// 内联变量（VS / IntelliJ 的 Inline Variable）：把 `var x = expr;` 的 x
@@ -10571,7 +10636,36 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 把某份文档写回它自己的路径（不是当前文档也能存）。
+  /// 同一文件的保存串行化队列（path → 在飞的那次保存）。
+  ///
+  /// 自动保存（2 秒防抖）、手动保存、保存全部、退出时保存会同时进来：
+  /// 两次 `writeAsBytes` 并发时，**先发起的可能后落地**，把刚保存的新内容
+  /// 覆盖成上一版——这是真的会丢改动，不只是慢一点。
+  final Map<String, Future<void>> _saveChains = <String, Future<void>>{};
+
   Future<bool> _saveDoc(EditorDocument doc) async {
+    final path = doc.path;
+    if (path == null || path.isEmpty) return false;
+    final prev = _saveChains[path];
+    final mine = Completer<void>();
+    // 先把 future 挂上去，后来的调用才能看到「有人在写」。
+    _saveChains[path] = mine.future;
+    if (prev != null) {
+      try {
+        await prev;
+      } catch (_) {
+        // 前一次失败不影响这一次：接着写就是了。
+      }
+    }
+    try {
+      return await _saveDocNow(doc);
+    } finally {
+      mine.complete();
+      if (identical(_saveChains[path], mine.future)) _saveChains.remove(path);
+    }
+  }
+
+  Future<bool> _saveDocNow(EditorDocument doc) async {
     final path = doc.path;
     if (path == null || path.isEmpty) return false;
     // 「保存全部 / 自动保存 / 退出前保存」也走这里，必须遵守和单文件保存一样的规则，
@@ -11504,6 +11598,36 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _addNextOccurrence();
         case 'shrinkSel':
           _shrinkSelection();
+        // 下面这批以前只写在「长按浮动菜单」的那个 switch 里，工具栏分类菜单点了
+        // 完全没反应（静默）—— 两个 switch 共用一个实现，缺一个 case 就等于功能没接上。
+        case 'compareDoc':
+          unawaited(_compareWithOpenDoc());
+        case 'surroundWith':
+          unawaited(_surroundWith());
+        case 'emmet':
+          _expandEmmetAtCursor();
+        case 'extractVar':
+          unawaited(_extractVariable());
+        case 'inlineVar':
+          _inlineVariable();
+        case 'organizeImports':
+          _organizeImports();
+        case 'foldCurrent':
+          _foldAtCaret(collapse: true);
+        case 'unfoldCurrent':
+          _foldAtCaret(collapse: false);
+        case 'symbolBar':
+          final nextSymbolBar = !_prefs.symbolBar;
+          unawaited(TextEditorPrefsStore.update(_prefs.copyWith(symbolBar: nextSymbolBar)));
+          setState(() {});
+        case 'cursorBar':
+          final nextCursorBar = !_prefs.cursorBar;
+          unawaited(TextEditorPrefsStore.update(_prefs.copyWith(cursorBar: nextCursorBar)));
+          setState(() {});
+        case 'statusBarTop':
+          final nextStatusTop = !_prefs.statusBarTop;
+          unawaited(TextEditorPrefsStore.update(_prefs.copyWith(statusBarTop: nextStatusTop)));
+          setState(() {});
         case 'selectAllOccurrences':
           _selectAllOccurrences();
         case 'gotoDef':

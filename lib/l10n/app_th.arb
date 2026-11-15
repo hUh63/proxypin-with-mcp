@@ -3790,5 +3790,7 @@
   "tableDiffOrderIgnoredByKey": "ไม่ใช้เมื่อเลือกคอลัมน์คีย์",
   "vpnRestartToApply": "บันทึกแล้ว — รีสตาร์ท VPN เพื่อให้มีผล",
   "tableDiffIgnoreColumns": "ไม่สนคอลัมน์",
-  "diffRestoreTooBig": "การเปรียบเทียบครั้งก่อนใหญ่เกินไป — เลือกไฟล์ใหม่"
+  "diffRestoreTooBig": "การเปรียบเทียบครั้งก่อนใหญ่เกินไป — เลือกไฟล์ใหม่",
+  "editorCompareWithDoc": "เปรียบเทียบกับไฟล์ที่เปิดอยู่อื่น",
+  "editorNoOtherDoc": "ไม่มีไฟล์อื่นเปิดอยู่"
 }
