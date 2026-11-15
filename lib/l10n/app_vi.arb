@@ -3769,5 +3769,9 @@
   "editorInlineMultiUse": "Còn {n} chỗ dùng — hãy làm thủ công",
   "editorInlineDone": "Đã nội tuyến biến",
   "diffOnlyLeft": "Chỉ bên trái",
-  "diffOnlyRight": "Chỉ bên phải"
+  "diffOnlyRight": "Chỉ bên phải",
+  "editorOrganizeImports": "Sắp xếp import",
+  "editorOrganizeNoImports": "Không thấy khối import ở đầu tệp",
+  "editorOrganizeHasComment": "Có chú thích trong khối import — bỏ qua",
+  "editorOrganizeDone": "Đã sắp xếp {n} dòng import"
 }

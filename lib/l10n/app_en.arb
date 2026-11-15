@@ -6256,5 +6256,16 @@
   },
   "editorInlineDone": "Variable inlined",
   "diffOnlyLeft": "Only in left",
-  "diffOnlyRight": "Only in right"
+  "diffOnlyRight": "Only in right",
+  "editorOrganizeImports": "Organize imports",
+  "editorOrganizeNoImports": "No import block found at the top",
+  "editorOrganizeHasComment": "Comments inside the import block — skipped",
+  "editorOrganizeDone": "Sorted {n} import lines",
+  "@editorOrganizeDone": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

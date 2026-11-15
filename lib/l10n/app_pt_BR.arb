@@ -3770,5 +3770,9 @@
   "editorInlineMultiUse": "Usado {n} vezes mais — faça manualmente",
   "editorInlineDone": "Variável inlinada",
   "diffOnlyLeft": "Só à esquerda",
-  "diffOnlyRight": "Só na direita"
+  "diffOnlyRight": "Só na direita",
+  "editorOrganizeImports": "Organizar importações",
+  "editorOrganizeNoImports": "Nenhum bloco de importação no topo",
+  "editorOrganizeHasComment": "Há comentários no bloco: ignorado",
+  "editorOrganizeDone": "{n} linhas de importação ordenadas"
 }

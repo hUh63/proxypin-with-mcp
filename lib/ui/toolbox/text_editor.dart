@@ -2526,6 +2526,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _expandEmmetAtCursor();
       case 'inlineVar':
         _inlineVariable();
+      case 'organizeImports':
+        _organizeImports();
       case 'extractVar':
         unawaited(_extractVariable());
       case 'foldCurrent':
@@ -4289,6 +4291,86 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return id[0].toLowerCase() + id.substring(1);
     }
     return 'value';
+  }
+
+  /// 整理导入块（VS Code 的 Organize Imports）。
+  ///
+  /// 只重排**文件开头那段连续的导入行**，按 Dart 惯例分三组：
+  /// `dart:` → `package:` → 其它（含相对路径），组内按字母序，并去掉完全重复的行。
+  ///
+  /// 刻意不碰导入行本身的内容 —— 只排序，做错了撤销一下就能回去。
+  /// 块里只要出现注释就放弃：注释归哪个 import 说不清，挪错了比不整理更烦。
+  void _organizeImports() {
+    final c = _controller;
+    if (c == null) return;
+    final text = c.text;
+    if (text.isEmpty) return;
+    final lines = text.split('\n');
+    final imp = RegExp(r'^\s*(?:import|export|using|require|from|#include|use)\s');
+
+    final idx = <int>[];
+    var started = false;
+    for (var i = 0; i < lines.length && i < 400; i++) {
+      final t = lines[i].trim();
+      if (imp.hasMatch(lines[i])) {
+        started = true;
+        idx.add(i);
+      } else if (t.isEmpty) {
+        // 块内的空行允许（整理时会被合并）；块外开头遇到空行就继续往下找。
+        continue;
+      } else if (!started && (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*'))) {
+        continue; // 文件头注释，跳过继续找
+      } else {
+        break;
+      }
+    }
+    if (idx.isEmpty) {
+      _toast(localizations.editorOrganizeNoImports);
+      return;
+    }
+    // 块内出现注释就拒绝（见函数注释）。
+    for (var i = idx.first; i <= idx.last; i++) {
+      final t = lines[i].trim();
+      if (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*')) {
+        _toast(localizations.editorOrganizeHasComment);
+        return;
+      }
+    }
+
+    int groupOf(String line) {
+      final t = line.trim();
+      if (t.contains('dart:')) return 0;
+      if (t.contains('package:')) return 1;
+      if (RegExp(r'''['"]\.{1,2}/''').hasMatch(t)) return 3;
+      return 2;
+    }
+
+    final seen = <String>{};
+    final buckets = <int, List<String>>{};
+    for (final i in idx) {
+      final t = lines[i].trim();
+      if (!seen.add(t)) continue; // 去掉完全重复的导入
+      buckets.putIfAbsent(groupOf(t), () => <String>[]).add(t);
+    }
+    final out = <String>[];
+    for (var g = 0; g <= 3; g++) {
+      final items = buckets[g];
+      if (items == null || items.isEmpty) continue;
+      items.sort();
+      if (out.isNotEmpty) out.add(''); // 组之间空一行（Dart 惯例）
+      out.addAll(items);
+    }
+    final next = out.join('\n');
+    final oldBlock = lines.sublist(idx.first, idx.last + 1).join('\n');
+    if (next == oldBlock) {
+      _toast(localizations.editorOrganizeDone(0));
+      return;
+    }
+
+    final blockStart = _offsetOfLine(text, idx.first);
+    final blockEnd = idx.last + 1 < lines.length ? _offsetOfLine(text, idx.last + 1) : text.length;
+    c.replaceRange(blockStart, blockEnd, idx.last + 1 < lines.length ? '$next\n' : next);
+    _toast(localizations.editorOrganizeDone(idx.length));
   }
 
   /// 内联变量（VS / IntelliJ 的 Inline Variable）：把 `var x = expr;` 的 x
@@ -11301,6 +11383,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
           _menuItem('emmet', Icons.html, loc.editorEmmet),
           _menuItem('inlineVar', Icons.input_outlined, loc.editorInlineVariable),
+          _menuItem('organizeImports', Icons.sort, loc.editorOrganizeImports),
           _menuItem('extractVar', Icons.input, loc.editorExtractVariable),
           _menuItem('foldCurrent', Icons.unfold_less, loc.editorFoldCurrent),
           _menuItem('unfoldCurrent', Icons.unfold_more, loc.editorUnfoldCurrent),

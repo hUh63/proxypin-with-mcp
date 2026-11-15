@@ -3769,5 +3769,9 @@
   "editorInlineMultiUse": "Dipakai {n} kali lagi — lakukan manual",
   "editorInlineDone": "Variabel di-inline",
   "diffOnlyLeft": "Hanya di kiri",
-  "diffOnlyRight": "Hanya di kanan"
+  "diffOnlyRight": "Hanya di kanan",
+  "editorOrganizeImports": "Rapikan import",
+  "editorOrganizeNoImports": "Tidak ada blok import di atas",
+  "editorOrganizeHasComment": "Ada komentar di blok import — dilewati",
+  "editorOrganizeDone": "{n} baris import diurutkan"
 }

@@ -3769,5 +3769,9 @@
   "editorInlineMultiUse": "ใช้่อีก {n} ครั้ง — ทำเอง",
   "editorInlineDone": "แทรกตัวแปรแล้ว",
   "diffOnlyLeft": "เฉพาะด้านซ้าย",
-  "diffOnlyRight": "เฉพาะด้านขวา"
+  "diffOnlyRight": "เฉพาะด้านขวา",
+  "editorOrganizeImports": "จัดเรียง import",
+  "editorOrganizeNoImports": "ไม่พบบล็อก import ด้านบน",
+  "editorOrganizeHasComment": "มีคอมเมนต์ในบล็อก — ข้าม",
+  "editorOrganizeDone": "เรียง {n} บรรทัด import แล้ว"
 }

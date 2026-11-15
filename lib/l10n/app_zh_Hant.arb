@@ -5459,5 +5459,9 @@
   "editorInlineMultiUse": "還有 {n} 處使用，請手動內聯",
   "editorInlineDone": "已內聯變數",
   "diffOnlyLeft": "只在左側",
-  "diffOnlyRight": "只在右側"
+  "diffOnlyRight": "只在右側",
+  "editorOrganizeImports": "整理 import",
+  "editorOrganizeNoImports": "檔案開頭找不到匯入區塊",
+  "editorOrganizeHasComment": "匯入區塊裡有註解，不自動整理",
+  "editorOrganizeDone": "已整理 {n} 行匯入"
 }
