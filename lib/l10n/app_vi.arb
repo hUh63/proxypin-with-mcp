@@ -3767,5 +3767,7 @@
   "editorInlineNeedSymbol": "Đặt con trỏ lên tên biến trước",
   "editorInlineNoDecl": "Không tìm thấy khai báo có giá trị ở trên",
   "editorInlineMultiUse": "Còn {n} chỗ dùng — hãy làm thủ công",
-  "editorInlineDone": "Đã nội tuyến biến"
+  "editorInlineDone": "Đã nội tuyến biến",
+  "diffOnlyLeft": "Chỉ bên trái",
+  "diffOnlyRight": "Chỉ bên phải"
 }

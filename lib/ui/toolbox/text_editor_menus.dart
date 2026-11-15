@@ -1625,7 +1625,7 @@ class _LanguageManagerDialogState extends State<LanguageManagerDialog> with Sing
     final loc = AppLocalizations.of(context)!;
     try {
       final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
-      if (picked == null || picked.isEmpty) return;
+      if (picked.isEmpty) return;
       final text = await picked.single.xFile.readAsString();
       final (langs, enabled) = CustomLangStore.parseExport(text);
       if (langs.isEmpty && enabled == null) {

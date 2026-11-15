@@ -5457,5 +5457,7 @@
   "editorInlineNeedSymbol": "先將游標放到變數名稱上",
   "editorInlineNoDecl": "上方找不到「名稱 = 運算式」形式的宣告",
   "editorInlineMultiUse": "還有 {n} 處使用，請手動內聯",
-  "editorInlineDone": "已內聯變數"
+  "editorInlineDone": "已內聯變數",
+  "diffOnlyLeft": "只在左側",
+  "diffOnlyRight": "只在右側"
 }

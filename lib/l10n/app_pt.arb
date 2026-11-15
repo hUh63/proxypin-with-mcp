@@ -3768,5 +3768,7 @@
   "editorInlineNeedSymbol": "Coloque o cursor sobre o nome de uma variável",
   "editorInlineNoDecl": "Nenhuma declaração com valor acima",
   "editorInlineMultiUse": "Usado {n} vezes mais — faça manualmente",
-  "editorInlineDone": "Variável inlinada"
+  "editorInlineDone": "Variável inlinada",
+  "diffOnlyLeft": "Só a esquerda",
+  "diffOnlyRight": "Só à direita"
 }

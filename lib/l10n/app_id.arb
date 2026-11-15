@@ -3767,5 +3767,7 @@
   "editorInlineNeedSymbol": "Letakkan kursor pada nama variabel",
   "editorInlineNoDecl": "Tidak ada deklarasi bernilai di atas",
   "editorInlineMultiUse": "Dipakai {n} kali lagi — lakukan manual",
-  "editorInlineDone": "Variabel di-inline"
+  "editorInlineDone": "Variabel di-inline",
+  "diffOnlyLeft": "Hanya di kiri",
+  "diffOnlyRight": "Hanya di kanan"
 }

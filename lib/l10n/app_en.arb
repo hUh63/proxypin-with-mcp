@@ -6254,5 +6254,7 @@
       }
     }
   },
-  "editorInlineDone": "Variable inlined"
+  "editorInlineDone": "Variable inlined",
+  "diffOnlyLeft": "Only in left",
+  "diffOnlyRight": "Only in right"
 }

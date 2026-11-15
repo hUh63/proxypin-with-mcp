@@ -4016,6 +4016,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 ),
               ]),
             ),
+            // 两段列表：先「只在左侧」（删除），再「只在右侧」（新增）。
+            // section 早就写好了却一直没人调用 —— 结果这个弹窗除标题外整片空白，
+            // 用户以为「没差异」，其实差异都在 items 里没渲染出来。
+            section(loc.diffOnlyLeft, r.onlyLeft, Colors.red, '-');
+            section(loc.diffOnlyRight, r.onlyRight, Colors.green, '+');
             if (r.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),

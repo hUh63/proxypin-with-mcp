@@ -3767,5 +3767,7 @@
   "editorInlineNeedSymbol": "Coloque el cursor sobre un nombre de variable",
   "editorInlineNoDecl": "No se encontró arriba una declaración con valor",
   "editorInlineMultiUse": "Se usa {n} veces más: hazlo manualmente",
-  "editorInlineDone": "Variable insertada"
+  "editorInlineDone": "Variable insertada",
+  "diffOnlyLeft": "Solo en la izquierda",
+  "diffOnlyRight": "Solo en la derecha"
 }

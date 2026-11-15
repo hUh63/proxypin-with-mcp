@@ -5457,5 +5457,7 @@
   "editorInlineNeedSymbol": "先把光标放到变量名上",
   "editorInlineNoDecl": "上方没找到「名字 = 表达式」形式的声明",
   "editorInlineMultiUse": "还有 {n} 处使用，请手动内联",
-  "editorInlineDone": "已内联变量"
+  "editorInlineDone": "已内联变量",
+  "diffOnlyLeft": "只在左侧",
+  "diffOnlyRight": "只在右侧"
 }

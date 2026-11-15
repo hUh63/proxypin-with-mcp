@@ -3767,5 +3767,7 @@
   "editorInlineNeedSymbol": "วางเคอร์เซอร์บนชื่อตัวแปรก่อน",
   "editorInlineNoDecl": "ไม่พบการประกาศค่าด้านบน",
   "editorInlineMultiUse": "ใช้่อีก {n} ครั้ง — ทำเอง",
-  "editorInlineDone": "แทรกตัวแปรแล้ว"
+  "editorInlineDone": "แทรกตัวแปรแล้ว",
+  "diffOnlyLeft": "เฉพาะด้านซ้าย",
+  "diffOnlyRight": "เฉพาะด้านขวา"
 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.67.317 (2026-11-15) — 修「忽略行顺序」弹窗空白（真 bug）
+
+`diffAsMultiset()` 算出来的结果一直是**对的**，但弹窗里负责渲染的 `section()`
+写完之后没人调用它 —— `items` 永远是空的，于是弹窗上只有标题、下面一片空白。
+用户看到的样子就是「点了没反应 / 这两份文件没差异」，其实差异全被算出来了。
+
+静态分析里那条 `unused_element: The declaration 'section' isn't referenced`
+就是它。现在按「只在左侧 / 只在右侧」两段渲染，带原行号和 `-`/`+` 标记。
+
+顺手清掉两处 `picked == null` 判空（`FilePicker.pickFiles` 返回的就是非空 List）
+和工具箱里一个早就没人调用的 `_cipherButton`。
+
 ## v1.67.316 (2026-11-15) — 内联变量
 
 `内联变量`：把 `var x = expr;` 的 x 在**唯一使用处**换成 `(expr)` 并删掉声明行，

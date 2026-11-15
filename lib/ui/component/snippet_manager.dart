@@ -112,7 +112,7 @@ class _SnippetManagerDialogState extends State<SnippetManagerDialog> {
         type: FileType.custom,
         allowedExtensions: const ['json', 'code-snippets', 'txt'],
       );
-      if (picked == null || picked.isEmpty) return;
+      if (picked.isEmpty) return;
       final file = picked.first;
       final bytes = await file.xFile.readAsBytes();
       final text = utf8.decode(bytes, allowMalformed: true);

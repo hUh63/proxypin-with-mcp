@@ -824,15 +824,6 @@ class _ToolboxState extends State<Toolbox> {
     MultiWindow.openWindow(localizations.httpRequest, "RequestEditor", size: Size(960, size.height));
   }
 
-  Widget _cipherButton(String label, String algorithm, IconData icon) {
-    return IconText(
-      onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => CipherPage(initialAlgorithm: algorithm))),
-      icon: icon,
-      text: label,
-      tooltip: localizations.cipherButtonTip(label),
-    );
-  }
 }
 
 class IconText extends StatelessWidget {
