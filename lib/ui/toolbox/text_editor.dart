@@ -4353,7 +4353,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     final uses = wordRe.allMatches(text).length - 1; // 扣掉声明处
     if (uses > 1) {
-      _toast(localizations.editorInlineMultiUse('$uses'));
+      _toast(localizations.editorInlineMultiUse(uses));
       return;
     }
 
