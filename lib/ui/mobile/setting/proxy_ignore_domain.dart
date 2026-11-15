@@ -15,6 +15,8 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:flutter_toastr/flutter_toastr.dart';
+import 'package:proxypin/native/vpn.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/network/util/system_proxy.dart';
@@ -42,7 +44,7 @@ class _ProxyIgnoreDomainPageState extends State<ProxyIgnoreDomainPage> {
     super.initState();
     _controller = TextEditingController(text: widget.configuration.proxyPassDomains);
     _focus.addListener(() {
-      if (!_focus.hasFocus) _save();
+      if (!_focus.hasFocus) _save(notify: true);
     });
   }
 
@@ -54,10 +56,16 @@ class _ProxyIgnoreDomainPageState extends State<ProxyIgnoreDomainPage> {
     super.dispose();
   }
 
-  void _save() {
+  /// [notify]：只在「用户改完失焦」时提示 —— dispose 里也会调这个，
+  /// 那时候页面已经要销毁，弹提示会报错，也确实没意义。
+  void _save({bool notify = false}) {
     if (_controller.text == widget.configuration.proxyPassDomains) return;
     widget.configuration.proxyPassDomains = _controller.text;
     widget.configuration.flushConfig();
+    // 旁路域名只在建立 VPN 时传给原生：VPN 在跑的时候改完不重启等于白改。
+    if (notify && mounted && Vpn.isVpnStarted) {
+      FlutterToastr.show(localizations.vpnRestartToApply, context, duration: 3);
+    }
   }
 
   @override

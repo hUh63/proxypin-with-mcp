@@ -3785,5 +3785,8 @@
   "backupIntervalHours": "Tiap {n} jam",
   "quicProbeSettings": "Probe QUIC",
   "quicProbeEnabled": "Ambil metadata QUIC",
-  "quicProbeEnabledHint": "Membaca SNI dan connection ID dari UDP 443. Berlaku setelah VPN dimulai ulang."
+  "quicProbeEnabledHint": "Membaca SNI dan connection ID dari UDP 443. Berlaku setelah VPN dimulai ulang.",
+  "diffIgnoreRowOrder": "Abaikan urutan baris",
+  "tableDiffOrderIgnoredByKey": "Tidak dipakai bila kolom kunci dipilih",
+  "vpnRestartToApply": "Tersimpan — mulai ulang VPN untuk menerapkan"
 }

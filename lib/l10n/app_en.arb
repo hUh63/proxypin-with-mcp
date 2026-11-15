@@ -6286,5 +6286,8 @@
   },
   "quicProbeSettings": "QUIC probe",
   "quicProbeEnabled": "Capture QUIC metadata",
-  "quicProbeEnabledHint": "Reads SNI and connection IDs from UDP 443. Takes effect after the VPN is restarted."
+  "quicProbeEnabledHint": "Reads SNI and connection IDs from UDP 443. Takes effect after the VPN is restarted.",
+  "diffIgnoreRowOrder": "Ignore row order",
+  "tableDiffOrderIgnoredByKey": "Not used while a key column is selected",
+  "vpnRestartToApply": "Saved — restart the VPN to apply"
 }

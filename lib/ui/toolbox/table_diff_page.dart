@@ -69,6 +69,10 @@ class _TableDiffPageState extends State<TableDiffPage> {
   bool _ignoreWhitespace = false;
   bool _onlyDiff = false;
 
+  /// 忽略行顺序：按行内容配对，不要求两侧行的顺序一致。
+  /// （导出的表经常内容一样、顺序不同，按行号比会整片标红。）
+  bool _ignoreRowOrder = false;
+
   double _fontSize = 12;
 
   TableData? _leftTable;
@@ -102,6 +106,7 @@ class _TableDiffPageState extends State<TableDiffPage> {
       keyColumn: _key,
       ignoreCase: _ignoreCase,
       ignoreWhitespace: _ignoreWhitespace,
+      ignoreRowOrder: _ignoreRowOrder,
     );
   }
 
@@ -343,6 +348,16 @@ class _TableDiffPageState extends State<TableDiffPage> {
             visualDensity: VisualDensity.compact,
             onSelected: (v) => setState(() {
               _ignoreWhitespace = v;
+              _recompute();
+            }),
+          ),
+          FilterChip(
+            label: Text(loc.diffIgnoreRowOrder, style: const TextStyle(fontSize: 11)),
+            selected: _ignoreRowOrder,
+            visualDensity: VisualDensity.compact,
+            tooltip: _key.isEmpty ? null : loc.tableDiffOrderIgnoredByKey,
+            onSelected: (v) => setState(() {
+              _ignoreRowOrder = v;
               _recompute();
             }),
           ),

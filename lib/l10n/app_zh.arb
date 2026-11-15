@@ -5475,5 +5475,8 @@
   "backupIntervalHours": "{n} 小时",
   "quicProbeSettings": "QUIC 探测",
   "quicProbeEnabled": "采集 QUIC 元数据",
-  "quicProbeEnabledHint": "从 UDP 443 首包解析 SNI 与连接 ID。重开 VPN 后生效。"
+  "quicProbeEnabledHint": "从 UDP 443 首包解析 SNI 与连接 ID。重开 VPN 后生效。",
+  "diffIgnoreRowOrder": "忽略行顺序",
+  "tableDiffOrderIgnoredByKey": "选了主键列时此项不生效",
+  "vpnRestartToApply": "已保存，重开 VPN 后生效"
 }

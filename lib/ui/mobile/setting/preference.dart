@@ -542,6 +542,11 @@ class _PreferenceState extends State<Preference> {
                     if (!value) {
                       FlutterToastr.show(localizations.prefQuicBlockOff, context);
                     }
+                    // blockQuic 只在建立 VPN 时传给原生：VPN 已经在跑就重启一次，
+                    // 否则这个开关看起来「点了没反应」，计数也永远不动。
+                    if (Vpn.isVpnStarted) {
+                      Vpn.restartVpn('127.0.0.1', proxyServer.port, configuration);
+                    }
                   },
                 ),
               ),

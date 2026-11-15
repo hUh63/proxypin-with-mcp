@@ -302,6 +302,10 @@ TableDiffResult compareTables(
     rows = _alignRowsByKey(left, right, columns, leftKeyIndex, rightKeyIndex,
         ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
     rowKeyLabel = left.headers[leftKeyIndex];
+  } else if (ignoreRowOrder) {
+    rows = _alignRowsIgnoreOrder(left, right, columns,
+        ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
+    rowKeyLabel = '';
   } else {
     rows = _alignRowsByPosition(left, right, columns,
         ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace);
@@ -453,6 +457,127 @@ List<TableRowDiff> _alignRowsByPosition(
     ));
   }
   return out;
+}
+
+/// 按「行内容」对齐，不要求行序一致。
+///
+/// 典型场景：两份从不同系统导出的表，内容基本一样、只是行顺序不同。
+/// 按行号对齐会把几乎每一行都标成「变了」，完全看不出真正多了哪几行；
+/// 按主键对齐又要求表里有唯一列 —— 这份表往往没有。
+///
+/// 两轮：
+/// 1) 内容完全一致的行先配对（含 ignoreCase / ignoreWhitespace 归一化）；
+/// 2) 剩下的按「相同单元格数」贪心配对，至少一半的列相同才算同一行
+///    （也就是「改了一两个格」的情况），否则算删除 / 新增。
+///
+/// 结果行的顺序按左侧原顺序，只有右侧的行追加在尾部。
+List<TableRowDiff> _alignRowsIgnoreOrder(
+  TableData left,
+  TableData right,
+  List<_ColumnPair> columns, {
+  required bool ignoreCase,
+  required bool ignoreWhitespace,
+}) {
+  String norm(String s) {
+    var v = s;
+    if (ignoreWhitespace) v = v.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (ignoreCase) v = v.toLowerCase();
+    return v;
+  }
+
+  String sigLeft(int i) {
+    final row = left.rows[i];
+    final parts = <String>[];
+    for (final c in columns) {
+      parts.add(c.leftIndex >= 0 && c.leftIndex < row.length ? norm(row[c.leftIndex]) : '\u0000');
+    }
+    return parts.join('\u0001');
+  }
+
+  String sigRight(int j) {
+    final row = right.rows[j];
+    final parts = <String>[];
+    for (final c in columns) {
+      parts.add(c.rightIndex >= 0 && c.rightIndex < row.length ? norm(row[c.rightIndex]) : '\u0000');
+    }
+    return parts.join('\u0001');
+  }
+
+  final byLeft = <int, TableRowDiff>{};
+  final matchedRight = <int>{};
+
+  // 第一轮：内容完全一致
+  final rightBySig = <String, List<int>>{};
+  for (var j = 0; j < right.rowCount; j++) {
+    rightBySig.putIfAbsent(sigRight(j), () => <int>[]).add(j);
+  }
+  for (var i = 0; i < left.rowCount; i++) {
+    final cand = rightBySig[sigLeft(i)];
+    if (cand == null || cand.isEmpty) continue;
+    final j = cand.removeAt(0);
+    matchedRight.add(j);
+    byLeft[i] = TableRowDiff(
+      leftIndex: i,
+      rightIndex: j,
+      state: TableRowState.unchanged,
+      changedColumns: const <int>[],
+    );
+  }
+
+  // 第二轮：相似配对。行数乘积太大就跳过（这是 O(n·m·列) 的，几百行以内才值得）。
+  final comparable = columns.where((c) => c.leftIndex >= 0 && c.rightIndex >= 0).length;
+  final leftRest = <int>[for (var i = 0; i < left.rowCount; i++) if (!byLeft.containsKey(i)) i];
+  final rightRest = <int>[for (var j = 0; j < right.rowCount; j++) if (!matchedRight.contains(j)) j];
+  if (comparable > 0 && leftRest.length * rightRest.length <= 200000) {
+    for (final i in leftRest) {
+      var bestJ = -1;
+      var bestSame = 0;
+      var bestChanged = const <int>[];
+      for (final j in rightRest) {
+        if (matchedRight.contains(j)) continue;
+        var same = 0;
+        final changed = <int>[];
+        for (var c = 0; c < columns.length; c++) {
+          final ci = columns[c];
+          if (ci.leftIndex < 0 || ci.rightIndex < 0) continue;
+          final lr = left.rows[i];
+          final rr = right.rows[j];
+          final lv = ci.leftIndex < lr.length ? lr[ci.leftIndex] : '';
+          final rv = ci.rightIndex < rr.length ? rr[ci.rightIndex] : '';
+          if (_cellEq(lv, rv, ignoreCase: ignoreCase, ignoreWhitespace: ignoreWhitespace)) {
+            same++;
+          } else {
+            changed.add(c);
+          }
+        }
+        if (same > bestSame) {
+          bestSame = same;
+          bestJ = j;
+          bestChanged = changed;
+        }
+      }
+      if (bestJ >= 0 && bestSame * 2 >= comparable) {
+        matchedRight.add(bestJ);
+        byLeft[i] = TableRowDiff(
+          leftIndex: i,
+          rightIndex: bestJ,
+          state: bestChanged.isEmpty ? TableRowState.unchanged : TableRowState.changed,
+          changedColumns: bestChanged,
+        );
+      }
+    }
+  }
+
+  final rows = <TableRowDiff>[];
+  for (var i = 0; i < left.rowCount; i++) {
+    rows.add(byLeft[i] ??
+        TableRowDiff(leftIndex: i, rightIndex: -1, state: TableRowState.removed, changedColumns: const <int>[]));
+  }
+  for (var j = 0; j < right.rowCount; j++) {
+    if (matchedRight.contains(j)) continue;
+    rows.add(TableRowDiff(leftIndex: -1, rightIndex: j, state: TableRowState.added, changedColumns: const <int>[]));
+  }
+  return rows;
 }
 
 List<TableRowDiff> _alignRowsByKey(

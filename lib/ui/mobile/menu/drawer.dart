@@ -279,6 +279,10 @@ class _SettingPageState extends State<_SettingPage> {
                           onChanged: (value) {
                             configuration.enableSystemProxy = value;
                             widget.proxyServer.configuration.flushConfig();
+                            // 系统代理通告只在建立 VPN 时生效：不重启的话拨了没反应。
+                            if (Vpn.isVpnStarted) {
+                              Vpn.restartVpn('127.0.0.1', widget.proxyServer.port, configuration);
+                            }
                           })),
                 if (Platform.isAndroid)
                   ListTile(
@@ -360,6 +364,10 @@ class _SettingPageState extends State<_SettingPage> {
                         onSubmitted: (_) {
                           configuration.proxyPassDomains = textEditingController.text;
                           widget.proxyServer.configuration.flushConfig();
+                          // 旁路域名只在建立 VPN 时传给原生，VPN 在跑时改完要重开才生效。
+                          if (Vpn.isVpnStarted) {
+                            FlutterToastr.show(localizations.vpnRestartToApply, context, duration: 3);
+                          }
                         },
                         decoration:
                             const InputDecoration(contentPadding: EdgeInsets.all(10), border: OutlineInputBorder()),

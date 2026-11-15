@@ -3785,5 +3785,8 @@
   "backupIntervalHours": "Mỗi {n} giờ",
   "quicProbeSettings": "Dò QUIC",
   "quicProbeEnabled": "Thu thập siêu dữ liệu QUIC",
-  "quicProbeEnabledHint": "Đọc SNI và connection ID từ UDP 443. Có hiệu lực sau khi khởi động lại VPN."
+  "quicProbeEnabledHint": "Đọc SNI và connection ID từ UDP 443. Có hiệu lực sau khi khởi động lại VPN.",
+  "diffIgnoreRowOrder": "Bỏ qua thứ tự dòng",
+  "tableDiffOrderIgnoredByKey": "Không dùng khi đã chọn cột khóa",
+  "vpnRestartToApply": "Đã lưu — khởi động lại VPN để áp dụng"
 }

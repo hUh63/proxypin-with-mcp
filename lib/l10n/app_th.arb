@@ -3785,5 +3785,8 @@
   "backupIntervalHours": "ทุก {n} ชม.",
   "quicProbeSettings": "การตรวจจับ QUIC",
   "quicProbeEnabled": "เก็บข้อมูล QUIC",
-  "quicProbeEnabledHint": "อ่าน SNI และ connection ID จาก UDP 443 มีผลหลังรีสตาร์ท VPN"
+  "quicProbeEnabledHint": "อ่าน SNI และ connection ID จาก UDP 443 มีผลหลังรีสตาร์ท VPN",
+  "diffIgnoreRowOrder": "ไม่สนลำดับแถว",
+  "tableDiffOrderIgnoredByKey": "ไม่ใช้เมื่อเลือกคอลัมน์คีย์",
+  "vpnRestartToApply": "บันทึกแล้ว — รีสตาร์ท VPN เพื่อให้มีผล"
 }

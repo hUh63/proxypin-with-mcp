@@ -3785,5 +3785,8 @@
   "backupIntervalHours": "Cada {n} h",
   "quicProbeSettings": "Sondeo QUIC",
   "quicProbeEnabled": "Capturar metadatos QUIC",
-  "quicProbeEnabledHint": "Lee SNI e IDs de conexión del UDP 443. Se aplica al reiniciar la VPN."
+  "quicProbeEnabledHint": "Lee SNI e IDs de conexión del UDP 443. Se aplica al reiniciar la VPN.",
+  "diffIgnoreRowOrder": "Ignorar orden de filas",
+  "tableDiffOrderIgnoredByKey": "No se usa si hay columna clave",
+  "vpnRestartToApply": "Guardado: reinicia la VPN para aplicar"
 }

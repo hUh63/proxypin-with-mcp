@@ -81,6 +81,10 @@ String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
   // 行尾 \r 是「换行符风格」不是内容：CRLF 与 LF 的文件必须逐行能对上，
   // 否则整篇都会被标成修改（Windows/macOS 互传文件时最常踩）。
   if (k.endsWith('\r')) k = k.substring(0, k.length - 1);
+  // BOM 同理：Windows 存出来的 UTF-8 文件开头会多一个 U+FEFF，肉眼看不见，
+  // 却会让「第一行」整行不同 —— 用户看到的就是「明明一样，第一行却标红了」。
+  // 真正需要比较零宽字符的场景（比如排查隐藏字符）有「特殊字符检测」专门做。
+  if (k.contains('\uFEFF')) k = k.replaceAll('\uFEFF', '');
   if (ignoreWhitespace) {
     k = k.replaceAll(_whiteSpace, '');
   } else if (ignoreTrailingWhitespace) {
