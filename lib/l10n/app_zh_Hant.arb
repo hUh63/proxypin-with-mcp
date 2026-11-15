@@ -5452,5 +5452,10 @@
   "editorShrinkSelection": "收縮選區",
   "diffAutoAdvance": "接受後自動跳下一處",
   "diffDetectMoved": "識別移動的區塊",
-  "diffMoved": "移動"
+  "diffMoved": "移動",
+  "editorInlineVariable": "內聯變數",
+  "editorInlineNeedSymbol": "先將游標放到變數名稱上",
+  "editorInlineNoDecl": "上方找不到「名稱 = 運算式」形式的宣告",
+  "editorInlineMultiUse": "還有 {n} 處使用，請手動內聯",
+  "editorInlineDone": "已內聯變數"
 }

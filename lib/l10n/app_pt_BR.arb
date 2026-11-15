@@ -3763,5 +3763,10 @@
   "editorShrinkSelection": "Reduzir seleção",
   "diffAutoAdvance": "Ir para a próxima alteração",
   "diffDetectMoved": "Detectar blocos movidos",
-  "diffMoved": "movido"
+  "diffMoved": "movido",
+  "editorInlineVariable": "Inlinar variável",
+  "editorInlineNeedSymbol": "Coloque o cursor sobre o nome de uma variável",
+  "editorInlineNoDecl": "Nenhuma declaração com valor acima",
+  "editorInlineMultiUse": "Usado {n} vezes mais — faça manualmente",
+  "editorInlineDone": "Variável inlinada"
 }

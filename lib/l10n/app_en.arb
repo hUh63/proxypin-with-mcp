@@ -6242,5 +6242,17 @@
   "editorShrinkSelection": "Shrink selection",
   "diffAutoAdvance": "Auto jump to next change",
   "diffDetectMoved": "Detect moved blocks",
-  "diffMoved": "moved"
+  "diffMoved": "moved",
+  "editorInlineVariable": "Inline variable",
+  "editorInlineNeedSymbol": "Put the cursor on a variable name first",
+  "editorInlineNoDecl": "No declaration with a plain value found above",
+  "editorInlineMultiUse": "Used {n} more times — inline it manually",
+  "@editorInlineMultiUse": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "editorInlineDone": "Variable inlined"
 }

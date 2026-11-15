@@ -3762,5 +3762,10 @@
   "editorShrinkSelection": "Perkecil pilihan",
   "diffAutoAdvance": "Lompat ke perubahan berikutnya",
   "diffDetectMoved": "Deteksi blok yang dipindah",
-  "diffMoved": "dipindah"
+  "diffMoved": "dipindah",
+  "editorInlineVariable": "Inline variabel",
+  "editorInlineNeedSymbol": "Letakkan kursor pada nama variabel",
+  "editorInlineNoDecl": "Tidak ada deklarasi bernilai di atas",
+  "editorInlineMultiUse": "Dipakai {n} kali lagi — lakukan manual",
+  "editorInlineDone": "Variabel di-inline"
 }

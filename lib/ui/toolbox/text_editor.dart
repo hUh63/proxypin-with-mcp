@@ -2524,6 +2524,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_surroundWith());
       case 'emmet':
         _expandEmmetAtCursor();
+      case 'inlineVar':
+        _inlineVariable();
       case 'extractVar':
         unawaited(_extractVariable());
       case 'foldCurrent':
@@ -4287,6 +4289,81 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return id[0].toLowerCase() + id.substring(1);
     }
     return 'value';
+  }
+
+  /// 内联变量（VS / IntelliJ 的 Inline Variable）：把 `var x = expr;` 的 x
+  /// 在**唯一使用处**换成 `(expr)` 并删掉声明行 —— 提取变量的反向操作。
+  ///
+  /// 只支持「只有一处使用」：多处使用内联等于把表达式复制多份，容易改出 bug，
+  /// 那种情况明确告诉用户有几处，让人自己决定，别偷偷干。
+  void _inlineVariable() {
+    final c = _controller;
+    if (c == null) return;
+    final text = c.text;
+    final sel = c.selection;
+    if (!sel.isValid) return;
+
+    // 选中了就用选中的名字；只有光标就取光标下的词（和「提取变量」用同一套手感）。
+    String name;
+    var useStart = sel.start;
+    var useEnd = sel.end;
+    if (sel.isCollapsed) {
+      final r = _wordRangeAt(text, sel.start.clamp(0, text.length));
+      name = text.substring(r.start, r.end);
+      useStart = r.start;
+      useEnd = r.end;
+    } else {
+      name = text.substring(sel.start.clamp(0, text.length), sel.end.clamp(sel.start, text.length)).trim();
+    }
+    if (!RegExp(r'^[A-Za-z_$][\w$]*$').hasMatch(name)) {
+      _toast(localizations.editorInlineNeedSymbol);
+      return;
+    }
+    final wordRe = RegExp(r'\b' + RegExp.escape(name) + r'\b');
+
+    final useLine = _lineOfOffset(text, useStart.clamp(0, text.length));
+    final lines = text.split('\n');
+    if (useLine <= 0 || useLine >= lines.length) {
+      _toast(localizations.editorInlineNoDecl);
+      return;
+    }
+
+    // 声明行形态：可有修饰符/类型，然后 `名字 = 表达式`（Go 的 `:=`，不匹配 `==`）。
+    final declRe = RegExp(r'^\s*(?:(?:final|var|let|const|static|auto|val|constexpr|local|readonly|mutable)\s+)?'
+        r'[\w<>\[\],.?]*(?:\s+[\w<>\[\],.?]+)*?\s*'
+        r'\b' +
+        RegExp.escape(name) +
+        r'\s*(?::=|=)(?!=)\s*(.+?)\s*;?\s*$');
+
+    ({int line, String expr})? decl;
+    // 只往上看 60 行：常规写法声明就在上一行附近，扫太多反而容易撞上别的变量。
+    for (var i = useLine - 1; i >= 0 && i >= useLine - 60; i--) {
+      final m = declRe.firstMatch(lines[i]);
+      if (m == null) continue;
+      final expr = (m.group(1) ?? '').trim();
+      if (expr.isEmpty) continue;
+      if (wordRe.hasMatch(expr)) continue; // 自引用（x = x + 1）不能内联
+      decl = (line: i, expr: expr);
+      break;
+    }
+    if (decl == null) {
+      _toast(localizations.editorInlineNoDecl);
+      return;
+    }
+
+    final uses = wordRe.allMatches(text).length - 1; // 扣掉声明处
+    if (uses > 1) {
+      _toast(localizations.editorInlineMultiUse('$uses'));
+      return;
+    }
+
+    // 顺序要紧：先改使用处（在声明行之后，偏移不受影响），再删声明行。
+    c.replaceRange(useStart, useEnd, '(${decl.expr})');
+    final declStart = _offsetOfLine(text, decl.line);
+    var declEnd = declStart + lines[decl.line].length;
+    if (declEnd < text.length) declEnd += 1; // 连带行尾换行一起删，不留空行
+    c.replaceRange(declStart, declEnd, '');
+    _toast(localizations.editorInlineDone);
   }
 
   /// 折叠 / 展开光标所在的块（VS 的 Ctrl+Shift+[ / ]）。
@@ -11223,6 +11300,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
           _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
           _menuItem('emmet', Icons.html, loc.editorEmmet),
+          _menuItem('inlineVar', Icons.input_outlined, loc.editorInlineVariable),
           _menuItem('extractVar', Icons.input, loc.editorExtractVariable),
           _menuItem('foldCurrent', Icons.unfold_less, loc.editorFoldCurrent),
           _menuItem('unfoldCurrent', Icons.unfold_more, loc.editorUnfoldCurrent),

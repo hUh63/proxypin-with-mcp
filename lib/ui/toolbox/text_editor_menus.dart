@@ -688,6 +688,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'bh 环绕 包裹 surround wrap if try for while block'),
   EditorMenuItem('emmet', _emmetLabel, group: 'code',
       aliases: 'emmet 展开 缩写 html css abbreviation'),
+  EditorMenuItem('inlineVar', _inlineVarLabel, group: 'code',
+      aliases: 'nlbl 内联变量 inline variable'),
   EditorMenuItem('extractVar', _extractVarLabel, group: 'code',
       aliases: 'tcbl 提取变量 extract variable assign'),
   EditorMenuItem('foldCurrent', _foldCurrentLabel, group: 'code',
@@ -848,6 +850,7 @@ String _formatSelLabel(AppLocalizations l) => l.editorFormatSelection;
 String _surroundWithLabel(AppLocalizations l) => l.editorSurroundWith;
 String _emmetLabel(AppLocalizations l) => l.editorEmmet;
 String _extractVarLabel(AppLocalizations l) => l.editorExtractVariable;
+String _inlineVarLabel(AppLocalizations l) => l.editorInlineVariable;
 String _foldCurrentLabel(AppLocalizations l) => l.editorFoldCurrent;
 String _unfoldCurrentLabel(AppLocalizations l) => l.editorUnfoldCurrent;
 String _symbolBarLabel(AppLocalizations l) => l.editorSymbolBar;
@@ -1067,6 +1070,8 @@ IconData menuIconOf(String id) {
       return Icons.data_object;
     case 'emmet':
       return Icons.html;
+    case 'inlineVar':
+      return Icons.input_outlined;
     case 'extractVar':
       return Icons.input;
     case 'foldCurrent':

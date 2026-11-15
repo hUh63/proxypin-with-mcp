@@ -3762,5 +3762,10 @@
   "editorShrinkSelection": "Thu hẹp vùng chọn",
   "diffAutoAdvance": "Nhảy tới thay đổi tiếp theo",
   "diffDetectMoved": "Phát hiện khối bị di chuyển",
-  "diffMoved": "di chuyển"
+  "diffMoved": "di chuyển",
+  "editorInlineVariable": "Nội tuyến biến",
+  "editorInlineNeedSymbol": "Đặt con trỏ lên tên biến trước",
+  "editorInlineNoDecl": "Không tìm thấy khai báo có giá trị ở trên",
+  "editorInlineMultiUse": "Còn {n} chỗ dùng — hãy làm thủ công",
+  "editorInlineDone": "Đã nội tuyến biến"
 }

@@ -9,16 +9,15 @@ List<String> _lines(String t) => t.isEmpty ? const <String>[] : t.split('\n');
 
 /// 用真实引擎跑一遍，得到 blocks（比手搓 DiffBlock 更接近线上行为）。
 List<DiffBlock> _blocks(String left, String right) {
-  final ll = _lines(left);
-  final rl = _lines(right);
-  final diffs = diffLines(ll, rl);
-  return buildDiffBlocks(diffs);
+  // diffLines 收的是**整段文本**（它自己切行），别传行数组。
+  return buildDiffBlocks(diffLines(left, right));
 }
 
 void main() {
   test('整段搬家：标成移动，不再是「删+增」', () {
-    const left = 'a\n1\n2\n3\nb';
-    const right = '1\n2\n3\na\nb';
+    // 移 3 行 = 「删这 3 行 + 另处加这 3 行」，两块都够 minLines。
+    const left = 'a\nb\nc\np\nq\nr';
+    const right = 'p\nq\nr\na\nb\nc';
     final blocks = _blocks(left, right);
     final moved = detectMovedBlocks(
       blocks,
@@ -68,8 +67,8 @@ void main() {
   });
 
   test('ignoreWhitespace 让缩进不同的搬家也算移动', () {
-    const left = 'fn() {\n  a();\n  b();\n}';
-    const right = 'a();\nb();\nfn() {}';
+    const left = 'a();\n  b();\n  c();\nx';
+    const right = 'x\na();\nb();\nc();';
     final strict = detectMovedBlocks(
       _blocks(left, right),
       leftSource: _lines(left),

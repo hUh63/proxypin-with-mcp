@@ -5452,5 +5452,10 @@
   "editorShrinkSelection": "收缩选区",
   "diffAutoAdvance": "接受后自动跳下一处",
   "diffDetectMoved": "识别移动的块",
-  "diffMoved": "移动"
+  "diffMoved": "移动",
+  "editorInlineVariable": "内联变量",
+  "editorInlineNeedSymbol": "先把光标放到变量名上",
+  "editorInlineNoDecl": "上方没找到「名字 = 表达式」形式的声明",
+  "editorInlineMultiUse": "还有 {n} 处使用，请手动内联",
+  "editorInlineDone": "已内联变量"
 }

@@ -3762,5 +3762,10 @@
   "editorShrinkSelection": "ย่อการเลือก",
   "diffAutoAdvance": "ข้ามไปการเปลี่ยนแปลงถัดไป",
   "diffDetectMoved": "ตรวหาบล็อกที่ย้าย",
-  "diffMoved": "ย้าย"
+  "diffMoved": "ย้าย",
+  "editorInlineVariable": "แทรกตัวแปร",
+  "editorInlineNeedSymbol": "วางเคอร์เซอร์บนชื่อตัวแปรก่อน",
+  "editorInlineNoDecl": "ไม่พบการประกาศค่าด้านบน",
+  "editorInlineMultiUse": "ใช้่อีก {n} ครั้ง — ทำเอง",
+  "editorInlineDone": "แทรกตัวแปรแล้ว"
 }
