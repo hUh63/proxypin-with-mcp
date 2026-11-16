@@ -15,6 +15,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:proxypin/ui/component/surface_tint.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
 import 'package:re_highlight/styles/atom-one-light.dart';
 
@@ -33,7 +34,9 @@ Map<String, TextStyle> editorThemeOf(BuildContext context) {
   final merged = Map<String, TextStyle>.from(base);
   merged['root'] = (base['root'] ?? const TextStyle()).copyWith(
     color: theme.colorScheme.onSurface,
-    backgroundColor: theme.colorScheme.surface,
+    // 用「带一点主题色的面板色」而不是 surface：#FFFFFF / #0F0F0F 这类纯色
+    // 换主题色时不变，编辑器区域看起来像贴了一张白纸。
+    backgroundColor: surfacePanelOf(theme.colorScheme),
   );
   return merged;
 }

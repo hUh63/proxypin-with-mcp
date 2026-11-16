@@ -46,6 +46,7 @@ import 'package:proxypin/ui/mobile/mobile.dart';
 import 'package:proxypin/utils/desktop_support.dart';
 import 'package:proxypin/utils/navigator.dart';
 import 'package:proxypin/utils/platform.dart';
+import 'package:proxypin/ui/component/surface_tint.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -291,11 +292,16 @@ class FluentApp extends StatelessWidget {
             // 莫奈取色：colorScheme 整体换成壁纸色板后，页面底色/分隔线必须跟着重算
             // —— 它们是 theme() 里按当时的 colorScheme 算出来的常量，只换 scheme 不改它们，
             // 页面底还是旧色（这也是「背景固定」的来源之一）。
-            ThemeData withScheme(ThemeData base, ColorScheme scheme) => base.copyWith(
-                  colorScheme: scheme,
-                  scaffoldBackgroundColor: scheme.surfaceContainerLowest,
-                  dividerColor: scheme.outlineVariant,
-                );
+            ThemeData withScheme(ThemeData base, ColorScheme scheme) {
+              // 底色要在「换色板之后」重算：莫奈/主题色的 primary 变了，
+              // 页面底色也要跟着带一点那个颜色，否则只有按钮在变。
+              final tinted = surfaceTintOf(scheme);
+              return base.copyWith(
+                colorScheme: scheme.copyWith(surfaceContainerLowest: tinted),
+                scaffoldBackgroundColor: tinted,
+                dividerColor: scheme.outlineVariant,
+              );
+            }
             if (useMonet && lightDynamic != null) {
               lightTheme = withScheme(
                   theme(Brightness.light), dynamicToMaterialColorScheme(lightDynamic.harmonized()));
@@ -369,6 +375,10 @@ class FluentApp extends StatelessWidget {
         surfaceContainerLow: DarkPalette.bg,
       );
     }
+
+    // 页面底色跟随主题色：见 surface_tint.dart 的说明（M3 的最底层色几乎恒定，
+    // 不混一点 primary 的话，换主题色时背景一个像素都不动）。
+    colorScheme = colorScheme.copyWith(surfaceContainerLowest: surfaceTintOf(colorScheme));
 
     // 预测性返回：开启时使用 Material 3 预测返回页面转场（Android 14+ 生效，其他平台回退默认转场）
     final pageTransitions = appConfiguration.predictiveBackEnabled && !Platform.isWindows

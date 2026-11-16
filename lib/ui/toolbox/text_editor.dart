@@ -2650,7 +2650,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   Future<void> _closeDoc(EditorDocument doc) async {
     // 关掉一份「改了但没存」的文档，跟按返回键退出是一回事，都得先问。
-    if (doc.dirty && (doc.path?.isNotEmpty ?? false)) {
+    //
+    // 这里以前多了一个 `path 非空` 的条件：新建的「未命名」文档改了内容直接关，
+    // 一句话都不问就把内容丢了。未命名文档更需要问 —— 它连磁盘上的副本都没有。
+    if (doc.dirty && doc.text.isNotEmpty) {
       final keep = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -2662,18 +2665,27 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 onPressed: () => Navigator.pop(ctx, false),
                 child: Text(localizations.editorExitWithoutSaving)),
             FilledButton(
-                onPressed: () async {
-                  Navigator.pop(ctx, true);
-                  await _saveDoc(doc);
-                },
+                onPressed: () => Navigator.pop(ctx, true),
                 child: Text(localizations.save)),
           ],
         ),
       );
       if (!mounted) return;
-      // 取消 → 什么都不做；选「保存」的话上面已经把内容写回去了。
+      // 取消 → 什么都不做
       if (keep == null) return;
-      if (doc.dirty) return; // 保存失败则别关，避免「以为存了」
+      if (keep) {
+        // 保存：有路径就写回原文件；没有路径（未命名）走另存/分享，
+        // 否则 _saveDoc 只会提示「没有文件路径」，等于没存。
+        if (!identical(doc, _doc)) _activate(doc);
+        if (doc.path?.isNotEmpty ?? false) {
+          await _saveDoc(doc);
+        } else {
+          await _download();
+        }
+        if (!mounted) return;
+      }
+      // 保存失败（或用户取消了另存）就别关，避免「以为存了」。
+      if (doc.dirty) return;
     }
     _rememberClosed(doc);
     final wasActive = identical(doc, _doc);
@@ -2733,7 +2745,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     //     下次打开还在，但**文件本身没变**——用户以为存了，其实没存。
     final doc = _doc;
     final path = doc?.path;
-    if (_dirty && path != null && path.isNotEmpty) {
+    // 未命名文档同样要问：它没有磁盘副本，关掉就是真没了（草稿保留是另一回事，
+    // 用户以为「存了文件」和「草稿还在」是两件不同的事）。
+    if (_dirty && (_doc?.text.isNotEmpty ?? false)) {
       final choice = await showDialog<int>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -2761,7 +2775,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
         return;
       }
       if (choice == 1) {
-        await _saveWithEncoding(_encoding);
+        if (path != null && path.isNotEmpty) {
+          await _saveWithEncoding(_encoding);
+        } else {
+          // 没路径 —— 另存 / 分享出去，别调只会提示「没有文件路径」的保存。
+          await _download();
+        }
         if (!mounted || _dirty) {
           // 保存失败（或用户中途取消了另存为）就别退，避免「以为存了」。
           _confirmingExit = false;
@@ -3578,6 +3597,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final topLine = (_vOffset / _linePixelHeight).floor() + 1;
     if (topLine == _stickyLine) return;
     _stickyLine = topLine;
+    // _collectSymbols 自带缓存（文本对象没换就直接复用），大文件在
+    // _refreshSymbolCache 里已置空，滚动路径上不需要再套一层缓存。
     final items = _collectSymbols(doc.text);
     _stickyTrail.value = items.isEmpty ? const <_SymbolItem>[] : _symbolTrail(items, topLine);
   }
@@ -12011,8 +12032,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ),
             const PopupMenuDivider(),
             _menuItem('settings', Icons.settings, localizations.editorSettings),
-            const PopupMenuDivider(),
-            _menuItem('close', Icons.close, localizations.editorCloseFile),
+            // 「关闭」不放在这里：文件分类菜单底部、标签条上的 ×、文档列表的左滑
+            // 都能关，同一个动作在「更多」里再来一次只会让人以为有两条不同的路。
           ].where((e) => e is! PopupMenuItem<String> || !hidden.contains(e.value)).toList();
         },
       ),

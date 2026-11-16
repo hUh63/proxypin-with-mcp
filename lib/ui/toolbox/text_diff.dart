@@ -5054,9 +5054,25 @@ class _TextDiffPageState extends State<TextDiffPage> {
     );
   }
 
+  /// 两个文本是否「只差空白和大小写」。
+  ///
+  /// 这一类在代码里通常是重新格式化、对齐缩进、补删尾随空格造成的 ——
+  /// 值得知道，但不该跟「逻辑变了」一个醒目度。
+  static bool _isFormatOnly(DiffRow r) {
+    if (r.type != DiffRowType.modified) return false;
+    String norm(String? s) =>
+        (s ?? '').trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+    final a = norm(r.leftText);
+    final b = norm(r.rightText);
+    return a.isNotEmpty && a == b;
+  }
+
   Widget _alignedRow(DiffRow r,
       {required bool left, required bool isCurrent, int rowIndex = -1}) {
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
+    // 只差空白/大小写的「修改」（Beyond Compare 叫 Unimportant difference）：
+    // 内容确实不一致，但改的不是逻辑。用灰蓝把这类降级，别把真正改逻辑的行淹掉。
+    final formatOnly = _isFormatOnly(r);
     Color? bg;
     switch (r.type) {
       case DiffRowType.added:
@@ -5064,7 +5080,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
       case DiffRowType.deleted:
         bg = Colors.red.withValues(alpha: isDark ? 0.22 : 0.14);
       case DiffRowType.modified:
-        bg = Colors.orange.withValues(alpha: isDark ? 0.18 : 0.12);
+        bg = formatOnly
+            ? Colors.blueGrey.withValues(alpha: isDark ? 0.16 : 0.12)
+            : Colors.orange.withValues(alpha: isDark ? 0.18 : 0.12);
       case DiffRowType.equal:
         bg = null;
     }
