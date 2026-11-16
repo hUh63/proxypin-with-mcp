@@ -120,24 +120,30 @@ void main() {
     });
   });
 
-  group('忽略列：支持 #列号（两侧表头名字对不上时）', () {
-    const left = 'id,time,val\n1,2026-01-01,a\n2,x,b\n';
-    // 右表第二列叫 timestamp，与左表的 time 名字对不上
-    const right = 'id,timestamp,val\n1,2026-11-11,a\n2,y,b\n';
+  group('忽略列：支持 #列号', () {
+    // 表头重名是最能体现 #列号价值的地方：按名字忽略会连带忽略所有同名列，
+    // 而 #N 只作用于指定那一列。
+    const left = 'id,v,v\n1,A,B\n2,C,D\n';
+    const right = 'id,v,v\n1,A,X\n2,C,Y\n'; // 只有第 3 列变了
 
-    test('按名字忽略不掉（表头不同）', () {
-      final r = _cmp(left, right, key: 'id', ignoreColumns: {'time'});
+    test('按名字忽略会同时忽略两列同名列 → 看不到任何差异', () {
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'v'});
+      expect(r.changedRowCount, 0);
+    });
+
+    test('按 #2 只忽略第一列 v，第 3 列的变化仍然被发现', () {
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'#2'});
       expect(r.changedRowCount, 2);
     });
 
-    test('按 #2 忽略第二列后只剩 val 的差异', () {
-      final r = _cmp(left, right, key: 'id', ignoreColumns: {'#2'});
-      expect(r.changedRowCount, 1);
+    test('按 #3 忽略真正变化的那一列 → 无差异', () {
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'#3'});
+      expect(r.changedRowCount, 0);
     });
 
-    test('#1 是被忽略的自增 id 列（名字还不同），按 name 对齐后无差异', () {
+    test('#1 忽略自增 id 列，按 name 对齐后无差异', () {
       const l = 'id,name\n1,tom\n2,amy\n';
-      const rr = 'index,name\n9,tom\n8,amy\n';
+      const rr = 'id,name\n9,tom\n8,amy\n';
       final r = _cmp(l, rr, key: 'name', ignoreColumns: {'#1'});
       expect(r.changedRowCount, 0);
     });
@@ -148,8 +154,8 @@ void main() {
     });
 
     test('名字和列号可以混着用', () {
-      final r = _cmp(left, right, key: 'id', ignoreColumns: {'time', '#2'});
-      expect(r.changedRowCount, 2);
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'#1', 'v'});
+      expect(r.changedRowCount, 0);
     });
   });
 }

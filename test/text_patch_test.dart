@@ -83,7 +83,8 @@ void main() {
       const left = 'a\nb\nc\n';
       const right = 'a\nX\nc\n';
       final p = buildUnifiedPatch(left, right, context: 0);
-      expect(p, isNot(contains(' a')));
+      // 具体的上下文行是「空格 + 内容」，header 里的 '--- a.txt' 不算
+      expect(p, isNot(contains('\n a')));
       expect(p, contains('-b'));
       expect(p, contains('+X'));
     });
