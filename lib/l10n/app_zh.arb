@@ -5496,5 +5496,7 @@
   "editorReplacePreserveCase": "全部替换（保留大小写）",
   "editorReplacePreserveNone": "没有可替换的内容，先在查找框里输入",
   "editorReplacePreserveFallback": "带 $ 的正则替换请用普通「全部替换」",
-  "editorReplacedCount": "已替换 {n} 处"
+  "editorReplacedCount": "已替换 {n} 处",
+  "statsTrailingWs": "尾随空白行",
+  "convertZhAuto": "自动识别"
 }

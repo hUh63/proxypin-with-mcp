@@ -3806,5 +3806,7 @@
   "editorReplacePreserveCase": "แทนที่ทั้งหมด (คงตัวพิมพ์)",
   "editorReplacePreserveNone": "ไม่มีอะไรให้แทนที่ — พิมพ์คำค้นก่อน",
   "editorReplacePreserveFallback": "การแทนที่ regex ที่มี $ ใช้ \"แทนที่ทั้งหมด\" ปกติ",
-  "editorReplacedCount": "แทนที่แล้ว {n}"
+  "editorReplacedCount": "แทนที่แล้ว {n}",
+  "statsTrailingWs": "บรรทัดที่มีช่องว่างท้ายบรรทัด",
+  "convertZhAuto": "ตรวจจับอัตโนมัติ"
 }

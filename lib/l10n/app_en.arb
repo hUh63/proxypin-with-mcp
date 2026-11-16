@@ -6367,5 +6367,13 @@
         "type": "String"
       }
     }
+  },
+  "statsTrailingWs": "Lines with trailing spaces",
+  "@statsTrailingWs": {
+    "description": "statsTrailingWs"
+  },
+  "convertZhAuto": "Auto detect",
+  "@convertZhAuto": {
+    "description": "convertZhAuto"
   }
 }

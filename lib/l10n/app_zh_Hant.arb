@@ -5496,5 +5496,7 @@
   "editorReplacePreserveCase": "全部取代（保留大小寫）",
   "editorReplacePreserveNone": "沒有可取代的內容，先在尋找框輸入",
   "editorReplacePreserveFallback": "帶 $ 的正則取代請用一般「全部取代」",
-  "editorReplacedCount": "已取代 {n} 處"
+  "editorReplacedCount": "已取代 {n} 處",
+  "statsTrailingWs": "尾隨空白行",
+  "convertZhAuto": "自動辨識"
 }

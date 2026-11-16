@@ -310,8 +310,11 @@ PatchApplyResult applyUnifiedPatch(
   }
   final hunks = parsed.hunks;
 
-  // 统一换行后按行切成数组，末尾换行单独记（split 会多给一个空串）
-  final endsWithNewline = target.endsWith('\n');
+  // 统一换行后按行切成数组，末尾换行单独记（split 会多给一个空串）。
+  //
+  // 空目标没有「原来的末尾」可参考，按「文本文件都以换行结束」处理：
+  // 补丁本身也表达不了「末尾没有换行」（生成时那一个换行已经被摘掉）。
+  final endsWithNewline = target.isEmpty ? true : target.endsWith('\n');
   final lines = <String>[];
   if (target.isNotEmpty) {
     lines.addAll(target.replaceAll('\r\n', '\n').split('\n'));

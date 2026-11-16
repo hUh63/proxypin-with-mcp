@@ -3806,5 +3806,7 @@
   "editorReplacePreserveCase": "Reemplazar todo (mantener mayúsculas)",
   "editorReplacePreserveNone": "Nada que reemplazar: escribe primero la búsqueda",
   "editorReplacePreserveFallback": "El reemplazo regex con $ usa \"Reemplazar todo\"",
-  "editorReplacedCount": "Reemplazados {n}"
+  "editorReplacedCount": "Reemplazados {n}",
+  "statsTrailingWs": "Líneas con espacios finales",
+  "convertZhAuto": "Detección automática"
 }

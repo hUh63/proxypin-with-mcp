@@ -3806,5 +3806,7 @@
   "editorReplacePreserveCase": "Thay tất cả (giữ hoa thường)",
   "editorReplacePreserveNone": "Không có gì để thay — nhập từ cần tìm trước",
   "editorReplacePreserveFallback": "Thay thế regex có $ dùng \"Thay tất cả\" thường",
-  "editorReplacedCount": "Đã thay {n}"
+  "editorReplacedCount": "Đã thay {n}",
+  "statsTrailingWs": "Dòng có khoảng trắng cuối",
+  "convertZhAuto": "Tự nhận diện"
 }

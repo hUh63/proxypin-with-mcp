@@ -3806,5 +3806,7 @@
   "editorReplacePreserveCase": "Ganti semua (pertahankan huruf)",
   "editorReplacePreserveNone": "Tidak ada yang diganti — isi dulu teks pencarian",
   "editorReplacePreserveFallback": "Ganti regex dengan $ pakai \"Ganti semua\" biasa",
-  "editorReplacedCount": "{n} diganti"
+  "editorReplacedCount": "{n} diganti",
+  "statsTrailingWs": "Baris dengan spasi di akhir",
+  "convertZhAuto": "Deteksi otomatis"
 }

@@ -7073,6 +7073,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
                           '${st.longestLine}', '${st.maxLineLength}')),
               row(Icons.notes, localizations.statsParagraphs,
                   TextStats.formatCount(st.paragraphs)),
+              // 尾随空白只在「全文」统计里有意义：它是「保存前该清理一下」的信号，
+              // 看到 0 也让人安心。
+              if (!useSelection)
+                row(
+                    Icons.cleaning_services_outlined,
+                    localizations.statsTrailingWs,
+                    TextStats.formatCount(countTrailingWhitespaceLines(text))),
               const SizedBox(height: 8),
             ]),
           );

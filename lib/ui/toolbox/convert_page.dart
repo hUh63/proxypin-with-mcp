@@ -369,6 +369,16 @@ class _ZhTabState extends State<_ZhTab> {
 
   void _toSimp() => setState(() => _out = ZhConvert.toSimplified(_input.text));
 
+  /// 自动判断方向：夹着繁体字就转简体，否则转繁体。
+  /// 从别处粘一段话过来，不用先自己判断它是简还是繁。
+  void _auto() {
+    final t = _input.text;
+    if (t.trim().isEmpty) return;
+    setState(() => _out = ZhConvert.looksTraditional(t)
+        ? ZhConvert.toSimplified(t)
+        : ZhConvert.toTraditional(t));
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -380,6 +390,7 @@ class _ZhTabState extends State<_ZhTab> {
       controls: [
         FilledButton.tonal(onPressed: _toTrad, child: Text('${loc.convertSimple} → ${loc.convertTrad}')),
         FilledButton.tonal(onPressed: _toSimp, child: Text('${loc.convertTrad} → ${loc.convertSimple}')),
+        OutlinedButton(onPressed: _auto, child: Text(loc.convertZhAuto)),
         Text('${ZhConvert.tableSize} ${loc.convertZhTable}',
             style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
