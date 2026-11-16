@@ -11412,6 +11412,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('compareClipboard', Icons.content_paste_search,
               loc.editorCompareClipboard),
           _menuItem('diffTab', Icons.compare, loc.editorDiffWithTab),
+          _menuItem('compareDoc', Icons.compare_arrows, loc.editorCompareWithDoc),
           _menuItem('history', Icons.history, loc.editorLocalHistory),
           CheckedPopupMenuItem(
               value: 'autosave', checked: _autoSave, child: Text(loc.editorAutoSave)),
@@ -11448,7 +11449,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
                           ? null
                           : Theme.of(context).disabledColor))),
           const PopupMenuDivider(),
+          _menuItem('cut', Icons.content_cut, loc.cut),
           _menuItem('copy', Icons.content_copy, loc.copy),
+          _menuItem('paste', Icons.content_paste, loc.paste),
+          _menuItem('selectAll', Icons.select_all, loc.selectAll),
           _menuItem('clipHistory', Icons.content_paste, loc.editorClipHistory),
           _menuItem('clear', Icons.backspace_outlined, loc.clear),
           _menuItem('replaceLine', Icons.sync_alt, loc.editorReplaceLine),
@@ -11703,6 +11707,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
           unawaited(_saveWithEncodingPick());
         case 'closeOthers':
           unawaited(_closeOtherDocs());
+        case 'cut':
+          _cut();
+        case 'paste':
+          _paste();
+        case 'selectAll':
+          _selectAll();
         case 'selectAllOccurrences':
           _selectAllOccurrences();
         case 'gotoDef':

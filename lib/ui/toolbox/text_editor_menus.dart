@@ -621,6 +621,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'bdkb 与磁盘比较 compare disk diff saved'),
   EditorMenuItem('compareClipboard', _compareClipboardLabel, group: 'file',
       aliases: 'jjb 与剪贴板比较 clipboard diff'),
+  EditorMenuItem('compareDoc', _compareDocLabel, group: 'file',
+      aliases: 'wdkb 与文档比较 compare open doc'),
   EditorMenuItem('autosave', _autoSaveLabel, group: 'file',
       aliases: 'zdbc 自动保存 autosave'),
   EditorMenuItem('docs', _docsLabel, group: 'file', aliases: 'wd 文档 documents tabs'),
@@ -640,6 +642,9 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('navForward', _navForwardLabel, group: 'edit', aliases: 'qj 前进 forward'),
   EditorMenuItem('recentEdits', _recentEditsLabel, group: 'edit'),
   EditorMenuItem('copy', _copyLabel, group: 'edit', aliases: 'fz fuzhi copy'),
+  EditorMenuItem('cut', _fCut, group: 'edit', aliases: 'jq jianqie cut'),
+  EditorMenuItem('paste', _fPaste, group: 'edit', aliases: 'nt nian tie paste'),
+  EditorMenuItem('selectAll', _fSelectAll, group: 'edit', aliases: 'qx quxuan select all'),
   EditorMenuItem('clipHistory', _clipHistoryLabel, group: 'edit',
       aliases: 'jtb 剪贴板 clipboard paste'),
   EditorMenuItem('clear', _clearLabel, group: 'edit', aliases: 'ql qingkong clear'),
@@ -956,6 +961,7 @@ String _shrinkSelLabel(AppLocalizations l) => l.editorShrinkSelection;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
+String _compareDocLabel(AppLocalizations l) => l.editorCompareWithDoc;
 String _trimTrailingLabel(AppLocalizations l) => l.editorTrimTrailing;
 String _saveAsLabel(AppLocalizations l) => l.editorSaveAs;
 String _reloadLabel(AppLocalizations l) => l.editorReloadFile;
@@ -1133,6 +1139,20 @@ IconData menuIconOf(String id) {
       return Icons.link;
     case 'trimTrailing':
       return Icons.cleaning_services_outlined;
+    case 'cut':
+      return Icons.content_cut;
+    case 'paste':
+      return Icons.content_paste;
+    case 'selectAll':
+      return Icons.select_all;
+    case 'find':
+      return Icons.search;
+    case 'special':
+      return Icons.report_outlined;
+    case 'selectNext':
+      return Icons.playlist_add;
+    case 'compareDoc':
+      return Icons.compare_arrows;
     case 'saveAs':
       return Icons.save_as_outlined;
     case 'reload':
