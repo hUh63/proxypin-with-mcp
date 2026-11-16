@@ -2624,6 +2624,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
         '${stats.added}', '${stats.deleted}', '${stats.modified}');
     final li = _sideInfo(_leftPath, _left.text);
     final ri = _sideInfo(_rightPath, _right.text);
+    // 只差空白/大小写的修改行：单独统计出来，否则「重新格式化过一遍」
+    // 会被当成几十处逻辑改动。
+    final formatOnlyCount = _blocks.isEmpty ? 0 : _alignedRows().where(_isFormatOnly).length;
     await showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -2696,6 +2699,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   const SizedBox(height: 3),
                   Text(localizations.diffIgnoredList(_ignoreSummary()),
                       style: TextStyle(fontSize: 11, color: color.onSurfaceVariant)),
+                ],
+                if (formatOnlyCount > 0) ...[
+                  const SizedBox(height: 3),
+                  Text(localizations.diffFormatOnly('$formatOnlyCount'),
+                      style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade400)),
                 ],
                 const SizedBox(height: 10),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

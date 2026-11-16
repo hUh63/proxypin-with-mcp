@@ -6295,5 +6295,14 @@
   "editorCompareWithDoc": "Compare with another open file",
   "editorNoOtherDoc": "No other file is open",
   "editorQuickFixNone": "Nothing to fix on this line",
-  "editorQuickFixed": "Fixed"
+  "editorQuickFixed": "Fixed",
+  "diffFormatOnly": "Format-only changes: {n}",
+  "@diffFormatOnly": {
+    "description": "只差空白/大小写的修改行数（Beyond Compare 的 unimportant difference）",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
 }

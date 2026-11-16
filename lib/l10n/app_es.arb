@@ -3794,5 +3794,6 @@
   "editorCompareWithDoc": "Comparar con otro archivo abierto",
   "editorNoOtherDoc": "No hay otro archivo abierto",
   "editorQuickFixNone": "No hay nada que corregir en esta línea",
-  "editorQuickFixed": "Corregido"
+  "editorQuickFixed": "Corregido",
+  "diffFormatOnly": "Cambios solo de formato: {n}"
 }

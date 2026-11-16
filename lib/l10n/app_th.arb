@@ -3794,5 +3794,6 @@
   "editorCompareWithDoc": "เปรียบเทียบกับไฟล์ที่เปิดอยู่อื่น",
   "editorNoOtherDoc": "ไม่มีไฟล์อื่นเปิดอยู่",
   "editorQuickFixNone": "ไม่มีอะไรให้แก้ในบรรทัดนี้",
-  "editorQuickFixed": "แก้ไขแล้ว"
+  "editorQuickFixed": "แก้ไขแล้ว",
+  "diffFormatOnly": "เปลี่ยนเฉพาะรูปแบบ: {n}"
 }

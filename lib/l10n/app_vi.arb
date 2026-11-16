@@ -3794,5 +3794,6 @@
   "editorCompareWithDoc": "So sánh với tệp đang mở khác",
   "editorNoOtherDoc": "Không có tệp nào khác đang mở",
   "editorQuickFixNone": "Dòng này không có gì để sửa",
-  "editorQuickFixed": "Đã sửa"
+  "editorQuickFixed": "Đã sửa",
+  "diffFormatOnly": "Chỉ thay đổi định dạng: {n}"
 }

@@ -5484,5 +5484,6 @@
   "editorCompareWithDoc": "与另一个已打开的文件比较",
   "editorNoOtherDoc": "没有其它已打开的文件",
   "editorQuickFixNone": "这一行没有可自动修复的问题",
-  "editorQuickFixed": "已修复"
+  "editorQuickFixed": "已修复",
+  "diffFormatOnly": "仅格式差异 {n} 处"
 }
