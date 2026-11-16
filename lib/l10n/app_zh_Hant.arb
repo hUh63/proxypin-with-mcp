@@ -5482,5 +5482,7 @@
   "tableDiffIgnoreColumns": "忽略欄",
   "diffRestoreTooBig": "上次對比的內容太大沒有儲存，請重新選擇檔案",
   "editorCompareWithDoc": "與另一個已開啟的檔案比較",
-  "editorNoOtherDoc": "沒有其他已開啟的檔案"
+  "editorNoOtherDoc": "沒有其他已開啟的檔案",
+  "editorQuickFixNone": "這一行沒有可自動修復的問題",
+  "editorQuickFixed": "已修復"
 }

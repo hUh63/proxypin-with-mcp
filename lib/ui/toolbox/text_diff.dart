@@ -3260,7 +3260,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   Widget _editor(CodeForgeController controller, String title, {required bool isLeft}) {
-    final isDark = Theme.brightnessOf(context) == Brightness.dark;
     // 背景/默认文字色跟着配色方案（editorThemeOf 统一处理），语法 token 色仍是 atom-one。
     final editorTheme = editorThemeOf(context);
 

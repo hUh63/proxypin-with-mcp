@@ -3792,5 +3792,7 @@
   "tableDiffIgnoreColumns": "Abaikan kolom",
   "diffRestoreTooBig": "Perbandingan terakhir terlalu besar — pilih berkas lagi",
   "editorCompareWithDoc": "Bandingkan dengan berkas lain yang terbuka",
-  "editorNoOtherDoc": "Tidak ada berkas lain yang terbuka"
+  "editorNoOtherDoc": "Tidak ada berkas lain yang terbuka",
+  "editorQuickFixNone": "Tidak ada yang bisa diperbaiki di baris ini",
+  "editorQuickFixed": "Diperbaiki"
 }

@@ -736,6 +736,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('aiAssist', _aiAssistLabel, group: 'code',
       aliases: 'ai fz 辅助 assist explain comment review tests'),
   EditorMenuItem('format', _formatLabel, group: 'code', aliases: 'gs geshihua format beautify indent'),
+  EditorMenuItem('quickFix', _quickFixLabel, group: 'code',
+      aliases: 'kjxf 快速修复 quick fix lightbulb ctrl.'),
   EditorMenuItem('formatSel', _formatSelLabel, group: 'code', aliases: 'gs 选中格式化 format selection'),
   EditorMenuItem('surroundWith', _surroundWithLabel, group: 'code',
       aliases: 'bh 环绕 包裹 surround wrap if try for while block'),
@@ -961,6 +963,7 @@ String _shrinkSelLabel(AppLocalizations l) => l.editorShrinkSelection;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
+String _quickFixLabel(AppLocalizations l) => l.editorQuickFix;
 String _compareDocLabel(AppLocalizations l) => l.editorCompareWithDoc;
 String _trimTrailingLabel(AppLocalizations l) => l.editorTrimTrailing;
 String _saveAsLabel(AppLocalizations l) => l.editorSaveAs;
@@ -1153,6 +1156,8 @@ IconData menuIconOf(String id) {
       return Icons.playlist_add;
     case 'compareDoc':
       return Icons.compare_arrows;
+    case 'quickFix':
+      return Icons.lightbulb_outline;
     case 'saveAs':
       return Icons.save_as_outlined;
     case 'reload':

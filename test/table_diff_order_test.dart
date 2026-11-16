@@ -118,7 +118,7 @@ void main() {
       final r = _cmp(left, r4, key: 'id', ignoreColumns: {'id', 'ts'});
       expect(r.changedRowCount, 0);
     });
-  })
+  });
 
   group('忽略列：支持 #列号（两侧表头名字对不上时）', () {
     const left = 'id,time,val\n1,2026-01-01,a\n2,x,b\n';

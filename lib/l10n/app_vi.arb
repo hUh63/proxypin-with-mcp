@@ -3792,5 +3792,7 @@
   "tableDiffIgnoreColumns": "Bỏ qua cột",
   "diffRestoreTooBig": "Lần so sánh trước quá lớn nên không lưu — hãy chọn lại tệp",
   "editorCompareWithDoc": "So sánh với tệp đang mở khác",
-  "editorNoOtherDoc": "Không có tệp nào khác đang mở"
+  "editorNoOtherDoc": "Không có tệp nào khác đang mở",
+  "editorQuickFixNone": "Dòng này không có gì để sửa",
+  "editorQuickFixed": "Đã sửa"
 }

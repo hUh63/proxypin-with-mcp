@@ -3792,5 +3792,7 @@
   "tableDiffIgnoreColumns": "ไม่สนคอลัมน์",
   "diffRestoreTooBig": "การเปรียบเทียบครั้งก่อนใหญ่เกินไป — เลือกไฟล์ใหม่",
   "editorCompareWithDoc": "เปรียบเทียบกับไฟล์ที่เปิดอยู่อื่น",
-  "editorNoOtherDoc": "ไม่มีไฟล์อื่นเปิดอยู่"
+  "editorNoOtherDoc": "ไม่มีไฟล์อื่นเปิดอยู่",
+  "editorQuickFixNone": "ไม่มีอะไรให้แก้ในบรรทัดนี้",
+  "editorQuickFixed": "แก้ไขแล้ว"
 }

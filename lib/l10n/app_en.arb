@@ -6293,5 +6293,7 @@
   "tableDiffIgnoreColumns": "Ignore columns",
   "diffRestoreTooBig": "Last comparison was too large to keep — pick the files again",
   "editorCompareWithDoc": "Compare with another open file",
-  "editorNoOtherDoc": "No other file is open"
+  "editorNoOtherDoc": "No other file is open",
+  "editorQuickFixNone": "Nothing to fix on this line",
+  "editorQuickFixed": "Fixed"
 }

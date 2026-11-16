@@ -58,9 +58,33 @@ List<PatchHunk> buildPatchHunks(
   bool ignoreBlankLines = false,
   bool ignoreComments = false,
 }) {
+  // 文本末尾的换行不是一个「空行」：'a\nb\n' 是 2 行，diffLines 因为要保留
+  // 「末尾是否多一个换行」的差异会把它切成 3 段（最后一段为空），直接拿去写
+  // patch 会多出一条 ` ` 空行 + 一个空行，`git apply` 会认为文件末尾多了一行。
+  // 这里先摘掉末尾那一个换行再比较。
+  final l = left.endsWith('\n') ? left.substring(0, left.length - 1) : left;
+  final r = right.endsWith('\n') ? right.substring(0, right.length - 1) : right;
+  // 空文件是 0 行，不是「一个空行」：不特判的话，从空文件新建的补丁头会写成
+  // `-1,1`（说原文件有一行空行），`git apply` 就会在目标里凭空留一个空行。
+  if (l.isEmpty || r.isEmpty) {
+    final onlyRight = l.isEmpty;
+    final src = onlyRight ? r : l;
+    if (src.isEmpty) return const <PatchHunk>[];
+    final lines = src.split('\n').map((e) => (onlyRight ? '+' : '-') + e).toList();
+    return <PatchHunk>[
+      PatchHunk(
+        leftStart: 1,
+        leftCount: onlyRight ? 0 : lines.length,
+        rightStart: 1,
+        rightCount: onlyRight ? lines.length : 0,
+        lines: lines,
+      )
+    ];
+  }
+
   final diffs = diffLines(
-    left,
-    right,
+    l,
+    r,
     ignoreCase: ignoreCase,
     ignoreWhitespace: ignoreWhitespace,
     ignoreTrailingWhitespace: ignoreTrailingWhitespace,

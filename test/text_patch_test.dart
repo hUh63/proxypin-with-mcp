@@ -21,6 +21,9 @@ void main() {
       expect(p, contains('-3'));
       expect(p, contains('+X'));
       expect(p, contains(' 1'));
+      // 文本末尾的换行不是空行：不该多出一条「空格开头、内容为空」的行
+      expect(p.split('\n').where((e) => e == ' ').isEmpty, isTrue);
+      expect(p.trim().endsWith(' 5'), isTrue);
     });
 
     test('文件中部纯新增：hunk 头必须是「上一行,0」而不是 1', () {
@@ -29,8 +32,9 @@ void main() {
       const left = 'a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n';
       const right = 'a\nb\nc\nd\ne\nNEW\nf\ng\nh\ni\nj\n';
       final p = buildUnifiedPatch(left, right);
-      // 左起 3（第 3 行起），左计数 7；右起 3，右计数 8
-      expect(p, contains('@@ -3,7 +3,8 @@'));
+      // 差异在第 6 行（0 起下标 5），块向两侧各扩 3 行 → 覆盖左第 3~9 行共 6 行；
+      // 右侧多出插入的那一行，所以是 7 行。
+      expect(p, contains('@@ -3,6 +3,7 @@'));
       expect(p, contains('+NEW'));
       expect(p, isNot(contains('@@ -1,')));
     });
@@ -39,7 +43,8 @@ void main() {
       const left = 'a\nb\n';
       const right = 'NEW\na\nb\n';
       final p = buildUnifiedPatch(left, right);
-      expect(p, contains('@@ -0,0 +1,3 @@'));
+      // 原文件有 2 行，开头插入 1 行 → 左侧仍有 2 行（不是 0 行）。
+      expect(p, contains('@@ -1,2 +1,3 @@'));
       expect(p, contains('+NEW'));
     });
 

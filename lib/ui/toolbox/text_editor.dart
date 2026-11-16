@@ -2135,6 +2135,44 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _runLint();
   }
 
+  /// 光标处的快速修复（VS 的 Lightbulb / Ctrl+.）：只改这一处。
+  ///
+  /// 「全部修复」适合收尾；写到一半时更常见的是「就这一行报错，先修了它」，
+  /// 全文一起改反而会打断思路，也让 diff 变得不可读。
+  void _quickFixAtCaret() {
+    final controller = _doc?.controller;
+    final report = _lint;
+    if (controller == null) {
+      return;
+    }
+    final text = controller.text;
+    final caret = controller.selection.extentOffset.clamp(0, text.length);
+    final line = _lineOfOffset(text, caret) + 1;
+    LintDiagnostic? covering;
+    LintDiagnostic? sameLine;
+    if (report != null) {
+      for (final d in report.diagnostics) {
+        if (d.replacement == null) continue;
+        if (d.length > 0 && d.start <= caret && caret <= d.start + d.length) {
+          covering ??= d;
+        } else if (d.line == line) {
+          sameLine ??= d;
+        }
+      }
+    }
+    final target = covering ?? sameLine;
+    final rep = target?.replacement;
+    if (target == null || rep == null) {
+      _toast(localizations.editorQuickFixNone);
+      return;
+    }
+    controller.replaceRange(target.start, target.start + target.length, rep);
+    controller.selection = TextSelection.collapsed(
+        offset: (target.start + rep.length).clamp(0, controller.text.length));
+    _runLint();
+    _toast(localizations.editorQuickFixed);
+  }
+
   void _setLintEnabled(bool value) {
     setState(() => _lintEnabled = value);
     if (!value) {
@@ -11491,6 +11529,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('aiAssist', Icons.auto_awesome, loc.editorAiAssist),
           const PopupMenuDivider(),
           if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
+          _menuItem('quickFix', Icons.lightbulb_outline, loc.editorQuickFix),
           _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
           _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
           _menuItem('emmet', Icons.html, loc.editorEmmet),
@@ -11713,6 +11752,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _paste();
         case 'selectAll':
           _selectAll();
+        case 'quickFix':
+          _quickFixAtCaret();
         case 'selectAllOccurrences':
           _selectAllOccurrences();
         case 'gotoDef':
