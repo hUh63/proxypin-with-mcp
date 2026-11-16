@@ -3795,5 +3795,16 @@
   "editorNoOtherDoc": "ไม่มีไฟล์อื่นเปิดอยู่",
   "editorQuickFixNone": "ไม่มีอะไรให้แก้ในบรรทัดนี้",
   "editorQuickFixed": "แก้ไขแล้ว",
-  "diffFormatOnly": "เปลี่ยนเฉพาะรูปแบบ: {n}"
+  "diffFormatOnly": "เปลี่ยนเฉพาะรูปแบบ: {n}",
+  "diffApplyPatch": "ใช้แพตช์…",
+  "diffApplyPatchHint": "วาง unified diff (@@ -1,4 +1,5 @@) จะใช้กับด้านที่เลือก",
+  "diffApplyPatchToLeft": "ใช้กับด้านซ้าย",
+  "diffApplyPatchToRight": "ใช้กับด้านขวา",
+  "diffApplyPatchOk": "ใช้แล้ว {n} บล็อก",
+  "diffApplyPatchPartial": "ใช้แล้ว {n} บล็อก {failed} ไม่ตรง",
+  "diffApplyPatchFailed": "ไม่มีบล็อกที่ตรง ({failed})",
+  "editorReplacePreserveCase": "แทนที่ทั้งหมด (คงตัวพิมพ์)",
+  "editorReplacePreserveNone": "ไม่มีอะไรให้แทนที่ — พิมพ์คำค้นก่อน",
+  "editorReplacePreserveFallback": "การแทนที่ regex ที่มี $ ใช้ \"แทนที่ทั้งหมด\" ปกติ",
+  "editorReplacedCount": "แทนที่แล้ว {n}"
 }

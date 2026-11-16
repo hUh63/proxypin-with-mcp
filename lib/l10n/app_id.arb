@@ -3795,5 +3795,16 @@
   "editorNoOtherDoc": "Tidak ada berkas lain yang terbuka",
   "editorQuickFixNone": "Tidak ada yang bisa diperbaiki di baris ini",
   "editorQuickFixed": "Diperbaiki",
-  "diffFormatOnly": "Perubahan hanya format: {n}"
+  "diffFormatOnly": "Perubahan hanya format: {n}",
+  "diffApplyPatch": "Terapkan tambalan…",
+  "diffApplyPatchHint": "Tempel unified diff (@@ -1,4 +1,5 @@); diterapkan ke sisi yang dipilih.",
+  "diffApplyPatchToLeft": "Terapkan ke kiri",
+  "diffApplyPatchToRight": "Terapkan ke kanan",
+  "diffApplyPatchOk": "{n} blok diterapkan",
+  "diffApplyPatchPartial": "{n} diterapkan; blok {failed} tidak cocok",
+  "diffApplyPatchFailed": "Tidak ada blok yang cocok ({failed})",
+  "editorReplacePreserveCase": "Ganti semua (pertahankan huruf)",
+  "editorReplacePreserveNone": "Tidak ada yang diganti — isi dulu teks pencarian",
+  "editorReplacePreserveFallback": "Ganti regex dengan $ pakai \"Ganti semua\" biasa",
+  "editorReplacedCount": "{n} diganti"
 }

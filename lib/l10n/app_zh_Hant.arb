@@ -5485,5 +5485,16 @@
   "editorNoOtherDoc": "沒有其他已開啟的檔案",
   "editorQuickFixNone": "這一行沒有可自動修復的問題",
   "editorQuickFixed": "已修復",
-  "diffFormatOnly": "僅格式差異 {n} 處"
+  "diffFormatOnly": "僅格式差異 {n} 處",
+  "diffApplyPatch": "套用補丁…",
+  "diffApplyPatchHint": "貼上 unified diff（@@ -1,4 +1,5 @@ 這種），會套用到下面選的那一側。",
+  "diffApplyPatchToLeft": "套用到左側",
+  "diffApplyPatchToRight": "套用到右側",
+  "diffApplyPatchOk": "已套用 {n} 個差異區塊",
+  "diffApplyPatchPartial": "套用了 {n} 個區塊，第 {failed} 塊對不上",
+  "diffApplyPatchFailed": "一個區塊都沒套上（區塊 {failed}）",
+  "editorReplacePreserveCase": "全部取代（保留大小寫）",
+  "editorReplacePreserveNone": "沒有可取代的內容，先在尋找框輸入",
+  "editorReplacePreserveFallback": "帶 $ 的正則取代請用一般「全部取代」",
+  "editorReplacedCount": "已取代 {n} 處"
 }

@@ -3795,5 +3795,16 @@
   "editorNoOtherDoc": "Không có tệp nào khác đang mở",
   "editorQuickFixNone": "Dòng này không có gì để sửa",
   "editorQuickFixed": "Đã sửa",
-  "diffFormatOnly": "Chỉ thay đổi định dạng: {n}"
+  "diffFormatOnly": "Chỉ thay đổi định dạng: {n}",
+  "diffApplyPatch": "Áp dụng bản vá…",
+  "diffApplyPatchHint": "Dán unified diff (@@ -1,4 +1,5 @@), sẽ áp dụng vào bên bạn chọn.",
+  "diffApplyPatchToLeft": "Áp dụng bên trái",
+  "diffApplyPatchToRight": "Áp dụng bên phải",
+  "diffApplyPatchOk": "Đã áp dụng {n} khối",
+  "diffApplyPatchPartial": "Đã áp dụng {n}, khối {failed} không khớp",
+  "diffApplyPatchFailed": "Không khối nào khớp ({failed})",
+  "editorReplacePreserveCase": "Thay tất cả (giữ hoa thường)",
+  "editorReplacePreserveNone": "Không có gì để thay — nhập từ cần tìm trước",
+  "editorReplacePreserveFallback": "Thay thế regex có $ dùng \"Thay tất cả\" thường",
+  "editorReplacedCount": "Đã thay {n}"
 }

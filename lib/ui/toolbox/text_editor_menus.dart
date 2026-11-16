@@ -648,6 +648,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('clipHistory', _clipHistoryLabel, group: 'edit',
       aliases: 'jtb 剪贴板 clipboard paste'),
   EditorMenuItem('clear', _clearLabel, group: 'edit', aliases: 'ql qingkong clear'),
+  EditorMenuItem('replacePreserveCase', _replacePreserveLabel, group: 'edit',
+      aliases: 'tihuan 保留大小写 preserve case replace'),
   EditorMenuItem('replaceLine', _replaceLineLabel, group: 'edit', aliases: 'th 替换行 replace line'),
   EditorMenuItem('comment', _commentLabel, group: 'edit', aliases: 'zs zhushi comment'),
   EditorMenuItem('expandSel', _expandSelLabel, group: 'edit', aliases: 'kx 扩大选区 expand selection'),
@@ -963,6 +965,7 @@ String _shrinkSelLabel(AppLocalizations l) => l.editorShrinkSelection;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
+String _replacePreserveLabel(AppLocalizations l) => l.editorReplacePreserveCase;
 String _quickFixLabel(AppLocalizations l) => l.editorQuickFix;
 String _compareDocLabel(AppLocalizations l) => l.editorCompareWithDoc;
 String _trimTrailingLabel(AppLocalizations l) => l.editorTrimTrailing;
@@ -1158,6 +1161,8 @@ IconData menuIconOf(String id) {
       return Icons.compare_arrows;
     case 'quickFix':
       return Icons.lightbulb_outline;
+    case 'replacePreserveCase':
+      return Icons.text_fields;
     case 'saveAs':
       return Icons.save_as_outlined;
     case 'reload':

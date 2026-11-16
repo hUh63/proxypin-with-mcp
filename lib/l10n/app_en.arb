@@ -6304,5 +6304,68 @@
         "type": "String"
       }
     }
+  },
+  "diffApplyPatch": "Apply a patch…",
+  "@diffApplyPatch": {
+    "description": "diffApplyPatch"
+  },
+  "diffApplyPatchHint": "Paste a unified diff (@@ -1,4 +1,5 @@); it is applied to the side you pick below.",
+  "@diffApplyPatchHint": {
+    "description": "diffApplyPatchHint"
+  },
+  "diffApplyPatchToLeft": "Apply to left",
+  "@diffApplyPatchToLeft": {
+    "description": "diffApplyPatchToLeft"
+  },
+  "diffApplyPatchToRight": "Apply to right",
+  "@diffApplyPatchToRight": {
+    "description": "diffApplyPatchToRight"
+  },
+  "diffApplyPatchOk": "Applied {n} hunk(s)",
+  "@diffApplyPatchOk": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "diffApplyPatchPartial": "Applied {n}, hunk(s) {failed} did not match",
+  "@diffApplyPatchPartial": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "failed": {
+        "type": "String"
+      }
+    }
+  },
+  "diffApplyPatchFailed": "No hunk matched (block {failed})",
+  "@diffApplyPatchFailed": {
+    "placeholders": {
+      "failed": {
+        "type": "String"
+      }
+    }
+  },
+  "editorReplacePreserveCase": "Replace all (keep case)",
+  "@editorReplacePreserveCase": {
+    "description": "editorReplacePreserveCase"
+  },
+  "editorReplacePreserveNone": "Nothing to replace — type the search text first",
+  "@editorReplacePreserveNone": {
+    "description": "editorReplacePreserveNone"
+  },
+  "editorReplacePreserveFallback": "Regex replacement with $ is handled by the normal replace all",
+  "@editorReplacePreserveFallback": {
+    "description": "editorReplacePreserveFallback"
+  },
+  "editorReplacedCount": "Replaced {n}",
+  "@editorReplacedCount": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
   }
 }

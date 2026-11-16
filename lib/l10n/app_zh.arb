@@ -5485,5 +5485,16 @@
   "editorNoOtherDoc": "没有其它已打开的文件",
   "editorQuickFixNone": "这一行没有可自动修复的问题",
   "editorQuickFixed": "已修复",
-  "diffFormatOnly": "仅格式差异 {n} 处"
+  "diffFormatOnly": "仅格式差异 {n} 处",
+  "diffApplyPatch": "应用补丁…",
+  "diffApplyPatchHint": "粘贴 unified diff（@@ -1,4 +1,5 @@ 这种），会应用到下面选的那一侧。",
+  "diffApplyPatchToLeft": "应用到左侧",
+  "diffApplyPatchToRight": "应用到右侧",
+  "diffApplyPatchOk": "已应用 {n} 个差异块",
+  "diffApplyPatchPartial": "应用了 {n} 个块，第 {failed} 块对不上",
+  "diffApplyPatchFailed": "一个块都没打上（块 {failed}）",
+  "editorReplacePreserveCase": "全部替换（保留大小写）",
+  "editorReplacePreserveNone": "没有可替换的内容，先在查找框里输入",
+  "editorReplacePreserveFallback": "带 $ 的正则替换请用普通「全部替换」",
+  "editorReplacedCount": "已替换 {n} 处"
 }

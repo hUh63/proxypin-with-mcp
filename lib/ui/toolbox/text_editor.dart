@@ -2135,6 +2135,55 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _runLint();
   }
 
+  /// 「全部替换」但**保留原文大小写**（VS 的 Preserve Case）。
+  ///
+  /// 查找 `foo` 换成 `bar`：原文 `Foo` → `Bar`、`FOO` → `BAR`、`foo` → `bar`。
+  /// 批量改类名/变量名时，直接把整篇统一成一种大小写会把常量和类名一起毁掉。
+  ///
+  /// 正则模式下不接管（用户写 `$1` 是想引用分组），直接返回 -1 让调用方回退。
+  int _replaceAllPreserveCase() {
+    final fc = _doc?.findController;
+    final controller = _controller;
+    if (fc == null || controller == null) return 0;
+    if (fc.isRegex && fc.replaceInputController.text.contains(r'$')) return -1;
+    final query = fc.findInputController.text;
+    final repl = fc.replaceInputController.text;
+    if (query.isEmpty) return 0;
+    var pattern = fc.isRegex ? query : RegExp.escape(query);
+    if (fc.matchWholeWord) pattern = '\\b$pattern\\b';
+    final RegExp re;
+    try {
+      re = RegExp(pattern, caseSensitive: fc.caseSensitive);
+    } catch (_) {
+      return 0; // 正则写错就什么都不做，别把文本改坏
+    }
+    final text = controller.text;
+    var n = 0;
+    final out = text.replaceAllMapped(re, (m) {
+      n++;
+      return _applySourceCase(m.group(0) ?? '', repl);
+    });
+    if (n == 0) return 0;
+    controller.replaceRange(0, text.length, out);
+    return n;
+  }
+
+  /// 让 [word] 跟着 [source] 的大小写形态走。
+  ///
+  /// 只区分三种最常见的形态：全大写 / 首字母大写 / 全小写原样。
+  /// 不做 camelCase 逐词映射 —— 那需要拆词，猜错比不猜更糟。
+  static String _applySourceCase(String source, String word) {
+    if (word.isEmpty || source.isEmpty) return word;
+    final letters = source.replaceAll(RegExp(r'[^A-Za-z]'), '');
+    if (letters.length <= 1) return word;
+    if (letters == letters.toUpperCase()) return word.toUpperCase();
+    final first = letters[0];
+    if (first == first.toUpperCase()) {
+      return word[0].toUpperCase() + (word.length > 1 ? word.substring(1) : '');
+    }
+    return word;
+  }
+
   /// 光标处的快速修复（VS 的 Lightbulb / Ctrl+.）：只改这一处。
   ///
   /// 「全部修复」适合收尾；写到一半时更常见的是「就这一行报错，先修了它」，
@@ -11523,6 +11572,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('clipHistory', Icons.content_paste, loc.editorClipHistory),
           _menuItem('clear', Icons.backspace_outlined, loc.clear),
           _menuItem('replaceLine', Icons.sync_alt, loc.editorReplaceLine),
+          _menuItem('replacePreserveCase', Icons.text_fields, loc.editorReplacePreserveCase),
           const PopupMenuDivider(),
           _menuItem('comment', Icons.code, loc.editorToggleComment),
           PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right, id: 'lineOps')),
@@ -11781,6 +11831,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _paste();
         case 'selectAll':
           _selectAll();
+        case 'replacePreserveCase':
+          final n = _replaceAllPreserveCase();
+          if (n < 0) {
+            _toast(localizations.editorReplacePreserveFallback);
+          } else if (n == 0) {
+            _toast(localizations.editorReplacePreserveNone);
+          } else {
+            _toast(localizations.editorReplacedCount('$n'));
+          }
         case 'quickFix':
           _quickFixAtCaret();
         case 'selectAllOccurrences':

@@ -238,3 +238,225 @@ String buildUnifiedPatch(
   }
   return (hunks: hunks.length, added: added, removed: removed);
 }
+
+// ------------------------------ 反向：把补丁应用回去 ------------------------------
+
+/// 一个 hunk 的解析结果（只在内部用）。
+class _RawHunk {
+  final int oldStart;
+  final int oldCount;
+  final int newStart;
+  final int newCount;
+
+  /// 已剥掉前缀的行，`kind` 是 ' '(上下文) / '-'(旧侧) / '+'(新侧)。
+  final List<(String kind, String text)> items;
+
+  const _RawHunk({
+    required this.oldStart,
+    required this.oldCount,
+    required this.newStart,
+    required this.newCount,
+    required this.items,
+  });
+}
+
+/// 应用补丁的结果。
+class PatchApplyResult {
+  /// 是否**全部** hunk 都打上了。
+  final bool ok;
+
+  /// 应用后的文本（部分失败时也返回「能打上的那部分」，方便自己判断）。
+  final String text;
+
+  /// 成功应用的 hunk 数。
+  final int applied;
+
+  /// 失败的 hunk 序号（1 起，按补丁里出现的顺序）。
+  final List<int> failed;
+
+  /// 解析阶段的整体错误（比如根本不是补丁）；null 表示解析成功。
+  final String? error;
+
+  const PatchApplyResult({
+    required this.ok,
+    required this.text,
+    required this.applied,
+    required this.failed,
+    this.error,
+  });
+}
+
+/// 把 unified diff 应用到 [target] 上。
+///
+/// 用途：对比页导出的 `.patch` 贴回来，把「改过的那一侧」还原成另一侧 ——
+/// 相当于 Beyond Compare 的反向同步，也顺便验证「导出的补丁到底能不能打」。
+///
+/// [reverse] 为 true 时把 `+` / `-` 对调（等于撤销这个补丁）。
+///
+/// 匹配策略（比 `patch(1)` 宽松，适合手工导出的补丁）：
+/// 1. 先按 hunk 头里的行号定位；内容对不上就在附近 ±[fuzz] 行内平移找；
+/// 2. 单个 hunk 打不上不影响其它 hunk，结果里会列出失败序号；
+/// 3. 一律按「行」处理，换行符统一成 `\n` 后再拼回去。
+PatchApplyResult applyUnifiedPatch(
+  String target,
+  String patch, {
+  bool reverse = false,
+  int fuzz = 200,
+}) {
+  final parsed = _parsePatch(patch);
+  if (parsed.error != null) {
+    return PatchApplyResult(
+        ok: false, text: target, applied: 0, failed: const <int>[], error: parsed.error);
+  }
+  final hunks = parsed.hunks;
+
+  // 统一换行后按行切成数组，末尾换行单独记（split 会多给一个空串）
+  final endsWithNewline = target.endsWith('\n');
+  final lines = <String>[];
+  if (target.isNotEmpty) {
+    lines.addAll(target.replaceAll('\r\n', '\n').split('\n'));
+    if (endsWithNewline && lines.isNotEmpty && lines.last.isEmpty) lines.removeLast();
+  }
+
+  var applied = 0;
+  final failed = <int>[];
+  // 每打一条，后面 hunk 的行号基准都会平移；用 delta 记累计偏移。
+  var delta = 0;
+
+  for (var idx = 0; idx < hunks.length; idx++) {
+    final h = hunks[idx];
+    final oldSide = <String>[];
+    final newSide = <String>[];
+    for (final it in h.items) {
+      var kind = it.$1;
+      if (reverse) {
+        if (kind == '-') {
+          kind = '+';
+        } else if (kind == '+') {
+          kind = '-';
+        }
+      }
+      if (kind == ' ' || kind == '-') oldSide.add(it.$2);
+      if (kind == ' ' || kind == '+') newSide.add(it.$2);
+    }
+
+    final wantStart = (reverse ? h.newStart : h.oldStart) - 1 + delta;
+    int? at;
+    for (var d = 0; d <= fuzz; d++) {
+      // 由近及远：先原地，再往前、往后
+      for (final c in d == 0 ? <int>[wantStart] : <int>[wantStart + d, wantStart - d]) {
+        if (_matchesAt(lines, c, oldSide)) {
+          at = c;
+          break;
+        }
+      }
+      if (at != null) break;
+    }
+    if (at == null) {
+      failed.add(idx + 1);
+      continue;
+    }
+    lines.replaceRange(at, at + oldSide.length, newSide);
+    delta += newSide.length - oldSide.length;
+    applied++;
+  }
+
+  var out = lines.join('\n');
+  if (endsWithNewline && out.isNotEmpty) out += '\n';
+  return PatchApplyResult(ok: failed.isEmpty, text: out, applied: applied, failed: failed);
+}
+
+/// [lines] 从 [at] 起是否正好等于 [want]。
+bool _matchesAt(List<String> lines, int at, List<String> want) {
+  if (at < 0 || at + want.length > lines.length) return false;
+  for (var i = 0; i < want.length; i++) {
+    if (lines[at + i] != want[i]) return false;
+  }
+  return true;
+}
+
+class _ParsedPatch {
+  final List<_RawHunk> hunks;
+  final String? error;
+  const _ParsedPatch(this.hunks, this.error);
+}
+
+/// 解析 unified diff。只认 `@@ -a,b +c,d @@` 开头的块，
+/// 文件头（`---` / `+++` / `diff --git` / `index`）一律跳过。
+_ParsedPatch _parsePatch(String patch) {
+  final hunks = <_RawHunk>[];
+  final all = patch.replaceAll('\r\n', '\n').split('\n');
+  final headerRe = RegExp(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@');
+
+  int? oldStart;
+  var oldCount = 0;
+  var newStart = 0;
+  var newCount = 0;
+  var items = <(String, String)>[];
+
+  void flush() {
+    if (oldStart == null) return;
+    hunks.add(_RawHunk(
+      oldStart: oldStart!,
+      oldCount: oldCount,
+      newStart: newStart,
+      newCount: newCount,
+      items: _trimToCounts(items, oldCount, newCount),
+    ));
+    oldStart = null;
+    items = <(String, String)>[];
+  }
+
+  for (final line in all) {
+    final m = headerRe.firstMatch(line);
+    if (m != null) {
+      flush();
+      oldStart = int.parse(m.group(1)!);
+      oldCount = m.group(2) == null ? 1 : int.parse(m.group(2)!);
+      newStart = int.parse(m.group(3)!);
+      newCount = m.group(4) == null ? 1 : int.parse(m.group(4)!);
+      continue;
+    }
+    if (oldStart == null) continue; // 还没进第一个块
+    if (line.startsWith('\\')) continue; // \ No newline at end of file
+    if (line.isEmpty) {
+      // 补丁文本末尾的空行（split 的产物）：块内计数满了就不再计入
+      if (_countOld(items) >= oldCount && _countNew(items) >= newCount) continue;
+      items.add((' ', ''));
+      continue;
+    }
+    final c = line[0];
+    if (c == ' ' || c == '-' || c == '+') {
+      items.add((c, line.substring(1)));
+      if (_countOld(items) >= oldCount && _countNew(items) >= newCount) flush();
+    }
+  }
+  flush();
+
+  if (hunks.isEmpty) {
+    return const _ParsedPatch(<_RawHunk>[], '没有找到 @@ 块，看起来不是 unified diff');
+  }
+  return _ParsedPatch(hunks, null);
+}
+
+int _countOld(List<(String, String)> items) => items.where((e) => e.$1 != '+').length;
+
+int _countNew(List<(String, String)> items) => items.where((e) => e.$1 != '-').length;
+
+/// 按块头声明的行数裁掉多余的行（补丁里 @ 之外的空白、尾部空行）。
+List<(String, String)> _trimToCounts(
+    List<(String, String)> items, int oldCount, int newCount) {
+  final out = <(String, String)>[];
+  var o = 0;
+  var n = 0;
+  for (final it in items) {
+    final addsOld = it.$1 != '+';
+    final addsNew = it.$1 != '-';
+    if (addsOld && o >= oldCount) continue;
+    if (addsNew && n >= newCount) continue;
+    if (addsOld) o++;
+    if (addsNew) n++;
+    out.add(it);
+  }
+  return out;
+}

@@ -3795,5 +3795,16 @@
   "editorNoOtherDoc": "No hay otro archivo abierto",
   "editorQuickFixNone": "No hay nada que corregir en esta línea",
   "editorQuickFixed": "Corregido",
-  "diffFormatOnly": "Cambios solo de formato: {n}"
+  "diffFormatOnly": "Cambios solo de formato: {n}",
+  "diffApplyPatch": "Aplicar un parche…",
+  "diffApplyPatchHint": "Pega un unified diff (@@ -1,4 +1,5 @@); se aplica al lado que elijas.",
+  "diffApplyPatchToLeft": "Aplicar a la izquierda",
+  "diffApplyPatchToRight": "Aplicar a la derecha",
+  "diffApplyPatchOk": "Se aplicaron {n} bloques",
+  "diffApplyPatchPartial": "Se aplicaron {n}; los bloques {failed} no coinciden",
+  "diffApplyPatchFailed": "Ningún bloque coincide ({failed})",
+  "editorReplacePreserveCase": "Reemplazar todo (mantener mayúsculas)",
+  "editorReplacePreserveNone": "Nada que reemplazar: escribe primero la búsqueda",
+  "editorReplacePreserveFallback": "El reemplazo regex con $ usa \"Reemplazar todo\"",
+  "editorReplacedCount": "Reemplazados {n}"
 }

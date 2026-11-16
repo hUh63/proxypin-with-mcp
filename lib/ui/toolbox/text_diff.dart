@@ -1900,6 +1900,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportPatch());
           case 'copyPatch':
             unawaited(_copyUnifiedDiff());
+          case 'applyPatch':
+            unawaited(_applyPatchDialog());
           case 'normalize':
             unawaited(_normalizeBoth());
           case 'editInEditorLeft':
@@ -2123,6 +2125,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
         PopupMenuItem(value: 'exportPatch', child: Text(localizations.diffExportPatch)),
         PopupMenuItem(value: 'copyPatch', child: Text(localizations.diffCopyPatch)),
+        PopupMenuItem(value: 'applyPatch', child: Text(localizations.diffApplyPatch)),
         PopupMenuItem(value: 'normalize', child: Text(localizations.diffNormalize)),
         PopupMenuItem(value: 'editInEditorLeft', child: Text(localizations.diffOpenInEditorLeft)),
         PopupMenuItem(value: 'editInEditorRight', child: Text(localizations.diffOpenInEditorRight)),
@@ -4574,6 +4577,107 @@ class _TextDiffPageState extends State<TextDiffPage> {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     _toastText(localizations.copied);
+  }
+
+  /// 把一段 unified diff 贴回来应用到某一侧。
+  ///
+  /// 导出的补丁能打回去，才算真的「可回放」：把改动还原、或者拿别人的补丁
+  /// 试一下能不能对上（Beyond Compare 的「反向同步」就是这个）。
+  Future<void> _applyPatchDialog() async {
+    final loc = localizations;
+    final ctrl = TextEditingController(text: '');
+    // 先看剪贴板里是不是补丁，是的话直接填进去（手机上很少愿意手打）
+    try {
+      final clip = await Clipboard.getData(Clipboard.kTextPlain);
+      final t = clip?.text ?? '';
+      if (t.contains('@@ -') || t.startsWith('--- ')) ctrl.text = t;
+    } catch (_) {
+      // 读不到剪贴板就算了，让用户自己粘
+    }
+    if (!mounted) return;
+    final choice = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        final insets = MediaQuery.of(ctx).viewInsets.bottom;
+        return Padding(
+          padding: EdgeInsets.only(bottom: insets),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(loc.diffApplyPatch,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(loc.diffApplyPatchHint,
+                    style: TextStyle(fontSize: 11.5, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: ctrl,
+                  minLines: 6,
+                  maxLines: 12,
+                  style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(children: <Widget>[
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, 0),
+                      child: Text(loc.diffApplyPatchToLeft, style: const TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx, 1),
+                      child: Text(loc.diffApplyPatchToRight, style: const TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    final text = ctrl.text;
+    // sheet 关闭动画期间 builder 还会重建一次，延后释放
+    Future<void>.delayed(const Duration(milliseconds: 400), ctrl.dispose);
+    if (choice == null || !mounted) return;
+    if (text.trim().isEmpty) {
+      _toastText(loc.cannotBeEmpty);
+      return;
+    }
+    final toLeft = choice == 0;
+    final target = toLeft ? _left.text : _right.text;
+    final r = applyUnifiedPatch(target, text);
+    if (r.error != null) {
+      _toastText(r.error!);
+      return;
+    }
+    if (r.applied == 0) {
+      _toastText(loc.diffApplyPatchFailed('${r.failed.join(",")}'));
+      return;
+    }
+    setState(() {
+      if (toLeft) {
+        _left.text = r.text;
+      } else {
+        _right.text = r.text;
+      }
+    });
+    _compare();
+    _persistNow();
+    _toastText(r.ok
+        ? loc.diffApplyPatchOk('${r.applied}')
+        : loc.diffApplyPatchPartial('${r.applied}', '${r.failed.join(",")}'));
   }
 
   Future<void> _exportPatch() async {
