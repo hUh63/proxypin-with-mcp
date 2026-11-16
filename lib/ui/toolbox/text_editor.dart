@@ -4191,9 +4191,14 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final chosen = await showModalBottomSheet<_RefHit>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+      builder: (ctx) {
+        // 搜索框自动聚焦会拉起键盘：高度要减掉键盘，否则列表底部被挡住一半，
+        // 滑到底也看不到最后几条。
+        final insets = MediaQuery.of(ctx).viewInsets.bottom;
+        final usable = MediaQuery.of(ctx).size.height - insets;
+        return StatefulBuilder(builder: (ctx, setSheet) {
         return SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.7,
+          height: usable * 0.7,
           child: Column(children: <Widget>[
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
@@ -4246,9 +4251,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
             ),
           ]),
         );
-      }),
+      });
+      },
     );
-    query.dispose();
+    // sheet 的关闭动画期间 builder 还会重建一次，立刻 dispose 会撞上
+    // 「used after being disposed」。延后到动画结束再释放。
+    Future<void>.delayed(const Duration(milliseconds: 400), query.dispose);
     if (chosen == null || !mounted) return;
     await _openRefHit(chosen, selectLength: chosen.label.length);
   }
