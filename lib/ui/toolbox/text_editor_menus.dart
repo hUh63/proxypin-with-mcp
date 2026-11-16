@@ -625,6 +625,13 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'zdbc 自动保存 autosave'),
   EditorMenuItem('docs', _docsLabel, group: 'file', aliases: 'wd 文档 documents tabs'),
   EditorMenuItem('close', _closeLabel, group: 'file', aliases: 'gb guanbi close'),
+  EditorMenuItem('saveAs', _saveAsLabel, group: 'file', aliases: 'lcwc 另存为 save as'),
+  EditorMenuItem('reload', _reloadLabel, group: 'file', aliases: 'czd 重新加载 reload disk'),
+  EditorMenuItem('encodingReload', _encodingReloadLabel, group: 'file',
+      aliases: 'bm 编码 重读 encoding reload charset'),
+  EditorMenuItem('encodingSave', _encodingSaveLabel, group: 'file',
+      aliases: 'bm 编码 另存 encoding save charset'),
+  EditorMenuItem('closeOthers', _closeOthersLabel, group: 'file', aliases: 'gbqt 关闭其他 close others'),
   // 编辑（19 项）
   EditorMenuItem('search', _searchLabel, group: 'edit', aliases: 'ss sousuo chazhao find search'),
   EditorMenuItem('undo', _undoLabel, group: 'edit', aliases: 'cx chexiao undo'),
@@ -650,6 +657,47 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'xzkh 选择到括号 select bracket'),
   EditorMenuItem('trimTrailing', _trimTrailingLabel, group: 'edit',
       aliases: 'xwjw 行尾空白 trim whitespace'),
+  EditorMenuItem('indent', _indentLabel, group: 'edit', aliases: 'sj 缩进 indent tab'),
+  EditorMenuItem('outdent', _outdentLabel, group: 'edit', aliases: 'fsj 反缩进 outdent unindent'),
+  EditorMenuItem('up', _moveUpLabel, group: 'edit', aliases: 'sys 上移 move up'),
+  EditorMenuItem('down', _moveDownLabel, group: 'edit', aliases: 'xys 下移 move down'),
+  EditorMenuItem('duplicate', _duplicateLineLabel, group: 'edit',
+      aliases: 'fzh 复制行 duplicate line'),
+  EditorMenuItem('delete', _deleteLineLabel, group: 'edit', aliases: 'sch 删除行 delete line'),
+  EditorMenuItem('insertAbove', _insertAboveLabel, group: 'edit',
+      aliases: 'sr 上方插入 insert line above'),
+  EditorMenuItem('insertBelow', _insertBelowLabel, group: 'edit',
+      aliases: 'xr 下方插入 insert line below'),
+  EditorMenuItem('join', _joinLabel, group: 'edit', aliases: 'hb 合并行 join lines'),
+  EditorMenuItem('align', _alignLabel, group: 'edit', aliases: 'dw 对齐 align column = :'),
+  EditorMenuItem('sortAsc', _sortAscLabel, group: 'edit', aliases: 'px 排序 升序 sort asc'),
+  EditorMenuItem('sortDesc', _sortDescLabel, group: 'edit', aliases: 'px 排序 降序 sort desc'),
+  EditorMenuItem('sortLenAsc', _sortLenAscLabel, group: 'edit',
+      aliases: 'px 按长度 升序 sort length'),
+  EditorMenuItem('sortLenDesc', _sortLenDescLabel, group: 'edit',
+      aliases: 'px 按长度 降序 sort length desc'),
+  EditorMenuItem('dedupe', _dedupeLabel, group: 'edit', aliases: 'qc 去重 dedupe unique'),
+  EditorMenuItem('removeBlank', _removeBlankLabel, group: 'edit',
+      aliases: 'sckh 删除空行 remove blank'),
+  EditorMenuItem('collapseBlank', _collapseBlankLabel, group: 'edit',
+      aliases: 'hbkh 合并空行 collapse blank'),
+  EditorMenuItem('appendComma', _appendCommaLabel, group: 'edit',
+      aliases: 'jdh 加逗号 append comma trailing'),
+  EditorMenuItem('stripComma', _stripCommaLabel, group: 'edit',
+      aliases: 'jdh 去逗号 strip comma trailing'),
+  EditorMenuItem('indentToSpaces', _indentToSpacesLabel, group: 'edit',
+      aliases: 'sj 缩进 空格 tab to spaces'),
+  EditorMenuItem('indentToTabs', _indentToTabsLabel, group: 'edit',
+      aliases: 'sj 缩进 Tab spaces to tab'),
+  EditorMenuItem('upper', _upperLabel, group: 'edit', aliases: 'dx 大写 uppercase upper'),
+  EditorMenuItem('lower', _lowerLabel, group: 'edit', aliases: 'xx 小写 lowercase lower'),
+  EditorMenuItem('title', _titleLabel, group: 'edit', aliases: 'sc 首字母 title case'),
+  EditorMenuItem('camel', _camelLabel, group: 'edit', aliases: 'tf 驼峰 camel case'),
+  EditorMenuItem('pascal', _pascalLabel, group: 'edit', aliases: 'dxt 大驼峰 pascal case'),
+  EditorMenuItem('snake', _snakeLabel, group: 'edit', aliases: 'xhc 下划线 snake case'),
+  EditorMenuItem('kebab', _kebabLabel, group: 'edit', aliases: 'lxc 短横线 kebab case'),
+  EditorMenuItem('constant', _constantLabel, group: 'edit',
+      aliases: 'cls 常量 大写下划线 constant case'),
   EditorMenuItem('detectIndent', _detectIndentLabel, group: 'view',
       aliases: 'jcsj 检测缩进 detect indent'),
   EditorMenuItem('diskChange', _diskChangeLabel, group: 'view',
@@ -909,6 +957,40 @@ String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
 String _trimTrailingLabel(AppLocalizations l) => l.editorTrimTrailing;
+String _saveAsLabel(AppLocalizations l) => l.editorSaveAs;
+String _reloadLabel(AppLocalizations l) => l.editorReloadFile;
+String _encodingReloadLabel(AppLocalizations l) => l.editorEncodingReload;
+String _encodingSaveLabel(AppLocalizations l) => l.editorEncodingSave;
+String _closeOthersLabel(AppLocalizations l) => l.editorCloseOthers;
+String _indentLabel(AppLocalizations l) => l.editorIndent;
+String _outdentLabel(AppLocalizations l) => l.editorOutdent;
+String _moveUpLabel(AppLocalizations l) => l.editorMoveLineUp;
+String _moveDownLabel(AppLocalizations l) => l.editorMoveLineDown;
+String _duplicateLineLabel(AppLocalizations l) => l.editorDuplicateLine;
+String _deleteLineLabel(AppLocalizations l) => l.editorDeleteLine;
+String _insertAboveLabel(AppLocalizations l) => l.editorInsertLineAbove;
+String _insertBelowLabel(AppLocalizations l) => l.editorInsertLineBelow;
+String _joinLabel(AppLocalizations l) => l.editorJoinLine;
+String _alignLabel(AppLocalizations l) => l.editorAlignBy;
+String _sortAscLabel(AppLocalizations l) => l.editorSortAsc;
+String _sortDescLabel(AppLocalizations l) => l.editorSortDesc;
+String _sortLenAscLabel(AppLocalizations l) => l.editorSortByLengthAsc;
+String _sortLenDescLabel(AppLocalizations l) => l.editorSortByLengthDesc;
+String _dedupeLabel(AppLocalizations l) => l.editorDedupeLines;
+String _removeBlankLabel(AppLocalizations l) => l.editorRemoveBlankLines;
+String _collapseBlankLabel(AppLocalizations l) => l.editorCollapseBlankLines;
+String _appendCommaLabel(AppLocalizations l) => l.editorAppendComma;
+String _stripCommaLabel(AppLocalizations l) => l.editorStripComma;
+String _indentToSpacesLabel(AppLocalizations l) => l.editorIndentToSpaces;
+String _indentToTabsLabel(AppLocalizations l) => l.editorIndentToTabs;
+String _upperLabel(AppLocalizations l) => l.editorUpperCase;
+String _lowerLabel(AppLocalizations l) => l.editorLowerCase;
+String _titleLabel(AppLocalizations l) => l.editorTitleCase;
+String _camelLabel(AppLocalizations l) => l.editorCamelCase;
+String _pascalLabel(AppLocalizations l) => l.editorPascalCase;
+String _snakeLabel(AppLocalizations l) => l.editorSnakeCase;
+String _kebabLabel(AppLocalizations l) => l.editorKebabCase;
+String _constantLabel(AppLocalizations l) => l.editorConstantCase;
 String _detectIndentLabel(AppLocalizations l) => l.editorDetectIndent;
 String _diskChangeLabel(AppLocalizations l) => l.editorDiskChange;
 String _toggleBreakpointLabel(AppLocalizations l) => l.editorToggleBreakpoint;
@@ -1051,6 +1133,74 @@ IconData menuIconOf(String id) {
       return Icons.link;
     case 'trimTrailing':
       return Icons.cleaning_services_outlined;
+    case 'saveAs':
+      return Icons.save_as_outlined;
+    case 'reload':
+      return Icons.refresh;
+    case 'encodingReload':
+      return Icons.sync;
+    case 'encodingSave':
+      return Icons.save_outlined;
+    case 'closeOthers':
+      return Icons.tab_unselected;
+    case 'indent':
+      return Icons.format_indent_increase;
+    case 'outdent':
+      return Icons.format_indent_decrease;
+    case 'up':
+      return Icons.arrow_upward;
+    case 'down':
+      return Icons.arrow_downward;
+    case 'duplicate':
+      return Icons.content_copy;
+    case 'delete':
+      return Icons.delete_outline;
+    case 'insertAbove':
+      return Icons.vertical_align_top;
+    case 'insertBelow':
+      return Icons.vertical_align_bottom;
+    case 'join':
+      return Icons.merge_type;
+    case 'align':
+      return Icons.format_align_left;
+    case 'sortAsc':
+      return Icons.sort;
+    case 'sortDesc':
+      return Icons.sort;
+    case 'sortLenAsc':
+      return Icons.straighten;
+    case 'sortLenDesc':
+      return Icons.straighten;
+    case 'dedupe':
+      return Icons.filter_alt_outlined;
+    case 'removeBlank':
+      return Icons.compress;
+    case 'collapseBlank':
+      return Icons.unfold_less;
+    case 'appendComma':
+      return Icons.add;
+    case 'stripComma':
+      return Icons.remove;
+    case 'indentToSpaces':
+      return Icons.space_bar;
+    case 'indentToTabs':
+      return Icons.keyboard_tab;
+    case 'upper':
+      return Icons.text_increase;
+    case 'lower':
+      return Icons.text_decrease;
+    case 'title':
+      return Icons.title;
+    case 'camel':
+      return Icons.text_fields;
+    case 'pascal':
+      return Icons.text_fields;
+    case 'snake':
+      return Icons.text_fields;
+    case 'kebab':
+      return Icons.text_fields;
+    case 'constant':
+      return Icons.text_fields;
     case 'detectIndent':
       return Icons.format_indent_increase;
     case 'diskChange':

@@ -118,5 +118,38 @@ void main() {
       final r = _cmp(left, r4, key: 'id', ignoreColumns: {'id', 'ts'});
       expect(r.changedRowCount, 0);
     });
+  })
+
+  group('忽略列：支持 #列号（两侧表头名字对不上时）', () {
+    const left = 'id,time,val\n1,2026-01-01,a\n2,x,b\n';
+    // 右表第二列叫 timestamp，与左表的 time 名字对不上
+    const right = 'id,timestamp,val\n1,2026-11-11,a\n2,y,b\n';
+
+    test('按名字忽略不掉（表头不同）', () {
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'time'});
+      expect(r.changedRowCount, 2);
+    });
+
+    test('按 #2 忽略第二列后只剩 val 的差异', () {
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'#2'});
+      expect(r.changedRowCount, 1);
+    });
+
+    test('#1 是被忽略的自增 id 列（名字还不同），按 name 对齐后无差异', () {
+      const l = 'id,name\n1,tom\n2,amy\n';
+      const rr = 'index,name\n9,tom\n8,amy\n';
+      final r = _cmp(l, rr, key: 'name', ignoreColumns: {'#1'});
+      expect(r.changedRowCount, 0);
+    });
+
+    test('越界 / 非法的 #N 不抛异常', () {
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'#99', '#x', '#'});
+      expect(r, isNotNull);
+    });
+
+    test('名字和列号可以混着用', () {
+      final r = _cmp(left, right, key: 'id', ignoreColumns: {'time', '#2'});
+      expect(r.changedRowCount, 2);
+    });
   });
 }

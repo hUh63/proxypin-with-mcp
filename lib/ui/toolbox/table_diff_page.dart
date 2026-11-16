@@ -105,9 +105,18 @@ class _TableDiffPageState extends State<TableDiffPage> {
     }
     if (_key.isNotEmpty && !_leftTable!.headers.contains(_key)) _key = '';
     // 表换了，原来选的「忽略列」可能已经不存在（不在任何一侧的表头里）。
-    _ignoredColumns = _ignoredColumns
-        .where((n) => _leftTable!.headers.contains(n) || _rightTable!.headers.contains(n))
-        .toSet();
+    // 表换了，原来选的「忽略列」可能已经不存在：按名字选的看表头里还有没有，
+    // 按位置选的（#N）看还有没有第 N 列 —— 不能一刀切按名字过滤，否则位置项会被清光。
+    final maxCols = _leftTable!.headers.length > _rightTable!.headers.length
+        ? _leftTable!.headers.length
+        : _rightTable!.headers.length;
+    _ignoredColumns = _ignoredColumns.where((n) {
+      if (n.startsWith('#')) {
+        final i = int.tryParse(n.substring(1));
+        return i != null && i >= 1 && i <= maxCols;
+      }
+      return _leftTable!.headers.contains(n) || _rightTable!.headers.contains(n);
+    }).toSet();
     _result = compareTables(
       _leftTable!,
       _rightTable!,
@@ -120,6 +129,13 @@ class _TableDiffPageState extends State<TableDiffPage> {
   }
 
   /// 选「不参与比较的列」。
+  /// 一个勾选会同时登记「名字」和「#列号」两个键，直接数长度会翻倍。
+  int _ignoredColCount() {
+    final pos = _ignoredColumns.where((e) => e.startsWith('#')).length;
+    if (pos > 0) return pos;
+    return _ignoredColumns.length;
+  }
+
   Future<void> _pickIgnoredColumns(List<String> headers) async {
     if (headers.isEmpty) return;
     final loc = localizations;
@@ -134,21 +150,43 @@ class _TableDiffPageState extends State<TableDiffPage> {
               width: 320,
               child: SingleChildScrollView(
                 child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                  for (final h in headers)
-                    CheckboxListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      value: sel.contains(h),
-                      title: Text(h.trim().isEmpty ? '(blank)' : h,
-                          style: const TextStyle(fontSize: 13)),
-                      onChanged: (v) => setD(() {
-                        if (v == true) {
-                          sel.add(h);
-                        } else {
-                          sel.remove(h);
-                        }
-                      }),
-                    ),
+                  // 每项同时按「列名」和「#列号」登记：名字在两侧表头不同时也能忽略，
+                  // 只按名字存的旧配置照样生效。
+                  for (var i = 0; i < headers.length; i++)
+                    Builder(builder: (ctx) {
+                      final h = headers[i];
+                      final posKey = '#${i + 1}';
+                      final on = sel.contains(h) || sel.contains(posKey);
+                      return CheckboxListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        value: on,
+                        title: Row(children: <Widget>[
+                          SizedBox(
+                            width: 26,
+                            child: Text('#${i + 1}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                          ),
+                          Expanded(
+                            child: Text(h.trim().isEmpty ? '(blank)' : h,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13)),
+                          ),
+                        ]),
+                        onChanged: (v) => setD(() {
+                          if (v == true) {
+                            sel.add(posKey);
+                            if (h.trim().isNotEmpty) sel.add(h);
+                          } else {
+                            sel.remove(posKey);
+                            sel.remove(h);
+                          }
+                        }),
+                      );
+                    }),
                 ]),
               ),
             ),
@@ -415,7 +453,7 @@ class _TableDiffPageState extends State<TableDiffPage> {
             label: Text(
                 _ignoredColumns.isEmpty
                     ? loc.tableDiffIgnoreColumns
-                    : '${loc.tableDiffIgnoreColumns} (${_ignoredColumns.length})',
+                    : '${loc.tableDiffIgnoreColumns} (${_ignoredColCount()})',
                 style: TextStyle(
                     fontSize: 11,
                     color: _ignoredColumns.isEmpty ? null : Theme.of(context).colorScheme.primary)),

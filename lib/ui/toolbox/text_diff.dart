@@ -47,6 +47,7 @@ import 'package:proxypin/ui/toolbox/table_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/text_diff.dart';
+import 'package:proxypin/utils/text_patch.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart' show kTextEditorWorkspaceKey;
 import 'package:proxypin/utils/text_file_reader.dart';
 import 'package:proxypin/utils/tool_snippets.dart';
@@ -4543,7 +4544,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   ///
   /// 复制到剪贴板再手动粘到聊天窗口那两步，手机上经常被别的 App 挤掉。
   Future<void> _shareDiff() async {
-    final text = _unifiedDiff(_alignedRows());
+    final text = _unifiedDiff();
     if (text.trim().isEmpty) {
       _toastText(localizations.cannotBeEmpty);
       return;
@@ -4558,7 +4559,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 把 unified diff 复制到剪贴板：手机上「发给别人看我改了什么」最常用的路径。
   Future<void> _copyUnifiedDiff() async {
-    final text = _unifiedDiff(_alignedRows());
+    final text = _unifiedDiff();
     if (text.trim().isEmpty) {
       _toastText(localizations.cannotBeEmpty);
       return;
@@ -4569,12 +4570,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   Future<void> _exportPatch() async {
-    final rows = _alignedRows();
-    if (rows.isEmpty) {
-      _toastText(localizations.cannotBeEmpty);
+    final text = _unifiedDiff();
+    if (text.trim().isEmpty) {
+      _toastText(localizations.diffNoChange);
       return;
     }
-    final text = _unifiedDiff(rows);
     try {
       final saved = await FilePicker.saveFile(
           fileName: 'changes.patch', bytes: Uint8List.fromList(utf8.encode(text)));
@@ -4585,63 +4585,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
   }
 
-  String _unifiedDiff(List<DiffRow> rows) {
-    final lName = _leftName.isEmpty ? 'original' : _leftName;
-    final rName = _rightName.isEmpty ? 'modified' : _rightName;
-    final out = StringBuffer()
-      ..writeln('--- a/$lName')
-      ..writeln('+++ b/$rName');
-    final changed = <int>[];
-    for (var i = 0; i < rows.length; i++) {
-      if (rows[i].type != DiffRowType.equal) changed.add(i);
-    }
-    if (changed.isEmpty) return out.toString();
-    // 相邻变更（间隔 <= 2*context+1）合成一个 hunk
-    const context = 3;
-    var start = changed.first;
-    var end = changed.first;
-    for (final i in changed.skip(1)) {
-      if (i - end <= context * 2 + 1) {
-        end = i;
-      } else {
-        _writeHunk(out, rows, start, end, context);
-        start = i;
-        end = i;
-      }
-    }
-    _writeHunk(out, rows, start, end, context);
-    return out.toString();
-  }
-
-  void _writeHunk(StringBuffer out, List<DiffRow> rows, int from, int to, int context) {
-    final first = from - context < 0 ? 0 : from - context;
-    final last = to + context >= rows.length ? rows.length - 1 : to + context;
-    int? lStart;
-    int? rStart;
-    var lCount = 0;
-    var rCount = 0;
-    for (var i = first; i <= last; i++) {
-      final r = rows[i];
-      if (lStart == null && r.leftLine != null) lStart = r.leftLine;
-      if (rStart == null && r.rightLine != null) rStart = r.rightLine;
-      if (r.type != DiffRowType.added && r.leftLine != null) lCount++;
-      if (r.type != DiffRowType.deleted && r.rightLine != null) rCount++;
-    }
-    out.writeln('@@ -${lStart ?? 1},$lCount +${rStart ?? 1},$rCount @@');
-    for (var i = first; i <= last; i++) {
-      final r = rows[i];
-      switch (r.type) {
-        case DiffRowType.deleted:
-          out.writeln('-${r.leftText ?? ''}');
-        case DiffRowType.added:
-          out.writeln('+${r.rightText ?? ''}');
-        case DiffRowType.modified:
-          out.writeln('-${r.leftText ?? ''}');
-          out.writeln('+${r.rightText ?? ''}');
-        case DiffRowType.equal:
-          out.writeln(' ${r.leftText ?? r.rightText ?? ''}');
-      }
-    }
+  /// 标准 unified diff（.patch）。
+  ///
+  /// **刻意不看忽略开关**：开了「忽略大小写 / 空白 / 注释 / 行序」时，
+  /// 这些差异在界面里不显示，但补丁里必须照原样出现 —— 少了行，
+  /// `git apply` / `patch -p1` 找不到对应上下文，整个补丁打不上。
+  /// 内容完全相同时返回空串。
+  String _unifiedDiff() {
+    final lName = _leftName.isEmpty ? 'left.txt' : _leftName;
+    final rName = _rightName.isEmpty ? 'right.txt' : _rightName;
+    return buildUnifiedPatch(_left.text, _right.text,
+        leftName: 'a/$lName', rightName: 'b/$rName');
   }
 
   Future<void> _exportReport() async {

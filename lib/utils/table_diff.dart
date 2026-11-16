@@ -301,6 +301,16 @@ TableDiffResult compareTables(
   // 按**列名**匹配（左右任一表能对上就算），因为两侧同名但下标可能不同。
   final ignoredPositions = <int>{};
   if (ignoreColumns.isNotEmpty) {
+    // 两种写法都认：
+    //   '#3'  按**列下标**（1 起，数的是对齐后的列顺序）—— 用于两侧表头名字完全
+    //         对不上的场景（一边叫「时间」一边叫 timestamp，靠名字忽略不掉）。
+    //   '时间' 按**列名**，左右任一表能对上就算（两侧同名但下标可能不同）。
+    for (final e in ignoreColumns) {
+      if (e.startsWith('#')) {
+        final n = int.tryParse(e.substring(1));
+        if (n != null && n >= 1 && n <= columns.length) ignoredPositions.add(n - 1);
+      }
+    }
     for (var c = 0; c < columns.length; c++) {
       final ci = columns[c];
       final lName = ci.leftIndex >= 0 && ci.leftIndex < left.headers.length ? left.headers[ci.leftIndex] : '';

@@ -10981,6 +10981,18 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 关掉除当前文档以外的全部文档。
   ///
   /// 其中有改过的只问一次（不逐个弹——手机上弹一串对话框最难忍受）。
+  /// 命令面板/工具栏调用的「换编码重读」：文件菜单里是内联写的，这里包一份。
+  Future<void> _reloadWithEncodingPick() async {
+    final enc = await showEncodingPicker(context, _encoding, title: localizations.editorEncoding);
+    if (enc != null) await _reloadWithEncoding(enc);
+  }
+
+  /// 命令面板/工具栏调用的「换编码另存」。
+  Future<void> _saveWithEncodingPick() async {
+    final enc = await showEncodingPicker(context, _encoding, title: localizations.editorEncoding);
+    if (enc != null) await _saveWithEncoding(enc);
+  }
+
   Future<void> _closeOtherDocs() async {
     final others = _docs.docs.where((d) => !identical(d, _doc)).toList(growable: false);
     if (others.isEmpty) return;
@@ -11628,6 +11640,69 @@ class _TextEditorPageState extends State<TextEditorPage> {
           final nextStatusTop = !_prefs.statusBarTop;
           unawaited(TextEditorPrefsStore.update(_prefs.copyWith(statusBarTop: nextStatusTop)));
           setState(() {});
+        // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后
+        //      要从命令面板也能直接执行（否则点了没反应）。
+        case 'indent':
+          _indentLines(outdent: false);
+        case 'outdent':
+          _indentLines(outdent: true);
+        case 'up':
+          _lineOp('up');
+        case 'down':
+          _lineOp('down');
+        case 'duplicate':
+          _lineOp('duplicate');
+        case 'delete':
+          _lineOp('delete');
+        case 'join':
+          _joinLines();
+        case 'insertAbove':
+          _insertBlankLine(above: true);
+        case 'insertBelow':
+          _insertBlankLine(above: false);
+        case 'align':
+          _applyLineTransform(alignByDelimiter);
+        case 'sortAsc':
+          _sortLines(ascending: true);
+        case 'sortDesc':
+          _sortLines(ascending: false);
+        case 'sortLenAsc':
+          _sortLinesByLength(ascending: true);
+        case 'sortLenDesc':
+          _sortLinesByLength(ascending: false);
+        case 'dedupe':
+          _dedupeLines();
+        case 'removeBlank':
+          _applyLineTransform(removeBlankLines);
+        case 'collapseBlank':
+          _applyLineTransform(collapseBlankLines);
+        case 'appendComma':
+          _toggleTrailingComma(add: true);
+        case 'stripComma':
+          _toggleTrailingComma(add: false);
+        case 'indentToSpaces':
+          _convertIndent(toSpaces: true);
+        case 'indentToTabs':
+          _convertIndent(toSpaces: false);
+        case 'upper':
+        case 'lower':
+        case 'title':
+        case 'camel':
+        case 'pascal':
+        case 'snake':
+        case 'kebab':
+        case 'constant':
+          _changeCase(value);
+        case 'saveAs':
+          unawaited(_download());
+        case 'reload':
+          unawaited(_reloadFile());
+        case 'encodingReload':
+          unawaited(_reloadWithEncodingPick());
+        case 'encodingSave':
+          unawaited(_saveWithEncodingPick());
+        case 'closeOthers':
+          unawaited(_closeOtherDocs());
         case 'selectAllOccurrences':
           _selectAllOccurrences();
         case 'gotoDef':
