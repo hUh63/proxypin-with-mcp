@@ -2121,7 +2121,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'filterMod',
             checked: _typeFilter == 'modified',
             child: Text(localizations.diffOnlyModified)),
-        PopupMenuCheckboxItem(
+        CheckedPopupMenuItem(
             value: 'filterFormat',
             checked: _typeFilter == 'format',
             child: Text(localizations.diffFormatOnlyFilter)),
