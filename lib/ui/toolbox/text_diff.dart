@@ -2336,7 +2336,47 @@ class _TextDiffPageState extends State<TextDiffPage> {
     if (index != null && _movedEnds.contains(index)) {
       parts.add('↕ ${localizations.diffMoved}');
     }
+    // 整块都只是空白/大小写差异：和「改了逻辑」不是一回事，单独标出来。
+    if (index != null && _formatOnlyBlocksOf().contains(index)) {
+      parts.add('≡ ${localizations.diffFormatOnlyFilter}');
+    }
     return parts.isEmpty ? '${b.leftLines.length}/${b.rightLines.length}' : parts.join(' · ');
+  }
+
+  /// 「整块都只是空白/大小写差异」的块下标集合（按 blocks 缓存）。
+  ///
+  /// 单遍扫描 + 游标推进：rows 和 blocks 都是按位置升序的，不用每个块都把
+  /// 全表扫一遍。
+  Set<int>? _formatOnlyFor;
+  Set<int> _formatOnlyBlocks = const <int>{};
+
+  Set<int> _formatOnlyBlocksOf() {
+    if (identical(_formatOnlyFor, _blocks)) return _formatOnlyBlocks;
+    final ok = <int>{};
+    final bad = <int>{};
+    final rows = _alignedRows();
+    var bi = 0;
+    for (final r in rows) {
+      if (r.type != DiffRowType.modified) continue;
+      final ln = r.leftLine;
+      if (ln == null) continue;
+      // 游标：跳过已经结束的块（1 起行号 vs 块内 0 起下标，边界要 +1）
+      while (bi < _blocks.length && ln > _blocks[bi].leftStart + _blocks[bi].leftLines.length) {
+        bi++;
+      }
+      if (bi >= _blocks.length) break;
+      final b = _blocks[bi];
+      if (ln < b.leftStart + 1) continue;
+      if (!b.isModify) continue;
+      if (_isFormatOnly(r)) {
+        ok.add(bi);
+      } else {
+        bad.add(bi);
+      }
+    }
+    _formatOnlyFor = _blocks;
+    _formatOnlyBlocks = ok.difference(bad);
+    return _formatOnlyBlocks;
   }
 
   /// 复制「当前差异块」的原文/新文（`-` / `+` 前缀），贴到聊天或工单里能直接看。
