@@ -657,8 +657,6 @@
   "securityAuditRuleExportSuccess": "規則已匯出",
   "securityAuditRuleExportFailed": "匯出失敗：",
   "toolboxGroupUtilities": "實用工具",
-  "toolboxGroupRuntime": "執行與除錯",
-  "toolboxGroupCapture": "抓包與重放",
   "toolboxLog": "日誌",
   "toolboxLogTip": "日誌檢視與過濾",
   "toolboxPerformance": "效能監控",
@@ -2032,7 +2030,6 @@
   "backupCopied": "已複製到剪貼簿",
   "backupJustNow": "剛剛",
   "cfgDeskGeneratingConfig": "正在生成配置檔案...",
-  "cfgDeskCannotReadFile": "無法讀取檔案",
   "rootProxyNoAccess": "沒有拿到 root 許可權：裝置可能未 root，或你沒有在授權框裡點允許",
   "rootProxyClosed": "已關閉，iptables 規則已清理",
   "rootProxyStopError": "關閉時出錯：規則可能仍在，建議重試或重啟裝置",
@@ -2458,21 +2455,7 @@
   "jwtHeader": "頭部",
   "jwtPayload": "載荷",
   "encoderParams": "引數",
-  "toolboxEncodeUrlTip": "URL 編碼/解碼",
-  "toolboxEncodeBase64Tip": "Base64 編碼/解碼",
-  "toolboxEncodeUnicodeTip": "Unicode 編碼/解碼",
-  "toolboxEncodeBase32Tip": "Base32 編碼/解碼",
-  "toolboxEncodeHexTip": "Hex 編碼/解碼",
-  "toolboxEncodeHtmlTip": "HTML 實體編碼/解碼",
-  "toolboxEncodeGzipTip": "GZip 壓縮/解壓",
-  "toolboxEncodeDeflateTip": "Deflate/ZLib 壓縮/解壓",
-  "toolboxUrlParams": "URL 引數",
-  "toolboxUrlParamsTip": "URL 查詢引數解析/構建",
-  "toolboxMd5Tip": "MD5 雜湊",
   "toolboxRsaTip": "RSA 加解密/簽名",
-  "toolboxHashTip": "雜湊摘要（MD5/SHA/SM3）",
-  "toolboxBcryptTip": "Bcrypt 雜湊",
-  "cipherButtonTip": "{label} 加密/解密",
   "toolboxSslPinning": "SSL 證書固定",
   "toolboxSign": "位元組簽名",
   "signTabSign": "簽名",
@@ -4325,13 +4308,6 @@
       }
     }
   },
-  "@cipherButtonTip": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
   "@regexpMatches": {
     "placeholders": {
       "count": {
@@ -4444,7 +4420,6 @@
   "wsTrafficAuthDesc": "關閉後同一區域網路內任何裝置都能讀取你的即時流量",
   "wsTrafficToken": "存取權杖",
   "toolboxCertCheck": "憑證檢測",
-  "toolboxCertCheckTip": "檢查伺服器憑證是否由已被攻破的 CA 簽發",
   "certCheckHint": "網域或 URL，如 example.com",
   "certCheckRun": "檢測",
   "certCheckSafe": "未發現已知問題",
@@ -4522,7 +4497,6 @@
   "editorConsoleBackend": "執行後端",
   "editorConsoleRun": "執行",
   "editorConsoleRunDocument": "執行整篇",
-  "editorConsoleError": "執行出錯",
   "editorLintPrev": "上一處",
   "editorLintNext": "下一處",
   "editorLintFilterAll": "全部",
@@ -4688,7 +4662,6 @@
   "diffApplyAllLeft": "全部：左側覆蓋右側",
   "diffApplyAllRight": "全部：右側覆蓋左側",
   "toolboxConvert": "轉換工具",
-  "toolboxGroupDiag": "診斷",
   "convertRadix": "進位",
   "convertBytes": "位元組",
   "convertFloat": "浮點",
@@ -5426,8 +5399,6 @@
   "diffCopyBlock": "複製這一處差異",
   "editorLineStartCursors": "每行行首加游標",
   "diffOrderAgnostic": "忽略行順序（只比內容集合）",
-  "diffOrderOnlyLeft": "只在左邊",
-  "diffOrderOnlyRight": "只在右邊",
   "diffOrderIdentical": "兩側內容完全一致，只是順序不同",
   "editorLineEndCursors": "每行行尾加游標",
   "editorEmmet": "展開縮寫（Emmet）",

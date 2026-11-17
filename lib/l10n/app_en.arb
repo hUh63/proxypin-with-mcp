@@ -722,8 +722,6 @@
   "securityAuditRuleExportSuccess": "Rules exported",
   "securityAuditRuleExportFailed": "Export failed:",
   "toolboxGroupUtilities": "Utilities",
-  "toolboxGroupRuntime": "Runtime & debug",
-  "toolboxGroupCapture": "Capture & replay",
   "toolboxLog": "Logs",
   "toolboxLogTip": "View and filter runtime logs",
   "toolboxPerformance": "Performance",
@@ -3089,7 +3087,6 @@
   "backupCopied": "Copied to clipboard",
   "backupJustNow": "Just now",
   "cfgDeskGeneratingConfig": "Generating config file...",
-  "cfgDeskCannotReadFile": "Unable to read the file",
   "rootProxyNoAccess": "Root permission not granted: the device may not be rooted, or you did not tap Allow in the authorization dialog",
   "rootProxyClosed": "Turned off; the iptables rules have been cleaned up",
   "rootProxyStopError": "Error while turning it off: rules may still be present; retry or reboot the device",
@@ -4040,28 +4037,7 @@
   "jwtHeader": "Header",
   "jwtPayload": "Payload",
   "encoderParams": "Params",
-  "toolboxEncodeUrlTip": "URL Encode/Decode",
-  "toolboxEncodeBase64Tip": "Base64 Encode/Decode",
-  "toolboxEncodeUnicodeTip": "Unicode Encode/Decode",
-  "toolboxEncodeBase32Tip": "Base32 Encode/Decode",
-  "toolboxEncodeHexTip": "Hex Encode/Decode",
-  "toolboxEncodeHtmlTip": "HTML Entity Encode/Decode",
-  "toolboxEncodeGzipTip": "GZip Compress/Decompress",
-  "toolboxEncodeDeflateTip": "Deflate/ZLib Compress/Decompress",
-  "toolboxUrlParams": "URL Params",
-  "toolboxUrlParamsTip": "URL Query Params Parse/Build",
-  "toolboxMd5Tip": "MD5 Hash",
   "toolboxRsaTip": "RSA Encrypt/Decrypt/Sign",
-  "toolboxHashTip": "Hash digest (MD5/SHA/SM3)",
-  "toolboxBcryptTip": "Bcrypt hash",
-  "cipherButtonTip": "{label} Encrypt/Decrypt",
-  "@cipherButtonTip": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
   "toolboxSslPinning": "SSL Pinning",
   "toolboxSign": "ByteDance Signatures",
   "signTabSign": "Signatures",
@@ -4600,10 +4576,6 @@
   "@toolboxCertCheck": {
     "description": "Certificate risk check (toolbox entry)."
   },
-  "toolboxCertCheckTip": "Check whether a server certificate is issued by a compromised CA",
-  "@toolboxCertCheckTip": {
-    "description": "Tooltip for the certificate check tool."
-  },
   "certCheckHint": "Domain or URL, e.g. example.com",
   "@certCheckHint": {
     "description": "Placeholder for the domain/URL input."
@@ -4733,7 +4705,6 @@
   "editorConsoleBackend": "Runtime",
   "editorConsoleRun": "Run",
   "editorConsoleRunDocument": "Run document",
-  "editorConsoleError": "Execution failed",
   "editorLintPrev": "Previous problem",
   "editorLintNext": "Next problem",
   "editorLintFilterAll": "All",
@@ -4978,7 +4949,6 @@
   "diffApplyAllLeft": "All: left → right",
   "diffApplyAllRight": "All: right → left",
   "toolboxConvert": "Convert tools",
-  "toolboxGroupDiag": "Diagnostics",
   "convertRadix": "Radix",
   "convertBytes": "Bytes",
   "convertFloat": "Float",
@@ -6209,8 +6179,6 @@
   "diffCopyBlock": "Copy this block",
   "editorLineStartCursors": "Cursor at every line start",
   "diffOrderAgnostic": "Ignore line order (compare as a set)",
-  "diffOrderOnlyLeft": "Only in the left",
-  "diffOrderOnlyRight": "Only in the right",
   "diffOrderIdentical": "Both sides contain the same lines — only the order differs",
   "editorLineEndCursors": "Cursor at every line end",
   "editorEmmet": "Expand abbreviation (Emmet)",
