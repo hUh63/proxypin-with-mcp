@@ -1894,6 +1894,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             setState(() => _typeFilter = _typeFilter == 'deleted' ? null : 'deleted');
           case 'filterMod':
             setState(() => _typeFilter = _typeFilter == 'modified' ? null : 'modified');
+          case 'filterFormat':
+            setState(() => _typeFilter = _typeFilter == 'format' ? null : 'format');
           case 'exportHtml':
             unawaited(_exportHtmlReport());
           case 'exportPatch':
@@ -2119,6 +2121,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'filterMod',
             checked: _typeFilter == 'modified',
             child: Text(localizations.diffOnlyModified)),
+        PopupMenuCheckboxItem(
+            value: 'filterFormat',
+            checked: _typeFilter == 'format',
+            child: Text(localizations.diffFormatOnlyFilter)),
         const PopupMenuDivider(),
         PopupMenuItem(value: 'exportMarkdown', child: Text(localizations.diffExportMarkdown)),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
@@ -4999,7 +5005,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
     for (var i = 0; i < rows.length; i++) {
       final type = rows[i].type;
       if (type == DiffRowType.equal) continue;
-      if (_typeFilter != null && type.name != _typeFilter) continue;
+      if (_typeFilter != null) {
+        // 'format' 不是 DiffRowType 的名字，而是「只差空白/大小写」这一类
+        if (_typeFilter == 'format') {
+          if (!_isFormatOnly(rows[i])) continue;
+        } else if (type.name != _typeFilter) {
+          continue;
+        }
+      }
       for (var d = -1; d <= 1; d++) {
         final j = i + d;
         if (j >= 0 && j < rows.length) keep.add(j);

@@ -3816,5 +3816,6 @@
   "editorReplaceThis": "Ganti",
   "tableDiffColumnSummary": "Ringkasan kolom",
   "tableDiffIgnoreColumnsHint": "Ketuk kolom untuk mengabaikannya",
-  "diffApplyPatchPreview": "Pratinjau tambalan"
+  "diffApplyPatchPreview": "Pratinjau tambalan",
+  "diffFormatOnlyFilter": "Hanya perubahan format"
 }

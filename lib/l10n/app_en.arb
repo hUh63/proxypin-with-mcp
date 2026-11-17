@@ -6414,5 +6414,9 @@
   "diffApplyPatchPreview": "Patch preview",
   "@diffApplyPatchPreview": {
     "description": "diffApplyPatchPreview"
+  },
+  "diffFormatOnlyFilter": "Format-only changes",
+  "@diffFormatOnlyFilter": {
+    "description": "only format changes"
   }
 }

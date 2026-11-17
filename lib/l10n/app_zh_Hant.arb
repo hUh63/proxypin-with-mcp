@@ -5506,5 +5506,6 @@
   "editorReplaceThis": "取代",
   "tableDiffColumnSummary": "欄摘要",
   "tableDiffIgnoreColumnsHint": "點一欄可以忽略它（不參與比較）",
-  "diffApplyPatchPreview": "補丁套用預覽"
+  "diffApplyPatchPreview": "補丁套用預覽",
+  "diffFormatOnlyFilter": "僅格式差異"
 }

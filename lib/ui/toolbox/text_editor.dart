@@ -10974,7 +10974,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
       }
       return true;
     } catch (e) {
-      _toast('$e');
+      // 带上文件名：保存全部 / 自动保存时可能同时有好几份，只说异常文本
+      // 根本不知道是哪一份没存上。
+      final name = path.split(Platform.pathSeparator).last;
+      _toast('${localizations.fail}: $name · $e');
       return false;
     }
   }

@@ -3817,5 +3817,6 @@
   "editorReplaceThis": "Substituir",
   "tableDiffColumnSummary": "Resumo das colunas",
   "tableDiffIgnoreColumnsHint": "Toque numa coluna para ignorá-la",
-  "diffApplyPatchPreview": "Prévia do patch"
+  "diffApplyPatchPreview": "Prévia do patch",
+  "diffFormatOnlyFilter": "Só alterações de formato"
 }

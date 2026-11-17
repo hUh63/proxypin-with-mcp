@@ -3816,5 +3816,6 @@
   "editorReplaceThis": "Thay",
   "tableDiffColumnSummary": "Tóm tắt cột",
   "tableDiffIgnoreColumnsHint": "Chạm vào cột để bỏ qua",
-  "diffApplyPatchPreview": "Xem trước bản vá"
+  "diffApplyPatchPreview": "Xem trước bản vá",
+  "diffFormatOnlyFilter": "Chỉ thay đổi định dạng"
 }

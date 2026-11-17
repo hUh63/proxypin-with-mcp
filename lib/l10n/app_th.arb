@@ -3816,5 +3816,6 @@
   "editorReplaceThis": "แทนที่",
   "tableDiffColumnSummary": "สรุปคอลัมน์",
   "tableDiffIgnoreColumnsHint": "แตะคอลัมน์เพื่อข้าม",
-  "diffApplyPatchPreview": "ตัวอย่างแพตช์"
+  "diffApplyPatchPreview": "ตัวอย่างแพตช์",
+  "diffFormatOnlyFilter": "เฉพาะการเปลี่ยนรูปแบบ"
 }
