@@ -78,16 +78,26 @@ class BodyReader {
 
   bool _computeCloseDelimited() {
     final msg = message;
-    return msg is HttpResponse &&
-        msg.status.code >= 200 &&
-        msg.status.code != 204 &&
-        msg.status.code != 304 &&
-        msg.status.code != 205 &&
-        msg.headers.get(HttpHeaders.CONTENT_LENGTH) == null &&
-        !msg.headers.isChunked &&
-        msg.headers.contentType != 'video/x-flv' &&
-        !msg.headers.contentType.startsWith('text/event-stream') &&
-        msg.request?.method != HttpMethod.connect;
+    if (msg is! HttpResponse) return false;
+    if (msg.status.code < 200 ||
+        msg.status.code == 204 ||
+        msg.status.code == 304 ||
+        msg.status.code == 205) {
+      return false;
+    }
+    // chunked 优先于 Content-Length（RFC 9112 §6.3），这类响应有自己的解析路径。
+    if (msg.headers.isChunked) return false;
+    if (msg.headers.contentType == 'video/x-flv') return false;
+    if (msg.headers.contentType.startsWith('text/event-stream')) return false;
+    if (msg.request?.method == HttpMethod.connect) return false;
+    final rawLen = msg.headers.get(HttpHeaders.CONTENT_LENGTH);
+    if (rawLen == null) return true;
+    // 有 Content-Length 但解析不出合法长度（非数字 / 负数 / 空串）：
+    // `contentLength` getter 此时会返回 0，解码器就当「没有 body」直接收工 ——
+    // 真实 body 字节被当成「下一条 HTTP 消息」去解析，轻则关连接、重则请求走私。
+    // 这种情况按 close-delimited 处理（读到连接关闭为止）才是安全的兜底。
+    final len = msg.headers.getInt(HttpHeaders.CONTENT_LENGTH);
+    return len == null || len < 0;
   }
 
   Result readBody(Uint8List data) {
