@@ -2381,13 +2381,31 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void _cut() {
     final controller = _controller;
     if (controller == null) return;
-    final sel = controller.selection;
-    if (!sel.isValid || sel.isCollapsed) return;
     final text = controller.text;
-    final selected = text.substring(sel.start, sel.end);
-    Clipboard.setData(ClipboardData(text: selected));
-    controller.text = text.replaceRange(sel.start, sel.end, '');
-    controller.selection = TextSelection.collapsed(offset: sel.start);
+    final sel = controller.selection;
+    if (!sel.isValid) return;
+    if (!sel.isCollapsed) {
+      Clipboard.setData(ClipboardData(text: text.substring(sel.start, sel.end)));
+      controller.text = text.replaceRange(sel.start, sel.end, '');
+      controller.selection = TextSelection.collapsed(offset: sel.start);
+      return;
+    }
+    // 没有选区时按 VS 的约定**剪切整行**（Ctrl+X 不选东西 = 把这行拿走，
+    // 配合「粘贴」就能整行搬移）。以前这里是直接 return，点了没有任何反应。
+    if (text.isEmpty) return;
+    final at = sel.start.clamp(0, text.length);
+    final lineStart = at == 0 ? 0 : text.lastIndexOf('\n', at - 1) + 1;
+    var lineEnd = text.indexOf('\n', at);
+    // 连行尾换行一起剪走，否则每剪一行会剩一个空行
+    if (lineEnd < 0) {
+      lineEnd = text.length;
+    } else {
+      lineEnd += 1;
+    }
+    Clipboard.setData(ClipboardData(text: text.substring(lineStart, lineEnd)));
+    controller.text = text.replaceRange(lineStart, lineEnd, '');
+    controller.selection =
+        TextSelection.collapsed(offset: lineStart.clamp(0, controller.text.length));
   }
 
   /// 取 [offset] 所在行的前导空白（用于粘贴对齐缩进）。
