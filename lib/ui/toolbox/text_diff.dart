@@ -4545,8 +4545,16 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _toastText(localizations.cannotBeEmpty);
       return;
     }
+    // 带着「当前差异块」的行号进去：比到第 120 行想看完整上下文，
+    // 打开编辑器还得自己再滚一遍，很打断节奏。
+    int? line;
+    if (_navIndex >= 0 && _navIndex < _blocks.length) {
+      final b = _blocks[_navIndex];
+      final l = isLeft ? b.leftStart + 1 : b.rightStart + 1;
+      if (l > 0) line = l;
+    }
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => TextEditorPage(initialText: text),
+      builder: (_) => TextEditorPage(initialText: text, initialLine: line),
     ));
   }
 
@@ -4666,6 +4674,59 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _toastText(loc.diffApplyPatchFailed('${r.failed.join(",")}'));
       return;
     }
+    // 改之前先让人看一眼「会变成什么样」：补丁是批量改文本的操作，
+    // 打错方向（该打右侧打到左侧）或者只打上一半，事后很难还原。
+    final preview = buildUnifiedPatch(target, r.text);
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.diffApplyPatchPreview, style: const TextStyle(fontSize: 15)),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  r.ok
+                      ? loc.diffApplyPatchOk('${r.applied}')
+                      : loc.diffApplyPatchPartial('${r.applied}', '${r.failed.join(",")}'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: r.ok ? null : Colors.orange.shade800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                if (preview.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        // 预览最多 40 行：再多也读不进去，确认按钮点得更犹豫
+                        preview.split('\n').take(40).join('\n'),
+                        style: const TextStyle(fontSize: 10.5, fontFamily: 'monospace'),
+                      ),
+                    ),
+                  )
+                else
+                  Text(loc.diffNoChange, style: const TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.confirm)),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
     setState(() {
       if (toLeft) {
         _left.text = r.text;

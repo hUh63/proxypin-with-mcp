@@ -3815,5 +3815,6 @@
   "editorReplaceSkip": "Omitir",
   "editorReplaceThis": "Reemplazar",
   "tableDiffColumnSummary": "Resumen de columnas",
-  "tableDiffIgnoreColumnsHint": "Toca una columna para ignorarla"
+  "tableDiffIgnoreColumnsHint": "Toca una columna para ignorarla",
+  "diffApplyPatchPreview": "Vista previa del parche"
 }

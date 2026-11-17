@@ -3816,5 +3816,6 @@
   "editorReplaceSkip": "Pular",
   "editorReplaceThis": "Substituir",
   "tableDiffColumnSummary": "Resumo das colunas",
-  "tableDiffIgnoreColumnsHint": "Toque numa coluna para ignorá-la"
+  "tableDiffIgnoreColumnsHint": "Toque numa coluna para ignorá-la",
+  "diffApplyPatchPreview": "Prévia do patch"
 }

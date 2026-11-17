@@ -6410,5 +6410,9 @@
   "tableDiffIgnoreColumnsHint": "Tap a column to ignore it",
   "@tableDiffIgnoreColumnsHint": {
     "description": "tableDiffIgnoreColumnsHint"
+  },
+  "diffApplyPatchPreview": "Patch preview",
+  "@diffApplyPatchPreview": {
+    "description": "diffApplyPatchPreview"
   }
 }

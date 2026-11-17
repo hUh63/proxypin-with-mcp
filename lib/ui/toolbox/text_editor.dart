@@ -105,7 +105,13 @@ class TextEditorPage extends StatefulWidget {
   final String? windowId;
   final String? initialText;
 
-  const TextEditorPage({super.key, this.windowId, this.initialText});
+  /// 打开后直接跳到这一行（1 起）。
+  ///
+  /// 给「对比页 → 送进编辑器」用：比到第 120 行想看完整上下文，
+  /// 打开编辑器还要自己再滚一遍很打断节奏。
+  final int? initialLine;
+
+  const TextEditorPage({super.key, this.windowId, this.initialText, this.initialLine});
 
   @override
   State<TextEditorPage> createState() => _TextEditorPageState();
@@ -646,6 +652,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (widget.initialText != null) {
       final doc = _docs.create(name: localizations.editorUntitled, text: widget.initialText!);
       _activate(doc);
+      _jumpToInitialLine();
       return;
     }
 
@@ -657,6 +664,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
       doc.newline = _newlineChars(_newline);
       _activate(doc);
     }
+  }
+
+  /// 打开后跳到 [TextEditorPage.initialLine] 指定的行。
+  ///
+  /// 必须等第一帧：这时候 editor 的布局还没做，`scrollToLine` 会滚不动。
+  void _jumpToInitialLine() {
+    final line = widget.initialLine;
+    if (line == null || line < 1) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final c = _controller;
+      final doc = _doc;
+      if (c == null || doc == null) return;
+      final totalLines = c.text.isEmpty ? 1 : '\n'.allMatches(c.text).length + 1;
+      final l = line.clamp(1, totalLines);
+      final offset = _offsetOfLine(c.text, l - 1);
+      c.selection = TextSelection.collapsed(offset: offset.clamp(0, c.text.length));
+      c.scrollToLine(l - 1);
+      setState(() {});
+    });
   }
 
   void _activate(EditorDocument doc) {

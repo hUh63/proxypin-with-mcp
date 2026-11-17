@@ -5505,5 +5505,6 @@
   "editorReplaceSkip": "跳过",
   "editorReplaceThis": "替换",
   "tableDiffColumnSummary": "列摘要",
-  "tableDiffIgnoreColumnsHint": "点一列可以忽略它（不参与比较）"
+  "tableDiffIgnoreColumnsHint": "点一列可以忽略它（不参与比较）",
+  "diffApplyPatchPreview": "补丁应用预览"
 }

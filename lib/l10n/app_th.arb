@@ -3815,5 +3815,6 @@
   "editorReplaceSkip": "ข้าม",
   "editorReplaceThis": "แทนที่",
   "tableDiffColumnSummary": "สรุปคอลัมน์",
-  "tableDiffIgnoreColumnsHint": "แตะคอลัมน์เพื่อข้าม"
+  "tableDiffIgnoreColumnsHint": "แตะคอลัมน์เพื่อข้าม",
+  "diffApplyPatchPreview": "ตัวอย่างแพตช์"
 }
