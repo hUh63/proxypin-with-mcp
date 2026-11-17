@@ -886,6 +886,104 @@ class _TableDiffPageState extends State<TableDiffPage> {
     }
   }
 
+  /// 列级摘要：每列的状态（仅左 / 仅右 / 有变化 N 格 / 相同）。
+  ///
+  /// 行摘要只告诉你「有 12 行变了」，看不出是「整列时间戳都在变」还是
+  /// 「某一列拼错了」—— 这两件事的处理方式完全不同。点一下还能就地忽略该列。
+  Future<void> _showColumnSummary(TableDiffResult r) async {
+    final loc = localizations;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        final color = Theme.of(ctx).colorScheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Text(loc.tableDiffColumnSummary,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: r.columns.length,
+                  itemBuilder: (ctx2, i) {
+                    final c = r.columns[i];
+                    final ignored = _ignoredColumns.contains('#${i + 1}') ||
+                        _ignoredColumns.contains(c.name);
+                    final onlyLeft = c.rightIndex < 0;
+                    final onlyRight = c.leftIndex < 0;
+                    final String status;
+                    if (onlyLeft) {
+                      status = loc.diffOnlyDeleted;
+                    } else if (onlyRight) {
+                      status = loc.diffOnlyAdded;
+                    } else if (c.changedCells > 0) {
+                      status = '~${c.changedCells}';
+                    } else {
+                      status = '=';
+                    }
+                    final statusColor = onlyLeft
+                        ? const Color(0xFFC62828)
+                        : onlyRight
+                            ? const Color(0xFF2E7D32)
+                            : (c.changedCells > 0 ? Colors.orange.shade800 : color.onSurfaceVariant);
+                    return ListTile(
+                      dense: true,
+                      leading: SizedBox(
+                        width: 24,
+                        child: Text('#${i + 1}',
+                            style: TextStyle(fontSize: 10.5, color: color.onSurfaceVariant)),
+                      ),
+                      title: Text(c.name.trim().isEmpty ? '(blank)' : c.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: ignored ? color.onSurfaceVariant : null,
+                            decoration: ignored ? TextDecoration.lineThrough : null,
+                          )),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                        Text(status,
+                            style: TextStyle(
+                                fontSize: 11, fontFamily: 'monospace', color: statusColor)),
+                        const SizedBox(width: 8),
+                        Icon(ignored ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            size: 16, color: color.onSurfaceVariant),
+                      ]),
+                      onTap: () {
+                        setState(() {
+                          if (ignored) {
+                            _ignoredColumns.remove('#${i + 1}');
+                            _ignoredColumns.remove(c.name);
+                          } else {
+                            _ignoredColumns.add('#${i + 1}');
+                            if (c.name.trim().isNotEmpty) _ignoredColumns.add(c.name);
+                          }
+                          _recompute();
+                        });
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                child: Text(loc.tableDiffIgnoreColumnsHint,
+                    style: TextStyle(fontSize: 10.5, color: color.onSurfaceVariant)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _statBar(TableDiffResult result, AppLocalizations loc) {
     final style = TextStyle(
       fontSize: 11,
@@ -912,6 +1010,18 @@ class _TableDiffPageState extends State<TableDiffPage> {
             Text('−${result.removedRows}', style: style.copyWith(color: const Color(0xFFC62828))),
             const SizedBox(width: 8),
           ],
+          // 列级摘要：这张表到底哪几列变了？点一下能看到，也能直接忽略。
+          InkWell(
+            onTap: () => _showColumnSummary(result),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(children: <Widget>[
+                const Icon(Icons.view_column_outlined, size: 12),
+                const SizedBox(width: 2),
+                Text('${result.changedColumnCount}/${result.columns.length}', style: style),
+              ]),
+            ),
+          ),
           if (_leftName.isNotEmpty || _rightName.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(right: 8),

@@ -3808,5 +3808,12 @@
   "editorReplacePreserveFallback": "Ganti regex dengan $ pakai \"Ganti semua\" biasa",
   "editorReplacedCount": "{n} diganti",
   "statsTrailingWs": "Baris dengan spasi di akhir",
-  "convertZhAuto": "Deteksi otomatis"
+  "convertZhAuto": "Deteksi otomatis",
+  "editorReplaceStepByStep": "Ganti satu per satu…",
+  "editorReplaceStepTitle": "Cocok {cur} dari {total}",
+  "editorReplaceStepAll": "Ganti semua",
+  "editorReplaceSkip": "Lewati",
+  "editorReplaceThis": "Ganti",
+  "tableDiffColumnSummary": "Ringkasan kolom",
+  "tableDiffIgnoreColumnsHint": "Ketuk kolom untuk mengabaikannya"
 }

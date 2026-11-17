@@ -3808,5 +3808,12 @@
   "editorReplacePreserveFallback": "การแทนที่ regex ที่มี $ ใช้ \"แทนที่ทั้งหมด\" ปกติ",
   "editorReplacedCount": "แทนที่แล้ว {n}",
   "statsTrailingWs": "บรรทัดที่มีช่องว่างท้ายบรรทัด",
-  "convertZhAuto": "ตรวจจับอัตโนมัติ"
+  "convertZhAuto": "ตรวจจับอัตโนมัติ",
+  "editorReplaceStepByStep": "แทนที่ทีละรายการ…",
+  "editorReplaceStepTitle": "ที่ตรงกัน {cur} จาก {total}",
+  "editorReplaceStepAll": "แทนที่ทั้งหมด",
+  "editorReplaceSkip": "ข้าม",
+  "editorReplaceThis": "แทนที่",
+  "tableDiffColumnSummary": "สรุปคอลัมน์",
+  "tableDiffIgnoreColumnsHint": "แตะคอลัมน์เพื่อข้าม"
 }

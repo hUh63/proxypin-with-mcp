@@ -3808,5 +3808,12 @@
   "editorReplacePreserveFallback": "Thay thế regex có $ dùng \"Thay tất cả\" thường",
   "editorReplacedCount": "Đã thay {n}",
   "statsTrailingWs": "Dòng có khoảng trắng cuối",
-  "convertZhAuto": "Tự nhận diện"
+  "convertZhAuto": "Tự nhận diện",
+  "editorReplaceStepByStep": "Thay từng chỗ…",
+  "editorReplaceStepTitle": "Kết quả {cur}/{total}",
+  "editorReplaceStepAll": "Thay tất cả",
+  "editorReplaceSkip": "Bỏ qua",
+  "editorReplaceThis": "Thay",
+  "tableDiffColumnSummary": "Tóm tắt cột",
+  "tableDiffIgnoreColumnsHint": "Chạm vào cột để bỏ qua"
 }

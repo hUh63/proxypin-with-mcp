@@ -5498,5 +5498,12 @@
   "editorReplacePreserveFallback": "带 $ 的正则替换请用普通「全部替换」",
   "editorReplacedCount": "已替换 {n} 处",
   "statsTrailingWs": "尾随空白行",
-  "convertZhAuto": "自动识别"
+  "convertZhAuto": "自动识别",
+  "editorReplaceStepByStep": "逐条确认替换",
+  "editorReplaceStepTitle": "第 {cur}/{total} 处",
+  "editorReplaceStepAll": "全部替换",
+  "editorReplaceSkip": "跳过",
+  "editorReplaceThis": "替换",
+  "tableDiffColumnSummary": "列摘要",
+  "tableDiffIgnoreColumnsHint": "点一列可以忽略它（不参与比较）"
 }

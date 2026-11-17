@@ -3808,5 +3808,12 @@
   "editorReplacePreserveFallback": "El reemplazo regex con $ usa \"Reemplazar todo\"",
   "editorReplacedCount": "Reemplazados {n}",
   "statsTrailingWs": "Líneas con espacios finales",
-  "convertZhAuto": "Detección automática"
+  "convertZhAuto": "Detección automática",
+  "editorReplaceStepByStep": "Reemplazar uno a uno…",
+  "editorReplaceStepTitle": "Coincidencia {cur} de {total}",
+  "editorReplaceStepAll": "Reemplazar todo",
+  "editorReplaceSkip": "Omitir",
+  "editorReplaceThis": "Reemplazar",
+  "tableDiffColumnSummary": "Resumen de columnas",
+  "tableDiffIgnoreColumnsHint": "Toca una columna para ignorarla"
 }

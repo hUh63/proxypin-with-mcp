@@ -2135,6 +2135,107 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _runLint();
   }
 
+  /// 逐条确认替换（VS / Vim 的 confirm 模式）。
+  ///
+  /// 「全部替换」一次改几十处，改错了只能整篇撤销；这个模式一处一问答，
+  /// 想停就停 —— 适合「这个名字有的该改、有的不该改」（比如同名的局部变量
+  /// 和一个不相关的字符串）。
+  Future<void> _replaceStepByStep() async {
+    final fc = _doc?.findController;
+    final controller = _controller;
+    if (fc == null || controller == null) return;
+    final loc = localizations;
+    final query = fc.findInputController.text;
+    final repl = fc.replaceInputController.text;
+    if (query.isEmpty) {
+      _toast(loc.editorReplacePreserveNone);
+      return;
+    }
+    var pattern = fc.isRegex ? query : RegExp.escape(query);
+    if (fc.matchWholeWord) pattern = '\\b$pattern\\b';
+    final RegExp re;
+    try {
+      re = RegExp(pattern, caseSensitive: fc.caseSensitive);
+    } catch (e) {
+      _toast(loc.regexpInvalid('$e'));
+      return;
+    }
+    final matches = re.allMatches(controller.text).toList(growable: false);
+    if (matches.isEmpty) {
+      _toast(loc.editorReplacePreserveNone);
+      return;
+    }
+    // delta：前面几处替换后，后面命中的偏移会整体平移这么多。
+    var delta = 0;
+    var done = 0;
+    for (var i = 0; i < matches.length; i++) {
+      final m = matches[i];
+      final text = controller.text;
+      final start = (m.start + delta).clamp(0, text.length);
+      final end = (m.end + delta).clamp(start, text.length);
+      // 先滚到该处并选中，用户在弹窗背后能看清上下文
+      controller.selection = TextSelection(baseOffset: start, extentOffset: end);
+      controller.scrollToLine(_lineOfOffset(text, start));
+      final act = await showDialog<int>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(loc.editorReplaceStepTitle('${i + 1}', '${matches.length}'),
+              style: const TextStyle(fontSize: 15)),
+          content: Text(_lineContextOf(text, start, end),
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+          actions: <Widget>[
+            TextButton(onPressed: () => Navigator.pop(ctx, -1), child: Text(loc.cancel)),
+            TextButton(onPressed: () => Navigator.pop(ctx, 2), child: Text(loc.editorReplaceStepAll)),
+            TextButton(onPressed: () => Navigator.pop(ctx, 0), child: Text(loc.editorReplaceSkip)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, 1), child: Text(loc.editorReplaceThis)),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (act == null || act == -1) break;
+      if (act == 2) {
+        // 剩下的全替换：**从后往前**，否则前面的替换会把后面的偏移挤偏。
+        for (var k = matches.length - 1; k >= i; k--) {
+          final mm = matches[k];
+          final t2 = controller.text;
+          final s2 = (mm.start + delta).clamp(0, t2.length);
+          final e2 = (mm.end + delta).clamp(s2, t2.length);
+          controller.replaceRange(s2, e2, repl);
+        }
+        done += matches.length - i;
+        break;
+      }
+      if (act == 1) {
+        final old = m.group(0) ?? '';
+        controller.replaceRange(start, end, repl);
+        delta += repl.length - old.length;
+        done++;
+      }
+    }
+    if (!mounted) return;
+    _toast(loc.editorReplacedCount('$done'));
+  }
+
+  /// 命中处所在行的上下文，用 `[ ]` 把命中部分圈出来。
+  ///
+  /// 长行只取命中点前后一段：弹窗里塞一整行 500 字符的 minified JS 没法看。
+  static String _lineContextOf(String text, int start, int end) {
+    final ls = text.lastIndexOf('\n', start < text.length ? start : text.length - 1) + 1;
+    var le = text.indexOf('\n', end);
+    if (le < 0) le = text.length;
+    final line = text.substring(ls, le);
+    final a = (start - ls).clamp(0, line.length);
+    final b = (end - ls).clamp(a, line.length);
+    if (line.length <= 100) {
+      return '${line.substring(0, a)}[${line.substring(a, b)}]${line.substring(b)}';
+    }
+    final from = a > 40 ? a - 40 : 0;
+    final to = (b + 60) < line.length ? b + 60 : line.length;
+    return '${from > 0 ? '…' : ''}${line.substring(from, a)}'
+        '[${line.substring(a, b)}]'
+        '${line.substring(b, to)}${to < line.length ? '…' : ''}';
+  }
+
   /// 「全部替换」但**保留原文大小写**（VS 的 Preserve Case）。
   ///
   /// 查找 `foo` 换成 `bar`：原文 `Foo` → `Bar`、`FOO` → `BAR`、`foo` → `bar`。
@@ -11579,6 +11680,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('clipHistory', Icons.content_paste, loc.editorClipHistory),
           _menuItem('clear', Icons.backspace_outlined, loc.clear),
           _menuItem('replaceLine', Icons.sync_alt, loc.editorReplaceLine),
+          _menuItem('replaceStep', Icons.rule, loc.editorReplaceStepByStep),
           _menuItem('replacePreserveCase', Icons.text_fields, loc.editorReplacePreserveCase),
           const PopupMenuDivider(),
           _menuItem('comment', Icons.code, loc.editorToggleComment),
@@ -11838,6 +11940,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _paste();
         case 'selectAll':
           _selectAll();
+        case 'replaceStep':
+          unawaited(_replaceStepByStep());
         case 'replacePreserveCase':
           final n = _replaceAllPreserveCase();
           if (n < 0) {

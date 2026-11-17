@@ -3809,5 +3809,12 @@
   "editorReplacePreserveFallback": "Substituição regex com $ usa \"Substituir tudo\"",
   "editorReplacedCount": "{n} substituído(s)",
   "statsTrailingWs": "Linhas com espaços no fim",
-  "convertZhAuto": "Detectar automaticamente"
+  "convertZhAuto": "Detectar automaticamente",
+  "editorReplaceStepByStep": "Substituir um a um…",
+  "editorReplaceStepTitle": "Ocorrência {cur} de {total}",
+  "editorReplaceStepAll": "Substituir tudo",
+  "editorReplaceSkip": "Pular",
+  "editorReplaceThis": "Substituir",
+  "tableDiffColumnSummary": "Resumo das colunas",
+  "tableDiffIgnoreColumnsHint": "Toque numa coluna para ignorá-la"
 }

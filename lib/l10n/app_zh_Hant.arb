@@ -5498,5 +5498,12 @@
   "editorReplacePreserveFallback": "帶 $ 的正則取代請用一般「全部取代」",
   "editorReplacedCount": "已取代 {n} 處",
   "statsTrailingWs": "尾隨空白行",
-  "convertZhAuto": "自動辨識"
+  "convertZhAuto": "自動辨識",
+  "editorReplaceStepByStep": "逐條確認取代",
+  "editorReplaceStepTitle": "第 {cur}/{total} 處",
+  "editorReplaceStepAll": "全部取代",
+  "editorReplaceSkip": "略過",
+  "editorReplaceThis": "取代",
+  "tableDiffColumnSummary": "欄摘要",
+  "tableDiffIgnoreColumnsHint": "點一欄可以忽略它（不參與比較）"
 }
