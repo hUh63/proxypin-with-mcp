@@ -2347,7 +2347,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   ///
   /// 单遍扫描 + 游标推进：rows 和 blocks 都是按位置升序的，不用每个块都把
   /// 全表扫一遍。
-  Set<int>? _formatOnlyFor;
+  /// 缓存对应的 blocks 对象（`_compare()` 重建 blocks 后自动失效）
+  List<DiffBlock>? _formatOnlyFor;
   Set<int> _formatOnlyBlocks = const <int>{};
 
   Set<int> _formatOnlyBlocksOf() {
