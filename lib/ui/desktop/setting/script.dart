@@ -250,7 +250,7 @@ class _ScriptConsoleState extends State<ScriptConsoleWidget> {
 
         if (scrollEnd) {
           Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
+            if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(_scrollController.position.maxScrollExtent,
                   duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
             }
@@ -274,7 +274,7 @@ class _ScriptConsoleState extends State<ScriptConsoleWidget> {
                   setState(() {
                     scrollEnd = !scrollEnd;
                   });
-                  if (scrollEnd) {
+                  if (scrollEnd && _scrollController.hasClients) {
                     _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
                   }
                 },

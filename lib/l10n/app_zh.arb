@@ -4826,6 +4826,7 @@
   "editorTrimmed": "已修剪 {n} 行行尾空白",
   "editorNothingToTrim": "没有行尾空白",
   "editorSelectToBracket": "选中到配对括号",
+  "editorGotoBracket": "跳到配对括号",
   "editorNoBracket": "光标不在括号上",
   "editorDetectIndent": "按内容检测缩进",
   "editorIndentDetected": "缩进已设为 {kind} × {n}",
@@ -5478,5 +5479,11 @@
   "tableDiffColumnSummary": "列摘要",
   "tableDiffIgnoreColumnsHint": "点一列可以忽略它（不参与比较）",
   "diffApplyPatchPreview": "补丁应用预览",
-  "diffFormatOnlyFilter": "仅格式差异"
+  "diffFormatOnlyFilter": "仅格式差异",
+  "diffMenuIgnore": "忽略",
+  "diffMenuView": "视图",
+  "diffMenuNav": "跳转与标记",
+  "diffMenuFilter": "筛选",
+  "diffMenuExport": "导出与应用",
+  "diffMenuTools": "其它工具"
 }

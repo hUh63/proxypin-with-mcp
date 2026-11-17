@@ -662,6 +662,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'zy 转义 反转义 escape unescape literal json sql'),
   EditorMenuItem('insertDateTime', _insertDateTimeLabel, group: 'edit',
       aliases: 'rq 插入日期时间 datetime date time now'),
+  EditorMenuItem('gotoBracket', _gotoBracketLabel, group: 'edit',
+      aliases: 'gjk pjkh tiaozhuankuohao bracket match'),
   EditorMenuItem('selectToBracket', _selectToBracketLabel, group: 'edit',
       aliases: 'xzkh 选择到括号 select bracket'),
   EditorMenuItem('trimTrailing', _trimTrailingLabel, group: 'edit',
@@ -966,6 +968,7 @@ String _selectAllOccurrencesLabel(AppLocalizations l) => l.editorSelectAllOccurr
 String _shrinkSelLabel(AppLocalizations l) => l.editorShrinkSelection;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
+String _gotoBracketLabel(AppLocalizations l) => l.editorGotoBracket;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
 String _replaceStepLabel(AppLocalizations l) => l.editorReplaceStepByStep;
 String _replacePreserveLabel(AppLocalizations l) => l.editorReplacePreserveCase;
@@ -1136,6 +1139,8 @@ IconData menuIconOf(String id) {
       return Icons.format_list_numbered;
     case 'caseOps':
       return Icons.text_fields;
+    case 'gotoBracket':
+      return Icons.forward;
     case 'selectToBracket':
       return Icons.select_all;
     case 'columnCursors':

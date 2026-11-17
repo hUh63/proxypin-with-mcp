@@ -359,9 +359,19 @@ class _QrEncodeState extends State<_QrEncode> with AutomaticKeepAliveClientMixin
   }
 
   Future<Uint8List?> toImageBytes() async {
-    RenderRepaintBoundary render = imageKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    ui.Image image = await render.toImage();
-    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData?.buffer.asUint8List();
+    final ctx = imageKey.currentContext;
+    if (ctx == null) return null;
+    final render = ctx.findRenderObject();
+    if (render is! RenderRepaintBoundary) return null;
+    // toImage() 出来的位图必须 dispose —— 不释放的话每导出一次就多占一份
+    // native 位图内存（几百 KB 到几 MB），连续导出几次手机上能明显感到吃内存。
+    ui.Image? image;
+    try {
+      image = await render.toImage();
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } finally {
+      image?.dispose();
+    }
   }
 }

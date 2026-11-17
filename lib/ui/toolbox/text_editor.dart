@@ -8819,6 +8819,51 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 选中从光标处括号到它配对括号之间的内容（VS 的 Ctrl+Shift+\ 的「选择到括号」）。
+  /// 光标跳到配对的括号上（VS 的 Ctrl+]）。
+  ///
+  /// `selectToBracket` 是把「从这半边到那半边」整段选中，用于替换/包住；
+  /// 这个只是把光标挪过去看看另一半写了什么 —— 长表达式里找人最常用的动作。
+  void _gotoMatchingBracket() {
+    final controller = _controller;
+    if (controller == null) return;
+    final text = controller.text;
+    if (text.isEmpty) return;
+    final caret = controller.selection.extentOffset;
+    if (caret < 0 || caret > text.length) return;
+    const opens = '([{';
+    const closes = ')]}';
+    int? pos;
+    if (caret < text.length && (opens.contains(text[caret]) || closes.contains(text[caret]))) {
+      pos = caret;
+    } else if (caret > 0 && (opens.contains(text[caret - 1]) || closes.contains(text[caret - 1]))) {
+      pos = caret - 1;
+    } else {
+      // 光标不在括号上：按 VS 的做法找本行最近的一个括号
+      final line = text.lastIndexOf('\n', caret > 0 ? caret - 1 : 0) + 1;
+      var lineEnd = text.indexOf('\n', caret);
+      if (lineEnd < 0) lineEnd = text.length;
+      var best = -1;
+      for (var i = line; i < lineEnd; i++) {
+        if (opens.contains(text[i]) || closes.contains(text[i])) {
+          if (best < 0 || (i - caret).abs() < (best - caret).abs()) best = i;
+        }
+      }
+      if (best < 0) {
+        _toast(localizations.editorNoBracket);
+        return;
+      }
+      pos = best;
+    }
+    final ch = text[pos];
+    final other = opens.contains(ch) ? _findClosing(text, pos, ch) : _findOpening(text, pos, ch);
+    if (other == null) {
+      _toast(localizations.editorNoBracket);
+      return;
+    }
+    controller.selection = TextSelection.collapsed(offset: other);
+    controller.scrollToLine(_lineOfOffset(text, other));
+  }
+
   void _selectToBracket() {
     final controller = _controller;
     if (controller == null) return;
@@ -9695,6 +9740,35 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
     final saved = await FilePicker.saveFile(fileName: fileName, bytes: utf8.encode(text));
     if (saved == null) return;
+
+    // 另存为之后把文档挂到新路径上（VS 的行为）。
+    //
+    // 以前另存完文档还挂在旧路径：标题栏显示的还是旧文件名，下一次 Ctrl+S
+    // 又写回**原来那个文件**，刚另存出去的这份从此没人管 —— 用户以为自己
+    // 在编辑新文件，其实改的是旧的那份。
+    String? newPath;
+    if (saved.scheme == 'file') {
+      try {
+        newPath = saved.toFilePath();
+      } catch (_) {
+        newPath = null; // 非本地路径（极少数平台）就只是导出，不改绑定
+      }
+    }
+    final target = _doc;
+    if (target != null && newPath != null && newPath.isNotEmpty && newPath != target.path) {
+      final sep = Platform.pathSeparator;
+      final i = newPath.lastIndexOf(sep);
+      final base = i >= 0 ? newPath.substring(i + 1) : newPath;
+      target.path = newPath;
+      if (base.isNotEmpty) target.name = base;
+      if (identical(target, _doc)) {
+        // 新文件的 mtime/监听都要重挂，否则 3 秒后弹「文件被外部修改」
+        _lastFileMtime = null;
+        _restartFileWatch();
+      }
+      _docs.persist();
+    }
+
     if (mounted) {
       setState(() => _dirty = false);
       _toast(localizations.saveSuccess);
@@ -11739,6 +11813,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('nextSnippetStop', Icons.keyboard_tab, loc.editorNextSnippetStop),
           _menuItem('escapeString', Icons.text_fields, loc.editorEscape),
         _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
+        _menuItem('gotoBracket', Icons.forward, loc.editorGotoBracket),
         _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
         _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
         _menuItem('lineStartCursors', Icons.format_indent_increase, loc.editorLineStartCursors),
@@ -12204,6 +12279,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _gotoChange(1);
       case 'conflicts':
         unawaited(_showConflicts());
+      case 'gotoBracket':
+        _gotoMatchingBracket();
       case 'selectToBracket':
         _selectToBracket();
       case 'columnCursors':
@@ -12245,13 +12322,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
         onSelected: _menuAction,
         itemBuilder: (context) {
           final hidden = _prefs.hiddenMenu.toSet();
-          // 「更多」只放快入口：搜索 / 语法 / 设置 / 关闭文件。
+          // 「更多」只放快入口：语法 / 设置。
+          //
+          // 搜索不在这里：工具栏有查找图标、Ctrl+F、长按浮动菜单都有，
+          // 同一个动作在第三个地方再出现一次只会让人怀疑是不是两个功能。
           //
           // 之前这里几乎把 54 项全列了一遍，和「文件·编辑·代码·视图·检查」五个分类菜单、
           // 以及命令面板完全重复 —— 三套入口列同一份东西，只会让「更多」越滚越长。
           // 隐藏项设置对这里仍然生效。
           return <PopupMenuEntry<String>>[
-            PopupMenuItem(value: 'search', child: Text(localizations.search)),
             PopupMenuItem(
               value: 'syntax',
               child: _menuRow(localizations.editorMoreSyntax, Icons.arrow_right, id: 'syntax'),

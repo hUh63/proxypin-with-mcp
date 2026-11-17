@@ -3032,6 +3032,7 @@
   "editorTrimmed": "Trimmed {n} line(s)",
   "editorNothingToTrim": "No trailing whitespace",
   "editorSelectToBracket": "Select to matching bracket",
+  "editorGotoBracket": "Ke tanda kurung pasangan",
   "editorNoBracket": "Cursor is not on a bracket",
   "editorDetectIndent": "Detect indentation",
   "editorIndentDetected": "Indentation: {kind} × {n}",
@@ -3788,5 +3789,11 @@
   "tableDiffColumnSummary": "Ringkasan kolom",
   "tableDiffIgnoreColumnsHint": "Ketuk kolom untuk mengabaikannya",
   "diffApplyPatchPreview": "Pratinjau tambalan",
-  "diffFormatOnlyFilter": "Hanya perubahan format"
+  "diffFormatOnlyFilter": "Hanya perubahan format",
+  "diffMenuIgnore": "Abaikan",
+  "diffMenuView": "Tampilan",
+  "diffMenuNav": "Lompat & tanda",
+  "diffMenuFilter": "Filter",
+  "diffMenuExport": "Ekspor & terapkan",
+  "diffMenuTools": "Alat lain"
 }

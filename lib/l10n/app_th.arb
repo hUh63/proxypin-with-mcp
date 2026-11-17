@@ -3032,6 +3032,7 @@
   "editorTrimmed": "Trimmed {n} line(s)",
   "editorNothingToTrim": "No trailing whitespace",
   "editorSelectToBracket": "Select to matching bracket",
+  "editorGotoBracket": "ไปที่วงเล็บที่จับคู่",
   "editorNoBracket": "Cursor is not on a bracket",
   "editorDetectIndent": "Detect indentation",
   "editorIndentDetected": "Indentation: {kind} × {n}",
@@ -3788,5 +3789,11 @@
   "tableDiffColumnSummary": "สรุปคอลัมน์",
   "tableDiffIgnoreColumnsHint": "แตะคอลัมน์เพื่อข้าม",
   "diffApplyPatchPreview": "ตัวอย่างแพตช์",
-  "diffFormatOnlyFilter": "เฉพาะการเปลี่ยนรูปแบบ"
+  "diffFormatOnlyFilter": "เฉพาะการเปลี่ยนรูปแบบ",
+  "diffMenuIgnore": "ไม่สนใจ",
+  "diffMenuView": "มุมมอง",
+  "diffMenuNav": "ไปที่และทำเครื่องหมาย",
+  "diffMenuFilter": "ตัวกรอง",
+  "diffMenuExport": "ส่งออกและใช้งาน",
+  "diffMenuTools": "เครื่องมืออื่น ๆ"
 }

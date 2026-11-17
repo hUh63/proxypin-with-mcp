@@ -263,6 +263,7 @@ class DomainListState extends State<DomainList> with AutomaticKeepAliveClientMix
   }
 
   void scrollToTop() {
+    if (!_scrollController.hasClients) return;
     _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 

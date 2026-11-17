@@ -5209,6 +5209,7 @@
   },
   "editorNothingToTrim": "No trailing whitespace",
   "editorSelectToBracket": "Select to matching bracket",
+  "editorGotoBracket": "Go to matching bracket",
   "editorNoBracket": "Cursor is not on a bracket",
   "editorDetectIndent": "Detect indentation",
   "editorIndentDetected": "Indentation: {kind} × {n}",
@@ -6386,5 +6387,11 @@
   "diffFormatOnlyFilter": "Format-only changes",
   "@diffFormatOnlyFilter": {
     "description": "only format changes"
-  }
+  },
+  "diffMenuIgnore": "Ignore",
+  "diffMenuView": "View",
+  "diffMenuNav": "Go to & marks",
+  "diffMenuFilter": "Filter",
+  "diffMenuExport": "Export & apply",
+  "diffMenuTools": "Other tools"
 }

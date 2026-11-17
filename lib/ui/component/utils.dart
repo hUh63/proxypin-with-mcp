@@ -391,6 +391,12 @@ ScrollController? trackingScroll(ScrollController? scrollController) {
   var trackingScroll = TrackingScrollController();
   double offset = 0;
   trackingScroll.addListener(() {
+    // 两个 controller 任一还没挂上（页面切换中、列表为空）时读 offset 会抛
+    // 「ScrollController not attached to any scroll views」，直接跳过这一轮。
+    if (!trackingScroll.hasClients || !scrollController.hasClients) {
+      offset = 0;
+      return;
+    }
     if (trackingScroll.offset < 30 && trackingScroll.offset < offset && scrollController.offset > 0) {
       //往上滚动
       scrollController.jumpTo(scrollController.offset - max(offset - trackingScroll.offset, 15));

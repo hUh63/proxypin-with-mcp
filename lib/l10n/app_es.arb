@@ -3032,6 +3032,7 @@
   "editorTrimmed": "Trimmed {n} line(s)",
   "editorNothingToTrim": "No trailing whitespace",
   "editorSelectToBracket": "Select to matching bracket",
+  "editorGotoBracket": "Ir al paréntesis correspondiente",
   "editorNoBracket": "Cursor is not on a bracket",
   "editorDetectIndent": "Detect indentation",
   "editorIndentDetected": "Indentation: {kind} × {n}",
@@ -3788,5 +3789,11 @@
   "tableDiffColumnSummary": "Resumen de columnas",
   "tableDiffIgnoreColumnsHint": "Toca una columna para ignorarla",
   "diffApplyPatchPreview": "Vista previa del parche",
-  "diffFormatOnlyFilter": "Solo cambios de formato"
+  "diffFormatOnlyFilter": "Solo cambios de formato",
+  "diffMenuIgnore": "Ignorar",
+  "diffMenuView": "Vista",
+  "diffMenuNav": "Ir y marcas",
+  "diffMenuFilter": "Filtrar",
+  "diffMenuExport": "Exportar y aplicar",
+  "diffMenuTools": "Otras herramientas"
 }

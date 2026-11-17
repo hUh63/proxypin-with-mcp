@@ -935,7 +935,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         i = _currentRowIndex(rows);
       }
     }
-    if (i < 0) return;
+    if (i < 0 || !_leftV.hasClients) return;
     final target = (i * _rowHeight - _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
     _leftV.animateTo(target, duration: const Duration(milliseconds: 160), curve: Curves.easeOut);
   }
@@ -1819,6 +1819,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 顶部「更多」菜单：把不常用的开关收进来，主栏只留最常用的几个。
+  /// 「更多」菜单的分段标题：不可点、小号、主题色。
+  ///
+  /// 这个菜单有 48 项，一屏放不下，平铺下来找一项得滚半天 ——
+  /// 分组之后至少知道该往哪个方向滚。
+  PopupMenuItem<String> _menuHeader(String text) => PopupMenuItem<String>(
+        enabled: false,
+        height: 28,
+        child: Text(text,
+            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary)),
+      );
+
   Widget _moreMenu() {
     return PopupMenuButton<String>(
       tooltip: localizations.more,
@@ -2005,6 +2016,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         }
       },
       itemBuilder: (_) => [
+        _menuHeader(localizations.diffMenuIgnore),
         CheckedPopupMenuItem(value: 'ignoreCase', checked: _ignoreCase, child: Text(localizations.diffIgnoreCase)),
         CheckedPopupMenuItem(
             value: 'ignoreSpace', checked: _ignoreWhitespace, child: Text(localizations.diffIgnoreWhitespace)),
@@ -2030,12 +2042,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 ? localizations.diffIgnoreLines
                 : localizations.diffIgnoreLinePattern(_ignoreLineText))),
         PopupMenuItem(value: 'preset', child: Text(localizations.diffPreset)),
+        _menuHeader(localizations.diffMenuView),
         PopupMenuItem(
             value: 'focusContext',
             child: Text(localizations.diffFocusContext(_focusContext))),
         CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(localizations.wordWrap)),
-        CheckedPopupMenuItem(
-            value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
         CheckedPopupMenuItem(
             value: 'syncH', checked: _syncH, child: Text(localizations.diffSyncHScroll)),
         CheckedPopupMenuItem(
@@ -2084,6 +2095,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'tab4', checked: _tabWidth == 4, child: const Text('Tab = 4')),
         CheckedPopupMenuItem(
             value: 'tab8', checked: _tabWidth == 8, child: const Text('Tab = 8')),
+        const PopupMenuDivider(),
+        _menuHeader(localizations.diffMenuNav),
         PopupMenuItem(value: 'gotoLine', child: Text(localizations.diffGotoLine)),
         PopupMenuItem(
             value: 'gotoBlock', child: Text(localizations.diffGotoBlock)),
@@ -2108,7 +2121,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'zoomIn', child: Text(localizations.editorZoomIn)),
         PopupMenuItem(value: 'zoomOut', child: Text(localizations.editorZoomOut)),
         PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
-        const PopupMenuDivider(),
+        _menuHeader(localizations.diffMenuFilter),
+        CheckedPopupMenuItem(
+            value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),
         CheckedPopupMenuItem(
             value: 'filterAdd',
             checked: _typeFilter == 'added',
@@ -2125,7 +2140,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'filterFormat',
             checked: _typeFilter == 'format',
             child: Text(localizations.diffFormatOnlyFilter)),
-        const PopupMenuDivider(),
+        PopupMenuItem(value: 'orderAgnostic', child: Text(localizations.diffOrderAgnostic)),
+        _menuHeader(localizations.diffMenuExport),
         PopupMenuItem(value: 'exportMarkdown', child: Text(localizations.diffExportMarkdown)),
         PopupMenuItem(value: 'exportReport', child: Text(localizations.diffExportReport)),
         PopupMenuItem(value: 'exportHtml', child: Text(localizations.diffExportHtmlReport)),
@@ -2140,7 +2156,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'exportCsv', child: Text(localizations.diffExportCsv)),
         PopupMenuItem(value: 'exportXlsx', child: Text(localizations.exportExcel)),
         PopupMenuItem(value: 'diffList', child: Text(localizations.diffList)),
-        PopupMenuItem(value: 'orderAgnostic', child: Text(localizations.diffOrderAgnostic)),
+        const PopupMenuDivider(),
+        _menuHeader(localizations.diffMenuTools),
         PopupMenuItem(value: 'hexDiff', child: Text(localizations.hexDiffTitle)),
         PopupMenuItem(value: 'imageDiff', child: Text(localizations.imageDiffTitle)),
         PopupMenuItem(value: 'tableCompare', child: Text(localizations.tableDiffOpen)),
@@ -5218,6 +5235,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         index += rows[k].type == DiffRowType.modified ? 2 : 1;
       }
     }
+    if (!_leftV.hasClients) return;
     final target =
         (index * _rowHeight).clamp(0.0, _leftV.position.maxScrollExtent);
     _leftV.animateTo(target,

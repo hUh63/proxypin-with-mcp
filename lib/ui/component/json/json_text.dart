@@ -252,7 +252,7 @@ class _JsonTextState extends State<JsonText> {
     trackingScroll.addListener(() {
       // iOS 回弹或向上轻微滑动时，驱动外部滚动条联动
       if (trackingScroll.offset < -10 || (trackingScroll.offset < 30 && trackingScroll.offset < prevOffset)) {
-        if (scrollController != null && scrollController.offset >= 50) {
+        if (scrollController != null && scrollController.hasClients && scrollController.offset >= 50) {
           scrollController.jumpTo(scrollController.offset - max((prevOffset - trackingScroll.offset), 10));
         }
       }

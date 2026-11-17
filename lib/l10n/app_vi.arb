@@ -3032,6 +3032,7 @@
   "editorTrimmed": "Trimmed {n} line(s)",
   "editorNothingToTrim": "No trailing whitespace",
   "editorSelectToBracket": "Select to matching bracket",
+  "editorGotoBracket": "Đi tới dấu ngoặc khớp",
   "editorNoBracket": "Cursor is not on a bracket",
   "editorDetectIndent": "Detect indentation",
   "editorIndentDetected": "Indentation: {kind} × {n}",
@@ -3788,5 +3789,11 @@
   "tableDiffColumnSummary": "Tóm tắt cột",
   "tableDiffIgnoreColumnsHint": "Chạm vào cột để bỏ qua",
   "diffApplyPatchPreview": "Xem trước bản vá",
-  "diffFormatOnlyFilter": "Chỉ thay đổi định dạng"
+  "diffFormatOnlyFilter": "Chỉ thay đổi định dạng",
+  "diffMenuIgnore": "Bỏ qua",
+  "diffMenuView": "Hiển thị",
+  "diffMenuNav": "Đi tới & đánh dấu",
+  "diffMenuFilter": "Lọc",
+  "diffMenuExport": "Xuất & áp dụng",
+  "diffMenuTools": "Công cụ khác"
 }

@@ -345,7 +345,9 @@ class _ScriptLogSmallWindowState extends State<ScriptLogSmallWindow> {
             return;
           }
           setState(() {});
-          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          }
         });
     ScriptManager.registerLogHandler(logHandler);
   }
