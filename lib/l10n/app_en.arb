@@ -4756,7 +4756,6 @@
   "editorDuplicateLine": "Duplicate line",
   "editorMoveLineUp": "Move line up",
   "editorMoveLineDown": "Move line down",
-  "editorJoinLine": "Join with next line",
   "editorCaseOps": "Change case",
   "editorUpperCase": "UPPERCASE",
   "editorLowerCase": "lowercase",

@@ -390,6 +390,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (!mounted || v == null || v == _focusContext) return;
       setState(() => _focusContext = v.clamp(0, 20));
     }).catchError((_) => null));
+    _loadOptions();
 
     _left.addListener(_onLeftChanged);
     _right.addListener(_onRightChanged);
@@ -411,6 +412,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   void dispose() {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
     _staleTimer?.cancel();
+    _optionsTimer?.cancel();
     _leftV.dispose();
     _rightV.dispose();
     _leftH.dispose();
@@ -1830,6 +1832,88 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 顶部「更多」菜单：把不常用的开关收进来，主栏只留最常用的几个。
+  /// 比较选项的持久化（忽略大小写/空白/注释、只显示差异、字号…）。
+  ///
+  /// 每次进对比页都要重新勾一遍忽略选项，是这块最烦的地方 ——
+  /// Beyond Compare 记住"会话默认值"，我们也记。
+  static const String _optionsKey = 'text_diff_options_v1';
+  Timer? _optionsTimer;
+
+  void _saveOptions() {
+    _optionsTimer?.cancel();
+    _optionsTimer = Timer(const Duration(milliseconds: 500), () {
+      unawaited(SharedPreferencesAsync()
+          .setString(
+              _optionsKey,
+              jsonEncode({
+                'ignoreCase': _ignoreCase,
+                'ignoreWhitespace': _ignoreWhitespace,
+                'ignoreTrailing': _ignoreTrailing,
+                'ignoreBlank': _ignoreBlank,
+                'ignoreComments': _ignoreComments,
+                'wordDiff': _wordDiff,
+                'showSpace': _showSpace,
+                'syncH': _syncH,
+                'syncV': _syncV,
+                'autoAdvance': _autoAdvance,
+                'detectMoved': _detectMoved,
+                'foldUnchanged': _foldUnchanged,
+                'syntax': _syntax,
+                'alignByLine': _alignByLine,
+                'onlyDiff': _onlyDiff,
+                'unified': _unified,
+                'typeFilter': _typeFilter,
+                'regionBegin': _regionBeginText,
+                'regionEnd': _regionEndText,
+              }))
+          .catchError((_) => null));
+    });
+  }
+
+  void _loadOptions() {
+    unawaited(SharedPreferencesAsync().getString(_optionsKey).then((raw) {
+      if (!mounted || raw == null || raw.isEmpty) return;
+      final dynamic d = jsonDecode(raw);
+      if (d is! Map) return;
+      bool b(String k, bool cur) => d[k] is bool ? d[k] as bool : cur;
+      setState(() {
+        _ignoreCase = b('ignoreCase', _ignoreCase);
+        _ignoreWhitespace = b('ignoreWhitespace', _ignoreWhitespace);
+        _ignoreTrailing = b('ignoreTrailing', _ignoreTrailing);
+        _ignoreBlank = b('ignoreBlank', _ignoreBlank);
+        _ignoreComments = b('ignoreComments', _ignoreComments);
+        _wordDiff = b('wordDiff', _wordDiff);
+        _showSpace = b('showSpace', _showSpace);
+        _syncH = b('syncH', _syncH);
+        _syncV = b('syncV', _syncV);
+        _autoAdvance = b('autoAdvance', _autoAdvance);
+        _detectMoved = b('detectMoved', _detectMoved);
+        _foldUnchanged = b('foldUnchanged', _foldUnchanged);
+        _syntax = b('syntax', _syntax);
+        _alignByLine = b('alignByLine', _alignByLine);
+        _onlyDiff = b('onlyDiff', _onlyDiff);
+        _unified = b('unified', _unified);
+        final tf = d['typeFilter'];
+        if (tf is String) _typeFilter = tf;
+        final rb = d['regionBegin'];
+        final re = d['regionEnd'];
+        if (rb is String && rb.isNotEmpty) {
+          try {
+            _regionBeginRe = RegExp(rb);
+            _regionBeginText = rb;
+            if (re is String && re.isNotEmpty) {
+              _regionEndRe = RegExp(re);
+              _regionEndText = re;
+            }
+          } catch (_) {
+            // 存下来的正则不合法（旧版本/手改）：忽略，保持默认
+          }
+        }
+      });
+      _compare();
+    }).catchError((_) => null));
+  }
+
   /// 「更多」菜单的分段标题：不可点、小号、主题色。
   ///
   /// 这个菜单有 48 项，一屏放不下，平铺下来找一项得滚半天 ——
@@ -2027,6 +2111,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'unifiedView':
             setState(() => _unified = !_unified);
         }
+        _saveOptions();
       },
       itemBuilder: (_) => [
         _menuHeader(localizations.diffMenuIgnore),

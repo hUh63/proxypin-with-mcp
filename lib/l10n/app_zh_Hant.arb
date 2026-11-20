@@ -4541,7 +4541,6 @@
   "editorDuplicateLine": "複製目前行",
   "editorMoveLineUp": "上移一行",
   "editorMoveLineDown": "下移一行",
-  "editorJoinLine": "與下一行合併",
   "editorCaseOps": "轉換大小寫",
   "editorUpperCase": "全部大寫",
   "editorLowerCase": "全部小寫",

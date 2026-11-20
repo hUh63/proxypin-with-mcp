@@ -261,6 +261,72 @@ String? familyLineComment(LangFamily family) {
   }
 }
 
+
+/// 自动闭合对（opener, close）。**按 opener 长度降序**，长的先匹配。
+///
+/// 数据取自 VS Code / sora-editor 的 `language-configuration.json`。
+/// 和原来「写死 `)]}>"'`」的差别有两处：
+/// 1. C 家族不再自动补 `<`——`List<` 一敲就变 `List<>`，比不补更烦；
+/// 2. 支持多字符 opener：`/**` 补 ` */`、`<!--` 补 `-->`，这是手打注释最费劲的两处。
+List<(String, String)> autoClosePairsOf({String? key, String? label}) {
+  final k = key ?? '';
+  const quote = [('"', '"'), ("'", "'")];
+  if (k == 'html' || k == 'xml' || k == 'vue' || k == 'svelte' || k == 'svg' || k == 'handlebars') {
+    return const [
+      ('<![CDATA[', ']]>'),
+      ('<!--', '-->'),
+      ('(', ')'),
+      ('[', ']'),
+      ('{', '}'),
+      ('<', '>'),
+      ('"', '"'),
+      ("'", "'"),
+    ];
+  }
+  if (k == 'css' || k == 'scss' || k == 'less') {
+    return const [('(', ')'), ('[', ']'), ('{', '}'), ('"', '"'), ("'", "'")];
+  }
+  if (const {'java', 'kotlin', 'csharp', 'dart', 'javascript', 'typescript', 'tsx', 'jsx', 'php', 'c', 'cpp', 'objc', 'swift', 'scala', 'groovy'}
+      .contains(k)) {
+    return const [
+      ('/**', ' */'),
+      ('(', ')'),
+      ('[', ']'),
+      ('{', '}'),
+      ('"', '"'),
+      ("'", "'"),
+    ];
+  }
+  // 族级回退：c 家族（`//` + `/* */`）用同一套；其余按通用括号 + 引号。
+  final family = langFamilyOf(key: key, label: label);
+  if (family == LangFamily.c) {
+    return const [('(', ')'), ('[', ']'), ('{', '}'), ('"', '"'), ("'", "'")];
+  }
+  return [...quote, ('(', ')'), ('[', ']'), ('{', '}')];
+}
+
+/// 「包围选区」的额外候选（语言相关）。
+///
+/// 基础模板（if / try / " " 等）在编辑器里是通用的；这里只补各语言
+/// 特有、且确实常用的那几种：HTML 的注释和尖括号、C 家族的文档注释等。
+List<(String, String, String)> surroundPairsOf({String? key, String? label}) {
+  final k = key ?? '';
+  if (k == 'html' || k == 'xml' || k == 'vue' || k == 'svelte' || k == 'svg' || k == 'markdown') {
+    return const [('<!-- -->', '<!-- ', ' -->'), ('< >', '<', '>')];
+  }
+  if (const {'java', 'kotlin', 'csharp', 'dart', 'javascript', 'typescript', 'php', 'c', 'cpp'}
+      .contains(k)) {
+    return const [('/** */', '/**\n * ', '\n */')];
+  }
+  if (k == 'python') {
+    return const [('""" """', '"""', '"""'), ('# ', '# ', '')];
+  }
+  if (langFamilyOf(key: key, label: label) == LangFamily.c) {
+    return const [('/** */', '/**\n * ', '\n */')];
+  }
+  return const [];
+}
+
 /// 按 key / label 取行注释前缀。
 String? lineCommentOf({String? key, String? label}) =>
     familyLineComment(langFamilyOf(key: key, label: label));

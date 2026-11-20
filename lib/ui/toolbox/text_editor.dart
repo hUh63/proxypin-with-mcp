@@ -907,19 +907,26 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (controller == null) return;
     final text = controller.text;
     final prev = _lastBeforeChange ?? _lastText;
-    if (text.length != prev.length + 1) return;
+    final delta = text.length - prev.length;
+    if (delta <= 0 || delta > 8) return;
     final sel = controller.selection;
     if (!sel.isValid || !sel.isCollapsed) return;
     final caret = sel.baseOffset;
-    if (caret <= 0 || caret > text.length) return;
-    final ch = text.substring(caret - 1, caret);
-    const pairs = {'(': ')', '[': ']', '{': '}', '<': '>', '"': '"', "'": "'"};
-    final close = pairs[ch];
-    if (close == null) return;
-    // 光标后面已经有闭合符号（用户自己打的）就不重复插入。
-    if (caret < text.length && text.substring(caret, caret + 1) == close) return;
-    controller.replaceRange(caret, caret, close);
-    controller.selection = TextSelection.collapsed(offset: caret);
+    if (caret < delta || caret > text.length) return;
+
+    // 按「刚才敲进去的那一段」判断，而不是只看最后一个字符 —— 否则
+    // `/**` 与 `<!--` 这种多字符 opener 永远匹配不上（每次只 +1 字符）。
+    final pairs = autoClosePairsOf(key: _lang.key, label: _lang.label);
+    for (final (open, close) in pairs) {
+      if (open.isEmpty || close.isEmpty || caret < open.length) continue;
+      if (delta > open.length) continue;
+      if (!text.startsWith(open, caret - open.length)) continue;
+      // 光标后面已经有闭合符号（用户自己打的）就不重复插入。
+      if (caret + close.length <= text.length && text.startsWith(close, caret)) return;
+      controller.replaceRange(caret, caret, close);
+      controller.selection = TextSelection.collapsed(offset: caret);
+      return;
+    }
   }
 
   /// 选中当前词/选区在全文的所有出现（VS 的 Select All Occurrences）。
@@ -4924,7 +4931,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       end = nl < 0 ? text.length : nl;
     }
 
-    const templates = <({String label, String before, String after, bool indent})>[
+    final templates = <({String label, String before, String after, bool indent})>[
       (label: 'if', before: 'if (condition) {\n', after: '\n}', indent: true),
       (label: 'if / else', before: 'if (condition) {\n', after: '\n} else {\n\n}', indent: true),
       (label: 'try / catch', before: 'try {\n', after: '\n} catch (e) {\n\n}', indent: true),
@@ -4935,6 +4942,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       (label: '/* */', before: '/* ', after: ' */', indent: false),
       (label: '" "', before: '"', after: '"', indent: false),
       (label: '<div>', before: '<div>', after: '</div>', indent: false),
+      // 语言级补充（HTML 注释/尖括号、C 家族的文档注释、Python 的三引号…）
+      for (final (label, before, after) in surroundPairsOf(key: _lang.key, label: _lang.label))
+        (label: label, before: before, after: after, indent: false),
     ];
 
     final picked = await showDialog<int>(
