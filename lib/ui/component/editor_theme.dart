@@ -15,6 +15,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:proxypin/ui/component/editor_color_presets.dart';
 import 'package:proxypin/ui/component/surface_tint.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
 import 'package:re_highlight/styles/atom-one-light.dart';
@@ -28,6 +29,10 @@ import 'package:re_highlight/styles/atom-one-light.dart';
 /// 这里只覆盖 `root`（背景 + 默认文字色），语法高亮的各个 token 色不动 ——
 /// atom-one 的两套 token 色在浅/深底上都已经调好，换掉反而难看。
 Map<String, TextStyle> editorThemeOf(BuildContext context) {
+  // 用户另选了配色方案（Quiet Light / Solarized Dark / Ayu Dark）时整表交给它，
+  // 包括底色——这三套是成对调过的，只换 token 色不换底会看不清。
+  final preset = editorColorPresetNotifier.value;
+  if (preset != EditorColorPreset.auto) return editorPresetThemeOf(preset);
   final theme = Theme.of(context);
   final isDark = theme.brightness == Brightness.dark;
   final base = isDark ? atomOneDarkTheme : atomOneLightTheme;

@@ -109,6 +109,12 @@ class Configuration {
   //MCP 局域网访问是否启用 Bearer 鉴权（默认开启；关闭后同一局域网内任何设备都能读取流量）
   bool mcpAuthEnabled = true;
 
+  /// 授权回退：局域网模式但没开鉴权时，自动把监听地址收回本机回环。
+  ///
+  /// 以前只打一条 warning 就继续监听 0.0.0.0 —— 用户以为「关了 token 只是本机用」，
+  /// 实际上同网段任何设备都能读到全部流量。默认开：要么带 token，要么只本机。
+  bool mcpAuthFallback = true;
+
   //MCP 保活：开启后可通过 keep_alive 工具把本应用加入电池优化白名单并解除后台限制
   bool mcpKeepAlive = false;
 
@@ -256,6 +262,7 @@ class Configuration {
     mcpRedactEnabled = config['mcpRedactEnabled'] ?? true;
     mcpToken = config['mcpToken'] as String?;
     mcpAuthEnabled = config['mcpAuthEnabled'] ?? true;
+    mcpAuthFallback = config['mcpAuthFallback'] ?? true;
     mcpKeepAlive = config['mcpKeepAlive'] ?? false;
     mcpStrictValidation = config['mcpStrictValidation'] ?? true;
     mcpAutoStart = config['mcpAutoStart'] ?? true;
@@ -404,6 +411,7 @@ class Configuration {
       'mcpRedactEnabled': mcpRedactEnabled,
       if (mcpToken != null) 'mcpToken': mcpToken,
       'mcpAuthEnabled': mcpAuthEnabled,
+      'mcpAuthFallback': mcpAuthFallback,
       'mcpKeepAlive': mcpKeepAlive,
       'mcpStrictValidation': mcpStrictValidation,
       'mcpAutoStart': mcpAutoStart,

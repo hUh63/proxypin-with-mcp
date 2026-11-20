@@ -60,6 +60,31 @@ class LineDiff {
 }
 
 /// 归一化 key：仅用于「是否相同」的比较，不改变显示文本。
+/// 算出一段文本里「落在忽略区域内」的行号（0-based，含起止行）。
+///
+/// 单行正则忽略（[diffLines] 的 `ignoreLinePattern`）只能按行模式匹配，
+/// 遇到「从 GENERATED 标记到 END GENERATED」这种整段模板代码就没办法。
+/// 这里的语义是开关式：命中 [begin] 的那一行起、到命中 [end] 的那一行止都忽略；
+/// 同一行同时命中 begin/end 时按单行区间处理；end 一直没出现则忽略到文件尾。
+Set<int> ignoredRegionLines(String text, RegExp begin, RegExp end) {
+  if (text.isEmpty) return const <int>{};
+  final lines = text.split('\n');
+  final out = <int>{};
+  var inside = false;
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    if (!inside) {
+      if (!begin.hasMatch(line)) continue;
+      out.add(i);
+      if (!end.hasMatch(line)) inside = true; // 单行区间（begin 与 end 同一行）
+    } else {
+      out.add(i);
+      if (end.hasMatch(line)) inside = false;
+    }
+  }
+  return out;
+}
+
 String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
     [bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
@@ -130,18 +155,31 @@ List<LineDiff> diffLines(String left, String right,
     bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
     bool ignoreComments = false,
-    RegExp? ignoreLinePattern}) {
+    RegExp? ignoreLinePattern,
+    RegExp? ignoreRegionBegin,
+    RegExp? ignoreRegionEnd}) {
   // 用 split('\n') 而不是 LineSplitter：保留尾部空行的差异（"a\n" vs "a"）
   final a = _stripTrailingCr(left.split('\n'));
   final b = _stripTrailingCr(right.split('\n'));
-  final aK = a
-      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          ignoreBlankLines, ignoreComments, ignoreLinePattern))
-      .toList();
-  final bK = b
-      .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          ignoreBlankLines, ignoreComments, ignoreLinePattern))
-      .toList();
+  // 忽略区域按行号处理：命中的行 key 归一成空串，于是「两侧同一段模板」
+  // 天然配对成 equal；只有一侧有这段时才算增/删。
+  final hasRegion = ignoreRegionBegin != null && ignoreRegionEnd != null;
+  final aIgn = hasRegion ? ignoredRegionLines(left, ignoreRegionBegin, ignoreRegionEnd) : const <int>{};
+  final bIgn = hasRegion ? ignoredRegionLines(right, ignoreRegionBegin, ignoreRegionEnd) : const <int>{};
+  final aK = <String>[];
+  for (var i = 0; i < a.length; i++) {
+    aK.add(aIgn.contains(i)
+        ? ''
+        : _normKey(a[i], ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines,
+            ignoreComments, ignoreLinePattern));
+  }
+  final bK = <String>[];
+  for (var i = 0; i < b.length; i++) {
+    bK.add(bIgn.contains(i)
+        ? ''
+        : _normKey(b[i], ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines,
+            ignoreComments, ignoreLinePattern));
+  }
   final out = <LineDiff>[];
   _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
   if (!ignoreBlankLines && ignoreLinePattern == null) return out;
@@ -778,6 +816,8 @@ List<DiffRow> alignedDiffRows(String left, String right,
     bool ignoreBlankLines = false,
     bool ignoreComments = false,
     RegExp? ignoreLinePattern,
+    RegExp? ignoreRegionBegin,
+    RegExp? ignoreRegionEnd,
     bool alignByLine = false}) {
   final diffs = alignByLine
       ? diffLinesByPosition(left, right,
@@ -786,14 +826,18 @@ List<DiffRow> alignedDiffRows(String left, String right,
           ignoreTrailingWhitespace: ignoreTrailingWhitespace,
           ignoreBlankLines: ignoreBlankLines,
           ignoreComments: ignoreComments,
-          ignoreLinePattern: ignoreLinePattern)
+          ignoreLinePattern: ignoreLinePattern,
+          ignoreRegionBegin: ignoreRegionBegin,
+          ignoreRegionEnd: ignoreRegionEnd)
       : diffLines(left, right,
           ignoreCase: ignoreCase,
           ignoreWhitespace: ignoreWhitespace,
           ignoreTrailingWhitespace: ignoreTrailingWhitespace,
           ignoreBlankLines: ignoreBlankLines,
           ignoreComments: ignoreComments,
-          ignoreLinePattern: ignoreLinePattern);
+          ignoreLinePattern: ignoreLinePattern,
+          ignoreRegionBegin: ignoreRegionBegin,
+          ignoreRegionEnd: ignoreRegionEnd);
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {

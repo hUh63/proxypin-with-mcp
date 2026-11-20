@@ -623,6 +623,22 @@ class _McpConnectionPageState extends State<McpConnectionPage> with WidgetsBindi
                       ),
                       const Divider(height: 0),
                       SwitchListTile(
+                        title: Text(loc.mcpConnAuthFallback),
+                        subtitle: Text(
+                          loc.mcpConnAuthFallbackDesc,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        value: Configuration.loaded?.mcpAuthFallback ?? true,
+                        onChanged: (v) async {
+                          final c = Configuration.loaded;
+                          if (c == null) return;
+                          setState(() => c.mcpAuthFallback = v);
+                          ConfigAutoSave.markChanged();
+                          if (McpServer().isRunning) await McpServer().restart();
+                        },
+                      ),
+                      const Divider(height: 0),
+                      SwitchListTile(
                         title: Text(loc.mcpConnKeepAlive),
                         subtitle: Text(
                             loc.mcpConnKeepAliveDesc,

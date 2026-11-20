@@ -244,15 +244,23 @@ class McpServer {
       _redactEnabled = config.mcpRedactEnabled;
 
       // 安全默认：仅监听回环地址；如需局域网访问，由用户在设置中显式开启 mcpAllowLan
-      final bindAddress =
-          config.mcpAllowLan ? io.InternetAddress.anyIPv4 : io.InternetAddress.loopbackIPv4;
+      //
+      // 授权回退：开了局域网但把鉴权关掉时，不再"裸奔"监听 0.0.0.0，
+      // 而是自动收回本机（等价于「只允许本机用」）。想要局域网访问就必须带 token。
+      var allowLan = config.mcpAllowLan;
+      if (allowLan && !config.mcpAuthEnabled && config.mcpAuthFallback) {
+        allowLan = false;
+        logger.w('MCP LAN requested without auth: falling back to loopback only '
+            '(enable auth or turn off mcpAuthFallback to allow LAN)');
+      }
+      final bindAddress = allowLan ? io.InternetAddress.anyIPv4 : io.InternetAddress.loopbackIPv4;
       _server = await io.HttpServer.bind(bindAddress, _port!);
       _lastError = null; // 清除之前的错误
       logger.i('MCP Server listening on http://${bindAddress.address}:$_port '
           '(allowLan=${config.mcpAllowLan})');
 
       // 局域网模式：生成/复用 Bearer token（与官方实现一致），并写握手文件供 stdio 桥发现端口
-      _lanMode = config.mcpAllowLan;
+      _lanMode = allowLan;
       // 运行期开关同步到工具运行时
       McpToolRuntime.strictValidation = config.mcpStrictValidation;
       McpMetrics.instance.markStarted();
@@ -1376,7 +1384,10 @@ class McpServer {
   /// 请求鉴权：仅局域网模式生效；[io.HttpRequest] 携带 Bearer token 或 ?token= 查询参数均可。
   bool _authorized(io.HttpRequest request) {
     final expected = _token;
-    if (!_lanMode || !_authEnabled || expected == null || expected.isEmpty) return true;
+    if (!_lanMode || !_authEnabled) return true;
+    // 鉴权开着但没有 token（启动时生成失败 / 被清空）：fail closed，
+    // 不能因为"没配置"就默认放行。
+    if (expected == null || expected.isEmpty) return false;
     final auth = request.headers.value('authorization') ?? '';
     final bearer = auth.toLowerCase().startsWith('bearer ') ? auth.substring(7).trim() : '';
     final query = request.uri.queryParameters['token'] ?? '';

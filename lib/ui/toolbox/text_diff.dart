@@ -157,6 +157,15 @@ class _TextDiffPageState extends State<TextDiffPage> {
   String _ignoreLineText = '';
   RegExp? _ignoreLineRe;
 
+  /// 忽略区域：从匹配 begin 的行到匹配 end 的行（含）整段不参与比较。
+  ///
+  /// 单行正则只能丢掉「像时间戳这种」整行；代码里的 GENERATED 模板段落、
+  /// 自动生成的头部注释，必须按区间忽略才不误伤。
+  String _regionBeginText = '';
+  String _regionEndText = '';
+  RegExp? _regionBeginRe;
+  RegExp? _regionEndRe;
+
   /// 两栏的文件名（打开文件后显示在顶部标签里：「原文件 · xxx.txt」）。
   String _leftName = '';
   String _rightName = '';
@@ -712,7 +721,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             ignoreTrailingWhitespace: _ignoreTrailing,
             ignoreBlankLines: _ignoreBlank,
             ignoreComments: _ignoreComments,
-            ignoreLinePattern: _ignoreLineRe);
+            ignoreLinePattern: _ignoreLineRe,
+            ignoreRegionBegin: _regionBeginRe,
+            ignoreRegionEnd: _regionEndRe);
     final blocks = buildDiffBlocks(diffs,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,
@@ -1861,6 +1872,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'ignoreLines':
             unawaited(_showIgnoreLineDialog());
+          case 'ignoreRegion':
+            unawaited(_showIgnoreRegionDialog());
           case 'preset':
             unawaited(_showPresetPicker());
           case 'focusContext':
@@ -2041,6 +2054,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
             child: Text(_ignoreLineText.isEmpty
                 ? localizations.diffIgnoreLines
                 : localizations.diffIgnoreLinePattern(_ignoreLineText))),
+        PopupMenuItem(
+            value: 'ignoreRegion',
+            child: Text(_regionBeginText.isEmpty
+                ? localizations.diffIgnoreRegion
+                : localizations.diffIgnoreRegionOn(_regionBeginText, _regionEndText))),
         PopupMenuItem(value: 'preset', child: Text(localizations.diffPreset)),
         _menuHeader(localizations.diffMenuView),
         PopupMenuItem(
@@ -2861,6 +2879,100 @@ class _TextDiffPageState extends State<TextDiffPage> {
   ///
   /// 日志、抓包、时间戳这类对比里，真正要看的内容一样，但每行都夹着不同的
   /// 时间/请求 id —— 不忽略就满屏红。正则在这里比「忽略空白」实用得多。
+  /// 「忽略区域」对话框：两个正则框（起、止），清空即取消。
+  Future<void> _showIgnoreRegionDialog() async {
+    final beginCtl = TextEditingController(text: _regionBeginText);
+    final endCtl = TextEditingController(text: _regionEndText);
+    String? error;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: Text(localizations.diffIgnoreRegionTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: beginCtl,
+                autofocus: true,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                decoration: InputDecoration(
+                  labelText: localizations.diffIgnoreRegionBegin,
+                  hintText: localizations.diffIgnoreRegionBeginHint,
+                  errorText: error,
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: endCtl,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                decoration: InputDecoration(
+                  labelText: localizations.diffIgnoreRegionEnd,
+                  hintText: localizations.diffIgnoreRegionEndHint,
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(localizations.diffIgnoreRegionHint,
+                  style: TextStyle(
+                      fontSize: 11, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+          actions: [
+            if (_regionBeginText.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  beginCtl.text = '';
+                  endCtl.text = '';
+                  setDlg(() => error = null);
+                },
+                child: Text(localizations.clear),
+              ),
+            TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(localizations.cancel)),
+            FilledButton(
+              onPressed: () {
+                final b = beginCtl.text.trim();
+                final e = endCtl.text.trim();
+                if (b.isNotEmpty) {
+                  try {
+                    RegExp(b);
+                    if (e.isNotEmpty) RegExp(e);
+                  } catch (err) {
+                    setDlg(() => error = '$err');
+                    return;
+                  }
+                }
+                Navigator.of(ctx).pop(true);
+              },
+              child: Text(localizations.confirm),
+            ),
+          ],
+        ),
+      ),
+    );
+    final b = beginCtl.text.trim();
+    final e = endCtl.text.trim();
+    // 关闭动画期间 builder 可能还会重建一次，立刻 dispose 会 used-after-dispose。
+    final b0 = beginCtl;
+    final e0 = endCtl;
+    unawaited(Future.delayed(const Duration(milliseconds: 400), () {
+      b0.dispose();
+      e0.dispose();
+    }));
+    if (!mounted || ok != true) return;
+    setState(() {
+      _regionBeginText = b;
+      _regionEndText = e;
+      _regionBeginRe = b.isEmpty ? null : RegExp(b);
+      _regionEndRe = e.isEmpty ? null : RegExp(e);
+    });
+    _compare();
+  }
+
   Future<void> _showIgnoreLineDialog() async {
     final ctl = TextEditingController(text: _ignoreLineText);
     String? error;
@@ -2940,6 +3052,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (_ignoreBlank) localizations.diffIgnoreBlankLines,
       if (_ignoreComments) localizations.diffIgnoreComments,
       if (_ignoreLineText.isNotEmpty) localizations.diffIgnoreLinePattern(_ignoreLineText),
+      if (_regionBeginText.isNotEmpty)
+        localizations.diffIgnoreRegionOn(_regionBeginText, _regionEndText),
     ];
     return parts.join('、');
   }
@@ -3404,7 +3518,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   List<DiffRow> _alignedRows() {
     final key =
         '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|'
-        '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText|$_alignByLine';
+        '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText|$_alignByLine|'
+        '$_regionBeginText|$_regionEndText';
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
@@ -3414,6 +3529,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreBlankLines: _ignoreBlank,
         ignoreComments: _ignoreComments,
         ignoreLinePattern: _ignoreLineRe,
+        ignoreRegionBegin: _regionBeginRe,
+        ignoreRegionEnd: _regionEndRe,
         alignByLine: _alignByLine);
     return _alignedRowsCache;
   }

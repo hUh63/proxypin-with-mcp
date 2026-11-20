@@ -182,6 +182,12 @@ class TextEditorPrefs {
   /// 上次使用的文件编码名。
   final String encodingName;
 
+  /// 编辑器配色方案（auto / quietLight / solarizedDark / ayuDark）。
+  ///
+  /// auto 是「atom-one 的 token 色 + App 主题底色」；其余三套取自
+  /// sora-editor Demo 的 TextMate 主题，自带底色。
+  final String editorColorPreset;
+
   const TextEditorPrefs({
     this.fontSize = 13,
     this.lineHeight = 1.0,
@@ -226,6 +232,7 @@ class TextEditorPrefs {
     this.newFileKeepPrefs = true,
     this.autoPageSize = 0,
     this.encodingName = 'UTF-8',
+    this.editorColorPreset = 'auto',
   });
 
   TextEditorPrefs copyWith({
@@ -272,6 +279,7 @@ class TextEditorPrefs {
     bool? newFileKeepPrefs,
     int? autoPageSize,
     String? encodingName,
+    String? editorColorPreset,
   }) {
     return TextEditorPrefs(
       fontSize: fontSize ?? this.fontSize,
@@ -317,6 +325,7 @@ class TextEditorPrefs {
       newFileKeepPrefs: newFileKeepPrefs ?? this.newFileKeepPrefs,
       autoPageSize: autoPageSize ?? this.autoPageSize,
       encodingName: encodingName ?? this.encodingName,
+      editorColorPreset: editorColorPreset ?? this.editorColorPreset,
     );
   }
 
@@ -364,6 +373,7 @@ class TextEditorPrefs {
         'newFileKeepPrefs': newFileKeepPrefs,
         'autoPageSize': autoPageSize,
         'encodingName': encodingName,
+        'editorColorPreset': editorColorPreset,
       };
 
   static List<String> _strList(dynamic v) {
@@ -417,6 +427,7 @@ class TextEditorPrefs {
       newFileKeepPrefs: json['newFileKeepPrefs'] as bool? ?? true,
       autoPageSize: (json['autoPageSize'] as num?)?.toInt() ?? 0,
       encodingName: json['encodingName'] as String? ?? 'UTF-8',
+      editorColorPreset: json['editorColorPreset'] as String? ?? 'auto',
     );
   }
 }

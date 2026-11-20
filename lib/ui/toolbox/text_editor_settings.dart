@@ -16,6 +16,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
+import 'package:proxypin/ui/component/editor_color_presets.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart';
 import 'package:proxypin/ui/toolbox/text_editor_menus.dart';
 
@@ -37,6 +38,9 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
 
   void _apply(TextEditorPrefs prefs) {
     TextEditorPrefsStore.update(prefs);
+    // 配色方案走 ValueNotifier（editorThemeOf 在十几个页面里被调用，
+    // 不能让组件层反过来依赖 prefs），改完必须同步一次。
+    editorColorPresetNotifier.value = editorColorPresetOf(prefs.editorColorPreset);
   }
 
   @override
@@ -73,6 +77,7 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
               ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsDisplay),
+              _presetTile(prefs),
               _switchTile(
                 icon: Icons.format_list_numbered,
                 title: localizations.editorShowGutter,
@@ -366,6 +371,33 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
           fontWeight: FontWeight.w600,
           color: Theme.of(context).colorScheme.primary,
         ),
+      ),
+    );
+  }
+
+  /// 编辑器配色方案下拉。
+  ///
+  /// 三套预设直接搬自 sora-editor Demo 的 TextMate 主题（VS Code 同款 scope 配色），
+  /// 自带底色——和「跟随 App 主题」分开，才不会出现「深色 token 配浅色底」。
+  Widget _presetTile(TextEditorPrefs prefs) {
+    final current = editorColorPresetOf(prefs.editorColorPreset);
+    return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: const Icon(Icons.palette_outlined, size: 20),
+      title: Text(localizations.editorColorPreset, style: const TextStyle(fontSize: 14)),
+      trailing: DropdownButton<EditorColorPreset>(
+        value: current,
+        underline: const SizedBox.shrink(),
+        isDense: true,
+        items: EditorColorPreset.values
+            .map((p) => DropdownMenuItem(value: p, child: Text(editorColorPresetLabel(p), style: const TextStyle(fontSize: 13))))
+            .toList(),
+        onChanged: (p) {
+          if (p == null) return;
+          _apply(prefs.copyWith(editorColorPreset: editorColorPresetName(p)));
+          setState(() {});
+        },
       ),
     );
   }

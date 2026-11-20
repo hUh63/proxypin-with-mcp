@@ -4820,7 +4820,7 @@
   "editorUnsavedExitBody": "This file has changes that are not written back to disk yet.",
   "editorSaveAndExit": "Save and exit",
   "editorExitWithoutSaving": "Exit without saving",
-  "editorMenuFile": "File",
+  "editorMenuFile": "Text",
   "editorMenuEdit": "Edit",
   "editorMenuCode": "Code",
   "editorMenuView": "View",
@@ -5209,7 +5209,6 @@
   },
   "editorNothingToTrim": "No trailing whitespace",
   "editorSelectToBracket": "Select to matching bracket",
-  "editorGotoBracket": "Go to matching bracket",
   "editorNoBracket": "Cursor is not on a bracket",
   "editorDetectIndent": "Detect indentation",
   "editorIndentDetected": "Indentation: {kind} × {n}",
@@ -6393,5 +6392,26 @@
   "diffMenuNav": "Go to & marks",
   "diffMenuFilter": "Filter",
   "diffMenuExport": "Export & apply",
-  "diffMenuTools": "Other tools"
+  "diffMenuTools": "Other tools",
+  "editorColorPreset": "Editor color scheme",
+  "mcpConnAuthFallback": "Auth fallback",
+  "mcpConnAuthFallbackDesc": "When LAN access is on but auth is off, listen on loopback only instead of exposing to the network",
+  "diffIgnoreRegion": "Ignore region",
+  "diffIgnoreRegionTitle": "Ignore region (regex)",
+  "diffIgnoreRegionBegin": "Start line regex",
+  "diffIgnoreRegionBeginHint": "e.g. ^// GENERATED",
+  "diffIgnoreRegionEnd": "End line regex",
+  "diffIgnoreRegionEndHint": "e.g. ^// END GENERATED",
+  "diffIgnoreRegionHint": "Lines from the start match to the end match (inclusive) are skipped; leave end empty to skip to EOF",
+  "diffIgnoreRegionOn": "Region: {begin} … {end}",
+  "@diffIgnoreRegionOn": {
+    "placeholders": {
+      "begin": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  }
 }

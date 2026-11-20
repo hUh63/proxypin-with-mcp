@@ -616,7 +616,6 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'ksdk 快速打开 quick open ctrlp'),
   EditorMenuItem('browse', _browseLabel, group: 'file',
       aliases: 'llwjj 浏览文件夹 browser folder explorer'),
-  EditorMenuItem('file', _fileLabel, group: 'file'),
   EditorMenuItem('compareDisk', _compareDiskLabel, group: 'file',
       aliases: 'bdkb 与磁盘比较 compare disk diff saved'),
   EditorMenuItem('compareClipboard', _compareClipboardLabel, group: 'file',
@@ -662,8 +661,6 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'zy 转义 反转义 escape unescape literal json sql'),
   EditorMenuItem('insertDateTime', _insertDateTimeLabel, group: 'edit',
       aliases: 'rq 插入日期时间 datetime date time now'),
-  EditorMenuItem('gotoBracket', _gotoBracketLabel, group: 'edit',
-      aliases: 'gjk pjkh tiaozhuankuohao bracket match'),
   EditorMenuItem('selectToBracket', _selectToBracketLabel, group: 'edit',
       aliases: 'xzkh 选择到括号 select bracket'),
   EditorMenuItem('trimTrailing', _trimTrailingLabel, group: 'edit',
@@ -679,7 +676,6 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'sr 上方插入 insert line above'),
   EditorMenuItem('insertBelow', _insertBelowLabel, group: 'edit',
       aliases: 'xr 下方插入 insert line below'),
-  EditorMenuItem('join', _joinLabel, group: 'edit', aliases: 'hb 合并行 join lines'),
   EditorMenuItem('align', _alignLabel, group: 'edit', aliases: 'dw 对齐 align column = :'),
   EditorMenuItem('sortAsc', _sortAscLabel, group: 'edit', aliases: 'px 排序 升序 sort asc'),
   EditorMenuItem('sortDesc', _sortDescLabel, group: 'edit', aliases: 'px 排序 降序 sort desc'),
@@ -709,9 +705,9 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('kebab', _kebabLabel, group: 'edit', aliases: 'lxc 短横线 kebab case'),
   EditorMenuItem('constant', _constantLabel, group: 'edit',
       aliases: 'cls 常量 大写下划线 constant case'),
-  EditorMenuItem('detectIndent', _detectIndentLabel, group: 'view',
+  EditorMenuItem('detectIndent', _detectIndentLabel, group: 'edit',
       aliases: 'jcsj 检测缩进 detect indent'),
-  EditorMenuItem('diskChange', _diskChangeLabel, group: 'view',
+  EditorMenuItem('diskChange', _diskChangeLabel, group: 'code',
       aliases: 'gd 改动 磁盘 diff disk change'),
   EditorMenuItem('columnCursors', _columnCursorsLabel, group: 'edit',
       aliases: 'lgx 列选择 多光标 column cursors'),
@@ -802,7 +798,7 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('tasks', _tasksLabel,
       group: 'inspect', aliases: 'rw 任务列表 todo fixme tasks'),
   EditorMenuItem('stats', _statsLabel,
-      group: 'edit', aliases: 'tj 文档统计 统计 字数 stats wordcount'),
+      group: 'file', aliases: 'tj 文档统计 统计 字数 stats wordcount'),
   EditorMenuItem('workspaceTree', _workspaceTreeLabel, group: 'file',
       aliases: 'gzzs 工作区 文件树 目录树 tree files explorer'),
   EditorMenuItem('reopenClosed', _reopenClosedLabel, group: 'file',
@@ -848,18 +844,18 @@ const List<EditorMenuItem> kEditorMenuItems = [
   EditorMenuItem('minify', _minifyLabel, group: 'code', aliases: 'ys 压缩 minify'),
   EditorMenuItem('minifyAggressive', _minifyAggressiveLabel, group: 'code', aliases: 'ys 深度压缩 minify'),
   // 视图（12 项）
-  EditorMenuItem('syntax', _syntaxLabel, group: 'view', aliases: 'yf 语法 syntax language'),
+  EditorMenuItem('syntax', _syntaxLabel, group: 'file', aliases: 'yf 语法 syntax language'),
   EditorMenuItem('settings', _settingsLabel, group: 'view', aliases: 'sz 设置 settings'),
   EditorMenuItem('wrap', _wrapLabel, group: 'view', aliases: 'hh 自动换行 wrap'),
-  EditorMenuItem('readOnly', _readOnlyLabel, group: 'view', aliases: 'zx 只读 readonly'),
+  EditorMenuItem('readOnly', _readOnlyLabel, group: 'file', aliases: 'zx 只读 readonly'),
   EditorMenuItem('smooth', _smoothLabel, group: 'view', aliases: 'sm 平滑 smooth'),
   EditorMenuItem('smart', _smartLabel, group: 'view', aliases: 'zn 智能补全 complete'),
   EditorMenuItem('smoothKeepIme', _keepImeLabel, group: 'view', aliases: 'sr 输入法 ime'),
   EditorMenuItem('ascii', _asciiLabel, group: 'view', aliases: 'kg 控制字符 ascii'),
   EditorMenuItem('unicode', _unicodeLabel, group: 'view', aliases: 'ts 特殊字符 unicode'),
-  EditorMenuItem('report', _reportLabel, group: 'view', aliases: 'tj 统计 report special'),
-  EditorMenuItem('newline', _newlineLabel, group: 'view', aliases: 'fh 换行符 newline'),
-  EditorMenuItem('retainMode', _retainLabel, group: 'view', aliases: 'bc 保留 retain'),
+  EditorMenuItem('report', _reportLabel, group: 'inspect', aliases: 'tj 统计 report special'),
+  EditorMenuItem('newline', _newlineLabel, group: 'file', aliases: 'fh 换行符 newline'),
+  EditorMenuItem('retainMode', _retainLabel, group: 'file', aliases: 'bc 保留 retain'),
   // 检查（4 项）
   EditorMenuItem('lint', _lintLabel, group: 'inspect', aliases: 'jc 检查 lint'),
   EditorMenuItem('lintIssues', _lintIssuesLabel, group: 'inspect', aliases: 'wt 问题 issues problems'),
@@ -968,7 +964,6 @@ String _selectAllOccurrencesLabel(AppLocalizations l) => l.editorSelectAllOccurr
 String _shrinkSelLabel(AppLocalizations l) => l.editorShrinkSelection;
 String _lineOpsLabel(AppLocalizations l) => l.editorLineOps;
 String _caseOpsLabel(AppLocalizations l) => l.editorCaseOps;
-String _gotoBracketLabel(AppLocalizations l) => l.editorGotoBracket;
 String _selectToBracketLabel(AppLocalizations l) => l.editorSelectToBracket;
 String _replaceStepLabel(AppLocalizations l) => l.editorReplaceStepByStep;
 String _replacePreserveLabel(AppLocalizations l) => l.editorReplacePreserveCase;
@@ -988,7 +983,6 @@ String _duplicateLineLabel(AppLocalizations l) => l.editorDuplicateLine;
 String _deleteLineLabel(AppLocalizations l) => l.editorDeleteLine;
 String _insertAboveLabel(AppLocalizations l) => l.editorInsertLineAbove;
 String _insertBelowLabel(AppLocalizations l) => l.editorInsertLineBelow;
-String _joinLabel(AppLocalizations l) => l.editorJoinLine;
 String _alignLabel(AppLocalizations l) => l.editorAlignBy;
 String _sortAscLabel(AppLocalizations l) => l.editorSortAsc;
 String _sortDescLabel(AppLocalizations l) => l.editorSortDesc;
@@ -1117,8 +1111,6 @@ IconData menuIconOf(String id) {
       return Icons.folder_open;
     case 'save':
       return Icons.save_outlined;
-    case 'file':
-      return Icons.folder_outlined;
     case 'docs':
       return Icons.description_outlined;
     case 'close':
@@ -1139,8 +1131,6 @@ IconData menuIconOf(String id) {
       return Icons.format_list_numbered;
     case 'caseOps':
       return Icons.text_fields;
-    case 'gotoBracket':
-      return Icons.forward;
     case 'selectToBracket':
       return Icons.select_all;
     case 'columnCursors':
@@ -1199,8 +1189,6 @@ IconData menuIconOf(String id) {
       return Icons.vertical_align_top;
     case 'insertBelow':
       return Icons.vertical_align_bottom;
-    case 'join':
-      return Icons.merge_type;
     case 'align':
       return Icons.format_align_left;
     case 'sortAsc':

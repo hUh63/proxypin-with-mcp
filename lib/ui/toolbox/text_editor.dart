@@ -25,6 +25,7 @@ import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
+import 'package:proxypin/ui/component/editor_color_presets.dart';
 import 'package:proxypin/ui/component/editor_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -443,6 +444,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   void _onEditorPrefsChanged() {
+    // 配色方案在设置页改的，编辑器这边要跟着换（editorThemeOf 读的是这个 notifier）。
+    editorColorPresetNotifier.value = editorColorPresetOf(_prefs.editorColorPreset);
     if (mounted) setState(() {});
     _restartFileWatch();
   }
@@ -8215,7 +8218,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
         PopupMenuItem(value: 'duplicate', child: Text(localizations.editorDuplicateLine)),
         PopupMenuItem(value: 'up', child: Text(localizations.editorMoveLineUp)),
         PopupMenuItem(value: 'down', child: Text(localizations.editorMoveLineDown)),
-        PopupMenuItem(value: 'join', child: Text(localizations.editorJoinLine)),
         const PopupMenuDivider(),
         PopupMenuItem(value: 'indent', child: Text(localizations.editorIndent)),
         PopupMenuItem(value: 'outdent', child: Text(localizations.editorOutdent)),
@@ -8530,14 +8532,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
         final next = text.substring(nextStart, nextEnd);
         controller.replaceRange(span.start, nextEnd, '$next\n$cur');
         controller.selection = TextSelection.collapsed(offset: span.start + next.length + 1);
-      case 'join':
-        if (!span.hasNewline) return;
-        final nextStart = span.end + 1;
-        var nextEnd = text.indexOf('\n', nextStart);
-        if (nextEnd < 0) nextEnd = text.length;
-        // 合并时去掉下一行的前导缩进（VS 也这么做），否则接出来一长串空格。
-        final next = text.substring(nextStart, nextEnd).trimLeft();
-        controller.replaceRange(span.end, nextEnd, next);
     }
   }
 
@@ -8819,51 +8813,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 选中从光标处括号到它配对括号之间的内容（VS 的 Ctrl+Shift+\ 的「选择到括号」）。
-  /// 光标跳到配对的括号上（VS 的 Ctrl+]）。
-  ///
-  /// `selectToBracket` 是把「从这半边到那半边」整段选中，用于替换/包住；
-  /// 这个只是把光标挪过去看看另一半写了什么 —— 长表达式里找人最常用的动作。
-  void _gotoMatchingBracket() {
-    final controller = _controller;
-    if (controller == null) return;
-    final text = controller.text;
-    if (text.isEmpty) return;
-    final caret = controller.selection.extentOffset;
-    if (caret < 0 || caret > text.length) return;
-    const opens = '([{';
-    const closes = ')]}';
-    int? pos;
-    if (caret < text.length && (opens.contains(text[caret]) || closes.contains(text[caret]))) {
-      pos = caret;
-    } else if (caret > 0 && (opens.contains(text[caret - 1]) || closes.contains(text[caret - 1]))) {
-      pos = caret - 1;
-    } else {
-      // 光标不在括号上：按 VS 的做法找本行最近的一个括号
-      final line = text.lastIndexOf('\n', caret > 0 ? caret - 1 : 0) + 1;
-      var lineEnd = text.indexOf('\n', caret);
-      if (lineEnd < 0) lineEnd = text.length;
-      var best = -1;
-      for (var i = line; i < lineEnd; i++) {
-        if (opens.contains(text[i]) || closes.contains(text[i])) {
-          if (best < 0 || (i - caret).abs() < (best - caret).abs()) best = i;
-        }
-      }
-      if (best < 0) {
-        _toast(localizations.editorNoBracket);
-        return;
-      }
-      pos = best;
-    }
-    final ch = text[pos];
-    final other = opens.contains(ch) ? _findClosing(text, pos, ch) : _findOpening(text, pos, ch);
-    if (other == null) {
-      _toast(localizations.editorNoBracket);
-      return;
-    }
-    controller.selection = TextSelection.collapsed(offset: other);
-    controller.scrollToLine(_lineOfOffset(text, other));
-  }
-
   void _selectToBracket() {
     final controller = _controller;
     if (controller == null) return;
@@ -10986,6 +10935,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 覆盖成上一版——这是真的会丢改动，不只是慢一点。
   final Map<String, Future<void>> _saveChains = <String, Future<void>>{};
 
+  /// 「保存」：有文件路径就写回原文件，没有（未命名文档）才走另存为/分享。
+  ///
+  /// 以前这里和「另存为」调的是同一个方法，点「保存」永远弹保存对话框、
+  /// 另存完又回到旧文件上——两个菜单项等于一个功能。
+  Future<void> _saveCurrent() async {
+    final doc = _doc;
+    if (doc == null) return;
+    final path = doc.path;
+    if (path == null || path.isEmpty) {
+      await _download();
+      return;
+    }
+    await _saveDoc(doc);
+  }
+
   Future<bool> _saveDoc(EditorDocument doc) async {
     final path = doc.path;
     if (path == null || path.isEmpty) return false;
@@ -11741,9 +11705,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('recentFiles', Icons.history_toggle_off,
               loc.editorRecentFiles),
+          const PopupMenuDivider(),
           _menuItem('save', Icons.save_outlined, loc.save),
           _menuItem('saveAll', Icons.save_as_outlined, loc.editorSaveAll),
+          _menuItem('saveAs', Icons.save_as_outlined, loc.editorSaveAs),
           _menuItem('reopenClosed', Icons.restore_page_outlined, loc.editorReopenClosed),
+          const PopupMenuDivider(),
           _menuItem('workspaceTree', Icons.account_tree_outlined, loc.editorWorkspaceTree),
           _menuItem('renameFile', Icons.drive_file_rename_outline,
               loc.editorRenameFile),
@@ -11754,18 +11721,32 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('quickOpen', Icons.bolt, loc.editorQuickOpen),
           _menuItem('browse', Icons.folder_open_outlined, loc.editorBrowser),
           _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
+          const PopupMenuDivider(),
           _menuItem('compareDisk', Icons.compare_arrows, loc.editorCompareDisk),
           _menuItem('compareClipboard', Icons.content_paste_search,
               loc.editorCompareClipboard),
           _menuItem('diffTab', Icons.compare, loc.editorDiffWithTab),
           _menuItem('compareDoc', Icons.compare_arrows, loc.editorCompareWithDoc),
           _menuItem('history', Icons.history, loc.editorLocalHistory),
-          CheckedPopupMenuItem(
-              value: 'autosave', checked: _autoSave, child: Text(loc.editorAutoSave)),
-          PopupMenuItem(value: 'file', child: _menuRow(loc.editorMoreFile, Icons.arrow_right, id: 'file')),
           _menuItem('docs', Icons.description_outlined, loc.editorDocuments),
           const PopupMenuDivider(),
           _menuItem('close', Icons.close, loc.editorCloseFile),
+          _menuItem('closeOthers', Icons.tab_unselected, loc.editorCloseOthers),
+          _menuItem('reload', Icons.refresh, loc.editorReloadFile),
+          _menuItem('encodingReload', Icons.sync, loc.editorEncodingReload),
+          _menuItem('encodingSave', Icons.save_outlined, loc.editorEncodingSave),
+          const PopupMenuDivider(),
+          CheckedPopupMenuItem(
+              value: 'autosave', checked: _autoSave, child: Text(loc.editorAutoSave)),
+          PopupMenuItem(
+              value: 'newline',
+              child: Text('${loc.editorNewline}: ${_newlineLabel()}')),
+          CheckedPopupMenuItem(value: 'readOnly', checked: _readOnly, child: Text(loc.editorReadOnly)),
+          PopupMenuItem(
+              value: 'retainMode',
+              child: Text('${loc.editorRetainPref}: ${_retainModeLabel()}')),
+          _menuItem('syntax', Icons.code, loc.editorMoreSyntax),
+          _menuItem('stats', Icons.analytics_outlined, loc.editorDocStats),
         ];
       case 'edit':
         return [
@@ -11809,85 +11790,86 @@ class _TextEditorPageState extends State<TextEditorPage> {
           PopupMenuItem(value: 'lineOps', child: _menuRow(loc.editorLineOps, Icons.arrow_right, id: 'lineOps')),
           PopupMenuItem(value: 'caseOps', child: _menuRow(loc.editorCaseOps, Icons.arrow_right, id: 'caseOps')),
           _menuItem('expandSel', Icons.open_in_full, loc.editorExpandSelection),
+          _menuItem('shrinkSel', Icons.close_fullscreen, loc.editorShrinkSelection),
           _menuItem('insertDateTime', Icons.schedule, loc.editorInsertDateTime),
           _menuItem('nextSnippetStop', Icons.keyboard_tab, loc.editorNextSnippetStop),
           _menuItem('escapeString', Icons.text_fields, loc.editorEscape),
-        _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
-        _menuItem('gotoBracket', Icons.forward, loc.editorGotoBracket),
-        _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
-        _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
-        _menuItem('lineStartCursors', Icons.format_indent_increase, loc.editorLineStartCursors),
-        _menuItem('lineEndCursors', Icons.format_indent_decrease, loc.editorLineEndCursors),
-        _menuItem('boxSelect', Icons.grid_on, loc.editorRectSelect),
-        _menuItem('openLink', Icons.link, loc.editorOpenLink),
-        _menuItem('trimTrailing', Icons.cleaning_services_outlined, loc.editorTrimTrailing),
-        PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
-        _menuItem('toggleBookmark', Icons.bookmark_add_outlined, loc.editorToggleBookmark),
-        _menuItem('bookmarks', Icons.bookmarks_outlined, loc.editorBookmarks),
-        _menuItem('clearBookmarks', Icons.bookmark_remove_outlined, loc.editorClearBookmarks),
-        _menuItem('shrinkSel', Icons.close_fullscreen, loc.editorShrinkSelection),
-        _menuItem('nextOccurrence', Icons.select_all, loc.editorSelectNext),
-        _menuItem('selectAllOccurrences', Icons.select_all,
-            loc.editorSelectAllOccurrences),
-        const PopupMenuDivider(),
-        _menuItem('cursorAbove', Icons.keyboard_arrow_up, loc.editorCursorAbove),
-        _menuItem('cursorBelow', Icons.keyboard_arrow_down, loc.editorCursorBelow),
-        _menuItem('clearCursors', Icons.highlight_remove, loc.editorClearCursors),
-        ];
-      case 'code':
-        return [
-          // AI 辅助放最前：这是 VS2026/Cursor 里使用频率最高的一档。
-          _menuItem('aiAssist', Icons.auto_awesome, loc.editorAiAssist),
+          _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
+          _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
+          _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
+          _menuItem('lineStartCursors', Icons.format_indent_increase, loc.editorLineStartCursors),
+          _menuItem('lineEndCursors', Icons.format_indent_decrease, loc.editorLineEndCursors),
+          _menuItem('boxSelect', Icons.grid_on, loc.editorRectSelect),
+          _menuItem('openLink', Icons.link, loc.editorOpenLink),
+          _menuItem('trimTrailing', Icons.cleaning_services_outlined, loc.editorTrimTrailing),
+          _menuItem('detectIndent', Icons.format_indent_increase, loc.editorDetectIndent),
           const PopupMenuDivider(),
-          if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
-          _menuItem('quickFix', Icons.lightbulb_outline, loc.editorQuickFix),
-          _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
-          _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
-          _menuItem('emmet', Icons.html, loc.editorEmmet),
-          _menuItem('inlineVar', Icons.input_outlined, loc.editorInlineVariable),
-          _menuItem('organizeImports', Icons.sort, loc.editorOrganizeImports),
-          _menuItem('extractVar', Icons.input, loc.editorExtractVariable),
-          _menuItem('foldCurrent', Icons.unfold_less, loc.editorFoldCurrent),
-          _menuItem('unfoldCurrent', Icons.unfold_more, loc.editorUnfoldCurrent),
-          if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
+          _menuItem('toggleBookmark', Icons.bookmark_add_outlined, loc.editorToggleBookmark),
+          _menuItem('bookmarks', Icons.bookmarks_outlined, loc.editorBookmarks),
+          PopupMenuItem(value: 'nextBookmark', child: Text(loc.editorNextBookmark)),
+          _menuItem('clearBookmarks', Icons.bookmark_remove_outlined, loc.editorClearBookmarks),
+          _menuItem('nextOccurrence', Icons.select_all, loc.editorSelectNext),
+          _menuItem('selectAllOccurrences', Icons.select_all,
+              loc.editorSelectAllOccurrences),
           const PopupMenuDivider(),
-          _menuItem('symbols', Icons.account_tree_outlined, loc.editorSymbols),
-          _menuItem('gotoLine', Icons.pin_drop_outlined, loc.editorSelectToLine),
-          _menuItem('gotoDef', Icons.my_location_outlined, loc.editorGotoDefinition),
-        _menuItem('peekDef', Icons.visibility, loc.editorPeekDefinition),
-          _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
-          _menuItem('callHierarchy', Icons.account_tree_outlined, loc.editorCallHierarchy),
-          _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
-          _menuItem('workspaceSymbols', Icons.manage_search, loc.editorWorkspaceSymbols),
-          _menuItem('renamePair', Icons.tag, loc.editorRenamePair),
-          _menuItem('prevChange', Icons.keyboard_double_arrow_up, loc.editorPrevChange),
-          _menuItem('nextChange', Icons.keyboard_double_arrow_down, loc.editorNextChange),
-          _menuItem('conflicts', Icons.call_split, loc.editorConflicts),
-          _menuItem('workspace', Icons.workspaces_outlined, loc.editorWorkspace),
-          _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
-          _menuItem('stats', Icons.analytics_outlined, loc.editorDocStats),
+          _menuItem('cursorAbove', Icons.keyboard_arrow_up, loc.editorCursorAbove),
+          _menuItem('cursorBelow', Icons.keyboard_arrow_down, loc.editorCursorBelow),
+          _menuItem('clearCursors', Icons.highlight_remove, loc.editorClearCursors),
+          const PopupMenuDivider(),
           _menuItem('copyNumbered', Icons.format_list_numbered, loc.editorCopyNumbered),
+          _menuItem('copyMarkdown', Icons.code, loc.editorCopyMarkdown),
           _menuItem('transpose', Icons.swap_horiz, loc.editorTranspose),
           _menuItem('numbering', Icons.format_list_numbered, loc.editorNumbering),
           _menuItem('quoteLines', Icons.format_quote, loc.editorQuoteLines),
           _menuItem('joinLines', Icons.merge_type, loc.editorJoinLines),
           _menuItem('splitLines', Icons.call_split, loc.editorSplitLines),
           _menuItem('textCodec', Icons.swap_vert, loc.editorTextCodec),
-          _menuItem('copyMarkdown', Icons.code, loc.editorCopyMarkdown),
           _menuItem('findInFiles', Icons.manage_search, loc.editorFindInFiles),
-          _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
-          _menuItem('undoRename', Icons.undo, loc.editorRenameUndo),
+        ];
+      case 'code':
+        return [
+          _menuItem('aiAssist', Icons.auto_awesome, loc.editorAiAssist),
           const PopupMenuDivider(),
+          if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
+          _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
+          _menuItem('quickFix', Icons.lightbulb_outline, loc.editorQuickFix),
+          _menuItem('surroundWith', Icons.data_object, loc.editorSurroundWith),
+          _menuItem('emmet', Icons.html, loc.editorEmmet),
+          _menuItem('inlineVar', Icons.input_outlined, loc.editorInlineVariable),
+          _menuItem('organizeImports', Icons.sort, loc.editorOrganizeImports),
+          _menuItem('extractVar', Icons.input, loc.editorExtractVariable),
+          const PopupMenuDivider(),
+          _menuItem('foldCurrent', Icons.unfold_less, loc.editorFoldCurrent),
+          _menuItem('unfoldCurrent', Icons.unfold_more, loc.editorUnfoldCurrent),
           _menuItem('foldAll', Icons.unfold_less, loc.editorFoldAll),
           _menuItem('unfoldAll', Icons.unfold_more, loc.editorUnfoldAll),
           _menuItem('foldLevel', Icons.format_indent_decrease, loc.editorFoldToLevel),
+          if (_canPreview) _menuItem('preview', Icons.visibility_outlined, loc.editorPreview),
+          const PopupMenuDivider(),
+          _menuItem('symbols', Icons.account_tree_outlined, loc.editorSymbols),
+          _menuItem('gotoLine', Icons.pin_drop_outlined, loc.editorSelectToLine),
+          _menuItem('gotoDef', Icons.my_location_outlined, loc.editorGotoDefinition),
+          _menuItem('peekDef', Icons.visibility, loc.editorPeekDefinition),
+          _menuItem('references', Icons.format_list_bulleted, loc.editorReferences),
+          _menuItem('callHierarchy', Icons.account_tree_outlined, loc.editorCallHierarchy),
+          _menuItem('rename', Icons.drive_file_rename_outline, loc.editorRename),
+          _menuItem('workspaceSymbols', Icons.manage_search, loc.editorWorkspaceSymbols),
+          _menuItem('renamePair', Icons.tag, loc.editorRenamePair),
+          _menuItem('renameEverywhere', Icons.drive_file_move_outline, loc.editorRenameEverywhere),
+          _menuItem('undoRename', Icons.undo, loc.editorRenameUndo),
+          const PopupMenuDivider(),
+          _menuItem('prevChange', Icons.keyboard_double_arrow_up, loc.editorPrevChange),
+          _menuItem('nextChange', Icons.keyboard_double_arrow_down, loc.editorNextChange),
+          _menuItem('conflicts', Icons.call_split, loc.editorConflicts),
+          _menuItem('diskChange', Icons.difference_outlined, loc.editorDiskChange),
+          const PopupMenuDivider(),
+          _menuItem('snippets', Icons.auto_awesome_motion, loc.editorSnippets),
           _menuItem('minify', Icons.compress, loc.editorMinify),
           _menuItem('minifyAggressive', Icons.compress, loc.editorMinifyAggressive),
         ];
       case 'view':
         return [
           CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(loc.wordWrap)),
-          CheckedPopupMenuItem(value: 'readOnly', checked: _readOnly, child: Text(loc.editorReadOnly)),
           CheckedPopupMenuItem(value: 'smooth', checked: _smooth, child: Text(loc.editorSmoothMode)),
           CheckedPopupMenuItem(
               value: 'smart', checked: SmartCompletion.enabled.value, child: Text(loc.smartCompletion)),
@@ -11908,17 +11890,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               value: 'statusBarTop',
               checked: _prefs.statusBarTop,
               child: Text(loc.editorStatusBarTop)),
-          _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
-          _menuItem('detectIndent', Icons.format_indent_increase, loc.editorDetectIndent),
-          _menuItem('diskChange', Icons.difference_outlined, loc.editorDiskChange),
           const PopupMenuDivider(),
-          _menuItem('syntax', Icons.code, loc.editorMoreSyntax),
-          PopupMenuItem(
-              value: 'newline',
-              child: Text('${loc.editorNewline}: ${_newlineLabel()}')),
-          PopupMenuItem(
-              value: 'retainMode',
-              child: Text('${loc.editorRetainPref}: ${_retainModeLabel()}')),
           _menuItem('settings', Icons.settings, loc.editorSettings),
         ];
       case 'inspect':
@@ -11936,22 +11908,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('prevTodo', Icons.arrow_upward, loc.editorPrevTodo),
           _menuItem('nextTodo', Icons.arrow_downward, loc.editorNextTodo),
           _menuItem('tasks', Icons.checklist, loc.editorTasks),
+          _menuItem('report', Icons.report_outlined, loc.editorSpecialReport),
         ];
     }
     return const [];
   }
 
-  void _undo() => _doc?.undoController.undo();
-
-  void _redo() => _doc?.undoController.redo();
-
-  /// 工具栏的分类菜单和「更多」菜单共用一个动作入口：
-  /// 两个入口只是「同一批功能的不同分组方式」，动作必须只有一份实现。
   void _menuAction(String value) {
     switch (value) {
 
-        case 'file':
-          _showFileMenu();
         case 'search':
           _toggleFind();
         case 'syntax':
@@ -12008,8 +11973,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _lineOp('duplicate');
         case 'delete':
           _lineOp('delete');
-        case 'join':
-          _joinLines();
         case 'insertAbove':
           _insertBlankLine(above: true);
         case 'insertBelow':
@@ -12170,7 +12133,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       case 'open':
         unawaited(_openFile());
       case 'save':
-        unawaited(_download());
+        unawaited(_saveCurrent());
       case 'saveAll':
         unawaited(_saveAllDirty());
       case 'aiAssist':
@@ -12279,8 +12242,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
         _gotoChange(1);
       case 'conflicts':
         unawaited(_showConflicts());
-      case 'gotoBracket':
-        _gotoMatchingBracket();
       case 'selectToBracket':
         _selectToBracket();
       case 'columnCursors':
@@ -12569,41 +12530,6 @@ class _TextEditorPageState extends State<TextEditorPage> {
   }
 
   /// 「文件」子菜单：另存为 / 重新加载 / 换行符 / 统计。
-  Future<void> _showFileMenu() async {
-    final size = MediaQuery.of(context).size;
-    final chosen = await showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(size.width - 150, kToolbarHeight + 40, 20, 0),
-      items: [
-        PopupMenuItem(value: 'saveAs', child: Text(localizations.editorSaveAs)),
-        PopupMenuItem(value: 'reload', child: Text(localizations.editorReloadFile)),
-        PopupMenuItem(value: 'encodingReload', child: Text(localizations.editorEncodingReload)),
-        PopupMenuItem(value: 'encodingSave', child: Text(localizations.editorEncodingSave)),
-        PopupMenuItem(
-          value: 'newline',
-          child: Text('${localizations.editorNewline}: ${_newlineLabel()}'),
-        ),
-        PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
-      ],
-    );
-    switch (chosen) {
-      case 'saveAs':
-        await _download();
-      case 'reload':
-        await _reloadFile();
-      case 'encodingReload':
-        final enc1 = await showEncodingPicker(context, _encoding, title: localizations.editorEncoding);
-        if (enc1 != null) await _reloadWithEncoding(enc1);
-      case 'encodingSave':
-        final enc2 = await showEncodingPicker(context, _encoding, title: localizations.editorEncoding);
-        if (enc2 != null) await _saveWithEncoding(enc2);
-      case 'newline':
-        await _pickNewline();
-      case 'stats':
-        unawaited(_showStats());
-    }
-  }
-
   /// 「语法」子菜单：直接选当前文档的语言（也就是语法高亮）。
   Future<void> _showSyntaxMenu() async {
     final doc = _doc;
