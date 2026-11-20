@@ -11914,6 +11914,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return const [];
   }
 
+  void _undo() => _doc?.undoController.undo();
+
+  void _redo() => _doc?.undoController.redo();
+
   void _menuAction(String value) {
     switch (value) {
 

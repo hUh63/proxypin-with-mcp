@@ -57,8 +57,11 @@ void main() {
       const r = 'head\n// GENERATED\nB\n// END GENERATED\ntail2';
       final d = diffLines(l, r, ignoreRegionBegin: begin, ignoreRegionEnd: end);
       final changed = d.where((x) => x.type != LineDiffType.equal).toList();
-      expect(changed.length, 2); // tail1 删 + tail2 增（或被配对成一处修改）
+      // tail1/tail2 前缀相同，可能被配对成一处 modified，也可能算一删一增；
+      // 这里只要求「区域外的改动被检出、区域内的 A/B 不被检出」。
+      expect(changed, isNotEmpty);
       expect(changed.any((x) => x.text.contains('tail')), isTrue);
+      expect(changed.any((x) => x.text == 'A' || x.text == 'B'), isFalse);
     });
 
     test('alignedDiffRows 透传参数', () {

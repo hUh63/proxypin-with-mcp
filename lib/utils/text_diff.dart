@@ -826,9 +826,7 @@ List<DiffRow> alignedDiffRows(String left, String right,
           ignoreTrailingWhitespace: ignoreTrailingWhitespace,
           ignoreBlankLines: ignoreBlankLines,
           ignoreComments: ignoreComments,
-          ignoreLinePattern: ignoreLinePattern,
-          ignoreRegionBegin: ignoreRegionBegin,
-          ignoreRegionEnd: ignoreRegionEnd)
+          ignoreLinePattern: ignoreLinePattern)
       : diffLines(left, right,
           ignoreCase: ignoreCase,
           ignoreWhitespace: ignoreWhitespace,
