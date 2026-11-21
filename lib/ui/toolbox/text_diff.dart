@@ -47,6 +47,8 @@ import 'package:proxypin/ui/toolbox/table_diff_page.dart';
 import 'package:proxypin/ui/toolbox/three_way_merge.dart';
 import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/text_diff.dart';
+import 'package:proxypin/utils/text_diff_job.dart';
+import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/utils/text_patch.dart';
 import 'package:proxypin/utils/text_editor_prefs.dart' show kTextEditorWorkspaceKey;
 import 'package:proxypin/utils/text_file_reader.dart';
@@ -321,6 +323,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 差异块（用于导航、分类与整块替换）。
   List<DiffBlock> _blocks = [];
+
+  /// 上一轮算好的行差异，以及它对应的缓存 key。
+  ///
+  /// 对齐视图的行列表和两侧装饰是**两份不同的数据**，但都只依赖同一份 diffs。
+  /// 存下来就能把「每轮跑两遍 LCS」压成一遍（大文件上这是秒级差别）。
+  List<LineDiff>? _lastDiffs;
+  String _lastDiffsKey = '';
   int _navIndex = -1;
 
   /// 撤销 / 重做作用的对象：最近一次触摸的编辑器。
@@ -693,6 +702,34 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   // ---------- 对比 ----------
 
+  /// 两侧总字符数超过这个值就丢 isolate 算。
+  ///
+  /// 行级 LCS 是 O(n·m) 的 DP：几十万字符在手机上要卡 1~2 秒（中间还会触发一次
+  /// 进度条都画不出来的长帧）。小文本起 isolate 反而更慢（要 10ms 上下），所以分档。
+  static const int _isolateDiffThreshold = 300000;
+
+  /// 对比序号：异步结果回来时和它对一下，过期就丢弃（用户可能已经又改又比了一轮）。
+  int _compareSeq = 0;
+
+  /// 正在后台算差异（只有大文件才会为 true）。
+  bool _computing = false;
+
+  DiffJobArgs _diffArgs() => DiffJobArgs(
+        left: _left.text,
+        right: _right.text,
+        ignoreCase: _ignoreCase,
+        ignoreWhitespace: _ignoreWhitespace,
+        ignoreTrailingWhitespace: _ignoreTrailing,
+        ignoreBlankLines: _ignoreBlank,
+        ignoreComments: _ignoreComments,
+        alignByLine: _alignByLine,
+        detectMoved: _detectMoved,
+        ignoreLinePattern: _ignoreLineRe?.pattern,
+        ignoreRegionBegin: _regionBeginRe?.pattern,
+        ignoreRegionEnd: _regionEndRe?.pattern,
+        pairSimilarity: _pairSimilarityPct * 10,
+      );
+
   void _compare() {
     // 比较内容变了，上一轮的「已看」标记就不再有意义
     _reviewed.clear();
@@ -700,6 +737,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _marks.clear();
     _charDiffCache.clear();
     if (_left.text.isEmpty && _right.text.isEmpty) {
+      _lastDiffs = null;
+      _lastDiffsKey = '';
       if (_summary != null || _blocks.isNotEmpty) {
         setState(() {
           _summary = null;
@@ -715,55 +754,51 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _leftSnapshot = _left.text;
     _rightSnapshot = _right.text;
 
-    final diffs = _alignByLine
-        ? diffLinesByPosition(_left.text, _right.text,
-            ignoreCase: _ignoreCase,
-            ignoreWhitespace: _ignoreWhitespace,
-            ignoreTrailingWhitespace: _ignoreTrailing,
-            ignoreBlankLines: _ignoreBlank,
-            ignoreComments: _ignoreComments,
-            ignoreLinePattern: _ignoreLineRe)
-        : diffLines(_left.text, _right.text,
-            ignoreCase: _ignoreCase,
-            ignoreWhitespace: _ignoreWhitespace,
-            ignoreTrailingWhitespace: _ignoreTrailing,
-            ignoreBlankLines: _ignoreBlank,
-            ignoreComments: _ignoreComments,
-            ignoreLinePattern: _ignoreLineRe,
-            ignoreRegionBegin: _regionBeginRe,
-            ignoreRegionEnd: _regionEndRe);
-    final blocks = buildDiffBlocks(diffs,
-        ignoreCase: _ignoreCase,
-        ignoreWhitespace: _ignoreWhitespace,
-        ignoreTrailingWhitespace: _ignoreTrailing,
-        ignoreBlankLines: _ignoreBlank,
-        ignoreComments: _ignoreComments,
-        pairSimilarity: _pairSimilarityPct * 10);
-    final stats = diffStats(blocks);
+    final args = _diffArgs();
+    final seq = ++_compareSeq;
 
-    // 「搬家」识别：把「这里整段删、那里整段增」且内容一致的块配成对。
-    // 纯提示性信息，算不出来/算错了不影响对比结果本身，所以整段兜住。
-    var movedEnds = <int>{};
-    if (_detectMoved && blocks.isNotEmpty) {
-      final lns = _splitLines(_left.text);
-      final rns = _splitLines(_right.text);
-      // 全量取行文本 + 逐块内容比对是 O(行数)：超大文件直接跳过，
-      // 那种场景下用户也不会逐个块看「搬家」标记。
-      if (lns.length <= 20000 && rns.length <= 20000) {
-        try {
-          for (final m in detectMovedBlocks(blocks,
-              leftSource: lns,
-              rightSource: rns,
-              ignoreCase: _ignoreCase,
-              ignoreWhitespace: _ignoreWhitespace || _ignoreTrailing)) {
-            movedEnds.add(m.fromBlock);
-            movedEnds.add(m.toBlock);
-          }
-        } catch (_) {
-          movedEnds = <int>{};
-        }
-      }
+    if (args.totalChars <= _isolateDiffThreshold) {
+      if (_computing) setState(() => _computing = false);
+      _applyDiffResult(runDiffJob(args));
+      return;
     }
+
+    // 大文件：丢后台算，期间顶部给一条进度条。
+    if (mounted) setState(() => _computing = true);
+    unawaited(compute(runDiffJobFromMap, <String, Object?>{
+      'left': args.left,
+      'right': args.right,
+      'ignoreCase': args.ignoreCase,
+      'ignoreWhitespace': args.ignoreWhitespace,
+      'ignoreTrailingWhitespace': args.ignoreTrailingWhitespace,
+      'ignoreBlankLines': args.ignoreBlankLines,
+      'ignoreComments': args.ignoreComments,
+      'alignByLine': args.alignByLine,
+      'detectMoved': args.detectMoved,
+      'ignoreLinePattern': args.ignoreLinePattern,
+      'ignoreRegionBegin': args.ignoreRegionBegin,
+      'ignoreRegionEnd': args.ignoreRegionEnd,
+      'pairSimilarity': args.pairSimilarity,
+    }).then<void>((result) {
+      if (!mounted || seq != _compareSeq) return;
+      setState(() => _computing = false);
+      // 算的过程中文本又变了：结果对应的已不是眼前的文本，丢掉（新一轮 _compare 会算）。
+      if (_left.text != _leftSnapshot || _right.text != _rightSnapshot) return;
+      _applyDiffResult(result);
+    }, onError: (Object e, StackTrace st) {
+      if (!mounted || seq != _compareSeq) return;
+      setState(() => _computing = false);
+      logger.w('diff in isolate failed: $e');
+    }));
+  }
+
+  /// 把算好的结果画到两侧（整行底色 + 行号条 + 字符级高亮）并更新状态栏摘要。
+  void _applyDiffResult(DiffJobResult result) {
+    final blocks = result.blocks;
+    final movedEnds = result.movedEnds;
+    final stats = result.stats;
+    _lastDiffs = result.diffs;
+    _lastDiffsKey = _rowsCacheKey();
 
     final addBg = Colors.green.withValues(alpha: 0.16);
     final delBg = Colors.red.withValues(alpha: 0.16);
@@ -1388,6 +1423,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
             autofocus: true,
             child: Column(children: [
           _fileBar(),
+          if (_computing)
+            const SizedBox(
+              height: 2,
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
           if (_staleDisk) _staleBar(),
           Row(
             children: [
@@ -2436,10 +2476,6 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 块的一行摘要：`修改 2 · 新增 1 · 删除 1`（和差异列表里的口径一致）。
-  /// 按行切文本（空文本算 0 行，与 diffLines 的口径一致）。
-  static List<String> _splitLines(String t) =>
-      t.isEmpty ? const <String>[] : t.split('\n');
-
   /// 按当前筛选条件挑出的块下标（「全部」时就是 0..n-1）。
   List<int> _filteredBlockIndexes() {
     if (_listFilter.isEmpty) {
@@ -3620,13 +3656,26 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 对齐视图的行（带缓存）：文本或忽略选项变了才重算。
+  /// 对齐行缓存的指纹：内容 + 所有影响比较结果的开关。
+  String _rowsCacheKey() =>
+      '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|'
+      '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText|$_alignByLine|'
+      '$_regionBeginText|$_regionEndText|$_pairSimilarityPct';
+
   List<DiffRow> _alignedRows() {
-    final key =
-        '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|'
-        '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText|$_alignByLine|'
-        '$_regionBeginText|$_regionEndText|$_pairSimilarityPct';
+    final key = _rowsCacheKey();
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
+    final reuse = _lastDiffs;
+    if (reuse != null && key == _lastDiffsKey) {
+      // 本轮的 diffs 已经算过（装饰用），直接拼行，省一次 LCS。
+      _alignedRowsCache = alignedRowsFromDiffs(reuse,
+          ignoreCase: _ignoreCase,
+          ignoreWhitespace: _ignoreWhitespace,
+          ignoreTrailingWhitespace: _ignoreTrailing,
+          pairSimilarity: _pairSimilarityPct * 10);
+      return _alignedRowsCache;
+    }
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
         ignoreCase: _ignoreCase,
         ignoreWhitespace: _ignoreWhitespace,

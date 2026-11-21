@@ -3807,5 +3807,7 @@
   "diffIgnoreRegionOn": "Area: {begin} … {end}",
   "editorAutoCommentContinue": "Lanjutkan komentar",
   "editorAutoCommentContinueHint": "Saat Enter di /** */ tambahkan * sejajar",
-  "diffPairSimilarity": "Kemiripan pemasangan: {pct}%"
+  "diffPairSimilarity": "Kemiripan pemasangan: {pct}%",
+  "editorClosingBraceHints": "Petunjuk kurung kurawal penutup",
+  "editorClosingBraceHintsHint": "Tampilkan nama blok setelah kurung kurawal penutup"
 }

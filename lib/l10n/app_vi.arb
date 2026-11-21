@@ -3807,5 +3807,7 @@
   "diffIgnoreRegionOn": "Vùng: {begin} … {end}",
   "editorAutoCommentContinue": "Tiếp tục chú thích",
   "editorAutoCommentContinueHint": "Khi Enter trong /** */ thêm * thẳng hàng",
-  "diffPairSimilarity": "Độ tương đồng ghép cặp: {pct}%"
+  "diffPairSimilarity": "Độ tương đồng ghép cặp: {pct}%",
+  "editorClosingBraceHints": "Gợi ý dấu ngoặc nhọn đóng",
+  "editorClosingBraceHintsHint": "Hiện tên khối sau dấu ngoặc nhọn đóng"
 }

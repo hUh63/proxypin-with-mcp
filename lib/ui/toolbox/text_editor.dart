@@ -42,6 +42,7 @@ import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/utils/brace_hints.dart';
 import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/utils/code_snippets.dart';
 import 'package:proxypin/utils/code_symbols.dart';
@@ -249,6 +250,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool _lintChecking = false;
   Timer? _lintTimer;
 
+  /// 闭合括号提示的防抖定时器（与 lint 分开：它更轻，节奏可以更慢）。
+  Timer? _hintTimer;
+
   /// 长按右侧分布条时显示的「第几行」浮标（1 基）；null = 不显示。
   int? _rulerLine;
   Timer? _rulerTimer;
@@ -422,6 +426,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _autoSaveTimer?.cancel();
     _fileWatchTimer?.cancel();
     _lintTimer?.cancel();
+    _hintTimer?.cancel();
     _rulerTimer?.cancel();
     _sniffTimer?.cancel();
     _diffTimer?.cancel();
@@ -742,6 +747,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _clearLintDecorations();
       _scheduleLint();
     }
+    // 括号提示跟着文档走，切过去立刻重算一份（不用防抖）。
+    _hintTimer?.cancel();
+    _runHints();
     // 标签条上可能有十几个文档，切过去要保证那个标签在可视区里。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _scrollTabIntoView();
@@ -1127,6 +1135,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       if (!_dirty) setState(() => _dirty = true);
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
       _scheduleLint();
+      _scheduleHints();
       // 内联改动标记（相对磁盘）也要跟着更新：同一行内打字不跨行，
       // 光靠「光标行变化」那条路刷不出来。
       _scheduleDiffRefresh();
@@ -1185,6 +1194,50 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool get _jsBackend {
     final key = _lang.key;
     return key == 'javascript' || key == 'typescript' || key == 'coffeescript';
+  }
+
+  /// 闭合括号提示：块结束的 `}` 后面灰字显示块名。
+  ///
+  /// 全文扫描虽然只有 O(n)，但每敲一个字都扫一遍没意义，所以和 lint 一样防抖；
+  /// 流畅模式下整块跳过（那时连高亮都不画）。
+  void _scheduleHints() {
+    if (!_prefs.closingBraceHints) return;
+    if (_smooth) return;
+    _hintTimer?.cancel();
+    _hintTimer = Timer(const Duration(milliseconds: 480), _runHints);
+  }
+
+  void _runHints() {
+    final c = _doc?.controller;
+    if (c == null) return;
+    if (!_prefs.closingBraceHints || _smooth) {
+      c.clearInlayHints();
+      return;
+    }
+    final text = c.text;
+    // 大文件不标：几百条浮字在滚动时反而拖慢绘制。
+    if (text.length > 200000) {
+      c.clearInlayHints();
+      return;
+    }
+    final hints = closingBraceHints(
+      text,
+      lineComment: _lineCommentToken() ?? '//',
+    );
+    if (hints.isEmpty) {
+      c.clearInlayHints();
+      return;
+    }
+    c.setInlayHints([
+      for (final h in hints)
+        InlayHint(
+          line: h.line,
+          column: h.column,
+          text: h.text,
+          kind: InlayHintKind.type,
+          paddingLeft: true,
+        ),
+    ]);
   }
 
   void _scheduleLint() {
@@ -3495,6 +3548,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 规则开关是按语言记的：切语言要换一份，并立刻重查。
     unawaited(_loadLintRules());
     _scheduleLint();
+    _scheduleHints();
   }
 
   // ------------------------------ 转到定义（同文件） ------------------------------

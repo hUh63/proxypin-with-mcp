@@ -185,6 +185,10 @@ class TextEditorPrefs {
   /// 块注释里回车是否自动续行（VS 的行为：`/**` 回车补 ` * `）。
   final bool autoCommentContinue;
 
+  /// 闭合括号提示：在块结束的 `}` 后面灰字显示这一块的名字（VS 的
+  /// *Show closing brace comments*）。
+  final bool closingBraceHints;
+
   /// 编辑器配色方案（auto / quietLight / solarizedDark / ayuDark）。
   ///
   /// auto 是「atom-one 的 token 色 + App 主题底色」；其余三套取自
@@ -220,6 +224,7 @@ class TextEditorPrefs {
     this.magnifier = false,
     this.autoPair = true,
     this.autoCommentContinue = true,
+    this.closingBraceHints = true,
     this.enabledLangs = const <String>[],
     this.hiddenMenu = const <String>[],
     this.floatMenu = defaultFloatMenu,
@@ -268,6 +273,7 @@ class TextEditorPrefs {
     bool? magnifier,
     bool? autoPair,
     bool? autoCommentContinue,
+    bool? closingBraceHints,
     List<String>? enabledLangs,
     List<String>? hiddenMenu,
     List<String>? floatMenu,
@@ -315,6 +321,7 @@ class TextEditorPrefs {
       magnifier: magnifier ?? this.magnifier,
       autoPair: autoPair ?? this.autoPair,
       autoCommentContinue: autoCommentContinue ?? this.autoCommentContinue,
+      closingBraceHints: closingBraceHints ?? this.closingBraceHints,
       enabledLangs: enabledLangs ?? this.enabledLangs,
       hiddenMenu: hiddenMenu ?? this.hiddenMenu,
       floatMenu: floatMenu ?? this.floatMenu,
@@ -364,6 +371,7 @@ class TextEditorPrefs {
         'magnifier': magnifier,
         'autoPair': autoPair,
         'autoCommentContinue': autoCommentContinue,
+        'closingBraceHints': closingBraceHints,
         'enabledLangs': enabledLangs,
         'hiddenMenu': hiddenMenu,
         'floatMenu': floatMenu,
@@ -418,6 +426,7 @@ class TextEditorPrefs {
       magnifier: json['magnifier'] as bool? ?? false,
       autoPair: json['autoPair'] as bool? ?? true,
       autoCommentContinue: json['autoCommentContinue'] as bool? ?? true,
+      closingBraceHints: json['closingBraceHints'] as bool? ?? true,
       enabledLangs: _strList(json['enabledLangs']),
       hiddenMenu: _strList(json['hiddenMenu']),
       floatMenu: json['floatMenu'] == null ? defaultFloatMenu : _strList(json['floatMenu']),

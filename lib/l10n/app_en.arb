@@ -6422,5 +6422,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "editorClosingBraceHints": "Closing brace hints",
+  "editorClosingBraceHintsHint": "Show the block name after its closing brace"
 }

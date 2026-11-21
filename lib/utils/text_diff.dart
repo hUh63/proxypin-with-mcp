@@ -839,6 +839,22 @@ List<DiffRow> alignedDiffRows(String left, String right,
           ignoreLinePattern: ignoreLinePattern,
           ignoreRegionBegin: ignoreRegionBegin,
           ignoreRegionEnd: ignoreRegionEnd);
+  return alignedRowsFromDiffs(diffs,
+      ignoreCase: ignoreCase,
+      ignoreWhitespace: ignoreWhitespace,
+      ignoreTrailingWhitespace: ignoreTrailingWhitespace,
+      pairSimilarity: pairSimilarity);
+}
+
+/// 由**已经算好的**行差异拼出对齐行。
+///
+/// 对比页每轮要拼两次（一次用于装饰、一次用于对齐视图的列表），而 `diffLines`
+/// 是 O(n·m) 的 DP —— 拆出来就能复用同一份 diffs，几 MB 的文件省掉一半时间。
+List<DiffRow> alignedRowsFromDiffs(List<LineDiff> diffs,
+    {bool ignoreCase = false,
+    bool ignoreWhitespace = false,
+    bool ignoreTrailingWhitespace = false,
+    int pairSimilarity = _pairSimilarity}) {
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {

@@ -3807,5 +3807,7 @@
   "diffIgnoreRegionOn": "ช่วง: {begin} … {end}",
   "editorAutoCommentContinue": "ต่อคอมเมนต์บล็อก",
   "editorAutoCommentContinueHint": "เมื่อกด Enter ใน /** */ จะเติม * ให้ตรงแนว",
-  "diffPairSimilarity": "ความคล้ายการจับคู่: {pct}%"
+  "diffPairSimilarity": "ความคล้ายการจับคู่: {pct}%",
+  "editorClosingBraceHints": "คำใบ้ปีกกาปิด",
+  "editorClosingBraceHintsHint": "แสดงชื่อบล็อกหลังปีกกาปิด"
 }

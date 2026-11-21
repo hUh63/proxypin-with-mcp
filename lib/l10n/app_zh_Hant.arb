@@ -5497,5 +5497,7 @@
   "diffIgnoreRegionOn": "區域：{begin} … {end}",
   "editorAutoCommentContinue": "註解內換行續行",
   "editorAutoCommentContinueHint": "在 /** */ 內換行時補對齊的 * ",
-  "diffPairSimilarity": "相似度配對：{pct}%（點擊切換）"
+  "diffPairSimilarity": "相似度配對：{pct}%（點擊切換）",
+  "editorClosingBraceHints": "閉合括號提示",
+  "editorClosingBraceHintsHint": "在區塊結束的 } 後面顯示區塊名"
 }
