@@ -5499,5 +5499,5 @@
   "editorAutoCommentContinueHint": "在 /** */ 内回车时补对齐的 * ",
   "diffPairSimilarity": "相似度配对：{pct}%（点击切换）",
   "editorClosingBraceHints": "闭合括号提示",
-  "editorClosingBraceHintsHint": "在块结束的 } 后面显示块名"
+  "editorClosingBraceHintsHint": "在块结束的右花括号后面显示块名"
 }
