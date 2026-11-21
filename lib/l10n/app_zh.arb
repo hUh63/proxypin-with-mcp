@@ -5494,5 +5494,8 @@
   "diffIgnoreRegionEnd": "结束行正则",
   "diffIgnoreRegionEndHint": "例如 ^// END GENERATED",
   "diffIgnoreRegionHint": "从起始行到结束行（含两端）不参与比较；结束留空表示忽略到文件末尾",
-  "diffIgnoreRegionOn": "区域：{begin} … {end}"
+  "diffIgnoreRegionOn": "区域：{begin} … {end}",
+  "editorAutoCommentContinue": "注释内回车续行",
+  "editorAutoCommentContinueHint": "在 /** */ 内回车时补对齐的 * ",
+  "diffPairSimilarity": "相似度配对：{pct}%（点击切换）"
 }

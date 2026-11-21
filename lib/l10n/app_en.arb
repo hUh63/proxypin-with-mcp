@@ -6412,5 +6412,15 @@
         "type": "String"
       }
     }
+  },
+  "editorAutoCommentContinue": "Continue block comment",
+  "editorAutoCommentContinueHint": "On Enter inside /** */ add aligned * ",
+  "diffPairSimilarity": "Pairing similarity: {pct}% (tap to change)",
+  "@diffPairSimilarity": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
   }
 }

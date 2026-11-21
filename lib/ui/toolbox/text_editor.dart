@@ -929,6 +929,65 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  bool _commentContinueGuard = false;
+
+  /// 块注释里回车自动续行（VS 的行为）：在 `/**` 或 ` * xxx` 下面回车，
+  /// 新行自动变成对齐的 ` * `。
+  ///
+  /// 只在「新行还是纯空白」时动手，所以不会和内核的 autoIndent 叠成双缩进
+  /// （我们是整行替换，不是追加）。
+  void _maybeContinueBlockComment() {
+    if (!_prefs.autoCommentContinue) return;
+    if (_commentContinueGuard) return;
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid || !sel.isCollapsed) return;
+    final caret = sel.baseOffset;
+    if (caret <= 0 || caret > text.length) return;
+    if (text[caret - 1] != '\n') return;
+
+    // 光标所在行必须还是空白（用户还没开始写）
+    var lineEnd = text.indexOf('\n', caret);
+    if (lineEnd < 0) lineEnd = text.length;
+    if (text.substring(caret, lineEnd).trim().isNotEmpty) return;
+
+    final prevEnd = caret - 1;
+    final prevStart = prevEnd == 0 ? 0 : text.lastIndexOf('\n', prevEnd - 1) + 1;
+    final prevLine = text.substring(prevStart, prevEnd);
+    final trimmed = prevLine.trimLeft();
+    final block = _blockComment;
+    if (block == null) return;
+    final open = block.$1;
+    final close = block.$2;
+    // 上一行必须以块注释起始符或续行 `*` 开头，否则不是「注释体内」
+    if (!trimmed.startsWith(open) && !trimmed.startsWith('*')) return;
+    if (!_insideBlockCommentBefore(text, prevEnd, open, close)) return;
+
+    final indent = prevLine.substring(0, prevLine.length - trimmed.length);
+    final desired = '$indent * ';
+    if (text.substring(caret, lineEnd) == desired) return;
+    _commentContinueGuard = true;
+    try {
+      controller.replaceRange(caret, lineEnd, desired);
+      controller.selection = TextSelection.collapsed(offset: caret + desired.length);
+    } finally {
+      _commentContinueGuard = false;
+    }
+  }
+
+  /// [from] 之前最近的块注释定界符是 open 还是 close。
+  ///
+  /// 块注释不能嵌套，所以只看「最近的那一个」就够，不需要配对扫描。
+  static bool _insideBlockCommentBefore(String text, int from, String open, String close) {
+    if (from <= 0) return false;
+    final o = text.lastIndexOf(open, from - 1);
+    if (o < 0) return false;
+    final c = close.isEmpty ? -1 : text.lastIndexOf(close, from - 1);
+    return o > c;
+  }
+
   /// 选中当前词/选区在全文的所有出现（VS 的 Select All Occurrences）。
   void _selectAllOccurrences() {
     final controller = _controller;
@@ -1073,6 +1132,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _scheduleDiffRefresh();
       _lastBeforeChange = before;
       _maybeAutoPair();
+      _maybeContinueBlockComment();
       _scheduleAutoSave();
       // 语言是嗅探来的话，内容变了可能就该换语言（空 .txt 里粘进 JSON）。
       if (_doc?.langSniffed ?? false) {

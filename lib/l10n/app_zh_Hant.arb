@@ -5494,5 +5494,8 @@
   "diffIgnoreRegionEnd": "結束行正則",
   "diffIgnoreRegionEndHint": "例如 ^// END GENERATED",
   "diffIgnoreRegionHint": "從起始行到結束行（含兩端）不參與比較；結束留空表示忽略到檔尾",
-  "diffIgnoreRegionOn": "區域：{begin} … {end}"
+  "diffIgnoreRegionOn": "區域：{begin} … {end}",
+  "editorAutoCommentContinue": "註解內換行續行",
+  "editorAutoCommentContinueHint": "在 /** */ 內換行時補對齊的 * ",
+  "diffPairSimilarity": "相似度配對：{pct}%（點擊切換）"
 }

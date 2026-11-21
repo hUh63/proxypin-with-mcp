@@ -257,6 +257,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.autoPair,
                 onChanged: (v) => _apply(prefs.copyWith(autoPair: v)),
               ),
+              _switchTile(
+                icon: Icons.format_align_left,
+                title: localizations.editorAutoCommentContinue,
+                subtitle: localizations.editorAutoCommentContinueHint,
+                value: prefs.autoCommentContinue,
+                onChanged: (v) => _apply(prefs.copyWith(autoCommentContinue: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsMenu),
               ListTile(

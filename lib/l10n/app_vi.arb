@@ -3804,5 +3804,8 @@
   "diffIgnoreRegionEnd": "Regex kết thúc",
   "diffIgnoreRegionEndHint": "vd. ^// END GENERATED",
   "diffIgnoreRegionHint": "Bỏ qua từ dòng bắt đầu đến kết thúc; để trống = đến cuối tệp",
-  "diffIgnoreRegionOn": "Vùng: {begin} … {end}"
+  "diffIgnoreRegionOn": "Vùng: {begin} … {end}",
+  "editorAutoCommentContinue": "Tiếp tục chú thích",
+  "editorAutoCommentContinueHint": "Khi Enter trong /** */ thêm * thẳng hàng",
+  "diffPairSimilarity": "Độ tương đồng ghép cặp: {pct}%"
 }

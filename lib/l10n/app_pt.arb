@@ -3805,5 +3805,8 @@
   "diffIgnoreRegionEnd": "Regex de fim",
   "diffIgnoreRegionEndHint": "ex. ^// END GENERATED",
   "diffIgnoreRegionHint": "Linhas do início ao fim são ignoradas; vazio = até o EOF",
-  "diffIgnoreRegionOn": "Região: {begin} … {end}"
+  "diffIgnoreRegionOn": "Região: {begin} … {end}",
+  "editorAutoCommentContinue": "Continuar comentário",
+  "editorAutoCommentContinueHint": "Ao Enter em /** */ adiciona * alinhado",
+  "diffPairSimilarity": "Similaridade de pareamento: {pct}%"
 }

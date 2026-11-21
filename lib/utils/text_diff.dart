@@ -452,7 +452,8 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
     List<String> rightTexts, bool ignoreCase, bool ignoreWhitespace,
     [bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
-    bool ignoreComments = false]) {
+    bool ignoreComments = false,
+    int similarity = _pairSimilarity]) {
   final m = leftTexts.length;
   final n = rightTexts.length;
   if (m == 0 || n == 0) return const <({int left, int right})>[];
@@ -485,7 +486,7 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
     for (var j = 1; j <= n; j++) {
       var best = dp[i - 1][j] > dp[i][j - 1] ? dp[i - 1][j] : dp[i][j - 1];
       final s = sim[i - 1][j - 1];
-      if (s >= _pairSimilarity) {
+      if (s >= similarity) {
         final diag = dp[i - 1][j - 1] + s;
         if (diag > best) best = diag;
       }
@@ -497,7 +498,7 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
   var i = m, j = n;
   while (i > 0 && j > 0) {
     final s = sim[i - 1][j - 1];
-    if (s >= _pairSimilarity && dp[i][j] == dp[i - 1][j - 1] + s) {
+    if (s >= similarity && dp[i][j] == dp[i - 1][j - 1] + s) {
       pairs.add((left: i - 1, right: j - 1));
       i--;
       j--;
@@ -653,7 +654,8 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
     bool ignoreWhitespace = false,
     bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
-    bool ignoreComments = false}) {
+    bool ignoreComments = false,
+    int pairSimilarity = _pairSimilarity}) {
   final blocks = <DiffBlock>[];
   List<int>? leftLines;
   List<int>? rightLines;
@@ -667,7 +669,7 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
     if (leftLines != null) {
       final pairs = _pairLines(leftTexts ?? const [], rightTexts ?? const [],
           ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines,
-          ignoreComments);
+          ignoreComments, pairSimilarity);
       blocks.add(DiffBlock(
         leftStart: leftStart!,
         rightStart: rightStart!,
@@ -818,6 +820,7 @@ List<DiffRow> alignedDiffRows(String left, String right,
     RegExp? ignoreLinePattern,
     RegExp? ignoreRegionBegin,
     RegExp? ignoreRegionEnd,
+    int pairSimilarity = _pairSimilarity,
     bool alignByLine = false}) {
   final diffs = alignByLine
       ? diffLinesByPosition(left, right,
@@ -865,6 +868,9 @@ List<DiffRow> alignedDiffRows(String left, String right,
       ignoreCase,
       ignoreWhitespace,
       ignoreTrailingWhitespace,
+      false,
+      false,
+      pairSimilarity,
     );
     // 按左行顺序输出：配对的算 modified，没配上的算 deleted；右侧未配对的算 added。
     final leftToRight = <int, int>{for (final p in pairs) p.left: p.right};

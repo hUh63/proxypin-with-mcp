@@ -3804,5 +3804,8 @@
   "diffIgnoreRegionEnd": "Regex de fin",
   "diffIgnoreRegionEndHint": "p.ej. ^// END GENERATED",
   "diffIgnoreRegionHint": "Se omiten desde la línea de inicio hasta la de fin; vacío = hasta el final",
-  "diffIgnoreRegionOn": "Región: {begin} … {end}"
+  "diffIgnoreRegionOn": "Región: {begin} … {end}",
+  "editorAutoCommentContinue": "Continuar comentario",
+  "editorAutoCommentContinueHint": "Al pulsar Enter en /** */ añade * alineado",
+  "diffPairSimilarity": "Similitud de emparejamiento: {pct}%"
 }

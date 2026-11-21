@@ -157,6 +157,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
   String _ignoreLineText = '';
   RegExp? _ignoreLineRe;
 
+  /// 「相似度配对」阈值（百分比）：一行被判成「修改」而不是「删+增」的门槛。
+  ///
+  /// Beyond Compare 的 similarity 设置。日志/JSON 里改动一两个字符的行很常见：
+  /// 阈值高 → 只有几乎一样才算修改（更多红绿）；阈值低 → 更容易配成修改（橙）。
+  int _pairSimilarityPct = 50;
+
   /// 忽略区域：从匹配 begin 的行到匹配 end 的行（含）整段不参与比较。
   ///
   /// 单行正则只能丢掉「像时间戳这种」整行；代码里的 GENERATED 模板段落、
@@ -731,7 +737,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreWhitespace: _ignoreWhitespace,
         ignoreTrailingWhitespace: _ignoreTrailing,
         ignoreBlankLines: _ignoreBlank,
-        ignoreComments: _ignoreComments);
+        ignoreComments: _ignoreComments,
+        pairSimilarity: _pairSimilarityPct * 10);
     final stats = diffStats(blocks);
 
     // 「搬家」识别：把「这里整段删、那里整段增」且内容一致的块配成对。
@@ -1863,6 +1870,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 'onlyDiff': _onlyDiff,
                 'unified': _unified,
                 'typeFilter': _typeFilter,
+                'pairSimilarity': _pairSimilarityPct,
                 'regionBegin': _regionBeginText,
                 'regionEnd': _regionEndText,
               }))
@@ -1895,6 +1903,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         _unified = b('unified', _unified);
         final tf = d['typeFilter'];
         if (tf is String) _typeFilter = tf;
+        final ps = d['pairSimilarity'];
+        if (ps is int) _pairSimilarityPct = ps.clamp(10, 100);
         final rb = d['regionBegin'];
         final re = d['regionEnd'];
         if (rb is String && rb.isNotEmpty) {
@@ -2108,6 +2118,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportMarkdown());
           case 'compareSelection':
             unawaited(_compareSelection());
+          case 'pairSimilarity':
+            setState(() {
+              _pairSimilarityPct = _pairSimilarityPct >= 80
+                  ? 25
+                  : (_pairSimilarityPct >= 50 ? 80 : 50);
+            });
+            _compare();
           case 'unifiedView':
             setState(() => _unified = !_unified);
         }
@@ -2172,6 +2189,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'wordDiff',
             checked: _wordDiff,
             child: Text(localizations.diffWordDiff)),
+        PopupMenuItem(
+            value: 'pairSimilarity',
+            child: Text(localizations.diffPairSimilarity(_pairSimilarityPct))),
         CheckedPopupMenuItem(
             value: 'autoAdvance',
             checked: _autoAdvance,
@@ -3604,7 +3624,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final key =
         '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|'
         '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText|$_alignByLine|'
-        '$_regionBeginText|$_regionEndText';
+        '$_regionBeginText|$_regionEndText|$_pairSimilarityPct';
     if (key == _alignedRowsKey) return _alignedRowsCache;
     _alignedRowsKey = key;
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
@@ -3616,6 +3636,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreLinePattern: _ignoreLineRe,
         ignoreRegionBegin: _regionBeginRe,
         ignoreRegionEnd: _regionEndRe,
+        pairSimilarity: _pairSimilarityPct * 10,
         alignByLine: _alignByLine);
     return _alignedRowsCache;
   }

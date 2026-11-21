@@ -3804,5 +3804,8 @@
   "diffIgnoreRegionEnd": "Regex akhir",
   "diffIgnoreRegionEndHint": "mis. ^// END GENERATED",
   "diffIgnoreRegionHint": "Baris dari awal sampai akhir dilewati; kosongkan akhir untuk sampai EOF",
-  "diffIgnoreRegionOn": "Area: {begin} … {end}"
+  "diffIgnoreRegionOn": "Area: {begin} … {end}",
+  "editorAutoCommentContinue": "Lanjutkan komentar",
+  "editorAutoCommentContinueHint": "Saat Enter di /** */ tambahkan * sejajar",
+  "diffPairSimilarity": "Kemiripan pemasangan: {pct}%"
 }

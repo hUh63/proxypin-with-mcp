@@ -182,6 +182,9 @@ class TextEditorPrefs {
   /// 上次使用的文件编码名。
   final String encodingName;
 
+  /// 块注释里回车是否自动续行（VS 的行为：`/**` 回车补 ` * `）。
+  final bool autoCommentContinue;
+
   /// 编辑器配色方案（auto / quietLight / solarizedDark / ayuDark）。
   ///
   /// auto 是「atom-one 的 token 色 + App 主题底色」；其余三套取自
@@ -216,6 +219,7 @@ class TextEditorPrefs {
     this.pinchZoom = true,
     this.magnifier = false,
     this.autoPair = true,
+    this.autoCommentContinue = true,
     this.enabledLangs = const <String>[],
     this.hiddenMenu = const <String>[],
     this.floatMenu = defaultFloatMenu,
@@ -263,6 +267,7 @@ class TextEditorPrefs {
     bool? pinchZoom,
     bool? magnifier,
     bool? autoPair,
+    bool? autoCommentContinue,
     List<String>? enabledLangs,
     List<String>? hiddenMenu,
     List<String>? floatMenu,
@@ -309,6 +314,7 @@ class TextEditorPrefs {
       pinchZoom: pinchZoom ?? this.pinchZoom,
       magnifier: magnifier ?? this.magnifier,
       autoPair: autoPair ?? this.autoPair,
+      autoCommentContinue: autoCommentContinue ?? this.autoCommentContinue,
       enabledLangs: enabledLangs ?? this.enabledLangs,
       hiddenMenu: hiddenMenu ?? this.hiddenMenu,
       floatMenu: floatMenu ?? this.floatMenu,
@@ -357,6 +363,7 @@ class TextEditorPrefs {
         'pinchZoom': pinchZoom,
         'magnifier': magnifier,
         'autoPair': autoPair,
+        'autoCommentContinue': autoCommentContinue,
         'enabledLangs': enabledLangs,
         'hiddenMenu': hiddenMenu,
         'floatMenu': floatMenu,
@@ -410,6 +417,7 @@ class TextEditorPrefs {
       pinchZoom: json['pinchZoom'] as bool? ?? true,
       magnifier: json['magnifier'] as bool? ?? false,
       autoPair: json['autoPair'] as bool? ?? true,
+      autoCommentContinue: json['autoCommentContinue'] as bool? ?? true,
       enabledLangs: _strList(json['enabledLangs']),
       hiddenMenu: _strList(json['hiddenMenu']),
       floatMenu: json['floatMenu'] == null ? defaultFloatMenu : _strList(json['floatMenu']),

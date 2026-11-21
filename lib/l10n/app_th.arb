@@ -3804,5 +3804,8 @@
   "diffIgnoreRegionEnd": "regex สิ้นสุด",
   "diffIgnoreRegionEndHint": "เช่น ^// END GENERATED",
   "diffIgnoreRegionHint": "ข้ามบรรทัดตั้งแต่เริ่มจนถึงสิ้นสุด; ถ้าเว้นว่างจะข้ามถึงท้ายไฟล์",
-  "diffIgnoreRegionOn": "ช่วง: {begin} … {end}"
+  "diffIgnoreRegionOn": "ช่วง: {begin} … {end}",
+  "editorAutoCommentContinue": "ต่อคอมเมนต์บล็อก",
+  "editorAutoCommentContinueHint": "เมื่อกด Enter ใน /** */ จะเติม * ให้ตรงแนว",
+  "diffPairSimilarity": "ความคล้ายการจับคู่: {pct}%"
 }
