@@ -46,9 +46,9 @@ void main() {
       expect(scanRegionFolds(src), isEmpty);
     });
 
-    test('单行 region 不产生折叠', () {
+    test('相邻的一对也能折叠（折起来只剩 #region 那行）', () {
       const src = '#region A\n#endregion';
-      expect(scanRegionFolds(src), isEmpty);
+      expect(_sig(scanRegionFolds(src)), '0-1');
     });
 
     test('上限生效', () {
