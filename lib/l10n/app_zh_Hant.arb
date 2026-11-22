@@ -5521,5 +5521,7 @@
   "diffPresetExport": "把預設複製到剪貼簿",
   "diffPresetImport": "從剪貼簿匯入預設",
   "diffPresetImportOk": "已匯入預設",
-  "diffPresetImportFail": "剪貼簿裡沒有有效的預設"
+  "diffPresetImportFail": "剪貼簿裡沒有有效的預設",
+  "editorAiNewChat": "新對話",
+  "editorAiFix": "AI 修復"
 }

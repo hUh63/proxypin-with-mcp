@@ -6446,5 +6446,7 @@
   "diffPresetExport": "Copy presets to clipboard",
   "diffPresetImport": "Import presets from clipboard",
   "diffPresetImportOk": "Presets imported",
-  "diffPresetImportFail": "Clipboard does not contain valid presets"
+  "diffPresetImportFail": "Clipboard does not contain valid presets",
+  "editorAiNewChat": "New chat",
+  "editorAiFix": "Fix with AI"
 }

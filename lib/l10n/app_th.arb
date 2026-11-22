@@ -3831,5 +3831,7 @@
   "diffPresetExport": "คัดลอกพรีเซ็ต",
   "diffPresetImport": "นำเข้าพรีเซ็ต",
   "diffPresetImportOk": "นำเข้าพรีเซ็ตแล้ว",
-  "diffPresetImportFail": "คลิปบอร์ดไม่มีพรีเซ็ตที่ถูกต้อง"
+  "diffPresetImportFail": "คลิปบอร์ดไม่มีพรีเซ็ตที่ถูกต้อง",
+  "editorAiNewChat": "แชทใหม่",
+  "editorAiFix": "แก้ด้วย AI"
 }

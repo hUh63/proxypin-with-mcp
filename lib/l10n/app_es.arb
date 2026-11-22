@@ -3831,5 +3831,7 @@
   "diffPresetExport": "Copiar preajustes al portapapeles",
   "diffPresetImport": "Importar preajustes del portapapeles",
   "diffPresetImportOk": "Preajustes importados",
-  "diffPresetImportFail": "El portapapeles no contiene preajustes válidos"
+  "diffPresetImportFail": "El portapapeles no contiene preajustes válidos",
+  "editorAiNewChat": "Nueva conversación",
+  "editorAiFix": "Corregir con AI"
 }

@@ -3832,5 +3832,7 @@
   "diffPresetExport": "Copiar predefinições",
   "diffPresetImport": "Importar predefinições",
   "diffPresetImportOk": "Predefinições importadas",
-  "diffPresetImportFail": "A área de transferência não contém predefinições válidas"
+  "diffPresetImportFail": "A área de transferência não contém predefinições válidas",
+  "editorAiNewChat": "Nova conversa",
+  "editorAiFix": "Corrigir com IA"
 }

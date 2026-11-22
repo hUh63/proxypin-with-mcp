@@ -30,155 +30,14 @@ import 'package:proxypin/utils/text_diff.dart';
 
 enum EditorAiAction { explain, comment, review, tests, improve, ask }
 
-/// 打开 AI 辅助弹层。
+/// 「先看差异再替换」——AI 改写和 AI 修复共用。
 ///
-/// [onInsert] 把结果插到光标处；[onReplace] 为 null 表示当前没有选中内容。
-Future<void> showEditorAiAssist(
+/// 无差异（AI 原样返回）时直接返回 true，不弹窗：别让用户白点两下。
+Future<bool> confirmReplaceWithDiff(
   BuildContext context, {
-  required String text,
-  required String language,
-  required void Function(String) onInsert,
-  void Function(String)? onReplace,
-}) {
-  return showDialog<void>(
-    context: context,
-    builder: (_) => EditorAiAssistDialog(
-      text: text,
-      language: language,
-      onInsert: onInsert,
-      onReplace: onReplace,
-    ),
-  );
-}
-
-class EditorAiAssistDialog extends StatefulWidget {
-  final String text;
-  final String language;
-  final void Function(String) onInsert;
-  final void Function(String)? onReplace;
-
-  const EditorAiAssistDialog({
-    super.key,
-    required this.text,
-    required this.language,
-    required this.onInsert,
-    this.onReplace,
-  });
-
-  @override
-  State<EditorAiAssistDialog> createState() => _EditorAiAssistDialogState();
-}
-
-class _EditorAiAssistDialogState extends State<EditorAiAssistDialog> {
-  final _ask = TextEditingController();
-  EditorAiAction _action = EditorAiAction.explain;
-  bool _busy = false;
-  String? _result;
-  String? _error;
-
-  @override
-  void dispose() {
-    _ask.dispose();
-    super.dispose();
-  }
-
-  static const String _system =
-      '你是一名资深软件工程师，正在 IDE 里协助用户处理代码。'
-      '回答用简体中文，直接给结论和可执行的产物，不要客套。'
-      '涉及代码时用 Markdown 代码围栏包裹完整片段。';
-
-  String _prompt(AppLocalizations loc) {
-    final lang = widget.language.isEmpty ? '未知语言' : widget.language;
-    // 截断：模型上下文有限，整篇几万行会直接 400。
-    final body = widget.text.length > 12000
-        ? '${widget.text.substring(0, 12000)}\n…（已截断，原文共 ${widget.text.length} 字符）'
-        : widget.text;
-    const fence = '```';
-    final code = '$fence$lang\n$body\n$fence';
-    switch (_action) {
-      case EditorAiAction.explain:
-        return '请解释下面这段 $lang 代码：先用一句话概括用途，再按执行顺序说明关键逻辑，'
-            '最后指出可能的坑。不要重复贴大段代码。\n\n$code';
-      case EditorAiAction.comment:
-        return '给下面这段 $lang 代码加注释：保持代码逻辑与格式不变，只插入必要的注释，'
-            '返回**完整代码**（用代码围栏包裹）。注释用中文。\n\n$code';
-      case EditorAiAction.review:
-        return '以资深工程师视角审查下面这段 $lang 代码：列出问题'
-            '（正确性、边界条件、性能、安全、可读性），每条给出具体修改建议，按严重程度排序。'
-            '不要整段重写。\n\n$code';
-      case EditorAiAction.tests:
-        return '为下面这段 $lang 代码生成单元测试：覆盖正常路径、边界和异常，'
-            '只输出可直接运行的测试代码（用代码围栏包裹）。\n\n$code';
-      case EditorAiAction.improve:
-        return '重构下面这段 $lang 代码：保持行为不变，改善可读性与健壮性。'
-            '先用三条说明改了什么，再给出完整代码（用代码围栏包裹）。\n\n$code';
-      case EditorAiAction.ask:
-        final q = _ask.text.trim();
-        return '${q.isEmpty ? '请说明这段代码的作用与风险。' : q}\n\n$code';
-    }
-  }
-
-  Future<void> _run() async {
-    if (_busy) return;
-    final loc = AppLocalizations.of(context)!;
-    if (!AiAnalyzer.isConfigured) {
-      setState(() => _error = loc.editorAiNoConfig);
-      return;
-    }
-    setState(() {
-      _busy = true;
-      _error = null;
-      _result = null;
-    });
-    try {
-      final r = await AiAnalyzer.chat([
-        {'role': 'user', 'content': _prompt(loc)}
-      ], systemOverride: _system);
-      if (!mounted) return;
-      setState(() => _result = r);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = '$e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  /// 去掉最外层代码围栏——插入到编辑器时不需要 ```
-  static String _stripFence(String s) {
-    final t = s.trim();
-    if (!t.startsWith('```')) return t;
-    final firstNl = t.indexOf('\n');
-    if (firstNl < 0) return t;
-    var body = t.substring(firstNl + 1);
-    final last = body.lastIndexOf('```');
-    if (last >= 0) body = body.substring(0, last);
-    return body.trimRight();
-  }
-
-  void _insert() {
-    final r = _result;
-    if (r == null) return;
-    widget.onInsert(_stripFence(r));
-    Navigator.of(context).maybePop();
-  }
-
-  /// 替换前先看差异。
-  ///
-  /// AI 改写经常「顺手」重排整个函数（换个写法、调整顺序），直接覆盖等于放弃
-  /// 自己刚才的改动。先给一份 diff，一眼扫过去确认没被改坏再落地。
-  Future<void> _replace() async {
-    final r = _result;
-    final cb = widget.onReplace;
-    if (r == null || cb == null) return;
-    final after = _stripFence(r);
-    final ok = await _confirmReplace(widget.text, after);
-    if (ok != true || !mounted) return;
-    cb(after);
-    Navigator.of(context).maybePop();
-  }
-
-  Future<bool?> _confirmReplace(String before, String after) {
+  required String before,
+  required String after,
+}) async {
     final loc = AppLocalizations.of(context)!;
     final diffs = diffLines(before, after,
         ignoreWhitespace: true, ignoreTrailingWhitespace: true);
@@ -266,6 +125,171 @@ class _EditorAiAssistDialogState extends State<EditorAiAssistDialog> {
       ),
     );
   }
+
+/// 打开 AI 辅助弹层。
+///
+/// [onInsert] 把结果插到光标处；[onReplace] 为 null 表示当前没有选中内容。
+Future<void> showEditorAiAssist(
+  BuildContext context, {
+  required String text,
+  required String language,
+  required void Function(String) onInsert,
+  void Function(String)? onReplace,
+}) {
+  return showDialog<void>(
+    context: context,
+    builder: (_) => EditorAiAssistDialog(
+      text: text,
+      language: language,
+      onInsert: onInsert,
+      onReplace: onReplace,
+    ),
+  );
+}
+
+class EditorAiAssistDialog extends StatefulWidget {
+  final String text;
+  final String language;
+  final void Function(String) onInsert;
+  final void Function(String)? onReplace;
+
+  const EditorAiAssistDialog({
+    super.key,
+    required this.text,
+    required this.language,
+    required this.onInsert,
+    this.onReplace,
+  });
+
+  @override
+  State<EditorAiAssistDialog> createState() => _EditorAiAssistDialogState();
+}
+
+class _EditorAiAssistDialogState extends State<EditorAiAssistDialog> {
+  final _ask = TextEditingController();
+  EditorAiAction _action = EditorAiAction.explain;
+  bool _busy = false;
+  String? _result;
+  String? _error;
+
+  /// 多轮对话历史：追问时带上之前几轮，AI 才知道「它」指的是什么。
+  /// 上限 12 条（6 轮），够用又不至于让请求越滚越大。
+  final List<Map<String, String>> _history = [];
+
+  @override
+  void dispose() {
+    _ask.dispose();
+    super.dispose();
+  }
+
+  static const String _system =
+      '你是一名资深软件工程师，正在 IDE 里协助用户处理代码。'
+      '回答用简体中文，直接给结论和可执行的产物，不要客套。'
+      '涉及代码时用 Markdown 代码围栏包裹完整片段。';
+
+  String _prompt(AppLocalizations loc) {
+    final lang = widget.language.isEmpty ? '未知语言' : widget.language;
+    // 截断：模型上下文有限，整篇几万行会直接 400。
+    final body = widget.text.length > 12000
+        ? '${widget.text.substring(0, 12000)}\n…（已截断，原文共 ${widget.text.length} 字符）'
+        : widget.text;
+    const fence = '```';
+    final code = '$fence$lang\n$body\n$fence';
+    switch (_action) {
+      case EditorAiAction.explain:
+        return '请解释下面这段 $lang 代码：先用一句话概括用途，再按执行顺序说明关键逻辑，'
+            '最后指出可能的坑。不要重复贴大段代码。\n\n$code';
+      case EditorAiAction.comment:
+        return '给下面这段 $lang 代码加注释：保持代码逻辑与格式不变，只插入必要的注释，'
+            '返回**完整代码**（用代码围栏包裹）。注释用中文。\n\n$code';
+      case EditorAiAction.review:
+        return '以资深工程师视角审查下面这段 $lang 代码：列出问题'
+            '（正确性、边界条件、性能、安全、可读性），每条给出具体修改建议，按严重程度排序。'
+            '不要整段重写。\n\n$code';
+      case EditorAiAction.tests:
+        return '为下面这段 $lang 代码生成单元测试：覆盖正常路径、边界和异常，'
+            '只输出可直接运行的测试代码（用代码围栏包裹）。\n\n$code';
+      case EditorAiAction.improve:
+        return '重构下面这段 $lang 代码：保持行为不变，改善可读性与健壮性。'
+            '先用三条说明改了什么，再给出完整代码（用代码围栏包裹）。\n\n$code';
+      case EditorAiAction.ask:
+        final q = _ask.text.trim();
+        return '${q.isEmpty ? '请说明这段代码的作用与风险。' : q}\n\n$code';
+    }
+  }
+
+  Future<void> _run() async {
+    if (_busy) return;
+    final loc = AppLocalizations.of(context)!;
+    if (!AiAnalyzer.isConfigured) {
+      setState(() => _error = loc.editorAiNoConfig);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+      _result = null;
+    });
+    try {
+      final prompt = _prompt(loc);
+      final r = await AiAnalyzer.chat([
+        ..._history,
+        {'role': 'user', 'content': prompt},
+      ], systemOverride: _system);
+      if (!mounted) return;
+      setState(() {
+        _result = r;
+        _history.add({'role': 'user', 'content': prompt});
+        _history.add({'role': 'assistant', 'content': r});
+        if (_history.length > 12) {
+          _history.removeRange(0, _history.length - 12);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// 去掉最外层代码围栏——插入到编辑器时不需要 ```
+  static String _stripFence(String s) {
+    final t = s.trim();
+    if (!t.startsWith('```')) return t;
+    final firstNl = t.indexOf('\n');
+    if (firstNl < 0) return t;
+    var body = t.substring(firstNl + 1);
+    final last = body.lastIndexOf('```');
+    if (last >= 0) body = body.substring(0, last);
+    return body.trimRight();
+  }
+
+  void _insert() {
+    final r = _result;
+    if (r == null) return;
+    widget.onInsert(_stripFence(r));
+    Navigator.of(context).maybePop();
+  }
+
+  /// 替换前先看差异。
+  ///
+  /// AI 改写经常「顺手」重排整个函数（换个写法、调整顺序），直接覆盖等于放弃
+  /// 自己刚才的改动。先给一份 diff，一眼扫过去确认没被改坏再落地。
+  Future<void> _replace() async {
+    final r = _result;
+    final cb = widget.onReplace;
+    if (r == null || cb == null) return;
+    final after = _stripFence(r);
+    final ok = await _confirmReplace(widget.text, after);
+    if (ok != true || !mounted) return;
+    cb(after);
+    Navigator.of(context).maybePop();
+  }
+
+  Future<bool?> _confirmReplace(String before, String after) =>
+      confirmReplaceWithDiff(context, before: before, after: after);
+
 
   Future<void> _copy() async {
     final r = _result;
@@ -397,6 +421,17 @@ class _EditorAiAssistDialogState extends State<EditorAiAssistDialog> {
           child: Text(_result == null ? loc.editorAiRun : loc.editorAiRegenerate),
         ),
         if (_result != null) TextButton(onPressed: _copy, child: Text(loc.copy)),
+        if (_history.isNotEmpty)
+          TextButton(
+            onPressed: _busy
+                ? null
+                : () => setState(() {
+                      _history.clear();
+                      _result = null;
+                      _error = null;
+                    }),
+            child: Text(loc.editorAiNewChat),
+          ),
         if (_result != null && widget.onReplace != null)
           TextButton(onPressed: _replace, child: Text(loc.editorAiReplace)),
         if (_result != null)

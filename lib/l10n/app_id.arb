@@ -3831,5 +3831,7 @@
   "diffPresetExport": "Salin preset ke papan klip",
   "diffPresetImport": "Impor preset dari papan klip",
   "diffPresetImportOk": "Preset diimpor",
-  "diffPresetImportFail": "Papan klip tidak berisi preset yang valid"
+  "diffPresetImportFail": "Papan klip tidak berisi preset yang valid",
+  "editorAiNewChat": "Obrolan baru",
+  "editorAiFix": "Perbaiki dengan AI"
 }

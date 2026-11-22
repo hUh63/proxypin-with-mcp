@@ -89,6 +89,7 @@ import 'package:xml/xml.dart';
 import 'package:proxypin/ui/component/lint_issue_bar.dart';
 import 'package:proxypin/ui/toolbox/html_preview.dart';
 import 'package:proxypin/ui/toolbox/file_preview.dart';
+import 'package:proxypin/network/components/ai_analyzer.dart';
 import 'package:proxypin/ui/toolbox/editor_ai_assist.dart';
 import 'package:proxypin/ui/toolbox/editor_quick_open.dart';
 import 'package:proxypin/ui/toolbox/compiler_log_page.dart';
@@ -2393,6 +2394,59 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (d.start < 0 || d.start + d.length > text.length) return;
     controller.replaceRange(d.start, d.start + d.length, replacement);
     _runLint();
+  }
+
+  /// 「AI 修复」：把问题所在的一小段代码 + 诊断描述发过去，走 diff 预览再落地。
+  ///
+  /// 静态检查能覆盖的只是括号/引号/分号这类语法级问题，模型很多时候也只能猜；
+  /// 所以这里刻意只给 ±6 行上下文，并且一定要先看差异再写回。
+  Future<void> _aiFixDiagnostic(LintDiagnostic d) async {
+    final c = _controller;
+    final doc = _doc;
+    if (c == null || doc == null) return;
+    if (!AiAnalyzer.isConfigured) {
+      _toast(localizations.editorAiNoConfig);
+      return;
+    }
+    final lines = c.text.split('\n');
+    if (lines.isEmpty) return;
+    final idx = (d.line - 1).clamp(0, lines.length - 1);
+    final from = (idx - 6).clamp(0, lines.length - 1);
+    final to = (idx + 6).clamp(0, lines.length - 1);
+    final snippet = lines.sublist(from, to + 1).join('\n');
+    _toast(localizations.editorAiThinking);
+    String fixed;
+    try {
+      final r = await AiAnalyzer.chat([
+        {
+          'role': 'user',
+          'content': '下面是一段 ${doc.langLabel} 代码（从第 ${from + 1} 行开始）。'
+              '第 ${d.line} 行第 ${d.column} 列有问题：${d.message}\n'
+              '请只输出修复后的这段代码，保持其它行不变，不要解释、不要代码围栏。\n\n'
+              '$snippet',
+        }
+      ], systemOverride: 'You fix code. Output only the corrected code block, no prose.');
+      fixed = r.replaceAll('\r\n', '\n').trim();
+      final fence = RegExp(r'^```[^\n]*\n([\s\S]*?)\n?```$');
+      final mm = fence.firstMatch(fixed);
+      if (mm != null) fixed = mm.group(1)!.trim();
+    } catch (e) {
+      if (mounted) _toast('${localizations.fail}: $e');
+      return;
+    }
+    if (!mounted) return;
+    if (fixed.isEmpty || fixed == snippet) {
+      _toast(localizations.editorAiCompleteEmpty);
+      return;
+    }
+    final ok = await confirmReplaceWithDiff(context, before: snippet, after: fixed);
+    if (!ok || !mounted) return;
+    final c2 = _controller;
+    if (c2 == null) return;
+    final startOff = c2.getLineStartOffset(from);
+    final endOff =
+        to + 1 < c2.lineCount ? c2.getLineStartOffset(to + 1) : c2.text.length;
+    c2.replaceRange(startOff, endOff, fixed.endsWith('\n') ? fixed : '$fixed\n');
   }
 
   void _fixAllDiagnostics() {
@@ -10985,6 +11039,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
               chinese: Localizations.localeOf(context).languageCode.startsWith('zh'),
               onJump: _jumpToDiagnostic,
               onFix: _fixDiagnostic,
+              onAiFix: _aiFixDiagnostic,
               onShowAll: () => _openConsole(EditorConsoleTab.problems),
               onFixAll: (_lint?.fixableCount ?? 0) > 0 ? _fixAllDiagnostics : null,
               onPrevIssue: () => _jumpIssue(false),

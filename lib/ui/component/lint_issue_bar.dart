@@ -44,6 +44,9 @@ class LintIssueBar extends StatefulWidget {
   /// 点「修复」→ 只应用这一条建议。
   final void Function(LintDiagnostic) onFix;
 
+  /// 点「AI 修复」→ 让模型改这段代码（走 diff 预览再落地）。null 表示不提供。
+  final void Function(LintDiagnostic)? onAiFix;
+
   /// 点「还有 N 条」→ 打开完整面板。
   final VoidCallback? onShowAll;
 
@@ -68,6 +71,7 @@ class LintIssueBar extends StatefulWidget {
     required this.report,
     required this.onJump,
     required this.onFix,
+    this.onAiFix,
     this.onShowAll,
     this.onFixAll,
     this.onPrevIssue,
@@ -368,6 +372,19 @@ class _LintIssueBarState extends State<LintIssueBar> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(localizations.editorIssueFix, style: const TextStyle(fontSize: 11)),
+              ),
+            ),
+          if (widget.onAiFix != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 2),
+              child: IconButton(
+                tooltip: localizations.editorAiFix,
+                icon: const Icon(Icons.auto_awesome, size: 15),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 26, minHeight: 24),
+                color: theme.colorScheme.tertiary,
+                onPressed: () => widget.onAiFix!(d),
               ),
             ),
         ]),

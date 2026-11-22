@@ -5521,5 +5521,7 @@
   "diffPresetExport": "把预设复制到剪贴板",
   "diffPresetImport": "从剪贴板导入预设",
   "diffPresetImportOk": "已导入预设",
-  "diffPresetImportFail": "剪贴板里没有有效的预设"
+  "diffPresetImportFail": "剪贴板里没有有效的预设",
+  "editorAiNewChat": "新对话",
+  "editorAiFix": "AI 修复"
 }
