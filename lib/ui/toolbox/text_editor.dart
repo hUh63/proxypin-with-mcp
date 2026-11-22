@@ -10869,7 +10869,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
         drawerEdgeDragWidth: 0,
         drawer: _docDrawer(),
         endDrawer: _outlineDrawer(),
-        endDrawerEdgeDragWidth: 0,
+        // 上面 drawerEdgeDragWidth: 0 对两侧抽屉同时生效，所以这里不用再加参数
+        // （Scaffold 也没有 endDrawerEdgeDragWidth 这个参数）。
+        endDrawerEnableOpenDragGesture: false,
         onEndDrawerChanged: (open) {
           if (!open && _outlineQuery.isNotEmpty) {
             setState(() => _outlineQuery = '');
