@@ -28,6 +28,9 @@ class DiffJobArgs {
   /// 相似度配对阈值，千分比。
   final int pairSimilarity;
 
+  /// 忽略数字差异（时间戳 / id / 耗时这类「同一行只差一个数」）。
+  final bool ignoreNumbers;
+
   const DiffJobArgs({
     required this.left,
     required this.right,
@@ -42,6 +45,7 @@ class DiffJobArgs {
     this.ignoreRegionBegin,
     this.ignoreRegionEnd,
     this.pairSimilarity = 500,
+    this.ignoreNumbers = false,
   });
 
   /// 两侧文本总长，用来判断值不值得起 isolate。
@@ -100,7 +104,8 @@ DiffJobResult runDiffJob(DiffJobArgs a) {
           ignoreComments: a.ignoreComments,
           ignoreLinePattern: lineRe,
           ignoreRegionBegin: regionBegin,
-          ignoreRegionEnd: regionEnd);
+          ignoreRegionEnd: regionEnd,
+          ignoreNumbers: a.ignoreNumbers);
 
   final blocks = buildDiffBlocks(diffs,
       ignoreCase: a.ignoreCase,
@@ -108,7 +113,8 @@ DiffJobResult runDiffJob(DiffJobArgs a) {
       ignoreTrailingWhitespace: a.ignoreTrailingWhitespace,
       ignoreBlankLines: a.ignoreBlankLines,
       ignoreComments: a.ignoreComments,
-      pairSimilarity: a.pairSimilarity);
+      pairSimilarity: a.pairSimilarity,
+      ignoreNumbers: a.ignoreNumbers);
 
   var movedEnds = <int>{};
   if (a.detectMoved && blocks.isNotEmpty) {
@@ -154,4 +160,5 @@ DiffJobResult runDiffJobFromMap(Map<String, Object?> m) => runDiffJob(DiffJobArg
       ignoreRegionBegin: m['ignoreRegionBegin'] as String?,
       ignoreRegionEnd: m['ignoreRegionEnd'] as String?,
       pairSimilarity: (m['pairSimilarity'] as int?) ?? 500,
+      ignoreNumbers: m['ignoreNumbers'] == true,
     ));

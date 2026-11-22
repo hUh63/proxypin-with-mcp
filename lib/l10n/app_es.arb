@@ -3815,5 +3815,6 @@
   "editorAiComplete": "Autocompletado AI en línea",
   "editorAiCompleteRequesting": "Consultando al modelo…",
   "editorAiCompleteEmpty": "No hay autocompletado disponible",
-  "editorAiCompleteHint": "Tab para aceptar, Esc para descartar"
+  "editorAiCompleteHint": "Tab para aceptar, Esc para descartar",
+  "diffIgnoreNumbers": "Ignorar números"
 }

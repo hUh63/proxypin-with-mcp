@@ -3815,5 +3815,6 @@
   "editorAiComplete": "Hoàn thành bằng AI trong dòng",
   "editorAiCompleteRequesting": "Đang hỏi mô hình…",
   "editorAiCompleteEmpty": "Không có gợi ý hoàn thành",
-  "editorAiCompleteHint": "Tab để chấp nhận, Esc để bỏ"
+  "editorAiCompleteHint": "Tab để chấp nhận, Esc để bỏ",
+  "diffIgnoreNumbers": "Bỏ qua số"
 }

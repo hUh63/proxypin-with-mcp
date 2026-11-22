@@ -20,6 +20,11 @@ void main() {
           'total = 1;');
     });
 
+    test('前缀命中但后面紧跟标识符字符时不砍（returnValue 不该变 Value）', () {
+      expect(sanitizeCompletion('returnValue = 1;', currentLinePrefix: '  return '),
+          'returnValue = 1;');
+    });
+
     test('模型回 nothing 视为没有补全', () {
       expect(sanitizeCompletion('nothing'), isNull);
       expect(sanitizeCompletion('  NOTHING \n'), isNull);

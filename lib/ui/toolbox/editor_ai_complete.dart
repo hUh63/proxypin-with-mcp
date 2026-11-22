@@ -84,9 +84,20 @@ String? sanitizeCompletion(String raw, {String? currentLinePrefix, int maxLines 
   if (m != null) s = m.group(1)!.trim();
 
   // 模型偶尔会把整行（含光标前的部分）原样返回，去掉重复部分只留新增。
+  //
+  // 缩进对不上是常态（有的模型带、有的不带），所以三种写法都试一遍；
+  // 但必须确认「重复部分之后不是标识符字符」—— 否则 prefix 为 `return `
+  // 时，模型回的 `returnValue;` 会被误砍成 `Value;`。
   final prefix = currentLinePrefix ?? '';
-  if (prefix.trim().isNotEmpty && s.startsWith(prefix)) {
-    s = s.substring(prefix.length);
+  if (prefix.trim().isNotEmpty) {
+    final wordChar = RegExp(r'[A-Za-z0-9_$]');
+    for (final p in <String>{prefix, prefix.trimLeft(), prefix.trim()}) {
+      if (p.isEmpty || !s.startsWith(p)) continue;
+      final next = p.length < s.length ? s[p.length] : '';
+      if (next.isNotEmpty && wordChar.hasMatch(next)) continue;
+      s = s.substring(p.length).trimLeft();
+      break;
+    }
   }
 
   if (s.trim().toLowerCase() == _nothingMarker) return null;

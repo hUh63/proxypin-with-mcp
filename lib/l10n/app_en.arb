@@ -6430,5 +6430,6 @@
   "editorAiComplete": "Inline AI completion",
   "editorAiCompleteRequesting": "Asking the model…",
   "editorAiCompleteEmpty": "No completion available",
-  "editorAiCompleteHint": "Tab to accept, Esc to dismiss"
+  "editorAiCompleteHint": "Tab to accept, Esc to dismiss",
+  "diffIgnoreNumbers": "Ignore numbers"
 }

@@ -3816,5 +3816,6 @@
   "editorAiComplete": "Conclusão de IA em linha",
   "editorAiCompleteRequesting": "A consultar o modelo…",
   "editorAiCompleteEmpty": "Sem conclusão disponível",
-  "editorAiCompleteHint": "Tab para aceitar, Esc para descartar"
+  "editorAiCompleteHint": "Tab para aceitar, Esc para descartar",
+  "diffIgnoreNumbers": "Ignorar números"
 }

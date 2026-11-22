@@ -3815,5 +3815,6 @@
   "editorAiComplete": "การเติมข้อความด้วย AI แบบอินไลน์",
   "editorAiCompleteRequesting": "กำลังถามโมเดล…",
   "editorAiCompleteEmpty": "ไม่มีข้อความเติมให้",
-  "editorAiCompleteHint": "กด Tab เพื่อยอมรับ Esc เพื่อปิด"
+  "editorAiCompleteHint": "กด Tab เพื่อยอมรับ Esc เพื่อปิด",
+  "diffIgnoreNumbers": "ไม่สนใจตัวเลข"
 }

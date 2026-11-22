@@ -3815,5 +3815,6 @@
   "editorAiComplete": "Pelengkapan AI sebaris",
   "editorAiCompleteRequesting": "Menanyakan model…",
   "editorAiCompleteEmpty": "Tidak ada pelengkapan",
-  "editorAiCompleteHint": "Tab untuk terima, Esc untuk batal"
+  "editorAiCompleteHint": "Tab untuk terima, Esc untuk batal",
+  "diffIgnoreNumbers": "Abaikan angka"
 }

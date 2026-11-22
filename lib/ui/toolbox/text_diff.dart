@@ -146,6 +146,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 忽略注释：`//` `*` `#` 开头的行当作空行，行尾 ` //` 之后丢掉。
   bool _ignoreComments = false;
 
+  /// 忽略数字差异（Beyond Compare 的 Ignore numbers）：时间戳、id、耗时这类
+  /// 「同一行只差一个数」在日志对比里占了绝大多数噪音。
+  bool _ignoreNumbers = false;
+
   /// 按行号对齐（Beyond Compare 的 Alignment → 按位置）：
   /// 不做内容匹配，左边第 i 行直接对右边第 i 行。改配置、改一列数值这类
   /// 「结构没动」的对比用它更好读 —— 内容对齐会因为插了一行而把下面整段挪位。
@@ -723,6 +727,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreTrailingWhitespace: _ignoreTrailing,
         ignoreBlankLines: _ignoreBlank,
         ignoreComments: _ignoreComments,
+        ignoreNumbers: _ignoreNumbers,
         alignByLine: _alignByLine,
         detectMoved: _detectMoved,
         ignoreLinePattern: _ignoreLineRe?.pattern,
@@ -774,6 +779,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       'ignoreTrailingWhitespace': args.ignoreTrailingWhitespace,
       'ignoreBlankLines': args.ignoreBlankLines,
       'ignoreComments': args.ignoreComments,
+      'ignoreNumbers': args.ignoreNumbers,
       'alignByLine': args.alignByLine,
       'detectMoved': args.detectMoved,
       'ignoreLinePattern': args.ignoreLinePattern,
@@ -1899,6 +1905,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                 'ignoreTrailing': _ignoreTrailing,
                 'ignoreBlank': _ignoreBlank,
                 'ignoreComments': _ignoreComments,
+                'ignoreNumbers': _ignoreNumbers,
                 'wordDiff': _wordDiff,
                 'showSpace': _showSpace,
                 'syncH': _syncH,
@@ -1931,6 +1938,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         _ignoreTrailing = b('ignoreTrailing', _ignoreTrailing);
         _ignoreBlank = b('ignoreBlank', _ignoreBlank);
         _ignoreComments = b('ignoreComments', _ignoreComments);
+        _ignoreNumbers = b('ignoreNumbers', _ignoreNumbers);
         _wordDiff = b('wordDiff', _wordDiff);
         _showSpace = b('showSpace', _showSpace);
         _syncH = b('syncH', _syncH);
@@ -2004,6 +2012,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _setTabWidth(8);
           case 'ignoreComment':
             setState(() => _ignoreComments = !_ignoreComments);
+            _compare();
+          case 'ignoreNumbers':
+            setState(() => _ignoreNumbers = !_ignoreNumbers);
             _compare();
           case 'ignoreLines':
             unawaited(_showIgnoreLineDialog());
@@ -2188,6 +2199,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'ignoreComment',
             checked: _ignoreComments,
             child: Text(localizations.diffIgnoreComments)),
+        CheckedPopupMenuItem(
+            value: 'ignoreNumbers',
+            checked: _ignoreNumbers,
+            child: Text(localizations.diffIgnoreNumbers)),
         CheckedPopupMenuItem(
             value: 'alignByLine',
             checked: _alignByLine,
@@ -3193,6 +3208,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (_ignoreTrailing) localizations.diffIgnoreTrailing,
       if (_ignoreBlank) localizations.diffIgnoreBlankLines,
       if (_ignoreComments) localizations.diffIgnoreComments,
+      if (_ignoreNumbers) localizations.diffIgnoreNumbers,
       if (_ignoreLineText.isNotEmpty) localizations.diffIgnoreLinePattern(_ignoreLineText),
       if (_regionBeginText.isNotEmpty)
         localizations.diffIgnoreRegionOn(_regionBeginText, _regionEndText),
@@ -3660,7 +3676,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 对齐行缓存的指纹：内容 + 所有影响比较结果的开关。
   String _rowsCacheKey() =>
       '${_left.text.hashCode}|${_right.text.hashCode}|$_ignoreCase|$_ignoreWhitespace|'
-      '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreLineText|$_alignByLine|'
+      '$_ignoreTrailing|$_ignoreBlank|$_ignoreComments|$_ignoreNumbers|$_ignoreLineText|$_alignByLine|'
       '$_regionBeginText|$_regionEndText|$_pairSimilarityPct';
 
   List<DiffRow> _alignedRows() {
@@ -3674,7 +3690,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
           ignoreCase: _ignoreCase,
           ignoreWhitespace: _ignoreWhitespace,
           ignoreTrailingWhitespace: _ignoreTrailing,
-          pairSimilarity: _pairSimilarityPct * 10);
+          pairSimilarity: _pairSimilarityPct * 10,
+          ignoreNumbers: _ignoreNumbers);
       return _alignedRowsCache;
     }
     _alignedRowsCache = alignedDiffRows(_left.text, _right.text,
@@ -3687,7 +3704,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
         ignoreRegionBegin: _regionBeginRe,
         ignoreRegionEnd: _regionEndRe,
         pairSimilarity: _pairSimilarityPct * 10,
-        alignByLine: _alignByLine);
+        alignByLine: _alignByLine,
+        ignoreNumbers: _ignoreNumbers);
     return _alignedRowsCache;
   }
 

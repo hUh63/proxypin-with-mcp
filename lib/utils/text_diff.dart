@@ -85,11 +85,15 @@ Set<int> ignoredRegionLines(String text, RegExp begin, RegExp end) {
   return out;
 }
 
+/// 连续数字（时间戳、请求 id、行号…）在「忽略数字」模式下归一成同一个占位符。
+final RegExp _digits = RegExp(r'\d+');
+
 String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
     [bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
     bool ignoreComments = false,
-    RegExp? ignoreLinePattern]) {
+    RegExp? ignoreLinePattern,
+    bool ignoreNumbers = false]) {
   var k = s;
   // 忽略匹配某模式的行（Beyond Compare 的「忽略不重要的差异」）：
   // 典型用法是日志/抓包对比时忽略带时间戳、请求 id 的那些行。
@@ -110,6 +114,9 @@ String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
   // 却会让「第一行」整行不同 —— 用户看到的就是「明明一样，第一行却标红了」。
   // 真正需要比较零宽字符的场景（比如排查隐藏字符）有「特殊字符检测」专门做。
   if (k.contains('\uFEFF')) k = k.replaceAll('\uFEFF', '');
+  // 忽略数字（Beyond Compare 的同名规则）：日志里的时间戳、自增 id、耗时数字
+  // 全归成 `#`，于是「同一行只差一个数字」不再算差异。
+  if (ignoreNumbers) k = k.replaceAll(_digits, '#');
   if (ignoreWhitespace) {
     k = k.replaceAll(_whiteSpace, '');
   } else if (ignoreTrailingWhitespace) {
@@ -157,7 +164,8 @@ List<LineDiff> diffLines(String left, String right,
     bool ignoreComments = false,
     RegExp? ignoreLinePattern,
     RegExp? ignoreRegionBegin,
-    RegExp? ignoreRegionEnd}) {
+    RegExp? ignoreRegionEnd,
+    bool ignoreNumbers = false}) {
   // 用 split('\n') 而不是 LineSplitter：保留尾部空行的差异（"a\n" vs "a"）
   final a = _stripTrailingCr(left.split('\n'));
   final b = _stripTrailingCr(right.split('\n'));
@@ -171,14 +179,14 @@ List<LineDiff> diffLines(String left, String right,
     aK.add(aIgn.contains(i)
         ? ''
         : _normKey(a[i], ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines,
-            ignoreComments, ignoreLinePattern));
+            ignoreComments, ignoreLinePattern, ignoreNumbers));
   }
   final bK = <String>[];
   for (var i = 0; i < b.length; i++) {
     bK.add(bIgn.contains(i)
         ? ''
         : _normKey(b[i], ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines,
-            ignoreComments, ignoreLinePattern));
+            ignoreComments, ignoreLinePattern, ignoreNumbers));
   }
   final out = <LineDiff>[];
   _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
@@ -187,16 +195,16 @@ List<LineDiff> diffLines(String left, String right,
   // 只在 _normKey 里归一成空串是不够的——那样「右边多两行空行」仍然会算出两处增行，
   // 只是两行内容都成了空串（第一版就栽在这，用例才把它抓出来）。
   return _dropBlankOnlyDiffs(out, a, b, ignoreCase, ignoreWhitespace,
-      ignoreTrailingWhitespace, ignoreComments, ignoreLinePattern);
+      ignoreTrailingWhitespace, ignoreComments, ignoreLinePattern, ignoreNumbers);
 }
 
 /// 丢掉「一整段差异里全是空行」的那些段。
 List<LineDiff> _dropBlankOnlyDiffs(List<LineDiff> diffs, List<String> a, List<String> b,
     bool ignoreCase, bool ignoreWhitespace, bool ignoreTrailingWhitespace, bool ignoreComments,
-    RegExp? ignoreLinePattern) {
+    RegExp? ignoreLinePattern, bool ignoreNumbers) {
   bool isBlank(LineDiff d) =>
       _normKey(d.text, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          true, ignoreComments, ignoreLinePattern)
+          true, ignoreComments, ignoreLinePattern, ignoreNumbers)
           .isEmpty;
   final out = <LineDiff>[];
   var i = 0;
@@ -453,7 +461,8 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
     [bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
     bool ignoreComments = false,
-    int similarity = _pairSimilarity]) {
+    int similarity = _pairSimilarity,
+    bool ignoreNumbers = false]) {
   final m = leftTexts.length;
   final n = rightTexts.length;
   if (m == 0 || n == 0) return const <({int left, int right})>[];
@@ -466,11 +475,11 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
 
   final lk = leftTexts
       .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          ignoreBlankLines, ignoreComments))
+          ignoreBlankLines, ignoreComments, null, ignoreNumbers))
       .toList();
   final rk = rightTexts
       .map((s) => _normKey(s, ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace,
-          ignoreBlankLines, ignoreComments))
+          ignoreBlankLines, ignoreComments, null, ignoreNumbers))
       .toList();
 
   final sim = List.generate(m, (_) => List<int>.filled(n, 0));
@@ -655,7 +664,8 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
     bool ignoreTrailingWhitespace = false,
     bool ignoreBlankLines = false,
     bool ignoreComments = false,
-    int pairSimilarity = _pairSimilarity}) {
+    int pairSimilarity = _pairSimilarity,
+    bool ignoreNumbers = false}) {
   final blocks = <DiffBlock>[];
   List<int>? leftLines;
   List<int>? rightLines;
@@ -669,7 +679,7 @@ List<DiffBlock> buildDiffBlocks(List<LineDiff> diffs,
     if (leftLines != null) {
       final pairs = _pairLines(leftTexts ?? const [], rightTexts ?? const [],
           ignoreCase, ignoreWhitespace, ignoreTrailingWhitespace, ignoreBlankLines,
-          ignoreComments, pairSimilarity);
+          ignoreComments, pairSimilarity, ignoreNumbers);
       blocks.add(DiffBlock(
         leftStart: leftStart!,
         rightStart: rightStart!,
@@ -821,7 +831,8 @@ List<DiffRow> alignedDiffRows(String left, String right,
     RegExp? ignoreRegionBegin,
     RegExp? ignoreRegionEnd,
     int pairSimilarity = _pairSimilarity,
-    bool alignByLine = false}) {
+    bool alignByLine = false,
+    bool ignoreNumbers = false}) {
   final diffs = alignByLine
       ? diffLinesByPosition(left, right,
           ignoreCase: ignoreCase,
@@ -843,7 +854,8 @@ List<DiffRow> alignedDiffRows(String left, String right,
       ignoreCase: ignoreCase,
       ignoreWhitespace: ignoreWhitespace,
       ignoreTrailingWhitespace: ignoreTrailingWhitespace,
-      pairSimilarity: pairSimilarity);
+      pairSimilarity: pairSimilarity,
+      ignoreNumbers: ignoreNumbers);
 }
 
 /// 由**已经算好的**行差异拼出对齐行。
@@ -854,7 +866,8 @@ List<DiffRow> alignedRowsFromDiffs(List<LineDiff> diffs,
     {bool ignoreCase = false,
     bool ignoreWhitespace = false,
     bool ignoreTrailingWhitespace = false,
-    int pairSimilarity = _pairSimilarity}) {
+    int pairSimilarity = _pairSimilarity,
+    bool ignoreNumbers = false}) {
   final rows = <DiffRow>[];
   var i = 0;
   while (i < diffs.length) {
@@ -887,6 +900,7 @@ List<DiffRow> alignedRowsFromDiffs(List<LineDiff> diffs,
       false,
       false,
       pairSimilarity,
+      ignoreNumbers,
     );
     // 按左行顺序输出：配对的算 modified，没配上的算 deleted；右侧未配对的算 added。
     final leftToRight = <int, int>{for (final p in pairs) p.left: p.right};
