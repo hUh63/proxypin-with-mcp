@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.67.360 (2026-11-22) — 修 CI：APK 的 Release 步骤并发冲突
+
+### 构建流程
+- 一个 tag 会同时触发 5 个 workflow，它们并发 `POST /releases` 创建同一个 Release，
+  GitHub 偶尔返回 HttpError。编译 / 签名 / 打包全部 success，只有「上传 Release」
+  这一步红，把整个 job 判成失败 —— `v1.67.359` 的 APK job 就是这么红的。
+- desktop / deb / ios 三个 workflow 早就有这一步的 `continue-on-error`，只有
+  **build-apk 漏了**。现在补上，四处一致。
+- 只影响「上传产物到 Release」这一步；APK 编译失败、签名校验失败仍然会让 job 红。
+
+### 排查（第 16 批）
+- 对比页更多菜单 74 个 value ↔ 77 个 case，唯一无 case 的仍是 `apply`（差异列表
+  长按菜单自己的回调，正确）
+- 9 个语言包 **3689 键**完全一致
+
 ## v1.67.359 (2026-11-22) — 比较预设 / 自动行内补全
 
 ### 文本对比页

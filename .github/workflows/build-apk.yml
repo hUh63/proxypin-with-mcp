@@ -131,6 +131,10 @@ jobs:
 
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
+        # 一个 tag 会同时触发 5 个 workflow，它们并发 POST /releases 创建同一个
+        # Release，GitHub 偶尔返回 HttpError。编译/签名/打包都已 success，
+        # 不能让「上传 Release」这一步把整个 job 判红（和 desktop/deb/ios 保持一致）。
+        continue-on-error: true
         uses: softprops/action-gh-release@v3
         with:
           files: build/app/outputs/flutter-apk/proxypin-*.apk
