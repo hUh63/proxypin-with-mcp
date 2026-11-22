@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import 'dart:async';
+
 import 'package:code_forge/code_forge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,7 +35,13 @@ import 'package:proxypin/utils/find_history.dart';
 class FindPanelView extends StatefulWidget implements PreferredSizeWidget {
   final FindController controller;
 
-  const FindPanelView({super.key, required this.controller});
+  /// 「全部替换」的替代实现（null = 直接用内核的 `replaceAll`）。
+  ///
+  /// 编辑器传进来的是「先预览差异再替换」；对比页、JS 运行页这些不需要预览的地方
+  /// 不传，行为完全不变。
+  final Future<void> Function(FindController controller)? onReplaceAll;
+
+  const FindPanelView({super.key, required this.controller, this.onReplaceAll});
 
   /// 给「仍被 CodeForge 当作 slot 使用」的场景（如 JS 运行页、重写页）一个合理高度；
   /// 在我们自己放进页面底部 Column 的用法里，这个值不影响布局。
@@ -297,7 +305,18 @@ class _FindPanelViewState extends State<FindPanelView> with SingleTickerProvider
         _textButton(localizations.findPrevious, none ? null : () => _recordAndRun(controller.previous)),
         _textButton(localizations.findNext, none ? null : () => _recordAndRun(controller.next)),
         _textButton(localizations.replace, none ? null : () => _recordAndRun(controller.replace)),
-        _textButton(localizations.findReplaceAll, none ? null : () => _recordAndRun(controller.replaceAll)),
+        _textButton(
+            localizations.findReplaceAll,
+            none
+                ? null
+                : () {
+                    final cb = widget.onReplaceAll;
+                    if (cb == null) {
+                      _recordAndRun(controller.replaceAll);
+                    } else {
+                      _recordAndRun(() => unawaited(cb(controller)));
+                    }
+                  }),
         _textButton(localizations.close, controller.toggleActive),
       ],
     );

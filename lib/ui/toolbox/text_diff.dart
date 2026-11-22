@@ -2497,7 +2497,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             child: Text(localizations.diffIgnoreNumbers)),
         PopupMenuItem(
             value: 'undoApply',
-            child: Text(localizations.diffUndoApply)),
+            // 带上剩余步数：让人知道这个菜单项现在点了是有用的。
+            child: Text(_applyStack.isEmpty
+                ? localizations.diffUndoApply
+                : '${localizations.diffUndoApply} (${_applyStack.length})')),
         CheckedPopupMenuItem(
             value: 'alignByLine',
             checked: _alignByLine,

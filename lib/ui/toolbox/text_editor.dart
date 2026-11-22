@@ -2577,7 +2577,61 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 批量改类名/变量名时，直接把整篇统一成一种大小写会把常量和类名一起毁掉。
   ///
   /// 正则模式下不接管（用户写 `$1` 是想引用分组），直接返回 -1 让调用方回退。
-  int _replaceAllPreserveCase() {
+  /// 「全部替换」前先看差异。
+  ///
+  /// 正则写错一个字符就能把整篇改烂（`\s+` 写成 `\s*` 之类），而且「全部替换」
+  /// 通常一次改几十处、靠 Ctrl+Z 也很难一一核对。先给一份 diff，扫一眼确认了再落地。
+  Future<void> _replaceAllWithPreview(FindController fc) async {
+    final c = _controller;
+    if (c == null) return;
+    final query = fc.findInputController.text;
+    final repl = fc.replaceInputController.text;
+    if (query.isEmpty) return;
+    final text = c.text;
+    // 大文件不做预览：diff 本身就要几百毫秒，而点「全部替换」的人通常就是要快。
+    if (text.length > 300000) {
+      fc.replaceAll();
+      return;
+    }
+    var pattern = fc.isRegex ? query : RegExp.escape(query);
+    if (fc.matchWholeWord) pattern = '\\b$pattern\\b';
+    final RegExp re;
+    try {
+      re = RegExp(pattern, caseSensitive: fc.caseSensitive);
+    } catch (_) {
+      // 正则非法：交给内核自己报错（它的提示更贴近用户输入）
+      fc.replaceAll();
+      return;
+    }
+    final matches = re.allMatches(text).length;
+    if (matches == 0) {
+      _toast(localizations.editorReplacePreserveNone);
+      return;
+    }
+    // replaceAllMapped 返回字面量：`replaceAll` 的替换串里 `$1` 会被当组引用。
+    final after = text.replaceAllMapped(re, (_) => repl);
+    final ok = await confirmReplaceWithDiff(context, before: text, after: after);
+    if (!ok || !mounted) return;
+    final c2 = _controller;
+    if (c2 == null) return;
+    c2.replaceRange(0, c2.text.length, after);
+    _toast(localizations.editorReplacedCount('$matches'));
+  }
+
+  Future<void> _runReplacePreserveCase() async {
+    final n = await _replaceAllPreserveCase();
+    if (!mounted) return;
+    if (n == -1) {
+      _toast(localizations.editorReplacePreserveFallback);
+    } else if (n == 0) {
+      _toast(localizations.editorReplacePreserveNone);
+    } else if (n > 0) {
+      _toast(localizations.editorReplacedCount('$n'));
+    }
+    // -2：用户在 diff 预览里取消了，静默。
+  }
+
+  Future<int> _replaceAllPreserveCase() async {
     final fc = _doc?.findController;
     final controller = _controller;
     if (fc == null || controller == null) return 0;
@@ -2600,7 +2654,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
       return _applySourceCase(m.group(0) ?? '', repl);
     });
     if (n == 0) return 0;
-    controller.replaceRange(0, text.length, out);
+    final ok = await confirmReplaceWithDiff(context, before: text, after: out);
+    if (!ok) return -2; // 用户取消
+    final c2 = _controller;
+    if (c2 == null) return 0;
+    c2.replaceRange(0, text.length, out);
     return n;
   }
 
@@ -11108,7 +11166,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           if (doc != null)
             AnimatedBuilder(
               animation: doc.findController,
-              builder: (_, __) => FindPanelView(controller: doc.findController),
+              builder: (_, __) => FindPanelView(
+                controller: doc.findController,
+                onReplaceAll: _replaceAllWithPreview,
+              ),
             ),
           // 状态栏（学 VS Code）：光标行列、选中字符数、缩进、语言。
           // 选「放顶部」时挪到工具栏下面（见上面的 `_prefs.statusBarTop` 分支）。
@@ -12484,14 +12545,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
         case 'replaceStep':
           unawaited(_replaceStepByStep());
         case 'replacePreserveCase':
-          final n = _replaceAllPreserveCase();
-          if (n < 0) {
-            _toast(localizations.editorReplacePreserveFallback);
-          } else if (n == 0) {
-            _toast(localizations.editorReplacePreserveNone);
-          } else {
-            _toast(localizations.editorReplacedCount('$n'));
-          }
+          unawaited(_runReplacePreserveCase());
         case 'quickFix':
           _quickFixAtCaret();
         case 'selectAllOccurrences':
