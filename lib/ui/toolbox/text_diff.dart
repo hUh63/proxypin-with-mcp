@@ -4148,7 +4148,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
       switch (r.type) {
         case DiffRowType.equal:
           lines.add(_UnifiedLine(
-              '  ', r.leftLine ?? r.rightLine, r.leftText ?? '', r.type, i));
+              '  ', r.leftLine ?? r.rightLine, r.leftText ?? '', r.type, i,
+              foldFrom: r.isFold ? r.foldFrom : null));
         case DiffRowType.deleted:
           lines.add(_UnifiedLine('- ', r.leftLine, r.leftText ?? '', r.type, i));
         case DiffRowType.added:
@@ -4196,7 +4197,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
     };
     final raw = l.text;
     final text = _renderText(raw);
-    return Container(
+    final foldFrom = l.foldFrom;
+    final body = Container(
       color: bg,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -4256,6 +4258,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
           ),
         ],
       ),
+    );
+    if (foldFrom == null) return body;
+    // 「⋯ N 行未变」的占位行：点一下展开这一段（对齐视图能点，统一视图以前不能）。
+    return InkWell(
+      onTap: () => _toggleFold(foldFrom),
+      child: body,
     );
   }
 
@@ -6349,7 +6357,10 @@ class _UnifiedLine {
   /// 两边的差异区间分别来自左/右原文。
   final List<({int start, int end})>? ranges;
 
+  /// 若这一行是「折叠了 N 行未变」的占位行，记下折叠段起点，用来点击展开。
+  final int? foldFrom;
+
   const _UnifiedLine(this.sign, this.num, this.text, this.type, this.srcRow,
-      {this.ranges});
+      {this.ranges, this.foldFrom});
 }
 
