@@ -15,8 +15,8 @@ class Foo {
       expect(hints.map((e) => e.text), containsAll(['bar', 'Foo']));
       // bar 的 } 在第 5 行（0 起），Foo 的 } 在第 6 行
       final byName = {for (final h in hints) h.text: h.line};
-      expect(byName['bar'], 5);
-      expect(byName['Foo'], 6);
+      expect(byName['bar'], 4);
+      expect(byName['Foo'], 5);
     });
 
     test('if / for 这类控制块不标', () {

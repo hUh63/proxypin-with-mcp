@@ -29,6 +29,7 @@ import 'package:proxypin/ui/component/search/highlight_text_document.dart'
         HighlightStyledSegment,
         buildHighlightBaseSegments,
         buildHighlightDocumentLines;
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:proxypin/ui/component/editor_theme.dart';
 import 'package:flutter/services.dart';

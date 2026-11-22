@@ -53,10 +53,19 @@ void main() {
     });
 
     test('搬家识别只在两行以上时才配对', () {
-      const a = 'keep\nmove1\nmove2\ntail';
-      const b = 'keep\ntail\nmove1\nmove2';
+      // 两行内容整体挪到文件末尾：LCS 会优先匹配更长的 X/Y/Z，
+      // 于是产生「纯删 2 行 + 纯增 2 行」，这才符合「搬家」的判据。
+      const a = 'move1\nmove2\nX\nY\nZ';
+      const b = 'X\nY\nZ\nmove1\nmove2';
       final r = runDiffJob(const DiffJobArgs(left: a, right: b));
       expect(r.movedEnds, isNotEmpty);
+    });
+
+    test('单行搬移不标记（误报率太高）', () {
+      const a = 'm\nX\nY\nZ';
+      const b = 'X\nY\nZ\nm';
+      final r = runDiffJob(const DiffJobArgs(left: a, right: b));
+      expect(r.movedEnds, isEmpty);
     });
 
     test('map 入口与直接构造等价', () {
