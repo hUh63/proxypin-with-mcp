@@ -3699,7 +3699,7 @@
   "diffPresetConfigHint": "Bỏ qua khoảng trắng, dòng trống và chú thích",
   "diffPresetDoc": "Văn bản / tài liệu",
   "diffPresetDocHint": "Bỏ qua hoa thường, khoảng trắng, khoảng trắng cuối dòng và dòng trống",
-  "diffPresetApplied": "Đã áp dụng bộ đặt trước",
+  "diffPresetApplied": "Đã áp dụng cấu hình",
   "diffFocusContext": "Ngữ cảnh tiêu điểm: {n} dòng",
   "diffFocusContextNone": "Không có ngữ cảnh",
   "editorSurroundWith": "Bọc bằng…",
@@ -3820,5 +3820,12 @@
   "editorOutline": "Dàn ý",
   "diffUndoApply": "Hoàn tác lần chấp nhận cuối",
   "diffUndoApplyDone": "Đã hoàn tác lần chấp nhận cuối",
-  "diffUndoApplyEmpty": "Không có gì để hoàn tác"
+  "diffUndoApplyEmpty": "Không có gì để hoàn tác",
+  "diffPresets": "Cấu hình so sánh",
+  "diffPresetSaveCurrent": "Lưu cấu hình hiện tại",
+  "diffPresetNameHint": "Tên cấu hình",
+  "diffPresetEmpty": "Chưa có cấu hình — chọn các tùy chọn rồi lưu tại đây",
+  "diffPresetNoOptions": "Không lọc (chỉ so sánh song song)",
+  "editorAiInlineAuto": "Tự động hoàn thành bằng AI",
+  "editorAiInlineAutoHint": "Hỏi mô hình khoảng 1 giây sau khi dừng ở cuối dòng (tốn hạn mức API)"
 }

@@ -5389,7 +5389,7 @@
   "diffPresetConfigHint": "忽略空白、空行与注释",
   "diffPresetDoc": "文档 / 散文",
   "diffPresetDocHint": "忽略大小写、空白、行尾空格与空行",
-  "diffPresetApplied": "已套用预设",
+  "diffPresetApplied": "已应用预设",
   "diffFocusContext": "聚焦上下文：{n} 行",
   "diffFocusContextNone": "不留上下文",
   "editorSurroundWith": "用代码块环绕…",
@@ -5510,5 +5510,12 @@
   "editorOutline": "大纲",
   "diffUndoApply": "撤销上一次接受",
   "diffUndoApplyDone": "已回退上一次接受",
-  "diffUndoApplyEmpty": "没有可回退的接受操作"
+  "diffUndoApplyEmpty": "没有可回退的接受操作",
+  "diffPresets": "比较预设",
+  "diffPresetSaveCurrent": "保存当前设置为预设",
+  "diffPresetNameHint": "预设名称",
+  "diffPresetEmpty": "还没有预设 —— 先把要用的选项勾好，然后保存到这里",
+  "diffPresetNoOptions": "不忽略任何内容（仅并排显示）",
+  "editorAiInlineAuto": "自动行内补全",
+  "editorAiInlineAutoHint": "在行尾停手约 1 秒后自动请求（会消耗接口额度）"
 }

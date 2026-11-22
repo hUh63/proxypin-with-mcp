@@ -431,6 +431,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       setState(() => _focusContext = v.clamp(0, 20));
     }).catchError((_) => null));
     _loadOptions();
+    unawaited(_loadPresets());
 
     _left.addListener(_onLeftChanged);
     _right.addListener(_onRightChanged);
@@ -1946,37 +1947,101 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 每次进对比页都要重新勾一遍忽略选项，是这块最烦的地方 ——
   /// Beyond Compare 记住"会话默认值"，我们也记。
   static const String _optionsKey = 'text_diff_options_v1';
+
+  /// 比较预设：一套「忽略项 + 显示项」的组合，Beyond Compare 里叫 session。
+  /// 日志对比、配置对比、代码 review 的规则完全不同，每次重勾十来个开关太烦。
+  static const String _presetsKey = 'text_diff_presets_v1';
+  List<Map<String, Object?>> _presets = const [];
+
   Timer? _optionsTimer;
+
+  /// 当前全部比较选项的快照（持久化与「预设」共用同一份结构）。
+  Map<String, Object?> _currentOptions() => {
+        'ignoreCase': _ignoreCase,
+        'ignoreWhitespace': _ignoreWhitespace,
+        'ignoreTrailing': _ignoreTrailing,
+        'ignoreBlank': _ignoreBlank,
+        'ignoreComments': _ignoreComments,
+        'ignoreNumbers': _ignoreNumbers,
+        'wordDiff': _wordDiff,
+        'showSpace': _showSpace,
+        'syncH': _syncH,
+        'syncV': _syncV,
+        'autoAdvance': _autoAdvance,
+        'detectMoved': _detectMoved,
+        'foldUnchanged': _foldUnchanged,
+        'syntax': _syntax,
+        'alignByLine': _alignByLine,
+        'onlyDiff': _onlyDiff,
+        'unified': _unified,
+        'typeFilter': _typeFilter,
+        'pairSimilarity': _pairSimilarityPct,
+        'regionBegin': _regionBeginText,
+        'regionEnd': _regionEndText,
+        'ignoreLineText': _ignoreLineText,
+      };
+
+  /// 把一份选项套到当前状态上（不 setState，调用方负责）。
+  void _applyOptionsMap(Map d) {
+    bool b(String k, bool cur) => d[k] is bool ? d[k] as bool : cur;
+    _ignoreCase = b('ignoreCase', _ignoreCase);
+    _ignoreWhitespace = b('ignoreWhitespace', _ignoreWhitespace);
+    _ignoreTrailing = b('ignoreTrailing', _ignoreTrailing);
+    _ignoreBlank = b('ignoreBlank', _ignoreBlank);
+    _ignoreComments = b('ignoreComments', _ignoreComments);
+    _ignoreNumbers = b('ignoreNumbers', _ignoreNumbers);
+    _wordDiff = b('wordDiff', _wordDiff);
+    _showSpace = b('showSpace', _showSpace);
+    _syncH = b('syncH', _syncH);
+    _syncV = b('syncV', _syncV);
+    _autoAdvance = b('autoAdvance', _autoAdvance);
+    _detectMoved = b('detectMoved', _detectMoved);
+    _foldUnchanged = b('foldUnchanged', _foldUnchanged);
+    _syntax = b('syntax', _syntax);
+    _alignByLine = b('alignByLine', _alignByLine);
+    _onlyDiff = b('onlyDiff', _onlyDiff);
+    _unified = b('unified', _unified);
+    final tf = d['typeFilter'];
+    _typeFilter = tf is String ? tf : _typeFilter;
+    final ps = d['pairSimilarity'];
+    if (ps is int) _pairSimilarityPct = ps.clamp(10, 100);
+    final rb = d['regionBegin'];
+    if (rb is String) {
+      final re = d['regionEnd'];
+      if (rb.isEmpty) {
+        _regionBeginRe = null;
+        _regionBeginText = '';
+        _regionEndRe = null;
+        _regionEndText = '';
+      } else {
+        try {
+          _regionBeginRe = RegExp(rb);
+          _regionBeginText = rb;
+          if (re is String && re.isNotEmpty) {
+            _regionEndRe = RegExp(re);
+            _regionEndText = re;
+          }
+        } catch (_) {
+          // 存下来的正则不合法（旧版本/手改）：忽略，保持默认
+        }
+      }
+    }
+    final il = d['ignoreLineText'];
+    if (il is String) {
+      _ignoreLineText = il;
+      try {
+        _ignoreLineRe = il.isEmpty ? null : RegExp(il);
+      } catch (_) {
+        _ignoreLineRe = null;
+      }
+    }
+  }
 
   void _saveOptions() {
     _optionsTimer?.cancel();
     _optionsTimer = Timer(const Duration(milliseconds: 500), () {
       unawaited(SharedPreferencesAsync()
-          .setString(
-              _optionsKey,
-              jsonEncode({
-                'ignoreCase': _ignoreCase,
-                'ignoreWhitespace': _ignoreWhitespace,
-                'ignoreTrailing': _ignoreTrailing,
-                'ignoreBlank': _ignoreBlank,
-                'ignoreComments': _ignoreComments,
-                'ignoreNumbers': _ignoreNumbers,
-                'wordDiff': _wordDiff,
-                'showSpace': _showSpace,
-                'syncH': _syncH,
-                'syncV': _syncV,
-                'autoAdvance': _autoAdvance,
-                'detectMoved': _detectMoved,
-                'foldUnchanged': _foldUnchanged,
-                'syntax': _syntax,
-                'alignByLine': _alignByLine,
-                'onlyDiff': _onlyDiff,
-                'unified': _unified,
-                'typeFilter': _typeFilter,
-                'pairSimilarity': _pairSimilarityPct,
-                'regionBegin': _regionBeginText,
-                'regionEnd': _regionEndText,
-              }))
+          .setString(_optionsKey, jsonEncode(_currentOptions()))
           .catchError((_) => null));
     });
   }
@@ -1986,46 +2051,165 @@ class _TextDiffPageState extends State<TextDiffPage> {
       if (!mounted || raw == null || raw.isEmpty) return;
       final dynamic d = jsonDecode(raw);
       if (d is! Map) return;
-      bool b(String k, bool cur) => d[k] is bool ? d[k] as bool : cur;
-      setState(() {
-        _ignoreCase = b('ignoreCase', _ignoreCase);
-        _ignoreWhitespace = b('ignoreWhitespace', _ignoreWhitespace);
-        _ignoreTrailing = b('ignoreTrailing', _ignoreTrailing);
-        _ignoreBlank = b('ignoreBlank', _ignoreBlank);
-        _ignoreComments = b('ignoreComments', _ignoreComments);
-        _ignoreNumbers = b('ignoreNumbers', _ignoreNumbers);
-        _wordDiff = b('wordDiff', _wordDiff);
-        _showSpace = b('showSpace', _showSpace);
-        _syncH = b('syncH', _syncH);
-        _syncV = b('syncV', _syncV);
-        _autoAdvance = b('autoAdvance', _autoAdvance);
-        _detectMoved = b('detectMoved', _detectMoved);
-        _foldUnchanged = b('foldUnchanged', _foldUnchanged);
-        _syntax = b('syntax', _syntax);
-        _alignByLine = b('alignByLine', _alignByLine);
-        _onlyDiff = b('onlyDiff', _onlyDiff);
-        _unified = b('unified', _unified);
-        final tf = d['typeFilter'];
-        if (tf is String) _typeFilter = tf;
-        final ps = d['pairSimilarity'];
-        if (ps is int) _pairSimilarityPct = ps.clamp(10, 100);
-        final rb = d['regionBegin'];
-        final re = d['regionEnd'];
-        if (rb is String && rb.isNotEmpty) {
-          try {
-            _regionBeginRe = RegExp(rb);
-            _regionBeginText = rb;
-            if (re is String && re.isNotEmpty) {
-              _regionEndRe = RegExp(re);
-              _regionEndText = re;
-            }
-          } catch (_) {
-            // 存下来的正则不合法（旧版本/手改）：忽略，保持默认
-          }
-        }
-      });
+      setState(() => _applyOptionsMap(d));
       _compare();
     }).catchError((_) => null));
+  }
+
+  Future<void> _loadPresets() async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(_presetsKey);
+      if (raw == null || raw.isEmpty) return;
+      final dynamic d = jsonDecode(raw);
+      if (d is! List) return;
+      final list = [
+        for (final e in d)
+          if (e is Map) Map<String, Object?>.from(e),
+      ];
+      if (!mounted) return;
+      setState(() => _presets = list);
+    } catch (_) {
+      // 存坏了就当没有：预设是锦上添花，不该让对比页打不开。
+    }
+  }
+
+  Future<void> _persistPresets() async {
+    try {
+      await SharedPreferencesAsync().setString(_presetsKey, jsonEncode(_presets));
+    } catch (_) {}
+  }
+
+  /// 一行字说清这个预设忽略/显示了什么，扫一眼就知道该选哪个。
+  String _presetSummary(Map d) {
+    final parts = <String>[];
+    bool on(String k) => d[k] == true;
+    if (on('ignoreCase')) parts.add(localizations.diffIgnoreCase);
+    if (on('ignoreWhitespace')) parts.add(localizations.diffIgnoreWhitespace);
+    if (on('ignoreTrailing')) parts.add(localizations.diffIgnoreTrailing);
+    if (on('ignoreBlank')) parts.add(localizations.diffIgnoreBlankLines);
+    if (on('ignoreComments')) parts.add(localizations.diffIgnoreComments);
+    if (on('ignoreNumbers')) parts.add(localizations.diffIgnoreNumbers);
+    final il = d['ignoreLineText'];
+    if (il is String && il.isNotEmpty) {
+      parts.add(localizations.diffIgnoreLinePattern(il));
+    }
+    if (on('alignByLine')) parts.add(localizations.diffAlignByLine);
+    if (on('onlyDiff')) parts.add(localizations.diffOnlyChanges);
+    if (parts.isEmpty) return localizations.diffPresetNoOptions;
+    return parts.join('、');
+  }
+
+  Future<void> _showPresets() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          Future<void> apply(Map<String, Object?> p) async {
+            Navigator.of(ctx).pop();
+            setState(() => _applyOptionsMap(p));
+            _compare();
+            _saveOptions();
+            _toast(localizations.diffPresetApplied);
+          }
+
+          Future<void> removeAt(int i) async {
+            final name = _presets[i]['name'];
+            setSheet(() => _presets = [..._presets]..removeAt(i));
+            await _persistPresets();
+            if (mounted) _toast('${localizations.delete}: $name');
+          }
+
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.8),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 8, 6),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(localizations.diffPresets,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(localizations.diffPresetSaveCurrent),
+                    onPressed: () async {
+                      final name = await _askPresetName();
+                      if (name == null || name.isEmpty || !ctx.mounted) return;
+                      setSheet(() => _presets = [
+                            ..._presets,
+                            {..._currentOptions(), 'name': name},
+                          ]);
+                      await _persistPresets();
+                    },
+                  ),
+                ]),
+              ),
+              const Divider(height: 1, thickness: 0.3),
+              Flexible(
+                child: _presets.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Text(localizations.diffPresetEmpty,
+                            style: const TextStyle(fontSize: 12.5),
+                            textAlign: TextAlign.center),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _presets.length,
+                        itemBuilder: (_, i) {
+                          final p = _presets[i];
+                          final name = '${p['name'] ?? ''}';
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.bookmark_outline, size: 18),
+                            title: Text(name, style: const TextStyle(fontSize: 13.5)),
+                            subtitle: Text(_presetSummary(p),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11)),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              tooltip: localizations.delete,
+                              onPressed: () => removeAt(i),
+                            ),
+                            onTap: () => apply(p),
+                          );
+                        },
+                      ),
+              ),
+            ]),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<String?> _askPresetName() async {
+    final ctrl = TextEditingController(text: '${localizations.diffPresets} ${_presets.length + 1}');
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.diffPresetSaveCurrent),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(hintText: localizations.diffPresetNameHint),
+          onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(localizations.cancel)),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text(localizations.confirm),
+          ),
+        ],
+      ),
+    );
+    // dialog 关闭动画期间 builder 还会重建一次，controller 不能立刻释放。
+    unawaited(Future<void>.delayed(const Duration(milliseconds: 400), ctrl.dispose));
+    return name;
   }
 
   /// 「更多」菜单的分段标题：不可点、小号、主题色。
@@ -2073,6 +2257,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
             _compare();
           case 'undoApply':
             _undoApply();
+          case 'presets':
+            unawaited(_showPresets());
           case 'ignoreLines':
             unawaited(_showIgnoreLineDialog());
           case 'ignoreRegion':
@@ -2360,6 +2546,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'zoomIn', child: Text(localizations.editorZoomIn)),
         PopupMenuItem(value: 'zoomOut', child: Text(localizations.editorZoomOut)),
         PopupMenuItem(value: 'stats', child: Text(localizations.editorStats)),
+        PopupMenuItem(value: 'presets', child: Text(localizations.diffPresets)),
         _menuHeader(localizations.diffMenuFilter),
         CheckedPopupMenuItem(
             value: 'onlyDiff', checked: _onlyDiff, child: Text(localizations.diffOnlyChanges)),

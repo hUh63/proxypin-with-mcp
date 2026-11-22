@@ -5510,5 +5510,12 @@
   "editorOutline": "大綱",
   "diffUndoApply": "復原上一次接受",
   "diffUndoApplyDone": "已復原上一次接受",
-  "diffUndoApplyEmpty": "沒有可復原的接受操作"
+  "diffUndoApplyEmpty": "沒有可復原的接受操作",
+  "diffPresets": "比較預設",
+  "diffPresetSaveCurrent": "儲存目前設定為預設",
+  "diffPresetNameHint": "預設名稱",
+  "diffPresetEmpty": "還沒有預設 —— 先把要用的選項勾好，然後儲存到這裡",
+  "diffPresetNoOptions": "不忽略任何內容（僅並排顯示）",
+  "editorAiInlineAuto": "自動行內補全",
+  "editorAiInlineAutoHint": "在行尾停手約 1 秒後自動請求（會消耗介面額度）"
 }

@@ -3820,5 +3820,12 @@
   "editorOutline": "โครงสร้าง",
   "diffUndoApply": "เลิกทำการยอมรับครั้งล่าสุด",
   "diffUndoApplyDone": "ย้อนกลับการยอมรับครั้งล่าสุดแล้ว",
-  "diffUndoApplyEmpty": "ไม่มีอะไรให้ย้อนกลับ"
+  "diffUndoApplyEmpty": "ไม่มีอะไรให้ย้อนกลับ",
+  "diffPresets": "พรีเซ็ตการเปรียบเทียบ",
+  "diffPresetSaveCurrent": "บันทึกการตั้งค่าปัจจุบัน",
+  "diffPresetNameHint": "ชื่อพรีเซ็ต",
+  "diffPresetEmpty": "ยังไม่มีพรีเซ็ต — ติ๊กตัวเลือกแล้วบันทึกที่นี่",
+  "diffPresetNoOptions": "ไม่มีตัวกรอง (เทียบเคียงเท่านั้น)",
+  "editorAiInlineAuto": "เติมข้อความ AI อัตโนมัติ",
+  "editorAiInlineAutoHint": "ถามโมเดลราว 1 วินาทีหลังหยุดที่ท้ายบรรทัด (ใช้โควตา API)"
 }

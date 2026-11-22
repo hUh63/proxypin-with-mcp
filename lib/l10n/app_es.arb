@@ -3820,5 +3820,12 @@
   "editorOutline": "Esquema",
   "diffUndoApply": "Deshacer última aceptación",
   "diffUndoApplyDone": "Se revirtió la última aceptación",
-  "diffUndoApplyEmpty": "Nada que deshacer"
+  "diffUndoApplyEmpty": "Nada que deshacer",
+  "diffPresets": "Preajustes de comparación",
+  "diffPresetSaveCurrent": "Guardar actual como preajuste",
+  "diffPresetNameHint": "Nombre del preajuste",
+  "diffPresetEmpty": "Aún no hay preajustes: marca las opciones y guárdalas aquí",
+  "diffPresetNoOptions": "Sin filtros (solo vista lado a lado)",
+  "editorAiInlineAuto": "Autocompletado AI automático",
+  "editorAiInlineAutoHint": "Consulta al modelo 1 s después de detenerte al final de una línea (consume tu cuota)"
 }

@@ -6435,5 +6435,12 @@
   "editorOutline": "Outline",
   "diffUndoApply": "Undo last accept",
   "diffUndoApplyDone": "Reverted the last accept",
-  "diffUndoApplyEmpty": "Nothing to undo"
+  "diffUndoApplyEmpty": "Nothing to undo",
+  "diffPresets": "Compare presets",
+  "diffPresetSaveCurrent": "Save current as preset",
+  "diffPresetNameHint": "Preset name",
+  "diffPresetEmpty": "No presets yet — tick the options you want, then save them here",
+  "diffPresetNoOptions": "No filters (side-by-side only)",
+  "editorAiInlineAuto": "Auto inline completion",
+  "editorAiInlineAutoHint": "Ask the model about 1s after you stop at the end of a line (uses your API quota)"
 }

@@ -278,6 +278,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.regionFolding,
                 onChanged: (v) => _apply(prefs.copyWith(regionFolding: v)),
               ),
+              _switchTile(
+                icon: Icons.auto_awesome_outlined,
+                title: localizations.editorAiInlineAuto,
+                subtitle: localizations.editorAiInlineAutoHint,
+                value: prefs.aiInlineAuto,
+                onChanged: (v) => _apply(prefs.copyWith(aiInlineAuto: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsMenu),
               ListTile(

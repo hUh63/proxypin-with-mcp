@@ -3821,5 +3821,12 @@
   "editorOutline": "Estrutura",
   "diffUndoApply": "Desfazer última aceitação",
   "diffUndoApplyDone": "Última aceitação revertida",
-  "diffUndoApplyEmpty": "Nada para desfazer"
+  "diffUndoApplyEmpty": "Nada para desfazer",
+  "diffPresets": "Predefinições de comparação",
+  "diffPresetSaveCurrent": "Salvar atual como predefinição",
+  "diffPresetNameHint": "Nome da predefinição",
+  "diffPresetEmpty": "Ainda sem predefinições — marque as opções e salve aqui",
+  "diffPresetNoOptions": "Sem filtros (apenas lado a lado)",
+  "editorAiInlineAuto": "Conclusão de IA automática",
+  "editorAiInlineAutoHint": "Consulta o modelo cerca de 1 s após parar no fim da linha (consome sua cota)"
 }

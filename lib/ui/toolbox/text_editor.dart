@@ -255,6 +255,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 闭合括号提示的防抖定时器（与 lint 分开：它更轻，节奏可以更慢）。
   Timer? _hintTimer;
 
+  /// 自动行内补全的停顿计时器（Copilot 式：停手约 1 秒才发请求）。
+  Timer? _aiAutoTimer;
+
+  /// 正在等 AI 回答（防止自动触发与手动触发叠加出两个请求）。
+  bool _aiBusy = false;
+
   /// 大纲抽屉的过滤词（关抽屉时清掉，和文档列表抽屉一个道理）。
   String _outlineQuery = '';
 
@@ -432,6 +438,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _fileWatchTimer?.cancel();
     _lintTimer?.cancel();
     _hintTimer?.cancel();
+    _aiAutoTimer?.cancel();
     _rulerTimer?.cancel();
     _sniffTimer?.cancel();
     _diffTimer?.cancel();
@@ -1143,6 +1150,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 只有内容变化才重跑检查：光标移动、选区变化不触发。
       _scheduleLint();
       _scheduleHints();
+      _maybeAutoAiComplete();
       // 内联改动标记（相对磁盘）也要跟着更新：同一行内打字不跨行，
       // 光靠「光标行变化」那条路刷不出来。
       _scheduleDiffRefresh();
@@ -1207,29 +1215,37 @@ class _TextEditorPageState extends State<TextEditorPage> {
   ///
   /// 接受由内核负责（Tab / →），放弃也是（打字、移动光标、Esc 都会清掉），
   /// 所以这里只管「请求」这一件事。
-  Future<void> _aiCompleteInline() async {
+  Future<void> _aiCompleteInline({bool silent = false}) async {
     final c = _controller;
     final doc = _doc;
     if (c == null || doc == null) return;
+    if (_aiBusy) return;
     final text = c.text;
     if (text.length > 200000) {
-      _toast(localizations.editorTooLargeToProcess);
+      if (!silent) _toast(localizations.editorTooLargeToProcess);
       return;
     }
     final caret = c.selection.extentOffset.clamp(0, text.length);
     // 上下文给 2KB 足够（再长模型也记不住，还白白多算 token）。
     final from = caret > 2000 ? caret - 2000 : 0;
     final to = caret + 400 > text.length ? text.length : caret + 400;
-    _toast(localizations.editorAiCompleteRequesting);
-    final result = await requestInlineCompletion(
-      before: text.substring(from, caret),
-      after: text.substring(caret, to),
-      language: doc.langLabel,
-    );
+    if (!silent) _toast(localizations.editorAiCompleteRequesting);
+    _aiBusy = true;
+    InlineCompletion result;
+    try {
+      result = await requestInlineCompletion(
+        before: text.substring(from, caret),
+        after: text.substring(caret, to),
+        language: doc.langLabel,
+      );
+    } finally {
+      _aiBusy = false;
+    }
     if (!mounted) return;
     final suggestion = result.text;
     if (suggestion == null || suggestion.isEmpty) {
-      _toast(result.error ?? localizations.editorAiCompleteEmpty);
+      // 自动模式不打扰：没得补就是常态。
+      if (!silent) _toast(result.error ?? localizations.editorAiCompleteEmpty);
       return;
     }
     final c2 = _controller;
@@ -1237,7 +1253,35 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final line = c2.getLineAtOffset(caret);
     final column = caret - c2.getLineStartOffset(line);
     c2.setGhostText(GhostText(line: line, column: column, text: suggestion));
-    _toast(localizations.editorAiCompleteHint);
+    if (!silent) _toast(localizations.editorAiCompleteHint);
+  }
+
+  /// 自动行内补全：光标停在行尾、内容够长、停手约 1 秒才发请求。
+  ///
+  /// 只在中小文件上开（大文件每次请求都带 2KB 上下文，费额度又慢），
+  /// 而且必须由用户在设置里显式打开 —— 默认关，不然会悄悄烧接口额度。
+  void _maybeAutoAiComplete() {
+    if (!_prefs.aiInlineAuto) return;
+    _aiAutoTimer?.cancel();
+    final c = _doc?.controller;
+    if (c == null || _aiBusy) return;
+    if (c.ghostText != null) return; // 已经有建议挂着，等用户处置
+    if (c.text.length > 60000) return;
+    final sel = c.selection;
+    if (!sel.isCollapsed) return;
+    final caret = sel.extentOffset;
+    if (caret <= 0) return;
+    final line = c.getLineAtOffset(caret);
+    final lineText = c.getLineText(line);
+    final col = caret - c.getLineStartOffset(line);
+    if (col < 0 || col > lineText.length) return;
+    // 光标必须在行尾（右侧只剩空白），且这一行已经有实际内容。
+    if (lineText.substring(col).trim().isNotEmpty) return;
+    if (lineText.trim().length < 3) return;
+    _aiAutoTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      unawaited(_aiCompleteInline(silent: true));
+    });
   }
 
   /// 闭合括号提示：块结束的 `}` 后面灰字显示块名。

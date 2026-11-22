@@ -3820,5 +3820,12 @@
   "editorOutline": "Garis besar",
   "diffUndoApply": "Batalkan penerimaan terakhir",
   "diffUndoApplyDone": "Penerimaan terakhir dibatalkan",
-  "diffUndoApplyEmpty": "Tidak ada yang bisa dibatalkan"
+  "diffUndoApplyEmpty": "Tidak ada yang bisa dibatalkan",
+  "diffPresets": "Preset pembanding",
+  "diffPresetSaveCurrent": "Simpan pengaturan saat ini",
+  "diffPresetNameHint": "Nama preset",
+  "diffPresetEmpty": "Belum ada preset — centang opsi lalu simpan di sini",
+  "diffPresetNoOptions": "Tanpa filter (hanya berdampingan)",
+  "editorAiInlineAuto": "Pelengkapan AI otomatis",
+  "editorAiInlineAutoHint": "Tanya model sekitar 1 dtk setelah berhenti di akhir baris (memakai kuota API)"
 }
