@@ -42,6 +42,7 @@ import 'package:proxypin/utils/css_formatter.dart';
 import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
+import 'package:proxypin/ui/toolbox/editor_ai_complete.dart';
 import 'package:proxypin/utils/brace_hints.dart';
 import 'package:proxypin/utils/region_folds.dart';
 import 'package:proxypin/utils/code_lint.dart';
@@ -1197,6 +1198,43 @@ class _TextEditorPageState extends State<TextEditorPage> {
   bool get _jsBackend {
     final key = _lang.key;
     return key == 'javascript' || key == 'typescript' || key == 'coffeescript';
+  }
+
+  /// 行内 AI 补全：把光标前后一小段发给模型，回来画成 ghost text。
+  ///
+  /// 接受由内核负责（Tab / →），放弃也是（打字、移动光标、Esc 都会清掉），
+  /// 所以这里只管「请求」这一件事。
+  Future<void> _aiCompleteInline() async {
+    final c = _controller;
+    final doc = _doc;
+    if (c == null || doc == null) return;
+    final text = c.text;
+    if (text.length > 200000) {
+      _toast(localizations.editorTooLargeToProcess);
+      return;
+    }
+    final caret = c.selection.extentOffset.clamp(0, text.length);
+    // 上下文给 2KB 足够（再长模型也记不住，还白白多算 token）。
+    final from = caret > 2000 ? caret - 2000 : 0;
+    final to = caret + 400 > text.length ? text.length : caret + 400;
+    _toast(localizations.editorAiCompleteRequesting);
+    final result = await requestInlineCompletion(
+      before: text.substring(from, caret),
+      after: text.substring(caret, to),
+      language: doc.langLabel,
+    );
+    if (!mounted) return;
+    final suggestion = result.text;
+    if (suggestion == null || suggestion.isEmpty) {
+      _toast(result.error ?? localizations.editorAiCompleteEmpty);
+      return;
+    }
+    final c2 = _controller;
+    if (c2 == null) return;
+    final line = c2.getLineAtOffset(caret);
+    final column = caret - c2.getLineStartOffset(line);
+    c2.setGhostText(GhostText(line: line, column: column, text: suggestion));
+    _toast(localizations.editorAiCompleteHint);
   }
 
   /// 闭合括号提示：块结束的 `}` 后面灰字显示块名。
@@ -11999,6 +12037,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       case 'code':
         return [
           _menuItem('aiAssist', Icons.auto_awesome, loc.editorAiAssist),
+          _menuItem('aiComplete', Icons.auto_fix_high_outlined, loc.editorAiComplete),
           const PopupMenuDivider(),
           if (_canFormat) _menuItem('format', Icons.auto_fix_high, loc.format),
           _menuItem('formatSel', Icons.auto_fix_normal, loc.editorFormatSelection),
@@ -12312,6 +12351,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_saveAllDirty());
       case 'aiAssist':
         unawaited(_showAiAssist());
+      case 'aiComplete':
+        unawaited(_aiCompleteInline());
       case 'quickOpen':
         unawaited(_showQuickOpen());
       case 'clipHistory':

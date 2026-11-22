@@ -6426,5 +6426,9 @@
   "editorClosingBraceHints": "Closing brace hints",
   "editorClosingBraceHintsHint": "Show the block name after its closing brace",
   "editorRegionFolding": "Fold #region blocks",
-  "editorRegionFoldingHint": "Make #region / #endregion markers foldable"
+  "editorRegionFoldingHint": "Make #region / #endregion markers foldable",
+  "editorAiComplete": "Inline AI completion",
+  "editorAiCompleteRequesting": "Asking the model…",
+  "editorAiCompleteEmpty": "No completion available",
+  "editorAiCompleteHint": "Tab to accept, Esc to dismiss"
 }

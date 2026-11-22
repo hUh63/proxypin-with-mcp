@@ -3811,5 +3811,9 @@
   "editorClosingBraceHints": "Sugerencias de cierre de llave",
   "editorClosingBraceHintsHint": "Muestra el nombre del bloque tras su llave de cierre",
   "editorRegionFolding": "Plegar bloques #region",
-  "editorRegionFoldingHint": "Haz plegables las marcas #region / #endregion"
+  "editorRegionFoldingHint": "Haz plegables las marcas #region / #endregion",
+  "editorAiComplete": "Autocompletado AI en línea",
+  "editorAiCompleteRequesting": "Consultando al modelo…",
+  "editorAiCompleteEmpty": "No hay autocompletado disponible",
+  "editorAiCompleteHint": "Tab para aceptar, Esc para descartar"
 }

@@ -737,6 +737,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
   // 代码（13 项）
   EditorMenuItem('aiAssist', _aiAssistLabel, group: 'code',
       aliases: 'ai fz 辅助 assist explain comment review tests'),
+  EditorMenuItem('aiComplete', _aiCompleteLabel, group: 'code',
+      aliases: 'ai bc 补全 complete inline ghost copilot'),
   EditorMenuItem('format', _formatLabel, group: 'code', aliases: 'gs geshihua format beautify indent'),
   EditorMenuItem('quickFix', _quickFixLabel, group: 'code',
       aliases: 'kjxf 快速修复 quick fix lightbulb ctrl.'),
@@ -898,6 +900,7 @@ String _browseLabel(AppLocalizations l) => l.editorBrowser;
 String _compilerLogLabel(AppLocalizations l) => l.editorCompilerLog;
 String _clipHistoryLabel(AppLocalizations l) => l.editorClipHistory;
 String _aiAssistLabel(AppLocalizations l) => l.editorAiAssist;
+String _aiCompleteLabel(AppLocalizations l) => l.editorAiComplete;
 String _docsLabel(AppLocalizations l) => l.editorDocuments;
 String _undoLabel(AppLocalizations l) => l.editorUndo;
 String _redoLabel(AppLocalizations l) => l.editorRedo;
@@ -1406,6 +1409,8 @@ IconData menuIconOf(String id) {
       return Icons.arrow_forward;
     case 'aiAssist':
       return Icons.auto_awesome;
+    case 'aiComplete':
+      return Icons.auto_fix_high_outlined;
     case 'quickOpen':
       return Icons.rocket_launch_outlined;
     case 'browse':

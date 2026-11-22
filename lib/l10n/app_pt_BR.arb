@@ -3812,5 +3812,9 @@
   "editorClosingBraceHints": "Dicas de fechamento de chave",
   "editorClosingBraceHintsHint": "Mostra o nome do bloco após a chave de fechamento",
   "editorRegionFolding": "Dobrar blocos #region",
-  "editorRegionFoldingHint": "Torna as marcas #region / #endregion dobráveis"
+  "editorRegionFoldingHint": "Torna as marcas #region / #endregion dobráveis",
+  "editorAiComplete": "Conclusão de IA em linha",
+  "editorAiCompleteRequesting": "Consultando o modelo…",
+  "editorAiCompleteEmpty": "Sem conclusão disponível",
+  "editorAiCompleteHint": "Tab para aceitar, Esc para descartar"
 }

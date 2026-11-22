@@ -3811,5 +3811,9 @@
   "editorClosingBraceHints": "Petunjuk kurung kurawal penutup",
   "editorClosingBraceHintsHint": "Tampilkan nama blok setelah kurung kurawal penutup",
   "editorRegionFolding": "Lipat blok #region",
-  "editorRegionFoldingHint": "Jadikan penanda #region / #endregion dapat dilipat"
+  "editorRegionFoldingHint": "Jadikan penanda #region / #endregion dapat dilipat",
+  "editorAiComplete": "Pelengkapan AI sebaris",
+  "editorAiCompleteRequesting": "Menanyakan model…",
+  "editorAiCompleteEmpty": "Tidak ada pelengkapan",
+  "editorAiCompleteHint": "Tab untuk terima, Esc untuk batal"
 }

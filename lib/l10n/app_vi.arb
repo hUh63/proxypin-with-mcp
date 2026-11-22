@@ -3811,5 +3811,9 @@
   "editorClosingBraceHints": "Gợi ý dấu ngoặc nhọn đóng",
   "editorClosingBraceHintsHint": "Hiện tên khối sau dấu ngoặc nhọn đóng",
   "editorRegionFolding": "Gấp khối #region",
-  "editorRegionFoldingHint": "Cho phép gấp các dấu #region / #endregion"
+  "editorRegionFoldingHint": "Cho phép gấp các dấu #region / #endregion",
+  "editorAiComplete": "Hoàn thành bằng AI trong dòng",
+  "editorAiCompleteRequesting": "Đang hỏi mô hình…",
+  "editorAiCompleteEmpty": "Không có gợi ý hoàn thành",
+  "editorAiCompleteHint": "Tab để chấp nhận, Esc để bỏ"
 }

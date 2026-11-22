@@ -3811,5 +3811,9 @@
   "editorClosingBraceHints": "คำใบ้ปีกกาปิด",
   "editorClosingBraceHintsHint": "แสดงชื่อบล็อกหลังปีกกาปิด",
   "editorRegionFolding": "พับบล็อก #region",
-  "editorRegionFoldingHint": "ทำให้เครื่องหมาย #region / #endregion พับได้"
+  "editorRegionFoldingHint": "ทำให้เครื่องหมาย #region / #endregion พับได้",
+  "editorAiComplete": "การเติมข้อความด้วย AI แบบอินไลน์",
+  "editorAiCompleteRequesting": "กำลังถามโมเดล…",
+  "editorAiCompleteEmpty": "ไม่มีข้อความเติมให้",
+  "editorAiCompleteHint": "กด Tab เพื่อยอมรับ Esc เพื่อปิด"
 }
