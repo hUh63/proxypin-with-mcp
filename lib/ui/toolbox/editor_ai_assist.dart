@@ -44,9 +44,9 @@ Future<bool> confirmReplaceWithDiff(
     final rows = alignedRowsFromDiffs(diffs, ignoreWhitespace: true);
     final stats = diffStats(buildDiffBlocks(diffs, ignoreWhitespace: true));
     // 只在有差异时弹：AI 原样返回时没必要让用户点两下。
-    if (stats.identical) return Future.value(true);
+    if (stats.identical) return true;
     final shown = rows.length > 600 ? rows.sublist(0, 600) : rows;
-    return showModalBottomSheet<bool>(
+    final picked = await showModalBottomSheet<bool>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
@@ -124,6 +124,7 @@ Future<bool> confirmReplaceWithDiff(
         ]),
       ),
     );
+    return picked ?? false;
   }
 
 /// 打开 AI 辅助弹层。
@@ -287,7 +288,7 @@ class _EditorAiAssistDialogState extends State<EditorAiAssistDialog> {
     Navigator.of(context).maybePop();
   }
 
-  Future<bool?> _confirmReplace(String before, String after) =>
+  Future<bool> _confirmReplace(String before, String after) =>
       confirmReplaceWithDiff(context, before: before, after: after);
 
 
