@@ -6424,5 +6424,7 @@
     }
   },
   "editorClosingBraceHints": "Closing brace hints",
-  "editorClosingBraceHintsHint": "Show the block name after its closing brace"
+  "editorClosingBraceHintsHint": "Show the block name after its closing brace",
+  "editorRegionFolding": "Fold #region blocks",
+  "editorRegionFoldingHint": "Make #region / #endregion markers foldable"
 }

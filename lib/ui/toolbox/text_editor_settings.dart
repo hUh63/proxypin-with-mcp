@@ -271,6 +271,13 @@ class _TextEditorSettingsPageState extends State<TextEditorSettingsPage> {
                 value: prefs.closingBraceHints,
                 onChanged: (v) => _apply(prefs.copyWith(closingBraceHints: v)),
               ),
+              _switchTile(
+                icon: Icons.unfold_less,
+                title: localizations.editorRegionFolding,
+                subtitle: localizations.editorRegionFoldingHint,
+                value: prefs.regionFolding,
+                onChanged: (v) => _apply(prefs.copyWith(regionFolding: v)),
+              ),
               const Divider(height: 16),
               _groupTitle(localizations.editorSettingsMenu),
               ListTile(

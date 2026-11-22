@@ -5499,5 +5499,7 @@
   "editorAutoCommentContinueHint": "在 /** */ 內換行時補對齊的 * ",
   "diffPairSimilarity": "相似度配對：{pct}%（點擊切換）",
   "editorClosingBraceHints": "閉合括號提示",
-  "editorClosingBraceHintsHint": "在區塊結束的右括號後面顯示區塊名"
+  "editorClosingBraceHintsHint": "在區塊結束的右括號後面顯示區塊名",
+  "editorRegionFolding": "摺疊 #region 區塊",
+  "editorRegionFoldingHint": "把 #region / #endregion 標記變成可摺疊區域"
 }

@@ -189,6 +189,9 @@ class TextEditorPrefs {
   /// *Show closing brace comments*）。
   final bool closingBraceHints;
 
+  /// 把 `#region` / `#endregion` 标记变成可折叠区域（VS/VS Code/JetBrains 都支持）。
+  final bool regionFolding;
+
   /// 编辑器配色方案（auto / quietLight / solarizedDark / ayuDark）。
   ///
   /// auto 是「atom-one 的 token 色 + App 主题底色」；其余三套取自
@@ -225,6 +228,7 @@ class TextEditorPrefs {
     this.autoPair = true,
     this.autoCommentContinue = true,
     this.closingBraceHints = true,
+    this.regionFolding = true,
     this.enabledLangs = const <String>[],
     this.hiddenMenu = const <String>[],
     this.floatMenu = defaultFloatMenu,
@@ -274,6 +278,7 @@ class TextEditorPrefs {
     bool? autoPair,
     bool? autoCommentContinue,
     bool? closingBraceHints,
+    bool? regionFolding,
     List<String>? enabledLangs,
     List<String>? hiddenMenu,
     List<String>? floatMenu,
@@ -322,6 +327,7 @@ class TextEditorPrefs {
       autoPair: autoPair ?? this.autoPair,
       autoCommentContinue: autoCommentContinue ?? this.autoCommentContinue,
       closingBraceHints: closingBraceHints ?? this.closingBraceHints,
+      regionFolding: regionFolding ?? this.regionFolding,
       enabledLangs: enabledLangs ?? this.enabledLangs,
       hiddenMenu: hiddenMenu ?? this.hiddenMenu,
       floatMenu: floatMenu ?? this.floatMenu,
@@ -372,6 +378,7 @@ class TextEditorPrefs {
         'autoPair': autoPair,
         'autoCommentContinue': autoCommentContinue,
         'closingBraceHints': closingBraceHints,
+        'regionFolding': regionFolding,
         'enabledLangs': enabledLangs,
         'hiddenMenu': hiddenMenu,
         'floatMenu': floatMenu,
@@ -427,6 +434,7 @@ class TextEditorPrefs {
       autoPair: json['autoPair'] as bool? ?? true,
       autoCommentContinue: json['autoCommentContinue'] as bool? ?? true,
       closingBraceHints: json['closingBraceHints'] as bool? ?? true,
+      regionFolding: json['regionFolding'] as bool? ?? true,
       enabledLangs: _strList(json['enabledLangs']),
       hiddenMenu: _strList(json['hiddenMenu']),
       floatMenu: json['floatMenu'] == null ? defaultFloatMenu : _strList(json['floatMenu']),

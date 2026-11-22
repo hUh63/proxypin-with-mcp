@@ -3809,5 +3809,7 @@
   "editorAutoCommentContinueHint": "Saat Enter di /** */ tambahkan * sejajar",
   "diffPairSimilarity": "Kemiripan pemasangan: {pct}%",
   "editorClosingBraceHints": "Petunjuk kurung kurawal penutup",
-  "editorClosingBraceHintsHint": "Tampilkan nama blok setelah kurung kurawal penutup"
+  "editorClosingBraceHintsHint": "Tampilkan nama blok setelah kurung kurawal penutup",
+  "editorRegionFolding": "Lipat blok #region",
+  "editorRegionFoldingHint": "Jadikan penanda #region / #endregion dapat dilipat"
 }

@@ -43,6 +43,7 @@ import 'package:proxypin/network/util/js_deobfuscator.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/code_keywords.dart';
 import 'package:proxypin/utils/brace_hints.dart';
+import 'package:proxypin/utils/region_folds.dart';
 import 'package:proxypin/utils/code_lint.dart';
 import 'package:proxypin/utils/code_snippets.dart';
 import 'package:proxypin/utils/code_symbols.dart';
@@ -453,6 +454,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     editorColorPresetNotifier.value = editorColorPresetOf(_prefs.editorColorPreset);
     if (mounted) setState(() {});
     _restartFileWatch();
+    // 「闭合括号提示」「#region 折叠」这类纯展示项在设置页切换后要立刻生效。
+    _scheduleHints();
   }
 
   bool _onKeyEvent(KeyEvent event) {
@@ -747,9 +750,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _clearLintDecorations();
       _scheduleLint();
     }
-    // 括号提示跟着文档走，切过去立刻重算一份（不用防抖）。
+    // 括号提示 / region 折叠跟着文档走，切过去立刻重算一份（不用防抖）。
     _hintTimer?.cancel();
-    _runHints();
+    _runTextAnnotations();
     // 标签条上可能有十几个文档，切过去要保证那个标签在可视区里。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _scrollTabIntoView();
@@ -1201,17 +1204,60 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 全文扫描虽然只有 O(n)，但每敲一个字都扫一遍没意义，所以和 lint 一样防抖；
   /// 流畅模式下整块跳过（那时连高亮都不画）。
   void _scheduleHints() {
-    if (!_prefs.closingBraceHints) return;
-    if (_smooth) return;
     _hintTimer?.cancel();
-    _hintTimer = Timer(const Duration(milliseconds: 480), _runHints);
+    _hintTimer = Timer(const Duration(milliseconds: 480), _runTextAnnotations);
+  }
+
+  /// 文本变了要跟着重算的两样东西：闭合括号提示、`#region` 折叠范围。
+  /// 同一个定时器驱动，避免短时间连打十几个字各排一串任务。
+  void _runTextAnnotations() {
+    _runHints();
+    _refreshRegionFolds();
+  }
+
+  /// 扫 `#region` / `#endregion`，交给内核当「宿主注入的折叠范围」。
+  ///
+  /// 内核（v5ead995c 起）支持 `customFoldRanges`：渲染时优先返回这里的范围，
+  /// 认不出来就还走内置的大括号/缩进算法，所以普通折叠不受影响。
+  void _refreshRegionFolds() {
+    final c = _doc?.controller;
+    if (c == null) return;
+    if (!_prefs.regionFolding || _smooth) {
+      if (c.customFoldRanges != null) c.setCustomFoldRanges(null);
+      return;
+    }
+    final text = c.text;
+    // 大文件上每轮全文扫一次不划算；region 折叠本来也是给长文件分段用的，
+    // 这里给个和括号提示一致的上限。
+    if (text.length > 300000) {
+      if (c.customFoldRanges != null) c.setCustomFoldRanges(null);
+      return;
+    }
+    final regions = scanRegionFolds(text);
+    if (regions.isEmpty) {
+      if (c.customFoldRanges != null) c.setCustomFoldRanges(null);
+      return;
+    }
+    final prev = c.customFoldRanges;
+    final map = <int, FoldRange>{};
+    for (final r in regions) {
+      final fold = FoldRange(r.startLine, r.endLine);
+      // 重扫时把上一版的折叠状态搬过来（用户展开过的区域不该自己又合上）。
+      final old = prev?[r.startLine];
+      if (old != null && old.endIndex == r.endLine && old.isFolded) {
+        fold.isFolded = true;
+        fold.originallyFoldedChildren = old.originallyFoldedChildren;
+      }
+      map[r.startLine] = fold;
+    }
+    c.setCustomFoldRanges(map);
   }
 
   void _runHints() {
     final c = _doc?.controller;
     if (c == null) return;
     if (!_prefs.closingBraceHints || _smooth) {
-      c.clearInlayHints();
+      if (c.inlayHints.isNotEmpty) c.clearInlayHints();
       return;
     }
     final text = c.text;

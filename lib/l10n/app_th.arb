@@ -3809,5 +3809,7 @@
   "editorAutoCommentContinueHint": "เมื่อกด Enter ใน /** */ จะเติม * ให้ตรงแนว",
   "diffPairSimilarity": "ความคล้ายการจับคู่: {pct}%",
   "editorClosingBraceHints": "คำใบ้ปีกกาปิด",
-  "editorClosingBraceHintsHint": "แสดงชื่อบล็อกหลังปีกกาปิด"
+  "editorClosingBraceHintsHint": "แสดงชื่อบล็อกหลังปีกกาปิด",
+  "editorRegionFolding": "พับบล็อก #region",
+  "editorRegionFoldingHint": "ทำให้เครื่องหมาย #region / #endregion พับได้"
 }

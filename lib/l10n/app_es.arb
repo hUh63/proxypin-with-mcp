@@ -3809,5 +3809,7 @@
   "editorAutoCommentContinueHint": "Al pulsar Enter en /** */ añade * alineado",
   "diffPairSimilarity": "Similitud de emparejamiento: {pct}%",
   "editorClosingBraceHints": "Sugerencias de cierre de llave",
-  "editorClosingBraceHintsHint": "Muestra el nombre del bloque tras su llave de cierre"
+  "editorClosingBraceHintsHint": "Muestra el nombre del bloque tras su llave de cierre",
+  "editorRegionFolding": "Plegar bloques #region",
+  "editorRegionFoldingHint": "Haz plegables las marcas #region / #endregion"
 }
