@@ -3816,5 +3816,9 @@
   "editorAiCompleteRequesting": "Đang hỏi mô hình…",
   "editorAiCompleteEmpty": "Không có gợi ý hoàn thành",
   "editorAiCompleteHint": "Tab để chấp nhận, Esc để bỏ",
-  "diffIgnoreNumbers": "Bỏ qua số"
+  "diffIgnoreNumbers": "Bỏ qua số",
+  "editorOutline": "Dàn ý",
+  "diffUndoApply": "Hoàn tác lần chấp nhận cuối",
+  "diffUndoApplyDone": "Đã hoàn tác lần chấp nhận cuối",
+  "diffUndoApplyEmpty": "Không có gì để hoàn tác"
 }

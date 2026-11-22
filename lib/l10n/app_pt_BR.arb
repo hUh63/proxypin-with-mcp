@@ -3817,5 +3817,9 @@
   "editorAiCompleteRequesting": "Consultando o modelo…",
   "editorAiCompleteEmpty": "Sem conclusão disponível",
   "editorAiCompleteHint": "Tab para aceitar, Esc para descartar",
-  "diffIgnoreNumbers": "Ignorar números"
+  "diffIgnoreNumbers": "Ignorar números",
+  "editorOutline": "Estrutura",
+  "diffUndoApply": "Desfazer última aceitação",
+  "diffUndoApplyDone": "Última aceitação revertida",
+  "diffUndoApplyEmpty": "Nada para desfazer"
 }

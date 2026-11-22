@@ -93,6 +93,20 @@ class TextDiffPage extends StatefulWidget {
   State<TextDiffPage> createState() => _TextDiffPageState();
 }
 
+/// 一次「接受」操作的快照（见 [_TextDiffPageState._applyStack]）。
+class _ApplyRecord {
+  /// 改动的是左侧编辑器还是右侧。
+  final bool toLeft;
+  final String before;
+  final String after;
+
+  const _ApplyRecord({
+    required this.toLeft,
+    required this.before,
+    required this.after,
+  });
+}
+
 class _TextDiffPageState extends State<TextDiffPage> {
   static const String _storeKey = 'text_diff_content_v1';
 
@@ -149,6 +163,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 忽略数字差异（Beyond Compare 的 Ignore numbers）：时间戳、id、耗时这类
   /// 「同一行只差一个数」在日志对比里占了绝大多数噪音。
   bool _ignoreNumbers = false;
+
+  /// 「接受某一块/全部接受」的快照栈，用来一步步回退。
+  ///
+  /// 存全文快照而不是区间：接受操作会让后面所有行号平移，区间回退极易错位；
+  /// 对比场景下的文本通常只有几十 KB，快照的代价远小于出错的风险。
+  final List<_ApplyRecord> _applyStack = [];
 
   /// 按行号对齐（Beyond Compare 的 Alignment → 按位置）：
   /// 不做内容匹配，左边第 i 行直接对右边第 i 行。改配置、改一列数值这类
@@ -1154,13 +1174,46 @@ class _TextDiffPageState extends State<TextDiffPage> {
       final dstEndOff =
           dstStart + dstCount < dst.lineCount ? dst.getLineStartOffset(dstStart + dstCount) : dst.text.length;
 
+      final before = dst.text;
       dst.replaceRange(dstStartOff, dstEndOff, srcText);
+      _rememberApply(toLeft: !fromLeft, before: before, after: dst.text);
       _compare();
       _toast(localizations.diffApplied);
       _advanceAfterApply(b, fromLeft: fromLeft);
     } catch (e) {
       _toast('${localizations.fail}: $e');
     }
+  }
+
+  /// 记一次「接受」操作，供「撤销上一次接受」回退。
+  ///
+  /// 超过 40 万字符不记：那时快照吃内存，而且这种规模的文件用户也不会一脸点接受。
+  void _rememberApply({
+    required bool toLeft,
+    required String before,
+    required String after,
+  }) {
+    if (after.length > 400000 || before.length > 400000) {
+      _applyStack.clear();
+      return;
+    }
+    _applyStack.add(_ApplyRecord(toLeft: toLeft, before: before, after: after));
+    if (_applyStack.length > 20) _applyStack.removeAt(0);
+  }
+
+  /// 撤销上一次「接受」，再点一次退一步。
+  void _undoApply() {
+    while (_applyStack.isNotEmpty) {
+      final r = _applyStack.removeLast();
+      final c = r.toLeft ? _left : _right;
+      // 这一批之后用户又手动改过：快照对不上，丢弃并继续往前找。
+      if (c.text != r.after) continue;
+      c.text = r.before;
+      _compare();
+      _toast(localizations.diffUndoApplyDone);
+      return;
+    }
+    _toast(localizations.diffUndoApplyEmpty);
   }
 
   /// 接受这一块之后，自动落到「原位置之后的下一处」差异。
@@ -1218,6 +1271,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   void _clearAll() {
+    _applyStack.clear();
     if (_left.text.isEmpty && _right.text.isEmpty) return;
     _left.text = '';
     _right.text = '';
@@ -1854,6 +1908,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 交换左右（工具栏的 ↔）。文本、快照、标注一起换。
   void _swapSides() {
+    _applyStack.clear();
     final l = _left.text;
     final r = _right.text;
     _left.text = r;
@@ -2016,6 +2071,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
           case 'ignoreNumbers':
             setState(() => _ignoreNumbers = !_ignoreNumbers);
             _compare();
+          case 'undoApply':
+            _undoApply();
           case 'ignoreLines':
             unawaited(_showIgnoreLineDialog());
           case 'ignoreRegion':
@@ -2203,6 +2260,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'ignoreNumbers',
             checked: _ignoreNumbers,
             child: Text(localizations.diffIgnoreNumbers)),
+        PopupMenuItem(
+            value: 'undoApply',
+            child: Text(localizations.diffUndoApply)),
         CheckedPopupMenuItem(
             value: 'alignByLine',
             checked: _alignByLine,
@@ -5335,7 +5395,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
       applied++;
     }
     if (applied == 0) return;
+    final before = dst.text;
     dst.text = text;
+    _rememberApply(toLeft: !fromLeft, before: before, after: text);
     setState(() => _focusBlock = null);
     _compare();
     _toast(localizations.diffApplied);

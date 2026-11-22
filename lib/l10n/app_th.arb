@@ -3816,5 +3816,9 @@
   "editorAiCompleteRequesting": "กำลังถามโมเดล…",
   "editorAiCompleteEmpty": "ไม่มีข้อความเติมให้",
   "editorAiCompleteHint": "กด Tab เพื่อยอมรับ Esc เพื่อปิด",
-  "diffIgnoreNumbers": "ไม่สนใจตัวเลข"
+  "diffIgnoreNumbers": "ไม่สนใจตัวเลข",
+  "editorOutline": "โครงสร้าง",
+  "diffUndoApply": "เลิกทำการยอมรับครั้งล่าสุด",
+  "diffUndoApplyDone": "ย้อนกลับการยอมรับครั้งล่าสุดแล้ว",
+  "diffUndoApplyEmpty": "ไม่มีอะไรให้ย้อนกลับ"
 }

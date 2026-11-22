@@ -5506,5 +5506,9 @@
   "editorAiCompleteRequesting": "正在请求补全…",
   "editorAiCompleteEmpty": "没有可补的内容",
   "editorAiCompleteHint": "Tab 接受，Esc 放弃",
-  "diffIgnoreNumbers": "忽略数字差异"
+  "diffIgnoreNumbers": "忽略数字差异",
+  "editorOutline": "大纲",
+  "diffUndoApply": "撤销上一次接受",
+  "diffUndoApplyDone": "已回退上一次接受",
+  "diffUndoApplyEmpty": "没有可回退的接受操作"
 }

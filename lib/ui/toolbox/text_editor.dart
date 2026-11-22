@@ -255,6 +255,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 闭合括号提示的防抖定时器（与 lint 分开：它更轻，节奏可以更慢）。
   Timer? _hintTimer;
 
+  /// 大纲抽屉的过滤词（关抽屉时清掉，和文档列表抽屉一个道理）。
+  String _outlineQuery = '';
+
   /// 长按右侧分布条时显示的「第几行」浮标（1 基）；null = 不显示。
   int? _rulerLine;
   Timer? _rulerTimer;
@@ -10865,6 +10868,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
         // 文档列表改从工具栏的菜单按钮进。
         drawerEdgeDragWidth: 0,
         drawer: _docDrawer(),
+        endDrawer: _outlineDrawer(),
+        endDrawerEdgeDragWidth: 0,
+        onEndDrawerChanged: (open) {
+          if (!open && _outlineQuery.isNotEmpty) {
+            setState(() => _outlineQuery = '');
+          }
+        },
         onDrawerChanged: (open) {
           if (!open) {
             // 抽屉一关，里面的输入框就销毁了；搜索词必须一起清掉，
@@ -11567,6 +11577,135 @@ class _TextEditorPageState extends State<TextEditorPage> {
         duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
   }
 
+  /// 大纲抽屉（VS 的「解决方案资源管理器」位置）：按层级列出类/方法，点一下跳过去。
+  ///
+  /// 和「转到符号」弹窗的区别是它不挡代码 —— 一边看结构一边翻文件，比每次弹层再关更顺。
+  Widget _outlineDrawer() {
+    final controller = _controller;
+    final all = controller == null || controller.text.length > 2000000
+        ? const <_SymbolItem>[]
+        : _collectSymbols(controller.text);
+    final q = _outlineQuery.trim().toLowerCase();
+    final items = q.isEmpty
+        ? all
+        : all.where((it) => it.name.toLowerCase().contains(q)).toList(growable: false);
+    final caretLine = _caretLine;
+    var currentIndex = -1;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].line <= caretLine) {
+        currentIndex = i;
+      } else {
+        break;
+      }
+    }
+    return Drawer(
+      child: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 6),
+            child: Row(children: [
+              Expanded(
+                child: Text(localizations.editorOutline,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+              IconButton(
+                tooltip: localizations.editorSymbolsFilter,
+                icon: const Icon(Icons.refresh, size: 20),
+                onPressed: () => setState(() {
+                  // 清缓存后重扫（文件被外部改动时用得上）。
+                  _symbolCacheText = null;
+                  _outlineQuery = '';
+                }),
+              ),
+              IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: TextField(
+              style: const TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 18),
+                hintText: localizations.editorSymbolsFilter,
+                border: const OutlineInputBorder(),
+                suffixText: '${items.length}/${all.length}',
+                suffixStyle: const TextStyle(fontSize: 11),
+              ),
+              onChanged: (v) => setState(() => _outlineQuery = v.trim()),
+            ),
+          ),
+          const Divider(height: 1, thickness: 0.3),
+          Expanded(
+            child: items.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        localizations.editorSymbolsEmpty,
+                        style: const TextStyle(fontSize: 12.5),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (ctx, i) {
+                      final it = items[i];
+                      final current = i == currentIndex;
+                      return InkWell(
+                        onTap: () {
+                          _jumpToSymbol(it);
+                          Navigator.of(context).pop();
+                        },
+                        child: Container(
+                          color: current
+                              ? Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.10)
+                              : null,
+                          padding: EdgeInsets.only(
+                              left: 12 + it.indent * 14.0, top: 7, bottom: 7, right: 8),
+                          child: Row(children: [
+                            Icon(_symbolIcon(it.kind), size: 16,
+                                color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(it.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight:
+                                          current ? FontWeight.w600 : FontWeight.normal)),
+                            ),
+                            const SizedBox(width: 6),
+                            Text('${it.line + 1}',
+                                style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                          ]),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  /// 打开大纲抽屉。
+  void _openOutline() {
+    if (!_programming) {
+      _toast(localizations.editorSymbolsEmpty);
+      return;
+    }
+    _scaffoldKey.currentState?.openEndDrawer();
+  }
+
   Widget _docDrawer() {
     final query = _docQuery.trim().toLowerCase();
     final docs = query.isEmpty
@@ -12078,6 +12217,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ];
       case 'view':
         return [
+          _menuItem('outline', Icons.account_tree_outlined, loc.editorOutline),
+          const PopupMenuDivider(),
           CheckedPopupMenuItem(value: 'wrap', checked: _wrap, child: Text(loc.wordWrap)),
           CheckedPopupMenuItem(value: 'smooth', checked: _smooth, child: Text(loc.editorSmoothMode)),
           CheckedPopupMenuItem(
@@ -12353,6 +12494,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
         unawaited(_showAiAssist());
       case 'aiComplete':
         unawaited(_aiCompleteInline());
+      case 'outline':
+        _openOutline();
       case 'quickOpen':
         unawaited(_showQuickOpen());
       case 'clipHistory':

@@ -5506,5 +5506,9 @@
   "editorAiCompleteRequesting": "正在請求補全…",
   "editorAiCompleteEmpty": "沒有可補的內容",
   "editorAiCompleteHint": "Tab 接受，Esc 放棄",
-  "diffIgnoreNumbers": "忽略數字差異"
+  "diffIgnoreNumbers": "忽略數字差異",
+  "editorOutline": "大綱",
+  "diffUndoApply": "復原上一次接受",
+  "diffUndoApplyDone": "已復原上一次接受",
+  "diffUndoApplyEmpty": "沒有可復原的接受操作"
 }

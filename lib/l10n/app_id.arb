@@ -3816,5 +3816,9 @@
   "editorAiCompleteRequesting": "Menanyakan model…",
   "editorAiCompleteEmpty": "Tidak ada pelengkapan",
   "editorAiCompleteHint": "Tab untuk terima, Esc untuk batal",
-  "diffIgnoreNumbers": "Abaikan angka"
+  "diffIgnoreNumbers": "Abaikan angka",
+  "editorOutline": "Garis besar",
+  "diffUndoApply": "Batalkan penerimaan terakhir",
+  "diffUndoApplyDone": "Penerimaan terakhir dibatalkan",
+  "diffUndoApplyEmpty": "Tidak ada yang bisa dibatalkan"
 }

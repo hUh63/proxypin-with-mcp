@@ -845,7 +845,9 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'zd 折叠到层级 fold level outline'),
   EditorMenuItem('minify', _minifyLabel, group: 'code', aliases: 'ys 压缩 minify'),
   EditorMenuItem('minifyAggressive', _minifyAggressiveLabel, group: 'code', aliases: 'ys 深度压缩 minify'),
-  // 视图（12 项）
+  // 视图（13 项）
+  EditorMenuItem('outline', _outlineLabel, group: 'view',
+      aliases: 'dg 大纲 outline symbols structure'),
   EditorMenuItem('syntax', _syntaxLabel, group: 'file', aliases: 'yf 语法 syntax language'),
   EditorMenuItem('settings', _settingsLabel, group: 'view', aliases: 'sz 设置 settings'),
   EditorMenuItem('wrap', _wrapLabel, group: 'view', aliases: 'hh 自动换行 wrap'),
@@ -901,6 +903,7 @@ String _compilerLogLabel(AppLocalizations l) => l.editorCompilerLog;
 String _clipHistoryLabel(AppLocalizations l) => l.editorClipHistory;
 String _aiAssistLabel(AppLocalizations l) => l.editorAiAssist;
 String _aiCompleteLabel(AppLocalizations l) => l.editorAiComplete;
+String _outlineLabel(AppLocalizations l) => l.editorOutline;
 String _docsLabel(AppLocalizations l) => l.editorDocuments;
 String _undoLabel(AppLocalizations l) => l.editorUndo;
 String _redoLabel(AppLocalizations l) => l.editorRedo;
@@ -1411,6 +1414,8 @@ IconData menuIconOf(String id) {
       return Icons.auto_awesome;
     case 'aiComplete':
       return Icons.auto_fix_high_outlined;
+    case 'outline':
+      return Icons.account_tree_outlined;
     case 'quickOpen':
       return Icons.rocket_launch_outlined;
     case 'browse':
