@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:proxypin/network/components/ai_analyzer.dart';
+import 'package:proxypin/utils/text_diff.dart';
 
 enum EditorAiAction { explain, comment, review, tests, improve, ask }
 
@@ -162,12 +163,108 @@ class _EditorAiAssistDialogState extends State<EditorAiAssistDialog> {
     Navigator.of(context).maybePop();
   }
 
-  void _replace() {
+  /// 替换前先看差异。
+  ///
+  /// AI 改写经常「顺手」重排整个函数（换个写法、调整顺序），直接覆盖等于放弃
+  /// 自己刚才的改动。先给一份 diff，一眼扫过去确认没被改坏再落地。
+  Future<void> _replace() async {
     final r = _result;
     final cb = widget.onReplace;
     if (r == null || cb == null) return;
-    cb(_stripFence(r));
+    final after = _stripFence(r);
+    final ok = await _confirmReplace(widget.text, after);
+    if (ok != true || !mounted) return;
+    cb(after);
     Navigator.of(context).maybePop();
+  }
+
+  Future<bool?> _confirmReplace(String before, String after) {
+    final loc = AppLocalizations.of(context)!;
+    final diffs = diffLines(before, after,
+        ignoreWhitespace: true, ignoreTrailingWhitespace: true);
+    final rows = alignedRowsFromDiffs(diffs, ignoreWhitespace: true);
+    final stats = diffStats(buildDiffBlocks(diffs, ignoreWhitespace: true));
+    // 只在有差异时弹：AI 原样返回时没必要让用户点两下。
+    if (stats.identical) return Future.value(true);
+    final shown = rows.length > 600 ? rows.sublist(0, 600) : rows;
+    return showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.85),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 12, 6),
+            child: Row(children: [
+              Expanded(
+                child: Text(
+                  loc.diffSummaryDetail(stats.added, stats.deleted, stats.modified),
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text('${rows.length > 600 ? '600/${rows.length}' : rows.length}',
+                  style: TextStyle(
+                      fontSize: 11, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+            ]),
+          ),
+          const Divider(height: 1, thickness: 0.3),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: shown.length,
+              itemBuilder: (_, i) {
+                final r = shown[i];
+                final (bg, sign) = switch (r.type) {
+                  DiffRowType.added => (Colors.green.withValues(alpha: 0.16), '+'),
+                  DiffRowType.deleted => (Colors.red.withValues(alpha: 0.16), '-'),
+                  DiffRowType.modified => (Colors.orange.withValues(alpha: 0.16), '~'),
+                  DiffRowType.equal => (Colors.transparent, ' '),
+                };
+                final text = r.type == DiffRowType.added ? (r.rightText ?? '') : (r.leftText ?? '');
+                return Container(
+                  color: bg,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    SizedBox(
+                      width: 12,
+                      child: Text(sign,
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    ),
+                    SizedBox(
+                      width: 34,
+                      child: Text('${r.leftLine ?? r.rightLine ?? ''}',
+                          style: TextStyle(
+                              fontSize: 10.5,
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                    ),
+                    Expanded(
+                      child: Text(text,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11.5, height: 1.35)),
+                    ),
+                  ]),
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1, thickness: 0.3),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+              TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(loc.cancel)),
+              const SizedBox(width: 6),
+              FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: Text(loc.editorAiReplace)),
+            ]),
+          ),
+        ]),
+      ),
+    );
   }
 
   Future<void> _copy() async {

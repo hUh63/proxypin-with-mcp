@@ -3827,5 +3827,9 @@
   "diffPresetEmpty": "ยังไม่มีพรีเซ็ต — ติ๊กตัวเลือกแล้วบันทึกที่นี่",
   "diffPresetNoOptions": "ไม่มีตัวกรอง (เทียบเคียงเท่านั้น)",
   "editorAiInlineAuto": "เติมข้อความ AI อัตโนมัติ",
-  "editorAiInlineAutoHint": "ถามโมเดลราว 1 วินาทีหลังหยุดที่ท้ายบรรทัด (ใช้โควตา API)"
+  "editorAiInlineAutoHint": "ถามโมเดลราว 1 วินาทีหลังหยุดที่ท้ายบรรทัด (ใช้โควตา API)",
+  "diffPresetExport": "คัดลอกพรีเซ็ต",
+  "diffPresetImport": "นำเข้าพรีเซ็ต",
+  "diffPresetImportOk": "นำเข้าพรีเซ็ตแล้ว",
+  "diffPresetImportFail": "คลิปบอร์ดไม่มีพรีเซ็ตที่ถูกต้อง"
 }

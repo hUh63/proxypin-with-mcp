@@ -3827,5 +3827,9 @@
   "diffPresetEmpty": "Chưa có cấu hình — chọn các tùy chọn rồi lưu tại đây",
   "diffPresetNoOptions": "Không lọc (chỉ so sánh song song)",
   "editorAiInlineAuto": "Tự động hoàn thành bằng AI",
-  "editorAiInlineAutoHint": "Hỏi mô hình khoảng 1 giây sau khi dừng ở cuối dòng (tốn hạn mức API)"
+  "editorAiInlineAutoHint": "Hỏi mô hình khoảng 1 giây sau khi dừng ở cuối dòng (tốn hạn mức API)",
+  "diffPresetExport": "Sao chép cấu hình",
+  "diffPresetImport": "Nhập cấu hình từ bộ nhớ tạm",
+  "diffPresetImportOk": "Đã nhập cấu hình",
+  "diffPresetImportFail": "Bộ nhớ tạm không có cấu hình hợp lệ"
 }

@@ -3827,5 +3827,9 @@
   "diffPresetEmpty": "Aún no hay preajustes: marca las opciones y guárdalas aquí",
   "diffPresetNoOptions": "Sin filtros (solo vista lado a lado)",
   "editorAiInlineAuto": "Autocompletado AI automático",
-  "editorAiInlineAutoHint": "Consulta al modelo 1 s después de detenerte al final de una línea (consume tu cuota)"
+  "editorAiInlineAutoHint": "Consulta al modelo 1 s después de detenerte al final de una línea (consume tu cuota)",
+  "diffPresetExport": "Copiar preajustes al portapapeles",
+  "diffPresetImport": "Importar preajustes del portapapeles",
+  "diffPresetImportOk": "Preajustes importados",
+  "diffPresetImportFail": "El portapapeles no contiene preajustes válidos"
 }

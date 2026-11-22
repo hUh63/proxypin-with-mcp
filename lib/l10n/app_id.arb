@@ -3827,5 +3827,9 @@
   "diffPresetEmpty": "Belum ada preset — centang opsi lalu simpan di sini",
   "diffPresetNoOptions": "Tanpa filter (hanya berdampingan)",
   "editorAiInlineAuto": "Pelengkapan AI otomatis",
-  "editorAiInlineAutoHint": "Tanya model sekitar 1 dtk setelah berhenti di akhir baris (memakai kuota API)"
+  "editorAiInlineAutoHint": "Tanya model sekitar 1 dtk setelah berhenti di akhir baris (memakai kuota API)",
+  "diffPresetExport": "Salin preset ke papan klip",
+  "diffPresetImport": "Impor preset dari papan klip",
+  "diffPresetImportOk": "Preset diimpor",
+  "diffPresetImportFail": "Papan klip tidak berisi preset yang valid"
 }

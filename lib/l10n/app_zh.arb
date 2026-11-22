@@ -5517,5 +5517,9 @@
   "diffPresetEmpty": "还没有预设 —— 先把要用的选项勾好，然后保存到这里",
   "diffPresetNoOptions": "不忽略任何内容（仅并排显示）",
   "editorAiInlineAuto": "自动行内补全",
-  "editorAiInlineAutoHint": "在行尾停手约 1 秒后自动请求（会消耗接口额度）"
+  "editorAiInlineAutoHint": "在行尾停手约 1 秒后自动请求（会消耗接口额度）",
+  "diffPresetExport": "把预设复制到剪贴板",
+  "diffPresetImport": "从剪贴板导入预设",
+  "diffPresetImportOk": "已导入预设",
+  "diffPresetImportFail": "剪贴板里没有有效的预设"
 }

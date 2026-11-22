@@ -2079,6 +2079,43 @@ class _TextDiffPageState extends State<TextDiffPage> {
     } catch (_) {}
   }
 
+  /// 导出全部预设到剪贴板（换设备时用聊天工具传过去即可）。
+  Future<void> _exportPresets() async {
+    await Clipboard.setData(ClipboardData(text: jsonEncode(_presets)));
+    if (!mounted) return;
+    _toast(localizations.copied);
+  }
+
+  /// 从剪贴板导入预设：同名覆盖、新名字追加。返回是否成功。
+  Future<bool> _importPresets() async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final raw = data?.text;
+      if (raw == null || raw.trim().isEmpty) return false;
+      final dynamic d = jsonDecode(raw);
+      if (d is! List) return false;
+      final incoming = [
+        for (final e in d)
+          if (e is Map) Map<String, Object?>.from(e),
+      ].where((p) => '${p['name'] ?? ''}'.trim().isNotEmpty).toList();
+      if (incoming.isEmpty) return false;
+      final merged = <String, Map<String, Object?>>{
+        for (final p in _presets) '${p['name']}': p,
+      };
+      for (final p in incoming) {
+        merged['${p['name']}'] = p;
+      }
+      _presets = merged.values.toList();
+      await _persistPresets();
+      if (!mounted) return false;
+      _toast(localizations.diffPresetImportOk);
+      return true;
+    } catch (_) {
+      if (mounted) _toast(localizations.diffPresetImportFail);
+      return false;
+    }
+  }
+
   /// 一行字说清这个预设忽略/显示了什么，扫一眼就知道该选哪个。
   String _presetSummary(Map d) {
     final parts = <String>[];
@@ -2130,6 +2167,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   Expanded(
                     child: Text(localizations.diffPresets,
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    tooltip: localizations.diffPresetImport,
+                    icon: const Icon(Icons.download_outlined, size: 20),
+                    onPressed: () async {
+                      if (await _importPresets()) setSheet(() {});
+                    },
+                  ),
+                  IconButton(
+                    tooltip: localizations.diffPresetExport,
+                    icon: const Icon(Icons.upload_outlined, size: 20),
+                    onPressed: _exportPresets,
                   ),
                   TextButton.icon(
                     icon: const Icon(Icons.add, size: 18),
