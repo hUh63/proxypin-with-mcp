@@ -5249,6 +5249,8 @@
   "diffHistory": "Recent compares",
   "diffSwipeHint": "Tip: swipe left or right to jump between differences",
   "diffElapsed": "Took {n} ms",
+  "diffNewSession": "New session",
+  "diffCloseSession": "Close session",
   "@diffElapsed": {
     "placeholders": {
       "n": {

@@ -4849,6 +4849,8 @@
   "diffHistory": "最近對比",
   "diffSwipeHint": "提示：左右滑動可切換上一處 / 下一處差異",
   "diffElapsed": "耗時 {n} 毫秒",
+  "diffNewSession": "新增比對工作階段",
+  "diffCloseSession": "關閉目前工作階段",
   "diffHistoryEmpty": "還沒有對比記錄",
   "diffHistoryRestore": "用這次記錄替換目前左右兩側？",
   "artexTabOverview": "概覽",

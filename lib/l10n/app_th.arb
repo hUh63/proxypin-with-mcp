@@ -3055,6 +3055,8 @@
   "diffHistory": "Recent compares",
   "diffSwipeHint": "เคล็ดลับ: ปัดซ้ายหรือขวาเพื่อข้ามความต่าง",
   "diffElapsed": "ใช้เวลา {n} มิลลิวินาที",
+  "diffNewSession": "เซสชันใหม่",
+  "diffCloseSession": "ปิดเซสชัน",
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",

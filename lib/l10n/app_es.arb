@@ -3055,6 +3055,8 @@
   "diffHistory": "Recent compares",
   "diffSwipeHint": "Consejo: desliza a los lados para saltar entre diferencias",
   "diffElapsed": "Tomó {n} ms",
+  "diffNewSession": "Nueva sesión",
+  "diffCloseSession": "Cerrar sesión",
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",

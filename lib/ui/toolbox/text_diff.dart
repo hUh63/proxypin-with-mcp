@@ -202,6 +202,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
   RegExp? _regionEndRe;
 
   /// 两栏的文件名（打开文件后显示在顶部标签里：「原文件 · xxx.txt」）。
+  /// 对比会话（多 tab）。
+  ///
+  /// 只存「文本 + 名字 + 路径」，不把 controller / 计算结果搬进来 —— 那等于把整个 State
+  /// 重写一遍，漏一个字段就是编译错。切会话 = 存档当前 → 载入目标 → 重算，
+  /// 渲染路径一行都不用动。选项（忽略大小写 / 只显示差异…）是全局的，会话之间共享。
+  final List<_DiffTab> _tabs = <_DiffTab>[_DiffTab()];
+  int _tabIndex = 0;
+
   String _leftName = '';
   String _rightName = '';
 
@@ -286,6 +294,71 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 磁盘上的文件在别处被改过（mtime 变了）→ 顶部提示条。
   /// 不做的话，用户在编辑器里改完切回来，看到的还是打开那一刻的旧内容，
   /// 却以为是「现在磁盘上的样子」，据此下结论。
+  /// 把当前编辑器的内容存回当前会话。
+  void _stashTab() {
+    if (_tabs.isEmpty) return;
+    final idx = _tabIndex < 0 ? 0 : (_tabIndex >= _tabs.length ? _tabs.length - 1 : _tabIndex);
+    final t = _tabs[idx];
+    t.leftText = _left.text;
+    t.rightText = _right.text;
+    t.leftName = _leftName;
+    t.rightName = _rightName;
+    t.leftPath = _leftPath;
+    t.rightPath = _rightPath;
+  }
+
+  /// 把某个会话的内容载入左右两栏并重算。
+  void _applyTab(_DiffTab t) {
+    _leftName = t.leftName;
+    _rightName = t.rightName;
+    _leftPath = t.leftPath;
+    _rightPath = t.rightPath;
+    _left.text = t.leftText;
+    _right.text = t.rightText;
+    // 换内容后滚动位置没有意义，回到顶部。
+    for (final c in [_leftV, _rightV, _leftH, _rightH]) {
+      if (c.hasClients) {
+        try {
+          c.jumpTo(0);
+        } catch (_) {}
+      }
+    }
+    _staleDisk = false;
+    _compare();
+    _persistNow();
+    setState(() {});
+  }
+
+  void _switchTab(int i) {
+    if (i == _tabIndex || i < 0 || i >= _tabs.length) return;
+    _stashTab();
+    setState(() => _tabIndex = i);
+    _applyTab(_tabs[i]);
+  }
+
+  void _newTab() {
+    _stashTab();
+    setState(() {
+      _tabs.add(_DiffTab());
+      _tabIndex = _tabs.length - 1;
+    });
+    _applyTab(_tabs[_tabIndex]);
+  }
+
+  void _closeTab(int i) {
+    if (_tabs.length <= 1 || i < 0 || i >= _tabs.length) return;
+    _stashTab();
+    setState(() {
+      _tabs.removeAt(i);
+      if (_tabIndex > i) {
+        _tabIndex--;
+      } else if (_tabIndex == i && _tabIndex >= _tabs.length) {
+        _tabIndex = _tabs.length - 1;
+      }
+    });
+    _applyTab(_tabs[_tabIndex]);
+  }
+
   bool _staleDisk = false;
   int _leftMtime = 0;
   int _rightMtime = 0;
@@ -1512,6 +1585,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
           child: Focus(
             autofocus: true,
             child: Column(children: [
+          _tabBar(),
           _fileBar(),
           if (_computing)
             const SizedBox(
@@ -2408,6 +2482,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             unawaited(_exportCsv());
           case 'exportXlsx':
             unawaited(_exportXlsx());
+          case 'newTab':
+            _newTab();
+          case 'closeTab':
+            _closeTab(_tabIndex);
           case 'history':
             unawaited(_showDiffHistory());
           case 'diffList':
@@ -2676,6 +2754,21 @@ class _TextDiffPageState extends State<TextDiffPage> {
         PopupMenuItem(value: 'dirDiff', child: Text(localizations.dirDiff)),
         PopupMenuItem(value: 'threeWay', child: Text(localizations.diffThreeWay)),
         PopupMenuItem(value: 'history', child: Text(localizations.diffHistory)),
+        PopupMenuItem(
+            value: 'newTab',
+            child: Row(children: [
+              const Icon(Icons.add, size: 17),
+              const SizedBox(width: 10),
+              Expanded(child: Text(localizations.diffNewSession)),
+            ])),
+        if (_tabs.length > 1)
+          PopupMenuItem(
+              value: 'closeTab',
+              child: Row(children: [
+                const Icon(Icons.close, size: 17),
+                const SizedBox(width: 10),
+                Expanded(child: Text(localizations.diffCloseSession)),
+              ])),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(
             value: 'focus', checked: _focusBlock != null, child: Text(localizations.diffFocus)),
@@ -3647,6 +3740,73 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 打开过文件时标签后面带上文件名（「原文件 · a.txt」），不用猜哪边是哪份。
   /// 整行限制字体放大倍数：系统字体调到 1.3 倍以上时，这一行会被挤到只剩半个
   /// 字（用户反馈过「新文件」显示不全）。
+  /// 会话标签条：两个以上才显示（一个会话时它只是白占 32dp）。
+  ///
+  /// 对标 Beyond Compare 的 session tabs：同时开着「配置 A ↔ 配置 B」「旧版 ↔ 新版」
+  /// 几组对比来回切，比每次重选两个文件快得多。
+  Widget _tabBar() {
+    if (_tabs.length < 2) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      height: 34,
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.25),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.1,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: _tabs.length + 1,
+          itemBuilder: (_, i) {
+            if (i == _tabs.length) {
+              return IconButton(
+                tooltip: localizations.diffNewSession,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.add, size: 17),
+                onPressed: _newTab,
+              );
+            }
+            final active = i == _tabIndex;
+            final t = _tabs[i];
+            return InkWell(
+              onTap: () => _switchTab(i),
+              child: Container(
+                padding: const EdgeInsets.only(left: 10, right: 2),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                        color: active ? cs.primary : Colors.transparent, width: 2),
+                  ),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 150),
+                    child: Text(
+                      t.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: active ? cs.primary : cs.onSurfaceVariant,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: localizations.diffCloseSession,
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.close, size: 13),
+                    onPressed: () => _closeTab(i),
+                  ),
+                ]),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _fileBar() {
     final total = _blocks.length;
     final pos = total == 0 ? 0 : (_navIndex < 0 ? 1 : _navIndex + 1);
@@ -6469,3 +6629,27 @@ class _UnifiedLine {
       {this.ranges, this.foldFrom});
 }
 
+/// 一个对比会话的内容快照。
+class _DiffTab {
+  _DiffTab({
+    this.leftText = '',
+    this.rightText = '',
+    this.leftName = '',
+    this.rightName = '',
+    this.leftPath = '',
+    this.rightPath = '',
+  });
+
+  String leftText;
+  String rightText;
+  String leftName;
+  String rightName;
+  String leftPath;
+  String rightPath;
+
+  String get label {
+    final l = leftName.isEmpty ? '—' : leftName;
+    final r = rightName.isEmpty ? '—' : rightName;
+    return '$l ↔ $r';
+  }
+}
