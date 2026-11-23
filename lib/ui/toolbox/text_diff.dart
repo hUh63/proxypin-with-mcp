@@ -736,6 +736,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 进度条都画不出来的长帧）。小文本起 isolate 反而更慢（要 10ms 上下），所以分档。
   static const int _isolateDiffThreshold = 300000;
 
+  /// 行数阈值（两侧合计）。见 `DiffJobArgs.totalLines` 的说明。
+  static const int _isolateLineThreshold = 20000;
+
   /// 对比序号：异步结果回来时和它对一下，过期就丢弃（用户可能已经又改又比了一轮）。
   int _compareSeq = 0;
 
@@ -786,7 +789,9 @@ class _TextDiffPageState extends State<TextDiffPage> {
     final args = _diffArgs();
     final seq = ++_compareSeq;
 
-    if (args.totalChars <= _isolateDiffThreshold) {
+    // 两个阈值任一超出就走 isolate：字符数管「长行」，行数管「多行」——
+    // 行级 LCS 的代价跟行数走，3 万行的短行文件和 3 MB 的长行文件一样卡。
+    if (args.totalChars <= _isolateDiffThreshold && args.totalLines <= _isolateLineThreshold) {
       if (_computing) setState(() => _computing = false);
       _applyDiffResult(runDiffJob(args));
       return;
@@ -2891,6 +2896,40 @@ class _TextDiffPageState extends State<TextDiffPage> {
   }
 
   /// 当前差异块的「上一个 / 下一个 / 用左侧 / 用右侧」快捷条。
+  /// 「用左侧 / 用右侧」两个按钮。
+  ///
+  /// 窄屏（<400dp）换成图标：带文字时这两个按钮合起来 160dp，加上前后的翻页 / 复制 /
+  /// 关闭几个 48dp 的 IconButton，360dp 屏的底部条会直接 RenderFlex overflow。
+  /// 图标版带 tooltip，长按能看到原文。
+  List<Widget> _useSideButtons(int idx) {
+    if (MediaQuery.sizeOf(context).width < 400) {
+      return <Widget>[
+        IconButton(
+          tooltip: '← ${localizations.diffUseRight}',
+          icon: const Icon(Icons.arrow_back, size: 18),
+          onPressed: () => _applyBlock(_blocks[idx], fromLeft: false),
+        ),
+        IconButton(
+          tooltip: '${localizations.diffUseLeft} →',
+          icon: const Icon(Icons.arrow_forward, size: 18),
+          onPressed: () => _applyBlock(_blocks[idx], fromLeft: true),
+        ),
+      ];
+    }
+    return <Widget>[
+      TextButton(
+        onPressed: () => _applyBlock(_blocks[idx], fromLeft: false),
+        child: Text('← ${localizations.diffUseRight}',
+            style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+      ),
+      TextButton(
+        onPressed: () => _applyBlock(_blocks[idx], fromLeft: true),
+        child: Text('${localizations.diffUseLeft} →',
+            style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+      ),
+    ];
+  }
+
   Widget _navApplyBar(int idx) {
     final theme = Theme.of(context);
     return Container(
@@ -2913,16 +2952,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
           onPressed: () => _navigate(1),
         ),
         const Spacer(),
-        TextButton(
-          onPressed: () => _applyBlock(_blocks[idx], fromLeft: false),
-          child: Text('← ${localizations.diffUseRight}',
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-        ),
-        TextButton(
-          onPressed: () => _applyBlock(_blocks[idx], fromLeft: true),
-          child: Text('${localizations.diffUseLeft} →',
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-        ),
+        ..._useSideButtons(idx),
         IconButton(
           tooltip: localizations.diffCopyBlock,
           icon: const Icon(Icons.copy_all, size: 16),
@@ -2952,16 +2982,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         Text('${localizations.diffFocus} ${idx + 1}/${_blocks.length}',
             style: TextStyle(fontSize: 12, color: theme.colorScheme.primary)),
         const Spacer(),
-        TextButton(
-          onPressed: () => _applyBlock(_blocks[idx], fromLeft: false),
-          child: Text('← ${localizations.diffUseRight}',
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-        ),
-        TextButton(
-          onPressed: () => _applyBlock(_blocks[idx], fromLeft: true),
-          child: Text('${localizations.diffUseLeft} →',
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-        ),
+        ..._useSideButtons(idx),
         IconButton(
           tooltip: localizations.diffCopyBlock,
           icon: const Icon(Icons.copy_all, size: 17),

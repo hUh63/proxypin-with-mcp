@@ -50,6 +50,22 @@ class DiffJobArgs {
 
   /// 两侧文本总长，用来判断值不值得起 isolate。
   int get totalChars => left.length + right.length;
+
+  /// 两侧总行数。
+  ///
+  /// 行级 LCS 的代价跟行数走，不跟字符数走：一段 5 万字符但 3 万行的文本（压缩过的
+  /// 日志、CSV、minify 后的文件按行切开）比 5 万字符 300 行的代码贵两个数量级。
+  /// 只看字符数会让这类文件留在 UI 线程上卡住。
+  int get totalLines => _linesOf(left) + _linesOf(right);
+
+  static int _linesOf(String text) {
+    if (text.isEmpty) return 0;
+    var n = 1;
+    for (var i = 0; i < text.length; i++) {
+      if (text.codeUnitAt(i) == 10) n++;
+    }
+    return n;
+  }
 }
 
 /// 一次「算差异」任务的结果。
