@@ -5248,6 +5248,14 @@
   "diffExportHtmlReport": "Export HTML report",
   "diffHistory": "Recent compares",
   "diffSwipeHint": "Tip: swipe left or right to jump between differences",
+  "diffElapsed": "Took {n} ms",
+  "@diffElapsed": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",

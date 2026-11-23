@@ -739,6 +739,12 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 行数阈值（两侧合计）。见 `DiffJobArgs.totalLines` 的说明。
   static const int _isolateLineThreshold = 20000;
 
+  /// 上一次比较实际花了多少毫秒（同步/异步两条路径都记）。
+  ///
+  /// 这东西本身没有功能价值，但它是**唯一能让人自己看到「到底卡在哪」**的数字：
+  /// 阈值该定多少、大文件到底慢在哪一段，看它比看我的估算靠谱。
+  int? _lastDiffMs;
+
   /// 对比序号：异步结果回来时和它对一下，过期就丢弃（用户可能已经又改又比了一轮）。
   int _compareSeq = 0;
 
@@ -793,11 +799,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 行级 LCS 的代价跟行数走，3 万行的短行文件和 3 MB 的长行文件一样卡。
     if (args.totalChars <= _isolateDiffThreshold && args.totalLines <= _isolateLineThreshold) {
       if (_computing) setState(() => _computing = false);
-      _applyDiffResult(runDiffJob(args));
+      final sw = Stopwatch()..start();
+      final result = runDiffJob(args);
+      sw.stop();
+      _lastDiffMs = sw.elapsedMilliseconds;
+      _applyDiffResult(result);
       return;
     }
 
     // 大文件：丢后台算，期间顶部给一条进度条。
+    // 这里记的是墙钟（含 isolate 启动 + 数据搬运），比纯计算耗时大一点，
+    // 但对「用户等了多久」这个问题的答案更准确。
+    final startedAt = DateTime.now();
     if (mounted) setState(() => _computing = true);
     unawaited(compute(runDiffJobFromMap, <String, Object?>{
       'left': args.left,
@@ -816,7 +829,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
       'pairSimilarity': args.pairSimilarity,
     }).then<void>((result) {
       if (!mounted || seq != _compareSeq) return;
-      setState(() => _computing = false);
+      setState(() {
+        _computing = false;
+        _lastDiffMs = DateTime.now().difference(startedAt).inMilliseconds;
+      });
       // 算的过程中文本又变了：结果对应的已不是眼前的文本，丢掉（新一轮 _compare 会算）。
       if (_left.text != _leftSnapshot || _right.text != _rightSnapshot) return;
       _applyDiffResult(result);
@@ -3274,6 +3290,11 @@ class _TextDiffPageState extends State<TextDiffPage> {
                   Text(localizations.diffFormatOnly('$formatOnlyCount'),
                       style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade400)),
                 ],
+                if (_lastDiffMs != null) ...[
+                  const SizedBox(height: 3),
+                  Text(localizations.diffElapsed(_lastDiffMs!),
+                      style: TextStyle(fontSize: 11, color: color.onSurfaceVariant)),
+                ],
                 const SizedBox(height: 10),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   card(localizations.diffOriginal,
@@ -3289,6 +3310,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
                       onPressed: () async {
                         final text = [
                           summary,
+                          if (_lastDiffMs != null) localizations.diffElapsed(_lastDiffMs!),
                           if (_newlineHint().isNotEmpty) _newlineHint().trim(),
                           '${localizations.diffOriginal}: '
                               '${_leftName.isEmpty ? '-' : _leftName} · '
@@ -3651,18 +3673,26 @@ class _TextDiffPageState extends State<TextDiffPage> {
         child: Row(children: [
           label(localizations.diffOriginal, _leftName),
           const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-            decoration: BoxDecoration(
-              color: color.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(9),
+          Tooltip(
+            // 耗时不好直接放进这条窄栏（一行要塞两个文件名 + 统计），挂在胶囊上：
+            // 长按看得见，平时不占地方。
+            message: _lastDiffMs == null
+                ? ''
+                : '${localizations.diffElapsed(_lastDiffMs!)} · '
+                    '${_left.lineCount + _right.lineCount} lines',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              decoration: BoxDecoration(
+                color: color.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Text('$pos/$total',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: color.primary,
+                      fontWeight: FontWeight.w600)),
             ),
-            child: Text('$pos/$total',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    color: color.primary,
-                    fontWeight: FontWeight.w600)),
           ),
           if (_blocks.isNotEmpty) ...[
             const SizedBox(width: 6),

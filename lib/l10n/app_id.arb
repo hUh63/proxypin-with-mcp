@@ -3054,6 +3054,7 @@
   "diffExportHtmlReport": "Export HTML report",
   "diffHistory": "Recent compares",
   "diffSwipeHint": "Tips: geser kiri atau kanan untuk berpindah perbedaan",
+  "diffElapsed": "Butuh {n} ms",
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",
