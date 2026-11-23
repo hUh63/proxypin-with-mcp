@@ -10743,6 +10743,51 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 把当前选区（没有选区就整份文本）送到分屏的另一侧。
+  ///
+  /// 分屏最常用的姿态是「这边看、那边写」：选中要挪过去的一段，一次点击落到对侧
+  /// 光标处，比「复制 → 切视图 → 粘贴」少两步，也不用和剪贴板抢内容。
+  void _sendSelectionToOther() {
+    final src = _controller;
+    final dstDoc = _splitDoc;
+    if (src == null || dstDoc == null) {
+      _toast(localizations.editorSendToOtherNoSplit);
+      return;
+    }
+    final all = src.text;
+    final sel = src.selection;
+    final String payload;
+    if (sel.isValid && !sel.isCollapsed) {
+      final start = sel.start.clamp(0, all.length);
+      final end = sel.end.clamp(0, all.length);
+      payload = start <= end ? all.substring(start, end) : all.substring(end, start);
+    } else {
+      payload = all;
+    }
+    if (payload.isEmpty) return;
+    final dst = dstDoc.controller;
+    final dsel = dst.selection;
+    final at = dsel.isValid ? dsel.end.clamp(0, dst.text.length) : dst.text.length;
+    dst.replaceRange(at, at, payload);
+    setState(() {});
+    _toast(localizations.editorSentToOther);
+  }
+
+  /// 把分屏另一侧滚到当前这行。
+  ///
+  /// 同一份文档时就是「另一侧跟着看这里」；两份文档时按行号近似定位
+  /// （两份文件没有行对应关系，能落到附近看一眼也比手滚强）。
+  void _locateInOther() {
+    final doc = _splitDoc;
+    if (doc == null) {
+      _toast(localizations.editorSendToOtherNoSplit);
+      return;
+    }
+    if (_caretLine < 0) return;
+    doc.controller.scrollToLine(_caretLine);
+    setState(() {});
+  }
+
   void _copy() {
     final controller = _controller;
     if (controller == null) return;
@@ -12449,6 +12494,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 child: Text(loc.editorSplitSideBySide)),
           if (_splitOn)
             PopupMenuItem(
+                value: 'sendToOther', child: Text(loc.editorSendToOther)),
+          if (_splitOn)
+            PopupMenuItem(
+                value: 'locateInOther', child: Text(loc.editorLocateInOther)),
+          if (_splitOn)
+            PopupMenuItem(
                 value: 'splitDoc',
                 child: Text(_splitDocId == null
                     ? loc.editorSplitDoc
@@ -12537,6 +12588,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           setState(() => _splitSideBySide = !_splitSideBySide);
         case 'splitDoc':
           unawaited(_pickSplitDoc());
+        case 'sendToOther':
+          _sendSelectionToOther();
+        case 'locateInOther':
+          _locateInOther();
         // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后
         //      要从命令面板也能直接执行（否则点了没反应）。
         case 'indent':

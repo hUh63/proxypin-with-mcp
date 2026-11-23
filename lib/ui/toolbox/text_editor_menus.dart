@@ -767,6 +767,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'fp 分屏 split sidebyside 并排'),
   EditorMenuItem('splitDoc', _splitDocLabel, group: 'view',
       aliases: 'fpfp 分屏文档 split document'),
+  EditorMenuItem('sendToOther', _sendToOtherLabel, group: 'edit',
+      aliases: 'fs 发送到另一侧 send other split'),
+  EditorMenuItem('locateInOther', _locateInOtherLabel, group: 'view',
+      aliases: 'dw 另一侧定位 locate other line'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -928,6 +932,8 @@ String _cursorBarLabel(AppLocalizations l) => l.editorCursorBar;
 String _statusBarTopLabel(AppLocalizations l) => l.editorStatusBarTop;
 String _splitViewLabel(AppLocalizations l) => l.editorSplitView;
 String _splitDocLabel(AppLocalizations l) => l.editorSplitDoc;
+String _sendToOtherLabel(AppLocalizations l) => l.editorSendToOther;
+String _locateInOtherLabel(AppLocalizations l) => l.editorLocateInOther;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1285,6 +1291,10 @@ IconData menuIconOf(String id) {
       return Icons.view_column_outlined;
     case 'splitDoc':
       return Icons.description_outlined;
+    case 'sendToOther':
+      return Icons.shortcut_outlined;
+    case 'locateInOther':
+      return Icons.my_location_outlined;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':
