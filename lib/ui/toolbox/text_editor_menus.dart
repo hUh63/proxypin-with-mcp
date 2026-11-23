@@ -773,6 +773,12 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'dw 另一侧定位 locate other line'),
   EditorMenuItem('syncSplitScroll', _syncSplitLabel, group: 'view',
       aliases: 'tbgd 同步滚动 sync scroll split'),
+  EditorMenuItem('macroRecord', _macroRecordLabel, group: 'edit',
+      aliases: 'lj 录制宏 macro record'),
+  EditorMenuItem('macroPlay', _macroPlayLabel, group: 'edit',
+      aliases: 'bf 播放宏 macro play replay'),
+  EditorMenuItem('macroClear', _macroClearLabel, group: 'edit',
+      aliases: 'qchj 清除宏 macro clear'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -937,6 +943,9 @@ String _splitDocLabel(AppLocalizations l) => l.editorSplitDoc;
 String _sendToOtherLabel(AppLocalizations l) => l.editorSendToOther;
 String _locateInOtherLabel(AppLocalizations l) => l.editorLocateInOther;
 String _syncSplitLabel(AppLocalizations l) => l.editorSyncSplitScroll;
+String _macroRecordLabel(AppLocalizations l) => l.editorMacroRecord;
+String _macroPlayLabel(AppLocalizations l) => l.editorMacroPlay;
+String _macroClearLabel(AppLocalizations l) => l.editorMacroClear;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1300,6 +1309,12 @@ IconData menuIconOf(String id) {
       return Icons.my_location_outlined;
     case 'syncSplitScroll':
       return Icons.sync_alt_outlined;
+    case 'macroRecord':
+      return Icons.radio_button_checked;
+    case 'macroPlay':
+      return Icons.play_circle_outline;
+    case 'macroClear':
+      return Icons.delete_outline;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':

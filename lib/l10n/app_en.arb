@@ -6216,6 +6216,28 @@
   "editorSentToOther": "Sent to the other pane",
   "editorLocateInOther": "Locate in other pane",
   "editorSyncSplitScroll": "Sync scrolling",
+  "editorMacroRecord": "Record macro",
+  "editorMacroStop": "Stop recording",
+  "editorMacroRecording": "Recording…",
+  "editorMacroRecorded": "Macro recorded ({n} steps)",
+  "editorMacroPlay": "Play macro",
+  "editorMacroPlayed": "Applied {n} step(s)",
+  "editorMacroClear": "Clear macro",
+  "editorMacroEmpty": "No macro to play",
+  "@editorMacroRecorded": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@editorMacroPlayed": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "editorShrinkSelection": "Shrink selection",
   "diffAutoAdvance": "Auto jump to next change",
   "diffDetectMoved": "Detect moved blocks",

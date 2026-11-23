@@ -1109,6 +1109,16 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final changed = text != _lastText;
     if (changed) {
       final before = _lastText;
+      if (_recording && !_macroReplaying && _macroSteps.length < 500) {
+        final d = _diffSpan(before, text);
+        if (d != null) {
+          _macroSteps.add((
+            offset: d.start,
+            removed: before.substring(d.start, d.start + d.removed),
+            inserted: text.substring(d.start, d.start + d.inserted),
+          ));
+        }
+      }
       // 书签跟着代码走：按「这次改了哪一段」平移，别让它漂到隔壁行。
       final bookmarks = _doc?.bookmarks;
       if (bookmarks != null && bookmarks.isNotEmpty) {
@@ -4021,6 +4031,20 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 分屏第二个视图的滚动控制器（内核不 dispose 外部传入的，得自己管）。
   final ScrollController _splitScroll = ScrollController();
+
+  /// 宏录制：把每一步改动记成「在哪、删了什么、加了什么」。
+  ///
+  /// Notepad++ 的宏是它最有辨识度的功能之一：给每行加前缀、把一种写法批量换掉这类
+  /// 重复活，录一遍就能反复用。这里用「提交后的文本差异」反推每一步 —— 不依赖内核
+  /// 的事件流，撤销、粘贴、多光标编辑自然都包含在内。
+  final List<({int offset, String removed, String inserted})> _macroSteps = [];
+  bool _recording = false;
+
+  /// 回放时把整篇替换掉会再触发一次改动回调，别把它也录进去。
+  bool _macroReplaying = false;
+
+  /// 录制开始时的光标位置：回放时按「现在光标 - 这个位置」整体平移。
+  int _macroBaseCaret = 0;
 
   /// 分屏时两侧同步滚动（同一份文档对照时最有用：上下永远看同一段）。
   bool _syncSplitScroll = false;
@@ -10762,6 +10786,61 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 开始 / 结束宏录制。
+  void _toggleMacroRecord() {
+    final c = _controller;
+    if (c == null) return;
+    if (_recording) {
+      setState(() => _recording = false);
+      _toast(localizations.editorMacroRecorded(_macroSteps.length));
+      return;
+    }
+    setState(() {
+      _macroSteps.clear();
+      _recording = true;
+      _macroBaseCaret = c.selection.isValid ? c.selection.start : 0;
+    });
+    _toast(localizations.editorMacroRecording);
+  }
+
+  /// 从当前光标位置回放宏。
+  ///
+  /// 每一步落地前会核对「这里本来应该是录制时删掉的那段内容」，对不上就跳过这一步
+  /// —— 文件已经改过一半时，宁肯少做一步也不要在这之前把后面全改错。
+  void _playMacro() {
+    final c = _controller;
+    if (c == null) return;
+    if (_macroSteps.isEmpty) {
+      _toast(localizations.editorMacroEmpty);
+      return;
+    }
+    final sel = c.selection;
+    final caret = sel.isValid ? (sel.start < sel.end ? sel.start : sel.end) : 0;
+    final shift = caret - _macroBaseCaret;
+    var out = c.text;
+    var applied = 0;
+    _macroReplaying = true;
+    for (final step in _macroSteps) {
+      final at = step.offset + shift;
+      if (at < 0 || at + step.removed.length > out.length) continue;
+      if (step.removed.isNotEmpty && out.substring(at, at + step.removed.length) != step.removed) {
+        continue;
+      }
+      out = out.replaceRange(at, at + step.removed.length, step.inserted);
+      applied++;
+    }
+    c.replaceRange(0, c.text.length, out);
+    _macroReplaying = false;
+    if (!mounted) return;
+    _toast(localizations.editorMacroPlayed(applied));
+  }
+
+  void _clearMacro() {
+    if (_recording) setState(() => _recording = false);
+    setState(() => _macroSteps.clear());
+    _toast(localizations.editorMacroEmpty);
+  }
+
   /// 把当前选区（没有选区就整份文本）送到分屏的另一侧。
   ///
   /// 分屏最常用的姿态是「这边看、那边写」：选中要挪过去的一段，一次点击落到对侧
@@ -12284,13 +12363,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
     IconData icon,
     String label, {
     bool enabled = true,
+    Color? tint,
   }) {
     return PopupMenuItem<String>(
       value: value,
       enabled: enabled,
       child: Row(children: [
         Icon(icon, size: 17,
-            color: enabled ? Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8) : Theme.of(context).disabledColor),
+            color: !enabled
+                ? Theme.of(context).disabledColor
+                : (tint ??
+                    Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8))),
         const SizedBox(width: 10),
         Expanded(
           child: Text(label,
@@ -12405,6 +12488,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _menuItem('insertDateTime', Icons.schedule, loc.editorInsertDateTime),
           _menuItem('nextSnippetStop', Icons.keyboard_tab, loc.editorNextSnippetStop),
           _menuItem('escapeString', Icons.text_fields, loc.editorEscape),
+          const PopupMenuDivider(),
+          // 宏：录制中把菜单项直接变成「停止录制」，比再找个设置页去看状态直观。
+          _menuItem('macroRecord',
+              _recording ? Icons.stop_circle_outlined : Icons.radio_button_checked,
+              _recording ? loc.editorMacroStop : loc.editorMacroRecord,
+              tint: _recording ? Colors.red : null),
+          _menuItem('macroPlay', Icons.play_circle_outline, loc.editorMacroPlay),
+          _menuItem('macroClear', Icons.delete_outline, loc.editorMacroClear),
+          const PopupMenuDivider(),
           _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
           _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
           _menuItem('columnCursors', Icons.view_column_outlined, loc.editorColumnSelect),
@@ -12618,6 +12710,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _locateInOther();
         case 'syncSplitScroll':
           setState(() => _syncSplitScroll = !_syncSplitScroll);
+        case 'macroRecord':
+          _toggleMacroRecord();
+        case 'macroPlay':
+          _playMacro();
+        case 'macroClear':
+          _clearMacro();
         // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后
         //      要从命令面板也能直接执行（否则点了没反应）。
         case 'indent':
