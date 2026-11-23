@@ -765,6 +765,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'ztl 状态栏 顶部 statusbar top'),
   EditorMenuItem('splitView', _splitViewLabel, group: 'view',
       aliases: 'fp 分屏 split sidebyside 并排'),
+  EditorMenuItem('splitDoc', _splitDocLabel, group: 'view',
+      aliases: 'fpfp 分屏文档 split document'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -925,6 +927,7 @@ String _symbolBarLabel(AppLocalizations l) => l.editorSymbolBar;
 String _cursorBarLabel(AppLocalizations l) => l.editorCursorBar;
 String _statusBarTopLabel(AppLocalizations l) => l.editorStatusBarTop;
 String _splitViewLabel(AppLocalizations l) => l.editorSplitView;
+String _splitDocLabel(AppLocalizations l) => l.editorSplitDoc;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1280,6 +1283,8 @@ IconData menuIconOf(String id) {
       return Icons.vertical_split_outlined;
     case 'splitSideBySide':
       return Icons.view_column_outlined;
+    case 'splitDoc':
+      return Icons.description_outlined;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':

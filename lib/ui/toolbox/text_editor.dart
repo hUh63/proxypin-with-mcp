@@ -403,8 +403,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
     return map;
   }
 
-  _LangOption get _lang =>
-      _langs.firstWhere((l) => l.label == (_doc?.langLabel ?? 'Plain Text'), orElse: () => _langs.first);
+  _LangOption get _lang => _langOf(_doc);
+
+  /// 按某份文档自己的语法标签取高亮模式（分屏副视图可能不是当前文档）。
+  _LangOption _langOf(EditorDocument? d) =>
+      _langs.firstWhere((l) => l.label == (d?.langLabel ?? 'Plain Text'), orElse: () => _langs.first);
 
   @override
   void initState() {
@@ -4014,6 +4017,19 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 分屏第二个视图的滚动控制器（内核不 dispose 外部传入的，得自己管）。
   final ScrollController _splitScroll = ScrollController();
+
+  /// 分屏右侧/下侧显示哪份文档；null = 与左侧同一份。
+  ///
+  /// 「同一文档两个位置」和「两份文档并排」是两个不同场景：前者对着长文件前后对照，
+  /// 后者对着接口定义改实现。都做才有用，所以副视图可以换文档。
+  String? _splitDocId;
+
+  EditorDocument? get _splitDoc {
+    final id = _splitDocId;
+    if (id == null) return _doc;
+    if (id == _doc?.id) return _doc;
+    return EditorDocuments.instance.byId(id);
+  }
 
   /// 断点行（0-based）。只对 JS 有意义（内置引擎），其它语言点了会提示没有运行时。
   final Set<int> _breakpoints = <int>{};
@@ -12426,6 +12442,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
                 value: 'splitSideBySide',
                 checked: _splitSideBySide,
                 child: Text(loc.editorSplitSideBySide)),
+          if (_splitOn)
+            PopupMenuItem(
+                value: 'splitDoc',
+                child: Text(_splitDocId == null
+                    ? loc.editorSplitDoc
+                    : '${loc.editorSplitDoc} · ${_splitDoc?.name ?? ''}')),
           const PopupMenuDivider(),
           _menuItem('settings', Icons.settings, loc.editorSettings),
         ];
@@ -12508,6 +12530,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           });
         case 'splitSideBySide':
           setState(() => _splitSideBySide = !_splitSideBySide);
+        case 'splitDoc':
+          unawaited(_pickSplitDoc());
         // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后
         //      要从命令面板也能直接执行（否则点了没反应）。
         case 'indent':
@@ -13374,22 +13398,58 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 选分屏副视图显示哪份文档。
+  Future<void> _pickSplitDoc() async {
+    final others =
+        EditorDocuments.instance.docs.where((d) => d.id != _doc?.id).toList(growable: false);
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(shrinkWrap: true, children: [
+          ListTile(
+            leading: const Icon(Icons.splitscreen_outlined),
+            title: Text(localizations.editorSplitSameDoc),
+            trailing: _splitDocId == null ? const Icon(Icons.check) : null,
+            onTap: () => Navigator.pop(ctx, ''),
+          ),
+          const Divider(height: 1),
+          for (final d in others)
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: Text(d.name),
+              trailing: _splitDocId == d.id ? const Icon(Icons.check) : null,
+              onTap: () => Navigator.pop(ctx, d.id),
+            ),
+          if (others.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+              child: Text(localizations.editorSplitNoOther,
+                  style: Theme.of(ctx).textTheme.bodySmall),
+            ),
+        ]),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _splitDocId = picked.isEmpty ? null : picked);
+  }
+
   /// 一个 CodeForge 视图。
   ///
   /// [vScroll] 由调用方创建并负责 dispose —— 内核不接管外部传入的控制器。
   /// 主视图传 `_vScroll`（minimap / 粘性滚动要跟着它定位），分屏的第二视图传
   /// `_splitScroll`，两者互不相干，于是同一份文本可以同时在两个位置看。
-  Widget _codeForge({required Key key, required ScrollController vScroll}) {
-    final doc = _doc!;
+  Widget _codeForge({required Key key, required ScrollController vScroll, EditorDocument? doc}) {
+    final d = doc ?? _doc!;
     return CodeForge(
       key: key,
-      controller: doc.controller,
-      findController: doc.findController,
-      undoController: doc.undoController,
+      controller: d.controller,
+      findController: d.findController,
+      undoController: d.undoController,
       // 流畅模式：关高亮 / 折叠 / 自动换行，换取超长文本下的流畅度。
       lineWrap: _wrap && !_smooth,
       readOnly: _readOnly,
-      language: _smooth ? null : _lang.mode,
+      language: _smooth ? null : _langOf(d).mode,
       enableGuideLines: _prefs.guideLines,
       enableGutter: _prefs.showGutter,
       enableGutterDivider: _prefs.gutterDivider,
@@ -13452,7 +13512,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
       padding: const EdgeInsets.all(8),
       child: Container(
         decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor)),
-        child: _codeForge(key: ValueKey('$keyStr-split'), vScroll: _splitScroll),
+        child: _codeForge(
+            key: ValueKey('$keyStr-split-${_splitDoc?.id}'),
+            vScroll: _splitScroll,
+            doc: _splitDoc),
       ),
     );
     final flex = (_splitRatio * 1000).round().clamp(200, 800).toInt();
