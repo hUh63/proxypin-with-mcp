@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.67.378 (2026-11-23) — 可见行缓存
+
+### 文本对比页
+`_visibleRows` 的结果加缓存。这个方法在「只显示差异 / 类型筛选 / 折叠未变区」时
+都是全量 O(n) 重算、还会 new 出一批 `DiffRow`，而它的调用点有一半在 build 路径上
+（对齐视图、统一视图、滚动定位）。两万行时每次重算几十毫秒，来回切开关就能看出顿。
+
+缓存键覆盖所有会改变结果的输入：对齐行指纹、rows 实例、聚焦块、只显示差异、
+类型筛选、是否折叠、已展开的折叠段集合、以及折叠行的文案（跟随语言）。
+`_compare()` 里显式清空。
+
+### 排查（第 33 批，渲染性能维度）
+沿「build 路径上有没有重复计算」这条线查了对比页和编辑页：
+- `_alignedRows()` 早就有指纹缓存（`_rowsCacheKey`），没问题
+- `_visibleRows()` 原来没有缓存 —— 本轮补上（上面那条）
+- `diffStats()` 只在统计面板里调，不在 build 路径
+- 字符级差异 `_charDiffOf` 有 800 条的 LRU 缓存 ✓
+- `_blockIndexAtRow` 只在长按时调 ✓
+- 编辑页：`_collectSymbols` 有 `identical` 缓存、`_inlineDiffMarks` 有 base+hash 缓存、
+  `_allBracketHighlights` 有 text 指纹缓存 ✓
+
 ## v1.67.377 (2026-11-23) — 从模板新建
 
 ### 文本编辑页

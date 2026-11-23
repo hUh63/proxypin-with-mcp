@@ -818,6 +818,14 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 阈值该定多少、大文件到底慢在哪一段，看它比看我的估算靠谱。
   int? _lastDiffMs;
 
+  /// `_visibleRows` 的结果缓存。
+  ///
+  /// 这个方法在「只显示差异 / 类型筛选 / 折叠未变区」时都是全量 O(n) 重算，
+  /// 还会 new 出一批 DiffRow；而它的调用点有一半在 build 路径上（对齐视图、
+  /// 统一视图、滚动定位）。两万行时每次重算几十毫秒，来回切开关就能看出顿。
+  List<DiffRow>? _visCache;
+  String _visKey = '';
+
   /// 对比序号：异步结果回来时和它对一下，过期就丢弃（用户可能已经又改又比了一轮）。
   int _compareSeq = 0;
 
@@ -847,6 +855,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 块下标是按上一版内容算的，内容一变就会指到别的块上，一起清掉。
     _marks.clear();
     _charDiffCache.clear();
+    _visCache = null;
     if (_left.text.isEmpty && _right.text.isEmpty) {
       _lastDiffs = null;
       _lastDiffsKey = '';
@@ -5914,6 +5923,17 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 只显示差异时：保留每个差异块前后各一行上下文，其余折成一行占位。
   List<DiffRow> _visibleRows(List<DiffRow> rows) {
+    final key = '${_rowsCacheKey()}|${identityHashCode(rows)}|$_focusBlock|$_onlyDiff|'
+        '$_typeFilter|$_foldUnchanged|${_expandedFolds.join(',')}|'
+        '${localizations.diffUnchangedLines}';
+    if (_visCache != null && _visKey == key) return _visCache!;
+    final out = _computeVisibleRows(rows);
+    _visKey = key;
+    _visCache = out;
+    return out;
+  }
+
+  List<DiffRow> _computeVisibleRows(List<DiffRow> rows) {
     final fb = _focusBlock;
     if (fb != null && fb >= 0 && fb < _blocks.length) {
       return _focusRows(rows, _blocks[fb]);
