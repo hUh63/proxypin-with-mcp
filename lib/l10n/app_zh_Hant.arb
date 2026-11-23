@@ -5428,6 +5428,7 @@
   "editorSendToOtherNoSplit": "請先開啟分割畫面",
   "editorSentToOther": "已傳送到另一側",
   "editorLocateInOther": "在另一側定位",
+  "editorSyncSplitScroll": "同步捲動",
   "editorShrinkSelection": "收縮選區",
   "diffAutoAdvance": "接受後自動跳下一處",
   "diffDetectMoved": "識別移動的區塊",

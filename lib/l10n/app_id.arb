@@ -3738,6 +3738,7 @@
   "editorSendToOtherNoSplit": "Buka tampilan terbelah dulu",
   "editorSentToOther": "Terkirim ke panel lain",
   "editorLocateInOther": "Temukan di panel lain",
+  "editorSyncSplitScroll": "Sinkronkan gulir",
   "editorShrinkSelection": "Perkecil pilihan",
   "diffAutoAdvance": "Lompat ke perubahan berikutnya",
   "diffDetectMoved": "Deteksi blok yang dipindah",

@@ -3738,6 +3738,7 @@
   "editorSendToOtherNoSplit": "Abre primero la vista dividida",
   "editorSentToOther": "Enviado al otro panel",
   "editorLocateInOther": "Ubicar en el otro panel",
+  "editorSyncSplitScroll": "Sincronizar desplazamiento",
   "editorShrinkSelection": "Reducir selección",
   "diffAutoAdvance": "Saltar al siguiente cambio",
   "diffDetectMoved": "Detectar bloques movidos",

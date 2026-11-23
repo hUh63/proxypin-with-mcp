@@ -3738,6 +3738,7 @@
   "editorSendToOtherNoSplit": "เปิดมุมมองแบ่งหน้าจอก่อน",
   "editorSentToOther": "ส่งไปยังแผงอื่นแล้ว",
   "editorLocateInOther": "ระบุตำแหน่งในแผงอื่น",
+  "editorSyncSplitScroll": "ซิงค์การเลื่อน",
   "editorShrinkSelection": "ย่อการเลือก",
   "diffAutoAdvance": "ข้ามไปการเปลี่ยนแปลงถัดไป",
   "diffDetectMoved": "ตรวหาบล็อกที่ย้าย",

@@ -3738,6 +3738,7 @@
   "editorSendToOtherNoSplit": "Hãy bật chia đôi màn hình trước",
   "editorSentToOther": "Đã gửi sang khung bên kia",
   "editorLocateInOther": "Định vị ở khung bên kia",
+  "editorSyncSplitScroll": "Đồng bộ cuộn",
   "editorShrinkSelection": "Thu hẹp vùng chọn",
   "diffAutoAdvance": "Nhảy tới thay đổi tiếp theo",
   "diffDetectMoved": "Phát hiện khối bị di chuyển",

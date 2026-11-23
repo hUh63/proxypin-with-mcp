@@ -3739,6 +3739,7 @@
   "editorSendToOtherNoSplit": "Abra primeiro a vista dividida",
   "editorSentToOther": "Enviado para o outro painel",
   "editorLocateInOther": "Localizar no outro painel",
+  "editorSyncSplitScroll": "Sincronizar rolagem",
   "editorShrinkSelection": "Reduzir seleção",
   "diffAutoAdvance": "Ir para a próxima alteração",
   "diffDetectMoved": "Detectar blocos movidos",

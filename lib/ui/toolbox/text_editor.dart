@@ -4022,6 +4022,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 分屏第二个视图的滚动控制器（内核不 dispose 外部传入的，得自己管）。
   final ScrollController _splitScroll = ScrollController();
 
+  /// 分屏时两侧同步滚动（同一份文档对照时最有用：上下永远看同一段）。
+  bool _syncSplitScroll = false;
+
   /// 分屏右侧/下侧显示哪份文档；null = 与左侧同一份。
   ///
   /// 「同一文档两个位置」和「两份文档并排」是两个不同场景：前者对着长文件前后对照，
@@ -4180,6 +4183,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _vViewportH = vh;
     if (_minimapOn) _scrollTick.value++;
     _syncSticky();
+    _syncSplitTo(off);
+  }
+
+  /// 主视图滚动时带动副视图（开关关掉就什么都不做）。
+  ///
+  /// 只在两边行高一致时才有意义 —— 分屏两侧共用同一份字体设置，所以偏移量可以直接
+  /// 对齐；副视图的滚动范围比主视图小的时候夹到边界，不会因为 jumpTo 越界抛异常。
+  void _syncSplitTo(double off) {
+    if (!_splitOn || !_syncSplitScroll) return;
+    if (!_splitScroll.hasClients) return;
+    final max = _splitScroll.position.maxScrollExtent;
+    final target = off < 0
+        ? 0.0
+        : (max.isFinite && off > max ? max : off);
+    if ((_splitScroll.offset - target).abs() < 0.5) return;
+    _splitScroll.jumpTo(target);
   }
 
   /// 粘性滚动：视口顶部那行属于哪条符号链（`Class › Method`），变了才更新。
@@ -12499,6 +12518,11 @@ class _TextEditorPageState extends State<TextEditorPage> {
             PopupMenuItem(
                 value: 'locateInOther', child: Text(loc.editorLocateInOther)),
           if (_splitOn)
+            CheckedPopupMenuItem(
+                value: 'syncSplitScroll',
+                checked: _syncSplitScroll,
+                child: Text(loc.editorSyncSplitScroll)),
+          if (_splitOn)
             PopupMenuItem(
                 value: 'splitDoc',
                 child: Text(_splitDocId == null
@@ -12592,6 +12616,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _sendSelectionToOther();
         case 'locateInOther':
           _locateInOther();
+        case 'syncSplitScroll':
+          setState(() => _syncSplitScroll = !_syncSplitScroll);
         // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后
         //      要从命令面板也能直接执行（否则点了没反应）。
         case 'indent':

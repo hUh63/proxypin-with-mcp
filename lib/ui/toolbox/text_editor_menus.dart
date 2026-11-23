@@ -771,6 +771,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'fs 发送到另一侧 send other split'),
   EditorMenuItem('locateInOther', _locateInOtherLabel, group: 'view',
       aliases: 'dw 另一侧定位 locate other line'),
+  EditorMenuItem('syncSplitScroll', _syncSplitLabel, group: 'view',
+      aliases: 'tbgd 同步滚动 sync scroll split'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -934,6 +936,7 @@ String _splitViewLabel(AppLocalizations l) => l.editorSplitView;
 String _splitDocLabel(AppLocalizations l) => l.editorSplitDoc;
 String _sendToOtherLabel(AppLocalizations l) => l.editorSendToOther;
 String _locateInOtherLabel(AppLocalizations l) => l.editorLocateInOther;
+String _syncSplitLabel(AppLocalizations l) => l.editorSyncSplitScroll;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1295,6 +1298,8 @@ IconData menuIconOf(String id) {
       return Icons.shortcut_outlined;
     case 'locateInOther':
       return Icons.my_location_outlined;
+    case 'syncSplitScroll':
+      return Icons.sync_alt_outlined;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':

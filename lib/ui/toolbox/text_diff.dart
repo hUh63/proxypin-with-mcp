@@ -4024,6 +4024,28 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 对齐并排视图：左右各一栏（行号 + 文本），两栏纵向滚动联动、
   /// 横向各自滚动、双指缩放统一字号。
+  /// 左右滑切换差异块。
+  ///
+  /// 手机上「上一处 / 下一处」只有顶部按钮和右下角那对悬浮箭头，单手举着手机时
+  /// 拇指够不太到；左右滑是这类 app 的通用手势（上下滚正文、左右翻差异）。
+  /// 只认「快速滑动」（primaryVelocity 过阈值）：慢速拖动交给中缝 / 手势缩放，
+  /// 长按选词也不会被误判成翻页。
+  Widget _swipeNav(Widget child) {
+    if (_blocks.length < 2) return child;
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: (d) {
+        final v = d.primaryVelocity ?? 0;
+        if (v < -250) {
+          _navigate(1); // 左滑 → 下一处
+        } else if (v > 250) {
+          _navigate(-1); // 右滑 → 上一处
+        }
+      },
+      child: child,
+    );
+  }
+
   Widget _alignedView() {
     final rows = _visibleRows(_alignedRows());
     if (rows.isEmpty) {
@@ -4041,13 +4063,13 @@ class _TextDiffPageState extends State<TextDiffPage> {
     // 对齐视图也支持拖中缝：和源码视图共用同一个比例（都是「左栏占多少」），
     // 用户拖过一次，两个视图都记住。
     final leftFlex = (_splitRatio * 1000).round().clamp(150, 850);
-    final body = Row(children: [
+    final body = _swipeNav(Row(children: [
       Expanded(flex: leftFlex, child: _alignedPane(rows, current, left: true)),
       _splitHandle(divider),
       Expanded(
           flex: 1000 - leftFlex, child: _alignedPane(rows, current, left: false)),
       _densityBar(rows),
-    ]);
+    ]));
     // 悬浮的「上一处 / 下一处」：滚下去之后顶部工具栏看不见了，
     // 手机上想跳到下一处还得先滚回顶部，很别扭（对标 VS Code diff 的右上角那对箭头）。
     if (_blocks.length < 2) return body;
@@ -4170,7 +4192,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     }
     // 单栏不横向滚动：超长行用省略号截断（统一视图是「快速扫改动」，
     // 逐字读长行请切回并排视图或直接看编辑器）。
-    return ListView.builder(
+    return _swipeNav(ListView.builder(
       // 复用左栏的滚动控制器：两种视图互斥，同一时刻只有一个挂在树上，
       // 这样「跳到某处差异 / 跳到命中」在统一视图里也能滚到位。
       controller: _leftV,
@@ -4178,7 +4200,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       itemCount: lines.length,
       itemBuilder: (context, i) => _unifiedLine(lines[i]),
       padding: EdgeInsets.zero,
-    );
+    ));
   }
 
   Widget _unifiedLine(_UnifiedLine l) {

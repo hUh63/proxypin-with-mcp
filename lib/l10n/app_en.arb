@@ -6215,6 +6215,7 @@
   "editorSendToOtherNoSplit": "Open split view first",
   "editorSentToOther": "Sent to the other pane",
   "editorLocateInOther": "Locate in other pane",
+  "editorSyncSplitScroll": "Sync scrolling",
   "editorShrinkSelection": "Shrink selection",
   "diffAutoAdvance": "Auto jump to next change",
   "diffDetectMoved": "Detect moved blocks",

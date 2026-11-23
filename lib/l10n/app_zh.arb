@@ -5428,6 +5428,7 @@
   "editorSendToOtherNoSplit": "请先开启分屏",
   "editorSentToOther": "已发送到另一侧",
   "editorLocateInOther": "在另一侧定位",
+  "editorSyncSplitScroll": "同步滚动",
   "editorShrinkSelection": "收缩选区",
   "diffAutoAdvance": "接受后自动跳下一处",
   "diffDetectMoved": "识别移动的块",
