@@ -3053,6 +3053,7 @@
   "diffOnlyModified": "Only modified lines",
   "diffExportHtmlReport": "Export HTML report",
   "diffHistory": "Recent compares",
+  "diffSwipeHint": "Mẹo: vuốt trái hoặc phải để chuyển giữa các khác biệt",
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",

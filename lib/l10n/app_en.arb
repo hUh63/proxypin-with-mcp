@@ -5247,6 +5247,7 @@
   "diffOnlyModified": "Only modified lines",
   "diffExportHtmlReport": "Export HTML report",
   "diffHistory": "Recent compares",
+  "diffSwipeHint": "Tip: swipe left or right to jump between differences",
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",

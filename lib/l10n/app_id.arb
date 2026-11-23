@@ -3053,6 +3053,7 @@
   "diffOnlyModified": "Only modified lines",
   "diffExportHtmlReport": "Export HTML report",
   "diffHistory": "Recent compares",
+  "diffSwipeHint": "Tips: geser kiri atau kanan untuk berpindah perbedaan",
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",

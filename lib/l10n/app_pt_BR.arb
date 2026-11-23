@@ -3054,6 +3054,7 @@
   "diffOnlyModified": "Only modified lines",
   "diffExportHtmlReport": "Export HTML report",
   "diffHistory": "Recent compares",
+  "diffSwipeHint": "Dica: deslize para os lados para pular entre diferenças",
   "diffHistoryEmpty": "No history yet",
   "diffHistoryRestore": "Replace both sides with this snapshot?",
   "artexTabOverview": "Overview",

@@ -4847,6 +4847,7 @@
   "diffOnlyModified": "只看修改",
   "diffExportHtmlReport": "导出 HTML 报告",
   "diffHistory": "最近对比",
+  "diffSwipeHint": "提示：左右滑动可切换上一处 / 下一处差异",
   "diffHistoryEmpty": "还没有对比记录",
   "diffHistoryRestore": "用这次记录替换当前左右两侧？",
   "artexTabOverview": "概览",

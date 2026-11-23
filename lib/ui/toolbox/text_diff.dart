@@ -111,6 +111,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   static const String _storeKey = 'text_diff_content_v1';
 
   /// 最近几次对比的快照（最多 5 组）：「刚才那两段怎么改的」可以回看。
+  static const String _swipeHintKey = 'text_diff_swipe_hint_v1';
+  bool _swipeHintDone = false;
   static const String _historyKey = 'text_diff_history_v1';
   static const int _historyLimit = 5;
   bool _historyWriting = false;
@@ -823,6 +825,8 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// 把算好的结果画到两侧（整行底色 + 行号条 + 字符级高亮）并更新状态栏摘要。
   void _applyDiffResult(DiffJobResult result) {
     final blocks = result.blocks;
+    // 提示放在渲染之后：这时才知道到底有没有差异块。
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSwipeHint(blocks.length));
     final movedEnds = result.movedEnds;
     final stats = result.stats;
     _lastDiffs = result.diffs;
@@ -4024,6 +4028,28 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 对齐并排视图：左右各一栏（行号 + 文本），两栏纵向滚动联动、
   /// 横向各自滚动、双指缩放统一字号。
+  /// 首次出现多处差异时提示一句「左右滑可切换」。
+  ///
+  /// 手势这种东西不写出来没人会去试 —— 而「跳到下一处」是对比页里最常用的动作，
+  /// 最省手的那个入口（滑）恰好是最不容易被发现的。只提示一次。
+  Future<void> _maybeShowSwipeHint(int blockCount) async {
+    if (_swipeHintDone) return;
+    _swipeHintDone = true;
+    if (blockCount < 2) return;
+    final sp = SharedPreferencesAsync();
+    try {
+      if (await sp.getBool(_swipeHintKey) == true) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(localizations.diffSwipeHint),
+        duration: const Duration(seconds: 5),
+      ));
+      await sp.setBool(_swipeHintKey, true);
+    } catch (_) {
+      // 读不到偏好就算了，提示不是核心功能。
+    }
+  }
+
   /// 左右滑切换差异块。
   ///
   /// 手机上「上一处 / 下一处」只有顶部按钮和右下角那对悬浮箭头，单手举着手机时

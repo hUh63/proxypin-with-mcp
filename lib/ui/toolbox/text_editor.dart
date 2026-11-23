@@ -717,6 +717,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (identical(_doc, doc)) return;
     // 副视图正显示这份文档 → 左右变成同一份，没有意义，回退成「同一文档」镜像模式。
     if (_splitDocId == doc.id) _splitDocId = null;
+    // 换文档就停止录制：否则接着录会把新文档的改动也记进来，回放时偏移全对不上。
+    if (_recording) _recording = false;
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
 
@@ -10820,17 +10822,21 @@ class _TextEditorPageState extends State<TextEditorPage> {
     var out = c.text;
     var applied = 0;
     _macroReplaying = true;
-    for (final step in _macroSteps) {
-      final at = step.offset + shift;
-      if (at < 0 || at + step.removed.length > out.length) continue;
-      if (step.removed.isNotEmpty && out.substring(at, at + step.removed.length) != step.removed) {
-        continue;
+    try {
+      for (final step in _macroSteps) {
+        final at = step.offset + shift;
+        if (at < 0 || at + step.removed.length > out.length) continue;
+        if (step.removed.isNotEmpty && out.substring(at, at + step.removed.length) != step.removed) {
+          continue;
+        }
+        out = out.replaceRange(at, at + step.removed.length, step.inserted);
+        applied++;
       }
-      out = out.replaceRange(at, at + step.removed.length, step.inserted);
-      applied++;
+      c.replaceRange(0, c.text.length, out);
+    } finally {
+      // 标志必须在 finally 里复位：万一 replaceRange 抛了，卡在 true 会让录制永久失效。
+      _macroReplaying = false;
     }
-    c.replaceRange(0, c.text.length, out);
-    _macroReplaying = false;
     if (!mounted) return;
     _toast(localizations.editorMacroPlayed(applied));
   }
