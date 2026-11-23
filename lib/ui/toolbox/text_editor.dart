@@ -715,6 +715,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   void _activate(EditorDocument doc) {
     if (identical(_doc, doc)) return;
+    // 副视图正显示这份文档 → 左右变成同一份，没有意义，回退成「同一文档」镜像模式。
+    if (_splitDocId == doc.id) _splitDocId = null;
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
 
@@ -3259,6 +3261,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _doc = null;
     }
     _docs.remove(doc.id);
+    // 关掉的正好是分屏副视图那份 → 副视图回到「同一文档」，否则它会悄悄变成当前文档。
+    if (_splitDocId != null && (_splitDocId == doc.id || _splitDoc?.id == null)) _splitDocId = null;
     if (wasActive) {
       final next = _docs.docs.isEmpty ? null : _docs.docs.first;
       _activate(next ?? _docs.create(name: localizations.editorUntitled));
@@ -11739,6 +11743,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
     for (final doc in others) {
       _docs.remove(doc.id);
     }
+    if (_splitDocId != null && _splitDoc == null) _splitDocId = null;
     setState(() {});
     _docs.persist();
   }
