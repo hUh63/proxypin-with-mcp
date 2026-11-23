@@ -1852,7 +1852,14 @@ class McpServer {
     }
     final out = Uint8List(hex.length ~/ 2);
     for (var i = 0; i < out.length; i++) {
-      out[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
+      final pair = hex.substring(i * 2, i * 2 + 2);
+      // 这里的 hex 来自 MCP 客户端（常常是模型生成），不能假定合法：
+      // int.parse 抛的 FormatException 会让整个工具调用变成未捕获异常。
+      final byte = int.tryParse(pair, radix: 16);
+      if (byte == null) {
+        throw FormatException('invalid hex "$pair" at offset ${i * 2}');
+      }
+      out[i] = byte;
     }
     return out;
   }

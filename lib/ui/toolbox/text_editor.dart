@@ -12303,6 +12303,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
                       tint: (_doc?.findController.isActive ?? false) ? color : null),
                 ),
               const Spacer(),
+              // 录制中：菜单里虽然会变成「停止录制」，但工具栏上看不见，
+              // 录完忘了停会一直记（上限 500 步后静默丢弃）。这里给个显性提示。
+              if (_recording)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.fiber_manual_record, size: 9, color: Colors.red.shade600),
+                    const SizedBox(width: 2),
+                    Text('REC',
+                        style: TextStyle(
+                            fontSize: 9,
+                            height: 1.0,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.red.shade600)),
+                  ]),
+                ),
               // 未保存小圆点（VS 标签上那个点），一眼知道这份文件还没写回磁盘。
               if (_dirty)
                 Padding(

@@ -831,7 +831,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
   void _applyDiffResult(DiffJobResult result) {
     final blocks = result.blocks;
     // 提示放在渲染之后：这时才知道到底有没有差异块。
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSwipeHint(blocks.length));
+    // 只注册一次，别每次重算都往帧回调队列里塞一个。
+    if (!_swipeHintDone) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSwipeHint(blocks.length));
+    }
     final movedEnds = result.movedEnds;
     final stats = result.stats;
     _lastDiffs = result.diffs;

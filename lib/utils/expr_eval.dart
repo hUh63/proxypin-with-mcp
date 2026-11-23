@@ -125,7 +125,11 @@ List<_Tok> _tokenize(String src) {
           i++;
         }
         if (i == hs) throw _ExprError('bad hex literal at $start');
-        out.add(_Tok(_T.num, src.substring(start, i), start, int.parse(src.substring(hs, i), radix: 16)));
+        // 16 位以上的字面量超出 int 范围，int.parse 抛的是 FormatException，
+        // 不在这套自定义异常的捕获范围里 —— 统一换成可读的报错。
+        final hv = int.tryParse(src.substring(hs, i), radix: 16);
+        if (hv == null) throw _ExprError('hex literal too large at $start');
+        out.add(_Tok(_T.num, src.substring(start, i), start, hv));
         continue;
       }
       if (c == '0' && i + 1 < src.length && (src[i + 1] == 'b' || src[i + 1] == 'B')) {
