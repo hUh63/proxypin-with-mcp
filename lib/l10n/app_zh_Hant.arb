@@ -5440,6 +5440,7 @@
   "editorMacroPlay": "播放巨集",
   "editorMacroPlayed": "已執行 {n} 步",
   "editorMacroClear": "清除巨集",
+  "editorNewFromTemplate": "從範本新增",
   "editorMacroEmpty": "沒有可播放的巨集",
   "editorShrinkSelection": "收縮選區",
   "diffAutoAdvance": "接受後自動跳下一處",

@@ -5440,6 +5440,7 @@
   "editorMacroPlay": "播放宏",
   "editorMacroPlayed": "已执行 {n} 步",
   "editorMacroClear": "清除宏",
+  "editorNewFromTemplate": "从模板新建",
   "editorMacroEmpty": "没有可播放的宏",
   "editorShrinkSelection": "收缩选区",
   "diffAutoAdvance": "接受后自动跳下一处",

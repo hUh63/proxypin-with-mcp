@@ -3751,6 +3751,7 @@
   "editorMacroPlay": "Reproduzir macro",
   "editorMacroPlayed": "{n} passo(s) aplicados",
   "editorMacroClear": "Limpar macro",
+  "editorNewFromTemplate": "Novo a partir de modelo",
   "editorMacroEmpty": "Nenhuma macro para reproduzir",
   "editorShrinkSelection": "Reduzir seleção",
   "diffAutoAdvance": "Ir para a próxima alteração",

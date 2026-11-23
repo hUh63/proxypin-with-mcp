@@ -6234,6 +6234,7 @@
   "editorMacroPlay": "Play macro",
   "editorMacroPlayed": "Applied {n} step(s)",
   "editorMacroClear": "Clear macro",
+  "editorNewFromTemplate": "New from template",
   "editorMacroEmpty": "No macro to play",
   "@editorMacroRecorded": {
     "placeholders": {

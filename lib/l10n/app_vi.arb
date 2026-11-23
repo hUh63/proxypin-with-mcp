@@ -3750,6 +3750,7 @@
   "editorMacroPlay": "Phát macro",
   "editorMacroPlayed": "Đã áp dụng {n} bước",
   "editorMacroClear": "Xóa macro",
+  "editorNewFromTemplate": "Tạo mới từ mẫu",
   "editorMacroEmpty": "Không có macro để phát",
   "editorShrinkSelection": "Thu hẹp vùng chọn",
   "diffAutoAdvance": "Nhảy tới thay đổi tiếp theo",

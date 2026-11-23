@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.67.377 (2026-11-23) — 从模板新建
+
+### 文本编辑页
+「文件」菜单新增 **从模板新建**，8 种骨架点一下填好：
+Python（shebang + encoding + main 守卫）、HTML5（含 viewport）、Markdown（标题 + 列表 + 表格）、
+Dart、Shell（shebang + `set -euo pipefail`）、Java、JSON、SQL。
+
+语言标签走扩展名映射（`_detectLanguage('untitled.py')`）而不是硬写名字 ——
+和打开文件同一个入口，高亮一定能生效；映射不到才退回模板里写的名字。
+
+模板正文刻意避开美元符号（Dart 字符串插值会把 `$1`、`$VAR` 当成变量），
+shell 模板因此只用 `set -euo pipefail` 这类无 `$` 的骨架。
+
+### 排查（第 32 批）
+- 编辑页菜单 **176 项**，items / case / 图标 / 渲染四方一致（`search` 仍是有意不渲染）
+- 模板表是 `static const` 的 record Map，`ext` 只存扩展名：语言解析必须发生在运行时
+
 ## v1.67.376 (2026-11-23) — 对比页多会话
 
 ### 文本对比页：会话标签条

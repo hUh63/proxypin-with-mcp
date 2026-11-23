@@ -3750,6 +3750,7 @@
   "editorMacroPlay": "เล่นมาโคร",
   "editorMacroPlayed": "ทำแล้ว {n} ขั้น",
   "editorMacroClear": "ล้างมาโคร",
+  "editorNewFromTemplate": "สร้างใหม่จากแม่แบบ",
   "editorMacroEmpty": "ไม่มีมาโครให้เล่น",
   "editorShrinkSelection": "ย่อการเลือก",
   "diffAutoAdvance": "ข้ามไปการเปลี่ยนแปลงถัดไป",

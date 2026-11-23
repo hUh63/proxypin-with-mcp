@@ -3750,6 +3750,7 @@
   "editorMacroPlay": "Putar makro",
   "editorMacroPlayed": "{n} langkah diterapkan",
   "editorMacroClear": "Hapus makro",
+  "editorNewFromTemplate": "Baru dari templat",
   "editorMacroEmpty": "Tidak ada makro untuk diputar",
   "editorShrinkSelection": "Perkecil pilihan",
   "diffAutoAdvance": "Lompat ke perubahan berikutnya",

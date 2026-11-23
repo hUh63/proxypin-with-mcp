@@ -773,6 +773,8 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'dw 另一侧定位 locate other line'),
   EditorMenuItem('syncSplitScroll', _syncSplitLabel, group: 'view',
       aliases: 'tbgd 同步滚动 sync scroll split'),
+  EditorMenuItem('newFromTemplate', _newFromTemplateLabel, group: 'file',
+      aliases: 'mbxj 从模板新建 template new file'),
   EditorMenuItem('macroRecord', _macroRecordLabel, group: 'edit',
       aliases: 'lj 录制宏 macro record'),
   EditorMenuItem('macroPlay', _macroPlayLabel, group: 'edit',
@@ -944,6 +946,7 @@ String _sendToOtherLabel(AppLocalizations l) => l.editorSendToOther;
 String _locateInOtherLabel(AppLocalizations l) => l.editorLocateInOther;
 String _syncSplitLabel(AppLocalizations l) => l.editorSyncSplitScroll;
 String _macroRecordLabel(AppLocalizations l) => l.editorMacroRecord;
+String _newFromTemplateLabel(AppLocalizations l) => l.editorNewFromTemplate;
 String _macroPlayLabel(AppLocalizations l) => l.editorMacroPlay;
 String _macroClearLabel(AppLocalizations l) => l.editorMacroClear;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
@@ -1309,6 +1312,8 @@ IconData menuIconOf(String id) {
       return Icons.my_location_outlined;
     case 'syncSplitScroll':
       return Icons.sync_alt_outlined;
+    case 'newFromTemplate':
+      return Icons.auto_awesome_motion_outlined;
     case 'macroRecord':
       return Icons.radio_button_checked;
     case 'macroPlay':

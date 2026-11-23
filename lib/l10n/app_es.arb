@@ -3750,6 +3750,7 @@
   "editorMacroPlay": "Reproducir macro",
   "editorMacroPlayed": "{n} paso(s) aplicados",
   "editorMacroClear": "Borrar macro",
+  "editorNewFromTemplate": "Nuevo desde plantilla",
   "editorMacroEmpty": "No hay macro para reproducir",
   "editorShrinkSelection": "Reducir selección",
   "diffAutoAdvance": "Saltar al siguiente cambio",

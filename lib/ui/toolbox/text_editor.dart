@@ -3175,6 +3175,138 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 新建文件的骨架模板。
+  ///
+  /// 每次新建都从空文件开始：写脚本要手敲 shebang、写 HTML 要手敲 head 那几行、
+  /// 写 Dart 要手敲 main。VS Code 靠 snippet 解决这件事，这里给一组最常用的骨架
+  /// ——点一下填好，然后照常改。
+  ///
+  /// 模板正文里不要出现美元符号（Dart 字符串插值），需要的话写成两段拼接。
+  static const Map<String, ({String ext, String lang, String body})> _fileTemplates = {
+    'python': (
+      ext: 'py',
+      lang: 'Python',
+      body: '#!/usr/bin/env python3\n'
+          '# -*- coding: utf-8 -*-\n'
+          '\n'
+          '\n'
+          'def main():\n'
+          '    pass\n'
+          '\n'
+          '\n'
+          'if __name__ == \'__main__\':\n'
+          '    main()\n'
+    ),
+    'html': (
+      ext: 'html',
+      lang: 'HTML',
+      body: '<!DOCTYPE html>\n'
+          '<html lang="zh-CN">\n'
+          '<head>\n'
+          '  <meta charset="utf-8">\n'
+          '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+          '  <title></title>\n'
+          '</head>\n'
+          '<body>\n'
+          '  \n'
+          '</body>\n'
+          '</html>\n'
+    ),
+    'markdown': (
+      ext: 'md',
+      lang: 'Markdown',
+      body: '# 标题\n'
+          '\n'
+          '## 小节\n'
+          '\n'
+          '- 要点\n'
+          '\n'
+          '| 列 | 列 |\n'
+          '| --- | --- |\n'
+          '| 值 | 值 |\n'
+    ),
+    'dart': (
+      ext: 'dart',
+      lang: 'Dart',
+      body: 'void main() {\n'
+          '  // TODO\n'
+          '}\n'
+    ),
+    'shell': (
+      ext: 'sh',
+      lang: 'Shell',
+      body: '#!/usr/bin/env bash\n'
+          'set -euo pipefail\n'
+          '\n'
+    ),
+    'java': (
+      ext: 'java',
+      lang: 'Java',
+      body: 'public class Main {\n'
+          '  public static void main(String[] args) {\n'
+          '    // TODO\n'
+          '  }\n'
+          '}\n'
+    ),
+    'json': (
+      ext: 'json',
+      lang: 'JSON',
+      body: '{\n'
+          '  "key": "value"\n'
+          '}\n'
+    ),
+    'sql': (
+      ext: 'sql',
+      lang: 'SQL',
+      body: 'SELECT\n'
+          '  *\n'
+          'FROM\n'
+          '  table_name\n'
+          'WHERE\n'
+          '  1 = 1;\n'
+    ),
+  };
+
+  Future<void> _pickTemplate() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(shrinkWrap: true, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+            child: Text(localizations.editorNewFromTemplate,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(ctx).colorScheme.primary)),
+          ),
+          for (final e in _fileTemplates.entries)
+            ListTile(
+              dense: true,
+              title: Text(e.value.lang),
+              onTap: () => Navigator.pop(ctx, e.key),
+            ),
+        ]),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    _newFromTemplate(picked);
+  }
+
+  void _newFromTemplate(String key) {
+    final t = _fileTemplates[key];
+    if (t == null) return;
+    // 语言标签走扩展名映射（和打开文件同一个入口），保证高亮能真的生效；
+    // 映射不到才退回模板里写的名字。
+    final lang = _detectLanguage('untitled.${t.ext}') ?? t.lang;
+    final doc = _docs.create(name: localizations.editorUntitled, langLabel: lang);
+    doc.newline = _newlineChars(_newline);
+    _activate(doc);
+    if (t.body.isNotEmpty) _insertAtCursor(t.body);
+    setState(() {});
+  }
+
   void _newFile() {
     final current = _doc;
     final keep = _prefs.newFileKeepPrefs && current != null;
@@ -12418,6 +12550,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
       case 'file':
         return [
           _menuItem('newFile', Icons.note_add_outlined, loc.editorNewFile),
+          _menuItem('newFromTemplate', Icons.auto_awesome_motion_outlined,
+              loc.editorNewFromTemplate),
           _menuItem('open', Icons.folder_open, loc.selectFile),
           _menuItem('recentFiles', Icons.history_toggle_off,
               loc.editorRecentFiles),
@@ -12738,6 +12872,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _playMacro();
         case 'macroClear':
           _clearMacro();
+        case 'newFromTemplate':
+          unawaited(_pickTemplate());
         // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后
         //      要从命令面板也能直接执行（否则点了没反应）。
         case 'indent':
