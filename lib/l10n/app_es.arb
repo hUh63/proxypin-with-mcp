@@ -3729,6 +3729,8 @@
   "editorUnfoldCurrent": "Desplegar este bloque",
   "editorFoldNoRegion": "Esta línea no tiene un bloque plegable",
   "editorStatusBarTop": "Barra de estado arriba",
+  "editorSplitView": "Vista dividida",
+  "editorSplitSideBySide": "Lado a lado",
   "editorShrinkSelection": "Reducir selección",
   "diffAutoAdvance": "Saltar al siguiente cambio",
   "diffDetectMoved": "Detectar bloques movidos",

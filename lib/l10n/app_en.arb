@@ -6206,6 +6206,8 @@
   "editorUnfoldCurrent": "Unfold this block",
   "editorFoldNoRegion": "This line has no foldable block",
   "editorStatusBarTop": "Status bar on top",
+  "editorSplitView": "Split view",
+  "editorSplitSideBySide": "Side by side",
   "editorShrinkSelection": "Shrink selection",
   "diffAutoAdvance": "Auto jump to next change",
   "diffDetectMoved": "Detect moved blocks",

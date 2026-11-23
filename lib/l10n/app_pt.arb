@@ -3730,6 +3730,8 @@
   "editorUnfoldCurrent": "Expandir este bloco",
   "editorFoldNoRegion": "Esta linha não tem bloco recolhível",
   "editorStatusBarTop": "Barra de status no topo",
+  "editorSplitView": "Visualização dividida",
+  "editorSplitSideBySide": "Lado a lado",
   "editorShrinkSelection": "Reduzir seleção",
   "diffAutoAdvance": "Ir para a próxima alteração",
   "diffDetectMoved": "Detectar blocos movidos",

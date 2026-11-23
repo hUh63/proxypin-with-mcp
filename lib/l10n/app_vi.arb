@@ -3729,6 +3729,8 @@
   "editorUnfoldCurrent": "Mở rộng khối này",
   "editorFoldNoRegion": "Dòng này không có khối nào để thu gọn",
   "editorStatusBarTop": "Thanh trạng thái ở trên",
+  "editorSplitView": "Chia đôi màn hình",
+  "editorSplitSideBySide": "Cạnh nhau",
   "editorShrinkSelection": "Thu hẹp vùng chọn",
   "diffAutoAdvance": "Nhảy tới thay đổi tiếp theo",
   "diffDetectMoved": "Phát hiện khối bị di chuyển",

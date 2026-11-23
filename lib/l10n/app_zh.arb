@@ -5419,6 +5419,8 @@
   "editorUnfoldCurrent": "展开这个块",
   "editorFoldNoRegion": "这一行没有可折叠的块",
   "editorStatusBarTop": "状态栏放顶部",
+  "editorSplitView": "分屏",
+  "editorSplitSideBySide": "左右并排",
   "editorShrinkSelection": "收缩选区",
   "diffAutoAdvance": "接受后自动跳下一处",
   "diffDetectMoved": "识别移动的块",

@@ -434,6 +434,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void dispose() {
     _vScroll.removeListener(_onVScroll);
     _vScroll.dispose();
+    _splitScroll.dispose();
     _navTimer?.cancel();
     _autoSaveTimer?.cancel();
     _fileWatchTimer?.cancel();
@@ -3997,6 +3998,22 @@ class _TextEditorPageState extends State<TextEditorPage> {
   // 交给 CodeForge 用的纵向 ScrollController（内核支持外部注入）。
   // 用 controller 而不是拦 ScrollNotification：内核内部如果 return true 就把通知吞了。
   final ScrollController _vScroll = ScrollController();
+
+  /// 分屏：同一文档的第二个视图。
+  ///
+  /// 长文件里最费劲的不是编辑，是「改完 A 处还要滚回 B 处看一眼」。VS Code / Sublime
+  /// 的分屏正是治这个：两个视图共享文本与折叠状态（同一个 controller），
+  /// 但**各自独立滚动**，所以可以在上面看函数头、下面改实现。
+  bool _splitOn = false;
+
+  /// 分屏方向：true = 左右并排（宽屏更合适），false = 上下（手机竖屏更合适）。
+  bool _splitSideBySide = true;
+
+  /// 两个视图的高度/宽度占比（第一个视图）。
+  double _splitRatio = 0.5;
+
+  /// 分屏第二个视图的滚动控制器（内核不 dispose 外部传入的，得自己管）。
+  final ScrollController _splitScroll = ScrollController();
 
   /// 断点行（0-based）。只对 JS 有意义（内置引擎），其它语言点了会提示没有运行时。
   final Set<int> _breakpoints = <int>{};
@@ -12402,6 +12419,13 @@ class _TextEditorPageState extends State<TextEditorPage> {
               value: 'statusBarTop',
               checked: _prefs.statusBarTop,
               child: Text(loc.editorStatusBarTop)),
+          CheckedPopupMenuItem(
+              value: 'splitView', checked: _splitOn, child: Text(loc.editorSplitView)),
+          if (_splitOn)
+            CheckedPopupMenuItem(
+                value: 'splitSideBySide',
+                checked: _splitSideBySide,
+                child: Text(loc.editorSplitSideBySide)),
           const PopupMenuDivider(),
           _menuItem('settings', Icons.settings, loc.editorSettings),
         ];
@@ -12475,6 +12499,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
           final nextStatusTop = !_prefs.statusBarTop;
           unawaited(TextEditorPrefsStore.update(_prefs.copyWith(statusBarTop: nextStatusTop)));
           setState(() {});
+        case 'splitView':
+          // 第一次开时按当前屏幕比例选方向：横屏/平板左右并排，手机竖屏上下。
+          final size = MediaQuery.sizeOf(context);
+          setState(() {
+            if (!_splitOn) _splitSideBySide = size.width >= 600;
+            _splitOn = !_splitOn;
+          });
+        case 'splitSideBySide':
+          setState(() => _splitSideBySide = !_splitSideBySide);
         // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后
         //      要从命令面板也能直接执行（否则点了没反应）。
         case 'indent':
@@ -13341,50 +13374,57 @@ class _TextEditorPageState extends State<TextEditorPage> {
     );
   }
 
+  /// 一个 CodeForge 视图。
+  ///
+  /// [vScroll] 由调用方创建并负责 dispose —— 内核不接管外部传入的控制器。
+  /// 主视图传 `_vScroll`（minimap / 粘性滚动要跟着它定位），分屏的第二视图传
+  /// `_splitScroll`，两者互不相干，于是同一份文本可以同时在两个位置看。
+  Widget _codeForge({required Key key, required ScrollController vScroll}) {
+    final doc = _doc!;
+    return CodeForge(
+      key: key,
+      controller: doc.controller,
+      findController: doc.findController,
+      undoController: doc.undoController,
+      // 流畅模式：关高亮 / 折叠 / 自动换行，换取超长文本下的流畅度。
+      lineWrap: _wrap && !_smooth,
+      readOnly: _readOnly,
+      language: _smooth ? null : _lang.mode,
+      enableGuideLines: _prefs.guideLines,
+      enableGutter: _prefs.showGutter,
+      enableGutterDivider: _prefs.gutterDivider,
+      tabSize: _prefs.tabSize,
+      useSpaceAsTab: !_prefs.useTabs,
+      enableFolding: !_smooth && _prefs.enableFolding,
+      // 本地代码补全（文档词 + 语言关键字）：光标上方弹出候选，选中才插入。
+      enableLocalSuggestions: SmartCompletion.enabled.value && !_smooth,
+      enableKeyboardSuggestions: !_smooth || _smoothKeepIme,
+      editorTheme: editorThemeOf(context),
+      textStyle: TextStyle(fontSize: _prefs.fontSize, height: _prefs.lineHeight),
+      selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
+      invisibleChars: _invisibleCharsStyle,
+      autoIndent: _prefs.autoIndent,
+      enterSuggestion: _prefs.enterSuggestion,
+      suggestionMaxHeight: _prefs.suggestionMaxHeight,
+      customContextMenuItems: _floatMenuItems(),
+      verticalScrollController: vScroll,
+      onGutterLineLongPress: _handleGutterLongPress,
+    );
+  }
+
   Widget _textView() {
     final controller = _doc?.controller;
     if (controller == null) {
       return const Center(child: CircularProgressIndicator());
     }
     // 背景/默认文字色跟着配色方案（editorThemeOf 统一处理），语法 token 色仍是 atom-one。
-    final editorTheme = editorThemeOf(context);
-
-    final editor = CodeForge(
-          // CodeForge 的 language / lineWrap 是 late final，切换得新 key 重建；
-          // controller / findController / undoController 在文档对象持有，重建不丢数据。
-          key: ValueKey('text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme-'
-              '${SmartCompletion.enabled.value}-${_prefs.fontSize}-${_prefs.lineHeight}-${_prefs.showGutter}-'
-              '${_prefs.gutterDivider}-${_prefs.guideLines}-${_prefs.enableFolding}-${_prefs.tabSize}-'
-              '${_prefs.useTabs}-$_readOnly'),
-          controller: controller,
-          findController: _doc!.findController,
-          undoController: _doc!.undoController,
-          // 流畅模式：关高亮 / 折叠 / 自动换行，换取超长文本下的流畅度。
-          // 输入法候选建议是否一并关闭，由「保留输入法」开关决定（默认保留，不牺牲输入法）。
-          lineWrap: _wrap && !_smooth,
-          readOnly: _readOnly,
-          language: _smooth ? null : _lang.mode,
-          enableGuideLines: _prefs.guideLines,
-          enableGutter: _prefs.showGutter,
-          enableGutterDivider: _prefs.gutterDivider,
-          tabSize: _prefs.tabSize,
-          useSpaceAsTab: !_prefs.useTabs,
-          enableFolding: !_smooth && _prefs.enableFolding,
-          // 本地代码补全（文档词 + 语言关键字）：光标上方弹出候选，选中才插入。
-          // 流畅模式关闭，换取超长文本下的流畅度。
-          enableLocalSuggestions: SmartCompletion.enabled.value && !_smooth,
-          enableKeyboardSuggestions: !_smooth || _smoothKeepIme,
-          editorTheme: editorTheme,
-          textStyle: TextStyle(fontSize: _prefs.fontSize, height: _prefs.lineHeight),
-          selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
-          invisibleChars: _invisibleCharsStyle,
-          autoIndent: _prefs.autoIndent,
-          enterSuggestion: _prefs.enterSuggestion,
-          suggestionMaxHeight: _prefs.suggestionMaxHeight,
-          customContextMenuItems: _floatMenuItems(),
-          verticalScrollController: _vScroll,
-          onGutterLineLongPress: _handleGutterLongPress,
-        );
+    // CodeForge 的 language / lineWrap 是 late final，切换得新 key 重建；
+    // controller / findController / undoController 在文档对象持有，重建不丢数据。
+    final keyStr = 'text-editor-${_doc!.id}-${_lang.label}-$_wrap-$_smooth-$_smoothKeepIme-'
+        '${SmartCompletion.enabled.value}-${_prefs.fontSize}-${_prefs.lineHeight}-${_prefs.showGutter}-'
+        '${_prefs.gutterDivider}-${_prefs.guideLines}-${_prefs.enableFolding}-${_prefs.tabSize}-'
+        '${_prefs.useTabs}-$_readOnly';
+    final editor = _codeForge(key: ValueKey(keyStr), vScroll: _vScroll);
 
     Widget body = editor;
     if (_minimapOn) {
@@ -13394,7 +13434,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       ]);
     }
 
-    return Padding(
+    final pane = Padding(
       padding: const EdgeInsets.all(8),
       child: Container(
         decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor)),
@@ -13405,6 +13445,51 @@ class _TextEditorPageState extends State<TextEditorPage> {
         ]),
       ),
     );
+    // 禅模式是「只看正文」，分屏让位。
+    if (!_splitOn || _zen) return pane;
+
+    final second = Padding(
+      padding: const EdgeInsets.all(8),
+      child: Container(
+        decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor)),
+        child: _codeForge(key: ValueKey('$keyStr-split'), vScroll: _splitScroll),
+      ),
+    );
+    final flex = (_splitRatio * 1000).round().clamp(200, 800).toInt();
+    final dividerColor = Theme.of(context).dividerColor;
+
+    return LayoutBuilder(builder: (context, cons) {
+      void dragBy(double delta, double total) {
+        if (total <= 0) return;
+        setState(() => _splitRatio = (_splitRatio + delta / total).clamp(0.2, 0.8).toDouble());
+      }
+
+      if (_splitSideBySide) {
+        final total = cons.maxWidth;
+        return Row(children: [
+          Expanded(flex: flex, child: pane),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onDoubleTap: () => setState(() => _splitRatio = 0.5),
+            onHorizontalDragUpdate: (d) => dragBy(d.delta.dx, total),
+            // 分隔条自己就是那块 10px 的触摸区，淡底 + 中缝，比一条 1px 线好抓。
+            child: Container(width: 10, color: dividerColor.withValues(alpha: 0.35)),
+          ),
+          Expanded(flex: 1000 - flex, child: second),
+        ]);
+      }
+      final total = cons.maxHeight;
+      return Column(children: [
+        Expanded(flex: flex, child: pane),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onDoubleTap: () => setState(() => _splitRatio = 0.5),
+          onVerticalDragUpdate: (d) => dragBy(d.delta.dy, total),
+          child: Container(height: 10, color: dividerColor.withValues(alpha: 0.35)),
+        ),
+        Expanded(flex: 1000 - flex, child: second),
+      ]);
+    });
   }
 }
 
