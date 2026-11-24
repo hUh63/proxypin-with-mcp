@@ -112,6 +112,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
 
   /// 最近几次对比的快照（最多 5 组）：「刚才那两段怎么改的」可以回看。
   static const String _swipeHintKey = 'text_diff_swipe_hint_v1';
+  static const String _tabsKey = 'text_diff_tabs_v1';
   bool _swipeHintDone = false;
   static const String _historyKey = 'text_diff_history_v1';
   static const int _historyLimit = 5;
@@ -334,6 +335,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     _stashTab();
     setState(() => _tabIndex = i);
     _applyTab(_tabs[i]);
+    unawaited(_persistTabs());
   }
 
   void _newTab() {
@@ -343,6 +345,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       _tabIndex = _tabs.length - 1;
     });
     _applyTab(_tabs[_tabIndex]);
+    unawaited(_persistTabs());
   }
 
   void _closeTab(int i) {
@@ -357,6 +360,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       }
     });
     _applyTab(_tabs[_tabIndex]);
+    unawaited(_persistTabs());
   }
 
   bool _staleDisk = false;
@@ -641,6 +645,72 @@ class _TextDiffPageState extends State<TextDiffPage> {
     } catch (_) {
       // 忽略损坏的存档
     }
+    await _restoreTabs();
+  }
+
+  /// 恢复多会话。
+  ///
+  /// 只在「刚进页面、还是一个空会话」时生效：用户已经开始输入就绝不覆盖。
+  /// 会话总文本超过 400KB 时 `_persistTabs` 本来就不存，这里自然拿不到东西。
+  Future<void> _restoreTabs() async {
+    if (_tabs.length > 1) return;
+    if (_tabs.first.leftText.isNotEmpty || _tabs.first.rightText.isNotEmpty) return;
+    try {
+      final raw = await SharedPreferencesAsync().getString(_tabsKey);
+      if (raw == null || raw.isEmpty) return;
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      final list = (m['tabs'] as List?) ?? const [];
+      final tabs = <_DiffTab>[];
+      for (final e in list) {
+        if (e is! Map) continue;
+        tabs.add(_DiffTab(
+          leftText: (e['lt'] as String?) ?? '',
+          rightText: (e['rt'] as String?) ?? '',
+          leftName: (e['ln'] as String?) ?? '',
+          rightName: (e['rn'] as String?) ?? '',
+          leftPath: (e['lp'] as String?) ?? '',
+          rightPath: (e['rp'] as String?) ?? '',
+        ));
+      }
+      if (tabs.isEmpty || !mounted) return;
+      final idx = (m['index'] as num?)?.toInt() ?? 0;
+      setState(() {
+        _tabs
+          ..clear()
+          ..addAll(tabs);
+        _tabIndex = idx < 0 || idx >= _tabs.length ? 0 : idx;
+      });
+      _applyTab(_tabs[_tabIndex]);
+    } catch (_) {
+      // 存档坏了就当没有
+    }
+  }
+
+  /// 保存所有会话（不含滚动位置：换会话后旧位置本来就没有意义）。
+  Future<void> _persistTabs() async {
+    if (!widget.persist) return;
+    final total =
+        _tabs.fold<int>(0, (a, t) => a + t.leftText.length + t.rightText.length);
+    // 太大就整个不存（不是截断）：截断的会话载回来会让人以为内容丢了。
+    if (total > 400000) return;
+    try {
+      await SharedPreferencesAsync().setString(
+          _tabsKey,
+          jsonEncode({
+            'index': _tabIndex,
+            'tabs': [
+              for (final t in _tabs)
+                {
+                  'lt': t.leftText,
+                  'rt': t.rightText,
+                  'ln': t.leftName,
+                  'rn': t.rightName,
+                  'lp': t.leftPath,
+                  'rp': t.rightPath,
+                }
+            ],
+          }));
+    } catch (_) {}
   }
 
   void _schedulePersist() {

@@ -86,7 +86,9 @@ void main() {
     test('1000 行里只改一行 → 恰好 1 个差异块', () {
       final left = List.generate(1000, (i) => 'line $i').join('\n');
       final rightLines = List.generate(1000, (i) => 'line $i');
-      rightLines[500] = 'line five hundred';
+      // 改后的行要与原行足够像（相似度 ≥ 500‰）才配成「修改」；
+      // 'line 500' → 'line five hundred' 只有 277‰，会被算成删 + 增。
+      rightLines[500] = 'line 5001';
       final blocks = buildDiffBlocks(diffLines(left, rightLines.join('\n')));
       expect(blocks.length, 1);
       expect(blocks.first.leftStart, 500);
