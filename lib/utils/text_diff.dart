@@ -95,6 +95,23 @@ String _normKey(String s, bool ignoreCase, bool ignoreWhitespace,
     RegExp? ignoreLinePattern,
     bool ignoreNumbers = false]) {
   var k = s;
+  // 全部忽略开关都关着时的快速路径：只去尾 \r 和行首 BOM。
+  //
+  // 这条路径覆盖大多数情况（默认设置），而它省掉的是每个行 3~4 次开关判断 +
+  // 一次全行扫 BOM 的 contains。三万行 × 每行 1KB 的文本，光这一项就能省几十毫秒。
+  // 注意 BOM 这里只看行首：全文本扫描留到慢路径里，那里的语义本来就是「去掉所有
+  // U+FEFF」（真正要排查零宽字符的场景有「特殊字符检测」专门做）。
+  if (!ignoreCase &&
+      !ignoreWhitespace &&
+      !ignoreTrailingWhitespace &&
+      !ignoreBlankLines &&
+      !ignoreComments &&
+      !ignoreNumbers &&
+      ignoreLinePattern == null) {
+    if (k.endsWith('\r')) k = k.substring(0, k.length - 1);
+    if (k.isNotEmpty && k.codeUnitAt(0) == 0xFEFF) k = k.substring(1);
+    return k;
+  }
   // 忽略匹配某模式的行（Beyond Compare 的「忽略不重要的差异」）：
   // 典型用法是日志/抓包对比时忽略带时间戳、请求 id 的那些行。
   if (ignoreLinePattern != null && ignoreLinePattern.hasMatch(k)) return '';
@@ -189,6 +206,26 @@ List<LineDiff> diffLines(String left, String right,
             ignoreComments, ignoreLinePattern, ignoreNumbers));
   }
   final out = <LineDiff>[];
+  // 归一化后逐行相同 → 全 equal，不必进算法。
+  //
+  // 这一条不只是省时间：它让「只差大小写 / 空白 / 数字 / 注释」的两份文件**瞬间**
+  // 出结果（正是那些忽略开关的典型用法）。走完整流程要先建锚点表、跑 LIS，
+  // 几万行时是几百毫秒的白工，最后结果还是「全部相同」。
+  if (aK.length == bK.length) {
+    var allSame = true;
+    for (var i = 0; i < aK.length; i++) {
+      if (aK[i] != bK[i]) {
+        allSame = false;
+        break;
+      }
+    }
+    if (allSame) {
+      for (var i = 0; i < a.length; i++) {
+        out.add(LineDiff(LineDiffType.equal, a[i], leftLine: i + 1, rightLine: i + 1));
+      }
+      return out;
+    }
+  }
   _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
   if (!ignoreBlankLines && ignoreLinePattern == null) return out;
   // 「忽略空白行」必须在 diff 之后再做一遍：把整段「只涉及空行」的增删丢掉。
@@ -436,20 +473,44 @@ int _similarityScore(String l, String r) {
     }
     return (same * 1000) ~/ lim;
   }
-  var prev = List<int>.filled(n + 1, 0);
-  for (var i = 1; i <= m; i++) {
-    final cur = List<int>.filled(n + 1, 0);
-    final ai = a[i - 1];
-    for (var j = 1; j <= n; j++) {
-      if (ai == b[j - 1]) {
-        cur[j] = prev[j - 1] + 1;
-      } else {
-        cur[j] = cur[j - 1] > prev[j] ? cur[j - 1] : prev[j];
-      }
-    }
-    prev = cur;
+  // 先剥公共前缀 / 公共后缀。
+  //
+  // LCS 的标准性质：a[0] == b[0] 时一定存在某个最长公共子序列把它包含在内，
+  // 所以剥掉前后缀不改变 LCS 长度，只是把 DP 的规模缩小。代码行往往共享一大截
+  // 缩进和标识符，剥完经常只剩几个字符 —— 而 _pairLines 要对每一对删除行 × 新增行
+  // 调这个函数（最多 2 万次），单这一处就能把配对阶段从秒级压到几十毫秒。
+  var prefix = 0;
+  final lim = m < n ? m : n;
+  while (prefix < lim && a[prefix] == b[prefix]) {
+    prefix++;
   }
-  final lcs = prev[n];
+  var suffix = 0;
+  while (suffix < lim - prefix && a[m - 1 - suffix] == b[n - 1 - suffix]) {
+    suffix++;
+  }
+  final am = m - prefix - suffix;
+  final bn = n - prefix - suffix;
+  var lcs = prefix + suffix;
+  if (am > 0 && bn > 0) {
+    // 两个 buffer 交替用：原来每行都 new 一个 List，m=2000 时就是两千次分配。
+    var prev = List<int>.filled(bn + 1, 0);
+    var cur = List<int>.filled(bn + 1, 0);
+    for (var i = 1; i <= am; i++) {
+      final ai = a[prefix + i - 1];
+      cur[0] = 0;
+      for (var j = 1; j <= bn; j++) {
+        if (ai == b[prefix + j - 1]) {
+          cur[j] = prev[j - 1] + 1;
+        } else {
+          cur[j] = cur[j - 1] > prev[j] ? cur[j - 1] : prev[j];
+        }
+      }
+      final t = prev;
+      prev = cur;
+      cur = t;
+    }
+    lcs += prev[bn];
+  }
   final denom = m > n ? m : n;
   return (lcs * 1000) ~/ denom;
 }
