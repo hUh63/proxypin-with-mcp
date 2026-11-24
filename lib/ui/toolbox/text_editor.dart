@@ -11051,7 +11051,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
               trailing: IconButton(
                 tooltip: localizations.delete,
                 icon: const Icon(Icons.delete_outline, size: 18),
-                onPressed: () => Navigator.pop(ctx, '!${m.name}'),
+                // 删除动作用一个不可见前缀带回（宏名里几乎不可能出现 U+0000）：
+              // 之前用 `!`，用户给宏起名「!todo」就会一点即删。
+              onPressed: () => Navigator.pop(ctx, '\u0000${m.name}'),
               ),
               onTap: () => Navigator.pop(ctx, m.name),
             ),
@@ -11059,7 +11061,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       ),
     );
     if (picked == null || !mounted) return;
-    if (picked.startsWith('!')) {
+    if (picked.startsWith('\u0000')) {
       final name = picked.substring(1);
       setState(() => _macros = _macros.where((m) => m.name != name).toList());
       await EditorMacroStore.save(_macros);
@@ -13633,6 +13635,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
       doc.undoController.clear();
       // 正文可能整份换了位置，书签按上下文重新找。
       _remapBookmarksByHead(doc);
+      // 折叠也按「行号」重建一次：重载后 controller 里的折叠区域全没了，
+      // 但用户折起来的意图还在（内容没变的话行号也是对的）。
+      _restoreFoldState(doc);
       _toast(localizations.editorReloadSuccess);
     } catch (e) {
       _toast('$e');

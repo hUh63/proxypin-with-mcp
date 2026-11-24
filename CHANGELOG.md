@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.67.384 (2026-11-24) — 重载后折叠还在 + 两个隐患
+
+### 文本编辑页
+- **重载文件后恢复折叠**：「从磁盘重新读取」会把正文整份换掉，controller 里的折叠区域
+  随之清空；但用户折起来的意图还在（内容没变的话行号也是对的），重载完按行号重建一次
+- **宏删除的标识换成 `U+0000` 前缀**：原来用 `!`，用户给宏起名「!todo」时，
+  在列表里一点就被当成删除
+
+### 排查（第 36 批：socket / 流 + setState）
+- `ServerSocket`、`StreamController`、`openWrite`、`WebSocket.connect` 全库成对关闭。
+  网络层几个「主动连接方」（`network.dart` / `http_client.dart` / `cloud_client.dart` /
+  `server.dart`）没有 `.destroy()` 是对的：关连接的责任在通道层
+  （`Channel.close()` 一路走到 socket），这些地方不该自己关
+- 扫了两个大文件里所有 `setState` 块：只有 3 处含循环或正则
+  （忽略区域设置、宏列表载入、换行符应用到全部文档），全是「用户操作触发一次」，
+  不在 build / 滚动路径上
+
 ## v1.67.383 (2026-11-23) — 锚点索引改用行哈希
 
 ### 对比引擎：Patience Diff 的锚点查找
