@@ -107,6 +107,23 @@ void main() {
       }
     });
 
+    test('整段重写（相似度全低）→ 配对为空，且不建 dp 表也不会错', () {
+      final left = List.generate(50, (i) => 'alpha-$i').join('\n');
+      final right = List.generate(50, (i) => 'z' * (i % 3 + 1) * 7).join('\n');
+      final blocks = buildDiffBlocks(diffLines(left, right));
+      expect(blocks.length, 1);
+      expect(blocks.first.pairs, isEmpty);
+    });
+
+    test('块内行数乘积超过上限 → 退化为按位置配对', () {
+      final left = List.generate(200, (i) => 'row $i same').join('\n');
+      final right = List.generate(200, (i) => 'row $i same!').join('\n');
+      // 200×200 = 40000 > _pairMaxCells(20000)，走「按位置配对」的兜底路径。
+      final blocks = buildDiffBlocks(diffLines(left, right));
+      expect(blocks.length, 1);
+      expect(blocks.first.pairs.length, 200);
+    });
+
     test('CRLF 与 LF 的同内容 → 无差异块', () {
       final blocks = buildDiffBlocks(diffLines('a\r\nb\r\n', 'a\nb\n'));
       expect(blocks, isEmpty);
