@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import 'dart:typed_data';
+
 // 行级文本对比：Patience Diff（错位时用 lookahead 兜底）。
 //
 // LCS 会跨远距离匹配（左第 1 行的 `abc` 跟右第 80 行的 `abc` 算公共行），
@@ -226,7 +228,11 @@ List<LineDiff> diffLines(String left, String right,
       return out;
     }
   }
-  _diffRange(a, aK, b, bK, 0, a.length, 0, b.length, out);
+  // 行键的哈希只算一遍：锚点查找每层递归都要给这段文本建索引，
+  // 现算的话同一行会被反复哈希（大文件上是几十毫秒级别）。
+  final aH = List<int>.generate(aK.length, (i) => aK[i].hashCode, growable: false);
+  final bH = List<int>.generate(bK.length, (i) => bK[i].hashCode, growable: false);
+  _diffRange(a, aK, aH, b, bK, bH, 0, a.length, 0, b.length, out);
   if (!ignoreBlankLines && ignoreLinePattern == null) return out;
   // 「忽略空白行」必须在 diff 之后再做一遍：把整段「只涉及空行」的增删丢掉。
   // 只在 _normKey 里归一成空串是不够的——那样「右边多两行空行」仍然会算出两处增行，
@@ -263,8 +269,8 @@ List<LineDiff> _dropBlankOnlyDiffs(List<LineDiff> diffs, List<String> a, List<St
   return out;
 }
 
-void _diffRange(List<String> a, List<String> aK, List<String> b, List<String> bK, int aLo, int aHi, int bLo,
-    int bHi, List<LineDiff> out) {
+void _diffRange(List<String> a, List<String> aK, List<int> aH, List<String> b, List<String> bK,
+    List<int> bH, int aLo, int aHi, int bLo, int bHi, List<LineDiff> out) {
   // 1. 公共前缀
   while (aLo < aHi && bLo < bHi && aK[aLo] == bK[bLo]) {
     out.add(LineDiff(LineDiffType.equal, a[aLo], leftLine: aLo + 1, rightLine: bLo + 1));
@@ -281,13 +287,13 @@ void _diffRange(List<String> a, List<String> aK, List<String> b, List<String> bK
 
   // 3. 中间段：找锚点切分
   if (aLo < aEnd || bLo < bEnd) {
-    final anchors = _findAnchors(aK, aLo, aEnd, bK, bLo, bEnd);
+    final anchors = _findAnchors(aK, aH, aLo, aEnd, bK, bH, bLo, bEnd);
     if (anchors.isEmpty) {
       _lookaheadDiff(a, aK, b, bK, aLo, aEnd, bLo, bEnd, out);
     } else {
       var prevA = aLo, prevB = bLo;
       for (final anchor in anchors) {
-        _diffRange(a, aK, b, bK, prevA, anchor.aIdx, prevB, anchor.bIdx, out);
+        _diffRange(a, aK, aH, b, bK, bH, prevA, anchor.aIdx, prevB, anchor.bIdx, out);
         out.add(LineDiff(
           LineDiffType.equal,
           a[anchor.aIdx],
@@ -297,7 +303,7 @@ void _diffRange(List<String> a, List<String> aK, List<String> b, List<String> bK
         prevA = anchor.aIdx + 1;
         prevB = anchor.bIdx + 1;
       }
-      _diffRange(a, aK, b, bK, prevA, aEnd, prevB, bEnd, out);
+      _diffRange(a, aK, aH, b, bK, bH, prevA, aEnd, prevB, bEnd, out);
     }
   }
 
@@ -320,38 +326,30 @@ class _Anchor {
 
 /// 在 [aLo,aHi) × [bLo,bHi) 内找"两边各自唯一且都出现"的行，作为对齐锚点。
 /// 返回的锚点已按 a-index 升序排列，且对应的 b-index 也单调递增（LIS 保证）。
-List<_Anchor> _findAnchors(List<String> aK, int aLo, int aHi, List<String> bK, int bLo, int bHi) {
-  // 统计每行出现次数 + 第一次出现的下标
-  final aCount = <String, int>{};
-  final aIdx = <String, int>{};
+List<_Anchor> _findAnchors(List<String> aK, List<int> aH, int aLo, int aHi, List<String> bK,
+    List<int> bH, int bLo, int bHi) {
+  // 用「行键的哈希」当索引，桶里存下标。
+  //
+  // 原来是 Map<String, ...>：每次插入都要对整行做一次哈希 + 一次相等比较，而锚点查找
+  // 在每层递归都要给这段文本重建一遍索引 —— 大文件上是几十毫秒的开销。
+  // 哈希预先算好（O(1) 取），桶里再复核字符串（不同内容撞同一哈希时不能误判成「唯一」）。
+  final aBuckets = <int, List<int>>{};
   for (var i = aLo; i < aHi; i++) {
-    final s = aK[i];
-    final c = aCount[s];
-    if (c == null) {
-      aCount[s] = 1;
-      aIdx[s] = i;
-    } else {
-      aCount[s] = c + 1;
-    }
+    (aBuckets[aH[i]] ??= <int>[]).add(i);
   }
-  final bCount = <String, int>{};
-  final bIdx = <String, int>{};
+  final bBuckets = <int, List<int>>{};
   for (var i = bLo; i < bHi; i++) {
-    final s = bK[i];
-    final c = bCount[s];
-    if (c == null) {
-      bCount[s] = 1;
-      bIdx[s] = i;
-    } else {
-      bCount[s] = c + 1;
-    }
+    (bBuckets[bH[i]] ??= <int>[]).add(i);
   }
 
   final candidates = <_Anchor>[];
-  aCount.forEach((s, ca) {
-    if (ca == 1 && bCount[s] == 1) {
-      candidates.add(_Anchor(aIdx[s]!, bIdx[s]!));
-    }
+  aBuckets.forEach((h, ai) {
+    if (ai.length != 1) return; // 左边出现多次 → 不是唯一行
+    final bi = bBuckets[h];
+    if (bi == null || bi.length != 1) return;
+    // 哈希撞车时内容可能不同：确认一次（这才是「同一行」的最终判据）。
+    if (aK[ai[0]] != bK[bi[0]]) return;
+    candidates.add(_Anchor(ai[0], bi[0]));
   });
   if (candidates.isEmpty) return const [];
 
@@ -543,36 +541,56 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
           ignoreBlankLines, ignoreComments, null, ignoreNumbers))
       .toList();
 
-  final sim = List.generate(m, (_) => List<int>.filled(n, 0));
+  // 相似度矩阵用扁平 Int32List：m 个小 List 在大块上就是 m 次分配 + m 个对象头，
+  // 而这里的规模上限是两万格。同一轮里顺手记下最大相似度 —— 最大都够不上阈值时
+  // 整块根本不会有配对，后面那张 dp 表就不用建了（常见于「整段重写」）。
+  final sim = Int32List(m * n);
+  var maxSim = 0;
   for (var i = 0; i < m; i++) {
+    final lki = lk[i];
+    final rowBase = i * n;
     for (var j = 0; j < n; j++) {
-      sim[i][j] = _similarityScore(lk[i], rk[j]);
+      final rkj = rk[j];
+      // 归一化后完全相同的行直接 1000，省掉一次函数调用和里面的长度检查。
+      final v = lki == rkj ? 1000 : _similarityScore(lki, rkj);
+      sim[rowBase + j] = v;
+      if (v > maxSim) maxSim = v;
     }
   }
+  if (maxSim < similarity) return const <({int left, int right})>[];
 
-  // dp[i][j] = 前 i 个删除行 / 前 j 个新增行能得到的最大相似度总和
-  final dp = List.generate(m + 1, (_) => List<int>.filled(n + 1, 0));
+  // dp[i*(n+1)+j] = 前 i 个删除行 / 前 j 个新增行能得到的最大相似度总和。
+  // 回溯要用整张表，所以这里不能只留两行。
+  final stride = n + 1;
+  final dp = Int32List((m + 1) * stride);
   for (var i = 1; i <= m; i++) {
+    final rowBase = i * stride;
+    final prevBase = (i - 1) * stride;
+    final simBase = (i - 1) * n;
     for (var j = 1; j <= n; j++) {
-      var best = dp[i - 1][j] > dp[i][j - 1] ? dp[i - 1][j] : dp[i][j - 1];
-      final s = sim[i - 1][j - 1];
+      final up = dp[prevBase + j];
+      final left = dp[rowBase + j - 1];
+      var best = up > left ? up : left;
+      final s = sim[simBase + j - 1];
       if (s >= similarity) {
-        final diag = dp[i - 1][j - 1] + s;
+        final diag = dp[prevBase + j - 1] + s;
         if (diag > best) best = diag;
       }
-      dp[i][j] = best;
+      dp[rowBase + j] = best;
     }
   }
 
   final pairs = <({int left, int right})>[];
   var i = m, j = n;
   while (i > 0 && j > 0) {
-    final s = sim[i - 1][j - 1];
-    if (s >= similarity && dp[i][j] == dp[i - 1][j - 1] + s) {
+    final rowBase = i * stride;
+    final prevBase = (i - 1) * stride;
+    final s = sim[(i - 1) * n + j - 1];
+    if (s >= similarity && dp[rowBase + j] == dp[prevBase + j - 1] + s) {
       pairs.add((left: i - 1, right: j - 1));
       i--;
       j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+    } else if (dp[prevBase + j] >= dp[rowBase + j - 1]) {
       i--;
     } else {
       j--;
