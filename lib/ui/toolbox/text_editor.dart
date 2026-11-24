@@ -54,6 +54,7 @@ import 'package:proxypin/ui/component/symbol_bar.dart';
 import 'package:proxypin/ui/component/cursor_bar.dart';
 import 'package:proxypin/utils/local_history.dart';
 import 'package:proxypin/utils/editor_config.dart';
+import 'package:proxypin/utils/editor_macro.dart';
 import 'package:proxypin/utils/snippet_placeholders.dart';
 import 'package:proxypin/ui/toolbox/workspace_tree.dart';
 import 'package:proxypin/utils/todo_scanner.dart';
@@ -606,7 +607,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
     final autoSave = await SharedPreferencesAsync().getBool(_kPrefAutoSave);
     final ws = await SharedPreferencesAsync().getString(_workspaceKey);
     final recent = await SharedPreferencesAsync().getStringList(_recentFilesKey);
+    final macros = await EditorMacroStore.load();
     if (!mounted) return;
+    if (macros.isNotEmpty) setState(() => _macros = macros);
     setState(() {
       if (raw != null && raw >= 0 && raw < _RetainMode.values.length) {
         _retainMode = _RetainMode.values[raw];
@@ -719,6 +722,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     if (_splitDocId == doc.id) _splitDocId = null;
     // 换文档就停止录制：否则接着录会把新文档的改动也记进来，回放时偏移全对不上。
     if (_recording) _recording = false;
+    // 折叠状态跟着文档走：先把旧文档的存下来，等新文档渲染完再还回去。
+    _captureFoldState(_doc);
     _doc?.controller.removeListener(_onControllerChanged);
     _doc?.undoController.removeListener(_onUndoChanged);
 
@@ -784,6 +789,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
     // 换文档：粘性滚动的「上次顶部行」失效，重算一次（否则条上还挂着上一篇的类名）。
     _stickyLine = -1;
     _syncSticky();
+    // 折叠状态跟着文档走：等这一帧画完再还回去（那时内核才算出可折叠区）。
+    _restoreFoldState(doc);
   }
 
   // ---------- 外部改动 / 删除检测 ----------
@@ -3398,6 +3405,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       // 保存失败（或用户取消了另存）就别关，避免「以为存了」。
       if (doc.dirty) return;
     }
+    _captureFoldState(doc);
     _rememberClosed(doc);
     final wasActive = identical(doc, _doc);
     if (wasActive) {
@@ -3437,6 +3445,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
   /// 延迟执行是为了避开路由退场动画——动画期间 CodeForge 仍在渲染，
   /// 此时 dispose 掉 controller 会引发异常。
   void _scheduleExitCleanup(bool? keep) {
+    // 退出前先把当前文档的折叠状态收进文档对象：之后 controller 会被解绑，
+    // 再想读 foldings 就读不到了，那这次折叠白折。
+    _captureFoldState(_doc);
     Future.delayed(const Duration(milliseconds: 500), () {
       _unbindActiveDoc();
       for (final d in _docs.docs.where((d) => !d.retained).toList()) {
@@ -4179,6 +4190,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
 
   /// 录制开始时的光标位置：回放时按「现在光标 - 这个位置」整体平移。
   int _macroBaseCaret = 0;
+
+  /// 存下来的具名宏（跨会话保留）。
+  List<EditorMacro> _macros = const <EditorMacro>[];
 
   /// 分屏时两侧同步滚动（同一份文档对照时最有用：上下永远看同一段）。
   bool _syncSplitScroll = false;
@@ -10973,10 +10987,135 @@ class _TextEditorPageState extends State<TextEditorPage> {
     _toast(localizations.editorMacroPlayed(applied));
   }
 
+  /// 把当前录制存成具名宏。
+  Future<void> _saveMacroAs() async {
+    if (_macroSteps.isEmpty) {
+      _toast(localizations.editorMacroEmpty);
+      return;
+    }
+    final ctrl = TextEditingController(text: localizations.editorMacroDefaultName(_macros.length + 1));
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(localizations.editorMacroSave),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(hintText: localizations.editorMacroNameHint),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(localizations.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: Text(localizations.confirm)),
+        ],
+      ),
+    );
+    // 弹窗关闭动画期间 builder 还会重建一次，不能立刻 dispose。
+    unawaited(Future<void>.delayed(const Duration(milliseconds: 400), ctrl.dispose));
+    if (name == null || name.isEmpty || !mounted) return;
+    final macro = EditorMacro(
+      name: name,
+      steps: [
+        for (final s in _macroSteps.take(EditorMacroStore.maxSteps))
+          EditorMacroStep(offset: s.offset, removed: s.removed, inserted: s.inserted)
+      ],
+    );
+    // 同名覆盖，新的排在最前（最近用的最容易找）。
+    final next = <EditorMacro>[macro, ..._macros.where((m) => m.name != name)];
+    setState(() => _macros = next.take(EditorMacroStore.maxMacros).toList());
+    await EditorMacroStore.save(_macros);
+    if (!mounted) return;
+    _toast(localizations.editorMacroSaved(name));
+  }
+
+  /// 已保存的宏：点一下载入并回放，右侧按钮删除。
+  Future<void> _openMacros() async {
+    if (_macros.isEmpty) {
+      _toast(localizations.editorMacroNone);
+      return;
+    }
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(shrinkWrap: true, children: [
+          for (final m in _macros)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.play_circle_outline, size: 20),
+              title: Text(m.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(localizations.editorMacroSummary(m.steps.length, m.weight),
+                  style: const TextStyle(fontSize: 11)),
+              trailing: IconButton(
+                tooltip: localizations.delete,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                onPressed: () => Navigator.pop(ctx, '!${m.name}'),
+              ),
+              onTap: () => Navigator.pop(ctx, m.name),
+            ),
+        ]),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    if (picked.startsWith('!')) {
+      final name = picked.substring(1);
+      setState(() => _macros = _macros.where((m) => m.name != name).toList());
+      await EditorMacroStore.save(_macros);
+      return;
+    }
+    final macro = _macros.firstWhere((m) => m.name == picked, orElse: () => _macros.first);
+    setState(() {
+      _macroSteps
+        ..clear()
+        ..addAll([
+          for (final s in macro.steps)
+            (offset: s.offset, removed: s.removed, inserted: s.inserted)
+        ]);
+    });
+    _playMacro();
+  }
+
   void _clearMacro() {
     if (_recording) setState(() => _recording = false);
     setState(() => _macroSteps.clear());
     _toast(localizations.editorMacroEmpty);
+  }
+
+  /// 记下这份文档当前折叠了哪些区域（切走 / 关闭 / 落盘之前调）。
+  ///
+  /// 内核的 `foldings` 是 `Map<行号, FoldRange?>`，只有 `isFolded == true` 的才是
+  /// 用户真正折起来的（其余是算出来但展开着的区域）。
+  void _captureFoldState(EditorDocument? doc) {
+    if (doc == null) return;
+    try {
+      doc.foldedLines = <int>[
+        for (final e in doc.controller.foldings.entries)
+          if (e.value?.isFolded == true) e.key
+      ];
+    } catch (_) {
+      // 内核没启用折叠 / 还没算出来 —— 保留上一次的即可
+    }
+  }
+
+  /// 把存下来的折叠状态还回去。
+  ///
+  /// 必须等首帧之后：折叠区域是按文档内容算的，widget 还没挂上去时 `toggleFold`
+  /// 会拿不到区域直接抛（内核里对「该行没有可折叠区」就是抛 StateError）。
+  void _restoreFoldState(EditorDocument doc) {
+    final lines = doc.foldedLines;
+    if (lines.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !identical(_doc, doc)) return;
+      for (final line in lines) {
+        try {
+          doc.controller.toggleFold(line);
+        } catch (_) {
+          // 这一行已经不可折叠（内容改过了），跳过
+        }
+      }
+    });
   }
 
   /// 把当前选区（没有选区就整份文本）送到分屏的另一侧。
@@ -12652,6 +12791,8 @@ class _TextEditorPageState extends State<TextEditorPage> {
               tint: _recording ? Colors.red : null),
           _menuItem('macroPlay', Icons.play_circle_outline, loc.editorMacroPlay),
           _menuItem('macroClear', Icons.delete_outline, loc.editorMacroClear),
+          _menuItem('macroSave', Icons.save_as_outlined, loc.editorMacroSave),
+          _menuItem('macroLibrary', Icons.video_library_outlined, loc.editorMacroLibrary),
           const PopupMenuDivider(),
           _menuItem('jumpBracket', Icons.data_object, loc.editorJumpBracket),
           _menuItem('selectToBracket', Icons.select_all, loc.editorSelectToBracket),
@@ -12872,6 +13013,10 @@ class _TextEditorPageState extends State<TextEditorPage> {
           _playMacro();
         case 'macroClear':
           _clearMacro();
+        case 'macroSave':
+          unawaited(_saveMacroAs());
+        case 'macroLibrary':
+          unawaited(_openMacros());
         case 'newFromTemplate':
           unawaited(_pickTemplate());
         // ---- 行操作 / 大小写 / 行整理：以前只挂手写子菜单，登记进菜单表后

@@ -781,6 +781,10 @@ const List<EditorMenuItem> kEditorMenuItems = [
       aliases: 'bf 播放宏 macro play replay'),
   EditorMenuItem('macroClear', _macroClearLabel, group: 'edit',
       aliases: 'qchj 清除宏 macro clear'),
+  EditorMenuItem('macroSave', _macroSaveLabel, group: 'edit',
+      aliases: 'bchj 保存宏 macro save name'),
+  EditorMenuItem('macroLibrary', _macroLibraryLabel, group: 'edit',
+      aliases: 'hjk 宏列表 macro library list'),
   EditorMenuItem('preview', _previewLabel, group: 'code', aliases: 'yl 预览 preview render'),
   EditorMenuItem('symbols', _symbolsLabel, group: 'code', aliases: 'fh 符号 outline symbols'),
   EditorMenuItem('gotoLine', _gotoLabel, group: 'code', aliases: 'th 跳行 goto line'),
@@ -949,6 +953,8 @@ String _macroRecordLabel(AppLocalizations l) => l.editorMacroRecord;
 String _newFromTemplateLabel(AppLocalizations l) => l.editorNewFromTemplate;
 String _macroPlayLabel(AppLocalizations l) => l.editorMacroPlay;
 String _macroClearLabel(AppLocalizations l) => l.editorMacroClear;
+String _macroSaveLabel(AppLocalizations l) => l.editorMacroSave;
+String _macroLibraryLabel(AppLocalizations l) => l.editorMacroLibrary;
 String _previewLabel(AppLocalizations l) => l.editorPreview;
 String _symbolsLabel(AppLocalizations l) => l.editorSymbols;
 String _gotoDefLabel(AppLocalizations l) => l.editorGotoDefinition;
@@ -1320,6 +1326,10 @@ IconData menuIconOf(String id) {
       return Icons.play_circle_outline;
     case 'macroClear':
       return Icons.delete_outline;
+    case 'macroSave':
+      return Icons.save_as_outlined;
+    case 'macroLibrary':
+      return Icons.video_library_outlined;
     case 'preview':
       return Icons.visibility_outlined;
     case 'symbols':

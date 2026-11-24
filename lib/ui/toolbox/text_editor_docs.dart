@@ -46,6 +46,12 @@ class EditorDocument {
   /// 存偏移再在文本变化时重映射，才能做到「跟着代码走」（VS 就是这样）。
   final Set<int> bookmarks = <int>{};
 
+  /// 折叠着的区域起始行（0 起）。
+  ///
+  /// 折叠状态原来是纯会话内的：切走再切回来，几十行的折叠全散了。长文件里
+  /// 「先把这几个函数折起来，专心看下一段」是很常用的姿势，值得跟着文档存下来。
+  List<int> foldedLines = <int>[];
+
   /// 每个书签「前面的 20 个字符」，用来在整份替换（重载 / 换编码）后重新定位。
   /// 只靠偏移的话，整份替换后所有书签会挤到同一个位置。
   final Map<int, String> bookmarkHeads = <int, String>{};
@@ -288,6 +294,7 @@ class EditorDocuments {
           'path': d.path,
           'langLabel': d.langLabel,
           'pinned': d.pinned,
+          'folded': d.foldedLines,
           // 书签存偏移 + 偏移前 20 个字符：正文被大幅删改后偏移会漂，
           // 有这段「上下文」就能在恢复时找回来（纯偏移只能瞎猜）。
           'bookmarks': d.bookmarks.map((b) {
@@ -418,6 +425,12 @@ class EditorDocuments {
         final nl = raw['newline'];
         if (nl == '\r\n' || nl == '\r' || nl == '\n') doc.newline = nl as String;
         doc.encodingName = raw['encodingName'] as String?;
+        final folded = raw['folded'];
+        if (folded is List) {
+          for (final f in folded) {
+            if (f is num && f >= 0) doc.foldedLines.add(f.toInt());
+          }
+        }
         final marks = raw['bookmarks'];
         if (marks is List) {
           for (final mark in marks) {
