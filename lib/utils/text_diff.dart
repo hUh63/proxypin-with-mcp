@@ -328,28 +328,55 @@ class _Anchor {
 /// 返回的锚点已按 a-index 升序排列，且对应的 b-index 也单调递增（LIS 保证）。
 List<_Anchor> _findAnchors(List<String> aK, List<int> aH, int aLo, int aHi, List<String> bK,
     List<int> bH, int bLo, int bHi) {
-  // 用「行键的哈希」当索引，桶里存下标。
+  // 一侧已经没有行就不可能有「两边都出现」的锚点，别白建两张表。
+  if (aLo >= aHi || bLo >= bHi) return const [];
+
+  // 只记「恰好出现一次」的行：值直接是下标，出现第二次就挪进 multi 集合。
   //
-  // 原来是 Map<String, ...>：每次插入都要对整行做一次哈希 + 一次相等比较，而锚点查找
-  // 在每层递归都要给这段文本重建一遍索引 —— 大文件上是几十毫秒的开销。
-  // 哈希预先算好（O(1) 取），桶里再复核字符串（不同内容撞同一哈希时不能误判成「唯一」）。
-  final aBuckets = <int, List<int>>{};
+  // 原来是 Map<hash, List<int>>，每个不同行都要分配一个 List —— 几万行的文件
+  // 就是几万个小对象，而锚点查找在每层递归都要重建一遍。现在每个不同行只占
+  // 一个 int 条目，且哈希撞车时两种写法都会把它判成「不唯一」，语义完全一致。
+  final aSingle = <int, int>{};
+  final aMulti = <int>{};
   for (var i = aLo; i < aHi; i++) {
-    (aBuckets[aH[i]] ??= <int>[]).add(i);
+    final h = aH[i];
+    if (aMulti.contains(h)) continue;
+    final cur = aSingle[h];
+    if (cur == null) {
+      aSingle[h] = i;
+    } else {
+      aSingle.remove(h);
+      aMulti.add(h);
+    }
   }
-  final bBuckets = <int, List<int>>{};
+  final bSingle = <int, int>{};
+  final bMulti = <int>{};
   for (var i = bLo; i < bHi; i++) {
-    (bBuckets[bH[i]] ??= <int>[]).add(i);
+    final h = bH[i];
+    if (bMulti.contains(h)) continue;
+    final cur = bSingle[h];
+    if (cur == null) {
+      bSingle[h] = i;
+    } else {
+      bSingle.remove(h);
+      bMulti.add(h);
+    }
   }
 
+  // 遍历较小的那张表：两侧行数差一个量级时（左边 3 行 / 右边 3 万行），
+  // 这一步能省掉绝大部分查找。
+  final fromA = aSingle.length <= bSingle.length;
+  final small = fromA ? aSingle : bSingle;
+  final large = fromA ? bSingle : aSingle;
   final candidates = <_Anchor>[];
-  aBuckets.forEach((h, ai) {
-    if (ai.length != 1) return; // 左边出现多次 → 不是唯一行
-    final bi = bBuckets[h];
-    if (bi == null || bi.length != 1) return;
+  small.forEach((h, smallIdx) {
+    final largeIdx = large[h];
+    if (largeIdx == null) return;
+    final ai = fromA ? smallIdx : largeIdx;
+    final bi = fromA ? largeIdx : smallIdx;
     // 哈希撞车时内容可能不同：确认一次（这才是「同一行」的最终判据）。
-    if (aK[ai[0]] != bK[bi[0]]) return;
-    candidates.add(_Anchor(ai[0], bi[0]));
+    if (aK[ai] != bK[bi]) return;
+    candidates.add(_Anchor(ai, bi));
   });
   if (candidates.isEmpty) return const [];
 
@@ -452,8 +479,28 @@ void _lookaheadDiff(List<String> a, List<String> aK, List<String> b, List<String
 
 // ---------- 行配对（按相似度） ----------
 
+/// 字符级 LCS 的暂存 buffer。
+///
+/// [_pairLines] 最多会算两万次相似度；原来每次都 new 两个 `List.filled(bn+1, 0)`
+/// —— 四万次分配。DP 的每一行都会把 1..bn 全部覆盖、且 cur[0] 每轮置 0，
+/// 所以 buffer 只要「够长」就能一直复用，残留值永远不会被读到。
+class _SimilarityScratch {
+  List<int> _prev = Int32List(0);
+  List<int> _cur = Int32List(0);
+
+  void ensure(int need) {
+    if (_prev.length >= need) return;
+    // Int32List 新建即全 0；扩容时才分配，整个 _pairLines 最多几次。
+    _prev = Int32List(need);
+    _cur = Int32List(need);
+  }
+
+  List<int> get prev => _prev;
+  List<int> get cur => _cur;
+}
+
 /// 两行的相似度（千分比，0..1000）：字符级 LCS 长度占较长行长度的比例。
-int _similarityScore(String l, String r) {
+int _similarityScore(String l, String r, [_SimilarityScratch? scratch]) {
   if (l == r) return 1000;
   final a = l.codeUnits;
   final b = r.codeUnits;
@@ -490,9 +537,15 @@ int _similarityScore(String l, String r) {
   final bn = n - prefix - suffix;
   var lcs = prefix + suffix;
   if (am > 0 && bn > 0) {
-    // 两个 buffer 交替用：原来每行都 new 一个 List，m=2000 时就是两千次分配。
-    var prev = List<int>.filled(bn + 1, 0);
-    var cur = List<int>.filled(bn + 1, 0);
+    // 两个 buffer 交替用；同一轮 _pairLines 里复用，避免每对行都分配。
+    // 超长行（>2000）走上面的粗分路径，bn+1 不会超过 2001。
+    scratch?.ensure(bn + 1);
+    var prev = scratch?.prev ?? List<int>.filled(bn + 1, 0);
+    var cur = scratch?.cur ?? List<int>.filled(bn + 1, 0);
+    // 复用的 buffer 里留着上一次调用最后一轮的值：DP 第一行必须全 0，
+    // 不清零会算出「串味」的相似度（不同长度的右行交替时必现）。
+    // 只清 prev：cur 的 1..bn 每轮都会被覆盖，且 cur[0] 每轮显式置 0。
+    if (scratch != null) prev.fillRange(0, bn + 1, 0);
     for (var i = 1; i <= am; i++) {
       final ai = a[prefix + i - 1];
       cur[0] = 0;
@@ -544,15 +597,31 @@ List<({int left, int right})> _pairLines(List<String> leftTexts,
   // 相似度矩阵用扁平 Int32List：m 个小 List 在大块上就是 m 次分配 + m 个对象头，
   // 而这里的规模上限是两万格。同一轮里顺手记下最大相似度 —— 最大都够不上阈值时
   // 整块根本不会有配对，后面那张 dp 表就不用建了（常见于「整段重写」）。
+  final scratch = _SimilarityScratch();
   final sim = Int32List(m * n);
   var maxSim = 0;
   for (var i = 0; i < m; i++) {
     final lki = lk[i];
+    final li = lki.length;
     final rowBase = i * n;
     for (var j = 0; j < n; j++) {
       final rkj = rk[j];
-      // 归一化后完全相同的行直接 1000，省掉一次函数调用和里面的长度检查。
-      final v = lki == rkj ? 1000 : _similarityScore(lki, rkj);
+      int v;
+      if (lki == rkj) {
+        // 归一化后完全相同的行直接 1000
+        v = 1000;
+      } else {
+        // 相似度 = LCS / max(len)，而 LCS ≤ min(len)。长度比本身就够不到阈值时，
+        // 这一对不可能配成「修改」，直接填 0、跳过字符级 LCS。
+        // 「整段重写」「日志里长短不一的行」这类场景能省掉大半计算，且严格等价：
+        // 低于阈值的值在 dp 里只参与 `s >= similarity` 判断，具体是多少不影响结果。
+        final lj = rkj.length;
+        final shorter = li < lj ? li : lj;
+        final longer = li > lj ? li : lj;
+        v = longer == 0 || (shorter * 1000) ~/ longer < similarity
+            ? 0
+            : _similarityScore(lki, rkj, scratch);
+      }
       sim[rowBase + j] = v;
       if (v > maxSim) maxSim = v;
     }

@@ -3863,5 +3863,6 @@
   "diffPresetImportOk": "Preajustes importados",
   "diffPresetImportFail": "El portapapeles no contiene preajustes válidos",
   "editorAiNewChat": "Nueva conversación",
-  "editorAiFix": "Corregir con AI"
+  "editorAiFix": "Corregir con AI",
+  "diffCollapseAllFolds": "Plegar todo"
 }

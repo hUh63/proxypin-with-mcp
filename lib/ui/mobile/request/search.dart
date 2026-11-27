@@ -81,6 +81,7 @@ class MobileSearchState extends State<MobileSearch> {
                 _changing = true;
                 Future.delayed(const Duration(milliseconds: 500), () {
                   _changing = false;
+                  if (!mounted) return;
                   if (!_searched) {
                     searchModel.searchOptions = {Option.url, Option.method, Option.requestHeader, Option.requestBody, Option.responseBody};
                   }

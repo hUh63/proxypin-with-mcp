@@ -3864,5 +3864,6 @@
   "diffPresetImportOk": "Predefinições importadas",
   "diffPresetImportFail": "A área de transferência não contém predefinições válidas",
   "editorAiNewChat": "Nova conversa",
-  "editorAiFix": "Corrigir com IA"
+  "editorAiFix": "Corrigir com IA",
+  "diffCollapseAllFolds": "Recolher todos"
 }

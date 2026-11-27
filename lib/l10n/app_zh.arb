@@ -5553,5 +5553,6 @@
   "diffPresetImportOk": "已导入预设",
   "diffPresetImportFail": "剪贴板里没有有效的预设",
   "editorAiNewChat": "新对话",
-  "editorAiFix": "AI 修复"
+  "editorAiFix": "AI 修复",
+  "diffCollapseAllFolds": "折叠全部"
 }

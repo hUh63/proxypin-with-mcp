@@ -533,6 +533,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
     SmartCompletion.enabled.removeListener(_onSmartChanged);
     _staleTimer?.cancel();
     _optionsTimer?.cancel();
+    _foldsTimer?.cancel();
     _leftV.dispose();
     _rightV.dispose();
     _leftH.dispose();
@@ -646,6 +647,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       // 忽略损坏的存档
     }
     await _restoreTabs();
+    await _restoreFolds();
   }
 
   /// 恢复多会话。
@@ -1101,6 +1103,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
         _movedEnds = movedEnds;
         _navIndex = -1;
         _expandedFolds.clear();
+        _applyPendingFolds();
         // 块数变了：聚焦下标越界就退出聚焦，否则保持在原块上。
         if (_focusBlock != null && _focusBlock! >= blocks.length) _focusBlock = null;
         _summary = stats.identical
@@ -2129,12 +2132,20 @@ class _TextDiffPageState extends State<TextDiffPage> {
   /// Beyond Compare 记住"会话默认值"，我们也记。
   static const String _optionsKey = 'text_diff_options_v1';
 
+  /// 「哪些未变区被展开了」的记忆。带内容指纹，换文本/换选项就自动失效。
+  static const String _foldsKey = 'text_diff_folds_v1';
+
   /// 比较预设：一套「忽略项 + 显示项」的组合，Beyond Compare 里叫 session。
   /// 日志对比、配置对比、代码 review 的规则完全不同，每次重勾十来个开关太烦。
   static const String _presetsKey = 'text_diff_presets_v1';
   List<Map<String, Object?>> _presets = const [];
 
   Timer? _optionsTimer;
+  Timer? _foldsTimer;
+
+  /// 恢复会话时读到的折叠状态，等 [_applyDiffResult] 落地后再套上去。
+  /// 大文件走 isolate 时结果比存档读得晚，直接 setState 会被那次 clear 抹掉。
+  ({int fp, Set<int> folds})? _pendingFoldRestore;
 
   /// 当前全部比较选项的快照（持久化与「预设」共用同一份结构）。
   Map<String, Object?> _currentOptions() => {
@@ -2595,14 +2606,18 @@ class _TextDiffPageState extends State<TextDiffPage> {
               _alignByLine = !_alignByLine;
               _expandedFolds.clear();
             });
+            _saveFolds();
             _compare();
           case 'foldUnchanged':
             setState(() {
               _foldUnchanged = !_foldUnchanged;
               _expandedFolds.clear();
             });
+            _saveFolds();
           case 'expandAll':
             _expandAllFolds();
+          case 'collapseAll':
+            _collapseAllFolds();
           case 'saveLeft':
             unawaited(_saveSide(left: true));
           case 'merge':
@@ -2714,8 +2729,10 @@ class _TextDiffPageState extends State<TextDiffPage> {
             value: 'foldUnchanged',
             checked: _foldUnchanged,
             child: Text(localizations.diffFoldUnchanged)),
-        if (_foldUnchanged)
+        if (_foldUnchanged) ...[
           PopupMenuItem(value: 'expandAll', child: Text(localizations.diffExpandAllFolds)),
+          PopupMenuItem(value: 'collapseAll', child: Text(localizations.diffCollapseAllFolds)),
+        ],
         CheckedPopupMenuItem(
             value: 'showSpace',
             checked: _showSpace,
@@ -6086,6 +6103,7 @@ class _TextDiffPageState extends State<TextDiffPage> {
       return;
     }
     setState(() => _expandedFolds.addAll(starts));
+    _saveFolds();
   }
 
   void _toggleFold(int from) {
@@ -6093,6 +6111,71 @@ class _TextDiffPageState extends State<TextDiffPage> {
     setState(() {
       if (!_expandedFolds.add(from)) _expandedFolds.remove(from);
     });
+    _saveFolds();
+  }
+
+  /// 一键把所有未变区折起来（与 [_expandAllFolds] 成对）。
+  void _collapseAllFolds() {
+    if (!_foldUnchanged || _expandedFolds.isEmpty) return;
+    setState(_expandedFolds.clear);
+    _saveFolds();
+  }
+
+  /// 消费一次「待恢复的折叠」。
+  ///
+  /// [_applyDiffResult] 和 [_restoreFolds] 都会调：前者负责大文件走 isolate、
+  /// 结果晚到的情况，后者负责同步算完的情况。消费一次就清空，不会重复套用。
+  void _applyPendingFolds() {
+    final pending = _pendingFoldRestore;
+    if (pending == null) return;
+    _pendingFoldRestore = null;
+    // 结果晚到期间用户可能已经换了文本 / 改了选项，指纹对不上就别套旧下标。
+    if (pending.fp != _foldFingerprint()) return;
+    _expandedFolds.addAll(pending.folds);
+  }
+
+  /// 折叠段起点是「未折叠行列表里的下标」，换一份正文或换一组忽略开关就全错位。
+  /// 所以存档带一份指纹：只有左右正文与比较选项都一致时才恢复。
+  int _foldFingerprint() {
+    final opts = jsonEncode(_currentOptions());
+    final fp = '${_left.text.length}:${_right.text.length}:'
+        '${_left.text.hashCode}:${_right.text.hashCode}:$opts';
+    return fp.hashCode;
+  }
+
+  void _saveFolds() {
+    if (!widget.persist) return;
+    _foldsTimer?.cancel();
+    _foldsTimer = Timer(const Duration(milliseconds: 500), () {
+      unawaited(SharedPreferencesAsync()
+          .setString(
+              _foldsKey,
+              jsonEncode({
+                'fp': _foldFingerprint(),
+                'expanded': _expandedFolds.toList(),
+              }))
+          .catchError((_) => null));
+    });
+  }
+
+  Future<void> _restoreFolds() async {
+    if (!widget.persist) return;
+    try {
+      final raw = await SharedPreferencesAsync().getString(_foldsKey);
+      if (raw == null || raw.isEmpty || !mounted) return;
+      final dynamic d = jsonDecode(raw);
+      if (d is! Map || d['fp'] != _foldFingerprint()) return;
+      final list = d['expanded'];
+      if (list is! List) return;
+      final restored = <int>{for (final e in list) if (e is int && e >= 0) e};
+      if (restored.isEmpty) return;
+      _pendingFoldRestore = (fp: _foldFingerprint(), folds: restored);
+      // 大文件还在 isolate 里算：这会儿 setState 会被结果落地时的 clear 抹掉，
+      // 留给 [_applyDiffResult] 消费；同步路径则立刻套上。
+      if (mounted && !_computing) setState(_applyPendingFolds);
+    } catch (_) {
+      // 存档坏了就当没有：折叠状态是锦上添花，不该让对比页打不开
+    }
   }
 
   /// 右侧「差异密度条」：把每一行的类型按比例画成色块，点哪里滚到哪里（VS 的 overview ruler）。

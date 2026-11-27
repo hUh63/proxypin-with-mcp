@@ -3863,5 +3863,6 @@
   "diffPresetImportOk": "Đã nhập cấu hình",
   "diffPresetImportFail": "Bộ nhớ tạm không có cấu hình hợp lệ",
   "editorAiNewChat": "Cuộc trò chuyện mới",
-  "editorAiFix": "Sửa bằng AI"
+  "editorAiFix": "Sửa bằng AI",
+  "diffCollapseAllFolds": "Thu gọn tất cả"
 }

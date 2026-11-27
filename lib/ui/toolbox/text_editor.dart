@@ -1015,6 +1015,60 @@ class _TextEditorPageState extends State<TextEditorPage> {
     }
   }
 
+  /// 行注释里回车自动续行（`// foo` → 回车 → `// `）。
+  ///
+  /// 只在「上一行以行注释符开头」+「新行还是纯空白」时动手，所以：
+  /// - 行尾注释 `var a = 1; // note` 不续（trimLeft 后是 `var` 开头）
+  /// - 字符串里的 `//`（`var url = "http://x";`）不会误判
+  /// - 块注释体内的 `//` 不续（那是 [_maybeContinueBlockComment] 的活）
+  ///
+  /// 另外：上一行如果只有注释符、没有正文（`//` / `// `），就不再续 ——
+  /// 连按两次回车即可退出注释，不用手动删掉补出来的前缀（JetBrains 的做法，
+  /// 比 VS Code 一路补下去更好用）。
+  void _maybeContinueLineComment() {
+    if (!_prefs.autoCommentContinue) return;
+    if (_commentContinueGuard) return;
+    final controller = _doc?.controller;
+    if (controller == null) return;
+    final text = controller.text;
+    final sel = controller.selection;
+    if (!sel.isValid || !sel.isCollapsed) return;
+    final caret = sel.baseOffset;
+    if (caret <= 0 || caret > text.length || text[caret - 1] != '\n') return;
+
+    // 光标所在行必须还是空白（用户还没开始写）
+    var lineEnd = text.indexOf('\n', caret);
+    if (lineEnd < 0) lineEnd = text.length;
+    if (text.substring(caret, lineEnd).trim().isNotEmpty) return;
+
+    final prevEnd = caret - 1;
+    final prevStart = prevEnd == 0 ? 0 : text.lastIndexOf('\n', prevEnd - 1) + 1;
+    final prevLine = text.substring(prevStart, prevEnd);
+    final trimmed = prevLine.trimLeft();
+    final token = _lineCommentToken();
+    if (token == null || token.isEmpty || !trimmed.startsWith(token)) return;
+    // shebang 不是「要续的注释」：在 #!/bin/sh 下面回车不该冒出一堆 #
+    if (prevStart == 0 && trimmed.startsWith('#!')) return;
+    // 块注释体内的 `//` 不算行注释
+    final block = _blockComment;
+    if (block != null && _insideBlockCommentBefore(text, prevEnd, block.$1, block.$2)) return;
+    // 空注释行不再续
+    if (trimmed.substring(token.length).trim().isEmpty) return;
+
+    final indent = prevLine.substring(0, prevLine.length - trimmed.length);
+    final desired = '$indent$token ';
+    if (text.substring(caret, lineEnd) == desired) return;
+    _commentContinueGuard = true;
+    try {
+      // 整行替换而不是追加：内核的 autoIndent 已经把上一行的缩进复制到新行，
+      // 追加会变成双缩进。
+      controller.replaceRange(caret, lineEnd, desired);
+      controller.selection = TextSelection.collapsed(offset: caret + desired.length);
+    } finally {
+      _commentContinueGuard = false;
+    }
+  }
+
   /// [from] 之前最近的块注释定界符是 open 还是 close。
   ///
   /// 块注释不能嵌套，所以只看「最近的那一个」就够，不需要配对扫描。
@@ -1183,6 +1237,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       _lastBeforeChange = before;
       _maybeAutoPair();
       _maybeContinueBlockComment();
+      _maybeContinueLineComment();
       _scheduleAutoSave();
       // 语言是嗅探来的话，内容变了可能就该换语言（空 .txt 里粘进 JSON）。
       if (_doc?.langSniffed ?? false) {

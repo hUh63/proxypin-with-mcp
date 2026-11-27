@@ -6523,5 +6523,6 @@
   "diffPresetImportOk": "Presets imported",
   "diffPresetImportFail": "Clipboard does not contain valid presets",
   "editorAiNewChat": "New chat",
-  "editorAiFix": "Fix with AI"
+  "editorAiFix": "Fix with AI",
+  "diffCollapseAllFolds": "Collapse all folded"
 }

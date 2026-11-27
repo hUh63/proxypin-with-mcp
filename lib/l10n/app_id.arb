@@ -3863,5 +3863,6 @@
   "diffPresetImportOk": "Preset diimpor",
   "diffPresetImportFail": "Papan klip tidak berisi preset yang valid",
   "editorAiNewChat": "Obrolan baru",
-  "editorAiFix": "Perbaiki dengan AI"
+  "editorAiFix": "Perbaiki dengan AI",
+  "diffCollapseAllFolds": "Lipat semua"
 }

@@ -27,10 +27,12 @@
 //     全显示的话滚动条根本找不到东西；
 //   · 差异行按「对齐后的块」标红具体字节，而不是整行标红，否则看不出改了哪一位。
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
@@ -55,6 +57,13 @@ class _HexDiffPageState extends State<HexDiffPage> {
   Uint8List? _right;
   bool _onlyDiff = true;
   bool _busy = false;
+
+  /// 差异行上限：16MB 全差时理论上有 100 万行，全建成对象会顶爆内存。
+  static const int _maxRows = 200000;
+
+  /// 连续切「只显示差异」/ 连续选文件时，旧任务的结果不能盖掉新结果。
+  int _computeSeq = 0;
+  bool _truncated = false;
 
   /// 差异行（对齐后的行号集合）与逐字节差异标记。
   List<_HexRow> _rows = const [];
@@ -91,7 +100,7 @@ class _HexDiffPageState extends State<HexDiffPage> {
           _right = bytes;
         }
       });
-      _compute();
+      unawaited(_compute());
     } catch (e) {
       _toast('$e');
     } finally {
@@ -103,43 +112,49 @@ class _HexDiffPageState extends State<HexDiffPage> {
   ///
   /// 两个文件长度不同时，多出来的部分单独成行（另一侧留空）——
   /// 这比强行对齐更容易看出「尾部多了一段」。
-  void _compute() {
+  ///
+  /// 扫描放在 isolate 里：原来这段在主线程同步跑，而 `setState(_busy = true)`
+  /// 之后同一帧就把活干完，16MB 是 1600 万次比较 + 最多 100 万个行对象，
+  /// 进度条根本来不及画，界面直接冻住。
+  Future<void> _compute() async {
     final a = _left;
     final b = _right;
     if (a == null || b == null) {
-      setState(() => _rows = const []);
+      if (mounted) {
+        setState(() {
+          _rows = const [];
+          _truncated = false;
+        });
+      }
       return;
     }
-    setState(() => _busy = true);
-    final rows = <_HexRow>[];
-    final maxLen = a.length > b.length ? a.length : b.length;
-    for (var off = 0; off < maxLen; off += _rowBytes) {
-      final leftEnd = off + _rowBytes > a.length ? a.length : off + _rowBytes;
-      final rightEnd = off + _rowBytes > b.length ? b.length : off + _rowBytes;
-      final leftLen = leftEnd - off;
-      final rightLen = rightEnd - off;
-      var diff = leftLen != rightLen;
-      // 差异位置用**位掩码**记（一行只有 16 个位置）：1M 行时比 Set<int> 省几十 MB，
-      // 也不再为每一行复制两份 16 字节的小数组（那是 200 万个对象）。
-      var mask = 0;
-      if (!diff) {
-        for (var i = 0; i < leftLen; i++) {
-          if (a[off + i] != b[off + i]) {
-            mask |= 1 << i;
-            diff = true;
-          }
-        }
-      }
-      if (diff) {
-        rows.add(_HexRow(offset: off, leftLen: leftLen, rightLen: rightLen, marks: mask));
-      } else if (!_onlyDiff) {
-        rows.add(_HexRow(offset: off, leftLen: leftLen, rightLen: rightLen, marks: 0));
-      }
+    final seq = ++_computeSeq;
+    if (mounted) {
+      setState(() {
+        _busy = true;
+        _truncated = false;
+      });
     }
-    setState(() {
-      _rows = rows;
-      _busy = false;
-    });
+    try {
+      final result = await compute(
+          _hexDiffJob,
+          _HexDiffArgs(
+              left: a,
+              right: b,
+              onlyDiff: _onlyDiff,
+              rowBytes: _rowBytes,
+              maxRows: _maxRows));
+      if (!mounted || seq != _computeSeq) return;
+      setState(() {
+        _rows = result.rows;
+        _truncated = result.truncated;
+        _busy = false;
+      });
+    } catch (e) {
+      if (!mounted || seq != _computeSeq) return;
+      setState(() => _busy = false);
+      _toast('$e');
+    }
   }
 
   void _clear() {
@@ -168,7 +183,7 @@ class _HexDiffPageState extends State<HexDiffPage> {
             onSelected: (v) {
               if (v == 'onlyDiff') {
                 setState(() => _onlyDiff = !_onlyDiff);
-                _compute();
+                unawaited(_compute());
               } else if (v == 'clear') {
                 _clear();
               }
@@ -194,7 +209,7 @@ class _HexDiffPageState extends State<HexDiffPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(children: [
-              Text('${_rows.length} ${loc.hexDiffRows}',
+              Text('${_rows.length}${_truncated ? '+' : ''} ${loc.hexDiffRows}',
                   style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
               const SizedBox(width: 8),
               Text('${_left!.length} B ↔ ${_right!.length} B',
@@ -202,6 +217,7 @@ class _HexDiffPageState extends State<HexDiffPage> {
             ]),
           ),
         const SizedBox(height: 4),
+        if (_busy) const LinearProgressIndicator(minHeight: 2),
         Expanded(
           child: (_left == null || _right == null)
               ? Center(
@@ -288,6 +304,64 @@ class _HexDiffPageState extends State<HexDiffPage> {
 
   static String _hexOffset(int off) =>
       off.toRadixString(16).toUpperCase().padLeft(8, '0');
+}
+
+/// 给 [compute] 用的参数：Uint8List 可跨 isolate 传递（会复制一份），
+/// 两份 16MB 的搬运远比让主线程冻住划算。
+class _HexDiffArgs {
+  final Uint8List left;
+  final Uint8List right;
+  final bool onlyDiff;
+  final int rowBytes;
+  final int maxRows;
+
+  const _HexDiffArgs({
+    required this.left,
+    required this.right,
+    required this.onlyDiff,
+    required this.rowBytes,
+    required this.maxRows,
+  });
+}
+
+class _HexDiffResult {
+  final List<_HexRow> rows;
+  final bool truncated;
+
+  const _HexDiffResult(this.rows, this.truncated);
+}
+
+/// 顶层函数：isolate 里逐字节比较，只回传「行位置 + 差异位掩码」，不回传字节副本。
+_HexDiffResult _hexDiffJob(_HexDiffArgs args) {
+  final a = args.left;
+  final b = args.right;
+  final rowBytes = args.rowBytes;
+  final onlyDiff = args.onlyDiff;
+  final maxRows = args.maxRows;
+  final rows = <_HexRow>[];
+  final maxLen = a.length > b.length ? a.length : b.length;
+  for (var off = 0; off < maxLen; off += rowBytes) {
+    final leftEnd = off + rowBytes > a.length ? a.length : off + rowBytes;
+    final rightEnd = off + rowBytes > b.length ? b.length : off + rowBytes;
+    final leftLen = leftEnd - off;
+    final rightLen = rightEnd - off;
+    var diff = leftLen != rightLen;
+    var mask = 0;
+    if (!diff) {
+      for (var i = 0; i < leftLen; i++) {
+        if (a[off + i] != b[off + i]) {
+          mask |= 1 << i;
+          diff = true;
+        }
+      }
+    }
+    if (diff || !onlyDiff) {
+      rows.add(_HexRow(
+          offset: off, leftLen: leftLen, rightLen: rightLen, marks: mask));
+      if (rows.length >= maxRows) return _HexDiffResult(rows, true);
+    }
+  }
+  return _HexDiffResult(rows, false);
 }
 
 /// 对齐后的一行（起始偏移 + 两侧长度 + 差异位掩码）。

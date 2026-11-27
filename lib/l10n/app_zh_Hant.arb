@@ -5553,5 +5553,6 @@
   "diffPresetImportOk": "已匯入預設",
   "diffPresetImportFail": "剪貼簿裡沒有有效的預設",
   "editorAiNewChat": "新對話",
-  "editorAiFix": "AI 修復"
+  "editorAiFix": "AI 修復",
+  "diffCollapseAllFolds": "摺疊全部"
 }

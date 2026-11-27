@@ -3863,5 +3863,6 @@
   "diffPresetImportOk": "นำเข้าพรีเซ็ตแล้ว",
   "diffPresetImportFail": "คลิปบอร์ดไม่มีพรีเซ็ตที่ถูกต้อง",
   "editorAiNewChat": "แชทใหม่",
-  "editorAiFix": "แก้ด้วย AI"
+  "editorAiFix": "แก้ด้วย AI",
+  "diffCollapseAllFolds": "ยุบทั้งหมด"
 }

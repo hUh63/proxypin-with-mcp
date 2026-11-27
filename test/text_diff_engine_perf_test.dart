@@ -82,6 +82,77 @@ void main() {
     });
   });
 
+  group('锚点索引：唯一行表 + 较小侧遍历', () {
+    test('重复行不当锚点，段内无锚点时仍走 lookahead 兜底', () {
+      final blocks = buildDiffBlocks(diffLines('common\nA\ncommon', 'common\nB\ncommon'));
+      expect(blocks.length, 1);
+      // leftLines / rightLines 存的是 0-based 行号，不是文本
+      expect(blocks.first.leftLines.length, 1);
+      expect(blocks.first.rightLines.length, 1);
+    });
+
+    test('两侧行数悬殊时仍能靠唯一行定位', () {
+      final left = 'a\nanchor\nb';
+      final right = [
+        ...List.generate(2000, (i) => 'x$i'),
+        'anchor',
+        'b',
+      ].join('\n');
+      final blocks = buildDiffBlocks(diffLines(left, right));
+      expect(blocks.length, 1);
+      expect(blocks.first.leftLines.length, 1);
+      expect(blocks.first.rightLines.length, 2000);
+    });
+
+    test('一侧为空不产生锚点异常', () {
+      expect(buildDiffBlocks(diffLines('', 'a\nb')).length, 1);
+      expect(buildDiffBlocks(diffLines('a\nb', '')).length, 1);
+    });
+  });
+
+  group('相似度：长度上界剪枝与 buffer 复用', () {
+    test('长度比够不到阈值 → 不配对（与完整 LCS 一致）', () {
+      final blocks = buildDiffBlocks(diffLines('a', 'abcdefghijklmnop'));
+      expect(blocks.length, 1);
+      expect(blocks.first.pairs, isEmpty);
+    });
+
+    test('短行是长行前缀但长度差过大 → 同样不配对', () {
+      final blocks = buildDiffBlocks(diffLines('abc', 'abcxxxxxxxxxxxx'));
+      expect(blocks.first.pairs, isEmpty);
+    });
+
+    test('长度相近且共享前缀 → 仍配成修改', () {
+      final blocks = buildDiffBlocks(diffLines('abcdefgh', 'abcdefgi'));
+      expect(blocks.first.pairs.length, 1);
+    });
+
+    test('同一块里右行长度交替变化，scratch 复用不能串味', () {
+      final left = ['aaa111', 'bbbb2222', 'cc333', 'dddddd44444'].join('\n');
+      final right = ['aaa112', 'bbbb2223', 'cc334', 'dddddd44446'].join('\n');
+      final blocks = buildDiffBlocks(diffLines(left, right));
+      expect(blocks.length, 1);
+      expect(blocks.first.pairs.length, 4);
+      for (var k = 0; k < 4; k++) {
+        expect(blocks.first.pairs[k].left, k);
+        expect(blocks.first.pairs[k].right, k);
+      }
+    });
+
+    test('混合长短行 + 完全不相似行，配对仍保序不交叉', () {
+      final left = ['alpha', 'b', 'cccccc', 'dd'].join('\n');
+      final right = ['alphb', 'b', 'zzzzzzzzzzzz', 'de'].join('\n');
+      final blocks = buildDiffBlocks(diffLines(left, right));
+      expect(blocks.isNotEmpty, isTrue);
+      for (final b in blocks) {
+        for (var k = 1; k < b.pairs.length; k++) {
+          expect(b.pairs[k].left > b.pairs[k - 1].left, isTrue);
+          expect(b.pairs[k].right > b.pairs[k - 1].right, isTrue);
+        }
+      }
+    });
+  });
+
   group('规模与稳定性', () {
     test('1000 行里只改一行 → 恰好 1 个差异块', () {
       final left = List.generate(1000, (i) => 'line $i').join('\n');
