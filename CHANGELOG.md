@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.67.386 (2026-11-28) — 第 38 批排查：4 处 firstWhere 崩溃点
+
+### 排查（第 38 批：集合操作 / 索引边界）
+- 「遍历中修改同一集合」全库 4 个候选逐个核对，全是误报（正则把 `marks.add` 当成改
+  `_marks`、把 `allNames.add` 当成改被遍历集合）；`ListenableList` 那处早在 v1.67.82
+  已修，无新增问题
+- 全库 9 处 `firstWhere` 无 `orElse` 逐个核对：MCP 的 4 处、环境管理 1 处都包在
+  try/catch 里，搜索条件 2 处的值为固定下拉项；真缺口 4 处已修
+- 桌面 / 移动 `rewrite_replace.getItems()`：老规则里没有 header 类型的项时
+  `firstWhere` 抛 StateError → 保存改写规则整页崩。改成「找到才写，找不到丢掉这次编辑」
+- 搜索条件面板 `sortBy` / `sortOrder` 的值来自持久化配置，命中不到枚举时抛
+  StateError → 补 `orElse` 保持原值
+
 ## v1.67.385 (2026-11-27) — 注释续行 / 折叠记忆 / hex 对比后台化 / 引擎三处提速
 
 ### 文本编辑页

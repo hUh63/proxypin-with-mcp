@@ -114,10 +114,15 @@ class RewriteReplaceState extends State<DesktopRewriteReplace> {
   List<RewriteItem> getItems() {
     var headers = _headerKey.currentState?.getHeaders();
     if (headers != null) {
-      items
-          .firstWhere(
-              (item) => item.type == RewriteType.replaceRequestHeader || item.type == RewriteType.replaceResponseHeader)
-          .headers = headers;
+      // 老规则里可能没有 header 类型的项（被删过 / 旧版本存的），
+      // firstWhere 直接抛会让「保存规则」整页崩掉。找到才写，找不到就丢掉这次编辑。
+      for (final item in items) {
+        if (item.type == RewriteType.replaceRequestHeader ||
+            item.type == RewriteType.replaceResponseHeader) {
+          item.headers = headers;
+          break;
+        }
+      }
     }
     return items;
   }

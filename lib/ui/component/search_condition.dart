@@ -135,7 +135,10 @@ class SearchConditionsState extends State<SearchConditions> {
                     ],
                     onSelected: (val) {
                       setState(() {
-                        searchModel.sortBy = SortBy.values.firstWhere((e) => e.name == val);
+                        // 值来自持久化配置/下拉项，万一没有命中别让整页抛 StateError
+                        searchModel.sortBy = SortBy.values.firstWhere(
+                            (e) => e.name == val,
+                            orElse: () => searchModel.sortBy);
                       });
                     },
                   ),
@@ -149,7 +152,9 @@ class SearchConditionsState extends State<SearchConditions> {
                     ],
                     onSelected: (val) {
                       setState(() {
-                        searchModel.sortOrder = SortOrder.values.firstWhere((e) => e.name == val);
+                        searchModel.sortOrder = SortOrder.values.firstWhere(
+                            (e) => e.name == val,
+                            orElse: () => searchModel.sortOrder);
                       });
                     },
                   ),
